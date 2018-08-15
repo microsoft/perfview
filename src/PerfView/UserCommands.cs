@@ -1,32 +1,24 @@
-﻿using System;
+﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Utilities;
+using PerfView;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using PerfView;
-using PerfViewModel;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using FastSerialization;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Session;
-using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Address = System.UInt64;
-using System.Threading.Tasks;
-using System.ComponentModel;
 
 #if !PERFVIEW_COLLECT
 using Graphs;
@@ -49,7 +41,10 @@ namespace PerfViewExtensibility
             var options = new TraceLogOptions();
             options.ConversionLog = LogFile;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -67,7 +62,12 @@ namespace PerfViewExtensibility
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
                 foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
+                {
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                    {
+                        processes.Add(proc);
+                    }
+                }
             }
 
             string outputFileName = traceFileName + ".gcStats.html";
@@ -82,7 +82,10 @@ namespace PerfViewExtensibility
             var options = new TraceLogOptions();
             options.ConversionLog = LogFile;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -103,12 +106,20 @@ namespace PerfViewExtensibility
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 bgJitEvents[data.ProcessID].Add(data.Clone());
             };
             source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 bgJitEvents[data.ProcessID].Add(data.Clone());
             };
 
@@ -116,7 +127,13 @@ namespace PerfViewExtensibility
             Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
             source.Process();
             foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID)) jitStats.Add(proc.ProcessID, proc);
+            {
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID))
+                {
+                    jitStats.Add(proc.ProcessID, proc);
+                }
+            }
+
             using (TextWriter output = File.CreateText(outputFileName))
             {
                 Stats.ClrStats.ToHtml(output, jitStats.Values.ToList(), outputFileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
@@ -1005,7 +1022,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-#region private
+        #region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -1082,7 +1099,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-#endregion
+        #endregion
         }
 
         /// <summary>
@@ -1485,7 +1502,7 @@ namespace PerfViewExtensibility
             }
         }
 #endif
-#region private
+        #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -1781,7 +1798,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-#endregion
+        #endregion
 #endif
     }
 }
@@ -1793,9 +1810,13 @@ public static class TraceEventStackSourceExtensions
     {
         TraceEvents events;
         if (process == null)
+        {
             events = eventLog.Events.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);
+        }
         else
+        {
             events = process.EventsInProcess.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData);
+        }
 
         var traceStackSource = new TraceEventStackSource(events);
         traceStackSource.ShowUnknownAddresses = showUnknownAddresses;

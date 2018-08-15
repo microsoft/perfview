@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.Threading;
+using PerfView;
+using System;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
-using Microsoft.VisualStudio.Threading;
-using PerfView;
 using Xunit;
 using Xunit.Abstractions;
 

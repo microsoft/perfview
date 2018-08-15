@@ -22,8 +22,15 @@ namespace PerfView
         /// <param name="other">An object to compare with this object.</param>
         public bool Equals(Preset other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
 
             return string.Equals(Name, other.Name) &&
                    string.Equals(GroupPat, other.GroupPat) &&

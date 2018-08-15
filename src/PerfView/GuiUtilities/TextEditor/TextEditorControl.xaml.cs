@@ -1,15 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Media;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Text.RegularExpressions;
-using System.Media;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Windows.Threading;
-using System.Collections.Generic;
 
 namespace Controls
 {
@@ -57,7 +56,10 @@ namespace Controls
             try
             {
                 using (var stream = File.OpenRead(fileName))
+                {
                     new TextRange(Body.Document.ContentStart, Body.Document.ContentEnd).Load(stream, DataFormats.Text);
+                }
+
                 m_fileName = fileName;
             }
             catch (Exception)
@@ -70,7 +72,10 @@ namespace Controls
             try
             {
                 using (var stream = File.Create(fileName))
+                {
                     new TextRange(Body.Document.ContentStart, Body.Document.ContentEnd).Save(stream, DataFormats.Text);
+                }
+
                 m_fileName = fileName;
             }
             catch (Exception)
@@ -88,20 +93,29 @@ namespace Controls
         {
             // Line numbers start at 1;
             if (lineNum > 0)
+            {
                 --lineNum;
+            }
 
             IEnumerable<Block> blocks = Body.Document.Blocks;
             if (blocks == null)
+            {
                 return;
+            }
 
             Block blockForLine = null;
             foreach (Block block in blocks)
             {
                 blockForLine = block;
                 if (lineNum <= 0)
+                {
                     break;
+                }
+
                 if (block is Paragraph)
+                {
                     --lineNum;
+                }
             }
             if (blockForLine != null)
             {
@@ -127,7 +141,10 @@ namespace Controls
                 var pos = Body.Selection.End;
                 Block startBlock = pos.Paragraph;
                 if (startBlock == null)
+                {
                     return null;
+                }
+
                 Block block = startBlock;
                 var endBlock = block.ContentEnd;
                 var wrapped = false;
@@ -167,9 +184,13 @@ namespace Controls
                     // Load up the beginning and end of that block.  
                     pos = block.ContentStart;
                     if (block != startBlock)
+                    {
                         endBlock = block.ContentEnd;
+                    }
                     else
+                    {
                         endBlock = stopPos;     // The last block we stop where we began the search.  
+                    }
                 }
             }
             catch (Exception)
@@ -196,9 +217,15 @@ namespace Controls
         private void DoFind(object sender, ExecutedRoutedEventArgs e)
         {
             if (!Body.Selection.IsEmpty)
+            {
                 FindTextBox.Text = Body.Selection.Text;
+            }
+
             if (FindTextBox.Text.Length == 0)
+            {
                 FindTextBox.Text = "Enter Search Text";
+            }
+
             FindTextBox.Focus();
         }
         private void DoDeleteLine(object sender, ExecutedRoutedEventArgs e)
@@ -216,7 +243,9 @@ namespace Controls
         {
             Window asWindow = Parent as Window;
             if (asWindow != null)
+            {
                 asWindow.Close();
+            }
         }
         private void DoSaveAs(object sender, ExecutedRoutedEventArgs e)
         {
@@ -227,7 +256,9 @@ namespace Controls
             saveDialog.AddExtension = true;
             saveDialog.OverwritePrompt = true;
             if (m_fileName != null)
+            {
                 saveDialog.FileName = Path.GetFileName(m_fileName);
+            }
 
             // Show open file dialog box
             Nullable<bool> result = saveDialog.ShowDialog();
@@ -238,18 +269,27 @@ namespace Controls
                 m_fileName = saveDialog.FileName;
                 Window window = Parent as Window;
                 if (window != null)
+                {
                     window.Title = "Editing: " + m_fileName;
+                }
+
                 SaveText(m_fileName);
             }
             else
+            {
                 SystemSounds.Beep.Play();
+            }
         }
         private void DoSave(object sender, ExecutedRoutedEventArgs e)
         {
             if (m_fileName == null)
+            {
                 DoSaveAs(sender, e);
+            }
             else
+            {
                 SaveText(m_fileName);
+            }
         }
         private void DoOpen(object sender, ExecutedRoutedEventArgs e)
         {
@@ -269,11 +309,16 @@ namespace Controls
                 m_fileName = openDialog.FileName;
                 Window window = Parent as Window;
                 if (window != null)
+                {
                     window.Title = "Editing: " + m_fileName;
+                }
+
                 OpenText(m_fileName);
             }
             else
+            {
                 SystemSounds.Beep.Play();
+            }
         }
 
         // GUI callbacks
@@ -299,7 +344,10 @@ namespace Controls
                 int charsInRun = start.GetTextRunLength(LogicalDirection.Forward);
                 string run = start.GetTextInRun(LogicalDirection.Forward);
                 if (textCharacterOffset <= charsInRun)
+                {
                     return start.GetPositionAtOffset(textCharacterOffset);
+                }
+
                 textCharacterOffset -= charsInRun;
                 start = start.GetNextContextPosition(LogicalDirection.Forward);
             }
@@ -313,7 +361,7 @@ namespace Controls
     /// <summary>
     /// TextEditorWriter creates a TextWriter that sends it TextEditor.  
     /// </summary>
-    class TextEditorWriter : TextWriter
+    internal class TextEditorWriter : TextWriter
     {
         public TextEditorWriter(TextEditorControl textEditorControl)
         {
@@ -322,7 +370,7 @@ namespace Controls
             m_timer = new DispatcherTimer();
             m_timer.Tick += delegate { Flush(); };
             m_timer.Interval = new TimeSpan(100000 * 300);     // 300 msec 
-            m_textEditorControl.IsVisibleChanged += delegate(object sender, DependencyPropertyChangedEventArgs e) { Flush(); };
+            m_textEditorControl.IsVisibleChanged += delegate (object sender, DependencyPropertyChangedEventArgs e) { Flush(); };
         }
         public override void Write(char value)
         {
@@ -338,7 +386,7 @@ namespace Controls
 
             if (m_textEditorControl.IsVisible && m_sb.Length > 0)
             {
-                m_textEditorControl.Dispatcher.BeginInvoke((Action)delegate()
+                m_textEditorControl.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     lock (this)
                     {
@@ -351,11 +399,15 @@ namespace Controls
                             m_sb.Clear();
                             var newTotalLen = logData.Length + m_charsWritten;
                             if (newTotalLen < maxLengthInViewer)
+                            {
                                 m_textEditorControl.AppendText(logData);
+                            }
                             else
                             {
                                 if (logData.Length < maxLengthInViewer)
+                                {
                                     logData = m_textEditorControl.Text + logData;
+                                }
 
                                 var newLogData = @"***** See " + PerfView.App.LogFileName + " for complete log. ******\r\n";
                                 var dataLen = Math.Min(maxLengthInViewer, logData.Length);
@@ -374,16 +426,24 @@ namespace Controls
         public override void Write(string value)
         {
             if (value.Length == 0)
+            {
                 return;
+            }
 
             lock (this)
             {
                 if (!m_timer.IsEnabled)
+                {
                     m_timer.Start();
+                }
+
                 m_sb.Append(value);
 
                 if (value.EndsWith("\r\n"))
+                {
                     value = value.Substring(0, value.Length - 2);
+                }
+
                 PerfViewLogger.Log.PerfViewLog(value);
             }
         }
@@ -394,13 +454,17 @@ namespace Controls
         public string GetText()
         {
             lock (this)
+            {
                 return m_sb.ToString() + m_textEditorControl.Text;
+            }
         }
 
         public override string ToString()
         {
             lock (this)
+            {
                 return m_textEditorControl.Text + " PENDING " + m_sb.ToString();
+            }
         }
         #region private
         private const int BuffSize = 10240;

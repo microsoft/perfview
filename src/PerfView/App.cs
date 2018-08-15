@@ -1,4 +1,9 @@
 // #define PUBLIC_BUILD
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
+using PerfView.Properties;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -7,13 +12,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Utilities;
-using PerfView.Properties;
-using Microsoft.Diagnostics.Symbols;
-using Utilities;
-using Microsoft.Diagnostics.Tracing.Session;
 using System.Threading.Tasks;
+using Utilities;
 
 namespace PerfView
 {
@@ -62,7 +62,9 @@ namespace PerfView
             catch (ThreadInterruptedException)
             {
                 if (App.CommandProcessor.LogFile != null)
+                {
                     App.CommandProcessor.LogFile.WriteLine("Thread Aborted by user.");
+                }
             }
             catch (Exception e)
             {
@@ -79,9 +81,14 @@ namespace PerfView
             finally
             {
                 if (App.CommandProcessor.LogFile != null)
+                {
                     App.CommandProcessor.LogFile.Flush();
+                }
+
                 if (writerToCleanup != null)
+                {
                     writerToCleanup.Dispose();
+                }
             }
 
             // If we created a new console (collect command), prompt before closing it so the user has a chance to look at it.
@@ -108,7 +115,9 @@ namespace PerfView
             Triggers.ETWEventTrigger.SessionNamePrefix = CommandProcessor.s_UserModeSessionName + "ETWTrigger";
             CommandLineArgs = new CommandLineArgs();
             if (args.Length > 0)
+            {
                 CommandLineArgs.ParseArgs(args);   // This routine catches command line parsing exceptions.  (sets CommandLineFailure)
+            }
 
             // Figure out where output goes and set CommandProcessor.LogFile
 #if !PERFVIEW_COLLECT
@@ -147,7 +156,9 @@ namespace PerfView
                         CommandLineArgs.DoCommand == CommandProcessor.GuiRun ||
                         CommandLineArgs.DoCommand == CommandProcessor.GuiCollect ||
                         CommandLineArgs.DoCommand == CommandProcessor.GuiHeapSnapshot))
+                    {
                         CommandLineArgs.NoGui = true;
+                    }
                 }
 
                 if (CommandLineArgs.NoGui)
@@ -160,7 +171,9 @@ namespace PerfView
             // Check for a common mistake (misspelling a command name) 
             if (CommandLineArgs.DoCommand == App.CommandProcessor.View && CommandLineArgs.DataFile != null &&
                 CommandLineArgs.DataFile.IndexOf('.') < 0 && CommandLineArgs.DataFile.IndexOf('\\') < 0)
+            {
                 throw new ApplicationException("Error " + CommandLineArgs.DataFile + " not a perfView command.");
+            }
 
 #if !PERFVIEW_COLLECT
             // Check for error where you have a TraceEvent dll in the wrong place.
@@ -183,7 +196,7 @@ namespace PerfView
             // It also can work if we only do viewing operations (msdia* uses old libraries), but again do we care?  
             // If we do we can move this to before the DLLs are loaded.   
             // Give the user a clean error.   
-            if (Environment.Is64BitProcess && Environment.OSVersion.Version.Major  * 10 + Environment.OSVersion.Version.Minor < 62)
+            if (Environment.Is64BitProcess && Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
             {
                 throw new ApplicationException("The PerfView64 does not work properly Windows version < 10\r\n" +
                     "    Please use the 32 bit version (PerfView.exe).");
@@ -191,14 +204,21 @@ namespace PerfView
 
             // For reasons I have not dug into SetFileName does not work if you attach to a session.  Warn the user.  
             if (CommandLineArgs.InMemoryCircularBuffer && CommandLineArgs.DoCommand == CommandProcessor.Start)
+            {
                 throw new ApplicationException("Error: InMemoryCircularBuffer currently can't be used with separate Start and Stop processes.");
+            }
 
             if (CommandLineArgs.NoGui)
             {
                 if (SupportFiles.ProcessArch != ProcessorArchitecture.Arm)
+                {
                     CloseSplashScreen();
+                }
+
                 if (needNewConsole && !newConsoleCreated)
+                {
                     newConsoleCreated = CreateConsole();
+                }
 
                 if (CommandLineArgs.CommandLineFailure != null)
                 {
@@ -243,23 +263,37 @@ namespace PerfView
                 {
                     string verboseLogName;
                     if (CommandLineArgs.DataFile == null)
+                    {
                         verboseLogName = "PerfViewData.log.txt";
+                    }
                     else
+                    {
                         verboseLogName = Path.ChangeExtension(CommandLineArgs.DataFile, "log.txt");
+                    }
 
                     App.LogFileName = verboseLogName;
                     CommandProcessor.LogFile.WriteLine("VERBOSE LOG IN: {0}", verboseLogName);
                     if (CommandLineArgs.DoCommand != CommandProcessor.Collect)
+                    {
                         CommandProcessor.LogFile.WriteLine("Use /LogFile:FILE  to redirect output entirely.");
+                    }
+
                     TextWriter verboseLog;
                     if (CommandLineArgs.DoCommand == CommandProcessor.Stop)
+                    {
                         verboseLog = File.AppendText(verboseLogName);
+                    }
                     else
+                    {
                         verboseLog = File.CreateText(verboseLogName);
+                    }
+
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
                 else
+                {
                     App.LogFileName = CommandLineArgs.LogFile;
+                }
 
                 var allArgs = string.Join(" ", args);
                 CommandProcessor.LogFile.WriteLine("[EXECUTING: PerfView {0}]", allArgs);
@@ -297,7 +331,10 @@ namespace PerfView
             get
             {
                 if (s_ConfigDataName == null)
+                {
                     s_ConfigDataName = Path.Combine(SupportFiles.SupportFileDirBase, "UserConfig.xml");
+                }
+
                 return s_ConfigDataName;
             }
         }
@@ -306,7 +343,10 @@ namespace PerfView
             get
             {
                 if (s_ConfigData == null)
+                {
                     s_ConfigData = new ConfigData(ConfigDataFileName, autoWrite: true);
+                }
+
                 return s_ConfigData;
             }
         }
@@ -324,7 +364,9 @@ namespace PerfView
                 if (s_LogFileName == null)
                 {
                     if (CommandLineArgs.LogFile != null)
+                    {
                         s_LogFileName = CommandLineArgs.LogFile;
+                    }
                     else
                     {
                         var uniq = "";
@@ -332,7 +374,10 @@ namespace PerfView
                         {
                             s_LogFileName = Path.Combine(CacheFiles.CacheDir, "PerfViewLogFile" + uniq + ".txt");
                             if (FileUtilities.TryDelete(s_LogFileName))
+                            {
                                 break;
+                            }
+
                             uniq = "." + i.ToString();
                         }
                     }
@@ -364,13 +409,17 @@ namespace PerfView
                 var tutorial = Path.Combine(SupportFiles.SupportFileDir, "tutorial.cs");
                 var tutorialTxt = Path.Combine(SupportFiles.SupportFileDir, "tutorial.cs.txt");
                 if (File.Exists(tutorialTxt))
+                {
                     File.Copy(tutorialTxt, tutorial);
+                }
 
                 if (Environment.OSVersion.Platform != PlatformID.Unix)
                 {
                     // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
                     if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
+                    {
                         DirectoryUtilities.Clean(Path.Combine(SupportFiles.SupportFileDir, "amd64"));
+                    }
 
                     // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
                     // so copy this dll to the other architectures.  
@@ -385,7 +434,9 @@ namespace PerfView
 
                             // ARM can use the X86 version of the heap dumper.  
                             if (arch == "arm")
+                            {
                                 File.Copy(Path.Combine(fromDir, "HeapDump.exe"), Path.Combine(toDir, "HeapDump.exe"));
+                            }
                         }
                     }
 
@@ -421,7 +472,7 @@ namespace PerfView
         /// unpacked in the  previous step.   
         /// </summary>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static void SetPermissionsForWin8Apps()
+        private static void SetPermissionsForWin8Apps()
         {
             // Are we on Win8 or above
             var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
@@ -456,16 +507,22 @@ namespace PerfView
             var cmdLine = Environment.CommandLine;
             // Give up if we are running as a script, as it is likely waiting on the result
             if (cmdLine.IndexOf("/logFile=", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
                 return;
+            }
 
             // Is the EXE on a network share 
             var exe = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
             if (!exe.StartsWith(@"\\"))
+            {
                 return;
+            }
 
             // This is redundant, but insures that we don't get into infinite loops during testing. 
             if (exe.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
+            {
                 return;
+            }
 
             // We have unpacked.  
             Debug.Assert(Directory.Exists(SupportFiles.SupportFileDir));
@@ -488,7 +545,9 @@ namespace PerfView
                 {
                     var pdbFile = Path.ChangeExtension(exe, ".pdb");
                     if (File.Exists(pdbFile))
+                    {
                         File.Copy(pdbFile, Path.ChangeExtension(targetExe, ".pdb"));
+                    }
 
                     // Copy TraceEvent.pdb if you can.  
                     var srcTraceEventPdb = Path.Combine(Path.GetDirectoryName(exe), "TraceEvent.pdb");
@@ -513,7 +572,9 @@ namespace PerfView
 
                 var m = System.Text.RegularExpressions.Regex.Match(cmdLine, "^\\s*\"(.*?)\"\\s*(.*)");
                 if (!m.Success)
+                {
                     m = System.Text.RegularExpressions.Regex.Match(cmdLine, @"\s*(\S*)\s*(.*)");
+                }
 
                 // Can't use Command class because that lives in TraceEvent and have not set up our assembly resolve event. 
                 var perfView = new Process();
@@ -530,7 +591,9 @@ namespace PerfView
         {
             var acceptedVersion = App.ConfigData["EULA_Accepted"];
             if (acceptedVersion != null && acceptedVersion == EulaVersion)
+            {
                 return false;
+            }
 
             // Did the accept the EULA by command line argument?
             if (App.CommandLineArgs.AcceptEULA)
@@ -541,7 +604,9 @@ namespace PerfView
 
             // Internal users implicitly accept the EULA
             if (AppLog.InternalUser)
+            {
                 return false;
+            }
 
             return true;
         }
@@ -580,7 +645,9 @@ namespace PerfView
                     // Add any path that we had on previous runs.  
                     var savedPath = App.ConfigData["_NT_SYMBOL_PATH"];
                     if (savedPath != null)
+                    {
                         symPath.Add(savedPath);
+                    }
 
                     bool persistSymPath = true;
 
@@ -602,7 +669,9 @@ namespace PerfView
                         else
                         {
                             if (UserOKWithSymbolServerGui())
+                            {
                                 symPath.Add(Microsoft.Diagnostics.Symbols.SymbolPath.MicrosoftSymbolServerPath);
+                            }
                         }
                     }
 
@@ -611,7 +680,9 @@ namespace PerfView
 
                     // Remember it.  
                     if (persistSymPath)
+                    {
                         SymbolPath = symPath.InsureHasCache(symPath.DefaultSymbolCache()).CacheFirst().ToString();
+                    }
                 }
                 return m_SymbolPath;
             }
@@ -619,7 +690,9 @@ namespace PerfView
             {
                 m_SymbolPath = value;
                 if (App.ConfigData["_NT_SYMBOL_PATH"] != m_SymbolPath)
+                {
                     App.ConfigData["_NT_SYMBOL_PATH"] = m_SymbolPath;
+                }
             }
         }
         public static string SourcePath
@@ -631,7 +704,9 @@ namespace PerfView
                     var symPath = new SymbolPath(Environment.GetEnvironmentVariable("_NT_SOURCE_PATH"));
                     var savedPath = App.ConfigData["_NT_SOURCE_PATH"];
                     if (savedPath != null)
+                    {
                         symPath.Add(savedPath);
+                    }
 
                     // Remember it.  
                     SourcePath = symPath.ToString();
@@ -656,7 +731,9 @@ namespace PerfView
             var log = App.CommandProcessor.LogFile;
             SymbolPath symPath = new SymbolPath(App.SymbolPath);
             if ((symbolFlags & SymbolReaderOptions.CacheOnly) != 0)
+            {
                 symPath = new SymbolPath("SRV*" + symPath.DefaultSymbolCache());
+            }
 
             var sourcePath = App.SourcePath;
             string localSymDir = symPath.DefaultSymbolCache();
@@ -682,30 +759,44 @@ namespace PerfView
                     // WPR conventions add any .etl.ngenPDB directory to the path too.   has higher priority still. 
                     var wprSymDir = etlFilePath + ".NGENPDB";
                     if (Directory.Exists(wprSymDir))
+                    {
                         symPath.Insert("SRV*" + wprSymDir);
+                    }
                     else
                     {
                         // I have now seen both conventions .etl.ngenpdb and .ngenpdb, so look for both.  
                         wprSymDir = Path.ChangeExtension(etlFilePath, ".NGENPDB");
                         if (Directory.Exists(wprSymDir))
+                        {
                             symPath.Insert("SRV*" + wprSymDir);
+                        }
                     }
                     // VS uses .NGENPDBS as a convention.  
                     wprSymDir = etlFilePath + ".NGENPDBS";
                     if (Directory.Exists(wprSymDir))
+                    {
                         symPath.Insert("SRV*" + wprSymDir);
+                    }
 
                     if (!string.IsNullOrWhiteSpace(sourcePath))
+                    {
                         sourcePath += ";";
+                    }
+
                     sourcePath += filePathDir;
                     var srcDir = Path.Combine(filePathDir, "src");
                     if (Directory.Exists(srcDir))
+                    {
                         sourcePath += ";" + srcDir;
+                    }
                 }
             }
             // Add the Support Files directory so that you get the tutorial example
             if (!string.IsNullOrWhiteSpace(sourcePath))
+            {
                 sourcePath += ";";
+            }
+
             sourcePath += SupportFiles.SupportFileDir;
 
             // Can we use the cached symbol reader?
@@ -713,7 +804,9 @@ namespace PerfView
             {
                 s_symbolReader.SourcePath = sourcePath;
                 if (symbolFlags == SymbolReaderOptions.None && s_symbolReader.SymbolPath == symPath.ToString())
+                {
                     return s_symbolReader;
+                }
 
                 s_symbolReader.Dispose();
                 s_symbolReader = null;
@@ -721,7 +814,10 @@ namespace PerfView
 
             log.WriteLine("Symbol reader _NT_SYMBOL_PATH= {");
             foreach (var element in symPath.Elements)
+            {
                 log.WriteLine("    {0};", element.ToString());
+            }
+
             log.WriteLine("    }");
             log.WriteLine("This can be set using the File -> Set Symbol Path dialog on the Stack Viewer.");
             SymbolReader ret = new SymbolReader(log, symPath.ToString());
@@ -745,14 +841,19 @@ namespace PerfView
             }
             ret.SourceCacheDirectory = Path.Combine(CacheFiles.CacheDir, "src");
             if (localSymDir != null)
+            {
                 ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log);
+            }
 
             if (symbolFlags == SymbolReaderOptions.None)
+            {
                 s_symbolReader = ret;
+            }
+
             return ret;
         }
 
-#region private
+        #region private
         /// <summary>
         /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
         /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
@@ -777,7 +878,10 @@ namespace PerfView
                             // clobber the source file in our attempt to set up the target.  In this case just give up
                             // and leave the file as it was.  
                             if (string.Compare(pdbPath, pdbPathPrefix, StringComparison.OrdinalIgnoreCase) == 0)
+                            {
                                 return;
+                            }
+
                             log.WriteLine("Removing file {0} from symbol cache to make way for symsrv files.", pdbPathPrefix);
                             File.Delete(pdbPathPrefix);
                         }
@@ -785,14 +889,18 @@ namespace PerfView
                     }
 
                     if (!Directory.Exists(localPdbDir))
+                    {
                         Directory.CreateDirectory(localPdbDir);
+                    }
 
                     var localPdbPath = Path.Combine(localPdbDir, fileName);
                     var fileExists = File.Exists(localPdbPath);
                     if (!fileExists || File.GetLastWriteTimeUtc(localPdbPath) != File.GetLastWriteTimeUtc(pdbPath))
                     {
                         if (fileExists)
+                        {
                             log.WriteLine("WARNING: overwriting existing file {0}.", localPdbPath);
+                        }
 
                         log.WriteLine("Copying {0} to local cache {1}", pdbPath, localPdbPath);
                         // Do it as a copy and a move so that the update is atomic.  
@@ -900,15 +1008,15 @@ namespace PerfView
         private static string m_SymbolPath;
         private static string m_SourcePath;
 
-#region CreateConsole
+        #region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
-        static extern int AllocConsole();
+        private extern static int AllocConsole();
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
-        static extern IntPtr GetStdHandle(int nStdHandle);
+        private extern static IntPtr GetStdHandle(int nStdHandle);
 
         private const int UNIVERSAL_NAME_INFO_LEVEL = 1;
         [System.Runtime.InteropServices.DllImport("mpr")]
-        private static unsafe extern int WNetGetUniversalNameW(char* localPath, int infoLevel, void* buffer, ref int bufferSize);
+        private static extern unsafe int WNetGetUniversalNameW(char* localPath, int infoLevel, void* buffer, ref int bufferSize);
 
         /// <summary>
         /// Convert a network drive (e.g. Z:\testing) to its universal name (e.g. \\clrmain\public\testing).   
@@ -992,14 +1100,14 @@ namespace PerfView
         static int s_controlCPressed = 0;
 #endif
 
-#endregion
-#endregion
-        }
+        #endregion
+        #endregion
+    }
 
-        /// <summary>
-        /// APIs for logging usage data and feedback.
-        /// </summary>
-        public static class AppLog
+    /// <summary>
+    /// APIs for logging usage data and feedback.
+    /// </summary>
+    public static class AppLog
     {
         /// <summary>
         /// Returns true if you have access to the file share where we log feedback
@@ -1014,7 +1122,9 @@ namespace PerfView
                 if (!s_CanSendFeedback.HasValue)
                 {
                     if (s_IsUnderTest)
+                    {
                         s_CanSendFeedback = false;          // Don't send feedback about test runs.  
+                    }
                     else
                     {
                         // Have we tried to probe for the existance of \\clrmain?
@@ -1024,18 +1134,27 @@ namespace PerfView
                             // Only collect data in the REDMOND domain EUROPE has rules about telemetry.  
                             var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
                             if (userDomain != "REDMOND")
+                            {
                                 s_CanSendFeedback = false;
+                            }
                             else
+                            {
                                 s_CanSendFeedback = SymbolPath.ComputerNameExists(FeedbackServer) && WriteFeedbackToLog(FeedbackFilePath, "");
+                            }
                         }
                         else
                         {
                             // Yes, see what has become of it.   
                             int msecSinceProbe = (int)(DateTime.Now - s_ProbedForFeedbackAt).TotalMilliseconds;
                             if (msecSinceProbe < 800)
+                            {
                                 Thread.Sleep(msecSinceProbe);       // We probed not to long ago, give it some time
+                            }
+
                             if (!s_CanSendFeedback.HasValue)
+                            {
                                 s_CanSendFeedback = false;          //Give up if we don't have an answer by now. 
+                            }
                         }
                     }
                 }
@@ -1054,7 +1173,10 @@ namespace PerfView
                 return false;
 #else
                 if (!s_InternalUser.HasValue)
+                {
                     s_InternalUser = s_IsUnderTest || SymbolPath.ComputerNameExists(FeedbackServer, 400);
+                }
+
                 return s_InternalUser.Value;
 #endif
             }
@@ -1067,7 +1189,10 @@ namespace PerfView
         {
 #if !PUBLIC_BUILD
             if (!CanSendFeedback)
+            {
                 return;
+            }
+
             try
             {
                 var usagePath = UsageFilePath;
@@ -1077,7 +1202,10 @@ namespace PerfView
                 {
                     var now = DateTime.Now;
                     if (s_startTime.Ticks == 0)
+                    {
                         s_startTime = now;
+                    }
+
                     var secFromStart = (now - s_startTime).TotalSeconds;
 
                     var sessionID = (uint)(s_startTime.Ticks / 100000);
@@ -1088,7 +1216,9 @@ namespace PerfView
                 // Keep the file to 10 meg;
                 // Note that the move might fail, but that is OK.  
                 if (new FileInfo(usagePath).Length > 10000000)
+                {
                     File.Move(usagePath, Path.ChangeExtension(usagePath, ".prev.csv"));
+                }
             }
             catch (Exception) { }
 #endif
@@ -1103,7 +1233,10 @@ namespace PerfView
             return false;
 #else
             if (!CanSendFeedback)
+            {
                 return false;
+            }
+
             StringWriter sw = new StringWriter();
             var userName = Environment.GetEnvironmentVariable("USERNAME");
             var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
@@ -1124,7 +1257,10 @@ namespace PerfView
             {
                 // Capture the user log, to see how we got here.  if it is less than 20 Meg.  
                 if (File.Exists(App.LogFileName) && (new FileInfo(App.LogFileName)).Length < 20000000)
+                {
                     File.Copy(App.LogFileName, logPath, true);
+                }
+
                 sw.WriteLine("UserLog: {0}", logPath);
             }
             catch { };
@@ -1153,7 +1289,7 @@ namespace PerfView
             }
         }
 
-#region private
+        #region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1185,25 +1321,31 @@ namespace PerfView
                 {
                     System.IO.Directory.CreateDirectory(Path.GetDirectoryName(filePath));
                     using (var writer = new StreamWriter(filePath, true))   // open for appending. 
+                    {
                         writer.Write(message);
+                    }
+
                     return true;
                 }
                 catch (Exception) { }
 
                 if ((DateTime.UtcNow - start).TotalMilliseconds > 50)
+                {
                     break;
+                }
+
                 System.Threading.Thread.Sleep(10);
             }
             return false;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
     /// VerboseLogWriter is a textWriter that forwards everything to 'verboseLog' but
     /// also sends any lines in [] to the 'terseLog'. 
     /// </summary>
-    class VerboseLogWriter : TextWriter
+    internal class VerboseLogWriter : TextWriter
     {
         public VerboseLogWriter(TextWriter verboseLog, TextWriter terseLog)
         {
@@ -1242,9 +1384,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-#region private
-        TextWriter m_verboseLog;
-        TextWriter m_terseLog;
-#endregion
+        #region private
+        private TextWriter m_verboseLog;
+        private TextWriter m_terseLog;
+        #endregion
     }
 }

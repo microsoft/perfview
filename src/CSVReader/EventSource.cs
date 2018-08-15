@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace EventSources
 {
@@ -97,7 +95,10 @@ namespace EventSources
         public static List<string> ParseColumns(string columnSpec, ICollection<string> columnNames)
         {
             if (string.IsNullOrWhiteSpace(columnSpec))
+            {
                 return null;
+            }
+
             var ret = new List<string>();
             var regex = new Regex(@"\s*(\S+)\s*");
             var index = 0;
@@ -112,17 +113,27 @@ namespace EventSources
                     {
                         // If it was already specified, leave it out
                         for (int i = 0; i < startCount; i++)
+                        {
                             if (ret[i] == colName)
+                            {
                                 goto Next;
+                            }
+                        }
+
                         ret.Add(colName);
-                    Next: ;
+                        Next:;
                     }
                 }
                 else
+                {
                     ret.Add(name);
+                }
+
                 index += match.Groups[0].Length;
                 if (index == columnSpec.Length)
+                {
                     break;
+                }
             }
             return ret;
         }
@@ -142,7 +153,7 @@ namespace EventSources
         /// <summary>
         /// The names of the fields in this record
         /// </summary>
-        public virtual string[] FieldNames { get { return null; } } 
+        public virtual string[] FieldNames { get { return null; } }
         // TODO FIX NOW should be abstract, get CSV and ETW subclasses to implement
         /// <summary>
         /// This fetches fields from the record.  The index corresponds to the FieldNames array.
@@ -177,7 +188,10 @@ namespace EventSources
         protected void SetDisplayFields(EventSource source)
         {
             if (m_displayFields == null)
+            {
                 m_displayFields = new string[5];
+            }
+
             Debug.Assert(m_displayFields.Length == 5);
             // TODO FIX NOW NOT DONE 
         }
@@ -192,7 +206,7 @@ namespace EventSources
             Debug.Assert(numNonRestFields >= 4 || numNonRestFields == 0);
             m_displayFields = new string[numNonRestFields];
         }
-        protected EventRecord() {}
+        protected EventRecord() { }
         #endregion
     }
 }

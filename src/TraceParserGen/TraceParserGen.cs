@@ -1,13 +1,12 @@
-﻿using System;
-using ETWManifest;
-using System.IO;
-using System.Text;
+﻿using ETWManifest;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Linq;
 
-class TraceParserGen
+internal class TraceParserGen
 {
     public TraceParserGen(Provider provider)
     {
@@ -33,7 +32,9 @@ class TraceParserGen
     {
         List<Event> eventsForName;
         if (!m_eventsByName.TryGetValue(eventName, out eventsForName))
+        {
             m_eventsByName[eventName] = eventsForName = new List<Event>();
+        }
 
         // Make sure that every event has a unique names, Warn if this is not true and morph name by adding the EventId as a suffix.  
         foreach (var eventWithName in eventsForName)
@@ -66,7 +67,9 @@ class TraceParserGen
                 // We use the last component of the - separated list.  
                 int lastDash = m_ClassNamePrefix.LastIndexOf('-');
                 if (lastDash > 0)
+                {
                     m_ClassNamePrefix = m_ClassNamePrefix.Substring(lastDash + 1);
+                }
             }
             return m_ClassNamePrefix;
         }
@@ -213,7 +216,9 @@ class TraceParserGen
     {
         int keywordIdx = keywordName.IndexOf("KEYWORD_");
         if (0 <= keywordIdx)
+        {
             keywordName = keywordName.Substring(keywordIdx + 8);
+        }
 
         // Convert it to CamelCase.  
 
@@ -223,13 +228,20 @@ class TraceParserGen
         {
             char c = keywordName[i];
             if (c == '_')
+            {
                 capitalizeNext = true;
+            }
             else
             {
                 if (capitalizeNext)
+                {
                     c = Char.ToUpperInvariant(c);
+                }
                 else
+                {
                     c = Char.ToLowerInvariant(c);
+                }
+
                 sb.Append(c);
                 capitalizeNext = false;
             }
@@ -252,12 +264,18 @@ class TraceParserGen
             string templateClassName = GetTemplateNameForEvent(evnt, evntName);
             var stateArg = "";
             if (NeedsParserState)
+            {
                 stateArg = ", " + templateClassName + "State state=null";
+            }
+
             output.WriteLine("        static private {0} {1}Template(Action<{0}> action{2})", templateClassName, TraceParserGen.ToCSharpName(evntName), stateArg);
             output.WriteLine("        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName");
             var state = "";
             if (NeedsParserState && templateClassName != "EmptyTraceData")
+            {
                 state = ", state";
+            }
+
             output.WriteLine("            return new {0}(action, {1}, {2}, \"{3}\", Guid.Empty, {4}, \"{5}\", ProviderGuid, ProviderName {6});",
                 templateClassName, evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName), state);
             output.WriteLine("        }");
@@ -265,7 +283,9 @@ class TraceParserGen
 
         var internalOpt = "";
         if (Internal)
+        {
             internalOpt = "internal ";
+        }
 
         output.WriteLine();
         output.WriteLine("        static private volatile TraceEvent[] s_templates;");
@@ -275,8 +295,11 @@ class TraceParserGen
         output.WriteLine("            {");
         output.WriteLine("                var templates = new TraceEvent[{0}];", m_provider.Events.Count);
         for (int i = 0; i < m_provider.Events.Count; i++)
+        {
             output.WriteLine("                templates[{0}] = {1}Template(null);", i, TraceParserGen.ToCSharpName(m_provider.Events[i].EventName));
-        output.WriteLine("                s_templates = templates;"); 
+        }
+
+        output.WriteLine("                s_templates = templates;");
         output.WriteLine("            }");
         output.WriteLine("            foreach (var template in s_templates)");
         output.WriteLine("                if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)");
@@ -305,7 +328,9 @@ class TraceParserGen
             output.WriteLine("            {");
             var extraArg = "";
             if (NeedsParserState)
+            {
                 extraArg = ", State";
+            }
             // Call the *Template() function that does the work
             output.WriteLine("                source.RegisterEventTemplate(" + TraceParserGen.ToCSharpName(evntName) + "Template(value" + extraArg + "));");
             output.WriteLine("            }");
@@ -338,14 +363,19 @@ class TraceParserGen
             GetFieldInfoByField(versionsForEvent, fieldVersions, allFields, ref lengthAssert);
 
             if (allFields.Count <= 0)
+            {
                 continue;
+            }
 
             // This is the name of the template we will be generating.   
             string templateClassName = GetTemplateNameForEvent(versionsForEvent[0], eventName);
 
             // Have we done it already?
             if (classesEmitted.ContainsKey(templateClassName))
+            {
                 continue;
+            }
+
             classesEmitted.Add(templateClassName, null);
 
             // OK we are ready to write it all out.  
@@ -364,7 +394,9 @@ class TraceParserGen
                 }
 
                 if (SkipPadOrReservedFields(fieldInfo))
+                {
                     output.WriteLine("        // Skipping " + fieldInfo.Name);
+                }
                 else
                 {
                     // Take cases on struct array, struct, value array, value.
@@ -435,18 +467,26 @@ class TraceParserGen
             // Write out the constructor
             output.Write("        internal " + templateClassName + "(Action<" + templateClassName + "> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName");
             if (NeedsParserState)
+            {
                 output.Write(", " + ClassNamePrefix + "State state");
+            }
+
             output.WriteLine(")");
             output.WriteLine("            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)");
             output.WriteLine("        {");
             output.WriteLine("            this.m_target = target;");
             if (NeedsParserState)
+            {
                 output.WriteLine("            this.m_state = state;");
+            }
+
             output.WriteLine("        }");
 
             var internalOpt = "";
             if (Internal)
+            {
                 internalOpt = "internal ";
+            }
 
             // Write out the dispatch method
             output.WriteLine("        protected {0}override void Dispatch()", internalOpt);
@@ -484,7 +524,10 @@ class TraceParserGen
                 {
                     string printFtn = "XmlAttrib";
                     if (fieldInfo.Type == "Address" || fieldInfo.HexFormat)
+                    {
                         printFtn = "XmlAttribHex";
+                    }
+
                     output.WriteLine("             " + printFtn + "(sb, \"" + safeName + "\", " + safeName + ");");
                 }
             }
@@ -512,7 +555,10 @@ class TraceParserGen
                 if (!SkipPadOrReservedFields(fieldInfo) && (fieldInfo.GetType() != typeof(StructInfo)))
                 {
                     if (!first)
+                    {
                         output.Write(", ");
+                    }
+
                     output.Write("\"" + safeName + "\"");
                     first = false;
                 }
@@ -553,8 +599,9 @@ class TraceParserGen
 
             // Write out the fields specific to this TraceEvent (that are not payload)
             output.WriteLine("        private event Action<" + templateClassName + "> m_target;");
-            if (NeedsParserState) {
-                output.WriteLine("        protected internal override void SetState(object newState) { m_state = ("+ ClassNamePrefix + "State)newState; }");
+            if (NeedsParserState)
+            {
+                output.WriteLine("        protected internal override void SetState(object newState) { m_state = (" + ClassNamePrefix + "State)newState; }");
                 output.WriteLine("        private " + ClassNamePrefix + "State m_state;");
             }
             output.WriteLine("        #endregion");
@@ -594,7 +641,9 @@ class TraceParserGen
                 {
                     lengthAssert += "            Debug.Assert(!(Version == " + eventVersion.Version + " && EventDataLength != " + FieldInfo.Skip(lastField) + "));\r\n";
                     if (curVersion == versionsForEvent.Count - 1)
+                    {
                         lengthAssert += "            Debug.Assert(!(Version > " + eventVersion.Version + " && EventDataLength < " + FieldInfo.Skip(lastField) + "));\r\n";
+                    }
                 }
             }
             curVersion++;
@@ -617,21 +666,31 @@ class TraceParserGen
             {
                 // see what enumerations we use.  
                 if (eventVersion.Fields != null)
+                {
                     foreach (Field field in eventVersion.Fields)
+                    {
                         if (field.Enumeration != null)
+                        {
                             enumerationsUsed[TraceParserGen.ToCSharpName(field.Enumeration.Name)] = field.Enumeration;
+                        }
+                    }
+                }
             }
         }
 
         // Emit all the enumerations that were used in the payload defintions.  
         foreach (var enumeration in enumerationsUsed.Values)
+        {
             GenerateEventEnumeration(enumeration, output);
+        }
     }
 
     private void GenerateEventEnumeration(Enumeration enumeration, TextWriter output)
     {
         if (enumeration.IsBitField)
+        {
             output.WriteLine("    [Flags]");
+        }
 
         // remove the Map suffix (more like .NET conventions)
         string name = EnumerationName(enumeration);
@@ -660,9 +719,15 @@ class TraceParserGen
     {
         string name = TraceParserGen.ToCSharpName(enumeration.Name);
         if (name.EndsWith("Map"))
+        {
             name = name.Substring(0, name.Length - 3);
+        }
+
         if (name.EndsWith("_Value", StringComparison.OrdinalIgnoreCase))
+        {
             name = name.Substring(0, name.Length - 6);
+        }
+
         return name;
     }
 
@@ -690,25 +755,38 @@ class TraceParserGen
         sb.Append(bytes[6].ToString("x").PadLeft(2, '0'));
         sb.Append(")");
         for (int i = 8; i < 16; i++)
+        {
             sb.Append(", 0x" + bytes[i].ToString("x").PadLeft(2, '0'));
+        }
+
         sb.Append(")");
         return sb.ToString();
     }
     private static bool SkipPadOrReservedFields(FieldInfo fieldInfo)
     {
         if (fieldInfo.Name == null)
+        {
             return true;
+        }
+
         if (fieldInfo.Type == null)
+        {
             return true;
+        }
+
         if (fieldInfo.Name.StartsWith("Reserved", StringComparison.OrdinalIgnoreCase))
         {
             if (fieldInfo.Name.Length == 8 || Char.IsDigit(fieldInfo.Name[8]))
+            {
                 return true;
+            }
         }
         if (fieldInfo.Name.StartsWith("Pad", StringComparison.OrdinalIgnoreCase))
         {
             if (fieldInfo.Name.Length == 3 || Char.IsDigit(fieldInfo.Name[3]))
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -719,15 +797,18 @@ class TraceParserGen
         {
             ret = TraceParserGen.ToCSharpName(evnt.TemplateName);
             if (ret == null || ret.StartsWith("tid_"))
+            {
                 ret = TraceParserGen.ToCSharpName(eventName) + "Args";
+            }
         }
         return ret;
     }
+
     /// <summary>
     /// Find all the information needed to create a payload decode class for a template (including offsets
     /// of the fields) and returns it as a list of 'FieldInfo' structures.  
     /// </summary>
-    List<FieldInfo> GetInfoForFields(IList<Field> fields)
+    private List<FieldInfo> GetInfoForFields(IList<Field> fields)
     {
         FieldInfo prevFieldInfo = null;
         List<FieldInfo> ret = new List<FieldInfo>();
@@ -747,9 +828,13 @@ class TraceParserGen
 
             FieldInfo fieldInfo;
             if (field.Struct != null)
+            {
                 fieldInfo = new StructInfo(TraceParserGen.ToCSharpName(field.Name));
+            }
             else
+            {
                 fieldInfo = new FieldInfo(TraceParserGen.ToCSharpName(field.Name), field.Type, prevFieldInfo, count, varSizedArray);
+            }
 
             fieldInfo.PrevField = prevFieldInfo;
             ret.Add(fieldInfo);
@@ -818,7 +903,9 @@ class TraceParserGen
             curStmt = "return " + prevFetch + ";";
         }
         else
+        {
             curStmt = "return " + versions[0].NullValue() + ";";
+        }
 
         // Versions are in ordered from lowest number to highest.  
         foreach (FieldInfo version in versions)
@@ -839,7 +926,10 @@ class TraceParserGen
         foreach (FieldInfo version in versions)
         {
             if (ret == null)
+            {
                 ret = version.Type;
+            }
+
             ret = MergeType(ret, version.Type, false);
         }
         return ret;
@@ -851,12 +941,17 @@ class TraceParserGen
     public static string ToCSharpName(string input)
     {
         if (input == null)
+        {
             return null;
+        }
+
         for (int i = 0; i < input.Length; i++)
         {
             char c = input[i];
             if (!Char.IsLetter(c) && !Char.IsDigit(c) && c != '_')
+            {
                 return Regex.Replace(input, @"[^\w\d_]", "");          //Simply remove them.    
+            }
         }
         return input;
     }
@@ -864,15 +959,30 @@ class TraceParserGen
     private string MergeType(string type1, string type2, bool triedSwap)
     {
         if (type1 == type2)
+        {
             return type1;
+        }
+
         if (type1 == "long" && type2 == "int")
+        {
             return "long";
+        }
+
         if (type1 == "long" && type2 == "Address")
+        {
             return "long";
+        }
+
         if (type1 == "Address" && type2 == "int")
+        {
             return "Address";
+        }
+
         if (triedSwap == false)
+        {
             return MergeType(type2, type1, true);
+        }
+
         Console.WriteLine("Error: Incompatible types " + type1 + " and " + type2 + " look for BAD_MERGE_OF in output for more.");
         return "BAD_MERGE_OF_" + type1 + "_AND_" + type2;
     }
@@ -880,44 +990,44 @@ class TraceParserGen
     /// <summary>
     /// Represents all the information needed to decode a specific version of a field of a event payload.
     /// </summary>
-    class FieldInfo
+    private class FieldInfo
     {
         protected FieldInfo() { }
         public FieldInfo(string name, string typeName, FieldInfo prevField, int count, string varSizedArray)
         {
-            this.VarSizedArrayCountPropertyName = varSizedArray;
-            this.PrevField = prevField;
+            VarSizedArrayCountPropertyName = varSizedArray;
+            PrevField = prevField;
 
             Name = name;
             switch (typeName)
             {
                 case "win:Pointer":
                 case "trace:SizeT":
-                    this.Type = "Address";
-                    this.FetchMethod = "GetAddressAt";
-                    this.NumPointersInSize = 1;
-                    this.ByteSize = 4;
+                    Type = "Address";
+                    FetchMethod = "GetAddressAt";
+                    NumPointersInSize = 1;
+                    ByteSize = 4;
                     break;
                 // Booleans are DWORD sized. 
                 case "win:Boolean":
-                    this.Type = "bool";
-                    this.FetchMethod = "GetInt32At";
-                    this.ByteSize = 4;
+                    Type = "bool";
+                    FetchMethod = "GetInt32At";
+                    ByteSize = 4;
                     break;
                 case "win:UInt8":
                 case "win:HexInt8":
                 case "win:Int8":
-                    this.Type = "int";
-                    this.FetchMethod = "GetByteAt";
-                    this.ByteSize = 1;
+                    Type = "int";
+                    FetchMethod = "GetByteAt";
+                    ByteSize = 1;
                     break;
                 case "win:UInt16":
                 case "win:HexInt16":
                 case "win:Int16":
                 case "trace:Port":
-                    this.Type = "int";
-                    this.FetchMethod = "GetInt16At";
-                    this.ByteSize = 2;
+                    Type = "int";
+                    FetchMethod = "GetInt16At";
+                    ByteSize = 2;
                     break;
                 // TODO do we want to support unsigned?
                 case "win:UInt32":
@@ -925,67 +1035,67 @@ class TraceParserGen
                 case "win:Int32":
                 case "trace:IPAddr":
                 case "trace:IPAddrV4":
-                    this.Type = "int";
-                    this.FetchMethod = "GetInt32At";
-                    this.ByteSize = 4;
+                    Type = "int";
+                    FetchMethod = "GetInt32At";
+                    ByteSize = 4;
                     break;
                 case "win:Double":
-                    this.Type = "double";
-                    this.FetchMethod = "GetDoubleAt";
-                    this.ByteSize = 8;
+                    Type = "double";
+                    FetchMethod = "GetDoubleAt";
+                    ByteSize = 8;
                     break;
                 case "win:Float":
-                    this.Type = "float";
-                    this.FetchMethod = "GetSingleAt";
-                    this.ByteSize = 4;
+                    Type = "float";
+                    FetchMethod = "GetSingleAt";
+                    ByteSize = 4;
                     break;
                 case "trace:WmiTime":
                 case "win:HexInt64":
                 case "win:UInt64":
                 case "win:Int64":
-                    this.Type = "long";
-                    this.FetchMethod = "GetInt64At";
-                    this.ByteSize = 8;
+                    Type = "long";
+                    FetchMethod = "GetInt64At";
+                    ByteSize = 8;
                     break;
                 case "trace:UnicodeChar":
-                    this.Type = "string";
-                    this.FetchMethod = "GetFixedUnicodeStringAt(" + count + ", ";
+                    Type = "string";
+                    FetchMethod = "GetFixedUnicodeStringAt(" + count + ", ";
 
                     // TODO add a fixed size string parser routine.  
-                    this.ByteSize = 2;
+                    ByteSize = 2;
                     break;
                 case "win:UnicodeString":
-                    this.Type = "string";
-                    this.FetchMethod = "GetUnicodeStringAt";
-                    this.SkipMethod = "SkipUnicodeString(" + FieldInfo.Skip(prevField) + ")";
+                    Type = "string";
+                    FetchMethod = "GetUnicodeStringAt";
+                    SkipMethod = "SkipUnicodeString(" + FieldInfo.Skip(prevField) + ")";
                     break;
                 case "win:AnsiString":
-                    this.Type = "string";
-                    this.FetchMethod = "GetUTF8StringAt";
-                    this.SkipMethod = "SkipUTF8String(" + FieldInfo.Skip(prevField) + ")";
+                    Type = "string";
+                    FetchMethod = "GetUTF8StringAt";
+                    SkipMethod = "SkipUTF8String(" + FieldInfo.Skip(prevField) + ")";
                     break;
                 case "trace:IPAddrV6":
                     // TODO deal with this. 
-                    this.ByteSize = 16;
+                    ByteSize = 16;
                     break;
                 case "trace:WBEMSid":
-                    this.SkipMethod = "SkipSID(" + FieldInfo.Skip(prevField) + ")";
+                    SkipMethod = "SkipSID(" + FieldInfo.Skip(prevField) + ")";
                     break;
                 case "win:GUID":
                 case "trace:Guid":
-                    this.Type = "Guid";
-                    this.FetchMethod = "GetGuidAt";
-                    this.ByteSize = 16;
+                    Type = "Guid";
+                    FetchMethod = "GetGuidAt";
+                    ByteSize = 16;
                     break;
                 case "win:FILETIME":
-                    this.Type = "DateTime";
-                    this.FetchMethod = "DateTime.FromFileTime(GetInt64At";
-                    this.ByteSize = 8;
+                    Type = "DateTime";
+                    FetchMethod = "DateTime.FromFileTime(GetInt64At";
+                    ByteSize = 8;
                     break;
                 case "win:Binary":
-                    this.Type = "byte[]";
-                    this.FetchMethod = "GetByteArrayAt";
-                    this.ByteSize = 1;
+                    Type = "byte[]";
+                    FetchMethod = "GetByteArrayAt";
+                    ByteSize = 1;
                     break;
                 default:
                     Debug.Assert(false, "Unknown type " + typeName);
@@ -1025,9 +1135,15 @@ class TraceParserGen
         public string NullValue()
         {
             if (Type == "string")
+            {
                 return "\"\"";
+            }
+
             if (IsEnum)
+            {
                 return "(" + Type + ")0";
+            }
+
             return "0";
         }
 
@@ -1038,7 +1154,10 @@ class TraceParserGen
         public string Offset()
         {
             if (PrevField == null)
+            {
                 return "0";
+            }
+
             return FieldInfo.Skip(PrevField);
         }
         /// <summary>
@@ -1076,12 +1195,19 @@ class TraceParserGen
                 ptr = ptr.PrevField;
             }
             if (loc == "0")
+            {
                 loc = numBytes.ToString();
+            }
             else if (numBytes > 0)
+            {
                 loc = loc + "+" + numBytes.ToString();
+            }
 
             if (numPointers != 0)
+            {
                 return "HostOffset(" + loc + ", " + numPointers + ")";
+            }
+
             return loc;
         }
 
@@ -1153,11 +1279,20 @@ class TraceParserGen
             }
 
             if (FetchMethod.IndexOf('(') >= 0)
+            {
                 ret += ")";
+            }
+
             if (Type == "bool")
+            {
                 ret = ret + " != 0";
+            }
+
             if (IsEnum)
+            {
                 ret = "(" + Type + ")" + ret;
+            }
+
             return ret;
         }
     }
@@ -1165,7 +1300,7 @@ class TraceParserGen
     // A struct embedded inside an event is considered its own field within the overall
     // event. The struct knows its entire size and offset, and also has a list of
     // "subfields"--each of which representing a particular field within the struct.
-    class StructInfo : FieldInfo
+    private class StructInfo : FieldInfo
     {
         public StructInfo(string name) { Name = name; }
         // List of "subfields" (<data> elements in manifest) contained within this <struct>
@@ -1181,10 +1316,11 @@ class TraceParserGen
     /// All the information from the manifest file. 
     /// </summary>
     private Provider m_provider;
+
     /// <summary>
     /// We group events together by version during the processing.  
     /// </summary>
-    SortedDictionary<string, List<Event>> m_eventsByName;
+    private SortedDictionary<string, List<Event>> m_eventsByName;
 
     private static Dictionary<string, string> reservedKeywords = new Dictionary<string, string> { { "object", "Object" }, { "new", "New" }, { "protected", "Protected" } };
     #endregion

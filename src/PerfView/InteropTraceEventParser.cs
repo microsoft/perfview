@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -325,13 +323,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
     {
         public long objectID { get { return GetInt64At(0); } }
         public long targetObjectID { get { return GetInt64At(8); } }
-        public Address targetObjectIDType { get { return (Address) GetInt64At(16); } }
+        public Address targetObjectIDType { get { return (Address)GetInt64At(16); } }
 
         #region Private
         internal TaskCCWCreationArgs(Action<TaskCCWCreationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -362,7 +360,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "targetObjectID", "targetObjectIDType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -395,7 +396,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskCCWFinalizationArgs(Action<TaskCCWFinalizationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -425,7 +426,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "refCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -456,7 +460,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskCCWQueryInterfaceFailureArgs(Action<TaskCCWQueryInterfaceFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -486,7 +490,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "interfaceIId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -517,7 +524,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskCCWQueryRuntimeClassNameArgs(Action<TaskCCWQueryRuntimeClassNameArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -547,7 +554,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "runtimeClassName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -579,7 +589,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskCCWRefCountDecArgs(Action<TaskCCWRefCountDecArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -610,7 +620,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "refCount", "jupiterRefCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -644,7 +657,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskCCWRefCountIncArgs(Action<TaskCCWRefCountIncArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -675,7 +688,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "refCount", "jupiterRefCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -710,7 +726,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskCCWResolveFailureArgs(Action<TaskCCWResolveFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -742,7 +758,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "interfaceAddress", "interfaceIId", "rejectedReason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -776,7 +795,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskJupiterAddMemoryPressureArgs(Action<TaskJupiterAddMemoryPressureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -805,7 +824,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "memorySize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -834,7 +856,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskJupiterCreateManagedReferenceArgs(Action<TaskJupiterCreateManagedReferenceArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -864,7 +886,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IUnknown", "objectType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -894,7 +919,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskJupiterRemoveMemoryPressureArgs(Action<TaskJupiterRemoveMemoryPressureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -923,7 +948,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "memorySize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -955,7 +983,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskRCWCreationArgs(Action<TaskRCWCreationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -988,7 +1016,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "typeRawValue", "runtimeClassName", "context", "flags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1025,7 +1056,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskRCWFinalizationArgs(Action<TaskRCWFinalizationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1055,7 +1086,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "refCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1088,7 +1122,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskRCWQueryInterfaceFailureArgs(Action<TaskRCWQueryInterfaceFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1120,7 +1154,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "context", "interfaceIId", "reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1155,7 +1192,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskRCWRefCountDecArgs(Action<TaskRCWRefCountDecArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1185,7 +1222,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "refCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1216,7 +1256,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
         internal TaskRCWRefCountIncArgs(Action<TaskRCWRefCountIncArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1246,7 +1286,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "objectID", "refCount" };
+                }
+
                 return payloadNames;
             }
         }

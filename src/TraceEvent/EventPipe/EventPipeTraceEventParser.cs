@@ -1,8 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using FastSerialization;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using System;
+using System.Diagnostics;
 
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -32,7 +31,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         #region Override ExternalTraceEventParser
         internal override DynamicTraceEventData TryLookup(TraceEvent unknownEvent)
         {
-            if (unknownEvent.IsClassicProvider) return null;
+            if (unknownEvent.IsClassicProvider)
+            {
+                return null;
+            }
 
             DynamicTraceEventData template;
             m_state.m_templates.TryGetValue(unknownEvent, out template);

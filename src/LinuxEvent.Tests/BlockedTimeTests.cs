@@ -1,44 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Diagnostics.Tracing.StackSources;
+﻿using Diagnostics.Tracing.StackSources;
 using Xunit;
 
 namespace LinuxTracing.Tests
 {
-	/// <summary>
-	/// Completed Context Switch - Starts with a thread that blocked through a sched_switch event and ends with the same
-	/// thread that was unblocked through a sched_switch.
-	/// Induced Context Switch - Starts with a blocked thread through sched_switch, ends when a different thread is
-	/// using the same CPU, in which we induce that the original thread was unblocked somewhere in between.
-	/// Incomplete Context Switch - Starts with a thread that has been blocked through a sched_switch event and unblocked
-	/// when the sample data is finished and the thread has not been unblocked.
-	/// </summary>
-	public class BlockedTimeTests
-	{
-		public static int? StartLook = null;
-		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod, bool concurrentTest = false)
-		{
-			if (concurrentTest)
-			{
-				StartLook = 10;
-			}
+    /// <summary>
+    /// Completed Context Switch - Starts with a thread that blocked through a sched_switch event and ends with the same
+    /// thread that was unblocked through a sched_switch.
+    /// Induced Context Switch - Starts with a blocked thread through sched_switch, ends when a different thread is
+    /// using the same CPU, in which we induce that the original thread was unblocked somewhere in between.
+    /// Incomplete Context Switch - Starts with a thread that has been blocked through a sched_switch event and unblocked
+    /// when the sample data is finished and the thread has not been unblocked.
+    /// </summary>
+    public class BlockedTimeTests
+    {
+        public static int? StartLook = null;
+        private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod, bool concurrentTest = false)
+        {
+            if (concurrentTest)
+            {
+                StartLook = 10;
+            }
 
-			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
+            ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
 
-			StartLook = null;
+            StartLook = null;
 
-			Assert.Equal(expectedTotalBlockedPeriod, stackSource.TotalBlockedTime);
-		}
+            Assert.Equal(expectedTotalBlockedPeriod, stackSource.TotalBlockedTime);
+        }
 
-		[Fact]
-		public void NoTimeBlocked1()
-		{
-			string path = Constants.GetTestingPerfDumpPath("onegeneric");
-			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 0.0);
-		}
+        [Fact]
+        public void NoTimeBlocked1()
+        {
+            string path = Constants.GetTestingPerfDumpPath("onegeneric");
+            TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 0.0);
+        }
 
         // These tests are associate with the Linux thread time 
         // view which we know is broken becasue we are not getting 
@@ -91,5 +86,5 @@ namespace LinuxTracing.Tests
 			Assert.Equal(linearStackSource.TotalBlockedTime, parallelStackSource.TotalBlockedTime);
 		}
 #endif
-	}
+    }
 }

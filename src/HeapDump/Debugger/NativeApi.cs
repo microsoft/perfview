@@ -1,4 +1,4 @@
-﻿#if false 
+﻿#if false
 
 namespace Microsoft.Samples.Debugging.NativeApi
 {
@@ -16,4 +16,4 @@ namespace Microsoft.Samples.Debugging.NativeApi
     };
 }
 
-#endif 
+#endif

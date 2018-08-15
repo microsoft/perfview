@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace HeapDump
+﻿namespace HeapDump
 {
     // This code is never meant to be run.  It is a reference assembly for HeapDump.exe.  
     // It only exposes those classes that I wish to export (GCHeap), and thus avoid 

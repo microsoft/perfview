@@ -9,11 +9,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;               // for StackTrace; Process
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.IO;
-using System.Reflection;
-using System.Diagnostics;               // for StackTrace; Process
 
 
 /// <summary>
@@ -62,7 +61,7 @@ public sealed class CommandOptions
     /// <returns>Updated command options</returns>
     public CommandOptions AddNoThrow()
     {
-        this.noThrow = true;
+        noThrow = true;
         return this;
     }
 
@@ -79,7 +78,7 @@ public sealed class CommandOptions
     /// </summary>
     public CommandOptions AddStart()
     {
-        this.start = true;
+        start = true;
         return this;
     }
 
@@ -96,7 +95,7 @@ public sealed class CommandOptions
     /// </summary>
     public CommandOptions AddTimeout(int milliseconds)
     {
-        this.timeoutMSec = milliseconds;
+        timeoutMSec = milliseconds;
         return this;
     }
 
@@ -122,7 +121,7 @@ public sealed class CommandOptions
     /// </summary>
     public CommandOptions AddCurrentDirectory(string directoryPath)
     {
-        this.currentDirectory = directoryPath;
+        currentDirectory = directoryPath;
         return this;
     }
 
@@ -139,7 +138,10 @@ public sealed class CommandOptions
         set
         {
             if (outputStream != null || outputHandler != null)
+            {
                 throw new Exception("Only one of OutputFile, OutputStream and OutputHandler can be set");
+            }
+
             outputFile = value;
         }
     }
@@ -164,7 +166,10 @@ public sealed class CommandOptions
         set
         {
             if (outputFile != null || outputHandler != null)
+            {
                 throw new Exception("Only one of OutputFile, OutputStream and OutputHandler can be set");
+            }
+
             outputStream = value;
         }
     }
@@ -175,7 +180,10 @@ public sealed class CommandOptions
         set
         {
             if (outputStream != null || outputFile != null)
+            {
                 throw new Exception("Only one of OutputFile, OutputStream and OutputHandler can be set");
+            }
+
             outputHandler = value;
         }
     }
@@ -202,7 +210,10 @@ public sealed class CommandOptions
         get
         {
             if (environmentVariables == null)
+            {
                 environmentVariables = new Dictionary<string, string>();
+            }
+
             return environmentVariables;
         }
     }
@@ -293,7 +304,10 @@ public sealed class Command
         get
         {
             if (outputStream != null)
+            {
                 throw new Exception("Output not available if redirected to file or stream");
+            }
+
             return output.ToString();
         }
     }
@@ -357,7 +371,9 @@ public sealed class Command
         // See if the command is quoted and match it in that case
         Match m = Regex.Match(commandLine, "^\\s*\"(.*?)\"\\s*(.*)");
         if (!m.Success)
+        {
             m = Regex.Match(commandLine, @"\s*(\S*)\s*(.*)");    // thing before first space is command
+        }
 
         ProcessStartInfo startInfo = new ProcessStartInfo(m.Groups[1].Value, m.Groups[2].Value);
         process = new Process();
@@ -369,7 +385,10 @@ public sealed class Command
         else
         {
             if (options.input != null)
+            {
                 startInfo.RedirectStandardInput = true;
+            }
+
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardError = true;
             startInfo.RedirectStandardOutput = true;
@@ -404,16 +423,24 @@ public sealed class Command
                     for (; ; )
                     {
                         m = new Regex(@"%(\w+)%").Match(value, startAt);
-                        if (!m.Success) break;
+                        if (!m.Success)
+                        {
+                            break;
+                        }
+
                         string varName = m.Groups[1].Value;
                         string varValue;
                         if (startInfo.EnvironmentVariables.ContainsKey(varName))
+                        {
                             varValue = startInfo.EnvironmentVariables[varName];
+                        }
                         else
                         {
                             varValue = Environment.GetEnvironmentVariable(varName);
                             if (varValue == null)
+                            {
                                 varValue = "";
+                            }
                         }
                         // replace this instance of the variable with its definition.  
                         int varStart = m.Groups[1].Index - 1;     // -1 becasue % chars are not in the group
@@ -452,7 +479,10 @@ public sealed class Command
                 "    Cmd: " + commandLine + "\r\n";
 
             if (Regex.IsMatch(startInfo.FileName, @"^(copy|dir|del|color|set|cd|cdir|md|mkdir|prompt|pushd|popd|start|assoc|ftype)", RegexOptions.IgnoreCase))
+            {
                 msg += "    Cmd " + startInfo.FileName + " implemented by Cmd.exe, fix by prefixing with 'cmd /c'.";
+            }
+
             throw new Exception(msg, e);
         }
 
@@ -487,14 +517,18 @@ public sealed class Command
     {
         // shell execute processes you don't wait for
         if (process.StartInfo.UseShellExecute)
+        {
             return this;
+        }
 
         process.WaitForExit(options.timeoutMSec);
         //  TODO : HACK we see to have a race in the async process stuff
         //  If you do Run("cmd /c set") you get truncated output at the
         //  Looks like the problem in the framework.  
         for (int i = 0; i < 10; i++)
+        {
             System.Threading.Thread.Sleep(1);
+        }
 
         if (!process.HasExited)
         {
@@ -504,11 +538,17 @@ public sealed class Command
 
         // If we created the output stream, we should close it.  
         if (outputStream != null && options.outputFile != null)
+        {
             outputStream.Close();
+        }
+
         outputStream = null;
 
         if (process.ExitCode != 0 && !options.noThrow)
+        {
             ThrowCommandFailure(null);
+        }
+
         return this;
     }
 
@@ -531,17 +571,26 @@ public sealed class Command
                 // Only show the first lineNumber the last two lines if there are alot of output. 
                 Match m = Regex.Match(outStr, @"^(\s*\n)?(.+\n)(.|\n)*?(.+\n.*\S)\s*$");
                 if (m.Success)
+                {
                     outStr = m.Groups[2].Value + "    <<< Omitted output ... >>>\r\n" + m.Groups[4].Value;
+                }
                 else
+                {
                     outStr = outStr.Trim();
+                }
                 // Indent the output
                 outStr = outStr.Replace("\n", "\n    ");
                 outSpec = "\r\n  Output: {\r\n    " + outStr + "\r\n  }";
             }
             if (message == null)
+            {
                 message = "";
+            }
             else if (message.Length > 0)
+            {
                 message += "\r\n";
+            }
+
             throw new Exception(message + "Process returned exit code 0x" + process.ExitCode.ToString("x") + "\r\n" +
                                 "  Cmd: " + commandLine + outSpec);
         }
@@ -565,7 +614,10 @@ public sealed class Command
         // how to kill all subchildren of a process, which important. 
         // TODO (should we use WMI instead?)
         if (!quiet)
+        {
             Console.WriteLine("Killing process tree " + Id + " Cmd: " + commandLine);
+        }
+
         try
         {
             Command.Run("taskkill /f /t /pid " + process.Id);
@@ -588,7 +640,10 @@ public sealed class Command
 
         // If we created the output stream, we should close it.  
         if (outputStream != null && options.outputFile != null)
+        {
             outputStream.Close();
+        }
+
         outputStream = null;
     }
 
@@ -607,9 +662,13 @@ public sealed class Command
     private void OnProcessOutput(object sender, DataReceivedEventArgs e)
     {
         if (outputStream != null)
+        {
             outputStream.WriteLine(e.Data);
+        }
         else
+        {
             output.AppendLine(e.Data);
+        }
     }
 
     /* private state */

@@ -1,12 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Utilities;
+using System;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing;
+using Utilities;
 
 namespace PerfView
 {
@@ -33,9 +29,15 @@ namespace PerfView
                 var parser = new CommandLineParser(args);
                 SetupCommandLine(parser);
                 if (parser.HelpRequested != null)
+                {
                     HelpRequested = true;
+                }
+
                 if (CommandAndArgs != null)
+                {
                     CommandLine = CommandLineUtilities.FormCommandLineFromArguments(CommandAndArgs, 0);
+                }
+
                 parser.CompleteValidation();
             }
             catch (CommandLineParserException e)
@@ -133,7 +135,7 @@ namespace PerfView
 
         // Stop options.  
         public bool NoRundown;
-       public bool NoNGenPdbs;
+        public bool NoNGenPdbs;
         public bool NoNGenRundown;
         public bool NoClrRundown;
         public bool NoV2Rundown;
@@ -147,10 +149,14 @@ namespace PerfView
             {
                 // We must merge if we Zip. 
                 if (ShouldZip)
+                {
                     return true;
+                }
                 // User asks for it explicitly. 
                 if (Merge.HasValue)
+                {
                     return Merge.Value;
+                }
                 // Otherwise the default is to merge.  
                 return true;
             }
@@ -161,14 +167,20 @@ namespace PerfView
             {
                 // User asks for it explicitly. 
                 if (Zip.HasValue)
+                {
                     return Zip.Value;
+                }
                 // If user asks for no-merge explicitly, and Zip was was not asked for, then /Zip:false is assumed 
                 if (Merge.HasValue && Merge.Value == false)
+                {
                     return false;
+                }
 
                 // by default, we don't zip if we were asked to mimic WPR.  
                 if (Wpr)
+                {
                     return false;
+                }
 
                 // But the final default is true. 
                 return true;
@@ -224,7 +236,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("BufferSizeMB", ref BufferSizeMB, "The size the buffers (in MB) the OS should use to store events waiting to be written to disk.");
             parser.DefineOptionalQualifier("CircularMB", ref CircularMB, "Do Circular logging with a file size in MB.  Zero means non-circular.");
             parser.DefineOptionalQualifier("InMemoryCircularBuffer", ref InMemoryCircularBuffer, "Keeps the circular buffer in memory until the session is stopped.");
-            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller."); 
+            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller.");
             parser.DefineOptionalQualifier("MaxCollectSec", ref MaxCollectSec,
                 "Turn off collection (and kill the program if perfView started it) after this many seconds. Zero means no timeout.");
             parser.DefineOptionalQualifier("StopOnPerfCounter", ref StopOnPerfCounter,
@@ -250,7 +262,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("StopOnGCSuspendOverMSec", ref StopOnGCSuspendOverMSec,
                 "Trigger a stop of a collect command if there is a .NET Garbage Collection (GC) where suspending for the GC took over the given number of MSec.");
             parser.DefineOptionalQualifier("StopOnBGCFinalPauseOverMsec", ref StopOnBGCFinalPauseOverMsec,
-               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec. To work correctly, "+
+               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec. To work correctly, " +
                "this requires that heap survival and movement tracking is not enabled.");
             parser.DefineOptionalQualifier("StopOnAppFabricOverMsec", ref StopOnAppFabricOverMsec,
                 "Trigger a stop of a collect command if there is a AppFabric request is longer than the given number of MSec.");
@@ -279,14 +291,22 @@ namespace PerfView
 
             List<string> etwStopEvents = new List<string>();
             if (StopOnRequestOverMsec != 0)
+            {
                 etwStopEvents.Add("Microsoft-Windows-IIS/EventID(1);Level=Critical;TriggerMSec=" + StopOnRequestOverMsec);
+            }
+
             if (StopOnGCSuspendOverMSec != 0)
+            {
                 etwStopEvents.Add("E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4/GC/SuspendEEStart;StopEvent=GC/SuspendEEStop;StartStopID=ThreadID;Keywords=0x1;TriggerMSec=" + StopOnGCSuspendOverMSec);
+            }
 
             if (0 < etwStopEvents.Count)
             {
                 if (StopOnEtwEvent != null)
+                {
                     etwStopEvents.AddRange(StopOnEtwEvent);
+                }
+
                 StopOnEtwEvent = etwStopEvents.ToArray();
             }
 
@@ -294,14 +314,19 @@ namespace PerfView
             if (StopOnEtwEvent != null && (Process != null || DecayToZeroHours != 0))
             {
                 etwStopEvents.Clear();
-                foreach(var stopEtwEvent in StopOnEtwEvent)
+                foreach (var stopEtwEvent in StopOnEtwEvent)
                 {
-                    var newStopEtwEvent = stopEtwEvent; 
+                    var newStopEtwEvent = stopEtwEvent;
                     if (Process != null && !stopEtwEvent.Contains(";Process="))
+                    {
                         newStopEtwEvent += ";Process=" + Process;
+                    }
 
-                    if(DecayToZeroHours != 0 && !stopEtwEvent.Contains(";DecayToZeroHours="))
+                    if (DecayToZeroHours != 0 && !stopEtwEvent.Contains(";DecayToZeroHours="))
+                    {
                         newStopEtwEvent += ";DecayToZeroHours=" + DecayToZeroHours;
+                    }
+
                     etwStopEvents.Add(newStopEtwEvent);
                 }
                 StopOnEtwEvent = etwStopEvents.ToArray();
@@ -318,8 +343,8 @@ namespace PerfView
             // These apply to Stop Collect and Run 
             parser.DefineOptionalQualifier("Merge", ref Merge, "Do a merge after stopping collection.");
             parser.DefineOptionalQualifier("Zip", ref Zip, "Zip the ETL file (implies /Merge).");
-            parser.DefineOptionalQualifier("Wpr", ref Wpr, "Make output mimic WPR (Windows Performance Recorder). Don't ZIP, make a .ngenpdbs directory.  " + 
-                "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " + 
+            parser.DefineOptionalQualifier("Wpr", ref Wpr, "Make output mimic WPR (Windows Performance Recorder). Don't ZIP, make a .ngenpdbs directory.  " +
+                "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " +
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
             parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
@@ -360,11 +385,19 @@ namespace PerfView
                 foreach (var provider in onlyProviders)
                 {
                     if (0 <= provider.IndexOf("@StacksEnabled=true", StringComparison.OrdinalIgnoreCase))
+                    {
                         hasStacks = true;
+                    }
+
                     if (0 <= provider.IndexOf("@EventIDStacksToEnable", StringComparison.OrdinalIgnoreCase))
+                    {
                         hasStacks = true;
+                    }
+
                     if (provider.StartsWith(".NETTasks", StringComparison.OrdinalIgnoreCase))
+                    {
                         hasTpl = true;
+                    }
                 }
 
                 if (hasStacks)
@@ -390,7 +423,9 @@ namespace PerfView
             }
             parser.DefineOptionalQualifier("ThreadTime", ref ThreadTime, "Shortcut for turning on context switch and readyThread events");
             if (ThreadTime)
+            {
                 KernelEvents = KernelTraceEventParser.Keywords.ThreadTime;
+            }
 
             parser.DefineOptionalQualifier("GCOnly", ref GCOnly, "Turns on JUST GC collections an allocation sampling.");
             if (GCOnly)
@@ -399,13 +434,15 @@ namespace PerfView
                 // For stack parsing.  
                 KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad | KernelTraceEventParser.Keywords.VirtualAlloc;
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.Stack |
-                            ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen | 
+                            ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen |
                             ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
                 TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
 
                 // This is not quite correct if you have providers of your own, but this covers the most important case.  
                 if (Providers == null)
+                {
                     Providers = new string[] { "Microsoft-Windows-Kernel-Memory:0x60" };
+                }
 
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCOnly.etl";
@@ -415,7 +452,7 @@ namespace PerfView
             {
                 // TODO this logic is cloned.  We need it in only one place.  If you update it do the other location as well
                 // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
-                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;     
+                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception;
                 ClrEventLevel = TraceEventLevel.Informational;
                 TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
@@ -548,7 +585,9 @@ namespace PerfView
             // We have both a qualifier and a parameter named Process. It is OK that they use the same variable, but the parameter should not
             // overwrite the qualifier if it is null.  
             if (ProcessParam != null)
+            {
                 Process = ProcessParam;
+            }
 
             parser.DefineParameterSet("HeapSnapshotFromProcessDump", ref DoCommand, App.CommandProcessor.HeapSnapshotFromProcessDump,
                 "Extract the CLR GC heap from a process dump file specified.");

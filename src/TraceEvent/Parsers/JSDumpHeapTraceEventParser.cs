@@ -1,11 +1,8 @@
-using System;
-using System.Text;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
+using System;
+using System.Diagnostics;
+using System.Text;
 using Address = System.UInt64;
-using System.Runtime.InteropServices;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -15,23 +12,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 {
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
-    public sealed class JSDumpHeapTraceEventParser : TraceEventParser 
+    public sealed class JSDumpHeapTraceEventParser : TraceEventParser
     {
         public static readonly string ProviderName = "Microsoft-IE-JSDumpHeap";
-        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x7f8e35ca), unchecked((short) 0x68e8), unchecked((short) 0x41b9), 0x86, 0xfe, 0xd6, 0xad, 0xc5, 0xb3, 0x27, 0xe7);
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x7f8e35ca), unchecked((short)0x68e8), unchecked((short)0x41b9), 0x86, 0xfe, 0xd6, 0xad, 0xc5, 0xb3, 0x27, 0xe7);
         public enum Keywords : long
         {
             jsdumpheap = 0x00000020,
             jsdumpheapEnvelopeOnly = 0x80000000,
         };
 
-        public JSDumpHeapTraceEventParser(TraceEventSource source) : base(source) {}
+        public JSDumpHeapTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<SettingsTraceData> JSDumpHeapEnvelopeStart
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new SettingsTraceData(value, 1, 321, "JSDumpHeapEnvelope", JSDumpHeapEnvelopeTaskGuid, 1, "Start", ProviderGuid, ProviderName));
             }
             remove
@@ -44,7 +41,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new SummaryTraceData(value, 2, 321, "JSDumpHeapEnvelope", JSDumpHeapEnvelopeTaskGuid, 2, "Stop", ProviderGuid, ProviderName));
             }
             remove
@@ -57,7 +54,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new BulkNodeTraceData(value, 3, 323, "JSDumpHeapBulkNode", JSDumpHeapBulkNodeTaskGuid, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
@@ -70,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new BulkAttributeTraceData(value, 4, 324, "JSDumpHeapBulkAttribute", JSDumpHeapBulkAttributeTaskGuid, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
@@ -83,7 +80,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new BulkEdgeTraceData(value, 5, 325, "JSDumpHeapBulkEdge", JSDumpHeapBulkEdgeTaskGuid, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
@@ -96,7 +93,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new StringTableTraceData(value, 6, 326, "JSDumpHeapStringTable", JSDumpHeapStringTableTaskGuid, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
@@ -109,7 +106,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new DoubleTableTraceData(value, 7, 327, "JSDumpHeapDoubleTable", JSDumpHeapDoubleTableTaskGuid, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
@@ -119,17 +116,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-       #region Event ID Definitions
-        private const TraceEventID JSDumpHeapEnvelopeStartEventID = (TraceEventID) 1;
-        private const TraceEventID JSDumpHeapEnvelopeStopEventID = (TraceEventID) 2;
-        private const TraceEventID JSDumpHeapBulkNodeEventID = (TraceEventID) 3;
-        private const TraceEventID JSDumpHeapBulkAttributeEventID = (TraceEventID) 4;
-        private const TraceEventID JSDumpHeapBulkEdgeEventID = (TraceEventID) 5;
-        private const TraceEventID JSDumpHeapStringTableEventID = (TraceEventID) 6;
-        private const TraceEventID JSDumpHeapDoubleTableEventID = (TraceEventID) 7;
-       #endregion
+        #region Event ID Definitions
+        private const TraceEventID JSDumpHeapEnvelopeStartEventID = (TraceEventID)1;
+        private const TraceEventID JSDumpHeapEnvelopeStopEventID = (TraceEventID)2;
+        private const TraceEventID JSDumpHeapBulkNodeEventID = (TraceEventID)3;
+        private const TraceEventID JSDumpHeapBulkAttributeEventID = (TraceEventID)4;
+        private const TraceEventID JSDumpHeapBulkEdgeEventID = (TraceEventID)5;
+        private const TraceEventID JSDumpHeapStringTableEventID = (TraceEventID)6;
+        private const TraceEventID JSDumpHeapDoubleTableEventID = (TraceEventID)7;
+        #endregion
 
-    #region private
+        #region private
         protected override string GetProviderName() { return ProviderName; }
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
@@ -151,13 +148,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     callback(template);
         }
 
-        private static readonly Guid JSDumpHeapEnvelopeTaskGuid = new Guid(unchecked((int) 0xfff80bb3), unchecked((short) 0x0541), unchecked((short) 0x4423), 0xb2, 0x6b, 0x8c, 0x4a, 0x5a, 0xf9, 0x06, 0xff);
-        private static readonly Guid JSDumpHeapBulkNodeTaskGuid = new Guid(unchecked((int) 0x89b4a9e6), unchecked((short) 0x156f), unchecked((short) 0x4ff2), 0x8c, 0x93, 0xcd, 0x86, 0xb1, 0xbc, 0xe9, 0xa4);
-        private static readonly Guid JSDumpHeapBulkAttributeTaskGuid = new Guid(unchecked((int) 0xb171ef0b), unchecked((short) 0xd1fb), unchecked((short) 0x4901), 0x98, 0x47, 0xe1, 0x3d, 0x58, 0x3b, 0xfa, 0x86);
-        private static readonly Guid JSDumpHeapBulkEdgeTaskGuid = new Guid(unchecked((int) 0xec5809c8), unchecked((short) 0xef06), unchecked((short) 0x456c), 0xbe, 0x69, 0xe8, 0xdc, 0xdf, 0x75, 0x54, 0xba);
-        private static readonly Guid JSDumpHeapStringTableTaskGuid = new Guid(unchecked((int) 0x8a019204), unchecked((short) 0x6cc0), unchecked((short) 0x41f3), 0x8f, 0xae, 0xe1, 0x90, 0xdd, 0xfd, 0x05, 0xa7);
-        private static readonly Guid JSDumpHeapDoubleTableTaskGuid = new Guid(unchecked((int) 0xeaa70a14), unchecked((short) 0xd1c3), unchecked((short) 0x4939), 0x8c, 0xa7, 0x39, 0x3c, 0x2f, 0x75, 0xfa, 0x58);
-    #endregion
+        private static readonly Guid JSDumpHeapEnvelopeTaskGuid = new Guid(unchecked((int)0xfff80bb3), unchecked((short)0x0541), unchecked((short)0x4423), 0xb2, 0x6b, 0x8c, 0x4a, 0x5a, 0xf9, 0x06, 0xff);
+        private static readonly Guid JSDumpHeapBulkNodeTaskGuid = new Guid(unchecked((int)0x89b4a9e6), unchecked((short)0x156f), unchecked((short)0x4ff2), 0x8c, 0x93, 0xcd, 0x86, 0xb1, 0xbc, 0xe9, 0xa4);
+        private static readonly Guid JSDumpHeapBulkAttributeTaskGuid = new Guid(unchecked((int)0xb171ef0b), unchecked((short)0xd1fb), unchecked((short)0x4901), 0x98, 0x47, 0xe1, 0x3d, 0x58, 0x3b, 0xfa, 0x86);
+        private static readonly Guid JSDumpHeapBulkEdgeTaskGuid = new Guid(unchecked((int)0xec5809c8), unchecked((short)0xef06), unchecked((short)0x456c), 0xbe, 0x69, 0xe8, 0xdc, 0xdf, 0x75, 0x54, 0xba);
+        private static readonly Guid JSDumpHeapStringTableTaskGuid = new Guid(unchecked((int)0x8a019204), unchecked((short)0x6cc0), unchecked((short)0x41f3), 0x8f, 0xae, 0xe1, 0x90, 0xdd, 0xfd, 0x05, 0xa7);
+        private static readonly Guid JSDumpHeapDoubleTableTaskGuid = new Guid(unchecked((int)0xeaa70a14), unchecked((short)0xd1c3), unchecked((short)0x4939), 0x8c, 0xa7, 0x39, 0x3c, 0x2f, 0x75, 0xfa, 0x58);
+        #endregion
     }
 }
 
@@ -165,7 +162,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
 {
     public sealed class SettingsTraceData : TraceEvent
     {
-        new public int Version { get { return GetInt32At(0); } }
+        public new int Version { get { return GetInt32At(0); } }
         public int MaxStringLength { get { return GetInt32At(4); } }
         public bool IsTypeNamePrivate { get { return GetInt32At(8) != 0; } }
         public bool IsEdgeStringValuePrivate { get { return GetInt32At(12) != 0; } }
@@ -177,34 +174,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         internal SettingsTraceData(Action<SettingsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<SettingsTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<SettingsTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 28));
             Debug.Assert(!(Version > 0 && EventDataLength < 28));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Version", Version);
-             XmlAttrib(sb, "MaxStringLength", MaxStringLength);
-             XmlAttrib(sb, "IsTypeNamePrivate", IsTypeNamePrivate);
-             XmlAttrib(sb, "IsEdgeStringValuePrivate", IsEdgeStringValuePrivate);
-             XmlAttrib(sb, "IsEdgeNumberValuePrivate", IsEdgeNumberValuePrivate);
-             XmlAttrib(sb, "IsAttributeStringValuePrivate", IsAttributeStringValuePrivate);
-             XmlAttrib(sb, "IsAttributeNumberValuePrivate", IsAttributeNumberValuePrivate);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Version", Version);
+            XmlAttrib(sb, "MaxStringLength", MaxStringLength);
+            XmlAttrib(sb, "IsTypeNamePrivate", IsTypeNamePrivate);
+            XmlAttrib(sb, "IsEdgeStringValuePrivate", IsEdgeStringValuePrivate);
+            XmlAttrib(sb, "IsEdgeNumberValuePrivate", IsEdgeNumberValuePrivate);
+            XmlAttrib(sb, "IsAttributeStringValuePrivate", IsAttributeStringValuePrivate);
+            XmlAttrib(sb, "IsAttributeNumberValuePrivate", IsAttributeNumberValuePrivate);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -212,7 +209,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Version", "MaxStringLength", "IsTypeNamePrivate", "IsEdgeStringValuePrivate", "IsEdgeNumberValuePrivate", "IsAttributeStringValuePrivate", "IsAttributeNumberValuePrivate"};
+                {
+                    payloadNames = new string[] { "Version", "MaxStringLength", "IsTypeNamePrivate", "IsEdgeStringValuePrivate", "IsEdgeNumberValuePrivate", "IsAttributeStringValuePrivate", "IsAttributeNumberValuePrivate" };
+                }
+
                 return payloadNames;
             }
         }
@@ -257,33 +257,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         internal SummaryTraceData(Action<SummaryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<SummaryTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<SummaryTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "HrResult", HrResult);
-             XmlAttrib(sb, "NodeCount", NodeCount);
-             XmlAttrib(sb, "EdgeCount", EdgeCount);
-             XmlAttrib(sb, "AttributeCount", AttributeCount);
-             XmlAttrib(sb, "NumberCount", NumberCount);
-             XmlAttrib(sb, "StringCount", StringCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "HrResult", HrResult);
+            XmlAttrib(sb, "NodeCount", NodeCount);
+            XmlAttrib(sb, "EdgeCount", EdgeCount);
+            XmlAttrib(sb, "AttributeCount", AttributeCount);
+            XmlAttrib(sb, "NumberCount", NumberCount);
+            XmlAttrib(sb, "StringCount", StringCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -291,7 +291,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HrResult", "NodeCount", "EdgeCount", "AttributeCount", "NumberCount", "StringCount"};
+                {
+                    payloadNames = new string[] { "HrResult", "NodeCount", "EdgeCount", "AttributeCount", "NumberCount", "StringCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -332,27 +335,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         /// points the the data in BulkNodeTraceData so it cannot live beyond that lifetime.  
         /// </summary>
         public BulkNodeValues Values(int index) { return new BulkNodeValues(this, 8 + index * HostOffset(26, 2)); }
-        
+
         #region Private
         internal BulkNodeTraceData(Action<BulkNodeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BulkNodeTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BulkNodeTraceData>)value; }
         }
-        unsafe internal protected override void Validate()
+        protected internal override unsafe void Validate()
         {
             Debug.Assert(!(EventDataLength < 8));
             Debug.Assert(!(EventDataLength != 8 + Count * HostOffset(26, 2)));
-            Debug.Assert(Count == 0 || Values(Count-1).EdgeCount < 10000);        // Gets the BulkNodeValues asserts kicked in
+            Debug.Assert(Count == 0 || Values(Count - 1).EdgeCount < 10000);        // Gets the BulkNodeValues asserts kicked in
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -368,7 +371,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Index", "Count" };
+                }
+
                 return payloadNames;
             }
         }
@@ -414,29 +420,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             Debug.Assert(AttributeCount < 10000);
             Debug.Assert(Size < 10000000);
         }
-        TraceEvent m_data;
-        int m_baseOffset;
+
+        private TraceEvent m_data;
+        private int m_baseOffset;
         #endregion
     }
 
     // TODO change casing?  This is the PROFILER_HEAP_OBJECT_FLAGS enum 
     [Flags]
     public enum ObjectFlags : uint
-    {  
-        NEW_OBJECT	= 0x1,  
-        IS_ROOT	= 0x2,  
-        SITE_CLOSED	= 0x4,  
-        EXTERNAL	= 0x8,  
-        EXTERNAL_UNKNOWN	= 0x10,  
-        EXTERNAL_DISPATCH	= 0x20,  
-        SIZE_APPROXIMATE	= 0x40,  
-        SIZE_UNAVAILABLE	= 0x80,  
-        NEW_STATE_UNAVAILABLE	= 0x100,  
-        WINRT_INSTANCE	= 0x200,  
-        WINRT_RUNTIMECLASS	= 0x400,  
-        WINRT_DELEGATE	= 0x800,  
-        WINRT_NAMESPACE	= 0x1000,
-        WINRT = (WINRT_INSTANCE|WINRT_RUNTIMECLASS|WINRT_DELEGATE|WINRT_NAMESPACE)
+    {
+        NEW_OBJECT = 0x1,
+        IS_ROOT = 0x2,
+        SITE_CLOSED = 0x4,
+        EXTERNAL = 0x8,
+        EXTERNAL_UNKNOWN = 0x10,
+        EXTERNAL_DISPATCH = 0x20,
+        SIZE_APPROXIMATE = 0x40,
+        SIZE_UNAVAILABLE = 0x80,
+        NEW_STATE_UNAVAILABLE = 0x100,
+        WINRT_INSTANCE = 0x200,
+        WINRT_RUNTIMECLASS = 0x400,
+        WINRT_DELEGATE = 0x800,
+        WINRT_NAMESPACE = 0x1000,
+        WINRT = (WINRT_INSTANCE | WINRT_RUNTIMECLASS | WINRT_DELEGATE | WINRT_NAMESPACE)
     };
 
     public sealed class BulkAttributeTraceData : TraceEvent
@@ -448,28 +455,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         /// Returns the edge at the given zero-based index (index less than Count).   The returned BulkAttributeValues 
         /// points the the data in BulkAttributeTraceData so it cannot live beyond that lifetime.  
         /// </summary>
-        public BulkAttributeValues Values(int index) { return new BulkAttributeValues(this,  8 + index * HostOffset(6, 1)); }
+        public BulkAttributeValues Values(int index) { return new BulkAttributeValues(this, 8 + index * HostOffset(6, 1)); }
 
         #region Private
         internal BulkAttributeTraceData(Action<BulkAttributeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BulkAttributeTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BulkAttributeTraceData>)value; }
         }
-        internal unsafe protected override void Validate()
+        protected internal override unsafe void Validate()
         {
             Debug.Assert(!(EventDataLength < 8));
             Debug.Assert(!(EventDataLength != 8 + Count * HostOffset(6, 1)));
-            Debug.Assert(Count == 0 || Values(Count-1).Type <= AttributeType.Max);     
+            Debug.Assert(Count == 0 || Values(Count - 1).Type <= AttributeType.Max);
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -485,7 +492,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Index", "Count" };
+                }
+
                 return payloadNames;
             }
         }
@@ -514,16 +524,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
     /// </summary>
     public unsafe struct BulkAttributeValues
     {
-        public AttributeType Type { get { return (AttributeType) m_data.GetInt16At(m_baseOffset); } }
+        public AttributeType Type { get { return (AttributeType)m_data.GetInt16At(m_baseOffset); } }
         public Address Value { get { return m_data.GetAddressAt(m_baseOffset + 2); } }
 
         #region private
-        internal BulkAttributeValues(TraceEvent data, int baseOffset) { 
+        internal BulkAttributeValues(TraceEvent data, int baseOffset)
+        {
             m_data = data; m_baseOffset = baseOffset;
             Debug.Assert(0 <= Type && Type <= AttributeType.Max);
         }
-        TraceEvent m_data;
-        int m_baseOffset;
+
+        private TraceEvent m_data;
+        private int m_baseOffset;
         #endregion
     }
 
@@ -550,28 +562,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         /// Returns the edge at the given zero-based index (index less than Count).   The returned BulkEdgeValues 
         /// points the the data in BulkEdgeTraceData so it cannot live beyond that lifetime.  
         /// </summary>
-        public BulkEdgeValues Values(int index) { return new BulkEdgeValues(this, 8 + index * HostOffset(10, 1)); } 
+        public BulkEdgeValues Values(int index) { return new BulkEdgeValues(this, 8 + index * HostOffset(10, 1)); }
 
         #region Private
         internal BulkEdgeTraceData(Action<BulkEdgeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal unsafe protected override void Dispatch()
+        protected internal override unsafe void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BulkEdgeTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BulkEdgeTraceData>)value; }
         }
-        internal unsafe protected override void Validate()
+        protected internal override unsafe void Validate()
         {
             Debug.Assert(!(EventDataLength < 8));
             Debug.Assert(EventDataLength == 8 + Count * HostOffset(10, 1));
-            Debug.Assert(Count == 0 || Values(Count-1).RelationshipType < EdgeRelationshipType.Max);  // This get the other Asserts kicked in too. 
+            Debug.Assert(Count == 0 || Values(Count - 1).RelationshipType < EdgeRelationshipType.Max);  // This get the other Asserts kicked in too. 
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -587,7 +599,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Index", "Count" };
+                }
+
                 return payloadNames;
             }
         }
@@ -622,19 +637,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         public Address Value { get { return m_data.GetAddressAt(m_baseOffset + 6); } }
 
         #region private
-        internal BulkEdgeValues(TraceEvent data, int baseOffset) { 
+        internal BulkEdgeValues(TraceEvent data, int baseOffset)
+        {
             m_data = data; m_baseOffset = baseOffset;
             Debug.Assert(RelationshipType <= EdgeRelationshipType.Max);
             Debug.Assert(0 <= TargetType && TargetType <= EdgeTargetType.Max);
         }
-        TraceEvent m_data;
-        int m_baseOffset;
+
+        private TraceEvent m_data;
+        private int m_baseOffset;
         #endregion
     }
 
     public enum EdgeRelationshipType : byte
     {
-        Prototype,          
+        Prototype,
         Scope,
         InternalProperty,
         NamedProperty,
@@ -658,7 +675,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
     {
         public int Index { get { return GetInt32At(0); } }
         public int Count { get { return GetInt32At(4); } }
-        public string Strings(int index) {
+        public string Strings(int index)
+        {
             Debug.Assert(0 <= index && index < Count);
             // Perf Remember the last place we were and look from there if possible.  
             // This handles the common case 
@@ -678,7 +696,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             var ret = GetUnicodeStringAt(offset);
             // Point at the next offset.  
             m_lastStrIdx = index + 1;
-            m_lastStrOffset = offset + 2*(ret.Length + 1);
+            m_lastStrOffset = offset + 2 * (ret.Length + 1);
             return ret;
         }
 
@@ -686,19 +704,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         internal StringTableTraceData(Action<StringTableTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
-            this.m_lastStrOffset = 8;
+            Action = action;
+            m_lastStrOffset = 8;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<StringTableTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<StringTableTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(EventDataLength < 8));
         }
@@ -716,7 +734,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Index", "Count" };
+                }
+
                 return payloadNames;
             }
         }
@@ -737,12 +758,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
 
         private event Action<StringTableTraceData> Action;
 
-            // For efficient string lookup
+        // For efficient string lookup
         private int m_lastStrIdx;
         private int m_lastStrOffset;
         #endregion
     }
-    public unsafe sealed class DoubleTableTraceData : TraceEvent
+    public sealed unsafe class DoubleTableTraceData : TraceEvent
     {
         public int Index { get { return GetInt32At(0); } }
         public int Count { get { return GetInt32At(4); } }
@@ -757,18 +778,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
         internal DoubleTableTraceData(Action<DoubleTableTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<DoubleTableTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<DoubleTableTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(EventDataLength < 8));
             Debug.Assert(!(EventDataLength != 8 + Count * 8));
@@ -787,7 +808,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Index", "Count" };
+                }
+
                 return payloadNames;
             }
         }

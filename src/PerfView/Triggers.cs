@@ -22,7 +22,7 @@ namespace Triggers
     /// Note that Triggers will NOT die on their own, since they are MONITORS and are kept alive by the
     /// monitoring thread they start.  You can only kill them by disposing them.  
     /// </summary>
-    abstract class Trigger : IDisposable
+    internal abstract class Trigger : IDisposable
     {
         /// <summary>
         /// Get something useful about the state of the trigger, can return the empty string if there 
@@ -35,7 +35,7 @@ namespace Triggers
         /// </summary>
         public virtual void Dispose() { }
     }
-    
+
 #if !DOTNET_CORE    // perfCounters don't exist on .NET Core
     /// <summary>
     /// PerformanceCounterTrigger is a class that knows how to determine if a particular performance counter has
@@ -214,7 +214,7 @@ namespace Triggers
                     m_counter.CategoryName, m_counter.CounterName, m_counter.InstanceName, CurrentValue, instanceExists);
             }
         }
-        #region private
+    #region private
 
         /// <summary>
         /// If you are in a 32 bit process you don't see 64 bit perf counters.  Returns true if we needed to do this.  
@@ -303,14 +303,14 @@ namespace Triggers
         private bool m_wasUntriggered;  // We only trigger if we go from untriggered to triggered.  
         private bool m_warnedAboutUntriggered;
         private DateTime m_startTimeUtc;
-        #endregion
+    #endregion
     }
 #endif
 
     /// <summary>
     /// A class that triggers when 
     /// </summary>
-    class ETWEventTrigger : Trigger
+    internal class ETWEventTrigger : Trigger
     {
         // Convenience methods.  
         /// <summary>
@@ -326,17 +326,24 @@ namespace Triggers
             ret.ProviderGuid = ClrTraceEventParser.ProviderGuid;
             ret.ProviderLevel = TraceEventLevel.Informational;
             ret.ProviderKeywords = (ulong)ClrTraceEventParser.Keywords.Exception;
-            ret.TriggerPredicate = delegate(TraceEvent e)
+            ret.TriggerPredicate = delegate (TraceEvent e)
             {
                 log.WriteLine("Got a CLR Exception");
                 if (exceptionRegEx.Length == 0)
+                {
                     return true;
+                }
 
                 var asException = (ExceptionTraceData)e;
                 if (asException == null)
+                {
                     return false;
+                }
+
                 if (string.IsNullOrEmpty(asException.ExceptionType) || string.IsNullOrEmpty(asException.ExceptionMessage))
+                {
                     return false;
+                }
 
                 string fullMessage = asException.ExceptionType + ": " + asException.ExceptionMessage;
                 log.WriteLine("Exception: {0}", fullMessage);
@@ -367,7 +374,7 @@ namespace Triggers
             ret.ProviderKeywords = (ulong)ClrTraceEventParser.Keywords.GC;
             ret.StartEvent = "GC/Start";
 
-            ret.TriggerPredicate = delegate(TraceEvent data)
+            ret.TriggerPredicate = delegate (TraceEvent data)
             {
                 var asGCStart = (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData)data;
                 if (asGCStart.Type == GCType.BackgroundGC)
@@ -408,7 +415,7 @@ namespace Triggers
             ret.Start();
             return ret;
         }
-        
+
         /// <summary>
         /// Stops on a Gen 2 GC.  
         /// </summary>
@@ -424,7 +431,7 @@ namespace Triggers
             ret.ProviderKeywords = (ulong)ClrTraceEventParser.Keywords.GC;
             ret.StartEvent = "GC/Start";
 
-            ret.TriggerPredicate = delegate(TraceEvent data)
+            ret.TriggerPredicate = delegate (TraceEvent data)
             {
                 var asGCStart = (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData)data;
                 if (asGCStart.Depth < 2)
@@ -517,7 +524,9 @@ namespace Triggers
                     if (ProcessFilter != null)
                     {
                         if (int.TryParse(ProcessFilter, out m_processID))
+                        {
                             m_log.WriteLine("[Only allowing process with ID {0} to stop the trace.]", m_processID);
+                        }
                         else
                         {
                             m_processID = WaitingForProcessID;              // This is an illegal process ID 
@@ -527,23 +536,29 @@ namespace Triggers
                     }
 
                     if (BufferSizeMB != 0)
+                    {
                         m_session.BufferSizeMB = BufferSizeMB;
+                    }
 
                     m_log.WriteLine("Additional Trigger debugging messages are logged to the ETL file as PerfView/StopTriggerDebugMessage events.");
                     using (m_source = new ETWTraceEventSource(sessionName, TraceEventSourceType.Session))
                     {
                         Dictionary<StartStopKey, StartEventData> startStopRecords = null;
                         if (TriggerMSec != 0)
+                        {
                             startStopRecords = new Dictionary<StartStopKey, StartEventData>(20);
+                        }
 
                         if (m_processID == WaitingForProcessID)
                         {
-                            m_source.Kernel.ProcessStop += delegate(ProcessTraceData data)
+                            m_source.Kernel.ProcessStop += delegate (ProcessTraceData data)
                             {
                                 if (m_processID == data.ProcessID)
+                                {
                                     m_processID = WaitingForProcessID;
+                                }
                             };
-                            m_source.Kernel.ProcessStartGroup += delegate(ProcessTraceData data)
+                            m_source.Kernel.ProcessStartGroup += delegate (ProcessTraceData data)
                             {
                                 if (string.Compare(data.ProcessName, ProcessFilter, StringComparison.OrdinalIgnoreCase) == 0)
                                 {
@@ -553,19 +568,25 @@ namespace Triggers
                                 else
                                 {
                                     if (ShouldLogVerbose)
+                                    {
                                         LogVerbose(data.TimeStamp, "Process " + data.ProcessName + " does not match process filter " + ProcessFilter);
+                                    }
                                 }
                             };
                         }
 
-                        Action<TraceEvent> onEvent = delegate(TraceEvent data)
+                        Action<TraceEvent> onEvent = delegate (TraceEvent data)
                         {
                             if (m_session == null || m_source == null)
+                            {
                                 return;
+                            }
 
                             m_sessionEventCount++;
                             if (m_sessionEventCount <= 3)
+                            {
                                 m_log.WriteLine("Got event {0} from trigger session: {1}", m_sessionEventCount, data.EventName);
+                            }
 
 
                             // Do we have a process filter?
@@ -574,13 +595,19 @@ namespace Triggers
                                 if (m_processID == WaitingForProcessID)
                                 {
                                     if (ShouldLogVerbose)
+                                    {
                                         LogVerbose(data.TimeStamp, "Dropping event, we have not mapped " + ProcessFilter + " to a process ID yet");
+                                    }
+
                                     return;
                                 }
                                 if (m_processID != data.ProcessID)
                                 {
                                     if (ShouldLogVerbose)
+                                    {
                                         LogVerbose(data.TimeStamp, "Dropping event because process ID  " + data.ProcessID + " != " + m_processID);
+                                    }
+
                                     return;
                                 }
                             }
@@ -592,7 +619,9 @@ namespace Triggers
                                 {
                                     // Check field filters
                                     if (!PassesFieldFilters(data))
+                                    {
                                         return;
+                                    }
 
                                     // Yeah we triggered for the single event case.  
                                     if (OnTriggered != null)
@@ -615,7 +644,9 @@ namespace Triggers
                                 {
                                     // Optimization, we can have a fair number of these
                                     if (data.EventName != "GC/GenerationRange")
+                                    {
                                         LogVerbose(data.TimeStamp, "Dropping event because name " + data.EventName + " != " + m_startEvent);
+                                    }
                                 }
                                 return;     // Did not see the event we want.  
                             }
@@ -628,7 +659,10 @@ namespace Triggers
                                 {
                                     string tail = "";
                                     if (m_stopEvent != null)
+                                    {
                                         tail = " or " + m_stopEvent.ToString();
+                                    }
+
                                     LogVerbose(data.TimeStamp, "Dropping event because name " + data.EventName + " != " + m_startEvent + tail);
                                 }
                                 return;
@@ -643,7 +677,9 @@ namespace Triggers
                             {
                                 // Check field filters
                                 if (!PassesFieldFilters(data))
+                                {
                                     return;
+                                }
 
                                 // If the user did not specify a stop event provide a default. 
                                 if (m_stopEvent == null)
@@ -660,7 +696,10 @@ namespace Triggers
                                 }
 
                                 if (ShouldLogVerbose)
+                                {
                                     LogVerbose(data.TimeStamp, "Start Request Context: " + contextID.ToString() + " Thread " + data.ThreadID);
+                                }
+
                                 startStopRecords[key] = new StartEventData(data.TimeStampRelativeMSec);
                                 return;         // Once we have logged the start, we are done. 
                             }
@@ -670,7 +709,10 @@ namespace Triggers
                             {
                                 // We don't warn on orphans if there is a trigger predicate because predicates create orphans.  
                                 if (TriggerPredicate == null && ShouldLogVerbose)
+                                {
                                     LogVerbose(data.TimeStamp, "Dropped Orphan Stop Request Context: " + contextID.ToString() + " ignoring");
+                                }
+
                                 return;
                             }
                             startStopRecords.Remove(key);
@@ -680,23 +722,36 @@ namespace Triggers
                             m_requestCount++;
                             m_requestTotalMSec += (int)durationMSec;
                             if (m_requestMaxMSec < durationMSec)
+                            {
                                 m_requestMaxMSec = durationMSec;
+                            }
 
                             // See if we should trigger.  
                             var triggerMSec = EffectiveTriggerDurationMSec;
                             if (ShouldLogVerbose)
+                            {
                                 LogVerbose(data.TimeStamp, "Stop Request Context " + contextID.ToString() + " Thread " + data.ThreadID + " Duration " + durationMSec.ToString("f2") + " Trigger: " + triggerMSec.ToString("f1") + " MSec");
+                            }
+
                             if (durationMSec <= triggerMSec)
+                            {
                                 return;
+                            }
 
                             // Yeah we get to trigger.  
                             if (OnTriggered != null)
                             {
                                 if (m_triggerName == null)
+                                {
                                     m_triggerName = "Stop";
+                                }
+
                                 var triggerMessage = "";
                                 if (DecayToZeroHours != 0)
+                                {
                                     triggerMessage = " (orig " + TriggerMSec.ToString() + " msec)";
+                                }
+
                                 TriggeredMessage = string.Format("{0} triggered.  Duration {1:f0} > {2} Msec{3}.  Triggering by Process {4}({5}) Thread {6} at {7:HH:mm:ss.ffffff} approximately {8:f3} Msec ago.",
                                     m_triggerName, durationMSec, triggerMSec, triggerMessage, data.ProcessName, data.ProcessID, data.ThreadID,
                                     data.TimeStamp, (DateTime.Now - data.TimeStamp).TotalMilliseconds);
@@ -724,7 +779,9 @@ namespace Triggers
                 }
             });
             while (!listening)
+            {
                 m_readerTask.Wait(1);
+            }
         }
 
         /// <summary>
@@ -743,15 +800,21 @@ namespace Triggers
                     if (fieldIndex < 0)
                     {
                         if (ShouldLogVerbose)
+                        {
                             m_log.WriteLine("Dropping event {0} could not find field {1}", data.EventName, fieldFilter.FieldName);
+                        }
+
                         return false;
                     }
                     string payloadValue = data.PayloadString(fieldIndex);
                     if (!fieldFilter.Succeeds(payloadValue))
                     {
                         if (ShouldLogVerbose)
+                        {
                             m_log.WriteLine("Dropping event {0} field filter {1} does not succeed on event value {2}",
                                 data.EventName, fieldFilter, payloadValue);
+                        }
+
                         return false;
                     }
                     m_log.WriteLine("FieldFilter {0} passes with event value {1}", fieldFilter, payloadValue);
@@ -778,7 +841,10 @@ namespace Triggers
             get
             {
                 if (m_providerName == null)
+                {
                     m_providerName = ProviderGuid.ToString();
+                }
+
                 return m_providerName;
             }
         }
@@ -821,16 +887,17 @@ namespace Triggers
         /// you will trigger.  
         /// </summary>
         public double DecayToZeroHours { get; set; }
+
         /// <summary>
         /// This is the callback when something is finally triggered.  
         /// </summary>
-        Action<ETWEventTrigger> OnTriggered { get; set; }
+        private Action<ETWEventTrigger> OnTriggered { get; set; }
 
         /// <summary>
         /// These represent filters (they are logically AND if there is more than one) that 
         /// operatin on field values of the event.  
         /// </summary>
-        IList<EventFieldFilter> FieldFilters { get; set; }
+        private IList<EventFieldFilter> FieldFilters { get; set; }
 
         /// <summary>
         /// Returns the actual threshold that will trigger a stop taking TriggerForceToZeroHours in to account
@@ -841,7 +908,10 @@ namespace Triggers
             {
                 var triggerMSec = TriggerMSec;
                 if (DecayToZeroHours != 0)
+                {
                     triggerMSec = (int)(triggerMSec * (1 - (DateTime.UtcNow - m_startTimeUtc).TotalHours / DecayToZeroHours));
+                }
+
                 return triggerMSec;
             }
         }
@@ -856,7 +926,9 @@ namespace Triggers
             {
                 var exception = m_readerTask.Exception;
                 if (exception != null)
+                {
                     return string.Format("Error: Exception thrown during monitoring: {0}", exception.InnerException.Message);
+                }
 
                 string extraData = "";
 
@@ -903,7 +975,9 @@ namespace Triggers
         {
             var m = Regex.Match(spec, @"^(.*?)/([^;]*);?(.*)$");
             if (!m.Success)
+            {
                 throw new ApplicationException("Specification for ETW Trigger did not match Provider/EventName;Key1=Value1;...");
+            }
 
             m_providerName = m.Groups[1].Value;
             if (m_providerName.StartsWith("*"))
@@ -915,7 +989,9 @@ namespace Triggers
             {
                 ProviderGuid = TraceEventProviders.GetProviderGuidByName(m_providerName);
                 if (ProviderGuid == Guid.Empty)
+                {
                     throw new ApplicationException("Could not find Provider with the name " + m_providerName + " did you forget the * for EventSources");
+                }
             }
             var eventName = m.Groups[2].Value;
             StartEvent = eventName;
@@ -925,35 +1001,57 @@ namespace Triggers
             {
                 m = Regex.Match(keyValues, @"([\w@]+)=([^;]*);?(.*)");
                 if (!m.Success)
+                {
                     throw new ApplicationException("Keywords not of the form key=value.");
+                }
+
                 var key = m.Groups[1].Value;
                 var value = m.Groups[2].Value;
 
                 if (key == "Keywords")
                 {
                     if (value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                    {
                         value = value.Substring(2);
+                    }
+
                     ProviderKeywords = ulong.Parse(value, System.Globalization.NumberStyles.HexNumber);
                 }
                 else if (key == "TriggerMSec")
+                {
                     TriggerMSec = int.Parse(value);
+                }
                 else if (key == "Level")
+                {
                     ProviderLevel = (TraceEventLevel)Enum.Parse(typeof(TraceEventLevel), value);
+                }
                 else if (key == "StartStopID")
+                {
                     StartStopID = value;
+                }
                 else if (key == "Process")
+                {
                     ProcessFilter = value;
+                }
                 else if (key == "DecayToZeroHours")
+                {
                     DecayToZeroHours = double.Parse(value);
+                }
                 else if (key == "StopEvent")
+                {
                     StopEvent = value;
+                }
                 else if (key == "Verbose")
+                {
                     m_verbose = value != "false";
+                }
                 else if (key == "FieldFilter")
                 {
                     var filterMatch = Regex.Match(value, @"^(\w+)(<|>|~|=|!=)(.*)$");
                     if (!filterMatch.Success)
+                    {
                         throw new ApplicationException("Syntax error in field filter '" + value + "'");
+                    }
 
                     var newFilter = new EventFieldFilter()
                     {
@@ -967,14 +1065,22 @@ namespace Triggers
                     {
                         long longValue;
                         if (long.TryParse((string)newFilter.Value, out longValue))
+                        {
                             newFilter.Value = longValue;
+                        }
                     }
                     if (FieldFilters == null)
+                    {
                         FieldFilters = new List<EventFieldFilter>();
+                    }
+
                     FieldFilters.Add(newFilter);
                 }
                 else
+                {
                     throw new ApplicationException("Did not recognize key " + key);
+                }
+
                 keyValues = m.Groups[3].Value;
             }
         }
@@ -984,7 +1090,9 @@ namespace Triggers
             get
             {
                 if (m_verbose)
+                {
                     return true;
+                }
 
                 var utcNow = DateTime.UtcNow;
                 if (utcNow > m_nextTime)
@@ -998,7 +1106,9 @@ namespace Triggers
                             m_samplingOn = false;
                         }
                         else
+                        {
                             m_nextTime = utcNow + new TimeSpan(0, 0, 10);
+                        }
                     }
                     else
                     {
@@ -1028,9 +1138,13 @@ namespace Triggers
             if (StartStopID != null)
             {
                 if (StartStopID == "ActivityID")
+                {
                     return data.ActivityID;
+                }
                 else if (StartStopID == "ThreadID")
+                {
                     return new Guid((int)data.ThreadID, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+                }
                 else
                 {
                     value = data.PayloadByName(StartStopID);
@@ -1038,35 +1152,48 @@ namespace Triggers
                     {
                         m_errorCount++;
                         if (m_errorCount <= 3)
+                        {
                             m_log.WriteLine("Error: could not find payload field " + StartStopID + " in event " + data.EventName + " Using ProcessID as start-stop ID");
+                        }
+
                         return new Guid(0, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x05);
                     }
                 }
             }
-            
+
             // If the activity ID is a Activity path, then we accept that.  
             var activityID = data.ActivityID;
             if (StartStopActivityComputer.IsActivityPath(activityID, data.ProcessID))
+            {
                 return activityID;
+            }
 
             if (value == null)
             {
                 if (0 < data.PayloadNames.Length)
+                {
                     value = data.PayloadValue(0);               // By default we choose the first argument. 
+                }
 
                 // If we did not find a value, by default use the activity ID or the thread ID 
                 if (value == null)
                 {
                     if (activityID != Guid.Empty)
+                    {
                         return activityID;
+                    }
                     else
+                    {
                         return new Guid((int)data.ThreadID, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+                    }
                 }
             }
 
             // Turn the value into a GUID.  
             if (value is Guid)
+            {
                 return (Guid)value;
+            }
             else if (value is long)
             {
                 var longValue = (long)value;
@@ -1078,15 +1205,21 @@ namespace Triggers
                 return new Guid((int)(longValue >> 32), (short)(longValue >> 16), (short)longValue, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x02);
             }
             else if (value is int)
+            {
                 return new Guid((int)value, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+            }
             else if (value is uint)
+            {
                 return new Guid((int)((uint)value), 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x04);
+            }
             else
+            {
                 // Give up and just use the hash code of the value as the context ID  
                 return new Guid(value.GetHashCode(), 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x00);
+            }
         }
 
-        struct StartEventData
+        private struct StartEventData
         {
             public StartEventData(double StartTime) { this.StartTime = StartTime; }
             public double StartTime;
@@ -1095,7 +1228,7 @@ namespace Triggers
         /// <summary>
         /// Used to hold the event name for the start or stop events.   
         /// </summary>
-        class ETWEventTriggerInfo
+        private class ETWEventTriggerInfo
         {
             public ETWEventTriggerInfo(string eventName)
             {
@@ -1114,7 +1247,9 @@ namespace Triggers
             public bool Matches(TraceEvent data)
             {
                 if (m_resolved)
+                {
                     return data.ID == m_eventID;
+                }
 
                 if (data.EventName == m_eventName)
                 {
@@ -1140,9 +1275,14 @@ namespace Triggers
 
                 string stopName;
                 if (m_eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+                {
                     stopName = m_eventName.Substring(0, m_eventName.Length - 5) + "Stop";
+                }
                 else
+                {
                     stopName = "EventID(" + (((int)m_eventID) + 1).ToString() + ")";
+                }
+
                 return new ETWEventTriggerInfo(stopName);
             }
 
@@ -1151,41 +1291,37 @@ namespace Triggers
                 return m_eventName;
             }
 
-            string m_eventName;
-
-            bool m_resolved;
+            private string m_eventName;
+            private bool m_resolved;
             internal TraceEventID m_eventID;
         }
 
-        int m_errorCount;
-        bool m_verbose;
-        DateTime m_nextTime;        // Used to control sampling of verbose logging. 
-        bool m_samplingOn;
-
-        int m_sessionEventCount;
-        TextWriter m_log;
-        TraceEventSession m_session;
-        ETWTraceEventSource m_source;
-        Task m_readerTask;
-        string m_providerName;
-
-        ETWEventTriggerInfo m_startEvent;
-        ETWEventTriggerInfo m_stopEvent;
-
-        int m_requestCount;
-        double m_requestMaxMSec;
-        double m_requestTotalMSec;
-        DateTime m_startTimeUtc;           // When the trigger started. 
-        string m_triggerName;
-        const int WaitingForProcessID = -1;         // An illegal process ID 
-        int m_processID;                   // 0 is a wildcard, WaitingForProcessID means no matching at all. 
+        private int m_errorCount;
+        private bool m_verbose;
+        private DateTime m_nextTime;        // Used to control sampling of verbose logging. 
+        private bool m_samplingOn;
+        private int m_sessionEventCount;
+        private TextWriter m_log;
+        private TraceEventSession m_session;
+        private ETWTraceEventSource m_source;
+        private Task m_readerTask;
+        private string m_providerName;
+        private ETWEventTriggerInfo m_startEvent;
+        private ETWEventTriggerInfo m_stopEvent;
+        private int m_requestCount;
+        private double m_requestMaxMSec;
+        private double m_requestTotalMSec;
+        private DateTime m_startTimeUtc;           // When the trigger started. 
+        private string m_triggerName;
+        private const int WaitingForProcessID = -1;         // An illegal process ID 
+        private int m_processID;                   // 0 is a wildcard, WaitingForProcessID means no matching at all. 
         #endregion
     }
 
     /// <summary>
     /// Describes a field filter Thus Foo > 5 means that the field Foo has to be greater than 5.   
     /// </summary>
-    struct EventFieldFilter
+    internal struct EventFieldFilter
     {
         public string FieldName;
         public string Op;         // Must be < > = != ~  (which means match regular expression)
@@ -1194,7 +1330,9 @@ namespace Triggers
         public bool Succeeds(string fieldValue)
         {
             if (Op == "~")
+            {
                 return Regex.IsMatch(fieldValue, Value.ToString(), RegexOptions.IgnoreCase);         // Match as a regular expression
+            }
             else
             {
                 int result = int.MinValue;
@@ -1202,24 +1340,41 @@ namespace Triggers
                 {
                     long longValue = 0;
                     if (long.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out longValue))
+                    {
                         result = -((long)Value).CompareTo(longValue);       // negated because the x and y arguments are swapped.  
+                    }
                 }
 
                 // If not yet set, then use string comparison. 
                 if (result == int.MinValue)
+                {
                     result = -Value.ToString().CompareTo(fieldValue);       // negated because the x and y arguments are swapped.  
+                }
+
                 if (Op == "<")
+                {
                     return result < 0;
+                }
                 else if (Op == "<=")
+                {
                     return result <= 0;
+                }
                 else if (Op == ">")
+                {
                     return result > 0;
+                }
                 else if (Op == ">=")
+                {
                     return result >= 0;
+                }
                 else if (Op == "=")
+                {
                     return result == 0;
+                }
                 else if (Op == "!=")
+                {
                     return result != 0;
+                }
             }
             return false;
         }
@@ -1273,14 +1428,14 @@ namespace Triggers
                 m_eventLog.Dispose();
         }
 
-        #region private
+    #region private
         EventLog m_eventLog;
         TextWriter m_log;
         Action<EventLogTrigger> m_onTriggered;
         Regex m_pat;
-        #endregion
+    #endregion
     };
-#endif 
+#endif
 
 #if !DOTNET_CORE    // perfCounters don't exist on .NET Core
     /// <summary>
@@ -1340,7 +1495,7 @@ namespace Triggers
             GC.SuppressFinalize(this);
         }
 
-        #region private
+    #region private
         private void TimerTick(object obj)
         {
             try
@@ -1361,7 +1516,7 @@ namespace Triggers
         PerformanceCounter m_counter;
         System.Threading.Timer m_timer;
         TextWriter m_log;
-        #endregion
+    #endregion
     }
 #endif
 
@@ -1372,7 +1527,7 @@ namespace Triggers
     /// </summary>
     internal class StartStopKey : IEquatable<StartStopKey>
     {
-        public StartStopKey(Guid provider, TraceEventTask task, Guid activityID) { this.Provider = provider; this.task = task; this.ActivityId = activityID; }
+        public StartStopKey(Guid provider, TraceEventTask task, Guid activityID) { Provider = provider; this.task = task; ActivityId = activityID; }
         public Guid Provider;
         public Guid ActivityId;
         public TraceEventTask task;

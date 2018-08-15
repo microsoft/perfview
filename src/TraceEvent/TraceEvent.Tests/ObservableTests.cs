@@ -1,8 +1,8 @@
-﻿using System;
-using System.IO;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using System;
+using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -42,15 +42,18 @@ namespace TraceEventTests
                 var cnt = 0;
                 using (var gcSub = Subscribe(gcTicks, gcTickData => Console.WriteLine("Got Tick {0}", gcTickData.AllocationAmount), () => Console.WriteLine("Ticks Completed.")))
                 using (var manifestSub = Subscribe(perfViewTicks, manifestData => Console.WriteLine("Got PerfView Tick {0:f4}", manifestData.TimeStampRelativeMSec), () => Console.WriteLine("Manifests Completed")))
-                using (var allTasksSub = Subscribe(allTasks, delegate(TraceEvent allTasksData) { 
-                    if (allTasksData.EventName != "ManifestData") 
+                using (var allTasksSub = Subscribe(allTasks, delegate (TraceEvent allTasksData)
+                {
+                    if (allTasksData.EventName != "ManifestData")
+                    {
                         Console.WriteLine("Got AllTasks: Data = {0}", allTasksData);
+                    }
                 }, () => Console.WriteLine("allTasks Completed")))
                 using (var logSub = Subscribe(logMessages, logMessageData => Console.WriteLine("Got PerfView Log Message {0}", logMessageData.PayloadByName("message")), () => Console.WriteLine("Log Messages Completed")))
                 {
                     IDisposable allPerfSub = null;
                     allPerfSub = Subscribe(allPerfView,
-                         delegate(TraceEvent allPerfViewData)
+                         delegate (TraceEvent allPerfViewData)
                          {
                              cnt++;
                              if (cnt >= 5)
@@ -66,7 +69,9 @@ namespace TraceEventTests
                     source.Process();
 
                     if (allPerfSub != null)
+                    {
                         allPerfSub.Dispose();
+                    }
                 }
                 var endCallbackCount = source.CallbackCount();
                 Console.WriteLine("endCallbackCount = " + endCallbackCount);
@@ -74,17 +79,24 @@ namespace TraceEventTests
             Console.WriteLine("Done ObservableTests");
         }
 
-        class MyObserver<T> : IObserver<T>
+        private class MyObserver<T> : IObserver<T>
         {
             public MyObserver(Action<T> action, Action completed = null) { m_action = action; m_completed = completed; }
             public void OnNext(T value) { m_action(value); }
-            public void OnCompleted() { if (m_completed != null) m_completed(); }
+            public void OnCompleted()
+            {
+                if (m_completed != null)
+                {
+                    m_completed();
+                }
+            }
             public void OnError(Exception error) { }
-            Action<T> m_action;
-            Action m_completed;
+
+            private Action<T> m_action;
+            private Action m_completed;
         }
 
-        static IDisposable Subscribe<T>(IObservable<T> observable, Action<T> action, Action completed = null)
+        private static IDisposable Subscribe<T>(IObservable<T> observable, Action<T> action, Action completed = null)
         {
             return observable.Subscribe(new MyObserver<T>(action, completed));
         }

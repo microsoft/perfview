@@ -119,8 +119,15 @@ namespace PerfView
             string n1 = x.Name;
             string n2 = y.Name;
 
-            if (n1 == null) n1 = String.Empty;
-            if (n2 == null) n2 = String.Empty;
+            if (n1 == null)
+            {
+                n1 = String.Empty;
+            }
+
+            if (n2 == null)
+            {
+                n2 = String.Empty;
+            }
 
             int r = n1.CompareTo(n2);
 
@@ -140,9 +147,9 @@ namespace PerfView
     /// </summary>
     public class ThreadMemoryInfo
     {
-        ProcessMemoryInfo m_process;
-        int m_threadID;
-        string m_name;
+        private ProcessMemoryInfo m_process;
+        private int m_threadID;
+        private string m_name;
 
         internal List<HeapEventData> m_events;
         internal int[] m_histogram;
@@ -150,7 +157,7 @@ namespace PerfView
         internal int m_heapNum = -1;   // User by server GC thread
         internal bool m_backgroundGc;   // User by background GC 
 
-        int GetCount(HeapEvents e)
+        private int GetCount(HeapEvents e)
         {
             return m_histogram[(int)e];
         }
@@ -267,7 +274,7 @@ namespace PerfView
         }
     }
 
-    class GcEventExtra
+    internal class GcEventExtra
     {
         internal EventIndex GCStartIndex;
         internal TraceThread GCStartThread;
@@ -276,17 +283,16 @@ namespace PerfView
     /// <summary>
     /// Per-process data, extension of GCProcess
     /// </summary>
-    partial class ProcessMemoryInfo : HeapDiagramGenerator
+    internal partial class ProcessMemoryInfo : HeapDiagramGenerator
     {
-        const int OneMB = 1024 * 1024;
-        const double OneMBD = 1024 * 1024;
+        private const int OneMB = 1024 * 1024;
+        private const double OneMBD = 1024 * 1024;
 
         protected TraceLog m_traceLog;
         protected PerfViewFile m_dataFile;
 
         protected Dictionary<int, ThreadMemoryInfo> m_threadInfo = new Dictionary<int, ThreadMemoryInfo>();
-
-        Dictionary<int, GcEventExtra> m_gcEventExtra = new Dictionary<int, GcEventExtra>();
+        private Dictionary<int, GcEventExtra> m_gcEventExtra = new Dictionary<int, GcEventExtra>();
 
         internal Dictionary<int, ThreadMemoryInfo> Threads
         {
@@ -304,8 +310,8 @@ namespace PerfView
             }
         }
 
-        StackDecoder m_stackDecoder;
-        StatusBar m_statusBar;
+        private StackDecoder m_stackDecoder;
+        private StatusBar m_statusBar;
 
         public ProcessMemoryInfo(TraceLog traceLog, PerfViewFile dataFile, StatusBar statusBar)
         {
@@ -316,7 +322,7 @@ namespace PerfView
             m_stackDecoder = new StackDecoder(m_traceLog);
         }
 
-        ThreadMemoryInfo GetThread(int threadID)
+        private ThreadMemoryInfo GetThread(int threadID)
         {
             ThreadMemoryInfo ret;
 
@@ -331,7 +337,7 @@ namespace PerfView
             return ret;
         }
 
-        GcEventExtra GetGcEventExtra(int gc, bool create = true)
+        private GcEventExtra GetGcEventExtra(int gc, bool create = true)
         {
             GcEventExtra data;
 
@@ -668,11 +674,11 @@ namespace PerfView
             writer.WriteLine("</pre>");
         }
 
-        Microsoft.Diagnostics.Tracing.Analysis.TraceProcess m_process;
-        Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntime m_runtime;
-        int m_heapCount;
-        double m_SampleInterval;
-        TraceEventSource m_source;
+        private Microsoft.Diagnostics.Tracing.Analysis.TraceProcess m_process;
+        private Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntime m_runtime;
+        private int m_heapCount;
+        private double m_SampleInterval;
+        private TraceEventSource m_source;
 
         internal double TotalCpuSample
         {
@@ -697,24 +703,23 @@ namespace PerfView
             }
         }
 
-        int m_procID;
-
-        Guid kernelGuid;
-        Dictionary<int /*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_processLookup;
+        private int m_procID;
+        private Guid kernelGuid;
+        private Dictionary<int /*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_processLookup;
 
         /// <summary>
         /// Event filtering by process ID. Called in ForwardEventEnumerator::MoveNext
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        bool FilterEvent(TraceEvent data)
+        private bool FilterEvent(TraceEvent data)
         {
             if (data.ProcessID == m_procID)
             {
                 if (m_process == null && m_processLookup.ContainsKey(data.ProcessID))
                 {
                     m_process = m_processLookup[data.ProcessID];
-                    m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime( m_process );
+                    m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_process);
                 }
 
                 if (m_source == null)
@@ -745,14 +750,12 @@ namespace PerfView
         // Single entry for 1 mb of commited memory, 256 + byte
         // 1 gb = 256 kb memory
         // 64 gb = 16 mb memory
-        Dictionary<ulong, ModuleClass[]> m_MemMap;
-        ulong m_VMSize;
-        ulong[] m_ModuleVMSize;
-        ulong m_MaxVMSize;
-
-        const int PageSize = 4096;
-
-        List<double> m_VMCurve;
+        private Dictionary<ulong, ModuleClass[]> m_MemMap;
+        private ulong m_VMSize;
+        private ulong[] m_ModuleVMSize;
+        private ulong m_MaxVMSize;
+        private const int PageSize = 4096;
+        private List<double> m_VMCurve;
 
         internal void OnVirtualMem(VirtualAllocTraceData data)
         {
@@ -803,7 +806,9 @@ namespace PerfView
             // complete.   
             long len = data.Length / PageSize;
             if (len > 0x400000)     // Cap it at 4M pages = 16GB chunks.  
+            {
                 len = 0x400000;
+            }
 
             while (len > 0)
             {
@@ -899,7 +904,7 @@ namespace PerfView
 
             KernelTraceEventParser kernel = source.Kernel;
 
-            kernel.PerfInfoSample += delegate(SampledProfileTraceData data)
+            kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
                 ThreadMemoryInfo thread = GetThread(data.ThreadID);
 
@@ -912,20 +917,29 @@ namespace PerfView
             m_processLookup = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
 
             // Process all events into GCProcess lookup dictionary
-            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes( source );
+            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
             Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc =>
             {
                 Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, sampleInterval100ns);
                 proc.Log = m_traceLog;
             });
             source.Process();
-            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes( source ))
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime( proc ) != null) m_processLookup.Add(proc.ProcessID, proc);
+            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+            {
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                {
+                    m_processLookup.Add(proc.ProcessID, proc);
+                }
+            }
 
             // Get the process we want
-            if (!m_processLookup.ContainsKey(procID)) return false;
+            if (!m_processLookup.ContainsKey(procID))
+            {
+                return false;
+            }
+
             m_process = m_processLookup[procID];
-            m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime( m_process );
+            m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_process);
             return true;
         }
 
@@ -1065,14 +1079,13 @@ namespace PerfView
 
         #region Allocation Tick
         // AllocTickKey -> int
-        Dictionary<AllocTick, int> m_typeMap = new Dictionary<AllocTick, int>(new AllocTickComparer());
+        private Dictionary<AllocTick, int> m_typeMap = new Dictionary<AllocTick, int>(new AllocTickComparer());
 
         // int -> AllocTickKey
         internal List<AllocTick> m_allocSites = new List<AllocTick>();
+        private bool m_hasBadAllocTick;
 
-        bool m_hasBadAllocTick;
-
-        void AddAlloc(AllocTick key, bool large, double val)
+        private void AddAlloc(AllocTick key, bool large, double val)
         {
             int id;
 
@@ -1085,7 +1098,9 @@ namespace PerfView
             }
 
             if (val < 0)
+            {
                 m_hasBadAllocTick = true;
+            }
 
             if (m_hasBadAllocTick)
             {
@@ -1142,7 +1157,7 @@ namespace PerfView
     /// <summary>
     /// Data passed to HeapDiagram
     /// </summary>
-    class DiagramData
+    internal class DiagramData
     {
         internal TraceLog dataFile;
         internal int procID;

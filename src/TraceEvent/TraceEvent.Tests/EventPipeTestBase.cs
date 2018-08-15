@@ -57,7 +57,10 @@ namespace TraceEventTests
             }
 
             if (Directory.Exists(OutputDir))
+            {
                 Directory.Delete(OutputDir, true);
+            }
+
             Directory.CreateDirectory(OutputDir);
             Output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
             Assert.True(Directory.Exists(OutputDir));

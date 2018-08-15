@@ -1,9 +1,7 @@
-using System;
-using System.Text;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
+using System;
+using System.Diagnostics;
+using System.Text;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -7162,35 +7160,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata9TemplateHATraceData(Action<Multidata9TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata9TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata9TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7198,7 +7196,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "State", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "State", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7252,7 +7253,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata10TemplateHATraceData(Action<Multidata10TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7260,8 +7261,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata10TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata10TemplateHATraceData>)value; }
         }
         protected internal override void Validate()
         {
@@ -7270,21 +7271,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "SourceName", SourceName);
-             XmlAttrib(sb, "SourceId", SourceId);
-             XmlAttrib(sb, "SourceInstanceId", SourceInstanceId);
-             XmlAttrib(sb, "SourceTypeName", SourceTypeName);
-             XmlAttrib(sb, "Exception", Exception);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "SourceName", SourceName);
+            XmlAttrib(sb, "SourceId", SourceId);
+            XmlAttrib(sb, "SourceInstanceId", SourceInstanceId);
+            XmlAttrib(sb, "SourceTypeName", SourceTypeName);
+            XmlAttrib(sb, "Exception", Exception);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7292,7 +7293,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "SourceName", "SourceId", "SourceInstanceId", "SourceTypeName", "Exception", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "SourceName", "SourceId", "SourceInstanceId", "SourceTypeName", "Exception", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7350,7 +7354,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata8TemplateHATraceData(Action<Multidata8TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7358,8 +7362,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata8TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata8TemplateHATraceData>)value; }
         }
         protected internal override void Validate()
         {
@@ -7368,17 +7372,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7386,7 +7390,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "Reason", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "Reason", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7441,7 +7448,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata4TemplateHATraceData(Action<Multidata4TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7449,8 +7456,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata4TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata4TemplateHATraceData>)value; }
         }
         protected internal override void Validate()
         {
@@ -7459,22 +7466,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Name", Name);
-             XmlAttrib(sb, "ActivityId", ActivityId);
-             XmlAttrib(sb, "ActivityInstanceId", ActivityInstanceId);
-             XmlAttrib(sb, "ActivityTypeName", ActivityTypeName);
-             XmlAttrib(sb, "Arguments", Arguments);
-             XmlAttrib(sb, "Variables", Variables);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "ActivityId", ActivityId);
+            XmlAttrib(sb, "ActivityInstanceId", ActivityInstanceId);
+            XmlAttrib(sb, "ActivityTypeName", ActivityTypeName);
+            XmlAttrib(sb, "Arguments", Arguments);
+            XmlAttrib(sb, "Variables", Variables);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7482,7 +7489,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "State", "Name", "ActivityId", "ActivityInstanceId", "ActivityTypeName", "Arguments", "Variables", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "State", "Name", "ActivityId", "ActivityInstanceId", "ActivityTypeName", "Arguments", "Variables", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7548,7 +7558,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata3TemplateHATraceData(Action<Multidata3TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7556,8 +7566,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata3TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata3TemplateHATraceData>)value; }
         }
         protected internal override void Validate()
         {
@@ -7566,23 +7576,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "Name", Name);
-             XmlAttrib(sb, "ActivityId", ActivityId);
-             XmlAttrib(sb, "ActivityInstanceId", ActivityInstanceId);
-             XmlAttrib(sb, "ActivityTypeName", ActivityTypeName);
-             XmlAttrib(sb, "ChildActivityName", ChildActivityName);
-             XmlAttrib(sb, "ChildActivityId", ChildActivityId);
-             XmlAttrib(sb, "ChildActivityInstanceId", ChildActivityInstanceId);
-             XmlAttrib(sb, "ChildActivityTypeName", ChildActivityTypeName);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "ActivityId", ActivityId);
+            XmlAttrib(sb, "ActivityInstanceId", ActivityInstanceId);
+            XmlAttrib(sb, "ActivityTypeName", ActivityTypeName);
+            XmlAttrib(sb, "ChildActivityName", ChildActivityName);
+            XmlAttrib(sb, "ChildActivityId", ChildActivityId);
+            XmlAttrib(sb, "ChildActivityInstanceId", ChildActivityInstanceId);
+            XmlAttrib(sb, "ChildActivityTypeName", ChildActivityTypeName);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7590,7 +7600,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "Name", "ActivityId", "ActivityInstanceId", "ActivityTypeName", "ChildActivityName", "ChildActivityId", "ChildActivityInstanceId", "ChildActivityTypeName", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "Name", "ActivityId", "ActivityInstanceId", "ActivityTypeName", "ChildActivityName", "ChildActivityId", "ChildActivityInstanceId", "ChildActivityTypeName", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7651,16 +7664,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         public string FaultHandlerActivityTypeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))); } }
         public string Fault { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))); } }
         public int IsFaultSource { get { return GetByteAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))); } }
-        public string Annotations { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))+1); } }
-        public string ProfileName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))+1)); } }
-        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))+1))); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))+1)))); } }
+        public string Annotations { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))) + 1); } }
+        public string ProfileName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))) + 1)); } }
+        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))) + 1))); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))) + 1)))); } }
 
         #region Private
         internal Multidata6TemplateHATraceData(Action<Multidata6TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7668,35 +7681,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata6TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata6TemplateHATraceData>)value; }
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))+1))))));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))+1))))));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))) + 1))))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))) + 1))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "FaultSourceActivityName", FaultSourceActivityName);
-             XmlAttrib(sb, "FaultSourceActivityId", FaultSourceActivityId);
-             XmlAttrib(sb, "FaultSourceActivityInstanceId", FaultSourceActivityInstanceId);
-             XmlAttrib(sb, "FaultSourceActivityTypeName", FaultSourceActivityTypeName);
-             XmlAttrib(sb, "FaultHandlerActivityName", FaultHandlerActivityName);
-             XmlAttrib(sb, "FaultHandlerActivityId", FaultHandlerActivityId);
-             XmlAttrib(sb, "FaultHandlerActivityInstanceId", FaultHandlerActivityInstanceId);
-             XmlAttrib(sb, "FaultHandlerActivityTypeName", FaultHandlerActivityTypeName);
-             XmlAttrib(sb, "Fault", Fault);
-             XmlAttrib(sb, "IsFaultSource", IsFaultSource);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "FaultSourceActivityName", FaultSourceActivityName);
+            XmlAttrib(sb, "FaultSourceActivityId", FaultSourceActivityId);
+            XmlAttrib(sb, "FaultSourceActivityInstanceId", FaultSourceActivityInstanceId);
+            XmlAttrib(sb, "FaultSourceActivityTypeName", FaultSourceActivityTypeName);
+            XmlAttrib(sb, "FaultHandlerActivityName", FaultHandlerActivityName);
+            XmlAttrib(sb, "FaultHandlerActivityId", FaultHandlerActivityId);
+            XmlAttrib(sb, "FaultHandlerActivityInstanceId", FaultHandlerActivityInstanceId);
+            XmlAttrib(sb, "FaultHandlerActivityTypeName", FaultHandlerActivityTypeName);
+            XmlAttrib(sb, "Fault", Fault);
+            XmlAttrib(sb, "IsFaultSource", IsFaultSource);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7704,7 +7717,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "FaultSourceActivityName", "FaultSourceActivityId", "FaultSourceActivityInstanceId", "FaultSourceActivityTypeName", "FaultHandlerActivityName", "FaultHandlerActivityId", "FaultHandlerActivityInstanceId", "FaultHandlerActivityTypeName", "Fault", "IsFaultSource", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "FaultSourceActivityName", "FaultSourceActivityId", "FaultSourceActivityInstanceId", "FaultSourceActivityTypeName", "FaultHandlerActivityName", "FaultHandlerActivityId", "FaultHandlerActivityInstanceId", "FaultHandlerActivityTypeName", "Fault", "IsFaultSource", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7761,20 +7777,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         // Skipping EventTime
         public string Name { get { return GetUnicodeStringAt(24); } }
         public Guid SubInstanceID { get { return GetGuidAt(SkipUnicodeString(24)); } }
-        public string OwnerActivityName { get { return GetUnicodeStringAt(SkipUnicodeString(24)+16); } }
-        public string OwnerActivityId { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(24)+16)); } }
-        public string OwnerActivityInstanceId { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16))); } }
-        public string OwnerActivityTypeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16)))); } }
-        public string Annotations { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16))))); } }
-        public string ProfileName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16)))))); } }
-        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16))))))); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16)))))))); } }
+        public string OwnerActivityName { get { return GetUnicodeStringAt(SkipUnicodeString(24) + 16); } }
+        public string OwnerActivityId { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(24) + 16)); } }
+        public string OwnerActivityInstanceId { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16))); } }
+        public string OwnerActivityTypeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16)))); } }
+        public string Annotations { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16))))); } }
+        public string ProfileName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16)))))); } }
+        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16))))))); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16)))))))); } }
 
         #region Private
         internal Multidata5TemplateHATraceData(Action<Multidata5TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7782,31 +7798,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata5TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata5TemplateHATraceData>)value; }
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16))))))))));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)+16))))))))));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16))))))))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24) + 16))))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "Name", Name);
-             XmlAttrib(sb, "SubInstanceID", SubInstanceID);
-             XmlAttrib(sb, "OwnerActivityName", OwnerActivityName);
-             XmlAttrib(sb, "OwnerActivityId", OwnerActivityId);
-             XmlAttrib(sb, "OwnerActivityInstanceId", OwnerActivityInstanceId);
-             XmlAttrib(sb, "OwnerActivityTypeName", OwnerActivityTypeName);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "SubInstanceID", SubInstanceID);
+            XmlAttrib(sb, "OwnerActivityName", OwnerActivityName);
+            XmlAttrib(sb, "OwnerActivityId", OwnerActivityId);
+            XmlAttrib(sb, "OwnerActivityInstanceId", OwnerActivityInstanceId);
+            XmlAttrib(sb, "OwnerActivityTypeName", OwnerActivityTypeName);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7814,7 +7830,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "Name", "SubInstanceID", "OwnerActivityName", "OwnerActivityId", "OwnerActivityInstanceId", "OwnerActivityTypeName", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "Name", "SubInstanceID", "OwnerActivityName", "OwnerActivityId", "OwnerActivityInstanceId", "OwnerActivityTypeName", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7876,7 +7895,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata7TemplateHATraceData(Action<Multidata7TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -7884,31 +7903,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata7TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata7TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "Name", Name);
-             XmlAttrib(sb, "ActivityName", ActivityName);
-             XmlAttrib(sb, "ActivityId", ActivityId);
-             XmlAttrib(sb, "ActivityInstanceId", ActivityInstanceId);
-             XmlAttrib(sb, "ActivityTypeName", ActivityTypeName);
-             XmlAttrib(sb, "Data", Data);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "ActivityName", ActivityName);
+            XmlAttrib(sb, "ActivityId", ActivityId);
+            XmlAttrib(sb, "ActivityInstanceId", ActivityInstanceId);
+            XmlAttrib(sb, "ActivityTypeName", ActivityTypeName);
+            XmlAttrib(sb, "Data", Data);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7916,7 +7935,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "Name", "ActivityName", "ActivityId", "ActivityInstanceId", "ActivityTypeName", "Data", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "Name", "ActivityName", "ActivityId", "ActivityInstanceId", "ActivityTypeName", "Data", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7975,36 +7997,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata11TemplateHATraceData(Action<Multidata11TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata11TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata11TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "WorkflowDefinitionIdentity", WorkflowDefinitionIdentity);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "WorkflowDefinitionIdentity", WorkflowDefinitionIdentity);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8012,7 +8034,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "State", "Annotations", "ProfileName", "WorkflowDefinitionIdentity", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "State", "Annotations", "ProfileName", "WorkflowDefinitionIdentity", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8065,36 +8090,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata12TemplateHATraceData(Action<Multidata12TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata12TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata12TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "WorkflowDefinitionIdentity", WorkflowDefinitionIdentity);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "WorkflowDefinitionIdentity", WorkflowDefinitionIdentity);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8102,7 +8127,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "Reason", "Annotations", "ProfileName", "WorkflowDefinitionIdentity", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "Reason", "Annotations", "ProfileName", "WorkflowDefinitionIdentity", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8159,40 +8187,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata13TemplateHATraceData(Action<Multidata13TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata13TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata13TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))))))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "SourceName", SourceName);
-             XmlAttrib(sb, "SourceId", SourceId);
-             XmlAttrib(sb, "SourceInstanceId", SourceInstanceId);
-             XmlAttrib(sb, "SourceTypeName", SourceTypeName);
-             XmlAttrib(sb, "Exception", Exception);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "WorkflowDefinitionIdentity", WorkflowDefinitionIdentity);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "SourceName", SourceName);
+            XmlAttrib(sb, "SourceId", SourceId);
+            XmlAttrib(sb, "SourceInstanceId", SourceInstanceId);
+            XmlAttrib(sb, "SourceTypeName", SourceTypeName);
+            XmlAttrib(sb, "Exception", Exception);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "WorkflowDefinitionIdentity", WorkflowDefinitionIdentity);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8200,7 +8228,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "SourceName", "SourceId", "SourceInstanceId", "SourceTypeName", "Exception", "Annotations", "ProfileName", "WorkflowDefinitionIdentity", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "SourceName", "SourceId", "SourceInstanceId", "SourceTypeName", "Exception", "Annotations", "ProfileName", "WorkflowDefinitionIdentity", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8262,37 +8293,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata14TemplateHATraceData(Action<Multidata14TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata14TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata14TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceId", InstanceId);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "OriginalDefinitionIdentity", OriginalDefinitionIdentity);
-             XmlAttrib(sb, "UpdatedDefinitionIdentity", UpdatedDefinitionIdentity);
-             XmlAttrib(sb, "Annotations", Annotations);
-             XmlAttrib(sb, "ProfileName", ProfileName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceId", InstanceId);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "OriginalDefinitionIdentity", OriginalDefinitionIdentity);
+            XmlAttrib(sb, "UpdatedDefinitionIdentity", UpdatedDefinitionIdentity);
+            XmlAttrib(sb, "Annotations", Annotations);
+            XmlAttrib(sb, "ProfileName", ProfileName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8300,7 +8331,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "State", "OriginalDefinitionIdentity", "UpdatedDefinitionIdentity", "Annotations", "ProfileName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceId", "RecordNumber", "ActivityDefinitionId", "State", "OriginalDefinitionIdentity", "UpdatedDefinitionIdentity", "Annotations", "ProfileName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8347,29 +8381,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata1TemplateATraceData(Action<Multidata1TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata1TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata1TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8377,7 +8411,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Size", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Size", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8409,30 +8446,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata2TemplateATraceData(Action<Multidata2TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata2TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata2TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "PoolSize", PoolSize);
-             XmlAttrib(sb, "Delta", Delta);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "PoolSize", PoolSize);
+            XmlAttrib(sb, "Delta", Delta);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8440,7 +8477,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "PoolSize", "Delta", "AppDomain"};
+                {
+                    payloadNames = new string[] { "PoolSize", "Delta", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8472,28 +8512,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal OneStringsTemplateATraceData(Action<OneStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<OneStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<OneStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8501,7 +8541,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AppDomain"};
+                {
+                    payloadNames = new string[] { "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8531,30 +8574,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata23TemplateHATraceData(Action<Multidata23TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata23TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata23TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8562,7 +8605,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TypeName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8597,31 +8643,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata24TemplateHATraceData(Action<Multidata24TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata24TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata24TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "MethodName", MethodName);
-             XmlAttrib(sb, "CallerInfo", CallerInfo);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttrib(sb, "CallerInfo", CallerInfo);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8629,7 +8675,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodName", "CallerInfo", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "MethodName", "CallerInfo", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8659,40 +8708,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     {
         public string TypeName { get { return GetUnicodeStringAt(0); } }
         public int Handled { get { return GetByteAt(SkipUnicodeString(0)); } }
-        public string ExceptionTypeName { get { return GetUnicodeStringAt(SkipUnicodeString(0)+1); } }
-        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0)+1)); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+1))); } }
+        public string ExceptionTypeName { get { return GetUnicodeStringAt(SkipUnicodeString(0) + 1); } }
+        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0) + 1)); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 1))); } }
 
         #region Private
         internal Multidata25TemplateHATraceData(Action<Multidata25TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata25TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata25TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+1)))));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+1)))));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 1)))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 1)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "Handled", Handled);
-             XmlAttrib(sb, "ExceptionTypeName", ExceptionTypeName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "Handled", Handled);
+            XmlAttrib(sb, "ExceptionTypeName", ExceptionTypeName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8700,7 +8749,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "Handled", "ExceptionTypeName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TypeName", "Handled", "ExceptionTypeName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8739,31 +8791,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata26TemplateHATraceData(Action<Multidata26TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata26TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata26TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "ExceptionTypeName", ExceptionTypeName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "ExceptionTypeName", ExceptionTypeName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8771,7 +8823,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "ExceptionTypeName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TypeName", "ExceptionTypeName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8801,38 +8856,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     {
         public string ThrottleName { get { return GetUnicodeStringAt(0); } }
         public long Limit { get { return GetInt64At(SkipUnicodeString(0)); } }
-        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(0)+8); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0)+8)); } }
+        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(0) + 8); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0) + 8)); } }
 
         #region Private
         internal Multidata27TemplateHATraceData(Action<Multidata27TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata27TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata27TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+8))));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+8))));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 8))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 8))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ThrottleName", ThrottleName);
-             XmlAttrib(sb, "Limit", Limit);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ThrottleName", ThrottleName);
+            XmlAttrib(sb, "Limit", Limit);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8840,7 +8895,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ThrottleName", "Limit", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ThrottleName", "Limit", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8876,30 +8934,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata72TemplateHATraceData(Action<Multidata72TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata72TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata72TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ServiceTypeName", ServiceTypeName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ServiceTypeName", ServiceTypeName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8907,7 +8965,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ServiceTypeName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ServiceTypeName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8935,38 +8996,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     {
         public string MethodName { get { return GetUnicodeStringAt(0); } }
         public long Duration { get { return GetInt64At(SkipUnicodeString(0)); } }
-        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(0)+8); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0)+8)); } }
+        public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(0) + 8); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0) + 8)); } }
 
         #region Private
         internal Multidata28TemplateHATraceData(Action<Multidata28TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata28TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata28TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+8))));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)+8))));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 8))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0) + 8))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "MethodName", MethodName);
-             XmlAttrib(sb, "Duration", Duration);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttrib(sb, "Duration", Duration);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8974,7 +9035,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodName", "Duration", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "MethodName", "Duration", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9010,30 +9074,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata29TemplateHATraceData(Action<Multidata29TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata29TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata29TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ListenAddress", ListenAddress);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ListenAddress", ListenAddress);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9041,7 +9105,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ListenAddress", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ListenAddress", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9075,30 +9142,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata30TemplateHATraceData(Action<Multidata30TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata30TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata30TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "DestinationAddress", DestinationAddress);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "DestinationAddress", DestinationAddress);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9106,7 +9173,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "DestinationAddress", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "DestinationAddress", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9142,32 +9212,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata22TemplateHATraceData(Action<Multidata22TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata22TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata22TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Action", Action);
-             XmlAttrib(sb, "ContractName", ContractName);
-             XmlAttrib(sb, "Destination", Destination);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Action", Action);
+            XmlAttrib(sb, "ContractName", ContractName);
+            XmlAttrib(sb, "Destination", Destination);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9175,7 +9245,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Action", "ContractName", "Destination", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Action", "ContractName", "Destination", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9214,31 +9287,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata31TemplateHATraceData(Action<Multidata31TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata31TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata31TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ExceptionToString", ExceptionToString);
-             XmlAttrib(sb, "ExceptionTypeName", ExceptionTypeName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ExceptionToString", ExceptionToString);
+            XmlAttrib(sb, "ExceptionTypeName", ExceptionTypeName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9246,7 +9319,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ExceptionToString", "ExceptionTypeName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ExceptionToString", "ExceptionTypeName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9282,30 +9358,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata32TemplateHATraceData(Action<Multidata32TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata32TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata32TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "CorrelationId", CorrelationId);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "CorrelationId", CorrelationId);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9313,7 +9389,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "CorrelationId", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "CorrelationId", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9349,32 +9428,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata86TemplateHATraceData(Action<Multidata86TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata86TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata86TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InstanceKey", InstanceKey);
-             XmlAttrib(sb, "Values", Values);
-             XmlAttrib(sb, "ParentScope", ParentScope);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InstanceKey", InstanceKey);
+            XmlAttrib(sb, "Values", Values);
+            XmlAttrib(sb, "ParentScope", ParentScope);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9382,7 +9461,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InstanceKey", "Values", "ParentScope", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "InstanceKey", "Values", "ParentScope", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9420,30 +9502,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata73TemplateATraceData(Action<Multidata73TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata73TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata73TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ClosedCount", ClosedCount);
-             XmlAttrib(sb, "TotalCount", TotalCount);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ClosedCount", ClosedCount);
+            XmlAttrib(sb, "TotalCount", TotalCount);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9451,7 +9533,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ClosedCount", "TotalCount", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ClosedCount", "TotalCount", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9485,30 +9570,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal UserEventsTemplateTraceData(Action<UserEventsTemplateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<UserEventsTemplateTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<UserEventsTemplateTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Name", Name);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "Payload", Payload);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "Payload", Payload);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9516,7 +9601,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Name", "HostReference", "Payload"};
+                {
+                    payloadNames = new string[] { "Name", "HostReference", "Payload" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9549,29 +9637,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal TwoStringsTemplateTATraceData(Action<TwoStringsTemplateTATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TwoStringsTemplateTATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TwoStringsTemplateTATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ExtendedData", ExtendedData);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ExtendedData", ExtendedData);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9579,7 +9667,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ExtendedData", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ExtendedData", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9610,29 +9701,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal TwoStringsTemplateATraceData(Action<TwoStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TwoStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TwoStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9640,7 +9731,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9671,29 +9765,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal TransferEmittedTemplateTraceData(Action<TransferEmittedTemplateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TransferEmittedTemplateTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TransferEmittedTemplateTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9701,7 +9795,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9733,30 +9830,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata69TemplateATraceData(Action<Multidata69TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata69TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata69TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AppDomainFriendlyName", AppDomainFriendlyName);
-             XmlAttrib(sb, "VirtualPath", VirtualPath);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AppDomainFriendlyName", AppDomainFriendlyName);
+            XmlAttrib(sb, "VirtualPath", VirtualPath);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9764,7 +9861,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AppDomainFriendlyName", "VirtualPath", "AppDomain"};
+                {
+                    payloadNames = new string[] { "AppDomainFriendlyName", "VirtualPath", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9798,30 +9898,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata74TemplateATraceData(Action<Multidata74TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata74TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata74TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "RelativeAddress", RelativeAddress);
-             XmlAttrib(sb, "NormalizedAddress", NormalizedAddress);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "RelativeAddress", RelativeAddress);
+            XmlAttrib(sb, "NormalizedAddress", NormalizedAddress);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9829,7 +9929,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RelativeAddress", "NormalizedAddress", "AppDomain"};
+                {
+                    payloadNames = new string[] { "RelativeAddress", "NormalizedAddress", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9862,29 +9965,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata70TemplateATraceData(Action<Multidata70TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata70TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata70TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IncomingAddress", IncomingAddress);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IncomingAddress", IncomingAddress);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9892,7 +9995,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IncomingAddress", "AppDomain"};
+                {
+                    payloadNames = new string[] { "IncomingAddress", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9925,31 +10031,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata71TemplateATraceData(Action<Multidata71TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata71TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata71TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AspNetRoutePrefix", AspNetRoutePrefix);
-             XmlAttrib(sb, "ServiceType", ServiceType);
-             XmlAttrib(sb, "ServiceHostFactoryType", ServiceHostFactoryType);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AspNetRoutePrefix", AspNetRoutePrefix);
+            XmlAttrib(sb, "ServiceType", ServiceType);
+            XmlAttrib(sb, "ServiceHostFactoryType", ServiceHostFactoryType);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9957,7 +10063,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AspNetRoutePrefix", "ServiceType", "ServiceHostFactoryType", "AppDomain"};
+                {
+                    payloadNames = new string[] { "AspNetRoutePrefix", "ServiceType", "ServiceHostFactoryType", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9992,29 +10101,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata75TemplateATraceData(Action<Multidata75TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata75TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata75TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Data", Data);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Data", Data);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10022,7 +10131,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Data", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Data", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10053,29 +10165,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal TwoStringsTemplateVATraceData(Action<TwoStringsTemplateVATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TwoStringsTemplateVATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TwoStringsTemplateVATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10083,7 +10195,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10115,30 +10230,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal ThreeStringsTemplateEATraceData(Action<ThreeStringsTemplateEATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ThreeStringsTemplateEATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ThreeStringsTemplateEATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "SerializedException", SerializedException);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "SerializedException", SerializedException);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10146,7 +10261,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "SerializedException", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "SerializedException", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10183,33 +10301,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal SixStringsTemplateEATraceData(Action<SixStringsTemplateEATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<SixStringsTemplateEATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<SixStringsTemplateEATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "data3", data3);
-             XmlAttrib(sb, "data4", data4);
-             XmlAttrib(sb, "SerializedException", SerializedException);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "data3", data3);
+            XmlAttrib(sb, "data4", data4);
+            XmlAttrib(sb, "SerializedException", SerializedException);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10217,7 +10335,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "SerializedException", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "SerializedException", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10261,34 +10382,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal SevenStringsTemplateATraceData(Action<SevenStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<SevenStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<SevenStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "data3", data3);
-             XmlAttrib(sb, "data4", data4);
-             XmlAttrib(sb, "data5", data5);
-             XmlAttrib(sb, "data6", data6);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "data3", data3);
+            XmlAttrib(sb, "data4", data4);
+            XmlAttrib(sb, "data5", data5);
+            XmlAttrib(sb, "data6", data6);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10296,7 +10417,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "data5", "data6", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "data5", "data6", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10340,32 +10464,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal FiveStringsTemplateATraceData(Action<FiveStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FiveStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FiveStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "data3", data3);
-             XmlAttrib(sb, "data4", data4);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "data3", data3);
+            XmlAttrib(sb, "data4", data4);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10373,7 +10497,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10412,31 +10539,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal FourStringsTemplateATraceData(Action<FourStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FourStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FourStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "data3", data3);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "data3", data3);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10444,7 +10571,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "data3", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "data3", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10483,33 +10613,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal SixStringsTemplateATraceData(Action<SixStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<SixStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<SixStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "data3", data3);
-             XmlAttrib(sb, "data4", data4);
-             XmlAttrib(sb, "data5", data5);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "data3", data3);
+            XmlAttrib(sb, "data4", data4);
+            XmlAttrib(sb, "data5", data5);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10517,7 +10647,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "data5", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "data5", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10557,30 +10690,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal ThreeStringsTemplateATraceData(Action<ThreeStringsTemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ThreeStringsTemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ThreeStringsTemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10588,7 +10721,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10627,35 +10763,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal EightStringsTemplateEATraceData(Action<EightStringsTemplateEATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<EightStringsTemplateEATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<EightStringsTemplateEATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "data3", data3);
-             XmlAttrib(sb, "data4", data4);
-             XmlAttrib(sb, "data5", data5);
-             XmlAttrib(sb, "data6", data6);
-             XmlAttrib(sb, "SerializedException", SerializedException);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "data3", data3);
+            XmlAttrib(sb, "data4", data4);
+            XmlAttrib(sb, "data5", data5);
+            XmlAttrib(sb, "data6", data6);
+            XmlAttrib(sb, "SerializedException", SerializedException);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10663,7 +10799,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "data5", "data6", "SerializedException", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "data3", "data4", "data5", "data6", "SerializedException", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10706,29 +10845,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata17TemplateATraceData(Action<Multidata17TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata17TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata17TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(16)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Id", Id);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Id", Id);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10736,7 +10875,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Id", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Id", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10768,30 +10910,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata56TemplateATraceData(Action<Multidata56TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata56TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata56TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "msg", msg);
-             XmlAttrib(sb, "key", key);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "msg", msg);
+            XmlAttrib(sb, "key", key);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10799,7 +10941,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "msg", "key", "AppDomain"};
+                {
+                    payloadNames = new string[] { "msg", "key", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10832,29 +10977,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata57TemplateATraceData(Action<Multidata57TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata57TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata57TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "msg", msg);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "msg", msg);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10862,7 +11007,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "msg", "AppDomain"};
+                {
+                    payloadNames = new string[] { "msg", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10894,30 +11042,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata58TemplateATraceData(Action<Multidata58TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata58TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata58TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "cur", cur);
-             XmlAttrib(sb, "max", max);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "cur", cur);
+            XmlAttrib(sb, "max", max);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10925,7 +11073,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "cur", "max", "AppDomain"};
+                {
+                    payloadNames = new string[] { "cur", "max", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10958,29 +11109,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata59TemplateATraceData(Action<Multidata59TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata59TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata59TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "itemTypeName", itemTypeName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "itemTypeName", itemTypeName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10988,7 +11139,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "itemTypeName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "itemTypeName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11019,29 +11173,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata19TemplateATraceData(Action<Multidata19TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata19TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata19TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "id", id);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "id", id);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11049,7 +11203,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "id", "AppDomain"};
+                {
+                    payloadNames = new string[] { "id", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11080,29 +11237,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata20TemplateATraceData(Action<Multidata20TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata20TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata20TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "expr", expr);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "expr", expr);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11110,7 +11267,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "expr", "AppDomain"};
+                {
+                    payloadNames = new string[] { "expr", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11141,29 +11301,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata21TemplateATraceData(Action<Multidata21TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata21TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata21TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "activityName", activityName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "activityName", activityName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11171,7 +11331,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "activityName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "activityName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11202,29 +11365,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata33TemplateATraceData(Action<Multidata33TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata33TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata33TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11232,7 +11395,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TypeName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11263,29 +11429,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal TwoStringsTemplateSATraceData(Action<TwoStringsTemplateSATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TwoStringsTemplateSATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TwoStringsTemplateSATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "EventSource", EventSource);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "EventSource", EventSource);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11293,7 +11459,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "EventSource", "AppDomain"};
+                {
+                    payloadNames = new string[] { "EventSource", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11325,30 +11494,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata34TemplateATraceData(Action<Multidata34TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata34TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata34TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "ExceptionToString", ExceptionToString);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "ExceptionToString", ExceptionToString);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11356,7 +11525,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "ExceptionToString", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TypeName", "ExceptionToString", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11391,31 +11563,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata35TemplateSATraceData(Action<Multidata35TemplateSATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata35TemplateSATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata35TemplateSATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(8))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(8))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Count", Count);
-             XmlAttrib(sb, "MaxNum", MaxNum);
-             XmlAttrib(sb, "EventSource", EventSource);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            XmlAttrib(sb, "MaxNum", MaxNum);
+            XmlAttrib(sb, "EventSource", EventSource);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11423,7 +11595,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "MaxNum", "EventSource", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Count", "MaxNum", "EventSource", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11459,30 +11634,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata36TemplateSATraceData(Action<Multidata36TemplateSATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata36TemplateSATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata36TemplateSATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(4))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(4))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Count", Count);
-             XmlAttrib(sb, "EventSource", EventSource);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            XmlAttrib(sb, "EventSource", EventSource);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11490,7 +11665,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "EventSource", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Count", "EventSource", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11525,31 +11703,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata37TemplateSATraceData(Action<Multidata37TemplateSATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata37TemplateSATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata37TemplateSATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "EventSource", EventSource);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "EventSource", EventSource);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11557,7 +11735,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "Uri", "EventSource", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TypeName", "Uri", "EventSource", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11593,30 +11774,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata38TemplateHATraceData(Action<Multidata38TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata38TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata38TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OperationName", OperationName);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OperationName", OperationName);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11624,7 +11805,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OperationName", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "OperationName", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11658,30 +11842,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata39TemplateSATraceData(Action<Multidata39TemplateSATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata39TemplateSATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata39TemplateSATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(4))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(4))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "EventSource", EventSource);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "EventSource", EventSource);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11689,7 +11873,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Size", "EventSource", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Size", "EventSource", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11722,29 +11909,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata40TemplateATraceData(Action<Multidata40TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata40TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata40TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "RemoteAddress", RemoteAddress);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "RemoteAddress", RemoteAddress);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11752,7 +11939,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RemoteAddress", "AppDomain"};
+                {
+                    payloadNames = new string[] { "RemoteAddress", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11784,30 +11974,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata41TemplateATraceData(Action<Multidata41TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata41TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata41TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ListenerHashCode", ListenerHashCode);
-             XmlAttrib(sb, "SocketHashCode", SocketHashCode);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ListenerHashCode", ListenerHashCode);
+            XmlAttrib(sb, "SocketHashCode", SocketHashCode);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11815,7 +12005,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ListenerHashCode", "SocketHashCode", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ListenerHashCode", "SocketHashCode", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11843,36 +12036,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     {
         public string PoolKey { get { return GetUnicodeStringAt(0); } }
         public int busy { get { return GetInt32At(SkipUnicodeString(0)); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(0)+4); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(0) + 4); } }
 
         #region Private
         internal Multidata42TemplateATraceData(Action<Multidata42TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata42TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata42TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)+4)));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)+4)));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0) + 4)));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0) + 4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "PoolKey", PoolKey);
-             XmlAttrib(sb, "busy", busy);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "PoolKey", PoolKey);
+            XmlAttrib(sb, "busy", busy);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11880,7 +12073,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "PoolKey", "busy", "AppDomain"};
+                {
+                    payloadNames = new string[] { "PoolKey", "busy", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11913,29 +12109,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata43TemplateATraceData(Action<Multidata43TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata43TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata43TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ChannelId", ChannelId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ChannelId", ChannelId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11943,7 +12139,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ChannelId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "ChannelId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11974,29 +12173,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata44TemplateATraceData(Action<Multidata44TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata44TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata44TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "uri", uri);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "uri", uri);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12004,7 +12203,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "uri", "AppDomain"};
+                {
+                    payloadNames = new string[] { "uri", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12035,29 +12237,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata45TemplateATraceData(Action<Multidata45TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata45TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata45TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Key", Key);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Key", Key);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12065,7 +12267,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Key", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Key", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12096,29 +12301,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata46TemplateATraceData(Action<Multidata46TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata46TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata46TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Via", Via);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Via", Via);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12126,7 +12331,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Via", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Via", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12157,29 +12365,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata47TemplateATraceData(Action<Multidata47TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata47TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata47TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "FaultString", FaultString);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "FaultString", FaultString);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12187,7 +12395,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "FaultString", "AppDomain"};
+                {
+                    payloadNames = new string[] { "FaultString", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12218,29 +12429,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata48TemplateATraceData(Action<Multidata48TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata48TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata48TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12248,7 +12459,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Uri", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Uri", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12280,30 +12494,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata49TemplateATraceData(Action<Multidata49TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata49TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata49TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(4))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(4))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SocketId", SocketId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SocketId", SocketId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12311,7 +12525,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SocketId", "Uri", "AppDomain"};
+                {
+                    payloadNames = new string[] { "SocketId", "Uri", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12344,29 +12561,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata50TemplateATraceData(Action<Multidata50TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata50TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata50TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12374,7 +12591,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Status", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Status", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12407,31 +12627,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata51TemplateATraceData(Action<Multidata51TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata51TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata51TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(8))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(8))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SocketId", SocketId);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "Endpoint", Endpoint);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SocketId", SocketId);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "Endpoint", Endpoint);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12439,7 +12659,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SocketId", "Size", "Endpoint", "AppDomain"};
+                {
+                    payloadNames = new string[] { "SocketId", "Size", "Endpoint", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12474,29 +12697,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata52TemplateATraceData(Action<Multidata52TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata52TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata52TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SessionId", SessionId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SessionId", SessionId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12504,7 +12727,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SessionId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "SessionId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12535,29 +12761,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata53TemplateATraceData(Action<Multidata53TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata53TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata53TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SocketId", SocketId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SocketId", SocketId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12565,7 +12791,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SocketId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "SocketId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12591,36 +12820,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     {
         public string LocalId { get { return GetUnicodeStringAt(0); } }
         public Guid Distributed { get { return GetGuidAt(SkipUnicodeString(0)); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(0)+16); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(0) + 16); } }
 
         #region Private
         internal Multidata54TemplateATraceData(Action<Multidata54TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata54TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata54TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)+16)));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)+16)));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0) + 16)));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0) + 16)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LocalId", LocalId);
-             XmlAttrib(sb, "Distributed", Distributed);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LocalId", LocalId);
+            XmlAttrib(sb, "Distributed", Distributed);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12628,7 +12857,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LocalId", "Distributed", "AppDomain"};
+                {
+                    payloadNames = new string[] { "LocalId", "Distributed", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12662,30 +12894,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata55TemplateATraceData(Action<Multidata55TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata55TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata55TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "BufferId", BufferId);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "BufferId", BufferId);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12693,7 +12925,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "BufferId", "Size", "AppDomain"};
+                {
+                    payloadNames = new string[] { "BufferId", "Size", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12726,29 +12961,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata60TemplateATraceData(Action<Multidata60TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata60TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata60TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "sharedMemoryName", sharedMemoryName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "sharedMemoryName", sharedMemoryName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12756,7 +12991,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "sharedMemoryName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "sharedMemoryName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12787,29 +13025,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata61TemplateATraceData(Action<Multidata61TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata61TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata61TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "pipeName", pipeName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "pipeName", pipeName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12817,7 +13055,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "pipeName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "pipeName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12848,29 +13089,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata62TemplateATraceData(Action<Multidata62TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata62TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata62TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "remoteAddress", remoteAddress);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "remoteAddress", remoteAddress);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12878,7 +13119,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "remoteAddress", "AppDomain"};
+                {
+                    payloadNames = new string[] { "remoteAddress", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12909,29 +13153,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata63TemplateATraceData(Action<Multidata63TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata63TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata63TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "websocketId", websocketId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "websocketId", websocketId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12939,7 +13183,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "websocketId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "websocketId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12970,29 +13217,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata64TemplateATraceData(Action<Multidata64TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata64TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata64TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "errorMessage", errorMessage);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "errorMessage", errorMessage);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13000,7 +13247,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "errorMessage", "AppDomain"};
+                {
+                    payloadNames = new string[] { "errorMessage", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13033,31 +13283,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata65TemplateATraceData(Action<Multidata65TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata65TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata65TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(8))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(8))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "websocketId", websocketId);
-             XmlAttrib(sb, "byteCount", byteCount);
-             XmlAttrib(sb, "remoteAddress", remoteAddress);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "websocketId", websocketId);
+            XmlAttrib(sb, "byteCount", byteCount);
+            XmlAttrib(sb, "remoteAddress", remoteAddress);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13065,7 +13315,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "websocketId", "byteCount", "remoteAddress", "AppDomain"};
+                {
+                    payloadNames = new string[] { "websocketId", "byteCount", "remoteAddress", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13102,31 +13355,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata66TemplateATraceData(Action<Multidata66TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata66TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata66TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(4)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(4)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "websocketId", websocketId);
-             XmlAttrib(sb, "remoteAddress", remoteAddress);
-             XmlAttrib(sb, "closeStatus", closeStatus);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "websocketId", websocketId);
+            XmlAttrib(sb, "remoteAddress", remoteAddress);
+            XmlAttrib(sb, "closeStatus", closeStatus);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13134,7 +13387,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "websocketId", "remoteAddress", "closeStatus", "AppDomain"};
+                {
+                    payloadNames = new string[] { "websocketId", "remoteAddress", "closeStatus", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13170,30 +13426,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata67TemplateATraceData(Action<Multidata67TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata67TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata67TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(4))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(4))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "websocketId", websocketId);
-             XmlAttrib(sb, "closeStatus", closeStatus);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "websocketId", websocketId);
+            XmlAttrib(sb, "closeStatus", closeStatus);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13201,7 +13457,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "websocketId", "closeStatus", "AppDomain"};
+                {
+                    payloadNames = new string[] { "websocketId", "closeStatus", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13234,29 +13493,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata68TemplateATraceData(Action<Multidata68TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata68TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata68TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "clientWebSocketFactoryType", clientWebSocketFactoryType);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "clientWebSocketFactoryType", clientWebSocketFactoryType);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13264,7 +13523,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "clientWebSocketFactoryType", "AppDomain"};
+                {
+                    payloadNames = new string[] { "clientWebSocketFactoryType", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13296,30 +13558,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata85TemplateATraceData(Action<Multidata85TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata85TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata85TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TrackingProfile", TrackingProfile);
-             XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TrackingProfile", TrackingProfile);
+            XmlAttrib(sb, "ActivityDefinitionId", ActivityDefinitionId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13327,7 +13589,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TrackingProfile", "ActivityDefinitionId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "TrackingProfile", "ActivityDefinitionId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13360,29 +13625,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata84TemplateATraceData(Action<Multidata84TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata84TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata84TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "limit", limit);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "limit", limit);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13390,7 +13655,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "limit", "AppDomain"};
+                {
+                    payloadNames = new string[] { "limit", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13421,29 +13689,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata76TemplateATraceData(Action<Multidata76TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata76TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata76TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "availableMemoryBytes", availableMemoryBytes);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "availableMemoryBytes", availableMemoryBytes);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13451,7 +13719,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "availableMemoryBytes", "AppDomain"};
+                {
+                    payloadNames = new string[] { "availableMemoryBytes", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13482,29 +13753,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal TwoStringsTemplateEATraceData(Action<TwoStringsTemplateEATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TwoStringsTemplateEATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TwoStringsTemplateEATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SerializedException", SerializedException);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SerializedException", SerializedException);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13512,7 +13783,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SerializedException", "AppDomain"};
+                {
+                    payloadNames = new string[] { "SerializedException", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13543,29 +13817,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata77TemplateATraceData(Action<Multidata77TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata77TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata77TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "via", via);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "via", via);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13573,7 +13847,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "via", "AppDomain"};
+                {
+                    payloadNames = new string[] { "via", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13604,29 +13881,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata78TemplateATraceData(Action<Multidata78TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata78TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata78TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Endpoint", Endpoint);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Endpoint", Endpoint);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13634,7 +13911,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Endpoint", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Endpoint", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13660,36 +13940,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     {
         public string Uri { get { return GetUnicodeStringAt(0); } }
         public int count { get { return GetInt32At(SkipUnicodeString(0)); } }
-        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(0)+4); } }
+        public string AppDomain { get { return GetUnicodeStringAt(SkipUnicodeString(0) + 4); } }
 
         #region Private
         internal Multidata79TemplateATraceData(Action<Multidata79TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata79TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata79TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)+4)));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)+4)));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0) + 4)));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0) + 4)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "count", count);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "count", count);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13697,7 +13977,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Uri", "count", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Uri", "count", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13731,30 +14014,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata81TemplateATraceData(Action<Multidata81TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata81TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata81TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13762,7 +14045,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Status", "Uri", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Status", "Uri", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13796,30 +14082,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata80TemplateATraceData(Action<Multidata80TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata80TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata80TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13827,7 +14113,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Uri", "Status", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Uri", "Status", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13860,29 +14149,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata82TemplateATraceData(Action<Multidata82TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata82TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata82TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "hresult", hresult);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "hresult", hresult);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13890,7 +14179,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "hresult", "AppDomain"};
+                {
+                    payloadNames = new string[] { "hresult", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13922,30 +14214,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata83TemplateATraceData(Action<Multidata83TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata83TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata83TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "curr", curr);
-             XmlAttrib(sb, "max", max);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "curr", curr);
+            XmlAttrib(sb, "max", max);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13953,7 +14245,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "curr", "max", "AppDomain"};
+                {
+                    payloadNames = new string[] { "curr", "max", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13988,31 +14283,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata87TemplateATraceData(Action<Multidata87TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata87TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata87TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "discoveryMessageName", discoveryMessageName);
-             XmlAttrib(sb, "messageId", messageId);
-             XmlAttrib(sb, "discoveryOperationName", discoveryOperationName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "discoveryMessageName", discoveryMessageName);
+            XmlAttrib(sb, "messageId", messageId);
+            XmlAttrib(sb, "discoveryOperationName", discoveryOperationName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14020,7 +14315,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "discoveryMessageName", "messageId", "discoveryOperationName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "discoveryMessageName", "messageId", "discoveryOperationName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14056,30 +14354,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata88TemplateATraceData(Action<Multidata88TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata88TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata88TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "messageType", messageType);
-             XmlAttrib(sb, "messageId", messageId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "messageType", messageType);
+            XmlAttrib(sb, "messageId", messageId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14087,7 +14385,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "messageType", "messageId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "messageType", "messageId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14123,32 +14424,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata89TemplateATraceData(Action<Multidata89TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata89TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata89TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "discoveryMessageName", discoveryMessageName);
-             XmlAttrib(sb, "messageId", messageId);
-             XmlAttrib(sb, "relatesTo", relatesTo);
-             XmlAttrib(sb, "discoveryOperationName", discoveryOperationName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "discoveryMessageName", discoveryMessageName);
+            XmlAttrib(sb, "messageId", messageId);
+            XmlAttrib(sb, "relatesTo", relatesTo);
+            XmlAttrib(sb, "discoveryOperationName", discoveryOperationName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14156,7 +14457,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "discoveryMessageName", "messageId", "relatesTo", "discoveryOperationName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "discoveryMessageName", "messageId", "relatesTo", "discoveryOperationName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14193,29 +14497,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata90TemplateATraceData(Action<Multidata90TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata90TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata90TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "messageId", messageId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "messageId", messageId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14223,7 +14527,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "messageId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "messageId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14254,29 +14561,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata91TemplateATraceData(Action<Multidata91TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata91TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata91TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "messageType", messageType);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "messageType", messageType);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14284,7 +14591,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "messageType", "AppDomain"};
+                {
+                    payloadNames = new string[] { "messageType", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14316,30 +14626,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata92TemplateATraceData(Action<Multidata92TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata92TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata92TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "discoveryMessageName", discoveryMessageName);
-             XmlAttrib(sb, "messageId", messageId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "discoveryMessageName", discoveryMessageName);
+            XmlAttrib(sb, "messageId", messageId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14347,7 +14657,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "discoveryMessageName", "messageId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "discoveryMessageName", "messageId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14381,30 +14694,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata93TemplateATraceData(Action<Multidata93TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata93TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata93TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "endpointAddress", endpointAddress);
-             XmlAttrib(sb, "listenUri", listenUri);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "endpointAddress", endpointAddress);
+            XmlAttrib(sb, "listenUri", listenUri);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14412,7 +14725,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "endpointAddress", "listenUri", "AppDomain"};
+                {
+                    payloadNames = new string[] { "endpointAddress", "listenUri", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14447,31 +14763,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata94TemplateEATraceData(Action<Multidata94TemplateEATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata94TemplateEATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata94TemplateEATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "endpointAddress", endpointAddress);
-             XmlAttrib(sb, "via", via);
-             XmlAttrib(sb, "SerializedException", SerializedException);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "endpointAddress", endpointAddress);
+            XmlAttrib(sb, "via", via);
+            XmlAttrib(sb, "SerializedException", SerializedException);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14479,7 +14795,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "endpointAddress", "via", "SerializedException", "AppDomain"};
+                {
+                    payloadNames = new string[] { "endpointAddress", "via", "SerializedException", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14515,30 +14834,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata95TemplateATraceData(Action<Multidata95TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata95TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata95TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "endpointAddress", endpointAddress);
-             XmlAttrib(sb, "via", via);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "endpointAddress", endpointAddress);
+            XmlAttrib(sb, "via", via);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14546,7 +14865,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "endpointAddress", "via", "AppDomain"};
+                {
+                    payloadNames = new string[] { "endpointAddress", "via", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14579,29 +14901,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata96TemplateATraceData(Action<Multidata96TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata96TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata96TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "synchronizationContextType", synchronizationContextType);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "synchronizationContextType", synchronizationContextType);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14609,7 +14931,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "synchronizationContextType", "AppDomain"};
+                {
+                    payloadNames = new string[] { "synchronizationContextType", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14640,29 +14965,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata97TemplateATraceData(Action<Multidata97TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata97TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata97TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SurrogateType", SurrogateType);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SurrogateType", SurrogateType);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14670,7 +14995,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SurrogateType", "AppDomain"};
+                {
+                    payloadNames = new string[] { "SurrogateType", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14702,30 +15030,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata98TemplateATraceData(Action<Multidata98TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata98TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata98TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Kind", Kind);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Kind", Kind);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14733,7 +15061,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Kind", "TypeName", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Kind", "TypeName", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14766,29 +15097,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata99TemplateATraceData(Action<Multidata99TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata99TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata99TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "DCType", DCType);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "DCType", DCType);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14796,7 +15127,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "DCType", "AppDomain"};
+                {
+                    payloadNames = new string[] { "DCType", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14829,31 +15163,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata103TemplateHATraceData(Action<Multidata103TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata103TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata103TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "tokenType", tokenType);
-             XmlAttrib(sb, "tokenID", tokenID);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "tokenType", tokenType);
+            XmlAttrib(sb, "tokenID", tokenID);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14861,7 +15195,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "tokenType", "tokenID", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "tokenType", "tokenID", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14899,32 +15236,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata102TemplateHATraceData(Action<Multidata102TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata102TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata102TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "tokenType", tokenType);
-             XmlAttrib(sb, "tokenID", tokenID);
-             XmlAttrib(sb, "errorMessage", errorMessage);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "tokenType", tokenType);
+            XmlAttrib(sb, "tokenID", tokenID);
+            XmlAttrib(sb, "errorMessage", errorMessage);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14932,7 +15269,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "tokenType", "tokenID", "errorMessage", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "tokenType", "tokenID", "errorMessage", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14971,31 +15311,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata101TemplateHATraceData(Action<Multidata101TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata101TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata101TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "issuerName", issuerName);
-             XmlAttrib(sb, "tokenID", tokenID);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "issuerName", issuerName);
+            XmlAttrib(sb, "tokenID", tokenID);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15003,7 +15343,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "issuerName", "tokenID", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "issuerName", "tokenID", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15039,30 +15382,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata100TemplateHATraceData(Action<Multidata100TemplateHATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata100TemplateHATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata100TemplateHATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "tokenID", tokenID);
-             XmlAttrib(sb, "HostReference", HostReference);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "tokenID", tokenID);
+            XmlAttrib(sb, "HostReference", HostReference);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15070,7 +15413,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "tokenID", "HostReference", "AppDomain"};
+                {
+                    payloadNames = new string[] { "tokenID", "HostReference", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15104,30 +15450,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata15TemplateATraceData(Action<Multidata15TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata15TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata15TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(24)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(24)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "RecordNumber", RecordNumber);
-             XmlAttrib(sb, "ProviderId", ProviderId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "RecordNumber", RecordNumber);
+            XmlAttrib(sb, "ProviderId", ProviderId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15135,7 +15481,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RecordNumber", "ProviderId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "RecordNumber", "ProviderId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15169,30 +15518,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata16TemplateATraceData(Action<Multidata16TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata16TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata16TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Data", Data);
-             XmlAttrib(sb, "Activity", Activity);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Data", Data);
+            XmlAttrib(sb, "Activity", Activity);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15200,7 +15549,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Data", "Activity", "AppDomain"};
+                {
+                    payloadNames = new string[] { "Data", "Activity", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15233,29 +15585,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata18TemplateATraceData(Action<Multidata18TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata18TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata18TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "name", name);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "name", name);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15263,7 +15615,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "name", "AppDomain"};
+                {
+                    payloadNames = new string[] { "name", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15296,31 +15651,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal Multidata0TemplateATraceData(Action<Multidata0TemplateATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<Multidata0TemplateATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<Multidata0TemplateATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "appdomainName", appdomainName);
-             XmlAttrib(sb, "processName", processName);
-             XmlAttrib(sb, "processId", processId);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "appdomainName", appdomainName);
+            XmlAttrib(sb, "processName", processName);
+            XmlAttrib(sb, "processId", processId);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15328,7 +15683,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "appdomainName", "processName", "processId", "AppDomain"};
+                {
+                    payloadNames = new string[] { "appdomainName", "processName", "processId", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15365,31 +15723,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
         internal FourStringsTemplateEATraceData(Action<FourStringsTemplateEATraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FourStringsTemplateEATraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FourStringsTemplateEATraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "data1", data1);
-             XmlAttrib(sb, "data2", data2);
-             XmlAttrib(sb, "SerializedException", SerializedException);
-             XmlAttrib(sb, "AppDomain", AppDomain);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "data1", data1);
+            XmlAttrib(sb, "data2", data2);
+            XmlAttrib(sb, "SerializedException", SerializedException);
+            XmlAttrib(sb, "AppDomain", AppDomain);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15397,7 +15755,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "data1", "data2", "SerializedException", "AppDomain"};
+                {
+                    payloadNames = new string[] { "data1", "data2", "SerializedException", "AppDomain" };
+                }
+
                 return payloadNames;
             }
         }

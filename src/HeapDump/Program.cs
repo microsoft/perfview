@@ -1,40 +1,44 @@
 ﻿using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
-using ClrMemory;
-using Triggers;
 using System.Threading;
+using Triggers;
 #if CROSS_GENERATION_LIVENESS
 using Microsoft.Diagnostics.CrossGenerationLiveness;
 #endif
 
-class Program
+internal class Program
 {
-    static int Main(string[] args)
+    private static int Main(string[] args)
     {
         // This EXE lives in the architecture specific directory but uses TraceEvent which lives in the neutral directory, 
         // Set up a resolve event that finds this DLL.  
-        AppDomain.CurrentDomain.AssemblyResolve += delegate(object sender, ResolveEventArgs resolveArgs)
+        AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs resolveArgs)
         {
             var simpleName = resolveArgs.Name;
             var commaIdx = simpleName.IndexOf(',');
             if (0 <= commaIdx)
+            {
                 simpleName = simpleName.Substring(0, commaIdx);
+            }
 
             var exeAssembly = System.Reflection.Assembly.GetExecutingAssembly();
             var parentDir = Path.GetDirectoryName(Path.GetDirectoryName(exeAssembly.ManifestModule.FullyQualifiedName));
             string fileName = Path.Combine(parentDir, simpleName + ".dll");
             if (File.Exists(fileName))
+            {
                 return System.Reflection.Assembly.LoadFrom(fileName);
+            }
+
             return null;
         };
 
         return MainWorker(args);
     }
 
-    static int MainWorker(string[] args)
+    private static int MainWorker(string[] args)
     {
         string outputFile = null;
         try
@@ -50,25 +54,39 @@ class Program
             {
                 var arg = args[curArgIdx].Trim();
                 if (string.IsNullOrWhiteSpace(arg))
+                {
                     continue;
+                }
+
                 if (arg.StartsWith("/"))
                 {
                     // This is not for external use.  On 64 bit systems we need to do the GetProcess in a 64 bit process. 
                     if (string.Compare(arg, "/GetProcessesWithGCHeaps", StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         foreach (var processInfo in GCHeapDump.GetProcessesWithGCHeaps().Values)
+                        {
                             Console.WriteLine("{0}{1} {2}", processInfo.UsesDotNet ? 'N' : ' ',
                                 processInfo.UsesJavaScript ? 'J' : ' ', processInfo.ID);
+                        }
+
                         return 0;
                     }
                     else if (string.Compare(arg, "/dumpData", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         dumper.DumpData = true;
+                    }
                     else if (string.Compare(arg, "/processDump", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         processDump = true;
+                    }
                     else if (string.Compare(arg, "/forceGC", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         forceGC = true;
+                    }
                     else if (string.Compare(arg, "/freeze", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         dumper.Freeze = true;
+                    }
                     else if (string.Compare(arg, 0, "/MaxDumpCountK=", 0, 15, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         string value = arg.Substring(15);
@@ -88,10 +106,13 @@ class Program
                         }
                     }
                     else if (string.Compare(arg, "/SaveETL", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         dumper.SaveETL = true;
+                    }
                     else if (string.Compare(arg, "/UseETW", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         dumper.UseETW = true;
-
+                    }
                     else if (arg.StartsWith("/DecayToZeroHours:", StringComparison.OrdinalIgnoreCase))
                     {
                         decayToZeroHours = float.Parse(arg.Substring(18));
@@ -100,7 +121,7 @@ class Program
                     {
                         string spec = arg.Substring(19);
                         bool done = false;
-                        using (var trigger = new PerformanceCounterTrigger(spec, decayToZeroHours, Console.Out, delegate(PerformanceCounterTrigger t) { done = true; }))
+                        using (var trigger = new PerformanceCounterTrigger(spec, decayToZeroHours, Console.Out, delegate (PerformanceCounterTrigger t) { done = true; }))
                         {
                             for (int i = 0; !done; i++)
                             {
@@ -146,9 +167,13 @@ class Program
                 else
                 {
                     if (inputSpec == null)
+                    {
                         inputSpec = arg;
+                    }
                     else if (outputFile == null)
+                    {
                         outputFile = arg;
+                    }
                     else
                     {
                         Console.WriteLine("Extra parameter: {0}", arg);
@@ -158,19 +183,27 @@ class Program
             }
 
             if (inputSpec == null)
+            {
                 goto Usage;
+            }
 
             if (dumper.DumpData)
+            {
                 Console.WriteLine("WARNING: Currently DumpData is not supported");
+            }
 
             if (!forceGC)
             {
                 if (outputFile == null)
+                {
                     outputFile = Path.ChangeExtension(inputSpec, ".gcDump");
+                }
 
                 // This avoids file sharing issues, and also insures that old files are not left behind.  
                 if (File.Exists(outputFile))
+                {
                     File.Delete(outputFile);
+                }
             }
 
             if (dumpSerializedException)
@@ -195,7 +228,9 @@ class Program
                 }
 
                 if (PointerSizeForProcess(processID) != Marshal.SizeOf(typeof(IntPtr)))
+                {
                     throw new ApplicationException("The debuggee process has a different bitness (32-64) than the debugger.");
+                }
 
                 if (forceGC)
                 {
@@ -213,7 +248,7 @@ class Program
                 return 2;
             }
             return 0;
-        Usage:
+            Usage:
             Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n /Freeze] ProcessIdOrName OutputHeapDumpFile");
             Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n] /processDump  DumpFile OutputHeapDumpFile");
             Console.WriteLine("Usage: HeapDump /forceGC ProcessIdOrName");
@@ -222,9 +257,14 @@ class Program
         catch (Exception e)
         {
             if (e is ApplicationException)
+            {
                 Console.WriteLine("HeapDump Error: {0}", e.Message);
+            }
             else
+            {
                 Console.WriteLine("HeapDump Error: {0}", e.ToString());
+            }
+
             if (outputFile != null)
             {
                 try { File.Delete(outputFile); }
@@ -256,14 +296,21 @@ class Program
         Process youngestProcess = null;
         // remove .exe if present.
         if (processNameOrID.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
             processNameOrID = processNameOrID.Substring(0, processNameOrID.Length - 4);
+        }
+
         foreach (var process in Process.GetProcessesByName(processNameOrID))
         {
             if (youngestProcess == null || process.StartTime > youngestProcess.StartTime)
+            {
                 youngestProcess = process;
+            }
         }
         if (youngestProcess != null)
+        {
             return youngestProcess.Id;
+        }
 
         return -1;
     }
@@ -271,12 +318,17 @@ class Program
     private static int PointerSizeForProcess(int processID)
     {
         if (!Environment.Is64BitOperatingSystem)
+        {
             return 4;
+        }
 
         var process = Process.GetProcessById(processID);
         bool is32Bit = false;
         if (!IsWow64Process(process.Handle, out is32Bit))
+        {
             throw new ApplicationException("Could not access process " + processID + " to determine target process architecture.");
+        }
+
         GC.KeepAlive(process);
         return is32Bit ? 4 : 8;
     }

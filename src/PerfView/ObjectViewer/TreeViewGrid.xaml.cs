@@ -38,7 +38,7 @@ namespace PerfView
             // Put the indentation in when we cut and paste
             nameColumn.ClipboardContentBinding = new Binding("IndentedName");
 
-            Grid.CopyingRowClipboardContent += delegate(object sender, DataGridRowClipboardEventArgs e)
+            Grid.CopyingRowClipboardContent += delegate (object sender, DataGridRowClipboardEventArgs e)
             {
                 for (int i = 0; i < e.ClipboardRowContent.Count; i++)
                 {
@@ -46,23 +46,36 @@ namespace PerfView
 
                     string morphedContent = null;
                     if (e.IsColumnHeadersRow)
+                    {
                         morphedContent = GetColumnHeaderText(clipboardContent.Column);
+                    }
                     else
                     {
                         var cellContent = clipboardContent.Content;
                         if (cellContent is float)
+                        {
                             morphedContent = GoodPrecision((float)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent is double)
+                        {
                             morphedContent = GoodPrecision((double)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent != null)
+                        {
                             morphedContent = cellContent.ToString();
+                        }
                         else
+                        {
                             morphedContent = "";
+                        }
+
                         morphedContent = CompressContent(morphedContent);
                     }
 
                     if (e.ClipboardRowContent.Count > 1)
+                    {
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
+                    }
 
                     // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
                     // for ranges.  
@@ -132,11 +145,15 @@ namespace PerfView
 
             // Copy over the nodes to the new flattened tree (as best we can)
             if (m_flattenedTree.Count > 0 && m_flattenedTree[0].Name == controller.Name(controller.Root))
+            {
                 TreeViewGridNode.CopyExpandedStateForNode(newFlattenedTree, 0, m_flattenedTree, 0);
+            }
 
             // Destroy old nodes (to save memory because GUI keeps references to them)
             foreach (var node in m_flattenedTree)
+            {
                 node.Dispose();
+            }
 
             // Update the whole tree with the new tree. 
             m_flattenedTree.ReplaceRange(0, m_flattenedTree.Count, newFlattenedTree);
@@ -177,8 +194,12 @@ namespace PerfView
                 // TODO should not have to be linear
                 var list = Grid.ItemsSource as IList;
                 for (int i = 0; i < list.Count; i++)
+                {
                     if (list[i] == cell.Item)
+                    {
                         return i;
+                    }
+                }
             }
             return ret;
         }
@@ -189,22 +210,31 @@ namespace PerfView
         private string CompressContent(string content)
         {
             if (content.Length < 70)
+            {
                 return content;
+            }
 
             // Trim method names !*.XXX.YYY(*) -> !XXX.YYY
             content = Regex.Replace(content, @"![\w\.]+\.(\w+\.\w+)\(.*\)", "!$1");
             if (content.Length < 70)
+            {
                 return content;
+            }
 
             // Trim out generic parameters 
             for (; ; )
             {
                 var result = Regex.Replace(content, @"(\w+)<[^>]+>", "$1");
                 if (result == content)
+                {
                     break;
+                }
+
                 content = result;
                 if (content.Length < 70)
+                {
                     return content;
+                }
             }
 
             return content;
@@ -217,12 +247,18 @@ namespace PerfView
         private string PadForColumn(string content, int columnIndex)
         {
             if (m_maxColumnInSelection == null)
+            {
                 m_maxColumnInSelection = new int[Grid.Columns.Count];
+            }
+
             int maxString = m_maxColumnInSelection[columnIndex];
             if (maxString == 0)
             {
                 for (int i = 0; i < m_maxColumnInSelection.Length; i++)
+                {
                     m_maxColumnInSelection[i] = GetColumnHeaderText(Grid.Columns[i]).Length;
+                }
+
                 foreach (var cellInfo in Grid.SelectedCells)
                 {
                     var idx = cellInfo.Column.DisplayIndex;
@@ -236,15 +272,22 @@ namespace PerfView
             }
 
             if (columnIndex == 0)
+            {
                 return content.PadRight(maxString);
+            }
             else
+            {
                 return content.PadLeft(maxString);
+            }
         }
         private static string GetCellStringValue(DataGridCellInfo cell)
         {
             var frameworkElement = cell.Column.GetCellContent(cell.Item);
             if (frameworkElement == null)
+            {
                 return "";
+            }
+
             return GetCellStringValue(frameworkElement);
         }
         private static string GetCellStringValue(FrameworkElement contents)
@@ -261,9 +304,13 @@ namespace PerfView
             {
                 var asTextBlock = column.Header as TextBlock;
                 if (asTextBlock != null)
+                {
                     ret = asTextBlock.Name;
+                }
                 else
+                {
                     ret = "UNKNONWN";
+                }
             }
             ret = ret.Replace("Column", "");
             return ret;
@@ -286,7 +333,7 @@ namespace PerfView
         // TODO FIX NOW.  This is an ugly hack.  
         private static TextBox EditingBox;
 
-        static private string GoodPrecision(double num, DataGridColumn column)
+        private static string GoodPrecision(double num, DataGridColumn column)
         {
             var format = "n3";
 
@@ -295,7 +342,9 @@ namespace PerfView
             {
                 var header = column.Header as TextBlock;
                 if (header != null)
+                {
                     headerName = header.Name;
+                }
             }
 
             if (headerName != null)
@@ -308,22 +357,33 @@ namespace PerfView
                         break;
                     default:
                         if ((int)num == num)
+                        {
                             format = "n0";
+                        }
+
                         break;
                 }
             }
             return num.ToString(format);
         }
         // TODO this is all a hack.
-        static private bool VeryClose(string val1, string val2)
+        private static bool VeryClose(string val1, string val2)
         {
             if (val1 == val2)
+            {
                 return true;
+            }
+
             double dval1, dval2;
             if (!double.TryParse(val1, out dval1))
+            {
                 return false;
+            }
+
             if (!double.TryParse(val2, out dval2))
+            {
                 return false;
+            }
 
             return (dval1 == dval2);
         }
@@ -351,7 +411,9 @@ namespace PerfView
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
                 }
                 else
+                {
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
+                }
             }
             m_maxColumnInSelection = null;
         }
@@ -359,16 +421,18 @@ namespace PerfView
         {
             var asHyperLink = sender as Hyperlink;
             if (asHyperLink != null)
+            {
                 MainWindow.DisplayUsersGuide((string)asHyperLink.Tag);
+            }
         }
 
         /// <summary>
         /// If we have only two cells selected, even if they are on differnet rows we want to morph them
         /// to a single row.  These variables are for detecting this situation.  
         /// </summary>
-        string m_clipboardRangeStart;
-        string m_clipboardRangeEnd;
-        int[] m_maxColumnInSelection;
+        private string m_clipboardRangeStart;
+        private string m_clipboardRangeEnd;
+        private int[] m_maxColumnInSelection;
 
         [Conditional("DEBUG")]
         public void Validate()
@@ -510,7 +574,9 @@ namespace PerfView
                     m_treeView.Validate();
 
                     if (m_isExpanded == value)
+                    {
                         return;
+                    }
 
                     if (value == true)
                     {
@@ -531,7 +597,10 @@ namespace PerfView
                         while (lastChild < m_treeView.m_flattenedTree.Count)
                         {
                             if (m_treeView.m_flattenedTree[lastChild].m_depth <= myDepth)
+                            {
                                 break;
+                            }
+
                             lastChild++;
                         }
 
@@ -588,7 +657,7 @@ namespace PerfView
             /// <summary>
             /// Does this node have any children (invisible (unexpanded) children count))
             /// </summary>
-            virtual public bool HasChildren
+            public virtual bool HasChildren
             {
                 get
                 {
@@ -609,9 +678,15 @@ namespace PerfView
                     {
                         var node = m_treeView.m_flattenedTree[i];
                         if (node.m_depth <= m_depth)
+                        {
                             break;
+                        }
+
                         if (node.m_depth == m_depth + 1)
+                        {
                             ret.Add(node);
+                        }
+
                         i++;
                     }
                     return ret;
@@ -626,11 +701,15 @@ namespace PerfView
             public void ExpandToDepth(int maxDepth, bool expandGraphNodes = false)
             {
                 if (maxDepth == 0)
+                {
                     return;
+                }
 
                 IsExpanded = true;
                 foreach (var child in VisibleChildren)
+                {
                     child.ExpandToDepth(maxDepth - 1, expandGraphNodes);
+                }
             }
 
             // The properties are for binding in the GUI.   
@@ -664,7 +743,9 @@ namespace PerfView
                 m_isExpanded = !HasChildren;
                 m_parent = parent;
                 if (parent != null)
+                {
                     m_depth = parent.m_depth + 1;
+                }
             }
 
             /// <summary>
@@ -683,13 +764,15 @@ namespace PerfView
                             m_indexGuess = m_parent.MyIndex + 1;
                             while (!m_treeView.m_flattenedTree[m_indexGuess].Equals(this))
                             {
-                                Debug.Assert(this.m_depth <= m_treeView.m_flattenedTree[m_indexGuess].m_depth);
+                                Debug.Assert(m_depth <= m_treeView.m_flattenedTree[m_indexGuess].m_depth);
                                 m_indexGuess = m_indexGuess + 1;
                                 Debug.Assert(m_indexGuess < m_treeView.m_flattenedTree.Count);
                             }
                         }
                         else
+                        {
                             Debug.Assert(m_indexGuess == 0);
+                        }
                     }
                     // We must find ourselves!
                     Debug.Assert(m_treeView.m_flattenedTree[m_indexGuess].Equals(this));
@@ -739,7 +822,9 @@ namespace PerfView
                             newFlattenedTree.Add(newChild);
                             int oldChildIndex = FindChild(oldFlattenedTree, oldNode, oldIndex, newChild.Name);
                             if (oldChildIndex >= 0)
+                            {
                                 CopyExpandedStateForNode(newFlattenedTree, newFlattenedTree.Count - 1, oldFlattenedTree, oldChildIndex);
+                            }
                         }
                     }
                 }
@@ -757,24 +842,32 @@ namespace PerfView
                 {
                     childIndex++;
                     if (childIndex >= flattenedTree.Count)
+                    {
                         break;
+                    }
+
                     var child = flattenedTree[childIndex];
                     if (child.m_depth < childDepth)
+                    {
                         break;
+                    }
+
                     if (child.m_depth == childDepth && child.Name == name)
+                    {
                         return childIndex;
+                    }
                 }
                 return -1;
             }
 
-            TreeViewGrid m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree). 
+            private TreeViewGrid m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree). 
             internal bool m_isExpanded;                     // Is this node expanded.  
-            string m_indentString;                          // The + and | that make it look like a tree. 
-            int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but worth checking  
+            private string m_indentString;                          // The + and | that make it look like a tree. 
+            private int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but worth checking  
 
             internal int m_depth;                           // My nesting level from root.   (root == 0);
-            bool m_isLastChild;                             // Am I the last child of my parent.  
-            TreeViewGridNode m_parent;                      // My parent.  
+            private bool m_isLastChild;                             // Am I the last child of my parent.  
+            private TreeViewGridNode m_parent;                      // My parent.  
             #endregion
         }
 

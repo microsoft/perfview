@@ -15,7 +15,10 @@ public class UsersGuide
     {
         string tempDir = Environment.GetEnvironmentVariable("TEMP");
         if (tempDir == null)
+        {
             tempDir = ".";
+        }
+
         string appPath = System.Reflection.Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName;
         string appName = Path.GetFileNameWithoutExtension(appPath);
         string usersGuideFilePath = Path.Combine(tempDir, appName + "." + resourceName);
@@ -36,9 +39,14 @@ public class UsersGuide
     public static void DisplayConsoleAppUsersGuide(string resourceName)
     {
         if (DisplayUsersGuide(resourceName))
+        {
             Console.WriteLine("Displaying Users guide.");
+        }
         else
+        {
             Console.WriteLine("Application does not have a user's guide.");
+        }
+
         Environment.Exit(0);
     }
 }

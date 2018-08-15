@@ -1,7 +1,8 @@
 namespace System.IO.Compression2
 {
     // Do not rearrange the enum values. 
-    internal enum InflaterState {
+    internal enum InflaterState
+    {
         ReadingHeader = 0,           // Only applies to GZIP
 
         ReadingBFinal = 2,               // About to read bfinal bit

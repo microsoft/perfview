@@ -3,21 +3,13 @@
 // 
 //  Copyright (C) Microsoft Corporation.  All rights reserved.
 //---------------------------------------------------------------------
-using System;
-using System.Threading;
-using System.Diagnostics;
-using System.Collections;
-using System.Security.Permissions;
-
-using Microsoft.Samples.Debugging.CorDebug;
 using Microsoft.Samples.Debugging.CorDebug.NativeApi;
-using Microsoft.Samples.Debugging.CorMetadata;
-using System.Runtime.InteropServices;
-using System.Runtime.ConstrainedExecution;
-using Microsoft.Samples.Debugging.CorDebug.Utility;
+using Microsoft.Samples.Debugging.MetaDataLocator;
 using Microsoft.Samples.Debugging.Native;
 using Microsoft.Win32.SafeHandles;
-using Microsoft.Samples.Debugging.MetaDataLocator;
+using System;
+using System.Runtime.InteropServices;
+using System.Security.Permissions;
 
 
 namespace Microsoft.Samples.Debugging.CorDebug.Utility
@@ -28,8 +20,8 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
     /// </summary>
     public sealed class DumpDataTarget : ICorDebugDataTarget, ICorDebugMetaDataLocator, IDisposable
     {
-        Microsoft.Samples.Debugging.Native.DumpReader m_reader;
-        Microsoft.Samples.Debugging.MetaDataLocator.CorDebugMetaDataLocator m_metaDataLocator;
+        private Microsoft.Samples.Debugging.Native.DumpReader m_reader;
+        private Microsoft.Samples.Debugging.MetaDataLocator.CorDebugMetaDataLocator m_metaDataLocator;
 
         /// <summary>
         /// Constructor a Dump Target around an existing DumpReader.
@@ -87,7 +79,7 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         {
             // Infer platform based off CPU architecture
             // At the moment we only support windows.
-            ProcessorArchitecture p = this.m_reader.ProcessorArchitecture;
+            ProcessorArchitecture p = m_reader.ProcessorArchitecture;
 
             switch (p)
             {
@@ -110,8 +102,10 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         {
             uint bytesRead = m_reader.ReadPartialMemory(address, buffer, bytesRequested);
 
-            if(bytesRead == 0)
+            if (bytesRead == 0)
+            {
                 throw new System.Runtime.InteropServices.COMException("Could not read memory requested at address " + address + ".");
+            }
 
             return bytesRead;
         }
@@ -120,7 +114,7 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         public void GetThreadContext(uint threadId, uint contextFlags, uint contextSize, IntPtr context)
         {
             // Ignore contextFlags because this will retrieve everything. 
-            m_reader.GetThread((int) threadId).GetThreadContext(context, (int) contextSize);
+            m_reader.GetThread((int)threadId).GetThreadContext(context, (int)contextSize);
         }
 
         #endregion
@@ -160,8 +154,8 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
     {
         #region Safe Handles and Native imports
         // See http://msdn.microsoft.com/msdnmag/issues/05/10/Reliability/ for more about safe handles.
-        [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]        
-        sealed class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
+        [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
+        private sealed class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             private SafeLibraryHandle() : base(true) { }
 
@@ -174,9 +168,9 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
             }
         }
 
-        static class NativeMethods
+        private static class NativeMethods
         {
-            const string s_kernel = "kernel32";
+            private const string s_kernel = "kernel32";
             [DllImport(s_kernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
             public static extern SafeLibraryHandle LoadLibrary(string fileName);
 
@@ -244,7 +238,7 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         }
 
         // Unmanaged resource.
-        SafeLibraryHandle m_hLibrary;
+        private SafeLibraryHandle m_hLibrary;
 
     } // UnmanagedLibrary
 

@@ -43,7 +43,10 @@ namespace PerfView
             {
                 var param = asCommand.Parameter as string;
                 if (param == null)
+                {
                     param = "ObjectViewerQuickStart";       // This is the F1 help
+                }
+
                 MainWindow.DisplayUsersGuide(param);
                 return;
             }
@@ -87,7 +90,7 @@ namespace PerfView
         /// graph.   We do this by creating ITreeViewControllerNode that represent nodes in the 
         /// tree which hold a NodeIndex that lets us get at all addition information about the node.  
         /// </summary>
-        class ObjectViewerTreeViewController : ITreeViewController
+        private class ObjectViewerTreeViewController : ITreeViewController
         {
             public ObjectViewerTreeViewController(MemoryGraph graph, RefGraph refGraph, List<NodeIndex> focusNodes)
             {
@@ -106,9 +109,13 @@ namespace PerfView
                 get
                 {
                     if (m_focusNodes != null)
+                    {
                         return new ITreeViewControllerNode(m_focusNodes, 0);
+                    }
                     else
+                    {
                         return new ITreeViewControllerNode(m_graph.RootIndex, 0);
+                    }
                 }
             }
             public string Name(object objNode)
@@ -121,7 +128,9 @@ namespace PerfView
             {
                 ITreeViewControllerNode treeNode = (ITreeViewControllerNode)objNode;
                 if (treeNode.m_nodeList != null)
+                {
                     return treeNode.m_nodeList.Count;                                   // Case 1 we are the root node
+                }
                 else
                 {
                     if (treeNode.IsRefByNode)
@@ -143,7 +152,9 @@ namespace PerfView
                 {
                     // Case 1 the root node
                     for (int i = 0; i < treeNode.m_nodeList.Count; i++)
+                    {
                         yield return new ITreeViewControllerNode(treeNode.m_nodeList[i], i + 1);
+                    }
                 }
                 else
                 {
@@ -172,7 +183,9 @@ namespace PerfView
                         {
                             var nextIdx = node.GetNextChildIndex();
                             if (nextIdx == NodeIndex.Invalid)
+                            {
                                 break;
+                            }
 
                             yield return new ITreeViewControllerNode(nextIdx, childNum);
                             childNum++;
@@ -185,11 +198,15 @@ namespace PerfView
             public string ColumnValue(object objNode, int columnNumber)
             {
                 if (columnNumber >= 3)
+                {
                     return "";
+                }
 
                 ITreeViewControllerNode treeNode = (ITreeViewControllerNode)objNode;
                 if (treeNode.IsRootNode || treeNode.IsRefByNode)
+                {
                     return "";
+                }
 
                 // Case 2 all other nodes.  
                 MemoryNode node = (MemoryNode)m_graph.GetNode(treeNode.m_nodeIdx, m_nodeStorage);
@@ -222,17 +239,19 @@ namespace PerfView
             /// We fix this mismatch by creating ITreeViewControllerNode which 'wraps' the NodeIndex
             /// but also remembers enough to create a useful name for the node.  
             /// </summary>
-            class ITreeViewControllerNode
+            private class ITreeViewControllerNode
             {
                 public override int GetHashCode()
                 {
-                    return (int) m_nodeIdx + m_childNum;
+                    return (int)m_nodeIdx + m_childNum;
                 }
                 public override bool Equals(object obj)
                 {
                     var asITreeViewControllerNode = obj as ITreeViewControllerNode;
                     if (asITreeViewControllerNode == null)
+                    {
                         return false;
+                    }
 
                     return m_nodeList == asITreeViewControllerNode.m_nodeList &&
                            m_childNum == asITreeViewControllerNode.m_childNum &&
@@ -254,13 +273,23 @@ namespace PerfView
                     get
                     {
                         if (IsRootNode)
+                        {
                             return ".";         // This is the root
+                        }
+
                         if (IsRefByNode)
+                        {
                             return "Referenced By";
+                        }
+
                         if (m_isRefByChild)
+                        {
                             return "refBy" + m_childNum.ToString();
+                        }
                         else
+                        {
                             return "child" + m_childNum.ToString();
+                        }
                     }
                 }
 
@@ -274,14 +303,13 @@ namespace PerfView
                 internal List<NodeIndex> m_nodeList;        // However you can also make a node that is a arbitrary list of nodes (m_childNum will always be 0)
             }
 
-            MemoryGraph m_graph;
-            RefGraph m_refGraph;
-            List<NodeIndex> m_focusNodes;
-
-            NodeType m_typeStorage;
-            Node m_nodeStorage;                             // Used for things that CAN'T be reentrant, just assume it is not in use
-            RefNode m_refNodeStorage;
-            List<string> m_columnNames;
+            private MemoryGraph m_graph;
+            private RefGraph m_refGraph;
+            private List<NodeIndex> m_focusNodes;
+            private NodeType m_typeStorage;
+            private Node m_nodeStorage;                             // Used for things that CAN'T be reentrant, just assume it is not in use
+            private RefNode m_refNodeStorage;
+            private List<string> m_columnNames;
             #endregion
         }
         #endregion
