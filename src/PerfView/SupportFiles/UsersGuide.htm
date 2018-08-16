@@ -8172,21 +8172,35 @@
     </h2>
     <ul>
         <!--
-        <li>Version 1.4.1 - 1/XX/2013
+    <li>Version 1.4.1 - 1/XX/2013
+        <ul>
+        <li>XXX</li>
+          <li>Improved the performance of the stack-view substantially by building a simplified regular expression matcher
+                instead of using System.Text.RegularExpressions.  This should improve 'update' speeds in the stack viewer
+                in common scenarios by of 2 </li>
+            <li>Allowed the stack-view to parallelize much of the activity, improving performance by probably another factor
+                of about 2 or more in many cases.   More can be done here to take advantage of Quad procs etc </li>
+            <li>Because it would be very easy for the above two features to cause the code to break, I have added a /safeMode
+                command qualifier that turns them off.   If you get a crash when updating the stack viewer, you should retry
+                with /safemode</li>
+        </ul>
+    </li>
+    -->
+        <li>
+            Version 2.0.22 8/15/18
             <ul>
-            <li>XXX</li>
-              <li>Improved the performance of the stack-view substantially by building a simplified regular expression matcher
-                    instead of using System.Text.RegularExpressions.  This should improve 'update' speeds in the stack viewer
-                    in common scenarios by of 2 </li>
-                <li>Allowed the stack-view to parallelize much of the activity, improving performance by probably another factor
-                    of about 2 or more in many cases.   More can be done here to take advantage of Quad procs etc </li>
-                <li>Because it would be very easy for the above two features to cause the code to break, I have added a /safeMode
-                    command qualifier that turns them off.   If you get a crash when updating the stack viewer, you should retry
-                    with /safemode</li>
+                <li> Added the /DotNetCallsSampled command line option that does call instrumentation
+                but samples every 97 calls (to keep overhead low)
+                 </li>
+                <li>Added the /DisableInlining command line option that tells the runtime not to
+                inline (used with the /DotNetCalls or /DotNetCallsSampled options)</li>
+                <li>Minor bug fixes so that things work inside windows docker containers.  
+                This works on windowsServerCore Version RS3 or beyond.  PerfViewCollect can 
+                be used on windowsNano OS
+                </li>
+                <li>fixed build to support SourceLink for the PerfVIew/TraceEvent source itself.</li>
             </ul>
         </li>
-        -->
-
         <li>
             Version 2.0.17 5/25/18
             <ul>
