@@ -6051,6 +6051,7 @@
         to package up the data, but it minimizes the impact to the system.
     </p>
 
+    <!--  ************************ -->
     <h4>
         <a id="WindowsContainers">Using PerfView inside Windows Server (Docker) Containers</a>
     </h4>
@@ -6095,6 +6096,8 @@
         operating system, and that you use the techniques in <a href="#AutomatingCollection">Automating Collection</a>
         to collect data without using the GUI.
     </p>
+
+    <!--  *************** -->
     <h5> Container Use Example </h5>
     <p>
         A example is worth a thousand explanations, so here is an example.  First you need to set up
@@ -6126,24 +6129,26 @@
         off some operation while monitoring, and then stop it.   The point is that this works just like normal windows,
         and PerfView is very flexible.   You will be able to do just about anything.
     </p>
+
+    <!--  *************** -->
     <h5> Windows Nanoserver and PerfViewCollect </h5>
     <p>
         The windowsservercore docker image is a pretty complete version of windows.  In particular it has a complete
         .NET Runtime on it, which is what PerfView needs to run.   Microsoft also supports a even smaller Docker image
         of windows called microsoft/nanoserver (which is 300 MB not 5GB).  This OS does support ETW, and thus in theory
         you could collect PerfView data on it, but it does not have the desktop runtime, so the PerfView.exe tool
-        itself can't run.  This is what the 'PerfViewCollect' tool is for.  
+        itself can't run.  This is what the 'PerfViewCollect' tool is for.
     </p>
     <p>
-        PerfViewCollect is a version of PerfView that has been stripped of its GUI (it only does collection), and 
+        PerfViewCollect is a version of PerfView that has been stripped of its GUI (it only does collection), and
         built using the .NET Core runtime.    When building .NET Core applications you can build them to be self-contained
         meaning that the application comes with all the .NET runtime and framework DLLs needed to run it.  Thus you
-        only need the basic OS functionality, and in particular it will run on the NanoServer.  
+        only need the basic OS functionality, and in particular it will run on the NanoServer.
     </p>
     <p>
         Currently we don't create a binary distribution of PerfViewCollect, it must be built from the source code at
-        https://github.com/Microsoft/perfview.   To build, however you don't need visual studio, you only need the 
-        <a href="https://www.microsoft.com/net/download">.NET Core SDK</a>  Thus the procedure is 
+        https://github.com/Microsoft/perfview.   To build, however you don't need visual studio, you only need the
+        <a href="https://www.microsoft.com/net/download">.NET Core SDK</a>  Thus the procedure is
     </p>
     <ul>
         <li>Install the <a href="https://www.microsoft.com/net/download">.NET Core SDK</a>.  This gives you the 'dotnet' command</li>
@@ -6156,18 +6161,20 @@
         This last command will build the PerfViewCollect application as a self contained application. The tool
         tells you where it put it, but it should be in src\PerfViewCollect\bin\Release\netcoreapp2.0\win-x64\publish.
         The tool is the PerfViewCollect.exe in that directory.  You can do a PerfViewCollect /? to get some help
-        (but it will be exactly the same command line help for PerfView.exe).  
+        (but it will be exactly the same command line help for PerfView.exe).
     </p>
     <p>
         If you copy this directory to your nanoserver you should be able to run the PerfViewCollect.exe there as well
-        Thus you can do the command 
+        Thus you can do the command
     </p>
     <ul>
-        <li>perfView /logFile=log.txt /maxCollectSec=30 collect</li>
+        <li>perfViewCollect.exe /logFile=log.txt /maxCollectSec=30 collect</li>
     </ul>
     <p>
-        To collect data on Window nanoserver. 
+        To collect data on Window nanoserver.
     </p>
+
+    <!--  ************************ -->
     <h4>
         <a id="ProductionMonitoring">Production Monitoring</a>
     </h4>
@@ -6583,7 +6590,7 @@
     <p>
         Here is a slightly more complex example where we only stop of the GCTest.exe executable fails with a non-zero exit code.   Here
         we use the ImageName field to find a particular Exe and well as the ExitCode field to determine if the process failes.
-        You can use this to stop PerfView when a paritcular process in a large script fails (which is a reasonably common scenario).
+        You can use this to stop PerfView when a particular process in a large script fails (which is a reasonably common scenario).
     </p>
     <ul>
         <li>PerfView /StopOnEtwEvent:Microsoft-Windows-Kernel-Process/ProcessStop/Stop;FieldFilter=ImageName~GCTest.exe;FieldFilter=ExitCode!=0 collect</li>
