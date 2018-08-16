@@ -82,7 +82,7 @@ public class DotNetHeapDumper
                 string sessionName = "PerfViewGCHeapSession";
                 session = new TraceEventSession(sessionName, null);
                 int gcNum = -1;
-                session.BufferSizeMB = 256;         // Events come pretty fast, so make the buffer bigger. 
+                session.BufferSizeMB = 1024;         // Events come pretty fast, so make the buffer bigger. 
 
                 // Start the providers and trigger the GCs.  
                 log.WriteLine("{0,5:n1}s: Requesting a .NET Heap Dump", sw.Elapsed.TotalSeconds);

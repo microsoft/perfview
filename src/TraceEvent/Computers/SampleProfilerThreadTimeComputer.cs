@@ -206,6 +206,10 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                     }
 
+                    // We don't care about EventPipe sample profiler events.  
+                    if (data.ProviderGuid == SampleProfilerTraceEventParser.ProviderGuid)
+                        return;
+
                     // We don't care about the TPL provider.  Too many events.  
                     if (data.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                     {

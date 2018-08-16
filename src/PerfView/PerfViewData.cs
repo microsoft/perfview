@@ -5174,6 +5174,26 @@ table {
                         goto ADD_EVENT_FRAME;
                     }
 
+                    var asAllocTick = data as GCAllocationTickTraceData;
+                    if (asAllocTick != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData Kind " + asAllocTick.AllocationKind);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        frameIdx = stackSource.Interner.FrameIntern("EventData Size " + asAllocTick.AllocationAmount64);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        var typeName = asAllocTick.TypeName;
+                        if (string.IsNullOrEmpty(typeName))
+                        {
+                            typeName = "TypeId 0x" + asAllocTick.TypeID;
+                        }
+
+                        frameIdx = stackSource.Interner.FrameIntern("EventData TypeName " + typeName);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
+
                     var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
                     if (asSampleObjectAllocated != null)
                     {
@@ -6114,7 +6134,10 @@ table {
                     while (cur != null)
                     {
                         if (!cur.IsFree)
+                        {
                             ret += (long)(cur.Next.MemAddr - cur.MemAddr);
+                        }
+
                         cur = cur.Next;
                     }
                     return ret;
@@ -8076,7 +8099,9 @@ table {
             double unreachableMemory = 0;
             double totalMemory = 0;
 
-            var cache = new UnreachableCacheEntry[10000];
+            // Make the cache roughly hit every 7 tries.  This keeps memory under control for large heaps
+            // but the slowdown because of misses will not be too bad.  
+            var cache = new UnreachableCacheEntry[memoryStackSource.SampleIndexLimit / 7 + 1001];
             memoryStackSource.ForEach(delegate (StackSourceSample sample)
             {
                 totalMemory += sample.Metric;
@@ -8431,8 +8456,27 @@ table {
                                     goto ADD_EVENT_FRAME;
                                 }
 
-                                // Tack on event name
+                                var asAllocTick = data as GCAllocationTickTraceData;
+                                if (asAllocTick != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData Kind " + asAllocTick.AllocationKind);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
+                                    frameIdx = stackSource.Interner.FrameIntern("EventData Size " + asAllocTick.AllocationAmount64);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                                    var typeName = asAllocTick.TypeName;
+                                    if (string.IsNullOrEmpty(typeName))
+                                    {
+                                        typeName = "TypeId 0x" + asAllocTick.TypeID;
+                                    }
+
+                                    frameIdx = stackSource.Interner.FrameIntern("EventData TypeName " + typeName);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                                    goto ADD_EVENT_FRAME;
+                                }
+
+                                // Tack on event nam
                                 ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
@@ -8478,6 +8522,11 @@ table {
                 var excludePat = "LAST_BLOCK";
                 stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
+            }
+
+            if (stackSourceName.Contains("Thread Time"))
+            {
+                stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
             }
         }
 

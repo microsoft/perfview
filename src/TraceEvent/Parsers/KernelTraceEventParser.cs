@@ -3463,20 +3463,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 #if !CONTAINER_WORKAROUND_NOT_NEEDED
                 // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognise them 
-                // because they have have the form of a GUID path \Files and then the client path.   We only
-                // need to fix this for windows (OS) files, so we use \Files\Windows\as the key that this is
-                // happening, and we morph the name to fix it.
-
+                // because they have have the form of a GUID path \OS or \File and then the client path.   It is enough
+                // to fix this for files in the \windows directory so we use \OS\Windows\ or \Files\Windows as the key 
+                // to tell if we have a HOST file path and we morph the name to fix it.
                 // We can pull this out when the OS fixes ETW to show client names.  
-                var filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
-                if (16 < filesIdx)
+                var filesIdx = kernelName.IndexOf(@"\OS\Windows\", StringComparison.OrdinalIgnoreCase);
+                if (0 <= filesIdx && filesIdx + 3 < kernelName.Length)
                 {
-                    var ret = systemDrive + kernelName.Substring(filesIdx + 6);
-                    return ret;
+                    return systemDrive + kernelName.Substring(filesIdx + 3);
                 }
 
-#endif 
-
+                filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
+                if (0 <= filesIdx && filesIdx + 6 < kernelName.Length)
+                {
+                    return systemDrive + kernelName.Substring(filesIdx + 6);
+                }
+#endif
                 for (int i = 0; i < kernelToDriveMap.Count; i++)
                 {
                     Debug.Assert(kernelToDriveMap[i].Key.EndsWith(@"\"));

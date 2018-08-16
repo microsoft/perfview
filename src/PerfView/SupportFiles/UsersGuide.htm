@@ -4052,6 +4052,17 @@
                 /BufferSize qualifier very large (e.g. 1000Meg).  and even that may not be enough
                 This option is really only meant for small isolated tests.
             </p>
+            <p>
+                There is an command line option /DotNetCallsSampled which works like /DotNetCalls, however it
+                samples every 97 calls rather than every call.  This cuts the overhead (and file size)
+                by a factor of ~100 which is better if overhead is a concern. 
+            </p>
+            <p>
+                By default the runtime does not disable inlining of methods.  Thus you will not see 
+                inlined calls in your trace.   There is also a command line option /DisableInlining 
+                which disables inlining so you will see every call.  This slows things down even more
+                so should only be used in 'small' scenarios.  
+            </p>
         </li>
         <li>
             The <strong><a id="JITInliningCheckBox">JIT Inlining Checkbox</a></strong> - Causes
@@ -6096,6 +6107,19 @@
         few minutes of data that lead up to the 'bad perf' (in this case high GC time).
     </p>
     <p>
+        Some counters (like the system global counters 'Memory:Committed Bytes' do not have
+        an instance because there is only one for the whole machine.  For these specify
+        an emtpy string.   For example
+    </p>
+    <ul>
+        <li>PerfView collect "/StopOnPerfCounter:Memory:Committed Bytes: > 50000000000"</li>
+    </ul>
+    <p>
+        will stop collection of the committed bytes for the entire machine exceed 50GB.  Notice
+        that the counter is still CATEGORY:NAME:INSTANCE, but in this case INSTANCE is the 
+        empty string (the trailing :).     
+    </p>
+    <p>
         When the performance counter triggers, PerfView actually collects 10 more seconds
         of trace before stopping. This way you get both the conditions up to and slightly
         after the event that you are interested in. PerfView logs an event called StopReason
@@ -6114,6 +6138,16 @@
         will then show you all the instances (processes) that have those counters. These
         three names (category, counter, instance) are the values you need to give to the
         '/StopOnPerfCounter qualifier.
+    </p>
+    <p>
+        You will want to test your /StopOn* specfication before waiting a long time to see
+        if it catpures a trace properly.   If you open the log (or use /MaxCollectSec=XXX to
+        force it to stop quickly and then look at the file specified by /LogFile or look for
+        this captured log file in the 'TraceInfo view of the '*.etl.zip'), you will find 
+        diagnostic messages as it monitors the perf counter.  You should see messages that
+        show it setting up the perf counter as well as the values it sees every few seconds. 
+        This can give you confidence that you did not misspell the counter, that you have
+        the correct instance, and you picked a reasonable threshold.
     </p>
     <p>
         You can specify the /StopOnPerfCounter qualifier more than once and each acts as a trigger.

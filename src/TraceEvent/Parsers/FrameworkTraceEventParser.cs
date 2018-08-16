@@ -9089,7 +9089,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
     }
     public sealed class ThreadPoolDequeueWorkArgs : TraceEvent
     {
-        public long workID { get { return GetInt64At(0); } }
+        public Address WorkID { get { return (Address)GetInt64At(0); } }
 
         #region Private
         internal ThreadPoolDequeueWorkArgs(Action<ThreadPoolDequeueWorkArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -9114,7 +9114,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "workID", workID);
+            XmlAttrib(sb, "WorkID", WorkID);
             sb.Append("/>");
             return sb;
         }
@@ -9125,7 +9125,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "workID" };
+                    payloadNames = new string[] { "WorkID" };
                 }
 
                 return payloadNames;
@@ -9137,7 +9137,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
             switch (index)
             {
                 case 0:
-                    return workID;
+                    return WorkID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -9149,7 +9149,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
     }
     public sealed class ThreadPoolEnqueueWorkArgs : TraceEvent
     {
-        public long workID { get { return GetInt64At(0); } }
+        public Address WorkID { get { return (Address)GetInt64At(0); } }
 
         #region Private
         internal ThreadPoolEnqueueWorkArgs(Action<ThreadPoolEnqueueWorkArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -9174,7 +9174,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "workID", workID);
+            XmlAttrib(sb, "WorkID", WorkID);
             sb.Append("/>");
             return sb;
         }
@@ -9185,7 +9185,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "workID" };
+                    payloadNames = new string[] { "WorkID" };
                 }
 
                 return payloadNames;
@@ -9197,7 +9197,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource
             switch (index)
             {
                 case 0:
-                    return workID;
+                    return WorkID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
