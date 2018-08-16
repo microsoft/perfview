@@ -7,6 +7,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Prefer32Bit>True</Prefer32Bit>
     <StartupObject>PerfView.App</StartupObject>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
@@ -47,6 +48,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
 
   <ItemGroup>

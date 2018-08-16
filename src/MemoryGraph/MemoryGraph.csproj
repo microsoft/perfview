@@ -6,6 +6,7 @@
   <!--Target CLR v2-->
   <PropertyGroup>
     <AllowCrossTargeting>true</AllowCrossTargeting>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -57,6 +58,9 @@
       <Project>{e32c9fc3-8524-4511-8acb-235ac136dc22}</Project>
       <Name>Utilities</Name>
     </ProjectReference>
+
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
   <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
 </Project>

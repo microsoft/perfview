@@ -1,6 +1,6 @@
 
 extern EnterMethod:proc
-extern TailcallMethod:proc
+extern CallSampleCount:dword
 
 _TEXT segment para 'CODE'
 
@@ -10,9 +10,22 @@ _TEXT segment para 'CODE'
 
         align   16
         public  EnterMethodNaked
-
 EnterMethodNaked     proc    frame
+		.endprolog
+		lock dec [CallSampleCount]
+		jle	   EnterMethodSampleNaked
+		ret
 
+EnterMethodNaked     endp
+
+;************************************************************************************
+; This is a helper that does work if we are actually taking a call sample
+;typedef void EnterMethodSampleNaked(
+;         rcx = FunctionIDOrClientID functionIDOrClientID);
+
+        align   16
+		public  EnterMethodSampleNaked
+EnterMethodSampleNaked     proc    frame
         ; save registers
         push    rax
         .allocstack 8
@@ -40,22 +53,8 @@ EnterMethodNaked     proc    frame
         ; return
         ret
 
-EnterMethodNaked     endp
+EnterMethodSampleNaked     endp
 
-;************************************************************************************
-;typedef void LeaveMethodNaked(
-;         rcx = FunctionIDOrClientID functionIDOrClientID);
-
-        align   16
-
-        public  LeaveMethodNaked
-
-LeaveMethodNaked     proc    frame
-	    .endprolog
-        ; we dont care about leaving methods, do nothing.  
-        ret
-
-LeaveMethodNaked     endp
 
 ;************************************************************************************
 ;typedef void TailcallMethodNaked(
@@ -63,27 +62,9 @@ LeaveMethodNaked     endp
 
         align   16
         public  TailcallMethodNaked
-
 TailcallMethodNaked  proc    frame
-
-        ; save rax
-        push    rax
-        .allocstack 8
-
-        sub     rsp, 20h
-        .allocstack 20h
-
-        .endprolog
-
-        call    TailcallMethod
-
-        add     rsp, 20h
-
-        ; restore rax
-        pop     rax
-
-        ; return
-        ret
+	    .endprolog
+		jmp EnterMethodNaked
 
 TailcallMethodNaked  endp
 

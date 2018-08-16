@@ -955,7 +955,7 @@ namespace PEFile
         {
             // Convert seconds from Jan 1 1970 to DateTime ticks.  
             // The 621356004000000000L represents Jan 1 1970 as DateTime 100ns ticks.  
-            DateTime ret = new DateTime(((long)timeDateStampSec) * 10000000 + 621356004000000000L, DateTimeKind.Utc).ToLocalTime();
+            DateTime ret = new DateTime(((long)(uint)timeDateStampSec) * 10000000 + 621356004000000000L, DateTimeKind.Utc).ToLocalTime();
 
             // Calculation above seems to be off by an hour  Don't know why 
             ret = ret.AddHours(-1.0);

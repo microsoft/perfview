@@ -133,6 +133,23 @@ namespace Microsoft.Diagnostics.Tracing
                 OnStart(data, id);
             };
 
+            // System.Threading.ThreadPool.QueueUserWorkItem support.  
+            fxParser.ThreadPoolEnqueueWork += delegate (ThreadPoolEnqueueWorkArgs data)
+            {
+                OnCreated(data, GetClrRawID(data, data.WorkID), TraceActivity.ActivityKind.ClrThreadPool);
+            };
+            fxParser.ThreadPoolDequeueWork += delegate (ThreadPoolDequeueWorkArgs data)
+            {
+                OnStart(data, GetClrRawID(data, data.WorkID));
+            };
+
+            // With this event, we should not need the hack below that looks at context switches
+            // because we fire this before we go to sleep.  
+            m_source.Clr.ThreadPoolWorkerThreadWait += delegate (ThreadPoolWorkerThreadTraceData data)
+            {
+                AutoRestart(data, data.Thread());
+            };
+
             // .NET Network thread pool support 
             m_source.Clr.ThreadPoolIOEnqueue += delegate (ThreadPoolIOWorkEnqueueTraceData data)
             {

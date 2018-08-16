@@ -1895,9 +1895,11 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns the Timestamp for the event using Query Performance Counter (QPC) ticks.   
-        /// The start time for the QPC tick counter is unknown
+        /// The start time for the QPC tick counter is arbitrary and the units  also vary.  
         /// </summary>
-        internal long TimeStampQPC { get { return eventRecord->EventHeader.TimeStamp; } }
+        [Obsolete("Not Obsolete but Discouraged.  Please use TimeStampRelativeMSec.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public long TimeStampQPC { get { return eventRecord->EventHeader.TimeStamp; } }
 
         /// <summary>
         /// A standard way for events to are that certain addresses are addresses in code and ideally have
@@ -3369,42 +3371,42 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-            {
-                anEvent.Dispatch();
-            }
-
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (; ; )
+                if (anEvent.Target != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                    {
-                        break;
-                    }
-
-                    if (nextEvent.Target != null)
-                    {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;
-                    }
-                }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                {
-                    unhandledEventTemplate.PrepForCallback();
+                    anEvent.Dispatch();
                 }
 
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;
+                if (anEvent.next != null)
+                {
+                    TraceEvent nextEvent = anEvent;
+                    for (; ; )
+                    {
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                        {
+                            break;
+                        }
+
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;
+                        }
+                    }
+                }
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                    {
+                        unhandledEventTemplate.PrepForCallback();
+                    }
+
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)

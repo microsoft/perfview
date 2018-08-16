@@ -106,64 +106,51 @@ void WINAPI ProfilerControlCallback(
 // TODO presently unused.   Only needed if the callback needs the TracerState
 // static CorProfilerTracer* s_tracer = NULL;
 
+//************************
+EXTERN_C int CallSampleCount = 1;	// This counts down to 0 for sampling 
+int CallSamplingRate = 1;			// The number of calls to skip before taking a sample.  
+
 EXTERN_C void __stdcall EnterMethod(FunctionID functionID)
 {
-	EventWriteCallEnterEvent(functionID);
-}
-
-EXTERN_C void __stdcall TailcallMethod(FunctionID functionID)
-{
-	EnterMethod(functionID);
+	EventWriteCallEnterEvent(functionID, CallSamplingRate);
+	CallSampleCount = CallSamplingRate;
 }
 
 #if defined(_M_IX86)
 // see http://msdn.microsoft.com/en-us/library/4ks26t93.aspx  for inline assembly.   Not supported on X64.   
 
-void __declspec(naked) __stdcall EnterMethodNaked(FunctionID funcID)
+void __declspec(naked) __stdcall EnterMethodNaked(FunctionIDOrClientID funcID)
 {
 	__asm
 	{
-		push eax
-		push ecx
-		push edx
-		push[esp + 16]		// Push the function ID
-		call EnterMethod
-		pop edx
-		pop ecx
-		pop eax
+		lock dec[CallSampleCount]
+		jle TakeSample
 		ret 4
+
+		TakeSample:
+		push eax
+			push ecx
+			push edx
+			push[esp + 16]		// Push the function ID
+			call EnterMethod
+			pop edx
+			pop ecx
+			pop eax
+			ret 4
 	}
 } // EnterNaked
 
-// Currently we don't care about the leave method (can we avoid making the call?
-void __declspec(naked) __stdcall LeaveMethodNaked(FunctionID funcID)
+void __declspec(naked) __stdcall TailcallMethodNaked(FunctionIDOrClientID funcID)
 {
 	__asm
 	{
-		ret 4
-	}
-}
-
-void __declspec(naked) __stdcall TailcallMethodNaked(FunctionID funcID)
-{
-	__asm
-	{
-		push eax
-		push ecx
-		push edx
-		push[esp + 16]
-		call TailcallMethod
-		pop edx
-		pop ecx
-		pop eax
-		ret 4
+		jmp EnterMethodNaked
 	}
 }
 
 #else
-EXTERN_C void __stdcall EnterMethodNaked(FunctionID functionID);
-EXTERN_C void __stdcall LeaveMethodNaked(FunctionID functionID);
-EXTERN_C void __stdcall TailcallMethodNaked(FunctionID functionID);
+EXTERN_C void __stdcall EnterMethodNaked(FunctionIDOrClientID functionID);
+EXTERN_C void __stdcall TailcallMethodNaked(FunctionIDOrClientID functionID);
 #endif 
 
 //==========================================================================
@@ -201,15 +188,28 @@ HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach(
 		DWORD keywords = 0;
 		DWORD keywordsSize = sizeof(keywords);
 		int hr = RegGetValue(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\.NETFramework", L"PerfView_Keywords", RRF_RT_DWORD, NULL, &keywords, &keywordsSize);
-		if (hr == ERROR_SUCCESS && (keywords & (CallKeyword | CallSampledKeyword)) != 0)
+		if (hr == ERROR_SUCCESS)
 		{
-			// assert(s_tracer == NULL);	// Don't need any information passed around so I don't need this.  
-			// s_tracer = this;
+			if ((keywords & DisableInliningKeyword) != 0)
+			{
+				CALL_N_LOGONBADHR(m_info->GetEventMask(&oldFlags));
+				CALL_N_LOGONBADHR(m_info->SetEventMask(oldFlags | COR_PRF_DISABLE_INLINING));
+			}
 
-			// Turn on the Call entry and leave hooks.  
-			CALL_N_LOGONBADHR(m_info->SetEnterLeaveFunctionHooks(EnterMethodNaked, LeaveMethodNaked, TailcallMethodNaked));
-			CALL_N_LOGONBADHR(m_info->GetEventMask(&oldFlags));
-			CALL_N_LOGONBADHR(m_info->SetEventMask(oldFlags | COR_PRF_MONITOR_ENTERLEAVE));
+			if ((keywords & (CallKeyword | CallSampledKeyword)) != 0)
+			{
+				// assert(s_tracer == NULL);	// Don't need any information passed around so I don't need this.  
+				// s_tracer = this;
+
+				// Turn on the Call entry and leave hooks.  
+				CALL_N_LOGONBADHR(m_info->SetEnterLeaveFunctionHooks3(EnterMethodNaked, 0, TailcallMethodNaked));
+				CALL_N_LOGONBADHR(m_info->GetEventMask(&oldFlags));
+				CALL_N_LOGONBADHR(m_info->SetEventMask(oldFlags | COR_PRF_MONITOR_ENTERLEAVE));
+
+
+				if ((keywords & CallSampledKeyword) != 0)
+					CallSamplingRate = 97;		// TODO make it configurable.    We choose 97 because it is prime and thus likely to be uncorrelated with things.  
+			}
 		}
 	}
 exit:

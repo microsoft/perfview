@@ -121,6 +121,7 @@ namespace PerfView
         public bool DotNetAllocSampled;     // Turn on .NET Allocation profiling, but only sampled (in a smart way)
         public bool DotNetCalls;            // Turn on logging of every .NET call
         public bool DotNetCallsSampled;     // Sampling of .NET calls.  
+        public bool DisableInlining;        // Force inlining to be disabled. (useful for DotNetCalls).  
         public bool JITInlining;            // Turn on logging of successful and failed JIT inlining
         public int OSHeapProcess;           // Turn on OS Heap tracing for the process with the given process ID.
         public string OSHeapExe;            // Turn on OS heap tracing for any process with the given EXE
@@ -483,6 +484,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("DotNetAllocSampled", ref DotNetAllocSampled, "Turns on per-allocation .NET profiling, sampling types in a smart way to keep overhead low.");
             parser.DefineOptionalQualifier("DotNetCalls", ref DotNetCalls, "Turns on per-call .NET profiling.");
             parser.DefineOptionalQualifier("DotNetCallsSampled", ref DotNetCallsSampled, "Turns on per-call .NET profiling, sampling types in a smart way to keep overhead low.");
+            parser.DefineOptionalQualifier("DisableInlining", ref DisableInlining, "Turns off inlining (but only affects processes that start after trace start.");
             parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
             parser.DefineOptionalQualifier("CCWRefCount", ref CCWRefCount, "Turns on logging of information about .NET Native CCW reference counting.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");

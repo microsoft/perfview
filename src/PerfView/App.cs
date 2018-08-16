@@ -51,7 +51,9 @@ namespace PerfView
 
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
+                {
                     DisplaySplashScreen();
+                }
 #endif
                 App.Unpack();                   // Install the program if it is not done already 
                 App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally. 
@@ -123,7 +125,9 @@ namespace PerfView
 #if !PERFVIEW_COLLECT
             // On ARM we don't have a GUI
             if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
+            {
                 CommandLineArgs.NoGui = true;
+            }
 #else
             // We never support GUI in PerfViewCollect
             CommandLineArgs.NoGui = true;
@@ -185,8 +189,10 @@ namespace PerfView
                 using (var correctFile = new PEFile.PEFile(correctTraceEventDll))
                 {
                     if (fileInUse.Header.TimeDateStampSec != correctFile.Header.TimeDateStampSec)
+                    {
                         throw new ApplicationException("Error using the wrong Microsoft.Diagnostics.Tracing.TraceEvent.dll.\r\n" +
                             "   You cannot place a version of Microsoft.Diagnostics.Tracing.TraceEvent.dll next to PerfView.exe.");
+                    }
                 }
             }
 #endif
@@ -236,9 +242,13 @@ namespace PerfView
                 {
 #if !PERFVIEW_COLLECT // THese messages are confusing for PerfViewCollect given that it does not support View.  
                     if (CommandLineArgs.DataFile != null)
+                    {
                         CommandProcessor.LogFile.WriteLine("Trying to view {0}", CommandLineArgs.DataFile);
+                    }
                     else
+                    {
                         CommandProcessor.LogFile.WriteLine("No command given, Trying to open viewer.");
+                    }
 #endif
                     CommandProcessor.LogFile.WriteLine("Use 'PerfView collect' or 'PerfView HeapSnapshot' to collect data.");
                     return -4;
@@ -942,7 +952,9 @@ namespace PerfView
                 var splashScreen = (System.Windows.SplashScreen)s_splashScreen.Target;
                 s_splashScreen = null;
                 if (splashScreen != null)
+                {
                     splashScreen.Close(new TimeSpan(0));
+                }
             }
 #endif
         }
@@ -966,7 +978,9 @@ namespace PerfView
             var done = false;
             var ret = false;
             if (GuiApp.MainWindow == null || GuiApp.MainWindow.Dispatcher == null)
+            {
                 return ret;
+            }
 
             // We are on the GUI thread, we can just open the dialog 
             if (GuiApp.MainWindow.Dispatcher.CheckAccess())
@@ -998,7 +1012,9 @@ namespace PerfView
 
                 // Yuk, spin until the dialog box is closed.  
                 while (!done)
+                {
                     System.Threading.Thread.Sleep(100);
+                }
             }
             return ret;
 #else
@@ -1096,8 +1112,8 @@ namespace PerfView
         }
 
 #if !DOTNET_CORE
-        static Thread s_threadToInterrupt;
-        static int s_controlCPressed = 0;
+        private static Thread s_threadToInterrupt;
+        private static int s_controlCPressed = 0;
 #endif
 
         #endregion

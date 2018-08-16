@@ -390,6 +390,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             var shortDataMachineName = MachineName;
+            if (string.IsNullOrEmpty(shortDataMachineName))
+            {
+                return true;        // If the trace does not know what machine it was on, give up and guess that is is the correct machine. 
+            }
+
             dotIdx = shortDataMachineName.IndexOf('.');
             if (dotIdx > 0)
             {
@@ -1209,15 +1214,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var isLoad = ((data.Opcode == (TraceEventOpcode)10) || (data.Opcode == TraceEventOpcode.DataCollectionStart));
 
-                // TODO is this a good idea?   It tries to undo the anonymization a bit.  
+                // TODO is this a good idea?   It tries to undo the anonimization a bit.  
                 var fileName = data.FileName;
                 if (fileName.EndsWith("########"))  // We threw away the DLL name
                 {
                     // But at least we have the DLL file name (not the path). 
                     if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                     {
-                        var anonymizedIdx = fileName.IndexOf("########");
-                        fileName = fileName.Substring(0, anonymizedIdx + 8) + @"\" + lastImageIDData.OriginalFileName;
+                        var anonomizedIdx = fileName.IndexOf("########");
+                        fileName = fileName.Substring(0, anonomizedIdx + 8) + @"\" + lastImageIDData.OriginalFileName;
                     }
                 }
 
@@ -1232,10 +1237,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // We tolerate the exceptions, because it is a useful check most of the time 
                     Debug.Assert(RoughDllPdbMatch(moduleFile.fileName, moduleFile.pdbName));
                 }
-                if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
+                moduleFile.timeDateStamp = data.TimeDateStamp;
+                moduleFile.imageChecksum = data.ImageChecksum;
+                if (moduleFile.timeDateStamp == 0 && lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                 {
                     moduleFile.timeDateStamp = lastImageIDData.TimeDateStamp;
                 }
+
                 if (lastFileVersionData != null && data.TimeStampQPC == lastFileVersionData.TimeStampQPC)
                 {
                     moduleFile.fileVersion = lastFileVersionData.FileVersion;
@@ -1815,6 +1823,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             uint rawEventCount = 0;
             double rawInputSizeMB = rawEvents.Size / 1000000.0;
             var startTime = DateTime.Now;
+            long lastQPCEventTime = long.MinValue;     // We want the times to be ordered.  
 #if DEBUG
             long lastTimeStamp = 0;
 #endif
@@ -1912,6 +1921,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     sessionEndTimeQPC = data.TimeStampQPC;
                 }
+
+                if (data.TimeStampQPC < lastQPCEventTime)
+                {
+                    options.ConversionLog.WriteLine("WARNING, events out of order! This breaks event search.  Jumping from {0:n3} back to {1:n3} for {2} EventID {3} Thread {4}",
+                        QPCTimeToRelMSec(lastQPCEventTime), data.TimeStampRelativeMSec, data.ProviderName, data.ID, data.ThreadID);
+                }
+
+                lastQPCEventTime = data.TimeStampQPC;
 
                 // Update the counts
                 var countForEvent = stats.GetEventCounts(data);
@@ -3701,7 +3718,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 69; }
+            get { return 70; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -8402,14 +8419,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 symReader.m_log.WriteLine("No PDB signature for {0} in trace.", moduleFile.FilePath);
             }
 
-            var isCurrentMachine = false;
             if (pdbFileName == null)
             {
-                isCurrentMachine = log.CurrentMachineIsCollectionMachine();
-                // if we don't have a GUID but we are on the current machine, look it up using the DLL info.  This also generates NGEN pdbs.  
-                if (isCurrentMachine)
+                // Confirm that the path from the trace points at a file that is the same (checksums match). 
+                // It will log messages if it does not match. 
+                if (TraceModuleUnchanged(moduleFile, symReader.m_log))
                 {
-                    symReader.m_log.WriteLine("Data collected on current machine, looking up PDB by inspecting information in EXE.");
                     pdbFileName = symReader.FindSymbolFilePathForModule(moduleFile.FilePath);
                 }
             }
@@ -8427,21 +8442,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (pdbFileName == null)
             {
                 // We are about to fail.   output helpful warnings.   
-                if (moduleFile.PdbSignature == Guid.Empty && !isCurrentMachine)
+                if (moduleFile.PdbSignature == Guid.Empty)
                 {
                     if (log.PointerSize == 8 && moduleFile.FilePath.IndexOf(@"\windows\System32", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        symReader.m_log.WriteLine("WARNING: could not find PDB signature of a 64 bit OS DLL.  Did you collect with a 32 bit version of XPERF?");
+                        symReader.m_log.WriteLine("WARNING: could not find PDB signature of a 64 bit OS DLL.  Did you collect with a 32 bit version of XPERF?\r\n");
                     }
-                    else
+
+                    symReader.m_log.WriteLine("WARNING: The log file does not contain exact PDB signature information for {0} and the file at this path is not the file used in the trace.", moduleFile.FilePath);
+                    symReader.m_log.WriteLine("PDB files cannot be unambiguously matched to the EXE.");
+                    symReader.m_log.WriteLine("Did you merge the ETL file before transferring it off the collection machine?  If not, doing the merge will fix this.");
+                    if (!UnsafePDBMatching)
                     {
-                        symReader.m_log.WriteLine("WARNING: The log file does not contain exact PDB signature information for {0} and the collection machine != current machine.", moduleFile.FilePath);
-                        symReader.m_log.WriteLine("PDB files cannot be unambiguously matched to the EXE.");
-                        symReader.m_log.WriteLine("Did you merge the ETL file before transferring it off the collection machine?  If not, doing the merge will fix this.");
-                        if (!UnsafePDBMatching)
-                        {
-                            symReader.m_log.WriteLine("The /UnsafePdbMatch option will force an ambiguous match, but this is not recommended.");
-                        }
+                        symReader.m_log.WriteLine("The /UnsafePdbMatch option will force an ambiguous match, but this is not recommended.");
                     }
                 }
                 symReader.m_log.WriteLine("Failed to to find PDB for {0}", moduleFile.FilePath);
@@ -8474,6 +8487,39 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             symReader.m_log.WriteLine("Opened Pdb file {0}", pdbFileName);
             return symbolReaderModule;
+        }
+
+        /// <summary>
+        /// Returns true if 'moduleFile' seems to be unchanged from the time the information about it
+        /// was generated.  Logs messages to 'log' if it fails.  
+        /// </summary>
+        private bool TraceModuleUnchanged(TraceModuleFile moduleFile, TextWriter log)
+        {
+            if (!File.Exists(moduleFile.FilePath))
+            {
+                log.WriteLine("The file {0} does not exist on the local machine", moduleFile.FilePath);
+                return false;
+            }
+
+            using (var file = new PEFile.PEFile(moduleFile.FilePath))
+            {
+                if (file.Header.CheckSum != (uint)moduleFile.ImageChecksum)
+                {
+                    log.WriteLine("The the local file {0} has a mismatched checksum found {1} != expected {2}", moduleFile.FilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
+                    return false;
+                }
+                if (moduleFile.ImageId != 0 && file.Header.TimeDateStampSec != moduleFile.ImageId)
+                {
+                    log.WriteLine("The the local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFile.FilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
+                    return false;
+                }
+                if (file.Header.SizeOfImage != (uint)moduleFile.ImageSize)
+                {
+                    log.WriteLine("The the local file {0} has a mismatched size found {1} != expected {2}", moduleFile.FilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
+                    return false;
+                }
+            }
+            return true;
         }
 
         void IFastSerializable.ToStream(Serializer serializer)
@@ -9709,6 +9755,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public string ProductVersion { get { return productVersion; } }
 
         /// <summary>
+        /// This is the checksum value in the PE header. Can be used to validate 
+        /// that the file on disk is the same as the file from the trace.  
+        /// </summary>
+        public int ImageChecksum { get { return imageChecksum; } }
+
+        /// <summary>
+        /// This used to be called TimeDateStamp, but linkers may not use it as a 
+        /// timestamp anymore because they want deterministic builds.  It still is 
+        /// useful as a unique ID for the image.  
+        /// </summary>
+        public int ImageId { get { return timeDateStamp; } }
+
+        /// <summary>
         /// If the Product Version fields has a GIT Commit Hash component, this returns it,  Otherwise it is empty.   
         /// </summary>
         public string GitCommitHash
@@ -9738,9 +9797,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
-        /// Returns the time the DLL was built as a DateTime.  
+        /// Returns the time the DLL was built as a DateTime.   Note that this may not
+        /// work if the build system uses deterministic builds (in which case timestamps
+        /// are not allowed.   We may not be able to tell if this is a bad timestamp
+        /// but we include it because when it is timestamp it is useful.  
         /// </summary>
-        public DateTime BuildTime { get { return PEFile.PEHeader.TimeDateStampToDate(timeDateStamp); } }
+        public DateTime BuildTime
+        {
+            get
+            {
+                var ret = PEFile.PEHeader.TimeDateStampToDate(timeDateStamp);
+                if (ret > DateTime.Now)
+                {
+                    ret = DateTime.MinValue;
+                }
+
+                return ret;
+            }
+        }
         /// <summary>
         /// The number of code addresses included in this module.  This is useful for determining if 
         /// this module is worth having its symbolic information looked up or not.   It is not 
@@ -9804,6 +9878,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal string productName;
         internal string productVersion;
         internal int timeDateStamp;
+        internal int imageChecksum;                  // used to validate if the local file is the same as the one from the trace.  
         internal int codeAddressesInModule;
         internal TraceModuleFile managedModule;
 
@@ -9820,6 +9895,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(fileVersion);
             serializer.Write(productVersion);
             serializer.Write(timeDateStamp);
+            serializer.Write(imageChecksum);
             serializer.Write((int)moduleFileIndex);
             serializer.Write(codeAddressesInModule);
             serializer.Write(managedModule);
@@ -9836,6 +9912,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out fileVersion);
             deserializer.Read(out productVersion);
             deserializer.Read(out timeDateStamp);
+            deserializer.Read(out imageChecksum);
             moduleFileIndex = (ModuleFileIndex)deserializer.ReadInt();
             deserializer.Read(out codeAddressesInModule);
             deserializer.Read(out managedModule);

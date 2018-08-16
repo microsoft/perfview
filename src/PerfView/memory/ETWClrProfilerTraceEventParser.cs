@@ -24,6 +24,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             GCAllocSampled = 0x8,
             Call = 0x10,
             CallSampled = 0x20,
+            DisableInlining = 0x40,
             Detach = 0x800000000000,
         };
 
@@ -360,7 +361,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class CallEnterArgs : TraceEvent
     {
         public Address FunctionID { get { return (Address)GetInt64At(0); } }
-
+        public int SamplingRate { get { if (EventDataLength >= 12) { return GetInt32At(8); } return 1; } }
         #region Private
         internal CallEnterArgs(Action<CallEnterArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -385,6 +386,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         {
             Prefix(sb);
             XmlAttrib(sb, "FunctionID", FunctionID);
+            XmlAttrib(sb, "SamplingRate", SamplingRate);
             sb.Append("/>");
             return sb;
         }
@@ -395,7 +397,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "FunctionID" };
+                    payloadNames = new string[] { "FunctionID", "SamplingRate" };
                 }
 
                 return payloadNames;
@@ -408,6 +410,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             {
                 case 0:
                     return FunctionID;
+                case 1:
+                    return SamplingRate;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -955,7 +959,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         public long ClassID { get { return GetInt64At(8); } }
         public long Size { get { return GetInt64At(16); } }
         public int ObjectRefCount { get { return GetInt32At(24); } }
-        public Address ObjectRefs(int arrayIndex) { return GetAddressAt(28 + (arrayIndex * HostOffset(4, 1))); }
+        public Address ObjectRefs(int arrayIndex) { return GetAddressAt(28 + (arrayIndex * PointerSize)); }
 
         #region Private
         internal ObjectReferencesArgs(Action<ObjectReferencesArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -1025,9 +1029,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class ObjectsMovedArgs : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
-        public Address RangeBases(int arrayIndex) { return GetAddressAt(4 + (arrayIndex * HostOffset(4, 1))); }
-        public Address TargetBases(int arrayIndex) { return GetAddressAt(HostOffset(0 + (Count * 4) + 4, 1) + (arrayIndex * HostOffset(4, 1))); }
-        public int Lengths(int arrayIndex) { return GetInt32At(HostOffset(0 + (Count * 4) + (Count * 4) + 4, 2) + (arrayIndex * HostOffset(4, 0))); }
+        public Address RangeBases(int arrayIndex) { return GetAddressAt(4 + (PointerSize * arrayIndex)); }
+        public Address TargetBases(int arrayIndex) { return GetAddressAt(4 + (PointerSize * Count) + (PointerSize * arrayIndex)); }
+        public int Lengths(int arrayIndex) { return GetInt32At(4 + 2 * (PointerSize * Count) + (4 * arrayIndex)); }
 
         #region Private
         internal ObjectsMovedArgs(Action<ObjectsMovedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -1041,8 +1045,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (Count * 4) + (Count * 4) + (Count * 4) + 4, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (Count * 4) + (Count * 4) + (Count * 4) + 4, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + 2 * (PointerSize * Count) + (4 * Count)));
+            Debug.Assert(!(Version > 0 && EventDataLength < 4 + 2 * (PointerSize * Count) + (4 * Count)));
         }
         protected override Delegate Target
         {
@@ -1088,8 +1092,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class ObjectsSurvivedArgs : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
-        public Address RangeBases(int arrayIndex) { return GetAddressAt(4 + (arrayIndex * HostOffset(4, 1))); }
-        public int Lengths(int arrayIndex) { return GetInt32At(HostOffset(0 + (Count * 4) + 4, 1) + (arrayIndex * HostOffset(4, 0))); }
+
+        public Address RangeBases(int arrayIndex)
+        {
+            // The ranges are a block of pointer sized elements. that is after the 4 byte length field 
+            return GetAddressAt(4 + (PointerSize * arrayIndex));
+        }
+        public int Lengths(int arrayIndex)
+        {
+            // The lengths are a blob of 32 bit integers that are after the RangeBases  
+            return GetInt32At(4 + (PointerSize * Count) + (4 * arrayIndex));
+        }
 
         #region Private
         internal ObjectsSurvivedArgs(Action<ObjectsSurvivedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -1103,8 +1116,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (Count * 4) + (Count * 4) + 4, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (Count * 4) + (Count * 4) + 4, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + (PointerSize * Count) + (4 * Count)));
+            Debug.Assert(!(Version > 0 && EventDataLength < 4 + (PointerSize * Count) + (4 * Count)));
         }
         protected override Delegate Target
         {
@@ -1214,10 +1227,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class RootReferencesArgs : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
-        public Address ObjectIDs(int arrayIndex) { return GetAddressAt(4 + (arrayIndex * HostOffset(4, 1))); }
-        public GCRootKind GCRootKinds(int arrayIndex) { return (GCRootKind)GetInt32At(HostOffset(0 + (Count * 4) + 4, 1) + (arrayIndex * HostOffset(4, 0))); }
-        public GCRootFlags GCRootFlags(int arrayIndex) { return (GCRootFlags)GetInt32At(HostOffset(0 + (Count * 4) + (Count * 4) + 4, 1) + (arrayIndex * HostOffset(4, 0))); }
-        public Address RootIDs(int arrayIndex) { return GetAddressAt(HostOffset(0 + (Count * 4) + (Count * 4) + (Count * 4) + 4, 1) + (arrayIndex * HostOffset(4, 1))); }
+        public Address ObjectIDs(int arrayIndex) { return GetAddressAt(4 + (PointerSize * arrayIndex)); }
+        public GCRootKind GCRootKinds(int arrayIndex)
+        {
+            int ret = GetInt32At(4 + PointerSize * Count + (4 * arrayIndex));
+            Debug.Assert((ret & 0xFFFFFF00) == 0);  // assert is is less than 256, we only use 4 bits so far.  
+            return (GCRootKind)ret;
+        }
+        public GCRootFlags GCRootFlags(int arrayIndex)
+        {
+            int ret = GetInt32At(4 + PointerSize * Count + 4 * Count + 4 * arrayIndex);
+            Debug.Assert((ret & 0xFFFFFFF0) == 0);  // assert is is less than 16, we only use 4 values so far. 
+
+            return (GCRootFlags)ret;
+        }
+        public Address RootIDs(int arrayIndex) { return GetAddressAt(4 + PointerSize * Count + (2 * 4 * Count) + PointerSize * arrayIndex); }
 
         #region Private
         internal RootReferencesArgs(Action<RootReferencesArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -1231,8 +1255,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (Count * 4) + (Count * 4) + (Count * 4) + (Count * 4) + 4, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (Count * 4) + (Count * 4) + (Count * 4) + (Count * 4) + 4, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + (2 * PointerSize * Count) + (2 * 4 * Count)));
+            Debug.Assert(!(Version > 0 && EventDataLength < 4 + (2 * PointerSize * Count) + (2 * 4 * Count)));
         }
         protected override Delegate Target
         {

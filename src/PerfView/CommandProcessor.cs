@@ -243,7 +243,9 @@ namespace PerfView
             if (parsedArgs.StartOnPerfCounter != null)
             {
                 if (!App.IsElevated)
+                {
                     throw new ApplicationException("Must be elevated to collect ETW information.");
+                }
 
                 DateTime waitStartTime = DateTime.Now;
                 DateTime lastProgressReportTime = waitStartTime;
@@ -266,7 +268,10 @@ namespace PerfView
                     while (!collectionCompleted.WaitOne(200))
                     {
                         if (startTriggered)
+                        {
                             break;
+                        }
+
                         var now = DateTime.Now;
                         if ((now - lastProgressReportTime).TotalSeconds > 10)
                         {
@@ -275,7 +280,9 @@ namespace PerfView
                             {
                                 var triggerStatus = startTrigger.Status;
                                 if (triggerStatus.Length != 0)
+                                {
                                     LogFile.WriteLine(triggerStatus);
+                                }
                             }
                             lastProgressReportTime = now;
                         }
@@ -284,7 +291,9 @@ namespace PerfView
                 finally
                 {
                     foreach (var startTrigger in startTigggers)
+                    {
                         startTrigger.Dispose();
+                    }
                 }
             }
 #endif
@@ -335,6 +344,11 @@ namespace PerfView
             if (parsedArgs.DotNetAllocSampled)
             {
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.GCAllocSampled;
+            }
+
+            if (parsedArgs.DisableInlining)
+            {
+                profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.DisableInlining;
             }
 
             if (profilerKeywords != 0)
@@ -686,7 +700,7 @@ namespace PerfView
                                 "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
                                 "Response.StatusCode";
                             diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
-                            const ulong IgnoreShortCutKeywords = 0x0800;
+                            const ulong IgnoreShortCutKeywords = 0x0800;    // Turing this OFF enables all the shortcut keywords (ASP.NET and Entity Framework).  
                             EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
                                 TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
@@ -697,10 +711,14 @@ namespace PerfView
                                 TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
 
                             // Turn on Power stuff
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5D);
-                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", ulong.MaxValue);
-                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCfg", ulong.MaxValue);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Power",
+                                new Guid("331C3B3A-2005-44C2-AC5E-77220C37D6B4"), TraceEventLevel.Informational, 0xFFB);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power",
+                                new Guid("0F67E49F-FE51-4E9F-B490-6F2948CC6027"), TraceEventLevel.Informational, 0xE5D);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCpl",
+                                new Guid("B1F90B27-4551-49D6-B2BD-DFC6453762A6"), TraceEventLevel.Informational, ulong.MaxValue);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCfg",
+                                 new Guid("9F0C4EA8-EC01-4200-A00D-B9701CBEA5D8"), TraceEventLevel.Informational, ulong.MaxValue);
 
                             // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
                             // It does not increase the volume in a significant way and they can be pretty useful.     
@@ -1573,7 +1591,9 @@ namespace PerfView
                     done = true;
                 });
                 while (!done)
+                {
                     Thread.Sleep(10);
+                }
             }
 #endif
             HeapDumper.ForceGC(processID, LogFile);
@@ -1742,11 +1762,15 @@ namespace PerfView
             // We do this to avoid a common mistake where people will create extensions on shared copies of perfView.  
             if (PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(@"\\") ||
                 PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new ApplicationException("Currently PerView.exe must be a machine-local copy of the EXE.  Copy it locally first.");
+            }
 
             var extensionSrcDir = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, parsedArgs.ExtensionName + "Src");
             if (Directory.Exists(extensionSrcDir))
+            {
                 throw new ApplicationException("The extension directory " + extensionSrcDir + " already exists.");
+            }
 
             Directory.CreateDirectory(extensionSrcDir);
 
@@ -1778,7 +1802,9 @@ namespace PerfView
                 var extensionName = shortDirName.Substring(0, shortDirName.Length - 3);   // Remove .src
                 var projFile = Path.Combine(dirName, extensionName + ".csproj");
                 if (File.Exists(projFile))
+                {
                     projectFiles.Add(projFile);
+                }
             }
 
             var extensionsSolnName = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "Extensions.sln");
@@ -2099,7 +2125,9 @@ namespace PerfView
                 {
                     LogFile.WriteLine("Turning off perf monitoring.");
                     foreach (var monitor in monitors)
+                    {
                         monitor.Dispose();
+                    }
                 }
 #endif
             }
@@ -2144,11 +2172,15 @@ namespace PerfView
 
                     parsedArgs.Merge = collectWindow.MergeCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Merge.HasValue)
+                    {
                         App.ConfigData["Merge"] = parsedArgs.Merge.Value.ToString();
+                    }
 
                     parsedArgs.Zip = collectWindow.ZipCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Zip.HasValue)
+                    {
                         App.ConfigData["Zip"] = parsedArgs.Zip.Value.ToString();
+                    }
 
                     parsedArgs.NoRundown = !(collectWindow.RundownCheckBox.IsChecked ?? false);
                     int.TryParse(collectWindow.RundownTimeoutTextBox.Text, out parsedArgs.RundownTimeout);
@@ -2556,8 +2588,11 @@ namespace PerfView
             {
                 return;
             }
-
+#if PERFVIEW_COLLECT
+            throw new ApplicationException("PerfViewCollect needs to run with elevated privileges.");
+#else
             LaunchPerfViewElevated(command, parsedArgs);
+#endif
         }
 
         private static string ParsedArgsAsString(string command, CommandLineArgs parsedArgs)
@@ -2831,6 +2866,11 @@ namespace PerfView
             if (parsedArgs.DotNetCallsSampled)
             {
                 cmdLineArgs += " /DotNetCallsSampled";
+            }
+
+            if (parsedArgs.DisableInlining)
+            {
+                cmdLineArgs += " /DisableInlining";
             }
 
             if (parsedArgs.JITInlining)

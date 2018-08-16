@@ -41,7 +41,7 @@ namespace Triggers
     /// PerformanceCounterTrigger is a class that knows how to determine if a particular performance counter has
     /// exceeded a particular threshold.   
     /// </summary>
-    class PerformanceCounterTrigger : Trigger
+    internal class PerformanceCounterTrigger : Trigger
     {
         /// <summary>
         /// Creates a new PerformanceCounterTrigger based on a specification.   Basically this specification is 
@@ -75,8 +75,11 @@ namespace Triggers
 
             var m = Regex.Match(spec, @"^\s*(.*):(.*?):(.*?)\s*([<>])\s*(\d+\.?\d*)\s*$");
             if (!m.Success)
+            {
                 throw new ApplicationException(
                     "Performance monitor specification '" + spec + "' does not match syntax CATEGORY:COUNTER:INSTANCE [<>] NUM");
+            }
+
             var categoryName = m.Groups[1].Value;
             var counterName = m.Groups[2].Value;
             var instanceName = m.Groups[3].Value;
@@ -89,11 +92,17 @@ namespace Triggers
             catch (Exception) { throw new ApplicationException("Could not start performance counter " + m_spec); }
 
             if (!m_category.CounterExists(counterName))
+            {
                 throw new ApplicationException("Count not find performance counter " + counterName + " in category " + categoryName);
+            }
 
             if (categoryName.StartsWith(".NET"))                // TODO FIX NOW, remove this condition after we are confident of it.  
+            {
                 if (SpawnCounterIn64BitProcessIfNecessary())
+                {
                     return;
+                }
+            }
 
             // If the instance does not exist, you won't discover it until we fetch the counter later.   
             m_counter = new PerformanceCounter(categoryName, counterName, instanceName);
@@ -139,7 +148,9 @@ namespace Triggers
                             }
                         }
                         else
+                        {
                             m_count = 0;
+                        }
                     }
                     Thread.Sleep(1000);     // Check every second
                 }
@@ -177,7 +188,10 @@ namespace Triggers
             {
                 var threshold = Threshold;
                 if (DecayToZeroHours != 0)
+                {
                     threshold = (float)(threshold * (1 - (DateTime.UtcNow - m_startTimeUtc).TotalHours / DecayToZeroHours));
+                }
+
                 return threshold;
             }
         }
@@ -193,7 +207,9 @@ namespace Triggers
 #if PERFVIEW
             var cmd = m_cmd;
             if (cmd != null)
+            {
                 cmd.Kill();
+            }
 #endif
         }
         public override string Status
@@ -202,19 +218,26 @@ namespace Triggers
             {
                 var exception = m_task.Exception;
                 if (exception != null)
+                {
                     return string.Format("Error: Exception thrown during monitoring: {0}", exception.InnerException.Message);
+                }
 
                 if (m_counter == null)
+                {
                     return "";
+                }
 
                 var instanceExists = "";
                 if (!m_instanceExists)
+                {
                     instanceExists = " " + m_counter.InstanceName + " does not exist";
+                }
+
                 return string.Format("{0}:{1}:{2}={3:n1}{4}",
                     m_counter.CategoryName, m_counter.CounterName, m_counter.InstanceName, CurrentValue, instanceExists);
             }
         }
-    #region private
+        #region private
 
         /// <summary>
         /// If you are in a 32 bit process you don't see 64 bit perf counters.  Returns true if we needed to do this.  
@@ -224,9 +247,14 @@ namespace Triggers
 #if PERFVIEW   // TODO FIX NOW turn this on and test.
             // Do we have to do this? 
             if (m_triggered == null)
+            {
                 return false;
+            }
+
             if (!(Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess))
+            {
                 return false;
+            }
 
             m_task = Task.Factory.StartNew(delegate
             {
@@ -237,7 +265,9 @@ namespace Triggers
                 var options = new Utilities.CommandOptions().AddNoThrow().AddTimeout(Utilities.CommandOptions.Infinite).AddOutputStream(m_log);
                 m_cmd = Utilities.Command.Run(commandLine, options);
                 if (m_cmd.ExitCode != 0)
+                {
                     m_log.WriteLine("Error: heapdump failed with error code {0}", m_cmd.ExitCode);
+                }
                 else
                 {
                     m_triggered?.Invoke(this);
@@ -255,9 +285,13 @@ namespace Triggers
             Update();
 
             if (IsGreaterThan)
+            {
                 return CurrentValue > EffectiveThreshold;
+            }
             else
+            {
                 return CurrentValue < EffectiveThreshold;
+            }
         }
         /// <summary>
         /// Update 'CurrentValue' to the live value of the performance counter. 
@@ -279,7 +313,9 @@ namespace Triggers
                 {
                     // ignore any 'does not exist exceptions
                     if (!e.Message.Contains("does not exist") || m_counter.InstanceName.Length == 0)
+                    {
                         throw;
+                    }
                 }
             }
             return CurrentValue;
@@ -303,7 +339,7 @@ namespace Triggers
         private bool m_wasUntriggered;  // We only trigger if we go from untriggered to triggered.  
         private bool m_warnedAboutUntriggered;
         private DateTime m_startTimeUtc;
-    #endregion
+        #endregion
     }
 #endif
 
@@ -1389,7 +1425,7 @@ namespace Triggers
     /// <summary>
     /// A class that will cause a callback if a particular event is writen to the windows event log.  
     /// </summary>
-    class EventLogTrigger : Trigger
+    internal class EventLogTrigger : Trigger
     {
         /// <summary>
         /// Will cause a callback if the an event is written to the Windows Application Event Log that matches the regular expression
@@ -1410,7 +1446,7 @@ namespace Triggers
             m_pat = new Regex(spec, RegexOptions.IgnoreCase);
 
             m_eventLog = new EventLog(eventLogName);
-            m_eventLog.EntryWritten += delegate(object sender, EntryWrittenEventArgs e)
+            m_eventLog.EntryWritten += delegate (object sender, EntryWrittenEventArgs e)
             {
                 var evnt = e.Entry;
                 var eventString = string.Format("{0}: Type: {1} EventId: {2} Message: {3}",
@@ -1418,24 +1454,28 @@ namespace Triggers
 
                 m_log.WriteLine("EVENT_LOG: {0}", eventString);
                 if (m_pat.IsMatch(eventString) && m_onTriggered != null)
+                {
                     m_onTriggered(this);
+                }
             };
             m_eventLog.EnableRaisingEvents = true;
         }
         public override void Dispose()
         {
             if (m_eventLog != null)
+            {
                 m_eventLog.Dispose();
+            }
         }
 
-    #region private
-        EventLog m_eventLog;
-        TextWriter m_log;
-        Action<EventLogTrigger> m_onTriggered;
-        Regex m_pat;
-    #endregion
+        #region private
+        private EventLog m_eventLog;
+        private TextWriter m_log;
+        private Action<EventLogTrigger> m_onTriggered;
+        private Regex m_pat;
+        #endregion
     };
-#endif
+#endif 
 
 #if !DOTNET_CORE    // perfCounters don't exist on .NET Core
     /// <summary>
@@ -1451,8 +1491,11 @@ namespace Triggers
         {
             var m = Regex.Match(spec, @"^\s*((.*):(.*?):(.*?))(@(\d+\.?\d*))?\s*$");
             if (!m.Success)
+            {
                 throw new ApplicationException(
                     "Performance monitor specification does not match syntax CATEGORY:COUNTER:INSTANCE");
+            }
+
             m_spec = m.Groups[1].Value;
             m_log = log;
 
@@ -1462,13 +1505,17 @@ namespace Triggers
             string intervalSecStr = m.Groups[6].Value;
             double intervalSec = 2;
             if (intervalSecStr.Length > 0)
+            {
                 intervalSec = double.Parse(intervalSecStr);
+            }
 
             try { m_category = new PerformanceCounterCategory(categoryName); }
             catch (Exception) { throw new ApplicationException("Could not start performance counter " + m_spec); }
 
             if (!m_category.CounterExists(counterName))
+            {
                 throw new ApplicationException("Count not find performance counter " + counterName + " in category " + categoryName);
+            }
 
             // If the instance does not exist, this will not throw until we try to get a value.   
             m_counter = new PerformanceCounter(categoryName, counterName, instanceName);
@@ -1495,7 +1542,7 @@ namespace Triggers
             GC.SuppressFinalize(this);
         }
 
-    #region private
+        #region private
         private void TimerTick(object obj)
         {
             try
@@ -1507,16 +1554,18 @@ namespace Triggers
             {
                 // ignore any 'does not exist exceptions
                 if (!e.Message.Contains("does not exist") || m_counter.InstanceName.Length == 0)
+                {
                     m_log.WriteLine("Error logging performance counter {0}: {1}", m_spec, e.Message);
+                }
             }
         }
 
-        string m_spec;
-        PerformanceCounterCategory m_category;
-        PerformanceCounter m_counter;
-        System.Threading.Timer m_timer;
-        TextWriter m_log;
-    #endregion
+        private string m_spec;
+        private PerformanceCounterCategory m_category;
+        private PerformanceCounter m_counter;
+        private System.Threading.Timer m_timer;
+        private TextWriter m_log;
+        #endregion
     }
 #endif
 
