@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
-
+﻿
 #if false 
 namespace Microsoft.Diagnostics.Tracing
 {

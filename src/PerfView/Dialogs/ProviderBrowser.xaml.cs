@@ -3,18 +3,9 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace PerfView.Dialogs
 {
@@ -51,7 +42,9 @@ namespace PerfView.Dialogs
             {
                 // If the name is null, it is likely a system process, it will not have managed code, so don't bother.   
                 if (process.Name == null)
+                {
                     continue;
+                }
                 // if (process.ProcessID == myProcessId)
                 //    continue;
 
@@ -60,7 +53,7 @@ namespace PerfView.Dialogs
                     continue;*/
                 m_processNames.Add(process.ToString());
             }
-            
+
             ProcessNameListBox.ItemsSource = m_processNames;
             // Get Provider names 
             m_providerNames = new List<String>();
@@ -82,11 +75,15 @@ namespace PerfView.Dialogs
             foreach (string processName in m_processNames)
             {
                 if (0 <= processName.IndexOf(ProcessNameFilter.Text, StringComparison.OrdinalIgnoreCase))
+                {
                     filteredList.Add(processName);
+                }
             }
             ProcessNameListBox.ItemsSource = filteredList;
             if (filteredList.Count > 0)
+            {
                 ProcessNameListBox.SelectedItem = filteredList[0];
+            }
         }
         private void DoProcessSelected(object sender, SelectionChangedEventArgs e)
         {
@@ -100,9 +97,11 @@ namespace PerfView.Dialogs
                 m_providerNames = new List<String>();
                 if (selectedItem.ToString() == "*")
                 {
-                   
+
                     foreach (Guid guid in TraceEventProviders.GetPublishedProviders())
+                    {
                         m_providerNames.Add(TraceEventProviders.GetProviderName(guid));
+                    }
                 }
                 else
                 {
@@ -114,10 +113,12 @@ namespace PerfView.Dialogs
                     int end = m_selectedProcess.IndexOf("| Alive", begin + 1);
                     m_selectedProcess = m_selectedProcess.Substring(begin + 8, end - begin - 8);
                     foreach (var provider in TraceEventProviders.GetRegisteredProvidersInProcess(int.Parse(m_selectedProcess)))
+                    {
                         m_providerNames.Add(TraceEventProviders.GetProviderName(provider));
-                    
+                    }
+
                     KeyNameListBox.ItemsSource = m_keyStrings;
-                    
+
                 }
                 ProviderNameListBox.ItemsSource = m_providerNames;
                 updateDisplays();
@@ -130,11 +131,15 @@ namespace PerfView.Dialogs
             foreach (string providerName in m_providerNames)
             {
                 if (0 <= providerName.IndexOf(ProviderNameFilter.Text, StringComparison.OrdinalIgnoreCase))
+                {
                     filteredList.Add(providerName);
+                }
             }
             ProviderNameListBox.ItemsSource = filteredList;
             if (filteredList.Count > 0)
+            {
                 ProviderNameListBox.SelectedItem = filteredList[0];
+            }
         }
         private void ProviderSelected(object sender, SelectionChangedEventArgs e)
         {
@@ -144,10 +149,16 @@ namespace PerfView.Dialogs
                 m_selectedProvider = selectedItem.ToString();
                 m_keys = new Dictionary<string, ProviderDataItem>();
                 foreach (var keyword in TraceEventProviders.GetProviderKeywords(TraceEventProviders.GetProviderGuidByName(m_selectedProvider)))
+                {
                     m_keys.Add(keyword.Name.ToString(), keyword);
+                }
+
                 m_keyStrings = new List<String>();
                 foreach (var key in m_keys.Keys)
+                {
                     m_keyStrings.Add(m_keys[key].Name.ToString());
+                }
+
                 KeyNameListBox.ItemsSource = m_keyStrings;
                 m_selectedKeys = new List<string>();
                 updateDisplays();
@@ -157,18 +168,24 @@ namespace PerfView.Dialogs
         private void DoKeyFilterTextChange(object sender, TextChangedEventArgs e)
         {
             if (KeyNameFilter.Text == "*")
+            {
                 KeyNameListBox.ItemsSource = m_keyStrings;
+            }
             else
             {
                 List<String> filteredList = new List<string>();
                 foreach (string key in m_keyStrings)
                 {
                     if (0 <= key.IndexOf(KeyNameFilter.Text, StringComparison.OrdinalIgnoreCase))
+                    {
                         filteredList.Add(key);
+                    }
                 }
                 KeyNameListBox.ItemsSource = filteredList;
                 if (filteredList.Count > 0)
+                {
                     ProviderNameListBox.SelectedItem = filteredList[0];
+                }
             }
 
         }
@@ -176,7 +193,10 @@ namespace PerfView.Dialogs
         {
             m_selectedKeys = new List<string>();
             foreach (var key in KeyNameListBox.SelectedItems)
+            {
                 m_selectedKeys.Add(key.ToString());
+            }
+
             updateDisplays();
         }
         private void LevelSelected(object sender, SelectionChangedEventArgs e)
@@ -192,23 +212,35 @@ namespace PerfView.Dialogs
             {
                 SelectedProviderString.Text += ":" + m_keys[m_selectedKeys[0]].Name.ToString();
                 for (int i = 1; i < m_selectedKeys.Count; i++)
+                {
                     SelectedProviderString.Text += "|" + m_keys[m_selectedKeys[i]].Name.ToString();
+                }
             }
             else
+            {
                 SelectedProviderString.Text += ":*";
+            }
 
             if (LevelListBox.SelectedItem != null)
+            {
                 SelectedProviderString.Text += ':' + m_level;
+            }
         }
         private void DoReturnClick(object sender, RoutedEventArgs e)
         {
             string keywords = "";
             if (m_selectedKeys.Count != 0)
+            {
                 keywords += m_keys[m_selectedKeys[0]].Name.ToString();
+            }
+
             for (int i = 1; i < m_selectedKeys.Count; i++)
+            {
                 keywords += "|" + m_keys[m_selectedKeys[i]].Name.ToString();
+            }
+
             m_updateParent(m_selectedProvider, keywords, m_level);
-            this.Close();
+            Close();
         }
 
         private void DoViewManifestClick(object sender, RoutedEventArgs e)

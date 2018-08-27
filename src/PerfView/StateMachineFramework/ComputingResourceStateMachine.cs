@@ -1,11 +1,10 @@
-﻿using System;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using System.Diagnostics;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
+using System.Diagnostics;
 
 namespace PerfView
 {
@@ -103,7 +102,9 @@ namespace PerfView
             TraceThread thread = data.Thread();
             Debug.Assert(thread != null);
             if (null == thread)
+            {
                 return;
+            }
 
             // Log the CPU sample.
             ComputingResourceThreadState threadState = m_ThreadState[(int)thread.ThreadIndex];
@@ -142,7 +143,9 @@ namespace PerfView
             TraceThread thread = data.Thread();
             Debug.Assert(thread != null);
             if (null == thread)
+            {
                 return;
+            }
 
             // Get the thread state.
             ComputingResourceThreadState threadState = m_ThreadState[(int)thread.ThreadIndex];
@@ -156,7 +159,9 @@ namespace PerfView
             TraceThread thread = data.Thread();
             Debug.Assert(thread != null);
             if (null == thread)
+            {
                 return;
+            }
 
             // Get the thread state.
             ComputingResourceThreadState threadState = m_ThreadState[(int)thread.ThreadIndex];
@@ -170,7 +175,9 @@ namespace PerfView
             TraceThread thread = data.Thread();
             Debug.Assert(thread != null);
             if (null == thread)
+            {
                 return;
+            }
 
             // Attempt to charge the allocation to a request.
             ScenarioThreadState scenarioThreadState = m_Configuration.ScenarioThreadState[(int)thread.ThreadIndex];
@@ -458,8 +465,8 @@ namespace PerfView
                 MutableTraceEventStackSource stackSource = stateMachine.StackSource;
 
                 // Set the time and metric.
-                sample.TimeRelativeMSec = this.BlockTimeStartRelativeMSec;
-                sample.Metric = (float)(data.TimeStampRelativeMSec - this.BlockTimeStartRelativeMSec);
+                sample.TimeRelativeMSec = BlockTimeStartRelativeMSec;
+                sample.Metric = (float)(data.TimeStampRelativeMSec - BlockTimeStartRelativeMSec);
 
                 /* Generate the stack trace. */
 
@@ -498,7 +505,9 @@ namespace PerfView
             TraceEvent data)
         {
             if ((null == stateMachine) || (null == thread) || (null == data))
+            {
                 return;
+            }
 
             StackSourceSample sample = stateMachine.Sample;
             sample.Metric = 1;

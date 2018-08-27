@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Windows.Controls;
-using System.Text.RegularExpressions;
-using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Diagnostics;
-using System.Windows.Documents;
+using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
 using Utilities;
 
 namespace PerfView
@@ -22,7 +22,7 @@ namespace PerfView
         public PerfDataGrid()
         {
             InitializeComponent();
-            Grid.CopyingRowClipboardContent += delegate(object sender, DataGridRowClipboardEventArgs e)
+            Grid.CopyingRowClipboardContent += delegate (object sender, DataGridRowClipboardEventArgs e)
             {
                 for (int i = 0; i < e.ClipboardRowContent.Count; i++)
                 {
@@ -30,24 +30,37 @@ namespace PerfView
 
                     string morphedContent = null;
                     if (e.IsColumnHeadersRow)
+                    {
                         morphedContent = GetColumnHeaderText(clipboardContent.Column);
+                    }
                     else
                     {
                         var cellContent = clipboardContent.Content;
                         if (cellContent is float)
+                        {
                             morphedContent = GoodPrecision((float)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent is double)
+                        {
                             morphedContent = GoodPrecision((double)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent != null)
+                        {
                             morphedContent = cellContent.ToString();
+                        }
                         else
+                        {
                             morphedContent = "";
+                        }
+
                         morphedContent = CompressContent(morphedContent);
                     }
 
                     // Pad so that pasting into a text window works well. 
                     if (e.ClipboardRowContent.Count > 1 && !NoPadOnCopyToClipboard)
+                    {
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
+                    }
 
                     // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
                     // for ranges.  
@@ -75,7 +88,9 @@ namespace PerfView
                 (sender, e) =>
                 {
                     if (e.Column.SortDirection == null)
+                    {
                         e.Column.SortDirection = ListSortDirection.Ascending;
+                    }
 
                     e.Handled = false;
                 };
@@ -108,17 +123,23 @@ namespace PerfView
 
             var list = Grid.ItemsSource as IList;
             if (list.Count == 0)
+            {
                 return false;
+            }
 
             for (; ; )
             {
                 if (startingNewSearch)
+                {
                     startingNewSearch = false;
+                }
                 else
                 {
                     curPos++;
                     if (curPos >= list.Count)
+                    {
                         curPos = 0;
+                    }
 
                     if (curPos == m_FindEnd)
                     {
@@ -166,8 +187,12 @@ namespace PerfView
                 // TODO should not have to be linear
                 var list = Grid.ItemsSource as IList;
                 for (int i = 0; i < list.Count; i++)
+                {
                     if (list[i] == cell.Item)
+                    {
                         return i;
+                    }
+                }
                 // var row = Grid.ItemContainerGenerator.ContainerFromItem(cell.Item);
                 // ret = Grid.ItemContainerGenerator.IndexFromContainer(row);
 
@@ -190,9 +215,13 @@ namespace PerfView
             {
                 var name = ((TextBlock)Grid.Columns[i].Header).Name;
                 if (name == columnName)
+                {
                     return i;
+                }
                 else
+                {
                     i++;
+                }
             }
             return -1;
         }
@@ -212,22 +241,31 @@ namespace PerfView
         private string CompressContent(string content)
         {
             if (content.Length < 70)
+            {
                 return content;
+            }
 
             // Trim method names !*.XXX.YYY(*) -> !XXX.YYY
             content = Regex.Replace(content, @"![\w\.]+\.(\w+\.\w+)\(.*\)", "!$1");
             if (content.Length < 70)
+            {
                 return content;
+            }
 
             // Trim out generic parameters 
             for (; ; )
             {
                 var result = Regex.Replace(content, @"(\w+)<[^>]+>", "$1");
                 if (result == content)
+                {
                     break;
+                }
+
                 content = result;
                 if (content.Length < 70)
+                {
                     return content;
+                }
             }
 
             return content;
@@ -240,12 +278,18 @@ namespace PerfView
         private string PadForColumn(string content, int columnIndex)
         {
             if (m_maxColumnInSelection == null)
+            {
                 m_maxColumnInSelection = new int[Grid.Columns.Count];
+            }
+
             int maxString = m_maxColumnInSelection[columnIndex];
             if (maxString == 0)
             {
                 for (int i = 0; i < m_maxColumnInSelection.Length; i++)
+                {
                     m_maxColumnInSelection[i] = GetColumnHeaderText(Grid.Columns[i]).Length;
+                }
+
                 foreach (var cellInfo in Grid.SelectedCells)
                 {
                     var idx = cellInfo.Column.DisplayIndex;
@@ -259,9 +303,13 @@ namespace PerfView
             }
 
             if (columnIndex == 0)
+            {
                 return content.PadRight(maxString);
+            }
             else
+            {
                 return content.PadLeft(maxString);
+            }
         }
         public static string GetCellStringValue(DataGridCellInfo cell)
         {
@@ -288,7 +336,10 @@ namespace PerfView
             }
             var frameworkElement = cell.Column.GetCellContent(cell.Item);
             if (frameworkElement == null)
+            {
                 return "";
+            }
+
             return GetCellStringValue(frameworkElement);
         }
         public static string GetCellStringValue(FrameworkElement contents)
@@ -336,10 +387,14 @@ namespace PerfView
             {
                 var asCallTreeViewNode = item as CallTreeViewNode;
                 if (asCallTreeViewNode != null)
+                {
                     asCallTreeNodeBase = asCallTreeViewNode.Data;
+                }
             }
             if (asCallTreeNodeBase != null)
+            {
                 histogram = asCallTreeNodeBase.InclusiveMetricByTime;
+            }
 
             if (asTextBox != null)
             {
@@ -347,18 +402,24 @@ namespace PerfView
                 asTextBox.ContextMenu = null;
 
                 if (e.Column == TimeHistogramColumn)
+                {
                     asTextBox.SelectionChanged += (s, ea) => HistogramCell_CellSelectionChanged(s, ea, window.CallTree.TimeHistogramController, histogram);
+                }
                 else if (e.Column == ScenarioHistogramColumn)
+                {
                     asTextBox.SelectionChanged += (s, ea) => HistogramCell_CellSelectionChanged(s, ea, window.CallTree.ScenarioHistogram, histogram);
+                }
                 else
+                {
                     Debug.Assert(false, "Edit from unknown column!");
+                }
             }
         }
 
         // TODO FIX NOW.  This is an ugly hack.  
         public static TextBox EditingBox;
 
-        static internal string GoodPrecision(double num, DataGridColumn column)
+        internal static string GoodPrecision(double num, DataGridColumn column)
         {
             var format = "n3";
 
@@ -367,7 +428,9 @@ namespace PerfView
             {
                 var header = column.Header as TextBlock;
                 if (header != null)
+                {
                     headerName = header.Name;
+                }
             }
 
             if (headerName != null)
@@ -380,7 +443,10 @@ namespace PerfView
                         break;
                     default:
                         if ((int)num == num)
+                        {
                             format = "n0";
+                        }
+
                         break;
                 }
             }
@@ -390,12 +456,20 @@ namespace PerfView
         internal static bool VeryClose(string val1, string val2)
         {
             if (val1 == val2)
+            {
                 return true;
+            }
+
             double dval1, dval2;
             if (!double.TryParse(val1, out dval1))
+            {
                 return false;
+            }
+
             if (!double.TryParse(val2, out dval2))
+            {
                 return false;
+            }
 
             return (dval1 == dval2);
         }
@@ -404,10 +478,16 @@ namespace PerfView
         {
             var asCallTreeNodeBase = item as CallTreeNodeBase;
             if (asCallTreeNodeBase != null)
+            {
                 return asCallTreeNodeBase.DisplayName;
+            }
+
             var asCallTreeViewNode = item as CallTreeViewNode;
             if (asCallTreeViewNode != null)
+            {
                 return asCallTreeViewNode.Name;
+            }
+
             return "";
         }
         private void SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
@@ -439,7 +519,9 @@ namespace PerfView
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
                 }
                 else
+                {
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
+                }
             }
             m_maxColumnInSelection = null;
         }
@@ -447,20 +529,20 @@ namespace PerfView
         {
             var asHyperLink = sender as Hyperlink;
             if (asHyperLink != null)
+            {
                 MainWindow.DisplayUsersGuide((string)asHyperLink.Tag);
+            }
         }
 
         /// <summary>
         /// If we have only two cells selected, even if they are on differnet rows we want to morph them
         /// to a single row.  These variables are for detecting this situation.  
         /// </summary>
-        string m_clipboardRangeStart;
-        string m_clipboardRangeEnd;
-
-        int[] m_maxColumnInSelection;
-
-        int m_FindEnd;
-        Regex m_findPat;
+        private string m_clipboardRangeStart;
+        private string m_clipboardRangeEnd;
+        private int[] m_maxColumnInSelection;
+        private int m_FindEnd;
+        private Regex m_findPat;
         #endregion
     }
 }

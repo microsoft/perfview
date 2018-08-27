@@ -1,22 +1,21 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
-using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Diagnostics.Tracing.StackSources
 {
     /// <summary>
     /// A DebuggerStackSource knows how to read a text file from the cdb (windbg) kc command output (clean stacks)
     /// </summary>
-    class DebuggerStackSource : InternStackSource
+    internal class DebuggerStackSource : InternStackSource
     {
         public DebuggerStackSource(string fileName)
         {
             using (var file = File.OpenText(fileName))
+            {
                 Read(file);
+            }
         }
 
         public DebuggerStackSource(TextReader reader)
@@ -26,12 +25,12 @@ namespace Diagnostics.Tracing.StackSources
 
 
         #region private
-        struct DebuggerCallStackFrame
+        private struct DebuggerCallStackFrame
         {
             public StackSourceFrameIndex frame;
         }
 
-        void Read(TextReader reader)
+        private void Read(TextReader reader)
         {
             var framePattern = new Regex(@"\b(\w+?)\!(\S\(?[\S\s]*\)?)");
             var stackStart = new Regex(@"Call Site");
@@ -58,7 +57,10 @@ namespace Diagnostics.Tracing.StackSources
             {
                 var line = reader.ReadLine();
                 if (line == null)
+                {
                     break;
+                }
+
                 var match = framePattern.Match(line);
                 if (match.Success && newCallStackFound)
                 {
@@ -94,7 +96,10 @@ namespace Diagnostics.Tracing.StackSources
 
                             StackSourceCallStackIndex parent = StackSourceCallStackIndex.Invalid;
                             for (int i = stack.Count - 1; i >= 0; --i)
+                            {
                                 parent = Interner.CallStackIntern(stack[i].frame, parent);
+                            }
+
                             stack.Clear();
 
                             sample.StackIndex = parent;

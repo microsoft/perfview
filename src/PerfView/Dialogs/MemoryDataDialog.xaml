@@ -4,7 +4,7 @@
         xmlns:src="clr-namespace:PerfView"
         Background="#FFA7A7A7" 
         Title="Collecting Memory Data" 
-        Width="730" MinWidth="500" Height="399">
+        Width="900" MinWidth="500" Height="400">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp"/>
     </Window.CommandBindings>

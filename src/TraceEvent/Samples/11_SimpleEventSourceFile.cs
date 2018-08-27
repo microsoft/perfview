@@ -39,12 +39,12 @@ namespace TraceEventSamples
     /// <summary>
     /// The main program is the 'listener' that listens and processes the events that come from EventGenerator
     /// </summary>
-    class SimpleEventSourceFile
+    internal class SimpleEventSourceFile
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         /// <summary>
         /// This is a demo of using TraceEvent to activate a 'real time' provider that is listening to 
@@ -70,7 +70,7 @@ namespace TraceEventSamples
         /// CollectData turn on logging of data from 'eventSourceName' to the file 'dataFileName'.
         /// It will then call EventGenerator.CreateEvents and wait 12 seconds for it to generate some data.  
         /// </summary>
-        static void CollectData(string eventSourceName, string dataFileName)
+        private static void CollectData(string eventSourceName, string dataFileName)
         {
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
             if (!(TraceEventSession.IsElevated() ?? false))
@@ -112,12 +112,14 @@ namespace TraceEventSamples
                 // In this mode if a session already exists, it is stopped and the new one is created.   
                 // 
                 // Here we install the Control C handler.   It is OK if Dispose is called more than once.  
-                Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
+                Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
 
                 // Enable my provider, you can call many of these on the same session to get other events.   
                 var restarted = session.EnableProvider(MyEventSource.Log.Name);
                 if (restarted)      // Generally you don't bother with this warning, but for the demo we do.  
+                {
                     Out.WriteLine("The session {0} was already active, it has been restarted.", sessionName);
+                }
 
                 // Start another thread that Causes MyEventSource to create some events
                 // Normally this code as well as the EventSource itself would be in a different process.  
@@ -132,7 +134,7 @@ namespace TraceEventSamples
         /// Process the data in 'dataFileName' printing the events and doing delta computation between 'MyFirstEvent'
         /// and 'MySecondEvent'.  
         /// </summary>
-        static void ProcessData(string dataFileName)
+        private static void ProcessData(string dataFileName)
         {
             // prepare to read from the session, connect the ETWTraceEventSource to the file
             // Notice there is no session at this point (reading and controlling are not necessarily related). 
@@ -141,7 +143,9 @@ namespace TraceEventSamples
             using (var source = new ETWTraceEventSource(dataFileName))
             {
                 if (source.EventsLost != 0)
+                {
                     Out.WriteLine("WARNING: there were {0} lost events", source.EventsLost);
+                }
 
                 // To demonstrate non-trivial event manipulation, we calculate the time delta between 'MyFirstEvent and 'MySecondEvent'
                 // firstEventTimeMSec remembers all the 'MyFirstEvent' arrival times (indexed by their ID)  
@@ -155,21 +159,21 @@ namespace TraceEventSamples
                 // For debugging, and demo purposes, hook up a callback for every event that 'Dynamic' knows about (this is not EVERY
                 // event only those know about by DynamiceTraceEventParser).   However the 'UnhandledEvents' handler below will catch
                 // the other ones.
-                source.Dynamic.All += delegate(TraceEvent data)
+                source.Dynamic.All += delegate (TraceEvent data)
                 {
                     Out.WriteLine(data.PayloadByName("MyName"));
                     Out.WriteLine("GOT EVENT: " + data.ToString());
                 };
 
                 // Add logic on what to do when we get "MyFirstEvent"
-                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Demos-SimpleMonitor", "MyFirstEvent", delegate(TraceEvent data)
+                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Demos-SimpleMonitor", "MyFirstEvent", delegate (TraceEvent data)
                 {
                     // On First Events, simply remember the ID and time of the event
                     firstEventTimeMSec[(int)data.PayloadByName("MyId")] = data.TimeStampRelativeMSec;
                 });
 
                 // Add logic on what to do when we get "MySecondEvent"
-                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Demos-SimpleMonitor", "MySecondEvent", delegate(TraceEvent data)
+                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Demos-SimpleMonitor", "MySecondEvent", delegate (TraceEvent data)
                 {
                     // On Second Events, if the ID matches, compute the delta and display it. 
                     var myID = (int)data.PayloadByName("MyId");
@@ -180,11 +184,13 @@ namespace TraceEventSamples
                         Out.WriteLine("   >>> Time Delta from first Event = {0:f3} MSec", data.TimeStampRelativeMSec - firstEventTime);
                     }
                     else
+                    {
                         Out.WriteLine("   >>> WARNING, Found a 'SecondEvent' without a corresponding 'FirstEvent'");
+                    }
                 });
 
                 // Add logic on what to do when we get "Stop"
-                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Demos-SimpleMonitor", "MyStopEvent", delegate(TraceEvent data)
+                source.Dynamic.AddCallbackForProviderEvent("Microsoft-Demos-SimpleMonitor", "MyStopEvent", delegate (TraceEvent data)
                 {
                     Out.WriteLine("    >>> Got a stop message");
                     // Stop processing after we we see the 'Stop' event

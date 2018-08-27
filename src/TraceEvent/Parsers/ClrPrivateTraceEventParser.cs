@@ -1,29 +1,26 @@
-using System;
-using System.Text;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-// be explicit about the specific types we need from the public provider
-using GCMarkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCMarkTraceData;
-using GCPerHeapHistoryTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCPerHeapHistoryTraceData;
+using System;
+using System.Diagnostics;
+using System.Text;
+using Address = System.UInt64;
+using ClrStackWalkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ClrStackWalkTraceData;
+using DestroyGCHandleTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.DestroyGCHandleTraceData;
+// TODO FIX NOW harmonize these two and then refer to one from the other.  
+using FinalizeObjectTraceData = Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.FinalizeObjectTraceData;
 using GCGlobalHeapHistoryTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCGlobalHeapHistoryTraceData;
 using GCJoinTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCJoinTraceData;
+// be explicit about the specific types we need from the public provider
+using GCMarkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCMarkTraceData;
 using GCNoUserDataTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCNoUserDataTraceData;
-using ClrStackWalkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ClrStackWalkTraceData;
-using SetGCHandleTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.SetGCHandleTraceData;
-using DestroyGCHandleTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.DestroyGCHandleTraceData;
+using GCPerHeapHistoryTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCPerHeapHistoryTraceData;
 using PinObjectAtGCTimeTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.PinObjectAtGCTimeTraceData;
 using PinPlugAtGCTimeTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.PinPlugAtGCTimeTraceData;
-using GCReason = Microsoft.Diagnostics.Tracing.Parsers.Clr.GCReason;
+using SetGCHandleTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.SetGCHandleTraceData;
+using ThreadPoolIOWorkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ThreadPoolIOWorkTraceData;
+using ThreadPoolWorkingThreadCountTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ThreadPoolWorkingThreadCountTraceData;
 // the next threadpool related types are needed for backwards compat only, as we moved some events from the 
 // private provider to the public provider
 using ThreadPoolWorkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ThreadPoolWorkTraceData;
-using ThreadPoolIOWorkTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ThreadPoolIOWorkTraceData;
-using ThreadPoolWorkingThreadCountTraceData = Microsoft.Diagnostics.Tracing.Parsers.Clr.ThreadPoolWorkingThreadCountTraceData;
-using Address = System.UInt64;
-// TODO FIX NOW harmonize these two and then refer to one from the other.  
-using FinalizeObjectTraceData = Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.FinalizeObjectTraceData;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -2085,24 +2082,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
     public sealed class GCDecisionTraceData : TraceEvent
     {
         public bool DoCompact { get { return GetInt32At(0) != 0; } }
-        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(4); return 0; } }
+        public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(4); } return 0; } }
 
         #region Private
         internal GCDecisionTraceData(Action<GCDecisionTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<GCDecisionTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<GCDecisionTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 4));
             Debug.Assert(!(Version == 1 && EventDataLength != 6));
@@ -2122,7 +2119,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "DoCompact", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2149,24 +2149,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         public long SegmentSize { get { return GetInt64At(0); } }
         public long LargeObjectSegmentSize { get { return GetInt64At(8); } }
         public bool ServerGC { get { return GetInt32At(16) != 0; } }
-        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(20); return 0; } }
+        public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(20); } return 0; } }
 
         #region Private
         internal GCSettingsTraceData(Action<GCSettingsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<GCSettingsTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<GCSettingsTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 20));
             Debug.Assert(!(Version == 1 && EventDataLength != 22));
@@ -2188,7 +2188,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "SegmentSize", "LargeObjectSegmentSize", "ServerGC", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2219,24 +2222,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         public long DesiredAllocation { get { return GetInt64At(0); } }
         public long NewAllocation { get { return GetInt64At(8); } }
         public int GenerationNumber { get { return GetInt32At(16); } }
-        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(20); return 0; } }
+        public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(20); } return 0; } }
 
         #region Private
         internal GCOptimizedTraceData(Action<GCOptimizedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<GCOptimizedTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<GCOptimizedTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 20));
             Debug.Assert(!(Version == 1 && EventDataLength != 22));
@@ -2258,7 +2261,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "DesiredAllocation", "NewAllocation", "GenerationNumber", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2294,18 +2300,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal BGCDrainMarkTraceData(Action<BGCDrainMarkTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BGCDrainMarkTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BGCDrainMarkTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 10));
             Debug.Assert(!(Version > 0 && EventDataLength < 10));
@@ -2324,7 +2330,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Objects", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2357,18 +2366,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal BGCRevisitTraceData(Action<BGCRevisitTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BGCRevisitTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BGCRevisitTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 22));
             Debug.Assert(!(Version > 0 && EventDataLength < 22));
@@ -2389,7 +2398,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Pages", "Objects", "IsLarge", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2427,18 +2439,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal BGCOverflowTraceData(Action<BGCOverflowTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BGCOverflowTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BGCOverflowTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 30));
             Debug.Assert(!(Version > 0 && EventDataLength < 30));
@@ -2460,7 +2472,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Min", "Max", "Objects", "IsLarge", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2497,18 +2512,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal BGCAllocWaitTraceData(Action<BGCAllocWaitTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BGCAllocWaitTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BGCAllocWaitTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 6));
             Debug.Assert(!(Version > 0 && EventDataLength < 6));
@@ -2527,7 +2542,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Reason", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2553,24 +2571,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
     {
         public int GenNumber { get { return GetInt32At(0); } }
         public int IsAlloc { get { return GetInt32At(4); } }
-        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(8); return 0; } }
+        public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(8); } return 0; } }
 
         #region Private
         internal GCFullNotifyTraceData(Action<GCFullNotifyTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<GCFullNotifyTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<GCFullNotifyTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 8));
             Debug.Assert(!(Version == 1 && EventDataLength != 10));
@@ -2591,7 +2609,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "GenNumber", "IsAlloc", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2617,24 +2638,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
     }
     public sealed class StartupTraceData : TraceEvent
     {
-        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(0); return 0; } }
+        public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(0); } return 0; } }
 
         #region Private
         internal StartupTraceData(Action<StartupTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<StartupTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<StartupTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 2));
             Debug.Assert(!(Version > 1 && EventDataLength < 2));
@@ -2652,7 +2673,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2686,18 +2710,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal ModuleRangePrivateTraceData(Action<ModuleRangePrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ModuleRangePrivateTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ModuleRangePrivateTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             // TODO FIX NOW gives 19 on win8 Debug.Assert(!(Version == 0 && EventDataLength != 22));
             Debug.Assert(!(Version > 0 && EventDataLength < 22));
@@ -2721,7 +2745,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID", "ModuleID", "RangeBegin", "RangeSize", "RangeType", "IBCType", "SectionType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2767,18 +2794,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal BindingTraceData(Action<BindingTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BindingTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BindingTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16)) + 2));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16)) + 2));
@@ -2802,7 +2829,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "AppDomainID", "LoadContextID", "FromLoaderCache", "DynamicLoad", "AssemblyCodebase", "AssemblyName", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2845,18 +2875,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal EvidenceGeneratedTraceData(Action<EvidenceGeneratedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<EvidenceGeneratedTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<EvidenceGeneratedTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8) + 2));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8) + 2));
@@ -2877,7 +2907,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Type", "AppDomain", "ILImage", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2913,18 +2946,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal ModuleTransparencyCalculationTraceData(Action<ModuleTransparencyCalculationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ModuleTransparencyCalculationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ModuleTransparencyCalculationTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0) + 6));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0) + 6));
@@ -2944,7 +2977,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Module", "AppDomainID", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2983,18 +3019,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal ModuleTransparencyCalculationResultTraceData(Action<ModuleTransparencyCalculationResultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ModuleTransparencyCalculationResultTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ModuleTransparencyCalculationResultTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0) + 26));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0) + 26));
@@ -3019,7 +3055,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Module", "AppDomainID", "IsAllCritical", "IsAllTransparent", "IsTreatAsSafe", "IsOpportunisticallyCritical", "SecurityRuleSet", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3064,18 +3103,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal TypeTransparencyCalculationTraceData(Action<TypeTransparencyCalculationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TypeTransparencyCalculationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TypeTransparencyCalculationTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)) + 6));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)) + 6));
@@ -3096,7 +3135,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Type", "Module", "AppDomainID", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3137,18 +3179,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal TypeTransparencyCalculationResultTraceData(Action<TypeTransparencyCalculationResultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TypeTransparencyCalculationResultTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TypeTransparencyCalculationResultTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)) + 22));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)) + 22));
@@ -3173,7 +3215,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Type", "Module", "AppDomainID", "IsAllCritical", "IsAllTransparent", "IsCritical", "IsTreatAsSafe", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3218,18 +3263,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal MethodTransparencyCalculationTraceData(Action<MethodTransparencyCalculationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<MethodTransparencyCalculationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<MethodTransparencyCalculationTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)) + 6));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)) + 6));
@@ -3250,7 +3295,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Method", "Module", "AppDomainID", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3289,18 +3337,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal MethodTransparencyCalculationResultTraceData(Action<MethodTransparencyCalculationResultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<MethodTransparencyCalculationResultTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<MethodTransparencyCalculationResultTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)) + 14));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)) + 14));
@@ -3323,7 +3371,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Method", "Module", "AppDomainID", "IsCritical", "IsTreatAsSafe", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3364,18 +3415,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal FieldTransparencyCalculationTraceData(Action<FieldTransparencyCalculationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FieldTransparencyCalculationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FieldTransparencyCalculationTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)) + 6));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)) + 6));
@@ -3396,7 +3447,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Field", "Module", "AppDomainID", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3435,18 +3489,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal FieldTransparencyCalculationResultTraceData(Action<FieldTransparencyCalculationResultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FieldTransparencyCalculationResultTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FieldTransparencyCalculationResultTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0)) + 14));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0)) + 14));
@@ -3469,7 +3523,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Field", "Module", "AppDomainID", "IsCritical", "IsTreatAsSafe", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3510,18 +3567,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal TokenTransparencyCalculationTraceData(Action<TokenTransparencyCalculationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TokenTransparencyCalculationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TokenTransparencyCalculationTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4) + 6));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4) + 6));
@@ -3542,7 +3599,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Token", "Module", "AppDomainID", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3581,18 +3641,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal TokenTransparencyCalculationResultTraceData(Action<TokenTransparencyCalculationResultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<TokenTransparencyCalculationResultTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<TokenTransparencyCalculationResultTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4) + 14));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(4) + 14));
@@ -3615,7 +3675,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Token", "Module", "AppDomainID", "IsCritical", "IsTreatAsSafe", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3679,25 +3742,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
         public long BindingID { get { return GetInt64At(2); } }
-        public NGenBind ReasonCode { get { return (NGenBind) GetInt32At(10); } }
+        public NGenBind ReasonCode { get { return (NGenBind)GetInt32At(10); } }
         public string AssemblyName { get { return GetUnicodeStringAt(14); } }
 
         #region Private
         internal NgenBindEventTraceData(Action<NgenBindEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<NgenBindEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<NgenBindEventTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(14)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(14)));
@@ -3718,7 +3781,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID", "BindingID", "ReasonCode", "AssemblyName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3756,18 +3822,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal FailFastTraceData(Action<FailFastTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FailFastTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FailFastTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(0) + 14, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(0) + 14, 1)));
@@ -3789,7 +3855,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "FailFastUserMessage", "FailedEIP", "OSExitCode", "ClrExitCode", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3829,18 +3898,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal FinalizeObjectTraceData(Action<FinalizeObjectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FinalizeObjectTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FinalizeObjectTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(10, 2))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(10, 2))));
@@ -3861,7 +3930,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TypeID", "ObjectID", "ClrInstanceID", "TypeName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3903,9 +3975,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal CCWRefCountChangeAnsiTraceData(Action<CCWRefCountChangeAnsiTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
@@ -3914,7 +3986,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get { return Action; }
             set { Action = (Action<CCWRefCountChangeAnsiTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))) + 2));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))) + 2));
@@ -3940,7 +4012,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HandleID", "ObjectID", "COMInterfacePointer", "NewRefCount", "AppDomainID", "ClassName", "NameSpace", "Operation", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3992,18 +4067,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal CCWRefCountChangeTraceData(Action<CCWRefCountChangeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<CCWRefCountChangeTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<CCWRefCountChangeTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(HostOffset(24, 3)))) + 2));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(HostOffset(24, 3)))) + 2));
@@ -4029,7 +4104,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HandleID", "ObjectID", "COMInterfacePointer", "NewRefCount", "AppDomainID", "ClassName", "NameSpace", "Operation", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4076,7 +4154,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal FusionMessageTraceData(Action<FusionMessageTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -4084,8 +4162,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<FusionMessageTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<FusionMessageTraceData>)value; }
         }
         protected internal override void Validate()
         {
@@ -4107,7 +4185,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID", "Prepend", "Message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4145,18 +4226,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal MulticoreJitPrivateTraceData(Action<MulticoreJitPrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<MulticoreJitPrivateTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<MulticoreJitPrivateTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(2)) + 12));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(2)) + 12));
@@ -4179,7 +4260,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID", "String1", "String2", "Int1", "Int2", "Int3" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4219,7 +4303,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal MulticoreJitMethodCodeReturnedPrivateTraceData(Action<MulticoreJitMethodCodeReturnedPrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -4227,8 +4311,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<MulticoreJitMethodCodeReturnedPrivateTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<MulticoreJitMethodCodeReturnedPrivateTraceData>)value; }
         }
         protected internal override void Validate()
         {
@@ -4250,7 +4334,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID", "ModuleID", "MethodID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4287,18 +4374,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal LoaderHeapAllocRequestTraceData(Action<LoaderHeapAllocRequestTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<LoaderHeapAllocRequestTraceData>) value; }
+            set { Action = (Action<LoaderHeapAllocRequestTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(26, 2)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(26, 2)));
@@ -4319,7 +4406,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "LoaderHeapPtr", "MemoryAddress", "RequestSize", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4354,9 +4444,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal DynamicTypeUsePrivateTraceData(Action<DynamicTypeUsePrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
@@ -4365,7 +4455,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get { return Action; }
             set { Action = (Action<DynamicTypeUsePrivateTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0) + 2));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0) + 2));
@@ -4384,7 +4474,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TypeName", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4416,9 +4509,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal DynamicTypeUseTwoParametersPrivateTraceData(Action<DynamicTypeUseTwoParametersPrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
@@ -4447,7 +4540,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TypeName", "SecondTypeName", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4482,9 +4578,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal DynamicTypeUsePrivateVarianceTraceData(Action<DynamicTypeUsePrivateVarianceTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
@@ -4514,7 +4610,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TypeName", "InterfaceTypeName", "VariantInterfaceTypeName", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4550,9 +4649,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal DynamicTypeUseStringAndIntPrivateTraceData(Action<DynamicTypeUseStringAndIntPrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
@@ -4561,7 +4660,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get { return Action; }
             set { Action = (Action<DynamicTypeUseStringAndIntPrivateTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0) + 6));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0) + 6));
@@ -4581,7 +4680,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TypeName", "Int1", "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4613,9 +4715,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         internal DynamicTypeUseNoParametersPrivateTraceData(Action<DynamicTypeUseNoParametersPrivateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
@@ -4624,7 +4726,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get { return Action; }
             set { Action = (Action<DynamicTypeUseNoParametersPrivateTraceData>)value; }
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 2));
             Debug.Assert(!(Version > 0 && EventDataLength < 2));
@@ -4642,7 +4744,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ClrInstanceID" };
+                }
+
                 return payloadNames;
             }
         }

@@ -1,9 +1,6 @@
 using System;
-using System.Text;
 using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
+using System.Text;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -12,11 +9,11 @@ using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
 {
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
-    public sealed class AspNetTraceEventParser : TraceEventParser 
+    public sealed class AspNetTraceEventParser : TraceEventParser
     {
         public static readonly string ProviderName = "AspNetTrace";
-        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0xaff081fe), unchecked((short) 0x0247), unchecked((short) 0x4275), 0x9c, 0x4e, 0x02, 0x1f, 0x3d, 0xc1, 0xda, 0x35);
-        public AspNetTraceEventParser(TraceEventSource source) : base(source) {}
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xaff081fe), unchecked((short)0x0247), unchecked((short)0x4275), 0x9c, 0x4e, 0x02, 0x1f, 0x3d, 0xc1, 0xda, 0x35);
+        public AspNetTraceEventParser(TraceEventSource source) : base(source) { }
 
         public enum Keywords
         {
@@ -31,7 +28,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetStartTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 1, "Start", ProviderGuid, ProviderName));
             }
             remove
@@ -43,7 +40,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetStopTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 2, "Stop", ProviderGuid, ProviderName));
             }
             remove
@@ -55,7 +52,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetRequestQueuedTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 3, "RequestQueued", ProviderGuid, ProviderName));
             }
             remove
@@ -67,7 +64,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetRequestDequeuedTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 4, "RequestDequeued", ProviderGuid, ProviderName));
             }
             remove
@@ -79,7 +76,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetGetAppDomainEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 5, "GetAppDomainEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -91,7 +88,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetGetAppDomainLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 6, "GetAppDomainLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -103,7 +100,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetAppDomainEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 7, "AppDomainEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -115,7 +112,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetStartHandlerTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 8, "StartHandler", ProviderGuid, ProviderName));
             }
             remove
@@ -127,7 +124,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetEndHandlerTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 9, "EndHandler", ProviderGuid, ProviderName));
             }
             remove
@@ -139,7 +136,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPipelineModuleEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 10, "PipelineModuleEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -151,7 +148,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPipelineModuleLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 11, "PipelineModuleLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -163,7 +160,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetMapHandlerEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 12, "MapHandlerEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -175,7 +172,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetMapHandlerLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 13, "MapHandlerLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -187,7 +184,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetParseEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 14, "ParseEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -199,7 +196,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetParseLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 15, "ParseLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -211,7 +208,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetCompileEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 16, "CompileEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -223,7 +220,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetCompileLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 17, "CompileLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -235,7 +232,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetHttpHandlerEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 18, "HttpHandlerEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -247,7 +244,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetHttpHandlerLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 19, "HttpHandlerLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -259,7 +256,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetSessionStatePartitionStartTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 20, "SessionStatePartitionStart", ProviderGuid, ProviderName));
             }
             remove
@@ -271,7 +268,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetSessionStatePartitionEndTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 21, "SessionStatePartitionEnd", ProviderGuid, ProviderName));
             }
             remove
@@ -283,7 +280,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPagePreInitEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 22, "PagePreInitEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -295,7 +292,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPagePreInitLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 23, "PagePreInitLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -307,7 +304,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageInitEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 24, "PageInitEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -319,7 +316,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageInitLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 25, "PageInitLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -331,7 +328,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageLoadViewstateEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 26, "PageLoadViewstateEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -343,7 +340,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageLoadViewstateLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 27, "PageLoadViewstateLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -355,7 +352,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageLoadPostDataEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 28, "PageLoadPostDataEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -367,7 +364,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageLoadPostDataLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 29, "PageLoadPostDataLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -379,7 +376,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageLoadEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 30, "PageLoadEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -391,7 +388,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageLoadLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 31, "PageLoadLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -403,7 +400,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPagePostDataChangedEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 32, "PagePostDataChangedEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -415,7 +412,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPagePostDataChangedLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 33, "PagePostDataChangedLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -427,7 +424,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageRaisePostbackEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 34, "PageRaisePostbackEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -439,7 +436,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageRaisePostbackLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 35, "PageRaisePostbackLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -451,7 +448,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPagePreRenderEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 36, "PagePreRenderEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -463,7 +460,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPagePreRenderLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 37, "PagePreRenderLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -475,7 +472,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageSaveViewstateEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 38, "PageSaveViewstateEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -487,7 +484,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageSaveViewstateLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 39, "PageSaveViewstateLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -499,7 +496,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageRenderEnterTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 40, "PageRenderEnter", ProviderGuid, ProviderName));
             }
             remove
@@ -511,7 +508,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageRenderLeaveTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 41, "PageRenderLeave", ProviderGuid, ProviderName));
             }
             remove
@@ -523,7 +520,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetAcquireSessionBeginTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 42, "SessionDataBegin", ProviderGuid, ProviderName));
             }
             remove
@@ -535,7 +532,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetAcquireSessionEndTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 43, "SessionDataEnd", ProviderGuid, ProviderName));
             }
             remove
@@ -547,7 +544,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetProfileBeginTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 44, "ProfileBegin", ProviderGuid, ProviderName));
             }
             remove
@@ -559,7 +556,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetProfileEndTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 45, "ProfileEnd", ProviderGuid, ProviderName));
             }
             remove
@@ -571,7 +568,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetRoleManagerIsUserInRoleTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 46, "RoleManagerIsUserInRole", ProviderGuid, ProviderName));
             }
             remove
@@ -583,7 +580,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetRoleManagerGetUserRolesTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 47, "RoleManagerGetUserRoles", ProviderGuid, ProviderName));
             }
             remove
@@ -595,7 +592,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetRoleManagerBeginTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 48, "RoleManagerBegin", ProviderGuid, ProviderName));
             }
             remove
@@ -607,7 +604,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetRoleManagerEndTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 49, "RoleManagerEnd", ProviderGuid, ProviderName));
             }
             remove
@@ -619,7 +616,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetWebEventRaiseStartTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 50, "WebEventRaiseStart", ProviderGuid, ProviderName));
             }
             remove
@@ -631,7 +628,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetWebEventRaiseEndTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 51, "WebEventRaiseEnd", ProviderGuid, ProviderName));
             }
             remove
@@ -643,7 +640,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetWebEventDeliverStartTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 52, "WebEventDeliverStart", ProviderGuid, ProviderName));
             }
             remove
@@ -655,7 +652,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetWebEventDeliverEndTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 53, "WebEventDeliverEnd", ProviderGuid, ProviderName));
             }
             remove
@@ -667,7 +664,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageTraceWarnEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 59, "TraceContextWarning", ProviderGuid, ProviderName));
             }
             remove
@@ -679,7 +676,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetPageTraceWriteEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 60, "TraceContextWrite", ProviderGuid, ProviderName));
             }
             remove
@@ -691,7 +688,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagCriticalEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 61, "DiagnosticTraceCritical", ProviderGuid, ProviderName));
             }
             remove
@@ -703,7 +700,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagErrorEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 62, "DiagnosticTraceError", ProviderGuid, ProviderName));
             }
             remove
@@ -715,7 +712,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagWarningEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 63, "DiagnosticTraceWarning", ProviderGuid, ProviderName));
             }
             remove
@@ -727,7 +724,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagInfoEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 64, "DiagnosticTraceInfo", ProviderGuid, ProviderName));
             }
             remove
@@ -739,7 +736,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagVerboseEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 65, "DiagnosticTraceVerbose", ProviderGuid, ProviderName));
             }
             remove
@@ -751,7 +748,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagStartEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 66, "DiagnosticTraceStart", ProviderGuid, ProviderName));
             }
             remove
@@ -763,7 +760,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagStopEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 67, "DiagnosticTraceStop", ProviderGuid, ProviderName));
             }
             remove
@@ -775,7 +772,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagSuspendEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 68, "DiagnosticTraceSuspend", ProviderGuid, ProviderName));
             }
             remove
@@ -787,7 +784,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagResumeEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 69, "DiagnosticTraceResume", ProviderGuid, ProviderName));
             }
             remove
@@ -799,7 +796,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new AspNetModuleDiagTransferEventTraceData(value, 0xFFFF, 0, "AspNetReq", AspNetReqTaskGuid, 70, "DiagnosticTraceTransfer", ProviderGuid, ProviderName));
             }
             remove
@@ -808,75 +805,75 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             }
         }
 
-       #region Event ID Definitions
-        private const TraceEventID AspNetReqStartEventID = (TraceEventID) 10000;
-        private const TraceEventID AspNetReqEndEventID = (TraceEventID) 10001;
-        private const TraceEventID AspNetReqRequestQueuedEventID = (TraceEventID) 10002;
-        private const TraceEventID AspNetReqRequestDequeuedEventID = (TraceEventID) 10003;
-        private const TraceEventID AspNetReqGetAppDomainEnterEventID = (TraceEventID) 10004;
-        private const TraceEventID AspNetReqGetAppDomainLeaveEventID = (TraceEventID) 10005;
-        private const TraceEventID AspNetReqAppDomainEnterEventID = (TraceEventID) 10006;
-        private const TraceEventID AspNetReqStartHandlerEventID = (TraceEventID) 10007;
-        private const TraceEventID AspNetReqEndHandlerEventID = (TraceEventID) 10008;
-        private const TraceEventID AspNetReqPipelineModuleEnterEventID = (TraceEventID) 10009;
-        private const TraceEventID AspNetReqPipelineModuleLeaveEventID = (TraceEventID) 10010;
-        private const TraceEventID AspNetReqMapHandlerEnterEventID = (TraceEventID) 10011;
-        private const TraceEventID AspNetReqMapHandlerLeaveEventID = (TraceEventID) 10012;
-        private const TraceEventID AspNetReqParseEnterEventID = (TraceEventID) 10013;
-        private const TraceEventID AspNetReqParseLeaveEventID = (TraceEventID) 10014;
-        private const TraceEventID AspNetReqCompileEnterEventID = (TraceEventID) 10015;
-        private const TraceEventID AspNetReqCompileLeaveEventID = (TraceEventID) 10016;
-        private const TraceEventID AspNetReqHttpHandlerEnterEventID = (TraceEventID) 10017;
-        private const TraceEventID AspNetReqHttpHandlerLeaveEventID = (TraceEventID) 10018;
-        private const TraceEventID AspNetReqSessionStatePartitionStartEventID = (TraceEventID) 10019;
-        private const TraceEventID AspNetReqSessionStatePartitionEndEventID = (TraceEventID) 10020;
-        private const TraceEventID AspNetReqPagePreInitEnterEventID = (TraceEventID) 10021;
-        private const TraceEventID AspNetReqPagePreInitLeaveEventID = (TraceEventID) 10022;
-        private const TraceEventID AspNetReqPageInitEnterEventID = (TraceEventID) 10023;
-        private const TraceEventID AspNetReqPageInitLeaveEventID = (TraceEventID) 10024;
-        private const TraceEventID AspNetReqPageLoadViewstateEnterEventID = (TraceEventID) 10025;
-        private const TraceEventID AspNetReqPageLoadViewstateLeaveEventID = (TraceEventID) 10026;
-        private const TraceEventID AspNetReqPageLoadPostDataEnterEventID = (TraceEventID) 10027;
-        private const TraceEventID AspNetReqPageLoadPostDataLeaveEventID = (TraceEventID) 10028;
-        private const TraceEventID AspNetReqPageLoadEnterEventID = (TraceEventID) 10029;
-        private const TraceEventID AspNetReqPageLoadLeaveEventID = (TraceEventID) 10030;
-        private const TraceEventID AspNetReqPagePostDataChangedEnterEventID = (TraceEventID) 10031;
-        private const TraceEventID AspNetReqPagePostDataChangedLeaveEventID = (TraceEventID) 10032;
-        private const TraceEventID AspNetReqPageRaisePostbackEnterEventID = (TraceEventID) 10033;
-        private const TraceEventID AspNetReqPageRaisePostbackLeaveEventID = (TraceEventID) 10034;
-        private const TraceEventID AspNetReqPagePreRenderEnterEventID = (TraceEventID) 10035;
-        private const TraceEventID AspNetReqPagePreRenderLeaveEventID = (TraceEventID) 10036;
-        private const TraceEventID AspNetReqPageSaveViewstateEnterEventID = (TraceEventID) 10037;
-        private const TraceEventID AspNetReqPageSaveViewstateLeaveEventID = (TraceEventID) 10038;
-        private const TraceEventID AspNetReqPageRenderEnterEventID = (TraceEventID) 10039;
-        private const TraceEventID AspNetReqPageRenderLeaveEventID = (TraceEventID) 10040;
-        private const TraceEventID AspNetReqSessionDataBeginEventID = (TraceEventID) 10041;
-        private const TraceEventID AspNetReqSessionDataEndEventID = (TraceEventID) 10042;
-        private const TraceEventID AspNetReqProfileBeginEventID = (TraceEventID) 10043;
-        private const TraceEventID AspNetReqProfileEndEventID = (TraceEventID) 10044;
-        private const TraceEventID AspNetReqRoleManagerIsUserInRoleEventID = (TraceEventID) 10045;
-        private const TraceEventID AspNetReqRoleManagerGetUserRolesEventID = (TraceEventID) 10046;
-        private const TraceEventID AspNetReqRoleManagerBeginEventID = (TraceEventID) 10047;
-        private const TraceEventID AspNetReqRoleManagerEndEventID = (TraceEventID) 10048;
-        private const TraceEventID AspNetReqWebEventRaiseStartEventID = (TraceEventID) 10049;
-        private const TraceEventID AspNetReqWebEventRaiseEndEventID = (TraceEventID) 10050;
-        private const TraceEventID AspNetReqWebEventDeliverStartEventID = (TraceEventID) 10051;
-        private const TraceEventID AspNetReqWebEventDeliverEndEventID = (TraceEventID) 10052;
-        private const TraceEventID AspNetReqTraceContextWarningEventID = (TraceEventID) 10053;
-        private const TraceEventID AspNetReqTraceContextWriteEventID = (TraceEventID) 10054;
-        private const TraceEventID AspNetReqDiagnosticTraceCriticalEventID = (TraceEventID) 10055;
-        private const TraceEventID AspNetReqDiagnosticTraceErrorEventID = (TraceEventID) 10056;
-        private const TraceEventID AspNetReqDiagnosticTraceWarningEventID = (TraceEventID) 10057;
-        private const TraceEventID AspNetReqDiagnosticTraceInfoEventID = (TraceEventID) 10058;
-        private const TraceEventID AspNetReqDiagnosticTraceVerboseEventID = (TraceEventID) 10059;
-        private const TraceEventID AspNetReqDiagnosticTraceStartEventID = (TraceEventID) 10060;
-        private const TraceEventID AspNetReqDiagnosticTraceStopEventID = (TraceEventID) 10061;
-        private const TraceEventID AspNetReqDiagnosticTraceSuspendEventID = (TraceEventID) 10062;
-        private const TraceEventID AspNetReqDiagnosticTraceResumeEventID = (TraceEventID) 10063;
-        private const TraceEventID AspNetReqDiagnosticTraceTransferEventID = (TraceEventID) 10064;
-       #endregion
+        #region Event ID Definitions
+        private const TraceEventID AspNetReqStartEventID = (TraceEventID)10000;
+        private const TraceEventID AspNetReqEndEventID = (TraceEventID)10001;
+        private const TraceEventID AspNetReqRequestQueuedEventID = (TraceEventID)10002;
+        private const TraceEventID AspNetReqRequestDequeuedEventID = (TraceEventID)10003;
+        private const TraceEventID AspNetReqGetAppDomainEnterEventID = (TraceEventID)10004;
+        private const TraceEventID AspNetReqGetAppDomainLeaveEventID = (TraceEventID)10005;
+        private const TraceEventID AspNetReqAppDomainEnterEventID = (TraceEventID)10006;
+        private const TraceEventID AspNetReqStartHandlerEventID = (TraceEventID)10007;
+        private const TraceEventID AspNetReqEndHandlerEventID = (TraceEventID)10008;
+        private const TraceEventID AspNetReqPipelineModuleEnterEventID = (TraceEventID)10009;
+        private const TraceEventID AspNetReqPipelineModuleLeaveEventID = (TraceEventID)10010;
+        private const TraceEventID AspNetReqMapHandlerEnterEventID = (TraceEventID)10011;
+        private const TraceEventID AspNetReqMapHandlerLeaveEventID = (TraceEventID)10012;
+        private const TraceEventID AspNetReqParseEnterEventID = (TraceEventID)10013;
+        private const TraceEventID AspNetReqParseLeaveEventID = (TraceEventID)10014;
+        private const TraceEventID AspNetReqCompileEnterEventID = (TraceEventID)10015;
+        private const TraceEventID AspNetReqCompileLeaveEventID = (TraceEventID)10016;
+        private const TraceEventID AspNetReqHttpHandlerEnterEventID = (TraceEventID)10017;
+        private const TraceEventID AspNetReqHttpHandlerLeaveEventID = (TraceEventID)10018;
+        private const TraceEventID AspNetReqSessionStatePartitionStartEventID = (TraceEventID)10019;
+        private const TraceEventID AspNetReqSessionStatePartitionEndEventID = (TraceEventID)10020;
+        private const TraceEventID AspNetReqPagePreInitEnterEventID = (TraceEventID)10021;
+        private const TraceEventID AspNetReqPagePreInitLeaveEventID = (TraceEventID)10022;
+        private const TraceEventID AspNetReqPageInitEnterEventID = (TraceEventID)10023;
+        private const TraceEventID AspNetReqPageInitLeaveEventID = (TraceEventID)10024;
+        private const TraceEventID AspNetReqPageLoadViewstateEnterEventID = (TraceEventID)10025;
+        private const TraceEventID AspNetReqPageLoadViewstateLeaveEventID = (TraceEventID)10026;
+        private const TraceEventID AspNetReqPageLoadPostDataEnterEventID = (TraceEventID)10027;
+        private const TraceEventID AspNetReqPageLoadPostDataLeaveEventID = (TraceEventID)10028;
+        private const TraceEventID AspNetReqPageLoadEnterEventID = (TraceEventID)10029;
+        private const TraceEventID AspNetReqPageLoadLeaveEventID = (TraceEventID)10030;
+        private const TraceEventID AspNetReqPagePostDataChangedEnterEventID = (TraceEventID)10031;
+        private const TraceEventID AspNetReqPagePostDataChangedLeaveEventID = (TraceEventID)10032;
+        private const TraceEventID AspNetReqPageRaisePostbackEnterEventID = (TraceEventID)10033;
+        private const TraceEventID AspNetReqPageRaisePostbackLeaveEventID = (TraceEventID)10034;
+        private const TraceEventID AspNetReqPagePreRenderEnterEventID = (TraceEventID)10035;
+        private const TraceEventID AspNetReqPagePreRenderLeaveEventID = (TraceEventID)10036;
+        private const TraceEventID AspNetReqPageSaveViewstateEnterEventID = (TraceEventID)10037;
+        private const TraceEventID AspNetReqPageSaveViewstateLeaveEventID = (TraceEventID)10038;
+        private const TraceEventID AspNetReqPageRenderEnterEventID = (TraceEventID)10039;
+        private const TraceEventID AspNetReqPageRenderLeaveEventID = (TraceEventID)10040;
+        private const TraceEventID AspNetReqSessionDataBeginEventID = (TraceEventID)10041;
+        private const TraceEventID AspNetReqSessionDataEndEventID = (TraceEventID)10042;
+        private const TraceEventID AspNetReqProfileBeginEventID = (TraceEventID)10043;
+        private const TraceEventID AspNetReqProfileEndEventID = (TraceEventID)10044;
+        private const TraceEventID AspNetReqRoleManagerIsUserInRoleEventID = (TraceEventID)10045;
+        private const TraceEventID AspNetReqRoleManagerGetUserRolesEventID = (TraceEventID)10046;
+        private const TraceEventID AspNetReqRoleManagerBeginEventID = (TraceEventID)10047;
+        private const TraceEventID AspNetReqRoleManagerEndEventID = (TraceEventID)10048;
+        private const TraceEventID AspNetReqWebEventRaiseStartEventID = (TraceEventID)10049;
+        private const TraceEventID AspNetReqWebEventRaiseEndEventID = (TraceEventID)10050;
+        private const TraceEventID AspNetReqWebEventDeliverStartEventID = (TraceEventID)10051;
+        private const TraceEventID AspNetReqWebEventDeliverEndEventID = (TraceEventID)10052;
+        private const TraceEventID AspNetReqTraceContextWarningEventID = (TraceEventID)10053;
+        private const TraceEventID AspNetReqTraceContextWriteEventID = (TraceEventID)10054;
+        private const TraceEventID AspNetReqDiagnosticTraceCriticalEventID = (TraceEventID)10055;
+        private const TraceEventID AspNetReqDiagnosticTraceErrorEventID = (TraceEventID)10056;
+        private const TraceEventID AspNetReqDiagnosticTraceWarningEventID = (TraceEventID)10057;
+        private const TraceEventID AspNetReqDiagnosticTraceInfoEventID = (TraceEventID)10058;
+        private const TraceEventID AspNetReqDiagnosticTraceVerboseEventID = (TraceEventID)10059;
+        private const TraceEventID AspNetReqDiagnosticTraceStartEventID = (TraceEventID)10060;
+        private const TraceEventID AspNetReqDiagnosticTraceStopEventID = (TraceEventID)10061;
+        private const TraceEventID AspNetReqDiagnosticTraceSuspendEventID = (TraceEventID)10062;
+        private const TraceEventID AspNetReqDiagnosticTraceResumeEventID = (TraceEventID)10063;
+        private const TraceEventID AspNetReqDiagnosticTraceTransferEventID = (TraceEventID)10064;
+        #endregion
 
-    #region private
+        #region private
         protected override string GetProviderName() { return ProviderName; }
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
@@ -956,8 +953,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
                     callback(template);
         }
 
-        private static readonly Guid AspNetReqTaskGuid = new Guid(unchecked((int) 0x06a01367), unchecked((short) 0x79d3), unchecked((short) 0x4594), 0x8e, 0xb3, 0xc7, 0x21, 0x60, 0x3c, 0x46, 0x79);
-    #endregion
+        private static readonly Guid AspNetReqTaskGuid = new Guid(unchecked((int)0x06a01367), unchecked((short)0x79d3), unchecked((short)0x4594), 0x8e, 0xb3, 0xc7, 0x21, 0x60, 0x3c, 0x46, 0x79);
+        #endregion
     }
 }
 
@@ -977,33 +974,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetStartTraceData(Action<AspNetStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetStartTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetStartTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
-                // V1.1 version of the runtime have an EventDataLength of 8
+            // V1.1 version of the runtime have an EventDataLength of 8
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(24))) && EventDataLength != 8));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(24)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Method", Method);
-             XmlAttrib(sb, "Path", Path);
-             XmlAttrib(sb, "QueryString", QueryString);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Method", Method);
+            XmlAttrib(sb, "Path", Path);
+            XmlAttrib(sb, "QueryString", QueryString);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1011,7 +1008,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "Method", "Path", "QueryString"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "Method", "Path", "QueryString" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1048,18 +1048,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetStopTraceData(Action<AspNetStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetStopTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetStopTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             // != 8 added because V1.1 runtimes had an old event. 
             Debug.Assert(!(Version == 0 && EventDataLength != 24 && EventDataLength != 8));
@@ -1067,11 +1067,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1079,7 +1079,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1110,29 +1113,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetRequestQueuedTraceData(Action<AspNetRequestQueuedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetRequestQueuedTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetRequestQueuedTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1140,7 +1143,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1171,29 +1177,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetRequestDequeuedTraceData(Action<AspNetRequestDequeuedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetRequestDequeuedTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetRequestDequeuedTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1201,7 +1207,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1232,29 +1241,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetGetAppDomainEnterTraceData(Action<AspNetGetAppDomainEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetGetAppDomainEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetGetAppDomainEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1262,7 +1271,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1293,29 +1305,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetGetAppDomainLeaveTraceData(Action<AspNetGetAppDomainLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetGetAppDomainLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetGetAppDomainLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1323,7 +1335,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1355,30 +1370,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetAppDomainEnterTraceData(Action<AspNetAppDomainEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetAppDomainEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetAppDomainEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(24)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(24)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "DomainId", DomainId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "DomainId", DomainId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1386,7 +1401,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "DomainId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "DomainId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1421,31 +1439,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetStartHandlerTraceData(Action<AspNetStartHandlerTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetStartHandlerTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetStartHandlerTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(24))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "HandlerName", HandlerName);
-             XmlAttrib(sb, "EventName", EventName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "HandlerName", HandlerName);
+            XmlAttrib(sb, "EventName", EventName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1453,7 +1471,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "HandlerName", "EventName"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "HandlerName", "EventName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1488,29 +1509,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetEndHandlerTraceData(Action<AspNetEndHandlerTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetEndHandlerTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetEndHandlerTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1518,7 +1539,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1550,30 +1574,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPipelineModuleEnterTraceData(Action<AspNetPipelineModuleEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPipelineModuleEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPipelineModuleEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(24)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(24)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "ModuleName", ModuleName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1581,7 +1605,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "ModuleName"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "ModuleName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1615,30 +1642,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPipelineModuleLeaveTraceData(Action<AspNetPipelineModuleLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPipelineModuleLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPipelineModuleLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(24)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(24)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "ModuleName", ModuleName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1646,7 +1673,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "ModuleName"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "ModuleName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1679,29 +1709,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetMapHandlerEnterTraceData(Action<AspNetMapHandlerEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetMapHandlerEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetMapHandlerEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1709,7 +1739,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1740,29 +1773,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetMapHandlerLeaveTraceData(Action<AspNetMapHandlerLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetMapHandlerLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetMapHandlerLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1770,7 +1803,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1801,29 +1837,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetParseEnterTraceData(Action<AspNetParseEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetParseEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetParseEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1831,7 +1867,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1862,29 +1901,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetParseLeaveTraceData(Action<AspNetParseLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetParseLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetParseLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1892,7 +1931,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1923,29 +1965,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetCompileEnterTraceData(Action<AspNetCompileEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetCompileEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetCompileEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1953,7 +1995,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1986,31 +2031,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetCompileLeaveTraceData(Action<AspNetCompileLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetCompileLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetCompileLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(24))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Files", Files);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Files", Files);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2018,7 +2063,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "Files", "Status"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "Files", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2053,29 +2101,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetHttpHandlerEnterTraceData(Action<AspNetHttpHandlerEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetHttpHandlerEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetHttpHandlerEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2083,7 +2131,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2114,29 +2165,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetHttpHandlerLeaveTraceData(Action<AspNetHttpHandlerLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetHttpHandlerLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetHttpHandlerLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2144,7 +2195,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2177,31 +2231,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetSessionStatePartitionStartTraceData(Action<AspNetSessionStatePartitionStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetSessionStatePartitionStartTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetSessionStatePartitionStartTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(24))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "ResolverType", ResolverType);
-             XmlAttrib(sb, "SessionId", SessionId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ResolverType", ResolverType);
+            XmlAttrib(sb, "SessionId", SessionId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2209,7 +2263,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "ResolverType", "SessionId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "ResolverType", "SessionId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2245,30 +2302,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetSessionStatePartitionEndTraceData(Action<AspNetSessionStatePartitionEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetSessionStatePartitionEndTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetSessionStatePartitionEndTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(24)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(24)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "ResolverResult", ResolverResult);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ResolverResult", ResolverResult);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2276,7 +2333,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "ResolverResult"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "ResolverResult" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2309,29 +2369,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPagePreInitEnterTraceData(Action<AspNetPagePreInitEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPagePreInitEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPagePreInitEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2339,7 +2399,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2370,29 +2433,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPagePreInitLeaveTraceData(Action<AspNetPagePreInitLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPagePreInitLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPagePreInitLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2400,7 +2463,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2431,29 +2497,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageInitEnterTraceData(Action<AspNetPageInitEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageInitEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageInitEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2461,7 +2527,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2492,29 +2561,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageInitLeaveTraceData(Action<AspNetPageInitLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageInitLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageInitLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2522,7 +2591,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2553,29 +2625,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageLoadViewstateEnterTraceData(Action<AspNetPageLoadViewstateEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageLoadViewstateEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageLoadViewstateEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2583,7 +2655,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2614,29 +2689,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageLoadViewstateLeaveTraceData(Action<AspNetPageLoadViewstateLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageLoadViewstateLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageLoadViewstateLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2644,7 +2719,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2675,29 +2753,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageLoadPostDataEnterTraceData(Action<AspNetPageLoadPostDataEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageLoadPostDataEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageLoadPostDataEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2705,7 +2783,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2736,29 +2817,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageLoadPostDataLeaveTraceData(Action<AspNetPageLoadPostDataLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageLoadPostDataLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageLoadPostDataLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2766,7 +2847,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2797,29 +2881,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageLoadEnterTraceData(Action<AspNetPageLoadEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageLoadEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageLoadEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2827,7 +2911,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2858,29 +2945,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageLoadLeaveTraceData(Action<AspNetPageLoadLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageLoadLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageLoadLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2888,7 +2975,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2919,29 +3009,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPagePostDataChangedEnterTraceData(Action<AspNetPagePostDataChangedEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPagePostDataChangedEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPagePostDataChangedEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2949,7 +3039,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2980,29 +3073,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPagePostDataChangedLeaveTraceData(Action<AspNetPagePostDataChangedLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPagePostDataChangedLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPagePostDataChangedLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3010,7 +3103,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3041,29 +3137,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageRaisePostbackEnterTraceData(Action<AspNetPageRaisePostbackEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageRaisePostbackEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageRaisePostbackEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3071,7 +3167,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3102,29 +3201,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageRaisePostbackLeaveTraceData(Action<AspNetPageRaisePostbackLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageRaisePostbackLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageRaisePostbackLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3132,7 +3231,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3163,29 +3265,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPagePreRenderEnterTraceData(Action<AspNetPagePreRenderEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPagePreRenderEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPagePreRenderEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3193,7 +3295,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3224,29 +3329,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPagePreRenderLeaveTraceData(Action<AspNetPagePreRenderLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPagePreRenderLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPagePreRenderLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3254,7 +3359,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3285,29 +3393,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageSaveViewstateEnterTraceData(Action<AspNetPageSaveViewstateEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageSaveViewstateEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageSaveViewstateEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3315,7 +3423,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3346,29 +3457,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageSaveViewstateLeaveTraceData(Action<AspNetPageSaveViewstateLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageSaveViewstateLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageSaveViewstateLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3376,7 +3487,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3407,29 +3521,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageRenderEnterTraceData(Action<AspNetPageRenderEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageRenderEnterTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageRenderEnterTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3437,7 +3551,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3468,29 +3585,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageRenderLeaveTraceData(Action<AspNetPageRenderLeaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageRenderLeaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageRenderLeaveTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3498,7 +3615,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3529,29 +3649,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetAcquireSessionBeginTraceData(Action<AspNetAcquireSessionBeginTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetAcquireSessionBeginTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetAcquireSessionBeginTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3559,7 +3679,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3590,29 +3713,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetAcquireSessionEndTraceData(Action<AspNetAcquireSessionEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetAcquireSessionEndTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetAcquireSessionEndTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3620,7 +3743,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3651,29 +3777,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetProfileBeginTraceData(Action<AspNetProfileBeginTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetProfileBeginTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetProfileBeginTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3681,7 +3807,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3713,30 +3842,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetProfileEndTraceData(Action<AspNetProfileEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetProfileEndTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetProfileEndTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(24)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(24)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "User", User);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "User", User);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3744,7 +3873,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "User"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "User" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3781,33 +3913,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetRoleManagerIsUserInRoleTraceData(Action<AspNetRoleManagerIsUserInRoleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetRoleManagerIsUserInRoleTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetRoleManagerIsUserInRoleTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24))))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Provider", Provider);
-             XmlAttrib(sb, "User", User);
-             XmlAttrib(sb, "Role", Role);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Provider", Provider);
+            XmlAttrib(sb, "User", User);
+            XmlAttrib(sb, "Role", Role);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3815,7 +3947,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "Provider", "User", "Role", "Status"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "Provider", "User", "Role", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3857,32 +3992,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetRoleManagerGetUserRolesTraceData(Action<AspNetRoleManagerGetUserRolesTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetRoleManagerGetUserRolesTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetRoleManagerGetUserRolesTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Provider", Provider);
-             XmlAttrib(sb, "User", User);
-             XmlAttrib(sb, "Roles", Roles);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Provider", Provider);
+            XmlAttrib(sb, "User", User);
+            XmlAttrib(sb, "Roles", Roles);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3890,7 +4025,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "Provider", "User", "Roles"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "Provider", "User", "Roles" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3927,29 +4065,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetRoleManagerBeginTraceData(Action<AspNetRoleManagerBeginTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetRoleManagerBeginTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetRoleManagerBeginTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3957,7 +4095,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3990,31 +4131,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetRoleManagerEndTraceData(Action<AspNetRoleManagerEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetRoleManagerEndTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetRoleManagerEndTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(24))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Provider", Provider);
-             XmlAttrib(sb, "User", User);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Provider", Provider);
+            XmlAttrib(sb, "User", User);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4022,7 +4163,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "Provider", "User"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "Provider", "User" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4060,32 +4204,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetWebEventRaiseStartTraceData(Action<AspNetWebEventRaiseStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetWebEventRaiseStartTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetWebEventRaiseStartTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "EventClassName", EventClassName);
-             XmlAttrib(sb, "EventCode", EventCode);
-             XmlAttrib(sb, "EventDetailCode", EventDetailCode);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "EventClassName", EventClassName);
+            XmlAttrib(sb, "EventCode", EventCode);
+            XmlAttrib(sb, "EventDetailCode", EventDetailCode);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4093,7 +4237,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "EventClassName", "EventCode", "EventDetailCode"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "EventClassName", "EventCode", "EventDetailCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4130,29 +4277,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetWebEventRaiseEndTraceData(Action<AspNetWebEventRaiseEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetWebEventRaiseEndTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetWebEventRaiseEndTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4160,7 +4307,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4194,32 +4344,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetWebEventDeliverStartTraceData(Action<AspNetWebEventDeliverStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetWebEventDeliverStartTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetWebEventDeliverStartTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(24)))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "ProviderName", ProviderName);
-             XmlAttrib(sb, "RuleName", RuleName);
-             XmlAttrib(sb, "EventGroupName", EventGroupName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ProviderName", ProviderName);
+            XmlAttrib(sb, "RuleName", RuleName);
+            XmlAttrib(sb, "EventGroupName", EventGroupName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4227,7 +4377,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId", "ProviderName", "RuleName", "EventGroupName"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId", "ProviderName", "RuleName", "EventGroupName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4264,29 +4417,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetWebEventDeliverEndTraceData(Action<AspNetWebEventDeliverEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetWebEventDeliverEndTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetWebEventDeliverEndTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 24));
             Debug.Assert(!(Version > 0 && EventDataLength < 24));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ConnID", ConnID);
-             XmlAttrib(sb, "ContextId", ContextId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ConnID", ConnID);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4294,7 +4447,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnID", "ContextId"};
+                {
+                    payloadNames = new string[] { "ConnID", "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4326,30 +4482,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageTraceWarnEventTraceData(Action<AspNetPageTraceWarnEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageTraceWarnEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageTraceWarnEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWarningMsg", TraceWarningMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWarningMsg", TraceWarningMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4357,7 +4513,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWarningMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWarningMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4391,30 +4550,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetPageTraceWriteEventTraceData(Action<AspNetPageTraceWriteEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetPageTraceWriteEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetPageTraceWriteEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4422,7 +4581,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4456,30 +4618,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagCriticalEventTraceData(Action<AspNetModuleDiagCriticalEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagCriticalEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagCriticalEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4487,7 +4649,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4521,30 +4686,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagErrorEventTraceData(Action<AspNetModuleDiagErrorEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagErrorEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagErrorEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4552,7 +4717,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4586,30 +4754,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagWarningEventTraceData(Action<AspNetModuleDiagWarningEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagWarningEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagWarningEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4617,7 +4785,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4651,30 +4822,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagInfoEventTraceData(Action<AspNetModuleDiagInfoEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagInfoEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagInfoEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4682,7 +4853,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4716,30 +4890,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagVerboseEventTraceData(Action<AspNetModuleDiagVerboseEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagVerboseEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagVerboseEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4747,7 +4921,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4781,30 +4958,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagStartEventTraceData(Action<AspNetModuleDiagStartEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagStartEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagStartEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4812,7 +4989,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4846,30 +5026,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagStopEventTraceData(Action<AspNetModuleDiagStopEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagStopEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagStopEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4877,7 +5057,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4911,30 +5094,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagSuspendEventTraceData(Action<AspNetModuleDiagSuspendEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagSuspendEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagSuspendEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -4942,7 +5125,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4976,30 +5162,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagResumeEventTraceData(Action<AspNetModuleDiagResumeEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagResumeEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagResumeEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5007,7 +5193,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5041,30 +5230,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
         internal AspNetModuleDiagTransferEventTraceData(Action<AspNetModuleDiagTransferEventTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-        internal  protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<AspNetModuleDiagTransferEventTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<AspNetModuleDiagTransferEventTraceData>)value; }
         }
-        internal  protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ContextId", ContextId);
-             XmlAttrib(sb, "Uri", Uri);
-             XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Uri", Uri);
+            XmlAttrib(sb, "TraceWriteMsg", TraceWriteMsg);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5072,7 +5261,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg"};
+                {
+                    payloadNames = new string[] { "ContextId", "Uri", "TraceWriteMsg" };
+                }
+
                 return payloadNames;
             }
         }

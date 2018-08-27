@@ -2,10 +2,10 @@
 /* AUTHOR: Vance Morrison   
  * Date  : 10/20/2007  */
 using System;
-using System.Text;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace Utilities
 {
@@ -310,7 +310,10 @@ class CommandLine
                 {
                     var parameterSetTofocusOn = parser.HelpRequested;
                     if (parameterSetTofocusOn.Length == 0)
+                    {
                         parameterSetTofocusOn = null;
+                    }
+
                     string helpString = parser.GetHelp(Console.WindowWidth - 1, parameterSetTofocusOn, true);
                     DisplayStringToConsole(helpString);
                     Environment.Exit(0);
@@ -350,7 +353,9 @@ class CommandLine
         {
             object obj = DefineQualifier(name, typeof(T), retVal, helpText, false);
             if (obj != null)
+            {
                 retVal = (T)obj;
+            }
         }
         /// <summary>
         /// Like code:DeclareOptionalQualifier except it is an error if this parameter is not on the command line. 
@@ -363,7 +368,9 @@ class CommandLine
         {
             object obj = DefineQualifier(name, typeof(T), retVal, helpText, true);
             if (obj != null)
+            {
                 retVal = (T)obj;
+            }
         }
         /// <summary>
         /// Specify additional aliases for an qualifier.  This call must come BEFORE the call to
@@ -374,10 +381,15 @@ class CommandLine
             // TODO assert that aliases are defined before the Definition.  
             // TODO confirm no ambiguities (same alias used again).  
             if (aliasDefinitions != null && aliasDefinitions.ContainsKey(officalName))
+            {
                 throw new CommandLineParserDesignerException("Named parameter " + officalName + " already has been given aliases.");
+            }
 
             if (aliasDefinitions == null)
+            {
                 aliasDefinitions = new Dictionary<string, string[]>();
+            }
+
             aliasDefinitions.Add(officalName, alaises);
         }
 
@@ -397,7 +409,9 @@ class CommandLine
         {
             object obj = DefineParameter(name, typeof(T), retVal, helpText, true);
             if (obj != null)
+            {
                 retVal = (T)obj;
+            }
         }
         /// <summary>
         /// Like code:DeclareParameter except it is an error if this parameter is not on the command line. 
@@ -411,7 +425,9 @@ class CommandLine
         {
             object obj = DefineParameter(name, typeof(T), retVal, helpText, false);
             if (obj != null)
+            {
                 retVal = (T)obj;
+            }
         }
 
         /// <summary>
@@ -432,7 +448,9 @@ class CommandLine
         public void DefineParameterSet<T>(string name, ref T retVal, T val, string helpText)
         {
             if (DefineParameterSet(name, helpText))
+            {
                 retVal = val;
+            }
         }
         /// <summary>
         /// There is one special parameter set called the default parameter set (whose names is empty) which is
@@ -465,7 +483,9 @@ class CommandLine
         public void DefineDefaultParameterSet<T>(ref T retVal, T val, string helpText)
         {
             if (DefineParameterSet("", helpText))
+            {
                 retVal = val;
+            }
         }
 
         // You can influence details of command line parsing by setting the following properties.  
@@ -482,7 +502,10 @@ class CommandLine
             set
             {
                 if (noDashOnParameterSets != value)
+                {
                     ThrowIfNotFirst("NoDashOnParameterSets");
+                }
+
                 noDashOnParameterSets = value;
             }
         }
@@ -520,7 +543,10 @@ class CommandLine
             set
             {
                 if (qualifiersUseOnlyDash != value)
+                {
                     ThrowIfNotFirst("OnlyDashForQualifiers");
+                }
+
                 qualifiersUseOnlyDash = value;
             }
         }
@@ -537,7 +563,10 @@ class CommandLine
             set
             {
                 if (noSpaceOnQualifierValues != value)
+                {
                     ThrowIfNotFirst("NoSpaceOnQualifierValues");
+                }
+
                 noSpaceOnQualifierValues = value;
             }
         }
@@ -575,32 +604,46 @@ class CommandLine
         {
             Debug.Assert(args != null);
             if (dashedParameterEncodedPositions == null)
+            {
                 ParseWordsIntoQualifiers();
+            }
 
             foreach (int encodedPos in dashedParameterEncodedPositions.Values)
+            {
                 throw new CommandLineParserException("Unexpected qualifier: " + args[GetPosition(encodedPos)] + ".");
+            }
 
             // Find any 'unused' parameters;
             while (curPosition < args.Count && args[curPosition] == null)
+            {
                 curPosition++;
+            }
 
             if (curPosition < args.Count)
+            {
                 throw new CommandLineParserException("Extra positional parameter: " + args[curPosition] + ".");
+            }
 
             // TODO we should null out data structures we no longer need, to save space. 
             // Not critical because in the common case, the parser as a whole becomes dead.
 
             if (helpRequestedFor != null)
+            {
                 return false;
+            }
 
             if (!defaultParamSetEncountered)
             {
                 if (paramSetEncountered && parameterSetName == null)
                 {
                     if (noDashOnParameterSets && curPosition < args.Count)
+                    {
                         throw new CommandLineParserException("Unrecognised command: " + args[curPosition]);
+                    }
                     else
+                    {
                         throw new CommandLineParserException("No command given.");
+                    }
                 }
             }
             return true;
@@ -632,10 +675,14 @@ class CommandLine
         {
             Debug.Assert(mustParseHelpStrings);
             if (!mustParseHelpStrings)          // Backup for retail code.  
+            {
                 return null;
+            }
 
             if (parameterSetName == null)
+            {
                 return GetFullHelp(maxLineWidth);
+            }
 
             // Find the begining of the parameter set parameters, as well as the end of the global parameters
             // (Which come before any parameters set). 
@@ -656,7 +703,9 @@ class CommandLine
             }
 
             if (parameterSetBody == 0 && parameterSetName != "")
+            {
                 return "";
+            }
 
             // At this point parameterSetBody and globalParametersEnd are properly set. Start generating strings
             StringBuilder sb = new StringBuilder();
@@ -675,7 +724,10 @@ class CommandLine
             for (int i = parameterSetBody; i < parameterDescriptions.Count; i++)
             {
                 CommandLineParameter parameter = parameterDescriptions[i];
-                if (parameter.IsParameterSet) break;
+                if (parameter.IsParameterSet)
+                {
+                    break;
+                }
 
                 if (parameter.IsPositional)
                 {
@@ -683,7 +735,9 @@ class CommandLine
                     sb.Append(' ').Append(parameter.Syntax(false, false));
                 }
                 else
+                {
                     hasQualifiers = true;
+                }
             }
             sb.AppendLine();
 
@@ -692,7 +746,9 @@ class CommandLine
             {
                 sb.AppendLine();
                 if (parameterSetParameter != null && parameterSetParameter.HelpText != null)
+                {
                     Wrap(sb.Append("  "), parameterSetParameter.HelpText, 2, "  ", maxLineWidth);
+                }
             }
 
             if (hasParameters)
@@ -701,15 +757,23 @@ class CommandLine
                 for (int i = parameterSetBody; i < parameterDescriptions.Count; i++)
                 {
                     CommandLineParameter parameter = parameterDescriptions[i];
-                    if (parameter.IsParameterSet) break;
+                    if (parameter.IsParameterSet)
+                    {
+                        break;
+                    }
+
                     if (parameter.IsPositional)
+                    {
                         ParameterHelp(parameter, sb, QualifierSyntaxWidth, maxLineWidth);
+                    }
                 }
             }
 
             string globalQualifiers = null;
             if (displayGlobalQualifiers)
+            {
                 globalQualifiers = GetHelpGlobalQualifiers(maxLineWidth);
+            }
 
             if (hasQualifiers || !string.IsNullOrEmpty(globalQualifiers))
             {
@@ -717,12 +781,20 @@ class CommandLine
                 for (int i = parameterSetBody; i < parameterDescriptions.Count; i++)
                 {
                     CommandLineParameter parameter = parameterDescriptions[i];
-                    if (parameter.IsParameterSet) break;
+                    if (parameter.IsParameterSet)
+                    {
+                        break;
+                    }
+
                     if (parameter.IsNamed)
+                    {
                         ParameterHelp(parameter, sb, QualifierSyntaxWidth, maxLineWidth);
+                    }
                 }
                 if (globalQualifiers != null)
+                {
                     sb.Append(globalQualifiers);
+                }
             }
 
             return sb.ToString();
@@ -750,19 +822,29 @@ class CommandLine
                 {
                     numQuotes++;
                     if (wordStartIndex < 0)
+                    {
                         wordStartIndex = i;
+                    }
+
                     i++;
                     for (; ; )
                     {
                         if (i >= commandLine.Length)
+                        {
                             throw new CommandLineParserException("Unmatched quote at position " + i + ".");
+                        }
+
                         c = commandLine[i];
                         if (c == '"')
                         {
                             if (i > 0 && commandLine[i - 1] == '\\')
+                            {
                                 hasExcapedQuotes = true;
+                            }
                             else
+                            {
                                 break;
+                            }
                         }
                         i++;
                     }
@@ -780,11 +862,15 @@ class CommandLine
                 else
                 {
                     if (wordStartIndex < 0)
+                    {
                         wordStartIndex = i;
+                    }
                 }
             }
             if (wordStartIndex > 0)
+            {
                 AddWord(commandLine, wordStartIndex, commandLine.Length, numQuotes, hasExcapedQuotes);
+            }
         }
         private void AddWord(string commandLine, int wordStartIndex, int wordEndIndex, int numQuotes, bool hasExcapedQuotes)
         {
@@ -798,12 +884,14 @@ class CommandLine
             {
                 // Common case, the whole word is quoted, and no escaping happened.   
                 if (!hasExcapedQuotes && numQuotes == 1 && commandLine[wordStartIndex] == '"' && commandLine[wordEndIndex - 1] == '"')
+                {
                     word = commandLine.Substring(wordStartIndex + 1, wordEndIndex - wordStartIndex - 2);
+                }
                 else
                 {
                     // Remove "" (except for quoted quotes!)
                     StringBuilder sb = new StringBuilder();
-                    for (int i = wordStartIndex; i < wordEndIndex; )
+                    for (int i = wordStartIndex; i < wordEndIndex;)
                     {
                         char c = commandLine[i++];
                         if (c != '"')
@@ -814,14 +902,19 @@ class CommandLine
                                 i++;
                             }
                             else
+                            {
                                 sb.Append(c);
+                            }
                         }
                     }
                     word = sb.ToString();
                 }
             }
             else
+            {
                 word = commandLine.Substring(wordStartIndex, wordEndIndex - wordStartIndex);
+            }
+
             args.Add(word);
         }
 
@@ -838,7 +931,9 @@ class CommandLine
             {
                 string arg = args[i];
                 if (arg == null)
+                {
                     continue;
+                }
 
                 string name = ParseParameterName(arg);
                 if (name != null)
@@ -863,22 +958,34 @@ class CommandLine
                     }
                     int position = i;
                     if (dashedParameterEncodedPositions.TryGetValue(name, out position))
+                    {
                         position = SetMulitple(position);
+                    }
                     else
+                    {
                         position = i;
+                    }
+
                     dashedParameterEncodedPositions[name] = position;
 
                     if (!paramSetEncountered && !noDashOnParameterSets && IsParameterSetWithqualifiersMustBeFirst(name))
+                    {
                         break;
+                    }
                 }
                 else
                 {
                     if (!paramSetEncountered)
                     {
                         if (noDashOnParameterSets && IsParameterSetWithqualifiersMustBeFirst(arg))
+                        {
                             break;
+                        }
                         else if (IsParameterSetWithqualifiersMustBeFirst(""))        // Then we are the default parameter set
+                        {
                             break;
+                        }
+
                         paramSetEncountered = true;     // If we have hit a parameter, we must have hit a parameter set.  
                     }
                 }
@@ -891,7 +998,9 @@ class CommandLine
                 foreach (string parameterSetName in parameterSetsWhereQualifiersMustBeFirst)
                 {
                     if (string.Compare(name, parameterSetName, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         return true;
+                    }
                 }
             }
             return false;
@@ -907,11 +1016,20 @@ class CommandLine
         private bool IsQualifier(string arg)
         {
             if (arg.Length < 1)
+            {
                 return false;
+            }
+
             if (IsDash(arg[0]))
+            {
                 return true;
+            }
+
             if (!qualifiersUseOnlyDash && arg[0] == '/')
+            {
                 return true;
+            }
+
             return false;
         }
         /// <summary>
@@ -924,7 +1042,10 @@ class CommandLine
             {
                 int endName = arg.IndexOfAny(separators);
                 if (endName < 0)
+                {
                     endName = arg.Length;
+                }
+
                 ret = arg.Substring(1, endName - 1);
             }
             return ret;
@@ -932,7 +1053,9 @@ class CommandLine
         private void ThrowIfNotFirst(string propertyName)
         {
             if (qualiferEncountered || positionalArgEncountered || paramSetEncountered)
+            {
                 throw new CommandLineParserDesignerException("The property " + propertyName + " can only be set before any calls to Define* Methods.");
+            }
         }
 
         // Phase 3, processing user defintions of qualifiers parameter sets etc.  
@@ -944,20 +1067,32 @@ class CommandLine
         {
             Debug.Assert(args != null);
             if (dashedParameterEncodedPositions == null)
+            {
                 ParseWordsIntoQualifiers();
+            }
 
             qualiferEncountered = true;
             if (mustParseHelpStrings)
+            {
                 AddHelp(new CommandLineParameter(name, defaultValue, helpText, type, isRequired, false, false));
+            }
+
             if (skipDefinitions)
+            {
                 return null;
+            }
+
             if (positionalArgEncountered && !noSpaceOnQualifierValues)
+            {
                 throw new CommandLineParserDesignerException("Definitions of Named parameters must come before defintions of positional parameters");
+            }
 
             object ret = null;
             string[] alaises = null;
             if (aliasDefinitions != null)
+            {
                 aliasDefinitions.TryGetValue(name, out alaises);
+            }
 
             int occuranceCount = 0;
             List<Array> arrayValues = null;
@@ -965,7 +1100,9 @@ class CommandLine
             {
                 int position = GetNextOccuranceQualifier(name, alaises);
                 if (position < 0)
+                {
                     break;
+                }
 
                 string parameterStr = args[position];
                 args[position] = null;
@@ -973,14 +1110,20 @@ class CommandLine
                 string value = null;
                 int colonIdx = parameterStr.IndexOfAny(separators);
                 if (colonIdx >= 0)
+                {
                     value = parameterStr.Substring(colonIdx + 1);
+                }
 
                 if (type == typeof(bool) || type == typeof(bool?))
                 {
                     if (value == null)
+                    {
                         value = "true";
+                    }
                     else if (value == "")
+                    {
                         value = "false";
+                    }
                 }
                 else if (value == null)
                 {
@@ -989,7 +1132,10 @@ class CommandLine
                     {
                         string message = "Parameter " + name + " is missing a value.";
                         if (noSpaceOnQualifierValues)
+                        {
                             message += "  The syntax -" + name + ":<value> must be used.";
+                        }
+
                         throw new CommandLineParserException(message);
                     }
                     value = args[valuePos];
@@ -1000,50 +1146,77 @@ class CommandLine
                     // begin with a '-' by doing -qualifer:-value instead of -qualifier -value I force the issue
                     // by excluding it here.  TODO: this makes negative numbers harder... 
                     if (value.Length > 0 && IsQualifier(value))
+                    {
                         throw new CommandLineParserException("Use " + name + ":" + value + " if " + value +
                             " is meant to be value rather than a named parameter");
+                    }
+
                     args[valuePos] = null;
                 }
                 ret = ParseValue(value, type, name);
                 if (type.IsArray)
                 {
                     if (arrayValues == null)
+                    {
                         arrayValues = new List<Array>();
+                    }
+
                     arrayValues.Add((Array)ret);
                     ret = null;
                 }
                 else if (occuranceCount > 0 && !lastQualiferWins)
+                {
                     throw new CommandLineParserException("Parameter " + name + " specified more than once.");
+                }
+
                 occuranceCount++;
             }
 
             if (occuranceCount == 0 && isRequired)
+            {
                 throw new CommandLineParserException("Required named parameter " + name + " not present.");
+            }
 
             if (arrayValues != null)
+            {
                 ret = ConcatinateArrays(type, arrayValues);
+            }
+
             return ret;
         }
         private object DefineParameter(string name, Type type, object defaultValue, string helpText, bool isRequired)
         {
             Debug.Assert(args != null);
             if (dashedParameterEncodedPositions == null)
+            {
                 ParseWordsIntoQualifiers();
+            }
 
             if (!isRequired)
+            {
                 optionalPositionalArgEncountered = true;
+            }
             else if (optionalPositionalArgEncountered)
+            {
                 throw new CommandLineParserDesignerException("Optional positional parameters can't preceed required positional parameters");
+            }
 
             positionalArgEncountered = true;
             if (mustParseHelpStrings)
+            {
                 AddHelp(new CommandLineParameter(name, defaultValue, helpText, type, isRequired, true, false));
+            }
+
             if (skipDefinitions)
+            {
                 return null;
+            }
 
             // Skip any nulled out args (things that used to be named parameters)
             while (curPosition < args.Count && args[curPosition] == null)
+            {
                 curPosition++;
+            }
 
             object ret = null;
             if (type.IsArray)
@@ -1052,11 +1225,17 @@ class CommandLine
                 int count = 0;
                 int argPosition = curPosition;
                 while (argPosition < args.Count)
+                {
                     if (args[argPosition++] != null)
+                    {
                         count++;
+                    }
+                }
 
                 if (count == 0 && isRequired)
+                {
                     throw new CommandLineParserException("Required positional parameter " + name + " not present.");
+                }
 
                 Type elementType = type.GetElementType();
                 Array array = Array.CreateInstance(elementType, count);
@@ -1066,7 +1245,9 @@ class CommandLine
                 {
                     string arg = args[argPosition++];
                     if (arg != null)
+                    {
                         array.SetValue(ParseValue(arg, elementType, name), index++);
+                    }
                 }
                 curPosition = args.Count;
                 ret = array;
@@ -1078,7 +1259,9 @@ class CommandLine
             else // No value
             {
                 if (isRequired)
+                {
                     throw new CommandLineParserException("Required positional parameter " + name + " not present.");
+                }
             }
 
             return ret;
@@ -1087,25 +1270,38 @@ class CommandLine
         {
             Debug.Assert(args != null);
             if (dashedParameterEncodedPositions == null)
+            {
                 ParseWordsIntoQualifiers();
+            }
 
             if (!paramSetEncountered && positionalArgEncountered)
+            {
                 throw new CommandLineParserDesignerException("Positional parameters must not preceed parameter set definitions.");
+            }
 
             paramSetEncountered = true;
             positionalArgEncountered = false;               // each parameter set gets a new arg set   
             optionalPositionalArgEncountered = false;
             if (defaultParamSetEncountered)
+            {
                 throw new CommandLineParserDesignerException("The default parameter set must be defined last.");
+            }
 
             bool isDefaultParameterSet = (name.Length == 0);
             if (isDefaultParameterSet)
+            {
                 defaultParamSetEncountered = true;
+            }
 
             if (mustParseHelpStrings)
+            {
                 AddHelp(new CommandLineParameter(name, null, helpText, typeof(bool), true, noDashOnParameterSets, true));
+            }
+
             if (skipParameterSets)
+            {
                 return false;
+            }
 
             // Have we just finish with the parameter set that was actually on the command line?
             if (parameterSetName != null)
@@ -1122,7 +1318,10 @@ class CommandLine
                 {
                     string arg = args[i];
                     if (arg == null)
+                    {
                         continue;
+                    }
+
                     if (IsQualifier(arg))
                     {
                         if (!noDashOnParameterSets &&
@@ -1192,7 +1391,9 @@ class CommandLine
             if (match != null)
             {
                 if (!IsMulitple(encodedPos))
+                {
                     dashedParameterEncodedPositions.Remove(match);
+                }
                 else
                 {
                     int nextPos = -1;
@@ -1205,9 +1406,13 @@ class CommandLine
                         }
                     }
                     if (nextPos >= 0)
+                    {
                         dashedParameterEncodedPositions[name] = SetMulitple(nextPos);
+                    }
                     else
+                    {
                         dashedParameterEncodedPositions.Remove(name);
+                    }
                 }
             }
             return ret;
@@ -1219,20 +1424,32 @@ class CommandLine
             try
             {
                 if (type == typeof(string))
+                {
                     return valueString;
+                }
                 else if (type == typeof(bool))
+                {
                     return bool.Parse(valueString);
+                }
                 else if (type == typeof(int))
                 {
                     if (valueString.Length > 2 && valueString[0] == '0' && (valueString[1] == 'x' || valueString[1] == 'X'))
+                    {
                         return int.Parse(valueString.Substring(2), System.Globalization.NumberStyles.AllowHexSpecifier);
+                    }
                     else
+                    {
                         return int.Parse(valueString);
+                    }
                 }
                 else if (type.IsEnum)
+                {
                     return ParseCompositeEnumValue(valueString, type, parameterName);
+                }
                 else if (type == typeof(string[]))
+                {
                     return valueString.Split(',');
+                }
                 else if (type.IsArray)
                 {
                     // TODO I need some way of handling string with , in them.  
@@ -1240,20 +1457,29 @@ class CommandLine
                     string[] elementStrings = valueString.Split(',');
                     Array array = Array.CreateInstance(elementType, elementStrings.Length);
                     for (int i = 0; i < elementStrings.Length; i++)
+                    {
                         array.SetValue(ParseValue(elementStrings[i], elementType, parameterName), i);
+                    }
+
                     return array;
                 }
                 else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
                     if (valueString.Length == 0)
+                    {
                         return null;
+                    }
+
                     return ParseValue(valueString, type.GetGenericArguments()[0], parameterName);
                 }
                 else
                 {
                     System.Reflection.MethodInfo parseMethod = type.GetMethod("Parse", new Type[] { typeof(string) });
                     if (parseMethod == null)
+                    {
                         throw new CommandLineParserException("Could not find a parser for type " + type.Name + " for parameter " + parameterName);
+                    }
+
                     return parseMethod.Invoke(null, new object[] { valueString });
                 }
             }
@@ -1264,16 +1490,24 @@ class CommandLine
             catch (Exception e)
             {
                 if (e is System.Reflection.TargetInvocationException)
+                {
                     e = e.InnerException;
+                }
 
                 string paramStr = "";
                 if (parameterName != null)
+                {
                     paramStr = " for parameter " + parameterName;
+                }
 
                 if (e is FormatException)
+                {
                     throw new CommandLineParserException("The value '" + valueString + "' can not be parsed to a " + type.Name + paramStr + ".");
+                }
                 else
+                {
                     throw new CommandLineParserException("Failure while converting '" + valueString + "' to a " + type.Name + paramStr + ".");
+                }
             }
         }
         /// <summary>
@@ -1290,11 +1524,15 @@ class CommandLine
             {
                 int nextIdx = valueString.IndexOfAny(new char[] { ',', '+', '-' }, curIdx);
                 if (nextIdx < 0)
+                {
                     nextIdx = valueString.Length;
+                }
 
                 object nextValue = ParseSimpleEnumValue(valueString.Substring(curIdx, nextIdx - curIdx), type, parameterName);
                 if (curIdx == 0 && nextIdx == valueString.Length)
+                {
                     return nextValue;
+                }
 
                 if (!knownToBeFlagsEnum)
                 {
@@ -1302,7 +1540,10 @@ class CommandLine
                     {
                         string paramStr = "";
                         if (parameterName != null)
+                        {
                             paramStr = " for parameter " + parameterName;
+                        }
+
                         throw new CommandLineParserException("The value  '" + valueString + paramStr + " can't have the + or - operators.");
                     }
                     knownToBeFlagsEnum = true;
@@ -1310,14 +1551,22 @@ class CommandLine
 
                 long newValue;
                 if (Enum.GetUnderlyingType(type) == typeof(long))
+                {
                     newValue = (long)nextValue;
+                }
                 else
+                {
                     newValue = (int)nextValue;
+                }
 
                 if (negate)
+                {
                     retValue &= ~newValue;
+                }
                 else
+                {
                     retValue |= newValue;
+                }
 
                 negate = (nextIdx < valueString.Length && valueString[nextIdx] == '-');
                 curIdx = nextIdx + 1;
@@ -1331,7 +1580,10 @@ class CommandLine
                 if (valueString.StartsWith("0x"))
                 {
                     if (Enum.GetUnderlyingType(type) == typeof(long))
+                    {
                         return long.Parse(valueString.Substring(2), System.Globalization.NumberStyles.HexNumber);
+                    }
+
                     return int.Parse(valueString.Substring(2), System.Globalization.NumberStyles.HexNumber);
                 }
                 return Enum.Parse(type, valueString, ignoreCase: true);
@@ -1340,16 +1592,23 @@ class CommandLine
             {
                 string paramStr = "";
                 if (parameterName != null)
+                {
                     paramStr = " for parameter " + parameterName;
+                }
 
                 StringBuilder sb = new StringBuilder();
                 sb.Append("The value '").Append(valueString).Append("'").Append(paramStr).Append(" is not a member of the enumeration ").Append(type.Name).Append(".").AppendLine();
                 sb.Append("The legal values are either a decimal integer, 0x and a hex integer or").AppendLine();
                 foreach (string name in Enum.GetNames(type))
+                {
                     sb.Append("    ").Append(name).AppendLine();
+                }
 
                 if (Attribute.GetCustomAttribute(type, typeof(FlagsAttribute)) != null)
+                {
                     sb.Append("The + and - operators can be used to combine the values.").AppendLine();
+                }
+
                 throw new CommandLineParserException(sb.ToString());
             }
         }
@@ -1357,7 +1616,9 @@ class CommandLine
         {
             int totalCount = 0;
             for (int i = 0; i < arrays.Count; i++)
+            {
                 totalCount += arrays[i].Length;
+            }
 
             Type elementType = arrayType.GetElementType();
             Array ret = Array.CreateInstance(elementType, totalCount);
@@ -1366,7 +1627,9 @@ class CommandLine
             {
                 Array source = arrays[i];
                 for (int j = 0; j < source.Length; j++)
+                {
                     ret.SetValue(source.GetValue(j), pos++);
+                }
             }
             return ret;
         }
@@ -1376,7 +1639,7 @@ class CommandLine
         /// CommandLineParameter contains the 'full' informaiton for a parameter or qualifier used for generating help.
         /// Most of the time we don't actualy generate instances of this class.  (see mustParseHelpStrings)
         /// </summary>
-        class CommandLineParameter
+        private class CommandLineParameter
         {
             public string Name { get { return name; } }
             public Type Type { get { return type; } }
@@ -1399,15 +1662,23 @@ class CommandLine
             {
                 string ret = name;
                 if (IsNamed)
+                {
                     ret = "-" + ret;
+                }
+
                 if (printType)
                 {
                     // We print out arrays with the ... notiation, so we don't want the [] when we display the type
                     Type displayType = Type;
                     if (displayType.IsArray)
+                    {
                         displayType = displayType.GetElementType();
+                    }
+
                     if (displayType.IsGenericType && displayType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    {
                         displayType = displayType.GetGenericArguments()[0];
+                    }
 
                     bool shouldPrint = true;
                     // Bool type implied on named parameters
@@ -1415,11 +1686,15 @@ class CommandLine
                     {
                         shouldPrint = false;
                         if (defaultValue != null && (bool)defaultValue)
+                        {
                             shouldPrint = false;
+                        }
                     }
                     // string type is implied on positional parameters
                     if (IsPositional && displayType == typeof(string) && string.IsNullOrEmpty(defaultValue as string))
+                    {
                         shouldPrint = false;
+                    }
 
                     if (shouldPrint)
                     {
@@ -1429,20 +1704,31 @@ class CommandLine
                         {
                             string defValue = defaultValue.ToString();
                             if (defValue.Length < 40)   // TODO is this reasonable?
+                            {
                                 ret += defValue;
+                            }
                             else
+                            {
                                 ret += displayType.Name.ToUpper();
+                            }
                         }
                         else
+                        {
                             ret += displayType.Name.ToUpper();
+                        }
                     }
                 }
 
                 if (Type.IsArray)
+                {
                     ret = ret + (IsNamed ? "," : " ") + "...";
+                }
 
                 if (!IsRequired)
+                {
                     ret = "[" + ret + "]";
+                }
+
                 return ret;
             }
 
@@ -1450,7 +1736,7 @@ class CommandLine
             internal CommandLineParameter(string Name, object defaultValue, string helpText, Type type,
                 bool isRequired, bool isPositional, bool isParameterSet)
             {
-                this.name = Name;
+                name = Name;
                 this.defaultValue = defaultValue;
                 this.type = type;
                 this.helpText = helpText;
@@ -1476,18 +1762,28 @@ class CommandLine
             // Do we have non-default parameter sets?
             bool hasParamSets = false;
             foreach (CommandLineParameter parameter in parameterDescriptions)
+            {
                 if (parameter.IsParameterSet && parameter.Name != "")
+                {
                     hasParamSets = true;
+                }
+            }
 
             if (!hasParamSets)
+            {
                 return GetHelp(maxLineWidth, "", true);
+            }
+
             StringBuilder sb = new StringBuilder();
 
 
             string appName = "";
             var entryAssembly = System.Reflection.Assembly.GetExecutingAssembly();
             if (entryAssembly != null)
+            {
                 appName = Path.GetFileNameWithoutExtension(entryAssembly.ManifestModule.Name);
+            }
+
             string intro = "The " + appName + " application has a number of commands associated with it, " +
                 "each with its own set of parameters and qualifiers.  They are listed below.  " +
                 "Options that are common to all commands are listed at the end.";
@@ -1529,7 +1825,7 @@ class CommandLine
         {
             // TODO we do paging, but this is not what we want when it is redirected.  
             bool first = true;
-            for (int pos = 0; ; )
+            for (int pos = 0; ;)
             {
                 int nextPos = pos;
                 int numLines = (first ? Console.WindowHeight - 2 : Console.WindowHeight * 3 / 4) - 1;
@@ -1538,14 +1834,21 @@ class CommandLine
                 {
                     int search = helpString.IndexOf("\r\n", nextPos) + 2;
                     if (search >= 2)
+                    {
                         nextPos = search;
+                    }
                     else
+                    {
                         nextPos = helpString.Length;
+                    }
                 }
 
                 Console.Write(helpString.Substring(pos, nextPos - pos));
                 if (nextPos == helpString.Length)
+                {
                     break;
+                }
+
                 Console.Write("[Press space to continue...]");
                 Console.ReadKey();
                 Console.Write("\r                               \r");
@@ -1555,7 +1858,10 @@ class CommandLine
         private void AddHelp(CommandLineParameter parameter)
         {
             if (parameterDescriptions == null)
+            {
                 parameterDescriptions = new List<CommandLineParameter>();
+            }
+
             parameterDescriptions.Add(parameter);
         }
         private static void ParameterHelp(CommandLineParameter parameter, StringBuilder sb, int firstColumnWidth, int maxLineWidth)
@@ -1564,7 +1870,10 @@ class CommandLine
             sb.Append("    ").Append(parameter.Syntax(true, true).PadRight(firstColumnWidth)).Append(' ');
             string helpText = parameter.HelpText;
             if (typeof(Enum).IsAssignableFrom(parameter.Type))
+            {
                 helpText = helpText + "  Legal values: " + string.Join(", ", Enum.GetNames(parameter.Type)) + ".";
+            }
+
             Wrap(sb, helpText, firstColumnWidth + 5, new string(' ', firstColumnWidth + 5), maxLineWidth);
         }
         private static void Wrap(StringBuilder sb, string text, int startColumn, string linePrefix, int maxLineWidth)
@@ -1618,16 +1927,24 @@ class CommandLine
         private string GetHelpGlobalQualifiers(int maxLineWidth)
         {
             if (!paramSetEncountered)
+            {
                 return "";
+            }
 
             StringBuilder sb = new StringBuilder();
 
             for (int i = 0; i < parameterDescriptions.Count; i++)
             {
                 CommandLineParameter parameter = parameterDescriptions[i];
-                if (parameter.IsParameterSet) break;
+                if (parameter.IsParameterSet)
+                {
+                    break;
+                }
+
                 if (parameter.IsNamed)
+                {
                     ParameterHelp(parameter, sb, QualifierSyntaxWidth, maxLineWidth);
+                }
             }
             return sb.ToString();
         }
@@ -1658,7 +1975,10 @@ class CommandLine
                     {
                         int maxSyntaxWidth = 0;
                         foreach (CommandLineParameter parameter in parameterDescriptions)
+                        {
                             maxSyntaxWidth = Math.Max(maxSyntaxWidth, parameter.Syntax(true, true).Length);
+                        }
+
                         qualifierSyntaxWidth = Math.Max(8, maxSyntaxWidth + 1); // +1 leaves an extra space
                     }
                 }

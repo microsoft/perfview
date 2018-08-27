@@ -46,7 +46,8 @@ public class PdbScopeMemoryGraph : MemoryGraph
                                 section.Name = reader.GetAttribute("Name");
                                 sections.Enqueue(section);
                                 lastAddress = Math.Max(lastAddress, section.EndRoundedUpToPage);
-                            } break;
+                            }
+                            break;
                         case "Module":
                             if (imageBase == 0)
                             {
@@ -61,14 +62,22 @@ public class PdbScopeMemoryGraph : MemoryGraph
                                 DebugWriteLine("Loading Module Map table used to decode $N symbol prefixes.");
                                 string dllFilePath = reader.GetAttribute("FilePath");
                                 if (dllFilePath != null)
+                                {
                                     LoadModuleMap(dllFilePath, pdbScopeFile);
+                                }
                                 else
+                                {
                                     DebugWriteLine("Could not find path to original DLL being analyzed.");
+                                }
 
                                 if (m_moduleMap != null)
+                                {
                                     DebugWriteLine("Loaded Module Map of " + m_moduleMap.Count + " Project N style IL modules to unmangled $N_ prefixes.");
+                                }
                                 else
+                                {
                                     DebugWriteLine("Warning: No Module Map Found: $N_ prefixes will not be unmangled.");
+                                }
                             }
                             break;
                         case "ObjectTypes":
@@ -91,13 +100,17 @@ public class PdbScopeMemoryGraph : MemoryGraph
                                     string sizeStr = reader.GetAttribute("size");
                                     uint size = 0;
                                     if (sizeStr != null)
+                                    {
                                         uint.TryParse(sizeStr, out size);
+                                    }
 
                                     // Get Children 
                                     children.Clear();
                                     string to = reader.GetAttribute("to");
                                     if (to != null)
+                                    {
                                         GetChildrenForAddresses(ref children, to);
+                                    }
 
                                     // Get Name, make a type out of it
                                     string name;
@@ -116,13 +129,18 @@ public class PdbScopeMemoryGraph : MemoryGraph
                                                 addr, expectedAddr, name));
                                             badValues++;
                                             if (50 < badValues)
+                                            {
                                                 throw new ApplicationException("Too many cases where the addresses were not ascending in the file");
+                                            }
+
                                             continue;           // discard
                                         }
                                         /*** We want to make sure we account for all bytes, so log when we see gaps ***/
                                         // If we don't match see if it is because of section boundary. 
                                         if (addr != expectedAddr)
+                                        {
                                             EmitNodesForGaps(sections, expectedAddr, addr);
+                                        }
 
                                         expectedAddr = addr + size;
 
@@ -156,14 +174,21 @@ public class PdbScopeMemoryGraph : MemoryGraph
 
                                         // Remember first node.
                                         if (firstNodeIndex == NodeIndex.Invalid)
+                                        {
                                             firstNodeIndex = nodeIndex;
+                                        }
                                     }
                                 }
                                 else
+                                {
                                     DebugWriteLine(string.Format("Warning Discarding Symbol node {0:x} outside the last address in the image {1:x}", addr, lastAddress));
+                                }
                             }
                             else
+                            {
                                 DebugWriteLine("Error: symbol without addr");
+                            }
+
                             break;
                         default:
                             DebugWriteLine(string.Format("Skipping unknown element {0}", reader.Name));
@@ -175,7 +200,10 @@ public class PdbScopeMemoryGraph : MemoryGraph
             EmitNodesForGaps(sections, expectedAddr, lastAddress);
 
             if (RootIndex == NodeIndex.Invalid)
+            {
                 RootIndex = firstNodeIndex;
+            }
+
             DebugWriteLine(string.Format("Image Base {0:x} LastAddress {1:x}", imageBase, lastAddress));
             DebugWriteLine(string.Format("Total Virtual Size {0} ({0:x})", lastAddress - imageBase));
             DebugWriteLine(string.Format("Total File Size    {0} ({0:x})", TotalSize));
@@ -261,7 +289,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
 
             }
             if (endGap <= startGap)
+            {
                 return;
+            }
 
             // Do we overlap with the section at all?
             if (startGap < section.End)
@@ -272,7 +302,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
                 startGap = subRegionEnd;
             }
             if (endGap <= startGap)
+            {
                 return;
+            }
 
             // Do we overlap with the section padding region?
             if (startGap < section.EndRoundedUpToPage)
@@ -284,17 +316,23 @@ public class PdbScopeMemoryGraph : MemoryGraph
                 var paddingSize = subRegionEnd - startGap;
                 var filePaddingSize = paddingSize % 512;
                 if (filePaddingSize != 512)
+                {
                     EmitRegion(startGap, startGap + filePaddingSize, "Section " + section.Name + " padding");
+                }
 
                 startGap = subRegionEnd;
             }
             if (endGap <= startGap)
+            {
                 return;
+            }
 
             sections.Dequeue();
         }
         if (endGap <= startGap)
+        {
             return;
+        }
         // Anything after the last section is unknown.  
         EmitRegion(startGap, endGap, "UNKNOWN");
     }
@@ -303,11 +341,14 @@ public class PdbScopeMemoryGraph : MemoryGraph
     {
         uint size = (uint)(end - start);
         if (name == "UNKNOWN")
+        {
             DebugWriteLine(string.Format("UNKNOWN GAP In symbols from {0:x} of size {1:x}", start, size));
+        }
+
         SetNode(GetNodeIndex(start), CreateType(name), (int)size, new GrowableArray<NodeIndex>());
     }
 
-    struct Section
+    private struct Section
     {
         public string Name;
         public Address Start;
@@ -328,7 +369,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
         {
             int num;
             if (int.TryParse(numStr, NumberStyles.HexNumber, null, out num))
+            {
                 children.Add(GetNodeIndex((Address)num));
+            }
         }
     }
 
@@ -343,14 +386,18 @@ public class PdbScopeMemoryGraph : MemoryGraph
         if (m_moduleMap != null)
         {
             if (rawName.Contains("::"))
+            {
                 moduleName = "CoreLib";
+            }
             else
+            {
                 isRuntimeData = true;
+            }
 
             if (0 <= fullName.IndexOf('$'))
             {
                 Regex prefixMatch = new Regex(@"\$(\d+)_");
-                fullName = prefixMatch.Replace(fullName, delegate(Match m)
+                fullName = prefixMatch.Replace(fullName, delegate (Match m)
                 {
                     var original = m.Groups[1].Value;
                     var moduleIndex = int.Parse(original);
@@ -363,7 +410,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
                         name = assemblyName.Name;
                     }
                     if (name == null)
+                    {
                         return "$" + original + "_";
+                    }
 
                     if (m.Groups[1].Index == 0)
                     {
@@ -374,7 +423,10 @@ public class PdbScopeMemoryGraph : MemoryGraph
                     {
                         var lessThanIdx = fullName.IndexOf('<');
                         if (lessThanIdx < 0 || m.Groups[1].Index < lessThanIdx)
+                        {
                             moduleName = null;
+                        }
+
                         return name + "!";
                     }
                 });
@@ -390,7 +442,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
         {
 
             if (IsHexNumSuffix(fullName, _idx + 1))
+            {
                 fullName = fullName.Substring(0, _idx);
+            }
         }
 
         if (fullName.StartsWith("FrozenData"))
@@ -404,7 +458,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
             fullName = "FrozenString";
         }
         else if (fullName.StartsWith("InitData"))
+        {
             fullName = "InitData";
+        }
         else if (fullName.StartsWith("OpaqueDataBlob"))
         {
             showSize = true;
@@ -417,32 +473,51 @@ public class PdbScopeMemoryGraph : MemoryGraph
             {
                 var end = fullName.IndexOf("_slot", _idx + 1);
                 if (end < 0)
+                {
                     end = fullName.Length;
+                }
+
                 fullName = "InterfaceDispatchCell" + fullName.Substring(_idx, end - _idx);
             }
         }
         else if (fullName.StartsWith("Unknown"))
+        {
             fullName = Regex.Replace(fullName, @"Unknown\d*", "Unknown");
+        }
         else if (fullName.StartsWith("__imp__#"))
+        {
             fullName = "__imp__#NNN";
+        }
 
         if (isRuntimeData)
+        {
             fullName = "RUNTIME_DATA " + fullName;
+        }
 
         string src = reader.GetAttribute("src");
         if (src != null)
+        {
             fullName += "@" + Path.GetFileName(src);
+        }
 
         if (1000 < size || 100 < size && showSize)
         {
             if (100000 < size)
+            {
                 fullName += " (>100K)";
+            }
             else if (10000 < size)
+            {
                 fullName += " (>10K)";
+            }
             else if (1000 < size)
+            {
                 fullName += " (>1K)";
+            }
             else
+            {
                 fullName += " (>100)";
+            }
         }
 
         string tag = reader.GetAttribute("tag");
@@ -455,7 +530,10 @@ public class PdbScopeMemoryGraph : MemoryGraph
         //}
 
         if (tag == null)
+        {
             tag = "other";
+        }
+
         fullName += " #" + tag + "#";
 
         NodeTypeIndex ret;
@@ -471,19 +549,24 @@ public class PdbScopeMemoryGraph : MemoryGraph
     {
         // We need it to have at least 3 digits
         if ((str.Length - startIndex) < 3)
+        {
             return false;
+        }
 
         while (startIndex < str.Length)
         {
             char c = str[startIndex];
             if (!(Char.IsDigit(c) || ('A' <= c && c <= 'F')))
+            {
                 return false;
+            }
+
             startIndex++;
         }
         return true;
     }
 
-    Dictionary<int, string> m_moduleMap;      // TODO FIX NOW not needed after PdbScope is fixed.  
+    private Dictionary<int, string> m_moduleMap;      // TODO FIX NOW not needed after PdbScope is fixed.  
     #endregion
 }
 
@@ -509,14 +592,19 @@ public class ProjectNMetaDataLogReader
                 line = reader.ReadLine();
                 lineNum++;
                 if (line == null)
+                {
                     return null;
+                }
 
                 LineData lineData = new LineData();
                 for (; ; )
                 {
                     line = reader.ReadLine();
                     if (line == null)
+                    {
                         break;
+                    }
+
                     lineNum++;
 
                     Match m = Regex.Match(line, "^(\\S+), +(\\S+), +\"(.*)\", +\"(.*?)\"$");
@@ -528,7 +616,9 @@ public class ProjectNMetaDataLogReader
                         {
                             NodeIndex nodeIndex = AddLineData(ref lineData);
                             if (lineNum == 3)
+                            {
                                 m_graph.RootIndex = nodeIndex;
+                            }
                         }
 
                         lineData.Offset = newOffset;
@@ -539,11 +629,15 @@ public class ProjectNMetaDataLogReader
                         {
                             string[] handleStrs = m.Groups[4].Value.Split(' ');
                             foreach (var handleStr in handleStrs)
+                            {
                                 lineData.Children.Add(m_graph.GetNodeIndex(uint.Parse(handleStr, NumberStyles.HexNumber) & 0xFFFFFF));
+                            }
                         }
                     }
                     else
+                    {
                         throw new FileFormatException();
+                    }
                 }
                 if (lineNum > 1)
                 {
@@ -569,7 +663,7 @@ public class ProjectNMetaDataLogReader
     }
 
     #region private
-    struct LineData
+    private struct LineData
     {
         public int Size;
         public uint Offset;
@@ -589,7 +683,7 @@ public class ProjectNMetaDataLogReader
         return ret;
     }
 
-    MemoryGraph m_graph;
-    Dictionary<string, NodeTypeIndex> m_knownTypes;
+    private MemoryGraph m_graph;
+    private Dictionary<string, NodeTypeIndex> m_knownTypes;
     #endregion
 }

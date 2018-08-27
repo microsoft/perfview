@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Text.RegularExpressions;
 
 
 namespace Microsoft.Diagnostics.Symbols
 {
-    class PortableSymbolModule : ManagedSymbolModule
+    internal class PortableSymbolModule : ManagedSymbolModule
     {
         public PortableSymbolModule(SymbolReader reader, string pdbFileName) : this(reader, File.Open(pdbFileName, FileMode.Open, FileAccess.Read, FileShare.Read), pdbFileName) { }
 
@@ -44,13 +42,19 @@ namespace Microsoft.Diagnostics.Symbols
                 if (sequencePoint.Offset > ilOffset)
                 {
                     if (lastSequencePoint.Document.IsNil)
+                    {
                         lastSequencePoint = sequencePoint;
+                    }
+
                     break;
                 }
                 lastSequencePoint = sequencePoint;
             }
             if (lastSequencePoint.Document.IsNil)
+            {
                 return null;
+            }
+
             return new SourceLocation(GetSourceFile(lastSequencePoint.Document), lastSequencePoint.StartLine);
         }
 
@@ -58,7 +62,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         protected override string GetSourceLinkJson()
         {
-            foreach(CustomDebugInformationHandle customDebugInformationHandle in _metaData.CustomDebugInformation)
+            foreach (CustomDebugInformationHandle customDebugInformationHandle in _metaData.CustomDebugInformation)
             {
                 CustomDebugInformation customDebugInformation = _metaData.GetCustomDebugInformation(customDebugInformationHandle);
 
@@ -67,7 +71,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (guid == SourceLinkKind)
                 {
                     BlobReader blobReader = _metaData.GetBlobReader(customDebugInformation.Value);
-                    var ret =  blobReader.ReadUTF8(blobReader.Length);
+                    var ret = blobReader.ReadUTF8(blobReader.Length);
                     return ret;
                 }
             }
@@ -89,11 +93,18 @@ namespace Microsoft.Diagnostics.Symbols
 
                 Guid hashAlgorithmGuid = _portablePdb._metaData.GetGuid(_sourceFileDocument.HashAlgorithm);
                 if (hashAlgorithmGuid == HashAlgorithmSha1)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
+                }
                 else if (hashAlgorithmGuid == HashAlgorithmSha256)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
+                }
+
                 if (_hashAlgorithm != null)
+                {
                     _hash = _portablePdb._metaData.GetBlobBytes(_sourceFileDocument.Hash);
+                }
 
                 BuildTimeFilePath = _portablePdb._metaData.GetString(_sourceFileDocument.Name);
                 _log.WriteLine("Opened Portable Pdb Source File: {0}", BuildTimeFilePath);
@@ -113,10 +124,8 @@ namespace Microsoft.Diagnostics.Symbols
 
         // Needed by other things to look up data
         internal MetadataReader _metaData;
-
-
-        MetadataReaderProvider _provider;
-        Stream _stream;
+        private MetadataReaderProvider _provider;
+        private Stream _stream;
         #endregion
     }
 }

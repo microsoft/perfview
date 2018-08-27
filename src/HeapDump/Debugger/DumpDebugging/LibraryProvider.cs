@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Samples.Debugging.CorDebug;
-using Microsoft.Samples.Debugging.CorDebug.Utility;
-using System.Runtime.InteropServices;
 using System.IO;
-using Microsoft.Samples.Debugging.Native;
+using System.Runtime.InteropServices;
 
 namespace Profiler
 {
@@ -22,7 +17,9 @@ namespace Profiler
             {
                 string versionString = rti.GetVersionString();
                 if (versionString.StartsWith("v2."))
+                {
                     continue;
+                }
 
                 string libPath = Path.Combine(rti.GetRuntimeDirectory(), fileName);
                 if (DoesFileMatch(libPath, timestamp, sizeOfImage))
@@ -45,7 +42,7 @@ namespace Profiler
             return -1;
         }
 
-        const string s_kernel = "kernel32";
+        private const string s_kernel = "kernel32";
         [DllImport(s_kernel, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
         public static extern IntPtr LoadLibrary(string fileName);
 
@@ -56,14 +53,16 @@ namespace Profiler
         /// <param name="timestamp">the PE timestamp value to verifiy</param>
         /// <param name="sizeOfImage">the PE sizeOfImage value to verify</param>
         /// <returns>true if the file is a match and false otherwise</returns>
-        bool DoesFileMatch(string filePath, int timestamp, int sizeOfImage)
+        private bool DoesFileMatch(string filePath, int timestamp, int sizeOfImage)
         {
             try
             {
                 // quick check to avoid exception handling for a common error
                 // this check is not required for correctness
                 if (!File.Exists(filePath))
+                {
                     return false;
+                }
 
                 // TODO we could do a timestamp match too. 
                 return true;
@@ -76,7 +75,7 @@ namespace Profiler
 
         public string LastLoadedDbi
         {
-            get { return m_lastDbi;}
+            get { return m_lastDbi; }
         }
 
         public string LastLoadedDac

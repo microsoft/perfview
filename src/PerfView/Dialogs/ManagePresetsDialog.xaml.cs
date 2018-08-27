@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Xml;
 
 namespace PerfView.Dialogs
@@ -148,7 +147,7 @@ namespace PerfView.Dialogs
             string fileName = openDialog.FileName;
 
             List<Preset> presetsFromFile = new List<Preset>();
-            XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace=true, IgnoreComments=true };
+            XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
             using (XmlReader reader = XmlTextReader.Create(fileName, settings))
             {
                 int entryDepth = reader.Depth;
@@ -164,7 +163,10 @@ namespace PerfView.Dialogs
                             continue;
                         }
 
-                        if (!reader.Read()) break;
+                        if (!reader.Read())
+                        {
+                            break;
+                        }
                     }
                 }
                 catch (Exception ex)

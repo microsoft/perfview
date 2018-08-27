@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Microsoft.Samples.Debugging.CorDebug;
+using Microsoft.Samples.Debugging.CorDebug.NativeApi;
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using Profiler;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Microsoft.Samples.Debugging.CorDebug;
-using Microsoft.Samples.Debugging.CorDebug.NativeApi;
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
-using Profiler;
 
 public class Silverlight
 {
@@ -23,7 +23,9 @@ public class Silverlight
         Silverlight.EnumerateCLRs((uint)processId, out fullPaths, out continueStartupEvents);
         int nSilverlight = fullPaths.Length;
         if (fullPaths == null || nSilverlight == 0)
+        {
             return null;
+        }
 
         // for each coreclr instance found.....
         if (nSilverlight > 0)
@@ -35,7 +37,10 @@ public class Silverlight
             debugAPI.Initialize();
 
             if (callBacks == null)
+            {
                 callBacks = new DebuggerCallBacks();
+            }
+
             debugAPI.SetManagedHandler(callBacks);
             return debugAPI;
         }
@@ -48,7 +53,9 @@ public class Silverlight
     {
         // check if already initialized
         if (true == s_bSLApiInit)
+        {
             return;
+        }
 
         // we must check if debug pack is installed
 
@@ -118,7 +125,9 @@ public class Silverlight
         finally
         {
             if (null != netFrameworkKey)
+            {
                 netFrameworkKey.Close();
+            }
         }
     }
     private static string CreateVersionStringFromModule(UInt32 debuggeePid, string clrPath)
@@ -349,7 +358,9 @@ public class Silverlight
         IntPtr hndModule = NativeMethods.LoadLibrary(strFileName);
 
         if (IntPtr.Zero == hndModule)
+        {
             throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
 
         return hndModule;
     }

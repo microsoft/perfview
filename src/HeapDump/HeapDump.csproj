@@ -7,6 +7,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>true</Prefer32Bit>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <RootNamespace>HeapDump</RootNamespace>
     <AssemblyName>HeapDump</AssemblyName>
@@ -34,6 +35,8 @@
   <ItemGroup>
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,11 +1,8 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
+using System;
+using System.Diagnostics;
+using System.Text;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -282,7 +279,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         internal FileVersionTraceData(Action<FileVersionTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
 
         protected internal override void Dispatch()
@@ -381,7 +378,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         internal DbgIDRSDSTraceData(Action<DbgIDRSDSTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
 
         protected internal override void Dispatch()
@@ -457,7 +454,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         internal ImageIDTraceData(Action<ImageIDTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -536,7 +533,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         internal DbgIDILRSDSTraceData(Action<DbgIDILRSDSTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -617,7 +614,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         internal DbgPPDBTraceData(Action<DbgPPDBTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
     base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
 
         protected internal override void Dispatch()
@@ -691,7 +688,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         internal DbgDetermTraceData(Action<DbgDetermTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -755,7 +752,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
             get
             {
                 if (m_xml == null)
+                {
                     m_xml = GetXml();
+                }
+
                 return m_xml;
             }
         }
@@ -765,7 +765,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         public WinSatXmlTraceData(Action<WinSatXmlTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         #region Private
         /// <summary>
@@ -788,7 +788,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
             {
                 // We dont put the XML in the fields because it is too big (it does go in the ToXml).  
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { };
+                }
+
                 return payloadNames;
             }
         }
@@ -826,12 +829,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         {
             int uncompressedSize = GetInt32At(4);
             if (0x10000 <= uncompressedSize)
+            {
                 return "";
+            }
 
             byte[] uncompressedData = new byte[uncompressedSize];
             fixed (byte* uncompressedPtr = uncompressedData)
             {
-                byte* compressedData  = ((byte*)DataStart) + 8; // Skip header (State + UncompressedLength)
+                byte* compressedData = ((byte*)DataStart) + 8; // Skip header (State + UncompressedLength)
                 int compressedSize = EventDataLength - 8;       // Compressed size is total size minus header. 
 
                 int resultSize = 0;
@@ -849,13 +854,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
                     // PrettyPrint the XML
                     char* charPtr = (Char*)uncompressedPtr;
                     StringBuilder sb = new StringBuilder();
-                    char* charEnd =  &charPtr[uncompressedSize / 2];
+                    char* charEnd = &charPtr[uncompressedSize / 2];
                     bool noChildren = true;
                     while (charPtr < charEnd)
                     {
                         char c = *charPtr;
                         if (c == 0)
+                        {
                             break;      // we will assume null termination
+                        }
+
                         if (c == '<')
                         {
                             var c1 = charPtr[1];
@@ -875,10 +883,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
                             {
                                 sb.AppendLine();
                                 for (int i = 0; i < indent; i++)
+                                {
                                     sb.Append(' ');
+                                }
                             }
                             if (c1 == '/')
+                            {
                                 --indent;
+                            }
                         }
                         sb.Append(c);
                         charPtr++;
@@ -889,7 +901,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
             return "";
         }
 
-        string m_xml;
+        private string m_xml;
         #endregion
     }
 }

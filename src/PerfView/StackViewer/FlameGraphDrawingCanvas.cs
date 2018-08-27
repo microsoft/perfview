@@ -43,7 +43,7 @@ namespace PerfView
             using (DrawingContext drawingContext = visual.RenderOpen())
             {
                 int index = 0;
-                System.Drawing.Font forSize = null; 
+                System.Drawing.Font forSize = null;
 
                 foreach (var box in boxes)
                 {
@@ -57,7 +57,9 @@ namespace PerfView
                     if (box.Width > 50 && box.Height >= 6) // we draw the text only if humans can see something
                     {
                         if (forSize == null)
+                        {
                             forSize = new System.Drawing.Font("Consolas", (float)box.Height, System.Drawing.GraphicsUnit.Pixel);
+                        }
 
                         var text = new FormattedText(
                                 box.Node.DisplayName,
@@ -105,7 +107,9 @@ namespace PerfView
         private void ShowTooltip(string text)
         {
             if (object.ReferenceEquals(tooltip.Content, text) && tooltip.IsOpen)
+            {
                 return;
+            }
 
             tooltip.IsOpen = false; // by closing and opening it again we restart it's position to the current mouse position..
             tooltip.Content = text;
@@ -152,14 +156,16 @@ namespace PerfView
                     .ToArray();
 
             foreach (var brush in brushes)
+            {
                 brush.Freeze(); // this is crucial for performance
+            }
 
             return brushes;
         }
 
         private class FlameBoxesMap
         {
-            SortedDictionary<Range, List<FlameBox>> boxesMap = new SortedDictionary<Range, List<FlameBox>>();
+            private SortedDictionary<Range, List<FlameBox>> boxesMap = new SortedDictionary<Range, List<FlameBox>>();
 
             internal void Clear() => boxesMap.Clear();
 
@@ -168,7 +174,9 @@ namespace PerfView
                 var row = new Range(flameBox.Y, flameBox.Y + flameBox.Height);
 
                 if (!boxesMap.TryGetValue(row, out var list))
+                {
                     boxesMap.Add(row, list = new List<FlameBox>());
+                }
 
                 list.Add(flameBox);
             }
@@ -176,12 +184,15 @@ namespace PerfView
             internal void Sort()
             {
                 foreach (var row in boxesMap.Values)
+                {
                     row.Sort(CompareByX); // sort the boxes from left to the right
+                }
             }
 
             internal string Find(Point point)
             {
                 foreach (var rowData in boxesMap)
+                {
                     if (rowData.Key.Contains(point.Y))
                     {
                         int low = 0, high = rowData.Value.Count - 1, mid = 0;
@@ -191,25 +202,34 @@ namespace PerfView
                             mid = (low + high) / 2;
 
                             if (rowData.Value[mid].X > point.X)
+                            {
                                 high = mid - 1;
+                            }
                             else if ((rowData.Value[mid].X + rowData.Value[mid].Width) < point.X)
+                            {
                                 low = mid + 1;
+                            }
                             else
+                            {
                                 break;
+                            }
                         }
 
                         if (rowData.Value[mid].X <= point.X && point.X <= (rowData.Value[mid].X + rowData.Value[mid].Width))
+                        {
                             return rowData.Value[mid].TooltipText;
+                        }
 
                         return null;
                     }
+                }
 
                 return null;
             }
 
             private static int CompareByX(FlameBox left, FlameBox right) => left.X.CompareTo(right.X);
 
-            struct Range : IEquatable<Range>, IComparable<Range>
+            private struct Range : IEquatable<Range>, IComparable<Range>
             {
                 private readonly double Start, End;
 

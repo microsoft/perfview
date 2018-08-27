@@ -1,7 +1,6 @@
 using System;
-using System.Text;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ETLStackBrowse
 {
@@ -9,23 +8,27 @@ namespace ETLStackBrowse
     {
         // const int fldCSwitchTimeStamp = 1; 
         // const int fldCSwitchNewProcessName = 2;    
-        const int fldCSwitchNewTID =  3;
+        private const int fldCSwitchNewTID = 3;
+
         // const int fldCSwitchNPri = 4;
         // const int fldCSwitchNQnt = 5;
         // const int fldCSwitchTmSinceLast = 6;
         // const int fldCSwitchWaitTime = 7;
         // const int fldCSwitchOldProcessName = 8;
-        const int fldCSwitchOldTID = 9;
+        private const int fldCSwitchOldTID = 9;
+
         // const int fldCSwitchOPri = 10;
         // const int fldCSwitchOQnt = 11;    
         // const int fldCSwitchOldState = 12;     
-        const int fldCSwitchWaitReason = 13;
+        private const int fldCSwitchWaitReason = 13;
+
         // const int fldCSwitchSwappable = 14;
         // const int fldCSwitchInSwitchTime = 15;
-        const int fldCSwitchCPU = 16;
+        private const int fldCSwitchCPU = 16;
+
         // const int fldCSwitchIdealProc = 17;
 
-        const int maxReasons = 32;
+        private const int maxReasons = 32;
 
         public class ThreadStat
         {
@@ -65,7 +68,7 @@ namespace ETLStackBrowse
             return FormatContextSwitchResult(result);
         }
 
-        ByteAtomTable atomsReasons = new ByteAtomTable();
+        private ByteAtomTable atomsReasons = new ByteAtomTable();
 
         public ContextSwitchResult ComputeContextSwitchesRaw()
         {
@@ -97,7 +100,9 @@ namespace ETLStackBrowse
             foreach (ByteWindow b in l.Lines())
             {
                 if (l.idType != idCSwitch)
+                {
                     continue;
+                }
 
                 int oldTid = b.GetInt(fldCSwitchOldTID);
 
@@ -105,7 +110,7 @@ namespace ETLStackBrowse
                 timeTotal += AddCSwitchTime(fSimulateHyperthreading, l.t, stats, state);
 
                 int newTid = b.GetInt(fldCSwitchNewTID);
-               
+
                 int idx = FindThreadInfoIndex(l.t, oldTid);
 
                 stats[idx].switches++;
@@ -117,7 +122,9 @@ namespace ETLStackBrowse
                     int id = atomsReasons.EnsureContains(bT);
 
                     if (stats[idx].swapReasons == null)
+                    {
                         stats[idx].swapReasons = new int[maxReasons];
+                    }
 
                     stats[idx].swapReasons[id]++;
                 }
@@ -132,13 +139,17 @@ namespace ETLStackBrowse
             if (fSortBySwitches)
             {
                 Array.Sort(stats,
-                    delegate(ThreadStat c1, ThreadStat c2)
+                    delegate (ThreadStat c1, ThreadStat c2)
                     {
                         if (c1.switches > c2.switches)
+                        {
                             return -1;
+                        }
 
                         if (c1.switches < c2.switches)
+                        {
                             return 1;
+                        }
 
                         return 0;
                     }
@@ -147,13 +158,17 @@ namespace ETLStackBrowse
             else
             {
                 Array.Sort(stats,
-                    delegate(ThreadStat c1, ThreadStat c2)
+                    delegate (ThreadStat c1, ThreadStat c2)
                     {
                         if (c1.time > c2.time)
+                        {
                             return -1;
+                        }
 
                         if (c1.time < c2.time)
+                        {
                             return 1;
+                        }
 
                         return 0;
                     }
@@ -185,11 +200,15 @@ namespace ETLStackBrowse
             foreach (ByteWindow b in l.Lines())
             {
                 if (l.idType != idCSwitch)
+                {
                     continue;
+                }
 
                 int cpu = b.GetInt(fldCSwitchCPU);
                 if (state[cpu].active)
+                {
                     continue;
+                }
 
                 state[cpu].active = true;
                 state[cpu].tid = b.GetInt(fldCSwitchOldTID);
@@ -197,7 +216,9 @@ namespace ETLStackBrowse
 
                 countCPU++;
                 if (countCPU >= maxCPU)
+                {
                     break;
+                }
             }
         }
 
@@ -213,27 +234,29 @@ namespace ETLStackBrowse
 
             ThreadStat[] stats = results.stats;
 
-            int ithreadIdle = this.IdleThreadIndex;
+            int ithreadIdle = IdleThreadIndex;
             int iStatsIdle = 0;
 
             // find where the idle thread landed after sorting
             for (int i = 0; i < stats.Length; i++)
+            {
                 if (stats[i].ithread == ithreadIdle)
                 {
                     iStatsIdle = i;
                     break;
                 }
+            }
 
             StringWriter sw = new StringWriter();
 
-            sw.WriteLine("Start time: {0:n0}   End time: {1:n0}  Interval Length: {2:n0}", tStart, tEnd, tEnd-tStart);
+            sw.WriteLine("Start time: {0:n0}   End time: {1:n0}  Interval Length: {2:n0}", tStart, tEnd, tEnd - tStart);
             sw.WriteLine();
 
             sw.WriteLine("CPUs: {0:n0}, Total CPU Time: {1:n0} usec. Total Switches: {2:n0} Idle: {3,5:f1}%  Busy: {4,5:f1}%",
                 results.countCPU,
                 results.timeTotal,
                 results.switchesTotal,
-                stats[iStatsIdle].time*100.0/results.timeTotal,
+                stats[iStatsIdle].time * 100.0 / results.timeTotal,
                 (results.timeTotal - stats[iStatsIdle].time) * 100.0 / results.timeTotal);
             sw.WriteLine();
 
@@ -247,19 +270,25 @@ namespace ETLStackBrowse
                 int ithread = stats[i].ithread;
 
                 if (stats[i].time == 0)
+                {
                     continue;
+                }
 
                 if (!results.threadFilters[ithread])
+                {
                     continue;
+                }
 
                 for (int bit = 0; bit < 32; bit++)
+                {
                     maskChars[bit] = ((stats[i].runmask & (1 << bit)) != 0 ? 'X' : '_');
+                }
 
-                sw.WriteLine("{0,11:n0} ({1,5:f1}%) {2,8:n0} ({3,5:f1}%) {4,35} {5,5} {6} {7}", 
-                    stats[i].time, 
-                    stats[i].time*100.0/results.timeTotal,
+                sw.WriteLine("{0,11:n0} ({1,5:f1}%) {2,8:n0} ({3,5:f1}%) {4,35} {5,5} {6} {7}",
+                    stats[i].time,
+                    stats[i].time * 100.0 / results.timeTotal,
                     stats[i].switches,
-                    stats[i].switches*100.0/results.switchesTotal,
+                    stats[i].switches * 100.0 / results.switchesTotal,
                     ByteWindow.MakeString(threads[ithread].processPid),
                     threads[ithread].threadid,
                     new String(maskChars),
@@ -275,7 +304,9 @@ namespace ETLStackBrowse
                         for (int k = 0; k < swapReasons.Length; k++)
                         {
                             if (swapReasons[k] > 0)
+                            {
                                 sw.WriteLine("          {0,17} {1}", reasonNames[k], swapReasons[k]);
+                            }
                         }
                     }
 
@@ -297,19 +328,23 @@ namespace ETLStackBrowse
             ThreadStat[] stats = new ThreadStat[threads.Count];
 
             for (int ithread = 0; ithread < threads.Count; ithread++)
+            {
                 stats[ithread] = new ThreadStat(ithread);
+            }
 
             return stats;
         }
 
-        private int AddCSwitchTime(bool fSimulateHyperthreading, long t, ThreadStat[] stats, CPUState[] state)     
+        private int AddCSwitchTime(bool fSimulateHyperthreading, long t, ThreadStat[] stats, CPUState[] state)
         {
             int timeTotal = 0;
 
             for (int cpu = 0; cpu < maxCPU; cpu++)
             {
                 if (!state[cpu].active)
+                {
                     continue;
+                }
 
                 int time = (int)(t - state[cpu].time);
 
@@ -320,9 +355,13 @@ namespace ETLStackBrowse
                     int th1 = time - th0;
 
                     if ((cpu & 1) == 0)
+                    {
                         time = th0;
+                    }
                     else
+                    {
                         time = th1;
+                    }
 
                     if (state[cpu].tid != 0 && state[cpu ^ 1].tid == 0)
                     {
@@ -342,10 +381,14 @@ namespace ETLStackBrowse
                 int bitEnd = (int)((t - tStart) * 32 / (tEnd - tStart));
 
                 if (bitEnd >= 32)
+                {
                     bitEnd = 31;
+                }
 
                 for (int bit = bitStart; bit <= bitEnd; bit++)
+                {
                     stats[idx].runmask |= ((uint)1 << bit);
+                }
 
                 timeTotal += time;
             }
@@ -353,7 +396,7 @@ namespace ETLStackBrowse
             return timeTotal;
         }
 
-        byte[] GetFilterText()
+        private byte[] GetFilterText()
         {
             return ByteWindow.MakeBytes(itparms.FilterText);
         }
@@ -363,7 +406,7 @@ namespace ETLStackBrowse
             return new ETWLineReader(this);
         }
 
-        List<TimeMark> listDelays = null;
+        private List<TimeMark> listDelays = null;
 
         public string ComputeDelays(int delaySize)
         {
@@ -384,13 +427,17 @@ namespace ETLStackBrowse
             long T0 = itparms.T0;
 
             for (int i = 0; i < stats.Length; i++)
+            {
                 stats[i].time = Math.Max(T0, threads[i].timestamp);
+            }
 
             ETWLineReader l = StandardLineReader();
             foreach (ByteWindow b in l.Lines())
             {
                 if (l.idType != idCSwitch)
+                {
                     continue;
+                }
 
                 int oldTid = b.GetInt(fldCSwitchOldTID);
                 int idxOld = FindThreadInfoIndex(l.t, oldTid);
@@ -402,10 +449,14 @@ namespace ETLStackBrowse
                 int waitTime = (int)(l.t - stats[idxNew].time);
 
                 if (waitTime <= 0)
+                {
                     continue;
+                }
 
                 if (!threadFilters[idxNew])
+                {
                     continue;
+                }
 
                 totalDelays++;
                 totalDelay += waitTime;
@@ -435,10 +486,14 @@ namespace ETLStackBrowse
         public void ZoomToDelays()
         {
             if (listDelays == null)
+            {
                 return;
+            }
 
             if (listDelays.Count < 1)
+            {
                 return;
+            }
 
             ClearZoomedTimes();
 

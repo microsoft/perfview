@@ -30,7 +30,10 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             {
                 // rundown events are 'last chance' events that we only add if we don't already have an entry for it.  
                 if (isEndRundown)
+                {
                     startTime = 0;
+                }
+
                 entries.Add((long)id, new HistoryValue(startTime, id, value));
             }
             else
@@ -41,7 +44,9 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                 // See if we can jump ahead.  Currently we only do this of the first entry, 
                 // But you could imagine using some of the other nodes's skipAhead entries.   
                 if (firstEntry.skipAhead != null && firstEntry.skipAhead.startTime <= startTime)
+                {
                     entry = firstEntry.skipAhead;
+                }
 
                 for (; ; )
                 {
@@ -92,17 +97,24 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                 // See if we can jump ahead.  Currently we only do this of the first entry, 
                 // But you could imagine using some of the other nodes's skipAhead entries.   
                 if (firstEntry.skipAhead != null && firstEntry.skipAhead.startTime < time)
+                {
                     entry = firstEntry.skipAhead;
+                }
 
                 HistoryValue last = null;
                 for (; ; )
                 {
                     if (time < entry.startTime)
+                    {
                         break;
+                    }
+
                     last = entry;
                     entry = entry.next;
                     if (entry == null)
+                    {
                         break;
+                    }
                 }
                 if (last != null)
                 {
@@ -166,15 +178,15 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             #region private
             internal HistoryValue(HistoryValue entry)
             {
-                this.key = entry.key;
-                this.startTime = entry.startTime;
-                this.value = entry.value;
-                this.next = entry.next;
+                key = entry.key;
+                startTime = entry.startTime;
+                value = entry.value;
+                next = entry.next;
             }
             internal HistoryValue(long startTime100ns, Address key, T value)
             {
                 this.key = key;
-                this.startTime = startTime100ns;
+                startTime = startTime100ns;
                 this.value = value;
             }
 
@@ -185,12 +197,12 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             // To improve getting to the end quickly, we allow nodes to store values that 'skip ahead'.
             // Today we only use this field for the first node to skip to the end (for fast append) 
             // The only strong invarient for this field is that it point further up the same list.  
-            internal HistoryValue skipAhead;   
+            internal HistoryValue skipAhead;
             #endregion
         }
         #region private
-        Dictionary<long, HistoryValue> entries;
-        int count;
+        private Dictionary<long, HistoryValue> entries;
+        private int count;
         #endregion
     }
 }

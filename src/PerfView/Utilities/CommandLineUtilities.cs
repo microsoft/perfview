@@ -2,10 +2,10 @@
 /* AUTHOR: Vance Morrison   
  * Date  : 10/20/2007  */
 using System;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Utilities
 {
@@ -17,7 +17,10 @@ namespace Utilities
         public static int RunConsoleMainWithExceptionProcessing(MainBody body)
         {
             if (Debug)
+            {
                 return body();
+            }
+
             try
             {
                 return body();
@@ -38,7 +41,10 @@ namespace Utilities
                     // output.WriteLine("Use /debug for additional debugging information.");
                 }
                 if (Debugger.IsAttached)
+                {
                     Debugger.Break();
+                }
+
                 return 1;
             }
         }
@@ -64,7 +70,10 @@ namespace Utilities
                 string arg = arguments[startAt++];
                 // WriteLine("Got Arg " + arg);
                 if (!first)
+                {
                     ret.Append(' ');
+                }
+
                 first = false;
                 if (Regex.IsMatch(arg, @"\s"))
                 {
@@ -74,7 +83,10 @@ namespace Utilities
                     {
                         Match m = Regex.Match(rest, "^(.*?)(\\\\*)\"(.*)");  //  search for \"  \\" \\\"
                         if (!m.Success)
+                        {
                             break;
+                        }
+
                         ret.Append(m.Groups[1].Value);
                         ret.Append('\\', m.Groups[2].Value.Length * 2);
                         ret.Append("\\\"");
@@ -87,11 +99,16 @@ namespace Utilities
                         ret.Append('\\', mLast.Groups[2].Value.Length * 2);
                     }
                     else
+                    {
                         ret.Append(rest);
+                    }
+
                     ret.Append('"');
                 }
                 else
+                {
                     ret.Append(arg);
+                }
             }
             return ret.ToString();
         }

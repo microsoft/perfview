@@ -10,24 +10,24 @@ using Address = System.UInt64;
 
 namespace ClrMemory
 {
-    public class GCHeap 
+    public class GCHeap
     {
-        public GCHeap(string filePath) {}
-        public GCHeapType GetObjectType(Address objRef) { return null; } 
-        public bool IsInHeap(Address objRef) { return false; } 
+        public GCHeap(string filePath) { }
+        public GCHeapType GetObjectType(Address objRef) { return null; }
+        public bool IsInHeap(Address objRef) { return false; }
         public DateTime TimeCollected { get; private set; }
         public string ProcessName { get; private set; }
         public int ProcessID { get; private set; }
         public string MachineName { get; private set; }
         public int PointerSize { get; private set; }
-        public long TotalSize { get { return 0; } } 
+        public long TotalSize { get { return 0; } }
         public int NumberOfObjects { get; internal set; }
         public IList<GCHeapRoot> Roots { get { return null; } }
         public IList<GCHeapType> Types { get { return null; } }
         public IList<GCHeapSegment> Segments { get { return null; } }
         public GCHeapType GetTypeByIndex(GCHeapTypeIndex typeIndex) { return null; }
         public GCHeapTypeIndex TypeIndexLimit { get { return 0; } }
-        public void ToXml(TextWriter writer) {}
+        public void ToXml(TextWriter writer) { }
         public override string ToString() { return null; }
 
 #if DEBUG
@@ -41,11 +41,11 @@ namespace ClrMemory
         public Address End { get { return 0; } }
         public int Length { get; private set; }
         public int NumberOfObjects { get; private set; }
-        public bool EnumerateObjectsInSegment(Func<Address, GCHeapType, bool> action) { return false; } 
+        public bool EnumerateObjectsInSegment(Func<Address, GCHeapType, bool> action) { return false; }
         public int Generation { get; private set; }
         public GCHeap Heap { get; private set; }
-        public void ToXml(TextWriter writer) {}
-        public override string ToString() { return null; } 
+        public void ToXml(TextWriter writer) { }
+        public override string ToString() { return null; }
     }
     public enum GCRootKind { StaticVar, LocalVar, Strong, Weak, Pinning, Finalizer, Max = Finalizer }
     public class GCHeapRoot
@@ -57,8 +57,8 @@ namespace ClrMemory
         public GCRootKind Kind { get; private set; }
         public Address HeapReference { get; private set; }
         public Address AddressOfRoot { get; private set; }
-        public void ToXml(TextWriter writer) {}
-        public override string ToString() { return null; } 
+        public void ToXml(TextWriter writer) { }
+        public override string ToString() { return null; }
     }
 
     public enum GCHeapTypeIndex { Invalid = -1 }
@@ -75,7 +75,7 @@ namespace ClrMemory
         public GCHeap Heap { get { return null; } }
         public bool HasSimpleValue { get { return false; } }
         public bool IsArray { get; private set; }
-        public object GetValue(Address address) { return null; } 
+        public object GetValue(Address address) { return null; }
         public bool GetFieldForOffset(int fieldOffset, out GCHeapField childField, out int childFieldOffset)
         {
             childField = null;
@@ -85,8 +85,8 @@ namespace ClrMemory
         public GCHeapType ElementType { get; private set; }
         public int GetArrayLength(Address objRef) { return 0; }
         public Address GetArrayElementAddress(Address objRef, int index) { return 0; }
-        public void ToXml(TextWriter writer) {}
-        public override string ToString() { return null; } 
+        public void ToXml(TextWriter writer) { }
+        public override string ToString() { return null; }
     }
 
     public class GCHeapField
@@ -95,8 +95,8 @@ namespace ClrMemory
         public int Offset { get; private set; }
         public GCHeapType Type { get; private set; }
         public Address GetFieldAddress(Address objRef) { return 0; }
-        public object GetFieldValue(Address objRef){ return null; }
-        public void ToXml(TextWriter writer) {}
-        public override string ToString() { return null; } 
+        public object GetFieldValue(Address objRef) { return null; }
+        public void ToXml(TextWriter writer) { }
+        public override string ToString() { return null; }
     }
 }

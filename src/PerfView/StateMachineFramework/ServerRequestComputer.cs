@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using System.Diagnostics;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 
 namespace PerfView
 {
@@ -75,87 +73,87 @@ namespace PerfView
             // ASP.NET Events.
             aspNetParser.AspNetReqStart += ASPNetReqStart;
             aspNetParser.AspNetReqStop += AspNetReqEnd;
-            aspNetParser.AspNetReqAppDomainEnter += delegate(AspNetAppDomainEnterTraceData data)
+            aspNetParser.AspNetReqAppDomainEnter += delegate (AspNetAppDomainEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqStartHandler += delegate(AspNetStartHandlerTraceData data)
+            aspNetParser.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId, true);
             };
-            aspNetParser.AspNetReqRoleManagerBegin += delegate(AspNetRoleManagerBeginTraceData data)
+            aspNetParser.AspNetReqRoleManagerBegin += delegate (AspNetRoleManagerBeginTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqRoleManagerGetUserRoles += delegate(AspNetRoleManagerGetUserRolesTraceData data)
+            aspNetParser.AspNetReqRoleManagerGetUserRoles += delegate (AspNetRoleManagerGetUserRolesTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqRoleManagerEnd += delegate(AspNetRoleManagerEndTraceData data)
+            aspNetParser.AspNetReqRoleManagerEnd += delegate (AspNetRoleManagerEndTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqMapHandlerEnter += delegate(AspNetMapHandlerEnterTraceData data)
+            aspNetParser.AspNetReqMapHandlerEnter += delegate (AspNetMapHandlerEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqMapHandlerLeave += delegate(AspNetMapHandlerLeaveTraceData data)
+            aspNetParser.AspNetReqMapHandlerLeave += delegate (AspNetMapHandlerLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqHttpHandlerEnter += delegate(AspNetHttpHandlerEnterTraceData data)
+            aspNetParser.AspNetReqHttpHandlerEnter += delegate (AspNetHttpHandlerEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqHttpHandlerLeave += delegate(AspNetHttpHandlerLeaveTraceData data)
+            aspNetParser.AspNetReqHttpHandlerLeave += delegate (AspNetHttpHandlerLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPagePreInitEnter += delegate(AspNetPagePreInitEnterTraceData data)
+            aspNetParser.AspNetReqPagePreInitEnter += delegate (AspNetPagePreInitEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPagePreInitLeave += delegate(AspNetPagePreInitLeaveTraceData data)
+            aspNetParser.AspNetReqPagePreInitLeave += delegate (AspNetPagePreInitLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageInitEnter += delegate(AspNetPageInitEnterTraceData data)
+            aspNetParser.AspNetReqPageInitEnter += delegate (AspNetPageInitEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageInitLeave += delegate(AspNetPageInitLeaveTraceData data)
+            aspNetParser.AspNetReqPageInitLeave += delegate (AspNetPageInitLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageLoadEnter += delegate(AspNetPageLoadEnterTraceData data)
+            aspNetParser.AspNetReqPageLoadEnter += delegate (AspNetPageLoadEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageLoadLeave += delegate(AspNetPageLoadLeaveTraceData data)
+            aspNetParser.AspNetReqPageLoadLeave += delegate (AspNetPageLoadLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPagePreRenderEnter += delegate(AspNetPagePreRenderEnterTraceData data)
+            aspNetParser.AspNetReqPagePreRenderEnter += delegate (AspNetPagePreRenderEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPagePreRenderLeave += delegate(AspNetPagePreRenderLeaveTraceData data)
+            aspNetParser.AspNetReqPagePreRenderLeave += delegate (AspNetPagePreRenderLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageSaveViewstateEnter += delegate(AspNetPageSaveViewstateEnterTraceData data)
+            aspNetParser.AspNetReqPageSaveViewstateEnter += delegate (AspNetPageSaveViewstateEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageSaveViewstateLeave += delegate(AspNetPageSaveViewstateLeaveTraceData data)
+            aspNetParser.AspNetReqPageSaveViewstateLeave += delegate (AspNetPageSaveViewstateLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageRenderEnter += delegate(AspNetPageRenderEnterTraceData data)
+            aspNetParser.AspNetReqPageRenderEnter += delegate (AspNetPageRenderEnterTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
-            aspNetParser.AspNetReqPageRenderLeave += delegate(AspNetPageRenderLeaveTraceData data)
+            aspNetParser.AspNetReqPageRenderLeave += delegate (AspNetPageRenderLeaveTraceData data)
             {
                 SetAspNetRequestForThread(data, data.ContextId);
             };
@@ -234,7 +232,10 @@ namespace PerfView
             // Get the thread.
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "ASPNetReqStart {0}", data.ContextId);
 
             RequestKey requestKey = new RequestKey(thread.Process.ProcessIndex, data.ContextId);
@@ -251,7 +252,10 @@ namespace PerfView
         {
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "AspNetReqEnd {0}", data.ContextId);
 
             RequestKey requestKey = new RequestKey(thread.Process.ProcessIndex, data.ContextId);
@@ -264,7 +268,10 @@ namespace PerfView
 
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "SetAspNetRequestForThread {0} force {1}", contextId, forceUpdate);
 
             RequestKey requestKey = new RequestKey(thread.Process.ProcessIndex, contextId);
@@ -273,14 +280,19 @@ namespace PerfView
             // Set the state if we have nothing. 
             var threadState = m_ThreadStateMap[thread.ThreadIndex];
             if (threadState.Request == null || forceUpdate)
+            {
                 threadState.Request = request;
+            }
         }
 
         private void WebHostRequestStart(Multidata69TemplateATraceData data)
         {
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "WebHostRequestStart {0}, ASPNET ID {1}", data.ActivityID, data.RelatedActivityID);
 
             // Create the request key.
@@ -288,7 +300,9 @@ namespace PerfView
 
             var wcfServerRequest = GetOrCreateWCFServerRequest(requestKey, thread, data.RelatedActivityID);
             if (wcfServerRequest == null)
+            {
                 return;
+            }
 
             // Mark this request as the overhead request.  This value will not get copied when we transfer to
             // a new request id when a message comes in on the wire.
@@ -305,7 +319,10 @@ namespace PerfView
         {
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "MessageReceivedByTransport {0}, PARENT ID {1}", data.ActivityID, data.RelatedActivityID);
 
             // Create the request for the 'group' of requests
@@ -321,11 +338,15 @@ namespace PerfView
                 var requestKey = new RequestKey(thread.Process.ProcessIndex, data.ActivityID);
                 wcfServerRequest = GetOrCreateWCFServerRequest(requestKey, thread, wcfServerRequest.ASPNetRequest.RequestID);
                 if (wcfServerRequest == null)
+                {
                     return;
+                }
 
                 var threadState = m_ThreadStateMap[thread.ThreadIndex];
                 if (threadState.Request as WCFClientRequest == null)
+                {
                     threadState.Request = wcfServerRequest;
+                }
             }
         }
 
@@ -333,7 +354,10 @@ namespace PerfView
         {
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "WebHostRequestStop {0}", data.ActivityID);
 
             // Create the request key.
@@ -345,7 +369,10 @@ namespace PerfView
         {
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "ClientOperationPrepared {0}", data.ActivityID);
 
             // Create the request key.
@@ -359,9 +386,14 @@ namespace PerfView
                 // no WCF request.   In this case the WCF activity ID also happens to be the ASP.NET
                 // context id.  Thus we can go ahead and make a WCF activity for it out of nothing.  
                 if (m_aspNetServerRequests.ContainsKey(requestKey))
+                {
                     clientRequest = GetOrCreateWCFClientRequest(requestKey, thread, data.ActivityID);
+                }
+
                 if (clientRequest == null)
+                {
                     return;
+                }
             }
 
             // Store necessary data
@@ -381,7 +413,10 @@ namespace PerfView
         {
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "ServiceChannelCallStop {0}", data.ActivityID);
 
             // Create the request key.
@@ -395,7 +430,10 @@ namespace PerfView
             // that from then on that that thread is processing the request.  
             TraceThread thread = data.Thread();
             if (null == thread)
+            {
                 return;
+            }
+
             ServerRequestComputer.DebugLog(data.TimeStampRelativeMSec, thread.ThreadID, "SetWCFRequestForThread {0}", data.ActivityID);
 
             Debug.Assert(data.ActivityID != Guid.Empty);
@@ -404,12 +442,16 @@ namespace PerfView
                 RequestKey requestKey = new RequestKey(thread.Process.ProcessIndex, data.ActivityID);
                 var wcfServerRequest = GetOrCreateWCFServerRequest(requestKey, thread, Guid.Empty);
                 if (wcfServerRequest == null)
+                {
                     return;
+                }
 
                 var threadState = m_ThreadStateMap[thread.ThreadIndex];
                 // Replace it if it is strictly better.  
                 if (threadState.Request == null || wcfServerRequest.ASPNetRequest == threadState.Request as ASPNetServerRequest)
+                {
                     threadState.Request = wcfServerRequest;
+                }
             }
         }
 
@@ -427,7 +469,9 @@ namespace PerfView
             if (m_aspNetServerRequests.TryGetValue(requestKey, out aspNetServerRequest))
             {
                 if (m_ThreadStateMap[thread.ThreadIndex].Request == aspNetServerRequest)
+                {
                     return aspNetServerRequest;
+                }
 
                 // TODO REVIEW:  This is moderately expensive.  
                 // We currently only allow one active thread per ASP.NET request.  Thus by starting work on this thread 
@@ -527,11 +571,15 @@ namespace PerfView
 #endif
                 // If we are in the right context, return the request.   If  return if we are the right context.  
                 if (request.ASPNetRequest.RequestID == aspNetRequestId)
+                {
                     return request;
+                }
 
                 // Give up if we don't know our ASP.NET context we assume we are non-nested and return the most deeply nested thing
                 if (aspNetRequestId == Guid.Empty)
+                {
                     return request;
+                }
 
                 // Fall through and push a new request on the stack of WCFServerRequests.  
                 next = request;
@@ -569,12 +617,19 @@ namespace PerfView
                     var done = (request.ASPNetRequest == aspNetRequest || aspNetRequest == null);
                     RemoveWCFServerRequestWorker(request, requestKey.ProcessIndex);
                     request = request.NextRequestWithTheSameID;
-                    if (done || request == null) break;
+                    if (done || request == null)
+                    {
+                        break;
+                    }
                 }
                 if (request != null)
+                {
                     m_wcfServerRequests[requestKey] = request;
+                }
                 else
+                {
                     m_wcfServerRequests.Remove(requestKey);
+                }
             }
         }
         private void RemoveWCFServerRequestWorker(WCFServerRequest request, ProcessIndex processIndex)
@@ -584,7 +639,9 @@ namespace PerfView
 
             // Make sure no threads are pointing at my call out
             if (request.ClientRequest != null)
+            {
                 m_ThreadStateMap.ReplaceRequest(request.ClientRequest, request.ASPNetRequest);
+            }
 
             // Make sure no threads are pointing at us.  
             m_ThreadStateMap.ReplaceRequest(request, request.ASPNetRequest);
@@ -611,13 +668,16 @@ namespace PerfView
                 ServerRequestComputer.DebugLog(0, thread.ThreadID, "GetOrCreateWCFClientRequest MAKING NEW REQUEST {0}", requestKey.RequestID);
             }
             else
+            {
                 ServerRequestComputer.DebugLog(0, thread.ThreadID, "GetOrCreateWCFClientRequest FINDING EXISTING REQUEST {0}", requestKey.RequestID);
+            }
+
             return request;
         }
         private void RemoveWCFClientRequest(RequestKey requestKey)
         {
             WCFServerRequest wcfServerRequest;
-            if (this.m_wcfServerRequests.TryGetValue(requestKey, out wcfServerRequest))
+            if (m_wcfServerRequests.TryGetValue(requestKey, out wcfServerRequest))
             {
                 var wcfClientRequest = wcfServerRequest.ClientRequest;
                 if (wcfClientRequest != null)
@@ -701,11 +761,15 @@ namespace PerfView
         public static bool IsCSwitchBlockedInThreadPool(TraceEvent data)
         {
             if (!(data is CSwitchTraceData))
+            {
                 return false;
+            }
 
             var callStack = data.CallStackIndex();
             if (callStack == CallStackIndex.Invalid)
+            {
                 return false;
+            }
 
             // Does the CSWITCH stack only contain thread pool modules.  In which case we assume we blocked in the thread pool.  
             var traceLog = (TraceLog)data.Source;
@@ -716,7 +780,9 @@ namespace PerfView
                 var codeAddrIdx = callStacks.CodeAddressIndex(callStack);
                 var module = codeAddresses.ModuleFile(codeAddrIdx);
                 if (module == null)
+                {
                     return false;
+                }
 
                 var moduleName = module.Name;
                 if (!moduleName.StartsWith("wow", StringComparison.OrdinalIgnoreCase) &&
@@ -726,7 +792,10 @@ namespace PerfView
                     string.Compare(moduleName, "w3tp", StringComparison.OrdinalIgnoreCase) != 0 &&
                     string.Compare(moduleName, "clr", StringComparison.OrdinalIgnoreCase) != 0 &&
                     string.Compare(moduleName, "mscorwks", StringComparison.OrdinalIgnoreCase) != 0)
+                {
                     return false;
+                }
+
                 callStack = callStacks.Caller(callStack);
             }
 
@@ -822,7 +891,7 @@ namespace PerfView
             // rootCallStackIndex = stackSource.Interner.CallStackIntern(aspNetRequestUrlFrameIndex, rootCallStackIndex);
 
             // Add a stack frame for the ASP.NET request.
-            StackSourceFrameIndex aspNetRequestFrameIndex = stackSource.Interner.FrameIntern(this.ToString());
+            StackSourceFrameIndex aspNetRequestFrameIndex = stackSource.Interner.FrameIntern(ToString());
             StackSourceCallStackIndex aspNetCallStackIndex = stackSource.Interner.CallStackIntern(aspNetRequestFrameIndex, rootCallStackIndex);
 
             return aspNetCallStackIndex;
@@ -903,15 +972,15 @@ namespace PerfView
             StackSourceCallStackIndex callStackIndex = base.GetCallStackIndex(rootCallStackIndex, stackSource, thread);
 
             // Add a stack frame for the ASP.NET request url.
-            StackSourceFrameIndex aspNetRequestUrlFrameIndex = stackSource.Interner.FrameIntern(this.ASPNetRequest.RequestUrl);
+            StackSourceFrameIndex aspNetRequestUrlFrameIndex = stackSource.Interner.FrameIntern(ASPNetRequest.RequestUrl);
             StackSourceCallStackIndex aspNetRequestCallStackIndex = stackSource.Interner.CallStackIntern(aspNetRequestUrlFrameIndex, callStackIndex);
 
             // Add a stack frame for the ASP.NET request.
-            StackSourceFrameIndex aspNetRequestFrameIndex = stackSource.Interner.FrameIntern(this.ASPNetRequest.ToString());
+            StackSourceFrameIndex aspNetRequestFrameIndex = stackSource.Interner.FrameIntern(ASPNetRequest.ToString());
             StackSourceCallStackIndex aspNetCallStackIndex = stackSource.Interner.CallStackIntern(aspNetRequestFrameIndex, aspNetRequestCallStackIndex);
 
             // Add a stack frame for the WCF server request.
-            StackSourceFrameIndex requestFrameIndex = stackSource.Interner.FrameIntern(this.ToString());
+            StackSourceFrameIndex requestFrameIndex = stackSource.Interner.FrameIntern(ToString());
             StackSourceCallStackIndex requestStackIndex = stackSource.Interner.CallStackIntern(requestFrameIndex, aspNetCallStackIndex);
 
             return requestStackIndex;
@@ -1001,27 +1070,32 @@ namespace PerfView
             TraceThread thread)
         {
             if (null == stackSource)
+            {
                 throw new ArgumentNullException("stackSource");
+            }
+
             if (null == thread)
+            {
                 throw new ArgumentNullException("thread");
+            }
 
             // Get the root call stack index.
             StackSourceCallStackIndex callStackIndex = base.GetCallStackIndex(rootCallStackIndex, stackSource, thread);
 
             // Add a stack frame for the ASP.NET request url.
-            StackSourceFrameIndex aspNetRequestUrlFrameIndex = stackSource.Interner.FrameIntern(this.m_ServerRequest.ASPNetRequest.RequestUrl);
+            StackSourceFrameIndex aspNetRequestUrlFrameIndex = stackSource.Interner.FrameIntern(m_ServerRequest.ASPNetRequest.RequestUrl);
             StackSourceCallStackIndex aspNetRequestCallStackIndex = stackSource.Interner.CallStackIntern(aspNetRequestUrlFrameIndex, callStackIndex);
 
             // Add a stack frame for the ASP.NET request.
-            StackSourceFrameIndex aspNetRequestFrameIndex = stackSource.Interner.FrameIntern(this.m_ServerRequest.ASPNetRequest.ToString());
+            StackSourceFrameIndex aspNetRequestFrameIndex = stackSource.Interner.FrameIntern(m_ServerRequest.ASPNetRequest.ToString());
             StackSourceCallStackIndex aspNetCallStackIndex = stackSource.Interner.CallStackIntern(aspNetRequestFrameIndex, aspNetRequestCallStackIndex);
 
             // Add a stack frame for the WCF server request.
-            StackSourceFrameIndex serverRequestFrameIndex = stackSource.Interner.FrameIntern(this.m_ServerRequest.ToString());
+            StackSourceFrameIndex serverRequestFrameIndex = stackSource.Interner.FrameIntern(m_ServerRequest.ToString());
             StackSourceCallStackIndex serverRequestStackIndex = stackSource.Interner.CallStackIntern(serverRequestFrameIndex, aspNetCallStackIndex);
 
             // Add a stack frame for the WCF client request.
-            StackSourceFrameIndex requestFrameIndex = stackSource.Interner.FrameIntern(this.ToString());
+            StackSourceFrameIndex requestFrameIndex = stackSource.Interner.FrameIntern(ToString());
             StackSourceCallStackIndex requestStackIndex = stackSource.Interner.CallStackIntern(requestFrameIndex, serverRequestStackIndex);
 
             return requestStackIndex;

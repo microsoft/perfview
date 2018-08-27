@@ -1,8 +1,6 @@
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -14,10 +12,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP;
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
-    public sealed class MicrosoftWindowsTCPIPTraceEventParser : TraceEventParser 
+    public sealed class MicrosoftWindowsTCPIPTraceEventParser : TraceEventParser
     {
         public static readonly string ProviderName = "Microsoft-Windows-TCPIP";
-        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x2f07e2ee), unchecked((short) 0x15db), unchecked((short) 0x40f1), 0x90, 0xef, 0x9d, 0x7b, 0xa2, 0x82, 0x18, 0x8a);
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x2f07e2ee), unchecked((short)0x15db), unchecked((short)0x40f1), 0x90, 0xef, 0x9d, 0x7b, 0xa2, 0x82, 0x18, 0x8a);
         public enum Keywords : long
         {
             Uttcpipendpoint = 0x1,
@@ -46,7 +44,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Keyword200000000000 = 0x200000000000,
         };
 
-        public MicrosoftWindowsTCPIPTraceEventParser(TraceEventSource source) : base(source) {}
+        public MicrosoftWindowsTCPIPTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<FramingIfOperStatusArgs> FramingIfOperStatus
         {
@@ -3827,1375 +3825,1375 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         static private FramingIfOperStatusArgs FramingIfOperStatusTemplate(Action<FramingIfOperStatusArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new FramingIfOperStatusArgs(action, 1130, 1130, "FramingIfOperStatus", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new FramingIfOperStatusArgs(action, 1130, 1130, "FramingIfOperStatus", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMediaDisconnectArgs FramingNdisPauseTemplate(Action<TcpMediaDisconnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMediaDisconnectArgs(action, 1136, 1136, "FramingNdisPause", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMediaDisconnectArgs(action, 1136, 1136, "FramingNdisPause", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMediaDisconnectArgs FramingNdisRestartTemplate(Action<TcpMediaDisconnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMediaDisconnectArgs(action, 1137, 1137, "FramingNdisRestart", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMediaDisconnectArgs(action, 1137, 1137, "FramingNdisRestart", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadFailedArgs IpAddressAddedTemplate(Action<IpDadFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadFailedArgs(action, 1127, 1127, "IpAddressAdded", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadFailedArgs(action, 1127, 1127, "IpAddressAdded", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadFailedArgs IpAddressDeletedTemplate(Action<IpDadFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadFailedArgs(action, 1128, 1128, "IpAddressDeleted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadFailedArgs(action, 1128, 1128, "IpAddressDeleted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadFailedArgs IpAddressStateNonPreferredTemplate(Action<IpDadFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadFailedArgs(action, 1139, 1139, "IpAddressStateNonPreferred", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadFailedArgs(action, 1139, 1139, "IpAddressStateNonPreferred", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadFailedArgs IpAddressStatePreferredTemplate(Action<IpDadFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadFailedArgs(action, 1138, 1138, "IpAddressStatePreferred", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadFailedArgs(action, 1138, 1138, "IpAddressStatePreferred", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadFailedArgs IpDadFailedTemplate(Action<IpDadFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadFailedArgs(action, 1115, 1115, "IpDadFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadFailedArgs(action, 1115, 1115, "IpDadFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadFailedArgs IpDadStartedTemplate(Action<IpDadFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadFailedArgs(action, 1116, 1116, "IpDadStarted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadFailedArgs(action, 1116, 1116, "IpDadStarted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpDadSuccessfulArgs IpDadSuccessfulTemplate(Action<IpDadSuccessfulArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpDadSuccessfulArgs(action, 1114, 1114, "IpDadSuccessful", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpDadSuccessfulArgs(action, 1114, 1114, "IpDadSuccessful", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpInterfacePropertyChangeArgs IpInterfacePropertyChangeTemplate(Action<IpInterfacePropertyChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpInterfacePropertyChangeArgs(action, 1144, 1144, "IpInterfacePropertyChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpInterfacePropertyChangeArgs(action, 1144, 1144, "IpInterfacePropertyChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpInterfaceRundownArgs IpInterfaceRundownTemplate(Action<IpInterfaceRundownArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpInterfaceRundownArgs(action, 1202, 1202, "IpInterfaceRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpInterfaceRundownArgs(action, 1202, 1202, "IpInterfaceRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpInterfaceSpeedChangeArgs IpInterfaceSpeedChangeTemplate(Action<IpInterfaceSpeedChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpInterfaceSpeedChangeArgs(action, 1203, 1203, "IpInterfaceSpeedChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpInterfaceSpeedChangeArgs(action, 1203, 1203, "IpInterfaceSpeedChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpNeighborDiscoveryArgs IpNeighborDiscoveryTemplate(Action<IpNeighborDiscoveryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpNeighborDiscoveryArgs(action, 1325, 1325, "IpNeighborDiscovery", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpNeighborDiscoveryArgs(action, 1325, 1325, "IpNeighborDiscovery", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpNeighborUnreachableArgs IpNeighborReachableTemplate(Action<IpNeighborUnreachableArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpNeighborUnreachableArgs(action, 1149, 1149, "IpNeighborReachable", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpNeighborUnreachableArgs(action, 1149, 1149, "IpNeighborReachable", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpNeighborStateArgs IpNeighborStateTemplate(Action<IpNeighborStateArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpNeighborStateArgs(action, 1324, 1324, "IpNeighborState", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpNeighborStateArgs(action, 1324, 1324, "IpNeighborState", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpNeighborUnreachableArgs IpNeighborUnreachableTemplate(Action<IpNeighborUnreachableArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpNeighborUnreachableArgs(action, 1148, 1148, "IpNeighborUnreachable", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpNeighborUnreachableArgs(action, 1148, 1148, "IpNeighborUnreachable", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpRouteCreatedArgs IpRouteCreatedTemplate(Action<IpRouteCreatedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpRouteCreatedArgs(action, 1145, 1145, "IpRouteCreated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpRouteCreatedArgs(action, 1145, 1145, "IpRouteCreated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpRouteCreatedArgs IpRouteDeletedTemplate(Action<IpRouteCreatedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpRouteCreatedArgs(action, 1146, 1146, "IpRouteDeleted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpRouteCreatedArgs(action, 1146, 1146, "IpRouteDeleted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpRouteCreatedArgs IpRoutePropertyChangeTemplate(Action<IpRouteCreatedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpRouteCreatedArgs(action, 1147, 1147, "IpRoutePropertyChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpRouteCreatedArgs(action, 1147, 1147, "IpRoutePropertyChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpSortedAddressPairsArgs IpSortedAddressPairsTemplate(Action<IpSortedAddressPairsArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpSortedAddressPairsArgs(action, 1327, 1327, "IpSortedAddressPairs", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpSortedAddressPairsArgs(action, 1327, 1327, "IpSortedAddressPairs", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private IpSourceAddressSelectionArgs IpSourceAddressSelectionTemplate(Action<IpSourceAddressSelectionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IpSourceAddressSelectionArgs(action, 1326, 1326, "IpSourceAddressSelection", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new IpSourceAddressSelectionArgs(action, 1326, 1326, "IpSourceAddressSelection", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_AcceptArgs Ndkpi_AcceptTemplate(Action<Ndkpi_AcceptArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_AcceptArgs(action, 1267, 1267, "Ndkpi_Accept", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_AcceptArgs(action, 1267, 1267, "Ndkpi_Accept", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Arm_CqArgs Ndkpi_Arm_CqTemplate(Action<Ndkpi_Arm_CqArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Arm_CqArgs(action, 1254, 1254, "Ndkpi_Arm_Cq", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Arm_CqArgs(action, 1254, 1254, "Ndkpi_Arm_Cq", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_BindArgs Ndkpi_BindTemplate(Action<Ndkpi_BindArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_BindArgs(action, 1290, 1290, "Ndkpi_Bind", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_BindArgs(action, 1290, 1290, "Ndkpi_Bind", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Build_LamArgs Ndkpi_Build_LamTemplate(Action<Ndkpi_Build_LamArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Build_LamArgs(action, 1278, 1278, "Ndkpi_Build_Lam", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Build_LamArgs(action, 1278, 1278, "Ndkpi_Build_Lam", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Close_Adapter_EnterArgs Ndkpi_Close_Adapter_EnterTemplate(Action<Ndkpi_Close_Adapter_EnterArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Close_Adapter_EnterArgs(action, 1298, 1298, "Ndkpi_Close_Adapter_Enter", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Close_Adapter_EnterArgs(action, 1298, 1298, "Ndkpi_Close_Adapter_Enter", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Close_Adapter_EnterArgs Ndkpi_Close_Adapter_ExitTemplate(Action<Ndkpi_Close_Adapter_EnterArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Close_Adapter_EnterArgs(action, 1299, 1299, "Ndkpi_Close_Adapter_Exit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Close_Adapter_EnterArgs(action, 1299, 1299, "Ndkpi_Close_Adapter_Exit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Close_CompletionArgs Ndkpi_Close_CompletionTemplate(Action<Ndkpi_Close_CompletionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Close_CompletionArgs(action, 1251, 1251, "Ndkpi_Close_Completion", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Close_CompletionArgs(action, 1251, 1251, "Ndkpi_Close_Completion", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Close_ObjArgs Ndkpi_Close_ObjTemplate(Action<Ndkpi_Close_ObjArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Close_ObjArgs(action, 1250, 1250, "Ndkpi_Close_Obj", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Close_ObjArgs(action, 1250, 1250, "Ndkpi_Close_Obj", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Complete_ConnectArgs Ndkpi_Complete_ConnectTemplate(Action<Ndkpi_Complete_ConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Complete_ConnectArgs(action, 1266, 1266, "Ndkpi_Complete_Connect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Complete_ConnectArgs(action, 1266, 1266, "Ndkpi_Complete_Connect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_ConnectArgs Ndkpi_ConnectTemplate(Action<Ndkpi_ConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_ConnectArgs(action, 1264, 1264, "Ndkpi_Connect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_ConnectArgs(action, 1264, 1264, "Ndkpi_Connect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Connect_Event_CallbackArgs Ndkpi_Connect_Event_CallbackTemplate(Action<Ndkpi_Connect_Event_CallbackArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Connect_Event_CallbackArgs(action, 1283, 1283, "Ndkpi_Connect_Event_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Connect_Event_CallbackArgs(action, 1283, 1283, "Ndkpi_Connect_Event_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_ConnectArgs Ndkpi_Connect_Shared_EndpointTemplate(Action<Ndkpi_ConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_ConnectArgs(action, 1265, 1265, "Ndkpi_Connect_Shared_Endpoint", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_ConnectArgs(action, 1265, 1265, "Ndkpi_Connect_Shared_Endpoint", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Control_Cq_ImArgs Ndkpi_Control_Cq_ImTemplate(Action<Ndkpi_Control_Cq_ImArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Control_Cq_ImArgs(action, 1314, 1314, "Ndkpi_Control_Cq_Im", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Control_Cq_ImArgs(action, 1314, 1314, "Ndkpi_Control_Cq_Im", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Cq_Notification_CallbackArgs Ndkpi_Cq_Notification_CallbackTemplate(Action<Ndkpi_Cq_Notification_CallbackArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Cq_Notification_CallbackArgs(action, 1280, 1280, "Ndkpi_Cq_Notification_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Cq_Notification_CallbackArgs(action, 1280, 1280, "Ndkpi_Cq_Notification_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Cq_ResultArgs Ndkpi_Cq_ResultTemplate(Action<Ndkpi_Cq_ResultArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Cq_ResultArgs(action, 1255, 1255, "Ndkpi_Cq_Result", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Cq_ResultArgs(action, 1255, 1255, "Ndkpi_Cq_Result", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Cq_Result_ExArgs Ndkpi_Cq_Result_ExTemplate(Action<Ndkpi_Cq_Result_ExArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Cq_Result_ExArgs(action, 1328, 1328, "Ndkpi_Cq_Result_Ex", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Cq_Result_ExArgs(action, 1328, 1328, "Ndkpi_Cq_Result_Ex", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_CompletionArgs Ndkpi_Create_CompletionTemplate(Action<Ndkpi_Create_CompletionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_CompletionArgs(action, 1249, 1249, "Ndkpi_Create_Completion", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_CompletionArgs(action, 1249, 1249, "Ndkpi_Create_Completion", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Deregister_MrArgs Ndkpi_Create_ConnectorTemplate(Action<Ndkpi_Deregister_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Deregister_MrArgs(action, 1276, 1276, "Ndkpi_Create_Connector", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Deregister_MrArgs(action, 1276, 1276, "Ndkpi_Create_Connector", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_CqArgs Ndkpi_Create_CqTemplate(Action<Ndkpi_Create_CqArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_CqArgs(action, 1248, 1248, "Ndkpi_Create_Cq", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_CqArgs(action, 1248, 1248, "Ndkpi_Create_Cq", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_ListenerArgs Ndkpi_Create_ListenerTemplate(Action<Ndkpi_Create_ListenerArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_ListenerArgs(action, 1277, 1277, "Ndkpi_Create_Listener", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_ListenerArgs(action, 1277, 1277, "Ndkpi_Create_Listener", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_MrArgs Ndkpi_Create_MrTemplate(Action<Ndkpi_Create_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_MrArgs(action, 1256, 1256, "Ndkpi_Create_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_MrArgs(action, 1256, 1256, "Ndkpi_Create_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Deregister_MrArgs Ndkpi_Create_MwTemplate(Action<Ndkpi_Deregister_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Deregister_MrArgs(action, 1270, 1270, "Ndkpi_Create_Mw", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Deregister_MrArgs(action, 1270, 1270, "Ndkpi_Create_Mw", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Deregister_MrArgs Ndkpi_Create_PdTemplate(Action<Ndkpi_Deregister_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Deregister_MrArgs(action, 1274, 1274, "Ndkpi_Create_Pd", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Deregister_MrArgs(action, 1274, 1274, "Ndkpi_Create_Pd", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_QpArgs Ndkpi_Create_QpTemplate(Action<Ndkpi_Create_QpArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_QpArgs(action, 1272, 1272, "Ndkpi_Create_Qp", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_QpArgs(action, 1272, 1272, "Ndkpi_Create_Qp", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_QpArgs Ndkpi_Create_Qp_SrqTemplate(Action<Ndkpi_Create_QpArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_QpArgs(action, 1273, 1273, "Ndkpi_Create_Qp_Srq", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_QpArgs(action, 1273, 1273, "Ndkpi_Create_Qp_Srq", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_ListenArgs Ndkpi_Create_Shared_EndpointTemplate(Action<Ndkpi_ListenArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_ListenArgs(action, 1275, 1275, "Ndkpi_Create_Shared_Endpoint", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_ListenArgs(action, 1275, 1275, "Ndkpi_Create_Shared_Endpoint", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Create_SrqArgs Ndkpi_Create_SrqTemplate(Action<Ndkpi_Create_SrqArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Create_SrqArgs(action, 1271, 1271, "Ndkpi_Create_Srq", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Create_SrqArgs(action, 1271, 1271, "Ndkpi_Create_Srq", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Deregister_MrArgs Ndkpi_Deregister_MrTemplate(Action<Ndkpi_Deregister_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Deregister_MrArgs(action, 1261, 1261, "Ndkpi_Deregister_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Deregister_MrArgs(action, 1261, 1261, "Ndkpi_Deregister_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Deregister_MrArgs Ndkpi_DisconnectTemplate(Action<Ndkpi_Deregister_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Deregister_MrArgs(action, 1268, 1268, "Ndkpi_Disconnect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Deregister_MrArgs(action, 1268, 1268, "Ndkpi_Disconnect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Disconnect_Event_CallbackArgs Ndkpi_Disconnect_Event_CallbackTemplate(Action<Ndkpi_Disconnect_Event_CallbackArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Disconnect_Event_CallbackArgs(action, 1282, 1282, "Ndkpi_Disconnect_Event_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Disconnect_Event_CallbackArgs(action, 1282, 1282, "Ndkpi_Disconnect_Event_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Fast_RegisterArgs Ndkpi_Fast_RegisterTemplate(Action<Ndkpi_Fast_RegisterArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Fast_RegisterArgs(action, 1291, 1291, "Ndkpi_Fast_Register", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Fast_RegisterArgs(action, 1291, 1291, "Ndkpi_Fast_Register", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_FlushArgs Ndkpi_FlushTemplate(Action<Ndkpi_FlushArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_FlushArgs(action, 1257, 1257, "Ndkpi_Flush", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_FlushArgs(action, 1257, 1257, "Ndkpi_Flush", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Get_Connect_DataArgs Ndkpi_Get_Connect_DataTemplate(Action<Ndkpi_Get_Connect_DataArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Get_Connect_DataArgs(action, 1288, 1288, "Ndkpi_Get_Connect_Data", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Get_Connect_DataArgs(action, 1288, 1288, "Ndkpi_Get_Connect_Data", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Get_SockaddrArgs Ndkpi_Get_SockaddrTemplate(Action<Ndkpi_Get_SockaddrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Get_SockaddrArgs(action, 1285, 1285, "Ndkpi_Get_Sockaddr", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Get_SockaddrArgs(action, 1285, 1285, "Ndkpi_Get_Sockaddr", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Get_Sockaddr_FailureArgs Ndkpi_Get_Sockaddr_FailureTemplate(Action<Ndkpi_Get_Sockaddr_FailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Get_Sockaddr_FailureArgs(action, 1286, 1286, "Ndkpi_Get_Sockaddr_Failure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Get_Sockaddr_FailureArgs(action, 1286, 1286, "Ndkpi_Get_Sockaddr_Failure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Get_TokenArgs Ndkpi_Get_TokenTemplate(Action<Ndkpi_Get_TokenArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Get_TokenArgs(action, 1284, 1284, "Ndkpi_Get_Token", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Get_TokenArgs(action, 1284, 1284, "Ndkpi_Get_Token", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Initialize_Fast_Register_MrArgs Ndkpi_Initialize_Fast_Register_MrTemplate(Action<Ndkpi_Initialize_Fast_Register_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Initialize_Fast_Register_MrArgs(action, 1262, 1262, "Ndkpi_Initialize_Fast_Register_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Initialize_Fast_Register_MrArgs(action, 1262, 1262, "Ndkpi_Initialize_Fast_Register_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Interface_EventArgs Ndkpi_Interface_EventTemplate(Action<Ndkpi_Interface_EventArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Interface_EventArgs(action, 1301, 1301, "Ndkpi_Interface_Event", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Interface_EventArgs(action, 1301, 1301, "Ndkpi_Interface_Event", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_InvalidateArgs Ndkpi_InvalidateTemplate(Action<Ndkpi_InvalidateArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_InvalidateArgs(action, 1292, 1292, "Ndkpi_Invalidate", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_InvalidateArgs(action, 1292, 1292, "Ndkpi_Invalidate", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_ListenArgs Ndkpi_ListenTemplate(Action<Ndkpi_ListenArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_ListenArgs(action, 1269, 1269, "Ndkpi_Listen", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_ListenArgs(action, 1269, 1269, "Ndkpi_Listen", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Modify_SrqArgs Ndkpi_Modify_SrqTemplate(Action<Ndkpi_Modify_SrqArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Modify_SrqArgs(action, 1263, 1263, "Ndkpi_Modify_Srq", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Modify_SrqArgs(action, 1263, 1263, "Ndkpi_Modify_Srq", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Open_AdapterArgs Ndkpi_Open_AdapterTemplate(Action<Ndkpi_Open_AdapterArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Open_AdapterArgs(action, 1297, 1297, "Ndkpi_Open_Adapter", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Open_AdapterArgs(action, 1297, 1297, "Ndkpi_Open_Adapter", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_ReadArgs Ndkpi_ReadTemplate(Action<Ndkpi_ReadArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_ReadArgs(action, 1293, 1293, "Ndkpi_Read", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_ReadArgs(action, 1293, 1293, "Ndkpi_Read", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_SendArgs Ndkpi_ReceiveTemplate(Action<Ndkpi_SendArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_SendArgs(action, 1259, 1259, "Ndkpi_Receive", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_SendArgs(action, 1259, 1259, "Ndkpi_Receive", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Register_MrArgs Ndkpi_Register_MrTemplate(Action<Ndkpi_Register_MrArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Register_MrArgs(action, 1260, 1260, "Ndkpi_Register_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Register_MrArgs(action, 1260, 1260, "Ndkpi_Register_Mr", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_RejectArgs Ndkpi_RejectTemplate(Action<Ndkpi_RejectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_RejectArgs(action, 1287, 1287, "Ndkpi_Reject", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_RejectArgs(action, 1287, 1287, "Ndkpi_Reject", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Release_LamArgs Ndkpi_Release_LamTemplate(Action<Ndkpi_Release_LamArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Release_LamArgs(action, 1279, 1279, "Ndkpi_Release_Lam", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Release_LamArgs(action, 1279, 1279, "Ndkpi_Release_Lam", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Request_CompletionArgs Ndkpi_Request_CompletionTemplate(Action<Ndkpi_Request_CompletionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Request_CompletionArgs(action, 1253, 1253, "Ndkpi_Request_Completion", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Request_CompletionArgs(action, 1253, 1253, "Ndkpi_Request_Completion", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Resize_CqArgs Ndkpi_Resize_CqTemplate(Action<Ndkpi_Resize_CqArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Resize_CqArgs(action, 1252, 1252, "Ndkpi_Resize_Cq", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Resize_CqArgs(action, 1252, 1252, "Ndkpi_Resize_Cq", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_SendArgs Ndkpi_SendTemplate(Action<Ndkpi_SendArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_SendArgs(action, 1258, 1258, "Ndkpi_Send", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_SendArgs(action, 1258, 1258, "Ndkpi_Send", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Send_InvalidateArgs Ndkpi_Send_InvalidateTemplate(Action<Ndkpi_Send_InvalidateArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Send_InvalidateArgs(action, 1329, 1329, "Ndkpi_Send_Invalidate", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Send_InvalidateArgs(action, 1329, 1329, "Ndkpi_Send_Invalidate", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Srq_Notification_CallbackArgs Ndkpi_Srq_Notification_CallbackTemplate(Action<Ndkpi_Srq_Notification_CallbackArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Srq_Notification_CallbackArgs(action, 1281, 1281, "Ndkpi_Srq_Notification_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Srq_Notification_CallbackArgs(action, 1281, 1281, "Ndkpi_Srq_Notification_Callback", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Srq_Work_Request_Inline_FailureArgs Ndkpi_Srq_Work_Request_Inline_FailureTemplate(Action<Ndkpi_Srq_Work_Request_Inline_FailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Srq_Work_Request_Inline_FailureArgs(action, 1296, 1296, "Ndkpi_Srq_Work_Request_Inline_Failure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Srq_Work_Request_Inline_FailureArgs(action, 1296, 1296, "Ndkpi_Srq_Work_Request_Inline_Failure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_SrqReceiveArgs Ndkpi_SrqReceiveTemplate(Action<Ndkpi_SrqReceiveArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_SrqReceiveArgs(action, 1295, 1295, "Ndkpi_SrqReceive", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_SrqReceiveArgs(action, 1295, 1295, "Ndkpi_SrqReceive", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_Work_Request_Inline_FailureArgs Ndkpi_Work_Request_Inline_FailureTemplate(Action<Ndkpi_Work_Request_Inline_FailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_Work_Request_Inline_FailureArgs(action, 1289, 1289, "Ndkpi_Work_Request_Inline_Failure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_Work_Request_Inline_FailureArgs(action, 1289, 1289, "Ndkpi_Work_Request_Inline_Failure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private Ndkpi_ReadArgs Ndkpi_WriteTemplate(Action<Ndkpi_ReadArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new Ndkpi_ReadArgs(action, 1294, 1294, "Ndkpi_Write", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new Ndkpi_ReadArgs(action, 1294, 1294, "Ndkpi_Write", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssBindingBindCompleteArgs RssBindingBindCompleteTemplate(Action<RssBindingBindCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssBindingBindCompleteArgs(action, 1241, 1241, "RssBindingBindComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssBindingBindCompleteArgs(action, 1241, 1241, "RssBindingBindComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssBindingCapabilityArgs RssBindingCapabilityTemplate(Action<RssBindingCapabilityArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssBindingCapabilityArgs(action, 1247, 1247, "RssBindingCapability", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssBindingCapabilityArgs(action, 1247, 1247, "RssBindingCapability", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssBindingChangeArgs RssBindingChangeTemplate(Action<RssBindingChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssBindingChangeArgs(action, 1230, 1230, "RssBindingChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssBindingChangeArgs(action, 1230, 1230, "RssBindingChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssBindingRundownArgs RssBindingRundownTemplate(Action<RssBindingRundownArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssBindingRundownArgs(action, 1245, 1245, "RssBindingRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssBindingRundownArgs(action, 1245, 1245, "RssBindingRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssConfigurationChangeArgs RssConfigurationChangeTemplate(Action<RssConfigurationChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssConfigurationChangeArgs(action, 1239, 1239, "RssConfigurationChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssConfigurationChangeArgs(action, 1239, 1239, "RssConfigurationChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssFailureArgs RssFailureTemplate(Action<RssFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssFailureArgs(action, 1240, 1240, "RssFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssFailureArgs(action, 1240, 1240, "RssFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssIndirectionChangeArgs RssIndirectionChangeTemplate(Action<RssIndirectionChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssIndirectionChangeArgs(action, 1237, 1237, "RssIndirectionChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssIndirectionChangeArgs(action, 1237, 1237, "RssIndirectionChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssInitializeIndirectionTableArgs RssInitializeIndirectionTableTemplate(Action<RssInitializeIndirectionTableArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssInitializeIndirectionTableArgs(action, 1244, 1244, "RssInitializeIndirectionTable", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssInitializeIndirectionTableArgs(action, 1244, 1244, "RssInitializeIndirectionTable", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortBindCompleteArgs RssPortBindCompleteTemplate(Action<RssPortBindCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortBindCompleteArgs(action, 1242, 1242, "RssPortBindComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortBindCompleteArgs(action, 1242, 1242, "RssPortBindComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortCapabilitiesArgs RssPortCapabilitiesTemplate(Action<RssPortCapabilitiesArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortCapabilitiesArgs(action, 1233, 1233, "RssPortCapabilities", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortCapabilitiesArgs(action, 1233, 1233, "RssPortCapabilities", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortChangeArgs RssPortChangeTemplate(Action<RssPortChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortChangeArgs(action, 1231, 1231, "RssPortChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortChangeArgs(action, 1231, 1231, "RssPortChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortBindCompleteArgs RssPortNotSupportedTemplate(Action<RssPortBindCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortBindCompleteArgs(action, 1243, 1243, "RssPortNotSupported", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortBindCompleteArgs(action, 1243, 1243, "RssPortNotSupported", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortProcessorsArgs RssPortProcessorsTemplate(Action<RssPortProcessorsArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortProcessorsArgs(action, 1234, 1234, "RssPortProcessors", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortProcessorsArgs(action, 1234, 1234, "RssPortProcessors", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortReferenceArgs RssPortReferenceTemplate(Action<RssPortReferenceArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortReferenceArgs(action, 1232, 1232, "RssPortReference", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortReferenceArgs(action, 1232, 1232, "RssPortReference", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssPortRundownArgs RssPortRundownTemplate(Action<RssPortRundownArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssPortRundownArgs(action, 1246, 1246, "RssPortRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssPortRundownArgs(action, 1246, 1246, "RssPortRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssProcessorAssignmentArgs RssProcessorAssignmentTemplate(Action<RssProcessorAssignmentArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssProcessorAssignmentArgs(action, 1235, 1235, "RssProcessorAssignment", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssProcessorAssignmentArgs(action, 1235, 1235, "RssProcessorAssignment", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssProcessorConsolidationArgs RssProcessorConsolidationTemplate(Action<RssProcessorConsolidationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssProcessorConsolidationArgs(action, 1238, 1238, "RssProcessorConsolidation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssProcessorConsolidationArgs(action, 1238, 1238, "RssProcessorConsolidation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RssProcessorUnassignmentArgs RssProcessorUnassignmentTemplate(Action<RssProcessorUnassignmentArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RssProcessorUnassignmentArgs(action, 1236, 1236, "RssProcessorUnassignment", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RssProcessorUnassignmentArgs(action, 1236, 1236, "RssProcessorUnassignment", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private task_0Args task_0Template(Action<task_0Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new task_0Args(action, 1316, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new task_0Args(action, 1316, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private task_01317Args task_01317Template(Action<task_01317Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new task_01317Args(action, 1317, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new task_01317Args(action, 1317, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private task_01318Args task_01318Template(Action<task_01318Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new task_01318Args(action, 1318, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new task_01318Args(action, 1318, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private task_01319Args task_01319Template(Action<task_01319Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new task_01319Args(action, 1319, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new task_01319Args(action, 1319, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private task_01320Args task_01320Template(Action<task_01320Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new task_01320Args(action, 1320, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new task_01320Args(action, 1320, 0, "task_0", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpAbortTcbCompleteTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1040, 1040, "TcpAbortTcbComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1040, 1040, "TcpAbortTcbComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpAbortTcbRequestTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1039, 1039, "TcpAbortTcbRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1039, 1039, "TcpAbortTcbRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpAcceptListenerCompleteTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1017, 1017, "TcpAcceptListenerComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1017, 1017, "TcpAcceptListenerComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAcceptListenerInsertionFailureArgs TcpAcceptListenerInsertionFailureTemplate(Action<TcpAcceptListenerInsertionFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAcceptListenerInsertionFailureArgs(action, 1015, 1015, "TcpAcceptListenerInsertionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAcceptListenerInsertionFailureArgs(action, 1015, 1015, "TcpAcceptListenerInsertionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpAcceptListenerRejectedTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1016, 1016, "TcpAcceptListenerRejected", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1016, 1016, "TcpAcceptListenerRejected", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpAccpetListenerRouteLookupFailureTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1014, 1014, "TcpAccpetListenerRouteLookupFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1014, 1014, "TcpAccpetListenerRouteLookupFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAcquirePortArgs TcpAcquirePortTemplate(Action<TcpAcquirePortArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAcquirePortArgs(action, 1191, 1191, "TcpAcquirePort", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAcquirePortArgs(action, 1191, 1191, "TcpAcquirePort", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAcquirePortArgs TcpAcquireWeakRefPortTemplate(Action<TcpAcquirePortArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAcquirePortArgs(action, 1192, 1192, "TcpAcquireWeakRefPort", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAcquirePortArgs(action, 1192, 1192, "TcpAcquireWeakRefPort", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpAppSendBufferSizeTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1091, 1091, "TcpAppSendBufferSize", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1091, 1091, "TcpAppSendBufferSize", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAcquirePortArgs TcpAssignedWeakReferencePortTemplate(Action<TcpAcquirePortArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAcquirePortArgs(action, 1195, 1195, "TcpAssignedWeakReferencePort", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAcquirePortArgs(action, 1195, 1195, "TcpAssignedWeakReferencePort", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAutoTuningBeginArgs TcpAutoTuningBeginTemplate(Action<TcpAutoTuningBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAutoTuningBeginArgs(action, 1092, 1092, "TcpAutoTuningBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAutoTuningBeginArgs(action, 1092, 1092, "TcpAutoTuningBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAutoTuningBeginArgs TcpAutoTuningChangeRcvBufferSizeTemplate(Action<TcpAutoTuningBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAutoTuningBeginArgs(action, 1097, 1097, "TcpAutoTuningChangeRcvBufferSize", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAutoTuningBeginArgs(action, 1097, 1097, "TcpAutoTuningChangeRcvBufferSize", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAutoTuningBeginArgs TcpAutoTuningEndTemplate(Action<TcpAutoTuningBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAutoTuningBeginArgs(action, 1093, 1093, "TcpAutoTuningEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAutoTuningBeginArgs(action, 1093, 1093, "TcpAutoTuningEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAutoTuningBeginArgs TcpAutoTuningFailedAllocationFailureTemplate(Action<TcpAutoTuningBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAutoTuningBeginArgs(action, 1096, 1096, "TcpAutoTuningFailedAllocationFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAutoTuningBeginArgs(action, 1096, 1096, "TcpAutoTuningFailedAllocationFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAutoTuningBeginArgs TcpAutoTuningFailedBandwidthEstimationTemplate(Action<TcpAutoTuningBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAutoTuningBeginArgs(action, 1095, 1095, "TcpAutoTuningFailedBandwidthEstimation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAutoTuningBeginArgs(action, 1095, 1095, "TcpAutoTuningFailedBandwidthEstimation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAutoTuningBeginArgs TcpAutoTuningFailedRttEstimationTemplate(Action<TcpAutoTuningBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAutoTuningBeginArgs(action, 1094, 1094, "TcpAutoTuningFailedRttEstimation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAutoTuningBeginArgs(action, 1094, 1094, "TcpAutoTuningFailedRttEstimation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoverySackExitArgs TcpBhDetectFullSizeAckTemplate(Action<TcpLossRecoverySackExitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoverySackExitArgs(action, 1196, 1196, "TcpBhDetectFullSizeAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoverySackExitArgs(action, 1196, 1196, "TcpBhDetectFullSizeAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBindEndpointResolutionFailureArgs TcpBindEndpointCompleteTemplate(Action<TcpBindEndpointResolutionFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBindEndpointResolutionFailureArgs(action, 1008, 1008, "TcpBindEndpointComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBindEndpointResolutionFailureArgs(action, 1008, 1008, "TcpBindEndpointComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBindEndpointResolutionFailureArgs TcpBindEndpointInspectionFailureTemplate(Action<TcpBindEndpointResolutionFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBindEndpointResolutionFailureArgs(action, 1007, 1007, "TcpBindEndpointInspectionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBindEndpointResolutionFailureArgs(action, 1007, 1007, "TcpBindEndpointInspectionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBindEndpointResolutionFailureArgs TcpBindEndpointPortFailureTemplate(Action<TcpBindEndpointResolutionFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBindEndpointResolutionFailureArgs(action, 1006, 1006, "TcpBindEndpointPortFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBindEndpointResolutionFailureArgs(action, 1006, 1006, "TcpBindEndpointPortFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBindEndpointResolutionFailureArgs TcpBindEndpointResolutionFailureTemplate(Action<TcpBindEndpointResolutionFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBindEndpointResolutionFailureArgs(action, 1005, 1005, "TcpBindEndpointResolutionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBindEndpointResolutionFailureArgs(action, 1005, 1005, "TcpBindEndpointResolutionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBlackHoleDetectionEntryArgs TcpBlackHoleDetectionEntryTemplate(Action<TcpBlackHoleDetectionEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBlackHoleDetectionEntryArgs(action, 1084, 1084, "TcpBlackHoleDetectionEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBlackHoleDetectionEntryArgs(action, 1084, 1084, "TcpBlackHoleDetectionEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBlackHoleDetectionEntryArgs TcpBlackHoleDetectionExitTemplate(Action<TcpBlackHoleDetectionEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBlackHoleDetectionEntryArgs(action, 1085, 1085, "TcpBlackHoleDetectionExit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBlackHoleDetectionEntryArgs(action, 1085, 1085, "TcpBlackHoleDetectionExit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBlackHoleDetectionEntryArgs TcpBlackHoleDetectionFailedTemplate(Action<TcpBlackHoleDetectionEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBlackHoleDetectionEntryArgs(action, 1086, 1086, "TcpBlackHoleDetectionFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBlackHoleDetectionEntryArgs(action, 1086, 1086, "TcpBlackHoleDetectionFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpBindEndpointResolutionFailureArgs TcpCloseEndpointTemplate(Action<TcpBindEndpointResolutionFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpBindEndpointResolutionFailureArgs(action, 1009, 1009, "TcpCloseEndpoint", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpBindEndpointResolutionFailureArgs(action, 1009, 1009, "TcpCloseEndpoint", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpCloseTcbRequestTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1038, 1038, "TcpCloseTcbRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1038, 1038, "TcpCloseTcbRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectFailedPortAcquireTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1050, 1050, "TcpConnectFailedPortAcquire", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1050, 1050, "TcpConnectFailedPortAcquire", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpConnectionKeepAliveTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1188, 1188, "TcpConnectionKeepAlive", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1188, 1188, "TcpConnectionKeepAlive", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectionOffloadStatusArgs TcpConnectionOffloadPmaxTemplate(Action<TcpConnectionOffloadStatusArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectionOffloadStatusArgs(action, 1113, 1113, "TcpConnectionOffloadPmax", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectionOffloadStatusArgs(action, 1113, 1113, "TcpConnectionOffloadPmax", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectionOffloadStateChangeArgs TcpConnectionOffloadStateChangeTemplate(Action<TcpConnectionOffloadStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectionOffloadStateChangeArgs(action, 1099, 1099, "TcpConnectionOffloadStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectionOffloadStateChangeArgs(action, 1099, 1099, "TcpConnectionOffloadStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectionOffloadStatusArgs TcpConnectionOffloadStatusTemplate(Action<TcpConnectionOffloadStatusArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectionOffloadStatusArgs(action, 1112, 1112, "TcpConnectionOffloadStatus", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectionOffloadStatusArgs(action, 1112, 1112, "TcpConnectionOffloadStatus", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectionRundownArgs TcpConnectionRundownTemplate(Action<TcpConnectionRundownArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectionRundownArgs(action, 1300, 1300, "TcpConnectionRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectionRundownArgs(action, 1300, 1300, "TcpConnectionRundown", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectionSummaryArgs TcpConnectionSummaryTemplate(Action<TcpConnectionSummaryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectionSummaryArgs(action, 1352, 1341, "TcpConnectionSummary", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectionSummaryArgs(action, 1352, 1341, "TcpConnectionSummary", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpConnectionTerminatedRcvdRstTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1184, 1184, "TcpConnectionTerminatedRcvdRst", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1184, 1184, "TcpConnectionTerminatedRcvdRst", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpConnectionTerminatedRcvdSynTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1185, 1185, "TcpConnectionTerminatedRcvdSyn", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1185, 1185, "TcpConnectionTerminatedRcvdSyn", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpConnectRestransmitTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1186, 1186, "TcpConnectRestransmit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1186, 1186, "TcpConnectRestransmit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbCancelTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1029, 1029, "TcpConnectTcbCancel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1029, 1029, "TcpConnectTcbCancel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbCheckRateLimitTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1024, 1024, "TcpConnectTcbCheckRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1024, 1024, "TcpConnectTcbCheckRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbCompleteTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1033, 1033, "TcpConnectTcbComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1033, 1033, "TcpConnectTcbComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbEstatsFailedTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1049, 1049, "TcpConnectTcbEstatsFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1049, 1049, "TcpConnectTcbEstatsFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailDontFragmentTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1037, 1037, "TcpConnectTcbFailDontFragment", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1037, 1037, "TcpConnectTcbFailDontFragment", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpInspectConnectCompleteArgs TcpConnectTcbFailedActiveConnectTemplate(Action<TcpInspectConnectCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpInspectConnectCompleteArgs(action, 1089, 1089, "TcpConnectTcbFailedActiveConnect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpInspectConnectCompleteArgs(action, 1089, 1089, "TcpConnectTcbFailedActiveConnect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailedAfTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1018, 1018, "TcpConnectTcbFailedAf", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1018, 1018, "TcpConnectTcbFailedAf", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailedCompartmentTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1019, 1019, "TcpConnectTcbFailedCompartment", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1019, 1019, "TcpConnectTcbFailedCompartment", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailedInspectTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1020, 1020, "TcpConnectTcbFailedInspect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1020, 1020, "TcpConnectTcbFailedInspect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpConnectTcbFailedRcvdRstTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1183, 1183, "TcpConnectTcbFailedRcvdRst", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1183, 1183, "TcpConnectTcbFailedRcvdRst", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailedRouteTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1021, 1021, "TcpConnectTcbFailedRoute", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1021, 1021, "TcpConnectTcbFailedRoute", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpConnectTcbFailInsertionTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1030, 1030, "TcpConnectTcbFailInsertion", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1030, 1030, "TcpConnectTcbFailInsertion", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailInspectConnectCompleteTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1035, 1035, "TcpConnectTcbFailInspectConnectComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1035, 1035, "TcpConnectTcbFailInspectConnectComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailSessionStateTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1036, 1036, "TcpConnectTcbFailSessionState", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1036, 1036, "TcpConnectTcbFailSessionState", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbFailureTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1034, 1034, "TcpConnectTcbFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1034, 1034, "TcpConnectTcbFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectTcbSkipRateLimitArgs TcpConnectTcbPassRateLimitTemplate(Action<TcpConnectTcbSkipRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectTcbSkipRateLimitArgs(action, 1023, 1023, "TcpConnectTcbPassRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectTcbSkipRateLimitArgs(action, 1023, 1023, "TcpConnectTcbPassRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbProceedingTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1031, 1031, "TcpConnectTcbProceeding", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1031, 1031, "TcpConnectTcbProceeding", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbRateLimitCancelTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1032, 1032, "TcpConnectTcbRateLimitCancel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1032, 1032, "TcpConnectTcbRateLimitCancel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbRateLimitReleaseTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1027, 1027, "TcpConnectTcbRateLimitRelease", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1027, 1027, "TcpConnectTcbRateLimitRelease", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectTcbSkipRateLimitArgs TcpConnectTcbSkipRateLimitTemplate(Action<TcpConnectTcbSkipRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectTcbSkipRateLimitArgs(action, 1022, 1022, "TcpConnectTcbSkipRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectTcbSkipRateLimitArgs(action, 1022, 1022, "TcpConnectTcbSkipRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpConnectTcbTimeoutTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1045, 1045, "TcpConnectTcbTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1045, 1045, "TcpConnectTcbTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateEndpointAfFailureArgs TcpCreateEndpointAfFailureTemplate(Action<TcpCreateEndpointAfFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateEndpointAfFailureArgs(action, 1010, 1010, "TcpCreateEndpointAfFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateEndpointAfFailureArgs(action, 1010, 1010, "TcpCreateEndpointAfFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateEndpointAfFailureArgs TcpCreateEndpointCompartmentFailureTemplate(Action<TcpCreateEndpointAfFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateEndpointAfFailureArgs(action, 1011, 1011, "TcpCreateEndpointCompartmentFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateEndpointAfFailureArgs(action, 1011, 1011, "TcpCreateEndpointCompartmentFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateEndpointAfFailureArgs TcpCreateEndpointCompleteTemplate(Action<TcpCreateEndpointAfFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateEndpointAfFailureArgs(action, 1013, 1013, "TcpCreateEndpointComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateEndpointAfFailureArgs(action, 1013, 1013, "TcpCreateEndpointComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateEndpointAfFailureArgs TcpCreateEndpointInspectionFailureTemplate(Action<TcpCreateEndpointAfFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateEndpointAfFailureArgs(action, 1012, 1012, "TcpCreateEndpointInspectionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateEndpointAfFailureArgs(action, 1012, 1012, "TcpCreateEndpointInspectionFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateNotificationChannelRequestArgs TcpCreateNotificationChannelRequestTemplate(Action<TcpCreateNotificationChannelRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateNotificationChannelRequestArgs(action, 1305, 1305, "TcpCreateNotificationChannelRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateNotificationChannelRequestArgs(action, 1305, 1305, "TcpCreateNotificationChannelRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateNotificationChannelRequestProcessedArgs TcpCreateNotificationChannelRequestProcessedTemplate(Action<TcpCreateNotificationChannelRequestProcessedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateNotificationChannelRequestProcessedArgs(action, 1307, 1307, "TcpCreateNotificationChannelRequestProcessed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateNotificationChannelRequestProcessedArgs(action, 1307, 1307, "TcpCreateNotificationChannelRequestProcessed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateNotificationChannelRequestProcessingArgs TcpCreateNotificationChannelRequestProcessingTemplate(Action<TcpCreateNotificationChannelRequestProcessingArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateNotificationChannelRequestProcessingArgs(action, 1315, 1315, "TcpCreateNotificationChannelRequestProcessing", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateNotificationChannelRequestProcessingArgs(action, 1315, 1315, "TcpCreateNotificationChannelRequestProcessing", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCTcpAssignedBlocksArgs TcpCTcpAssignedBlocksTemplate(Action<TcpCTcpAssignedBlocksArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCTcpAssignedBlocksArgs(action, 1163, 1163, "TcpCTcpAssignedBlocks", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCTcpAssignedBlocksArgs(action, 1163, 1163, "TcpCTcpAssignedBlocks", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCTcpCongestionWndwArgs TcpCTcpCongestionWndwTemplate(Action<TcpCTcpCongestionWndwArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCTcpCongestionWndwArgs(action, 1164, 1164, "TcpCTcpCongestionWndw", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCTcpCongestionWndwArgs(action, 1164, 1164, "TcpCTcpCongestionWndw", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpCtcpDataTransferCumAckTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1151, 1151, "TcpCtcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1151, 1151, "TcpCtcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferCumAck1330Args TcpCtcpDataTransferCumAck1331Template(Action<TcpDataTransferCumAck1330Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferCumAck1330Args(action, 1331, 1151, "TcpCtcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferCumAck1330Args(action, 1331, 1151, "TcpCtcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpCtcpDataTransferDupAckTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1152, 1152, "TcpCtcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1152, 1152, "TcpCtcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferDupAck1343Args TcpCtcpDataTransferDupAck1344Template(Action<TcpDataTransferDupAck1343Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferDupAck1343Args(action, 1344, 1152, "TcpCtcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferDupAck1343Args(action, 1344, 1152, "TcpCtcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferEcnArgs TcpCtcpDataTransferEcnTemplate(Action<TcpDataTransferEcnArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferEcnArgs(action, 1154, 1154, "TcpCtcpDataTransferEcn", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferEcnArgs(action, 1154, 1154, "TcpCtcpDataTransferEcn", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpCtcpDataTransferSendTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1153, 1153, "TcpCtcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1153, 1153, "TcpCtcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferSend1332Args TcpCtcpDataTransferSend1333Template(Action<TcpDataTransferSend1332Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferSend1332Args(action, 1333, 1153, "TcpCtcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferSend1332Args(action, 1333, 1153, "TcpCtcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpCtcpDataTransferSpuriousTimeoutTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1155, 1155, "TcpCtcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1155, 1155, "TcpCtcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCtcpDataTransferTimeout1348Args TcpCtcpDataTransferSpuriousTimeout1349Template(Action<TcpCtcpDataTransferTimeout1348Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCtcpDataTransferTimeout1348Args(action, 1349, 1155, "TcpCtcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCtcpDataTransferTimeout1348Args(action, 1349, 1155, "TcpCtcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpCtcpDataTransferTimeoutTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1150, 1150, "TcpCtcpDataTransferTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1150, 1150, "TcpCtcpDataTransferTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCtcpDataTransferTimeout1348Args TcpCtcpDataTransferTimeout1348Template(Action<TcpCtcpDataTransferTimeout1348Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCtcpDataTransferTimeout1348Args(action, 1348, 1150, "TcpCtcpDataTransferTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCtcpDataTransferTimeout1348Args(action, 1348, 1150, "TcpCtcpDataTransferTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpInspectConnectCompleteArgs TcpCTcpDelayWndwInactiveTemplate(Action<TcpInspectConnectCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpInspectConnectCompleteArgs(action, 1162, 1162, "TcpCTcpDelayWndwInactive", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpInspectConnectCompleteArgs(action, 1162, 1162, "TcpCTcpDelayWndwInactive", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCTcpGammaArgs TcpCTcpGammaTemplate(Action<TcpCTcpGammaArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCTcpGammaArgs(action, 1165, 1165, "TcpCTcpGamma", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCTcpGammaArgs(action, 1165, 1165, "TcpCTcpGamma", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCwndRestartArgs TcpCwndRestartTemplate(Action<TcpCwndRestartArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCwndRestartArgs(action, 1221, 1221, "TcpCwndRestart", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCwndRestartArgs(action, 1221, 1221, "TcpCwndRestart", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCwndRestartArgs TcpCwndRestart1229Template(Action<TcpCwndRestartArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCwndRestartArgs(action, 1229, 1221, "TcpCwndRestart", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCwndRestartArgs(action, 1229, 1221, "TcpCwndRestart", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferCumAckTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1071, 1071, "TcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1071, 1071, "TcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferCumAck1330Args TcpDataTransferCumAck1330Template(Action<TcpDataTransferCumAck1330Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferCumAck1330Args(action, 1330, 1071, "TcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferCumAck1330Args(action, 1330, 1071, "TcpDataTransferCumAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferDupAckTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1072, 1072, "TcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1072, 1072, "TcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferDupAck1343Args TcpDataTransferDupAck1343Template(Action<TcpDataTransferDupAck1343Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferDupAck1343Args(action, 1343, 1072, "TcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferDupAck1343Args(action, 1343, 1072, "TcpDataTransferDupAck", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferEcnArgs TcpDataTransferEcnTemplate(Action<TcpDataTransferEcnArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferEcnArgs(action, 1075, 1075, "TcpDataTransferEcn", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferEcnArgs(action, 1075, 1075, "TcpDataTransferEcn", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferEcnAlphaArgs TcpDataTransferEcnAlphaTemplate(Action<TcpDataTransferEcnAlphaArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferEcnAlphaArgs(action, 1225, 1225, "TcpDataTransferEcnAlpha", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferEcnAlphaArgs(action, 1225, 1225, "TcpDataTransferEcnAlpha", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferReceiveArgs TcpDataTransferReceiveTemplate(Action<TcpDataTransferReceiveArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferReceiveArgs(action, 1074, 1074, "TcpDataTransferReceive", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferReceiveArgs(action, 1074, 1074, "TcpDataTransferReceive", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpDataTransferRestransmitTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1187, 1187, "TcpDataTransferRestransmit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1187, 1187, "TcpDataTransferRestransmit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferRetransmitRoundTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1077, 1077, "TcpDataTransferRetransmitRound", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1077, 1077, "TcpDataTransferRetransmitRound", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferRetransmitRound1351Args TcpDataTransferRetransmitRound1351Template(Action<TcpDataTransferRetransmitRound1351Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferRetransmitRound1351Args(action, 1351, 1077, "TcpDataTransferRetransmitRound", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferRetransmitRound1351Args(action, 1351, 1077, "TcpDataTransferRetransmitRound", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferRttSampleTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1070, 1070, "TcpDataTransferRttSample", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1070, 1070, "TcpDataTransferRttSample", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferRttSample1341Args TcpDataTransferRttSample1341Template(Action<TcpDataTransferRttSample1341Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferRttSample1341Args(action, 1341, 1070, "TcpDataTransferRttSample", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferRttSample1341Args(action, 1341, 1070, "TcpDataTransferRttSample", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferSendTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1073, 1073, "TcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1073, 1073, "TcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferSend1332Args TcpDataTransferSend1332Template(Action<TcpDataTransferSend1332Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferSend1332Args(action, 1332, 1073, "TcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferSend1332Args(action, 1332, 1073, "TcpDataTransferSend", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferSpuriousTimeoutTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1076, 1076, "TcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1076, 1076, "TcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferSpuriousTimeout1345Args TcpDataTransferSpuriousTimeout1345Template(Action<TcpDataTransferSpuriousTimeout1345Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferSpuriousTimeout1345Args(action, 1345, 1076, "TcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferSpuriousTimeout1345Args(action, 1345, 1076, "TcpDataTransferSpuriousTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpDataTransferTimeoutTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1069, 1069, "TcpDataTransferTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1069, 1069, "TcpDataTransferTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryAcceptTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1175, 1175, "TcpDeliveryAccept", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1175, 1175, "TcpDeliveryAccept", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryCompletingTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1181, 1181, "TcpDeliveryCompleting", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1181, 1181, "TcpDeliveryCompleting", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryDataDroppedTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1190, 1190, "TcpDeliveryDataDropped", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1190, 1190, "TcpDeliveryDataDropped", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryFinTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1176, 1176, "TcpDeliveryFin", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1176, 1176, "TcpDeliveryFin", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryFlushTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1171, 1171, "TcpDeliveryFlush", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1171, 1171, "TcpDeliveryFlush", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryIndicatedTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1157, 1157, "TcpDeliveryIndicated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1157, 1157, "TcpDeliveryIndicated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryInjectingDataTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1173, 1173, "TcpDeliveryInjectingData", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1173, 1173, "TcpDeliveryInjectingData", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliveryPushTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1178, 1178, "TcpDeliveryPush", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1178, 1178, "TcpDeliveryPush", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDeliverySatisfiedTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1158, 1158, "TcpDeliverySatisfied", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1158, 1158, "TcpDeliverySatisfied", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDeliveryStateChangeArgs TcpDeliveryStateChangeTemplate(Action<TcpDeliveryStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDeliveryStateChangeArgs(action, 1189, 1189, "TcpDeliveryStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDeliveryStateChangeArgs(action, 1189, 1189, "TcpDeliveryStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpPlumbWakePatternArgs TcpDeplumbWakePatternTemplate(Action<TcpPlumbWakePatternArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpPlumbWakePatternArgs(action, 1312, 1312, "TcpDeplumbWakePattern", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpPlumbWakePatternArgs(action, 1312, 1312, "TcpDeplumbWakePattern", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateNotificationChannelRequestArgs TcpDetachNotificationChannelTemplate(Action<TcpCreateNotificationChannelRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateNotificationChannelRequestArgs(action, 1309, 1309, "TcpDetachNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateNotificationChannelRequestArgs(action, 1309, 1309, "TcpDetachNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpDisconnectTcbCompleteTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1043, 1043, "TcpDisconnectTcbComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1043, 1043, "TcpDisconnectTcbComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpDisconnectTcbFinWait2TimeoutTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1201, 1201, "TcpDisconnectTcbFinWait2Timeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1201, 1201, "TcpDisconnectTcbFinWait2Timeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpDisconnectTcbInjectFailedTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1041, 1041, "TcpDisconnectTcbInjectFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1041, 1041, "TcpDisconnectTcbInjectFailed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpDisconnectTcbKeepaliveTimeoutTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1047, 1047, "TcpDisconnectTcbKeepaliveTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1047, 1047, "TcpDisconnectTcbKeepaliveTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbRequestArgs TcpDisconnectTcbRequestTemplate(Action<TcpDisconnectTcbRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbRequestArgs(action, 1042, 1042, "TcpDisconnectTcbRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbRequestArgs(action, 1042, 1042, "TcpDisconnectTcbRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpDisconnectTcbRtoTimeoutTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1046, 1046, "TcpDisconnectTcbRtoTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1046, 1046, "TcpDisconnectTcbRtoTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpDisconnectTcbTimeoutTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1048, 1048, "TcpDisconnectTcbTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1048, 1048, "TcpDisconnectTcbTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpDisconnectTcbZeroWindowTimeoutTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1200, 1200, "TcpDisconnectTcbZeroWindowTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1200, 1200, "TcpDisconnectTcbZeroWindowTimeout", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpEndpointAcquirePortReservationArgs TcpEndpointAcquirePortReservationTemplate(Action<TcpEndpointAcquirePortReservationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpEndpointAcquirePortReservationArgs(action, 1052, 1052, "TcpEndpointAcquirePortReservation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpEndpointAcquirePortReservationArgs(action, 1052, 1052, "TcpEndpointAcquirePortReservation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpEndpointCreationArgs TcpEndpointCreationTemplate(Action<TcpEndpointCreationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpEndpointCreationArgs(action, 1001, 1001, "TcpEndpointCreation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpEndpointCreationArgs(action, 1001, 1001, "TcpEndpointCreation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpEndpointAcquirePortReservationArgs TcpEndpointFailedPortReservationTemplate(Action<TcpEndpointAcquirePortReservationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpEndpointAcquirePortReservationArgs(action, 1053, 1053, "TcpEndpointFailedPortReservation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpEndpointAcquirePortReservationArgs(action, 1053, 1053, "TcpEndpointFailedPortReservation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoverySackExitArgs TcpFlushSackTemplate(Action<TcpLossRecoverySackExitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoverySackExitArgs(action, 1197, 1197, "TcpFlushSack", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoverySackExitArgs(action, 1197, 1197, "TcpFlushSack", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpGlobalAddInterfaceArgs TcpGlobalAddInterfaceTemplate(Action<TcpGlobalAddInterfaceArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpGlobalAddInterfaceArgs(action, 1061, 1061, "TcpGlobalAddInterface", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpGlobalAddInterfaceArgs(action, 1061, 1061, "TcpGlobalAddInterface", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSecurityRateLimitArgs TcpGlobalConnectionRateLimitViolationTemplate(Action<TcpSecurityRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSecurityRateLimitArgs(action, 1057, 1057, "TcpGlobalConnectionRateLimitViolation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSecurityRateLimitArgs(action, 1057, 1057, "TcpGlobalConnectionRateLimitViolation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpGlobalAddInterfaceArgs TcpGlobalDeleteInterfaceTemplate(Action<TcpGlobalAddInterfaceArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpGlobalAddInterfaceArgs(action, 1062, 1062, "TcpGlobalDeleteInterface", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpGlobalAddInterfaceArgs(action, 1062, 1062, "TcpGlobalDeleteInterface", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpGlobalIsbBeginThrottleArgs TcpGlobalIsbBeginThrottleTemplate(Action<TcpGlobalIsbBeginThrottleArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpGlobalIsbBeginThrottleArgs(action, 1059, 1059, "TcpGlobalIsbBeginThrottle", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpGlobalIsbBeginThrottleArgs(action, 1059, 1059, "TcpGlobalIsbBeginThrottle", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpGlobalIsbBeginThrottleArgs TcpGlobalIsbEndThrottleTemplate(Action<TcpGlobalIsbBeginThrottleArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpGlobalIsbBeginThrottleArgs(action, 1060, 1060, "TcpGlobalIsbEndThrottle", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpGlobalIsbBeginThrottleArgs(action, 1060, 1060, "TcpGlobalIsbEndThrottle", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSecurityRateLimitArgs TcpGlobalLandAttackSegmentDropTemplate(Action<TcpSecurityRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSecurityRateLimitArgs(action, 1058, 1058, "TcpGlobalLandAttackSegmentDrop", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSecurityRateLimitArgs(action, 1058, 1058, "TcpGlobalLandAttackSegmentDrop", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpGlobalParametersArgs TcpGlobalParametersTemplate(Action<TcpGlobalParametersArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpGlobalParametersArgs(action, 1110, 1110, "TcpGlobalParameters", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpGlobalParametersArgs(action, 1110, 1110, "TcpGlobalParameters", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpEndpointAcquirePortReservationArgs TcpGlobalPortReservationTemplate(Action<TcpEndpointAcquirePortReservationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpEndpointAcquirePortReservationArgs(action, 1054, 1054, "TcpGlobalPortReservation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpEndpointAcquirePortReservationArgs(action, 1054, 1054, "TcpGlobalPortReservation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSecurityRateLimitArgs TcpGlobalReassemblyLimitViolationTemplate(Action<TcpSecurityRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSecurityRateLimitArgs(action, 1056, 1056, "TcpGlobalReassemblyLimitViolation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSecurityRateLimitArgs(action, 1056, 1056, "TcpGlobalReassemblyLimitViolation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSecurityRateLimitArgs TcpGlobalSynAttackEntryTemplate(Action<TcpSecurityRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSecurityRateLimitArgs(action, 1055, 1055, "TcpGlobalSynAttackEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSecurityRateLimitArgs(action, 1055, 1055, "TcpGlobalSynAttackEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSecurityRateLimitArgs TcpGlobalSynAttackExitTemplate(Action<TcpSecurityRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSecurityRateLimitArgs(action, 1063, 1063, "TcpGlobalSynAttackExit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSecurityRateLimitArgs(action, 1063, 1063, "TcpGlobalSynAttackExit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCwndRestartArgs TcpInitialCwndAdjustedTemplate(Action<TcpCwndRestartArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCwndRestartArgs(action, 1222, 1222, "TcpInitialCwndAdjusted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCwndRestartArgs(action, 1222, 1222, "TcpInitialCwndAdjusted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpInitiateSynRstValidationTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1182, 1182, "TcpInitiateSynRstValidation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1182, 1182, "TcpInitiateSynRstValidation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpInspectConnectCompleteArgs TcpInspectConnectCompleteTemplate(Action<TcpInspectConnectCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpInspectConnectCompleteArgs(action, 1003, 1003, "TcpInspectConnectComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpInspectConnectCompleteArgs(action, 1003, 1003, "TcpInspectConnectComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpInterfaceRscStateChangeArgs TcpInterfaceRscStateChangeTemplate(Action<TcpInterfaceRscStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpInterfaceRscStateChangeArgs(action, 1226, 1226, "TcpInterfaceRscStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpInterfaceRscStateChangeArgs(action, 1226, 1226, "TcpInterfaceRscStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipAoacFailFastArgs TcpipAoacFailFastTemplate(Action<TcpipAoacFailFastArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipAoacFailFastArgs(action, 1357, 1357, "TcpipAoacFailFast", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipAoacFailFastArgs(action, 1357, 1357, "TcpipAoacFailFast", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipGenericArgs TcpipGenericTemplate(Action<TcpipGenericArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipGenericArgs(action, 1353, 1342, "TcpipGeneric", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipGenericArgs(action, 1353, 1342, "TcpipGeneric", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMediaDisconnectArgs TcpipLimitedLinkConnectivityTemplate(Action<TcpMediaDisconnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMediaDisconnectArgs(action, 1322, 1323, "TcpipLimitedLinkConnectivity", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMediaDisconnectArgs(action, 1322, 1323, "TcpipLimitedLinkConnectivity", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMediaDisconnectArgs TcpipLimitedLinkConnectivity1323Template(Action<TcpMediaDisconnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMediaDisconnectArgs(action, 1323, 1323, "TcpipLimitedLinkConnectivity", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMediaDisconnectArgs(action, 1323, 1323, "TcpipLimitedLinkConnectivity", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMediaDisconnectArgs TcpipMediaConnectTemplate(Action<TcpMediaDisconnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMediaDisconnectArgs(action, 1321, 1321, "TcpipMediaConnect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMediaDisconnectArgs(action, 1321, 1321, "TcpipMediaConnect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipNetworkPacketDropsArgs TcpipNetworkPacketDropsTemplate(Action<TcpipNetworkPacketDropsArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipNetworkPacketDropsArgs(action, 1215, 1215, "TcpipNetworkPacketDrops", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipNetworkPacketDropsArgs(action, 1215, 1215, "TcpipNetworkPacketDrops", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipPlumbWakePatternOnInterfaceArgs TcpipPlumbWakePatternOnInterfaceTemplate(Action<TcpipPlumbWakePatternOnInterfaceArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipPlumbWakePatternOnInterfaceArgs(action, 1313, 1313, "TcpipPlumbWakePatternOnInterface", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipPlumbWakePatternOnInterfaceArgs(action, 1313, 1313, "TcpipPlumbWakePatternOnInterface", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipReceiveSlowPathArgs TcpipReceiveSlowPathTemplate(Action<TcpipReceiveSlowPathArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipReceiveSlowPathArgs(action, 1205, 1205, "TcpipReceiveSlowPath", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipReceiveSlowPathArgs(action, 1205, 1205, "TcpipReceiveSlowPath", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipSendSlowPathArgs TcpipSendSlowPathTemplate(Action<TcpipSendSlowPathArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipSendSlowPathArgs(action, 1206, 1206, "TcpipSendSlowPath", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipSendSlowPathArgs(action, 1206, 1206, "TcpipSendSlowPath", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipSilentModeArgs TcpipSilentModeTemplate(Action<TcpipSilentModeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipSilentModeArgs(action, 1304, 1304, "TcpipSilentMode", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipSilentModeArgs(action, 1304, 1304, "TcpipSilentMode", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipTransportPacketDropsArgs TcpipTransportPacketDropsTemplate(Action<TcpipTransportPacketDropsArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipTransportPacketDropsArgs(action, 1214, 1214, "TcpipTransportPacketDrops", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipTransportPacketDropsArgs(action, 1214, 1214, "TcpipTransportPacketDrops", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipUpdateInterfaceConfigFlagsArgs TcpipUpdateInterfaceConfigFlagsTemplate(Action<TcpipUpdateInterfaceConfigFlagsArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipUpdateInterfaceConfigFlagsArgs(action, 1358, 1346, "TcpipUpdateInterfaceConfigFlags", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipUpdateInterfaceConfigFlagsArgs(action, 1358, 1346, "TcpipUpdateInterfaceConfigFlags", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipWakePacketIndicatedArgs TcpipWakePacketIndicatedTemplate(Action<TcpipWakePacketIndicatedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipWakePacketIndicatedArgs(action, 1302, 1302, "TcpipWakePacketIndicated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipWakePacketIndicatedArgs(action, 1302, 1302, "TcpipWakePacketIndicated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpipWakePacketIndicated1303Args TcpipWakePacketIndicated1303Template(Action<TcpipWakePacketIndicated1303Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpipWakePacketIndicated1303Args(action, 1303, 1302, "TcpipWakePacketIndicated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpipWakePacketIndicated1303Args(action, 1303, 1302, "TcpipWakePacketIndicated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpIsPatternCoalescingRequiredArgs TcpIsPatternCoalescingRequiredTemplate(Action<TcpIsPatternCoalescingRequiredArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpIsPatternCoalescingRequiredArgs(action, 1355, 1344, "TcpIsPatternCoalescingRequired", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpIsPatternCoalescingRequiredArgs(action, 1355, 1344, "TcpIsPatternCoalescingRequired", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerActivatedTemplate(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1123, 1123, "TcpListenerActivated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1123, 1123, "TcpListenerActivated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerActivationFailedAfTemplate(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1117, 1117, "TcpListenerActivationFailedAf", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1117, 1117, "TcpListenerActivationFailedAf", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerActivationFailedCompartmentTemplate(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1118, 1118, "TcpListenerActivationFailedCompartment", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1118, 1118, "TcpListenerActivationFailedCompartment", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerActivationFailedInspection1Template(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1119, 1119, "TcpListenerActivationFailedInspection1", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1119, 1119, "TcpListenerActivationFailedInspection1", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerActivationFailedInspection2Template(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1120, 1120, "TcpListenerActivationFailedInspection2", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1120, 1120, "TcpListenerActivationFailedInspection2", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerBindFailedPortTemplate(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1122, 1122, "TcpListenerBindFailedPort", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1122, 1122, "TcpListenerBindFailedPort", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerBindFailedResolutionTemplate(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1121, 1121, "TcpListenerBindFailedResolution", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1121, 1121, "TcpListenerBindFailedResolution", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpListenerActivationFailedAfArgs TcpListenerUnboundTemplate(Action<TcpListenerActivationFailedAfArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpListenerActivationFailedAfArgs(action, 1124, 1124, "TcpListenerUnbound", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpListenerActivationFailedAfArgs(action, 1124, 1124, "TcpListenerUnbound", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLoopbackFastPathFailReasonArgs TcpLoopbackFastPathFailReasonTemplate(Action<TcpLoopbackFastPathFailReasonArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLoopbackFastPathFailReasonArgs(action, 1228, 1228, "TcpLoopbackFastPathFailReason", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLoopbackFastPathFailReasonArgs(action, 1228, 1228, "TcpLoopbackFastPathFailReason", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpLossRecoveryEntryTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1078, 1078, "TcpLossRecoveryEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1078, 1078, "TcpLossRecoveryEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpLossRecoveryExitTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1079, 1079, "TcpLossRecoveryExit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1079, 1079, "TcpLossRecoveryExit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoverySackEntryArgs TcpLossRecoverySackEntryTemplate(Action<TcpLossRecoverySackEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoverySackEntryArgs(action, 1080, 1080, "TcpLossRecoverySackEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoverySackEntryArgs(action, 1080, 1080, "TcpLossRecoverySackEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoverySackExitArgs TcpLossRecoverySackExitTemplate(Action<TcpLossRecoverySackExitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoverySackExitArgs(action, 1081, 1081, "TcpLossRecoverySackExit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoverySackExitArgs(action, 1081, 1081, "TcpLossRecoverySackExit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLsoArgs TcpLsoTemplate(Action<TcpLsoArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLsoArgs(action, 1111, 1111, "TcpLso", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLsoArgs(action, 1111, 1111, "TcpLso", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMediaDisconnectArgs TcpMediaDisconnectTemplate(Action<TcpMediaDisconnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMediaDisconnectArgs(action, 1106, 1106, "TcpMediaDisconnect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMediaDisconnectArgs(action, 1106, 1106, "TcpMediaDisconnect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMemoryFailuresArgs TcpMemoryFailuresTemplate(Action<TcpMemoryFailuresArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMemoryFailuresArgs(action, 1109, 1109, "TcpMemoryFailures", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMemoryFailuresArgs(action, 1109, 1109, "TcpMemoryFailures", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpModuleStartedArgs TcpModuleStartedTemplate(Action<TcpModuleStartedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpModuleStartedArgs(action, 1107, 1107, "TcpModuleStarted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpModuleStartedArgs(action, 1107, 1107, "TcpModuleStarted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpModuleStartedArgs TcpModuleStoppedTemplate(Action<TcpModuleStartedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpModuleStartedArgs(action, 1108, 1108, "TcpModuleStopped", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpModuleStartedArgs(action, 1108, 1108, "TcpModuleStopped", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMppNppEvaluationArgs TcpMppNppEvaluationTemplate(Action<TcpMppNppEvaluationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMppNppEvaluationArgs(action, 1216, 1216, "TcpMppNppEvaluation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMppNppEvaluationArgs(action, 1216, 1216, "TcpMppNppEvaluation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMppStartEpisodeArgs TcpMppStartEpisodeTemplate(Action<TcpMppStartEpisodeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMppStartEpisodeArgs(action, 1217, 1217, "TcpMppStartEpisode", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMppStartEpisodeArgs(action, 1217, 1217, "TcpMppStartEpisode", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMppStartEpochArgs TcpMppStartEpochTemplate(Action<TcpMppStartEpochArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMppStartEpochArgs(action, 1219, 1219, "TcpMppStartEpoch", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMppStartEpochArgs(action, 1219, 1219, "TcpMppStartEpoch", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMppStopEpisodeArgs TcpMppStopEpisodeTemplate(Action<TcpMppStopEpisodeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMppStopEpisodeArgs(action, 1218, 1218, "TcpMppStopEpisode", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMppStopEpisodeArgs(action, 1218, 1218, "TcpMppStopEpisode", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpMppStopEpochArgs TcpMppStopEpochTemplate(Action<TcpMppStopEpochArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpMppStopEpochArgs(action, 1220, 1220, "TcpMppStopEpoch", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpMppStopEpochArgs(action, 1220, 1220, "TcpMppStopEpoch", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpPlumbWakePatternArgs TcpPlumbWakePatternTemplate(Action<TcpPlumbWakePatternArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpPlumbWakePatternArgs(action, 1311, 1311, "TcpPlumbWakePattern", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpPlumbWakePatternArgs(action, 1311, 1311, "TcpPlumbWakePattern", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpQueryNotificationChannelStatusRequestArgs TcpQueryNotificationChannelStatusRequestTemplate(Action<TcpQueryNotificationChannelStatusRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpQueryNotificationChannelStatusRequestArgs(action, 1306, 1306, "TcpQueryNotificationChannelStatusRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpQueryNotificationChannelStatusRequestArgs(action, 1306, 1306, "TcpQueryNotificationChannelStatusRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectTcbSkipRateLimitArgs TcpRateLimitPathCancelTemplate(Action<TcpConnectTcbSkipRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectTcbSkipRateLimitArgs(action, 1028, 1028, "TcpRateLimitPathCancel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectTcbSkipRateLimitArgs(action, 1028, 1028, "TcpRateLimitPathCancel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpConnectTcbSkipRateLimitArgs TcpRateLimitPathReleaseTemplate(Action<TcpConnectTcbSkipRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpConnectTcbSkipRateLimitArgs(action, 1026, 1026, "TcpRateLimitPathRelease", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpConnectTcbSkipRateLimitArgs(action, 1026, 1026, "TcpRateLimitPathRelease", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpReassemblyEntryTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1198, 1198, "TcpReassemblyEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1198, 1198, "TcpReassemblyEntry", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpReassemblyExitTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1199, 1199, "TcpReassemblyExit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1199, 1199, "TcpReassemblyExit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoverySackExitArgs TcpReassemblyFlushTemplate(Action<TcpLossRecoverySackExitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoverySackExitArgs(action, 1204, 1204, "TcpReassemblyFlush", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoverySackExitArgs(action, 1204, 1204, "TcpReassemblyFlush", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpReceiveRequestTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1156, 1156, "TcpReceiveRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1156, 1156, "TcpReceiveRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpReleaseIndicationArgs TcpReleaseIndicationTemplate(Action<TcpReleaseIndicationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpReleaseIndicationArgs(action, 1090, 1090, "TcpReleaseIndication", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpReleaseIndicationArgs(action, 1090, 1090, "TcpReleaseIndication", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAcquirePortArgs TcpReleasePortTemplate(Action<TcpAcquirePortArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAcquirePortArgs(action, 1193, 1193, "TcpReleasePort", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAcquirePortArgs(action, 1193, 1193, "TcpReleasePort", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAcquirePortArgs TcpReplacePortTemplate(Action<TcpAcquirePortArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAcquirePortArgs(action, 1194, 1194, "TcpReplacePort", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAcquirePortArgs(action, 1194, 1194, "TcpReplacePort", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRequestConnectArgs TcpRequestConnectTemplate(Action<TcpRequestConnectArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRequestConnectArgs(action, 1002, 1002, "TcpRequestConnect", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRequestConnectArgs(action, 1002, 1002, "TcpRequestConnect", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRscNblOobInfoArgs TcpRscNblOobInfoTemplate(Action<TcpRscNblOobInfoArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRscNblOobInfoArgs(action, 1227, 1227, "TcpRscNblOobInfo", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRscNblOobInfoArgs(action, 1227, 1227, "TcpRscNblOobInfo", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRssTableChangeArgs TcpRssTableChangeTemplate(Action<TcpRssTableChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRssTableChangeArgs(action, 1068, 1068, "TcpRssTableChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRssTableChangeArgs(action, 1068, 1068, "TcpRssTableChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpRtcPortRangeAssignmentArgs TcpRtcPortRangeAssignmentTemplate(Action<TcpRtcPortRangeAssignmentArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpRtcPortRangeAssignmentArgs(action, 1356, 1345, "TcpRtcPortRangeAssignment", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpRtcPortRangeAssignmentArgs(action, 1356, 1345, "TcpRtcPortRangeAssignment", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpRttResiliencyDetectionTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1098, 1098, "TcpRttResiliencyDetection", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1098, 1098, "TcpRttResiliencyDetection", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferRttSample1341Args TcpRttResiliencyDetection1342Template(Action<TcpDataTransferRttSample1341Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferRttSample1341Args(action, 1342, 1098, "TcpRttResiliencyDetection", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferRttSample1341Args(action, 1342, 1098, "TcpRttResiliencyDetection", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSackUpdateArgs TcpSackUpdateTemplate(Action<TcpSackUpdateArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSackUpdateArgs(action, 1354, 1343, "TcpSackUpdate", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSackUpdateArgs(action, 1354, 1343, "TcpSackUpdate", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSecurityRateLimitArgs TcpSecurityRateLimitTemplate(Action<TcpSecurityRateLimitArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSecurityRateLimitArgs(action, 1025, 1025, "TcpSecurityRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSecurityRateLimitArgs(action, 1025, 1025, "TcpSecurityRateLimit", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSendPostedArgs TcpSendAdvanceTemplate(Action<TcpSendPostedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSendPostedArgs(action, 1161, 1161, "TcpSendAdvance", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSendPostedArgs(action, 1161, 1161, "TcpSendAdvance", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSendPostedArgs TcpSendPostedTemplate(Action<TcpSendPostedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSendPostedArgs(action, 1159, 1159, "TcpSendPosted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSendPostedArgs(action, 1159, 1159, "TcpSendPosted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSendPostedArgs TcpSendTransmittedTemplate(Action<TcpSendPostedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSendPostedArgs(action, 1160, 1160, "TcpSendTransmitted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSendPostedArgs(action, 1160, 1160, "TcpSendTransmitted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSetTcpOptionArgs TcpSetTcpOptionTemplate(Action<TcpSetTcpOptionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSetTcpOptionArgs(action, 1104, 1104, "TcpSetTcpOption", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSetTcpOptionArgs(action, 1104, 1104, "TcpSetTcpOption", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSetTcpSoOptionArgs TcpSetTcpSoOptionTemplate(Action<TcpSetTcpSoOptionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSetTcpSoOptionArgs(action, 1105, 1105, "TcpSetTcpSoOption", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSetTcpSoOptionArgs(action, 1105, 1105, "TcpSetTcpSoOption", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpAccpetListenerRouteLookupFailureArgs TcpShutdownTcbTemplate(Action<TcpAccpetListenerRouteLookupFailureArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1044, 1044, "TcpShutdownTcb", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpAccpetListenerRouteLookupFailureArgs(action, 1044, 1044, "TcpShutdownTcb", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSignalNotificationChannelEventArgs TcpSignalNotificationChannelEventTemplate(Action<TcpSignalNotificationChannelEventArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSignalNotificationChannelEventArgs(action, 1308, 1308, "TcpSignalNotificationChannelEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSignalNotificationChannelEventArgs(action, 1308, 1308, "TcpSignalNotificationChannelEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpSlowStartToCongestionAvoidanceTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1082, 1082, "TcpSlowStartToCongestionAvoidance", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1082, 1082, "TcpSlowStartToCongestionAvoidance", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCtcpDataTransferTimeout1348Args TcpSlowStartToCongestionAvoidance1350Template(Action<TcpCtcpDataTransferTimeout1348Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCtcpDataTransferTimeout1348Args(action, 1350, 1082, "TcpSlowStartToCongestionAvoidance", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCtcpDataTransferTimeout1348Args(action, 1350, 1082, "TcpSlowStartToCongestionAvoidance", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpSpuriousRtoDetectionBeginTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1087, 1087, "TcpSpuriousRtoDetectionBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1087, 1087, "TcpSpuriousRtoDetectionBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferSpuriousTimeout1345Args TcpSpuriousRtoDetectionBegin1346Template(Action<TcpDataTransferSpuriousTimeout1345Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferSpuriousTimeout1345Args(action, 1346, 1087, "TcpSpuriousRtoDetectionBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferSpuriousTimeout1345Args(action, 1346, 1087, "TcpSpuriousRtoDetectionBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferTimeoutArgs TcpSpuriousRtoDetectionEndTemplate(Action<TcpDataTransferTimeoutArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferTimeoutArgs(action, 1088, 1088, "TcpSpuriousRtoDetectionEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferTimeoutArgs(action, 1088, 1088, "TcpSpuriousRtoDetectionEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDataTransferSpuriousTimeout1345Args TcpSpuriousRtoDetectionEnd1347Template(Action<TcpDataTransferSpuriousTimeout1345Args> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDataTransferSpuriousTimeout1345Args(action, 1347, 1088, "TcpSpuriousRtoDetectionEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDataTransferSpuriousTimeout1345Args(action, 1347, 1088, "TcpSpuriousRtoDetectionEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSrttMeasurementStartedArgs TcpSrttMeasurementCancelledTemplate(Action<TcpSrttMeasurementStartedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSrttMeasurementStartedArgs(action, 1168, 1168, "TcpSrttMeasurementCancelled", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSrttMeasurementStartedArgs(action, 1168, 1168, "TcpSrttMeasurementCancelled", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSrttMeasurementStartedArgs TcpSrttMeasurementCompleteTemplate(Action<TcpSrttMeasurementStartedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSrttMeasurementStartedArgs(action, 1167, 1167, "TcpSrttMeasurementComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSrttMeasurementStartedArgs(action, 1167, 1167, "TcpSrttMeasurementComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSrttMeasurementStartedArgs TcpSrttMeasurementStartedTemplate(Action<TcpSrttMeasurementStartedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSrttMeasurementStartedArgs(action, 1166, 1166, "TcpSrttMeasurementStarted", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSrttMeasurementStartedArgs(action, 1166, 1166, "TcpSrttMeasurementStarted", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSwsAvoidanceBeginArgs TcpSwsAvoidanceBeginTemplate(Action<TcpSwsAvoidanceBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSwsAvoidanceBeginArgs(action, 1100, 1100, "TcpSwsAvoidanceBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSwsAvoidanceBeginArgs(action, 1100, 1100, "TcpSwsAvoidanceBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpSwsAvoidanceBeginArgs TcpSwsAvoidanceEndTemplate(Action<TcpSwsAvoidanceBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpSwsAvoidanceBeginArgs(action, 1101, 1101, "TcpSwsAvoidanceEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpSwsAvoidanceBeginArgs(action, 1101, 1101, "TcpSwsAvoidanceEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTcbChangeIsbArgs TcpTcbChangeIsbTemplate(Action<TcpTcbChangeIsbArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTcbChangeIsbArgs(action, 1067, 1067, "TcpTcbChangeIsb", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTcbChangeIsbArgs(action, 1067, 1067, "TcpTcbChangeIsb", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTcbStopTimerArgs TcpTcbExpireTimerTemplate(Action<TcpTcbStopTimerArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTcbStopTimerArgs(action, 1066, 1066, "TcpTcbExpireTimer", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTcbStopTimerArgs(action, 1066, 1066, "TcpTcbExpireTimer", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpTcbInjectFinCompleteTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1180, 1180, "TcpTcbInjectFinComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1180, 1180, "TcpTcbInjectFinComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpTcbInjectFinFailureTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1174, 1174, "TcpTcbInjectFinFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1174, 1174, "TcpTcbInjectFinFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpDisconnectTcbInjectFailedArgs TcpTcbInjectRcvFailureTemplate(Action<TcpDisconnectTcbInjectFailedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpDisconnectTcbInjectFailedArgs(action, 1172, 1172, "TcpTcbInjectRcvFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpDisconnectTcbInjectFailedArgs(action, 1172, 1172, "TcpTcbInjectRcvFailure", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTcbStartTimerArgs TcpTcbStartTimerTemplate(Action<TcpTcbStartTimerArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTcbStartTimerArgs(action, 1064, 1064, "TcpTcbStartTimer", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTcbStartTimerArgs(action, 1064, 1064, "TcpTcbStartTimer", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTcbStateChangeArgs TcpTcbStateChangeTemplate(Action<TcpTcbStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTcbStateChangeArgs(action, 1051, 1051, "TcpTcbStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTcbStateChangeArgs(action, 1051, 1051, "TcpTcbStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTcbStopTimerArgs TcpTcbStopTimerTemplate(Action<TcpTcbStopTimerArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTcbStopTimerArgs(action, 1065, 1065, "TcpTcbStopTimer", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTcbStopTimerArgs(action, 1065, 1065, "TcpTcbStopTimer", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTcbSynSendArgs TcpTcbSynSendTemplate(Action<TcpTcbSynSendArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTcbSynSendArgs(action, 1004, 1004, "TcpTcbSynSend", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTcbSynSendArgs(action, 1004, 1004, "TcpTcbSynSend", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTemplateChangedArgs TcpTemplateChangedTemplate(Action<TcpTemplateChangedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTemplateChangedArgs(action, 1224, 1224, "TcpTemplateChanged", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTemplateChangedArgs(action, 1224, 1224, "TcpTemplateChanged", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpTemplateParametersArgs TcpTemplateParametersTemplate(Action<TcpTemplateParametersArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpTemplateParametersArgs(action, 1223, 1223, "TcpTemplateParameters", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpTemplateParametersArgs(action, 1223, 1223, "TcpTemplateParameters", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpCreateNotificationChannelRequestArgs TcpUnlinkNotificationChannelTemplate(Action<TcpCreateNotificationChannelRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpCreateNotificationChannelRequestArgs(action, 1310, 1310, "TcpUnlinkNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpCreateNotificationChannelRequestArgs(action, 1310, 1310, "TcpUnlinkNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdCacheEntryStateChangeArgs TcpWsdCacheEntryStateChangeTemplate(Action<TcpWsdCacheEntryStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdCacheEntryStateChangeArgs(action, 1211, 1211, "TcpWsdCacheEntryStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdCacheEntryStateChangeArgs(action, 1211, 1211, "TcpWsdCacheEntryStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdInitializationErrorsArgs TcpWsdInitializationErrorsTemplate(Action<TcpWsdInitializationErrorsArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdInitializationErrorsArgs(action, 1207, 1207, "TcpWsdInitializationErrors", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdInitializationErrorsArgs(action, 1207, 1207, "TcpWsdInitializationErrors", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdInitializationInformationArgs TcpWsdInitializationInformationTemplate(Action<TcpWsdInitializationInformationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdInitializationInformationArgs(action, 1208, 1208, "TcpWsdInitializationInformation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdInitializationInformationArgs(action, 1208, 1208, "TcpWsdInitializationInformation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdProfileStateChangeArgs TcpWsdProfileStateChangeTemplate(Action<TcpWsdProfileStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdProfileStateChangeArgs(action, 1212, 1212, "TcpWsdProfileStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdProfileStateChangeArgs(action, 1212, 1212, "TcpWsdProfileStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdStateChangeArgs TcpWsdStateChangeTemplate(Action<TcpWsdStateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdStateChangeArgs(action, 1213, 1213, "TcpWsdStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdStateChangeArgs(action, 1213, 1213, "TcpWsdStateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdWsRestrictedProfileArgs TcpWsdWsRestrictedDestinationTemplate(Action<TcpWsdWsRestrictedProfileArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdWsRestrictedProfileArgs(action, 1210, 1210, "TcpWsdWsRestrictedDestination", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdWsRestrictedProfileArgs(action, 1210, 1210, "TcpWsdWsRestrictedDestination", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpWsdWsRestrictedProfileArgs TcpWsdWsRestrictedProfileTemplate(Action<TcpWsdWsRestrictedProfileArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpWsdWsRestrictedProfileArgs(action, 1209, 1209, "TcpWsdWsRestrictedProfile", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpWsdWsRestrictedProfileArgs(action, 1209, 1209, "TcpWsdWsRestrictedProfile", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpZeroWindowProbingBeginTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1102, 1102, "TcpZeroWindowProbingBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1102, 1102, "TcpZeroWindowProbingBegin", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TcpLossRecoveryEntryArgs TcpZeroWindowProbingEndTemplate(Action<TcpLossRecoveryEntryArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TcpLossRecoveryEntryArgs(action, 1103, 1103, "TcpZeroWindowProbingEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TcpLossRecoveryEntryArgs(action, 1103, 1103, "TcpZeroWindowProbingEnd", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpCreateNotificationChannelRequestArgs UdpCreateNotificationChannelRequestTemplate(Action<UdpCreateNotificationChannelRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpCreateNotificationChannelRequestArgs(action, 1334, 1334, "UdpCreateNotificationChannelRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpCreateNotificationChannelRequestArgs(action, 1334, 1334, "UdpCreateNotificationChannelRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpCreateNotificationChannelRequestProcessedArgs UdpCreateNotificationChannelRequestProcessedTemplate(Action<UdpCreateNotificationChannelRequestProcessedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpCreateNotificationChannelRequestProcessedArgs(action, 1336, 1336, "UdpCreateNotificationChannelRequestProcessed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpCreateNotificationChannelRequestProcessedArgs(action, 1336, 1336, "UdpCreateNotificationChannelRequestProcessed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpCreateNotificationChannelRequestProcessingArgs UdpCreateNotificationChannelRequestProcessingTemplate(Action<UdpCreateNotificationChannelRequestProcessingArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpCreateNotificationChannelRequestProcessingArgs(action, 1340, 1340, "UdpCreateNotificationChannelRequestProcessing", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpCreateNotificationChannelRequestProcessingArgs(action, 1340, 1340, "UdpCreateNotificationChannelRequestProcessing", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpQueryNotificationChannelStatusRequestArgs UdpDetachNotificationChannelTemplate(Action<UdpQueryNotificationChannelStatusRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpQueryNotificationChannelStatusRequestArgs(action, 1338, 1338, "UdpDetachNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpQueryNotificationChannelStatusRequestArgs(action, 1338, 1338, "UdpDetachNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpEndpointSendMessagesArgs UdpEndpointReceiveMessagesTemplate(Action<UdpEndpointSendMessagesArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpEndpointSendMessagesArgs(action, 1170, 1170, "UdpEndpointReceiveMessages", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpEndpointSendMessagesArgs(action, 1170, 1170, "UdpEndpointReceiveMessages", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpEndpointSendMessagesArgs UdpEndpointSendMessagesTemplate(Action<UdpEndpointSendMessagesArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpEndpointSendMessagesArgs(action, 1169, 1169, "UdpEndpointSendMessages", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpEndpointSendMessagesArgs(action, 1169, 1169, "UdpEndpointSendMessages", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpQueryNotificationChannelStatusRequestArgs UdpQueryNotificationChannelStatusRequestTemplate(Action<UdpQueryNotificationChannelStatusRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpQueryNotificationChannelStatusRequestArgs(action, 1335, 1335, "UdpQueryNotificationChannelStatusRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpQueryNotificationChannelStatusRequestArgs(action, 1335, 1335, "UdpQueryNotificationChannelStatusRequest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpSignalNotificationChannelEventArgs UdpSignalNotificationChannelEventTemplate(Action<UdpSignalNotificationChannelEventArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpSignalNotificationChannelEventArgs(action, 1337, 1337, "UdpSignalNotificationChannelEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpSignalNotificationChannelEventArgs(action, 1337, 1337, "UdpSignalNotificationChannelEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private UdpQueryNotificationChannelStatusRequestArgs UdpUnlinkNotificationChannelTemplate(Action<UdpQueryNotificationChannelStatusRequestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new UdpQueryNotificationChannelStatusRequestArgs(action, 1339, 1339, "UdpUnlinkNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new UdpQueryNotificationChannelStatusRequestArgs(action, 1339, 1339, "UdpUnlinkNotificationChannel", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -5571,7 +5569,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal FramingIfOperStatusArgs(Action<FramingIfOperStatusArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -5585,16 +5583,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<FramingIfOperStatusArgs>) value; }
+            set { m_target = (Action<FramingIfOperStatusArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "OperationalStatus", OperationalStatus);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "OperationalStatus", OperationalStatus);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5602,7 +5600,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "OperationalStatus", "Status"};
+                {
+                    payloadNames = new string[] { "Interface", "OperationalStatus", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5635,7 +5636,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMediaDisconnectArgs(Action<TcpMediaDisconnectArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -5649,15 +5650,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMediaDisconnectArgs>) value; }
+            set { m_target = (Action<TcpMediaDisconnectArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "TraceString", TraceString);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "TraceString", TraceString);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5665,7 +5666,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "TraceString"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "TraceString" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5692,18 +5696,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int Interface { get { return GetInt32At(0); } }
         public string Protocol { get { return GetUTF8StringAt(4); } }
         public int DadState { get { return GetInt32At(SkipUTF8String(4)); } }
-        public int DlAddrLength { get { return GetInt32At(SkipUTF8String(4)+4); } }
-        public byte[] DLAddress { get { return GetByteArrayAt(SkipUTF8String(4)+8, DlAddrLength); } }
-        public int IpAddrLength { get { return GetInt32At(SkipUTF8String(4)+8); } }
-        public int IPv4Address { get { return GetInt32At(SkipUTF8String(4)+12); } }
-        public byte[] IPv6Address { get { return GetByteArrayAt(SkipUTF8String(4)+16, IpAddrLength); } }
-        public int IPProtocol { get { return GetInt32At(SkipUTF8String(4)+16); } }
+        public int DlAddrLength { get { return GetInt32At(SkipUTF8String(4) + 4); } }
+        public byte[] DLAddress { get { return GetByteArrayAt(SkipUTF8String(4) + 8, DlAddrLength); } }
+        public int IpAddrLength { get { return GetInt32At(SkipUTF8String(4) + 8); } }
+        public int IPv4Address { get { return GetInt32At(SkipUTF8String(4) + 12); } }
+        public byte[] IPv6Address { get { return GetByteArrayAt(SkipUTF8String(4) + 16, IpAddrLength); } }
+        public int IPProtocol { get { return GetInt32At(SkipUTF8String(4) + 16); } }
 
         #region Private
         internal IpDadFailedArgs(Action<IpDadFailedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -5711,26 +5715,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4)+20));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4)+20));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4) + 20));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4) + 20));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpDadFailedArgs>) value; }
+            set { m_target = (Action<IpDadFailedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "Protocol", Protocol);
-             XmlAttrib(sb, "DadState", DadState);
-             XmlAttrib(sb, "DlAddrLength", DlAddrLength);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "Protocol", Protocol);
+            XmlAttrib(sb, "DadState", DadState);
+            XmlAttrib(sb, "DlAddrLength", DlAddrLength);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5738,7 +5742,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "Protocol", "DadState", "DlAddrLength", "DLAddress", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "Interface", "Protocol", "DadState", "DlAddrLength", "DLAddress", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5775,18 +5782,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int Interface { get { return GetInt32At(0); } }
         public string Protocol { get { return GetUTF8StringAt(4); } }
         public TCPIP_IP_DAD_STATE DadState { get { return (TCPIP_IP_DAD_STATE)GetInt32At(SkipUTF8String(4)); } }
-        public int DlAddrLength { get { return GetInt32At(SkipUTF8String(4)+4); } }
-        public byte[] DLAddress { get { return GetByteArrayAt(SkipUTF8String(4)+8, DlAddrLength); } }
-        public int IpAddrLength { get { return GetInt32At(SkipUTF8String(4)+8); } }
-        public int IPv4Address { get { return GetInt32At(SkipUTF8String(4)+12); } }
-        public byte[] IPv6Address { get { return GetByteArrayAt(SkipUTF8String(4)+16, IpAddrLength); } }
-        public TCPIP_Protocol IPProtocol { get { return (TCPIP_Protocol)GetInt32At(SkipUTF8String(4)+16); } }
+        public int DlAddrLength { get { return GetInt32At(SkipUTF8String(4) + 4); } }
+        public byte[] DLAddress { get { return GetByteArrayAt(SkipUTF8String(4) + 8, DlAddrLength); } }
+        public int IpAddrLength { get { return GetInt32At(SkipUTF8String(4) + 8); } }
+        public int IPv4Address { get { return GetInt32At(SkipUTF8String(4) + 12); } }
+        public byte[] IPv6Address { get { return GetByteArrayAt(SkipUTF8String(4) + 16, IpAddrLength); } }
+        public TCPIP_Protocol IPProtocol { get { return (TCPIP_Protocol)GetInt32At(SkipUTF8String(4) + 16); } }
 
         #region Private
         internal IpDadSuccessfulArgs(Action<IpDadSuccessfulArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -5794,26 +5801,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4)+20));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4)+20));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4) + 20));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4) + 20));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpDadSuccessfulArgs>) value; }
+            set { m_target = (Action<IpDadSuccessfulArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "Protocol", Protocol);
-             XmlAttrib(sb, "DadState", DadState);
-             XmlAttrib(sb, "DlAddrLength", DlAddrLength);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "Protocol", Protocol);
+            XmlAttrib(sb, "DadState", DadState);
+            XmlAttrib(sb, "DlAddrLength", DlAddrLength);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5821,7 +5828,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "Protocol", "DadState", "DlAddrLength", "DLAddress", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "Interface", "Protocol", "DadState", "DlAddrLength", "DLAddress", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5867,7 +5877,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal IpInterfacePropertyChangeArgs(Action<IpInterfacePropertyChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -5881,20 +5891,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpInterfacePropertyChangeArgs>) value; }
+            set { m_target = (Action<IpInterfacePropertyChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "Advertise", Advertise);
-             XmlAttrib(sb, "AdvertiseDefaultRoute", AdvertiseDefaultRoute);
-             XmlAttrib(sb, "Forward", Forward);
-             XmlAttrib(sb, "ForwardMulticast", ForwardMulticast);
-             XmlAttrib(sb, "UseNud", UseNud);
-             XmlAttrib(sb, "AdvertisingEnabled", AdvertisingEnabled);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "Advertise", Advertise);
+            XmlAttrib(sb, "AdvertiseDefaultRoute", AdvertiseDefaultRoute);
+            XmlAttrib(sb, "Forward", Forward);
+            XmlAttrib(sb, "ForwardMulticast", ForwardMulticast);
+            XmlAttrib(sb, "UseNud", UseNud);
+            XmlAttrib(sb, "AdvertisingEnabled", AdvertisingEnabled);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5902,7 +5912,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "Advertise", "AdvertiseDefaultRoute", "Forward", "ForwardMulticast", "UseNud", "AdvertisingEnabled"};
+                {
+                    payloadNames = new string[] { "Interface", "Advertise", "AdvertiseDefaultRoute", "Forward", "ForwardMulticast", "UseNud", "AdvertisingEnabled" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5942,13 +5955,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int IPv4Address { get { return GetInt32At(16); } }
         public int IpAddrLength { get { return GetInt32At(20); } }
         public byte[] IPv6Address { get { return GetByteArrayAt(24, IpAddrLength); } }
-        public int PhysicalMediumType { get { return GetInt32At(0+ (IpAddrLength*1)+24); } }
+        public int PhysicalMediumType { get { return GetInt32At(0 + (IpAddrLength * 1) + 24); } }
 
         #region Private
         internal IpInterfaceRundownArgs(Action<IpInterfaceRundownArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -5956,25 +5969,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IpAddrLength*1)+28));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IpAddrLength*1)+28));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IpAddrLength * 1) + 28));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IpAddrLength * 1) + 28));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpInterfaceRundownArgs>) value; }
+            set { m_target = (Action<IpInterfaceRundownArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IfIndex", IfIndex);
-             XmlAttrib(sb, "LinkSpeed", LinkSpeed);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "PhysicalMediumType", PhysicalMediumType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IfIndex", IfIndex);
+            XmlAttrib(sb, "LinkSpeed", LinkSpeed);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "PhysicalMediumType", PhysicalMediumType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -5982,7 +5995,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IfIndex", "LinkSpeed", "IPProtocol", "IPv4Address", "IpAddrLength", "IPv6Address", "PhysicalMediumType"};
+                {
+                    payloadNames = new string[] { "IfIndex", "LinkSpeed", "IPProtocol", "IPv4Address", "IpAddrLength", "IPv6Address", "PhysicalMediumType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6020,13 +6036,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int IPv4Address { get { return GetInt32At(16); } }
         public int IpAddrLength { get { return GetInt32At(20); } }
         public byte[] IPv6Address { get { return GetByteArrayAt(24, IpAddrLength); } }
-        public TCPIP_IP_PHYSICALMEDIUM_TYPE PhysicalMediumType { get { return (TCPIP_IP_PHYSICALMEDIUM_TYPE)GetInt32At(0+ (IpAddrLength*1)+24); } }
+        public TCPIP_IP_PHYSICALMEDIUM_TYPE PhysicalMediumType { get { return (TCPIP_IP_PHYSICALMEDIUM_TYPE)GetInt32At(0 + (IpAddrLength * 1) + 24); } }
 
         #region Private
         internal IpInterfaceSpeedChangeArgs(Action<IpInterfaceSpeedChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6034,25 +6050,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IpAddrLength*1)+28));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IpAddrLength*1)+28));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IpAddrLength * 1) + 28));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IpAddrLength * 1) + 28));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpInterfaceSpeedChangeArgs>) value; }
+            set { m_target = (Action<IpInterfaceSpeedChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IfIndex", IfIndex);
-             XmlAttrib(sb, "LinkSpeed", LinkSpeed);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "PhysicalMediumType", PhysicalMediumType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IfIndex", IfIndex);
+            XmlAttrib(sb, "LinkSpeed", LinkSpeed);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "PhysicalMediumType", PhysicalMediumType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6060,7 +6076,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IfIndex", "LinkSpeed", "IPProtocol", "IPv4Address", "IpAddrLength", "IPv6Address", "PhysicalMediumType"};
+                {
+                    payloadNames = new string[] { "IfIndex", "LinkSpeed", "IPProtocol", "IPv4Address", "IpAddrLength", "IPv6Address", "PhysicalMediumType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6095,14 +6114,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int Interface { get { return GetInt32At(0); } }
         public int IpAddrLength { get { return GetInt32At(4); } }
         public byte[] SourceIPAddress { get { return GetByteArrayAt(8, IpAddrLength); } }
-        public byte[] TargetIPAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+8, IpAddrLength); } }
-        public TCPIP_NEIGHBOR_EVENT NeighborEvent { get { return (TCPIP_NEIGHBOR_EVENT)GetInt32At(0+ (IpAddrLength*1)+ (IpAddrLength*1)+8); } }
+        public byte[] TargetIPAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + 8, IpAddrLength); } }
+        public TCPIP_NEIGHBOR_EVENT NeighborEvent { get { return (TCPIP_NEIGHBOR_EVENT)GetInt32At(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 8); } }
 
         #region Private
         internal IpNeighborDiscoveryArgs(Action<IpNeighborDiscoveryArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6110,22 +6129,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IpAddrLength*1)+ (IpAddrLength*1)+12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IpAddrLength*1)+ (IpAddrLength*1)+12));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 12));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 12));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpNeighborDiscoveryArgs>) value; }
+            set { m_target = (Action<IpNeighborDiscoveryArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "NeighborEvent", NeighborEvent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "NeighborEvent", NeighborEvent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6133,7 +6152,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "IpAddrLength", "SourceIPAddress", "TargetIPAddress", "NeighborEvent"};
+                {
+                    payloadNames = new string[] { "Interface", "IpAddrLength", "SourceIPAddress", "TargetIPAddress", "NeighborEvent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6162,16 +6184,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int Interface { get { return GetInt32At(0); } }
         public int DlAddrLength { get { return GetInt32At(4); } }
         public byte[] DlAddress { get { return GetByteArrayAt(8, DlAddrLength); } }
-        public int IpAddrLength { get { return GetInt32At(0+ (DlAddrLength*1)+8); } }
-        public int IPv4Address { get { return GetInt32At(0+ (DlAddrLength*1)+12); } }
-        public byte[] IPv6Address { get { return GetByteArrayAt(0+ (DlAddrLength*1)+16, IpAddrLength); } }
-        public int IPProtocol { get { return GetInt32At(0+ (IpAddrLength*1)+ (DlAddrLength*1)+16); } }
+        public int IpAddrLength { get { return GetInt32At(0 + (DlAddrLength * 1) + 8); } }
+        public int IPv4Address { get { return GetInt32At(0 + (DlAddrLength * 1) + 12); } }
+        public byte[] IPv6Address { get { return GetByteArrayAt(0 + (DlAddrLength * 1) + 16, IpAddrLength); } }
+        public int IPProtocol { get { return GetInt32At(0 + (IpAddrLength * 1) + (DlAddrLength * 1) + 16); } }
 
         #region Private
         internal IpNeighborUnreachableArgs(Action<IpNeighborUnreachableArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6179,24 +6201,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IpAddrLength*1)+ (DlAddrLength*1)+20));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IpAddrLength*1)+ (DlAddrLength*1)+20));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IpAddrLength * 1) + (DlAddrLength * 1) + 20));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IpAddrLength * 1) + (DlAddrLength * 1) + 20));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpNeighborUnreachableArgs>) value; }
+            set { m_target = (Action<IpNeighborUnreachableArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "DlAddrLength", DlAddrLength);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "DlAddrLength", DlAddrLength);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6204,7 +6226,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "DlAddrLength", "DlAddress", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "Interface", "DlAddrLength", "DlAddress", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6237,17 +6262,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int Interface { get { return GetInt32At(0); } }
         public int IpAddrLength { get { return GetInt32At(4); } }
         public byte[] IPAddress { get { return GetByteArrayAt(8, IpAddrLength); } }
-        public int DlAddrLength { get { return GetInt32At(0+ (IpAddrLength*1)+8); } }
-        public byte[] DLAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+12, DlAddrLength); } }
-        public int OldNeighborState { get { return GetInt32At(0+ (DlAddrLength*1)+ (IpAddrLength*1)+12); } }
-        public TCPIP_NEIGHBOR_STATE NewNeighborState { get { return (TCPIP_NEIGHBOR_STATE)GetInt32At(0+ (DlAddrLength*1)+ (IpAddrLength*1)+16); } }
-        public int NeighborEvent { get { return GetInt32At(0+ (DlAddrLength*1)+ (IpAddrLength*1)+20); } }
+        public int DlAddrLength { get { return GetInt32At(0 + (IpAddrLength * 1) + 8); } }
+        public byte[] DLAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + 12, DlAddrLength); } }
+        public int OldNeighborState { get { return GetInt32At(0 + (DlAddrLength * 1) + (IpAddrLength * 1) + 12); } }
+        public TCPIP_NEIGHBOR_STATE NewNeighborState { get { return (TCPIP_NEIGHBOR_STATE)GetInt32At(0 + (DlAddrLength * 1) + (IpAddrLength * 1) + 16); } }
+        public int NeighborEvent { get { return GetInt32At(0 + (DlAddrLength * 1) + (IpAddrLength * 1) + 20); } }
 
         #region Private
         internal IpNeighborStateArgs(Action<IpNeighborStateArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6255,25 +6280,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (DlAddrLength*1)+ (IpAddrLength*1)+24));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (DlAddrLength*1)+ (IpAddrLength*1)+24));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (DlAddrLength * 1) + (IpAddrLength * 1) + 24));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (DlAddrLength * 1) + (IpAddrLength * 1) + 24));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpNeighborStateArgs>) value; }
+            set { m_target = (Action<IpNeighborStateArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "DlAddrLength", DlAddrLength);
-             XmlAttrib(sb, "OldNeighborState", OldNeighborState);
-             XmlAttrib(sb, "NewNeighborState", NewNeighborState);
-             XmlAttrib(sb, "NeighborEvent", NeighborEvent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "DlAddrLength", DlAddrLength);
+            XmlAttrib(sb, "OldNeighborState", OldNeighborState);
+            XmlAttrib(sb, "NewNeighborState", NewNeighborState);
+            XmlAttrib(sb, "NeighborEvent", NeighborEvent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6281,7 +6306,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "IpAddrLength", "IPAddress", "DlAddrLength", "DLAddress", "OldNeighborState", "NewNeighborState", "NeighborEvent"};
+                {
+                    payloadNames = new string[] { "Interface", "IpAddrLength", "IPAddress", "DlAddrLength", "DLAddress", "OldNeighborState", "NewNeighborState", "NeighborEvent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6319,24 +6347,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int NextHopAddressLength { get { return GetInt32At(HostOffset(12, 1)); } }
         public string Protocol { get { return GetUTF8StringAt(HostOffset(16, 1)); } }
         public int DestinationPrefixLength { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))); } }
-        public byte[] DestinationPrefix { get { return GetByteArrayAt(SkipUTF8String(HostOffset(16, 1))+4, DestinationPrefixAddressLength); } }
-        public byte[] NextHopAddress { get { return GetByteArrayAt(SkipUTF8String(HostOffset(16, 1))+4, NextHopAddressLength); } }
-        public long ValidLifetime { get { return GetInt64At(SkipUTF8String(HostOffset(16, 1))+4); } }
-        public long PreferredLifetime { get { return GetInt64At(SkipUTF8String(HostOffset(16, 1))+12); } }
-        public int Metric { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+20); } }
-        public int Loopback { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+24); } }
-        public int AutoconfigureAddress { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+28); } }
-        public int Publish { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+32); } }
-        public int Immortal { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+36); } }
-        public int IPv4DestinationPrefix { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+40); } }
-        public int IPv4NextHopAddress { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+44); } }
-        public int IPProtocol { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1))+48); } }
+        public byte[] DestinationPrefix { get { return GetByteArrayAt(SkipUTF8String(HostOffset(16, 1)) + 4, DestinationPrefixAddressLength); } }
+        public byte[] NextHopAddress { get { return GetByteArrayAt(SkipUTF8String(HostOffset(16, 1)) + 4, NextHopAddressLength); } }
+        public long ValidLifetime { get { return GetInt64At(SkipUTF8String(HostOffset(16, 1)) + 4); } }
+        public long PreferredLifetime { get { return GetInt64At(SkipUTF8String(HostOffset(16, 1)) + 12); } }
+        public int Metric { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 20); } }
+        public int Loopback { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 24); } }
+        public int AutoconfigureAddress { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 28); } }
+        public int Publish { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 32); } }
+        public int Immortal { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 36); } }
+        public int IPv4DestinationPrefix { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 40); } }
+        public int IPv4NextHopAddress { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 44); } }
+        public int IPProtocol { get { return GetInt32At(SkipUTF8String(HostOffset(16, 1)) + 48); } }
 
         #region Private
         internal IpRouteCreatedArgs(Action<IpRouteCreatedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6344,35 +6372,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(HostOffset(16, 1))+52));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(HostOffset(16, 1))+52));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(HostOffset(16, 1)) + 52));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(HostOffset(16, 1)) + 52));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpRouteCreatedArgs>) value; }
+            set { m_target = (Action<IpRouteCreatedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Route", Route);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "DestinationPrefixAddressLength", DestinationPrefixAddressLength);
-             XmlAttrib(sb, "NextHopAddressLength", NextHopAddressLength);
-             XmlAttrib(sb, "Protocol", Protocol);
-             XmlAttrib(sb, "DestinationPrefixLength", DestinationPrefixLength);
-             XmlAttrib(sb, "ValidLifetime", ValidLifetime);
-             XmlAttrib(sb, "PreferredLifetime", PreferredLifetime);
-             XmlAttrib(sb, "Metric", Metric);
-             XmlAttrib(sb, "Loopback", Loopback);
-             XmlAttrib(sb, "AutoconfigureAddress", AutoconfigureAddress);
-             XmlAttrib(sb, "Publish", Publish);
-             XmlAttrib(sb, "Immortal", Immortal);
-             XmlAttrib(sb, "IPv4DestinationPrefix", IPv4DestinationPrefix);
-             XmlAttrib(sb, "IPv4NextHopAddress", IPv4NextHopAddress);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Route", Route);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "DestinationPrefixAddressLength", DestinationPrefixAddressLength);
+            XmlAttrib(sb, "NextHopAddressLength", NextHopAddressLength);
+            XmlAttrib(sb, "Protocol", Protocol);
+            XmlAttrib(sb, "DestinationPrefixLength", DestinationPrefixLength);
+            XmlAttrib(sb, "ValidLifetime", ValidLifetime);
+            XmlAttrib(sb, "PreferredLifetime", PreferredLifetime);
+            XmlAttrib(sb, "Metric", Metric);
+            XmlAttrib(sb, "Loopback", Loopback);
+            XmlAttrib(sb, "AutoconfigureAddress", AutoconfigureAddress);
+            XmlAttrib(sb, "Publish", Publish);
+            XmlAttrib(sb, "Immortal", Immortal);
+            XmlAttrib(sb, "IPv4DestinationPrefix", IPv4DestinationPrefix);
+            XmlAttrib(sb, "IPv4NextHopAddress", IPv4NextHopAddress);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6380,7 +6408,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Route", "Interface", "DestinationPrefixAddressLength", "NextHopAddressLength", "Protocol", "DestinationPrefixLength", "DestinationPrefix", "NextHopAddress", "ValidLifetime", "PreferredLifetime", "Metric", "Loopback", "AutoconfigureAddress", "Publish", "Immortal", "IPv4DestinationPrefix", "IPv4NextHopAddress", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "Route", "Interface", "DestinationPrefixAddressLength", "NextHopAddressLength", "Protocol", "DestinationPrefixLength", "DestinationPrefix", "NextHopAddress", "ValidLifetime", "PreferredLifetime", "Metric", "Loopback", "AutoconfigureAddress", "Publish", "Immortal", "IPv4DestinationPrefix", "IPv4NextHopAddress", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6434,19 +6465,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int IpAddrLength { get { return GetInt32At(0); } }
         public byte[] PreferredSourceIPAddress { get { return GetByteArrayAt(4, IpAddrLength); } }
-        public byte[] PreferredDestinationIPAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+4, IpAddrLength); } }
-        public byte[] NonPreferredSourceIPAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+ (IpAddrLength*1)+4, IpAddrLength); } }
-        public byte[] NonPreferredDestinationIPAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+4, IpAddrLength); } }
-        public int SortOption { get { return GetInt32At(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+4); } }
-        public string RuleType { get { return GetUTF8StringAt(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+8); } }
-        public int RuleMajor { get { return GetInt32At(SkipUTF8String(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+8)); } }
-        public int RuleMinor { get { return GetInt32At(SkipUTF8String(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+8)+4); } }
+        public byte[] PreferredDestinationIPAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + 4, IpAddrLength); } }
+        public byte[] NonPreferredSourceIPAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 4, IpAddrLength); } }
+        public byte[] NonPreferredDestinationIPAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 4, IpAddrLength); } }
+        public int SortOption { get { return GetInt32At(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 4); } }
+        public string RuleType { get { return GetUTF8StringAt(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 8); } }
+        public int RuleMajor { get { return GetInt32At(SkipUTF8String(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 8)); } }
+        public int RuleMinor { get { return GetInt32At(SkipUTF8String(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 8) + 4); } }
 
         #region Private
         internal IpSortedAddressPairsArgs(Action<IpSortedAddressPairsArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6454,24 +6485,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+8)+8));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+8)+8));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 8) + 8));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 8) + 8));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpSortedAddressPairsArgs>) value; }
+            set { m_target = (Action<IpSortedAddressPairsArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "SortOption", SortOption);
-             XmlAttrib(sb, "RuleType", RuleType);
-             XmlAttrib(sb, "RuleMajor", RuleMajor);
-             XmlAttrib(sb, "RuleMinor", RuleMinor);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "SortOption", SortOption);
+            XmlAttrib(sb, "RuleType", RuleType);
+            XmlAttrib(sb, "RuleMajor", RuleMajor);
+            XmlAttrib(sb, "RuleMinor", RuleMinor);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6479,7 +6510,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IpAddrLength", "PreferredSourceIPAddress", "PreferredDestinationIPAddress", "NonPreferredSourceIPAddress", "NonPreferredDestinationIPAddress", "SortOption", "RuleType", "RuleMajor", "RuleMinor"};
+                {
+                    payloadNames = new string[] { "IpAddrLength", "PreferredSourceIPAddress", "PreferredDestinationIPAddress", "NonPreferredSourceIPAddress", "NonPreferredDestinationIPAddress", "SortOption", "RuleType", "RuleMajor", "RuleMinor" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6511,16 +6545,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int IpAddrLength { get { return GetInt32At(0); } }
         public byte[] PreferredSourceIPAddress { get { return GetByteArrayAt(4, IpAddrLength); } }
-        public byte[] NonPreferredSourceIPAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+4, IpAddrLength); } }
-        public byte[] DestinationIPAddress { get { return GetByteArrayAt(0+ (IpAddrLength*1)+ (IpAddrLength*1)+4, IpAddrLength); } }
-        public int Rule { get { return GetInt32At(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+4); } }
-        public int RuleExtension { get { return GetInt32At(0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+8); } }
+        public byte[] NonPreferredSourceIPAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + 4, IpAddrLength); } }
+        public byte[] DestinationIPAddress { get { return GetByteArrayAt(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 4, IpAddrLength); } }
+        public int Rule { get { return GetInt32At(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 4); } }
+        public int RuleExtension { get { return GetInt32At(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 8); } }
 
         #region Private
         internal IpSourceAddressSelectionArgs(Action<IpSourceAddressSelectionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6528,22 +6562,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IpAddrLength*1)+ (IpAddrLength*1)+ (IpAddrLength*1)+12));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 12));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IpAddrLength * 1) + (IpAddrLength * 1) + (IpAddrLength * 1) + 12));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IpSourceAddressSelectionArgs>) value; }
+            set { m_target = (Action<IpSourceAddressSelectionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "Rule", Rule);
-             XmlAttrib(sb, "RuleExtension", RuleExtension);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "Rule", Rule);
+            XmlAttrib(sb, "RuleExtension", RuleExtension);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6551,7 +6585,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IpAddrLength", "PreferredSourceIPAddress", "NonPreferredSourceIPAddress", "DestinationIPAddress", "Rule", "RuleExtension"};
+                {
+                    payloadNames = new string[] { "IpAddrLength", "PreferredSourceIPAddress", "NonPreferredSourceIPAddress", "DestinationIPAddress", "Rule", "RuleExtension" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6589,7 +6626,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_AcceptArgs(Action<Ndkpi_AcceptArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6603,20 +6640,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_AcceptArgs>) value; }
+            set { m_target = (Action<Ndkpi_AcceptArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkConnector", NdkConnector);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttrib(sb, "IRD", IRD);
-             XmlAttrib(sb, "ORD", ORD);
-             XmlAttribHex(sb, "DisconnectEventContext", DisconnectEventContext);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkConnector", NdkConnector);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttrib(sb, "IRD", IRD);
+            XmlAttrib(sb, "ORD", ORD);
+            XmlAttribHex(sb, "DisconnectEventContext", DisconnectEventContext);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6624,7 +6661,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkConnector", "NdkQp", "IRD", "ORD", "DisconnectEventContext", "RequestContext", "PrivateDataLength"};
+                {
+                    payloadNames = new string[] { "NdkConnector", "NdkQp", "IRD", "ORD", "DisconnectEventContext", "RequestContext", "PrivateDataLength" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6665,7 +6705,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Arm_CqArgs(Action<Ndkpi_Arm_CqArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6679,15 +6719,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Arm_CqArgs>) value; }
+            set { m_target = (Action<Ndkpi_Arm_CqArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkCq", NdkCq);
-             XmlAttrib(sb, "ArmType", ArmType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkCq", NdkCq);
+            XmlAttrib(sb, "ArmType", ArmType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6695,7 +6735,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkCq", "ArmType"};
+                {
+                    payloadNames = new string[] { "NdkCq", "ArmType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6731,7 +6774,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_BindArgs(Action<Ndkpi_BindArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6745,20 +6788,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_BindArgs>) value; }
+            set { m_target = (Action<Ndkpi_BindArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "NdkMr", NdkMr);
-             XmlAttribHex(sb, "NdkMw", NdkMw);
-             XmlAttribHex(sb, "VirtualAddress", VirtualAddress);
-             XmlAttrib(sb, "Length", Length);
-             XmlAttrib(sb, "Flags", Flags);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "NdkMr", NdkMr);
+            XmlAttribHex(sb, "NdkMw", NdkMw);
+            XmlAttribHex(sb, "VirtualAddress", VirtualAddress);
+            XmlAttrib(sb, "Length", Length);
+            XmlAttrib(sb, "Flags", Flags);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6766,7 +6809,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "NdkMr", "NdkMw", "VirtualAddress", "Length", "Flags"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "NdkMr", "NdkMw", "VirtualAddress", "Length", "Flags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6811,7 +6857,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Build_LamArgs(Action<Ndkpi_Build_LamArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6825,19 +6871,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Build_LamArgs>) value; }
+            set { m_target = (Action<Ndkpi_Build_LamArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
-             XmlAttribHex(sb, "Mdl", Mdl);
-             XmlAttrib(sb, "Length", Length);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "LAMBuffer", LAMBuffer);
-             XmlAttrib(sb, "LAMBufferSize", LAMBufferSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
+            XmlAttribHex(sb, "Mdl", Mdl);
+            XmlAttrib(sb, "Length", Length);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "LAMBuffer", LAMBuffer);
+            XmlAttrib(sb, "LAMBufferSize", LAMBufferSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6845,7 +6891,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkAdapter", "Mdl", "Length", "RequestContext", "LAMBuffer", "LAMBufferSize"};
+                {
+                    payloadNames = new string[] { "NdkAdapter", "Mdl", "Length", "RequestContext", "LAMBuffer", "LAMBufferSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6883,7 +6932,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Close_Adapter_EnterArgs(Action<Ndkpi_Close_Adapter_EnterArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6897,14 +6946,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Close_Adapter_EnterArgs>) value; }
+            set { m_target = (Action<Ndkpi_Close_Adapter_EnterArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6912,7 +6961,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkAdapter"};
+                {
+                    payloadNames = new string[] { "NdkAdapter" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6941,7 +6993,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Close_CompletionArgs(Action<Ndkpi_Close_CompletionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -6955,15 +7007,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Close_CompletionArgs>) value; }
+            set { m_target = (Action<Ndkpi_Close_CompletionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "CompletionType", CompletionType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "CompletionType", CompletionType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -6971,7 +7023,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RequestContext", "CompletionType"};
+                {
+                    payloadNames = new string[] { "RequestContext", "CompletionType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7003,7 +7058,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Close_ObjArgs(Action<Ndkpi_Close_ObjArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7017,16 +7072,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Close_ObjArgs>) value; }
+            set { m_target = (Action<Ndkpi_Close_ObjArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttrib(sb, "NdkObjectType", NdkObjectType);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttrib(sb, "NdkObjectType", NdkObjectType);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7034,7 +7089,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7068,7 +7126,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Complete_ConnectArgs(Action<Ndkpi_Complete_ConnectArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7082,16 +7140,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Complete_ConnectArgs>) value; }
+            set { m_target = (Action<Ndkpi_Complete_ConnectArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkConnector", NdkConnector);
-             XmlAttribHex(sb, "DisconnectEventContext", DisconnectEventContext);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkConnector", NdkConnector);
+            XmlAttribHex(sb, "DisconnectEventContext", DisconnectEventContext);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7099,7 +7157,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkConnector", "DisconnectEventContext", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkConnector", "DisconnectEventContext", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7129,19 +7190,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address NdkQp { get { return GetAddressAt(HostOffset(4, 1)); } }
         public int SrcSockAddrLength { get { return GetInt32At(HostOffset(8, 2)); } }
         public byte[] SrcSockAddr { get { return GetByteArrayAt(HostOffset(12, 2), SrcSockAddrLength); } }
-        public int DestSockAddrLength { get { return GetInt32At(HostOffset(0+ (SrcSockAddrLength*1)+12, 2)); } }
-        public byte[] DestSockAddr { get { return GetByteArrayAt(HostOffset(0+ (SrcSockAddrLength*1)+16, 2), DestSockAddrLength); } }
-        public int IRD { get { return GetInt32At(HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+16, 2)); } }
-        public int ORD { get { return GetInt32At(HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+20, 2)); } }
-        public Address RequestContext { get { return GetAddressAt(HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+24, 2)); } }
-        public Address NdkSharedEndpoint { get { return GetAddressAt(HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+28, 3)); } }
-        public int PrivateDataLength { get { return GetInt32At(HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+32, 4)); } }
+        public int DestSockAddrLength { get { return GetInt32At(HostOffset(0 + (SrcSockAddrLength * 1) + 12, 2)); } }
+        public byte[] DestSockAddr { get { return GetByteArrayAt(HostOffset(0 + (SrcSockAddrLength * 1) + 16, 2), DestSockAddrLength); } }
+        public int IRD { get { return GetInt32At(HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 16, 2)); } }
+        public int ORD { get { return GetInt32At(HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 20, 2)); } }
+        public Address RequestContext { get { return GetAddressAt(HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 24, 2)); } }
+        public Address NdkSharedEndpoint { get { return GetAddressAt(HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 28, 3)); } }
+        public int PrivateDataLength { get { return GetInt32At(HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 32, 4)); } }
 
         #region Private
         internal Ndkpi_ConnectArgs(Action<Ndkpi_ConnectArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7149,28 +7210,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+36, 4)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (DestSockAddrLength*1)+ (SrcSockAddrLength*1)+36, 4)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 36, 4)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (DestSockAddrLength * 1) + (SrcSockAddrLength * 1) + 36, 4)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_ConnectArgs>) value; }
+            set { m_target = (Action<Ndkpi_ConnectArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkConnector", NdkConnector);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttrib(sb, "SrcSockAddrLength", SrcSockAddrLength);
-             XmlAttrib(sb, "DestSockAddrLength", DestSockAddrLength);
-             XmlAttrib(sb, "IRD", IRD);
-             XmlAttrib(sb, "ORD", ORD);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "NdkSharedEndpoint", NdkSharedEndpoint);
-             XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkConnector", NdkConnector);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttrib(sb, "SrcSockAddrLength", SrcSockAddrLength);
+            XmlAttrib(sb, "DestSockAddrLength", DestSockAddrLength);
+            XmlAttrib(sb, "IRD", IRD);
+            XmlAttrib(sb, "ORD", ORD);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "NdkSharedEndpoint", NdkSharedEndpoint);
+            XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7178,7 +7239,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkConnector", "NdkQp", "SrcSockAddrLength", "SrcSockAddr", "DestSockAddrLength", "DestSockAddr", "IRD", "ORD", "RequestContext", "NdkSharedEndpoint", "PrivateDataLength"};
+                {
+                    payloadNames = new string[] { "NdkConnector", "NdkQp", "SrcSockAddrLength", "SrcSockAddr", "DestSockAddrLength", "DestSockAddr", "IRD", "ORD", "RequestContext", "NdkSharedEndpoint", "PrivateDataLength" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7223,7 +7287,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Connect_Event_CallbackArgs(Action<Ndkpi_Connect_Event_CallbackArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7237,15 +7301,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Connect_Event_CallbackArgs>) value; }
+            set { m_target = (Action<Ndkpi_Connect_Event_CallbackArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "ConnectEventContext", ConnectEventContext);
-             XmlAttribHex(sb, "NdkConnector", NdkConnector);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "ConnectEventContext", ConnectEventContext);
+            XmlAttribHex(sb, "NdkConnector", NdkConnector);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7253,7 +7317,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ConnectEventContext", "NdkConnector"};
+                {
+                    payloadNames = new string[] { "ConnectEventContext", "NdkConnector" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7286,7 +7353,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Control_Cq_ImArgs(Action<Ndkpi_Control_Cq_ImArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7300,17 +7367,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Control_Cq_ImArgs>) value; }
+            set { m_target = (Action<Ndkpi_Control_Cq_ImArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkCq", NdkCq);
-             XmlAttrib(sb, "ModerationInterval", ModerationInterval);
-             XmlAttrib(sb, "ModerationCount", ModerationCount);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkCq", NdkCq);
+            XmlAttrib(sb, "ModerationInterval", ModerationInterval);
+            XmlAttrib(sb, "ModerationCount", ModerationCount);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7318,7 +7385,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkCq", "ModerationInterval", "ModerationCount", "Status"};
+                {
+                    payloadNames = new string[] { "NdkCq", "ModerationInterval", "ModerationCount", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7353,7 +7423,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Cq_Notification_CallbackArgs(Action<Ndkpi_Cq_Notification_CallbackArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7367,15 +7437,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Cq_Notification_CallbackArgs>) value; }
+            set { m_target = (Action<Ndkpi_Cq_Notification_CallbackArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "CqNotificationContext", CqNotificationContext);
-             XmlAttrib(sb, "CqStatus", CqStatus);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "CqNotificationContext", CqNotificationContext);
+            XmlAttrib(sb, "CqStatus", CqStatus);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7383,7 +7453,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "CqNotificationContext", "CqStatus"};
+                {
+                    payloadNames = new string[] { "CqNotificationContext", "CqStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7419,7 +7492,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Cq_ResultArgs(Action<Ndkpi_Cq_ResultArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7433,20 +7506,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Cq_ResultArgs>) value; }
+            set { m_target = (Action<Ndkpi_Cq_ResultArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkCq", NdkCq);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "BytesTransferred", BytesTransferred);
-             XmlAttribHex(sb, "QpContext", QpContext);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "ResultIndex", ResultIndex);
-             XmlAttrib(sb, "ResultCount", ResultCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkCq", NdkCq);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "BytesTransferred", BytesTransferred);
+            XmlAttribHex(sb, "QpContext", QpContext);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "ResultIndex", ResultIndex);
+            XmlAttrib(sb, "ResultCount", ResultCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7454,7 +7527,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkCq", "Status", "BytesTransferred", "QpContext", "RequestContext", "ResultIndex", "ResultCount"};
+                {
+                    payloadNames = new string[] { "NdkCq", "Status", "BytesTransferred", "QpContext", "RequestContext", "ResultIndex", "ResultCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7502,7 +7578,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Cq_Result_ExArgs(Action<Ndkpi_Cq_Result_ExArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7516,22 +7592,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Cq_Result_ExArgs>) value; }
+            set { m_target = (Action<Ndkpi_Cq_Result_ExArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkCq", NdkCq);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "BytesTransferred", BytesTransferred);
-             XmlAttribHex(sb, "QpContext", QpContext);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "ResultIndex", ResultIndex);
-             XmlAttrib(sb, "ResultCount", ResultCount);
-             XmlAttrib(sb, "Type", Type);
-             XmlAttrib(sb, "TypeSpecificCompletionOutput", TypeSpecificCompletionOutput);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkCq", NdkCq);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "BytesTransferred", BytesTransferred);
+            XmlAttribHex(sb, "QpContext", QpContext);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "ResultIndex", ResultIndex);
+            XmlAttrib(sb, "ResultCount", ResultCount);
+            XmlAttrib(sb, "Type", Type);
+            XmlAttrib(sb, "TypeSpecificCompletionOutput", TypeSpecificCompletionOutput);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7539,7 +7615,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkCq", "Status", "BytesTransferred", "QpContext", "RequestContext", "ResultIndex", "ResultCount", "Type", "TypeSpecificCompletionOutput"};
+                {
+                    payloadNames = new string[] { "NdkCq", "Status", "BytesTransferred", "QpContext", "RequestContext", "ResultIndex", "ResultCount", "Type", "TypeSpecificCompletionOutput" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7587,7 +7666,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Create_CompletionArgs(Action<Ndkpi_Create_CompletionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7601,18 +7680,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Create_CompletionArgs>) value; }
+            set { m_target = (Action<Ndkpi_Create_CompletionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttrib(sb, "CompletionType", CompletionType);
-             XmlAttrib(sb, "NdkObjectType", NdkObjectType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttrib(sb, "CompletionType", CompletionType);
+            XmlAttrib(sb, "NdkObjectType", NdkObjectType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7620,7 +7699,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RequestContext", "Status", "NdkObject", "CompletionType", "NdkObjectType"};
+                {
+                    payloadNames = new string[] { "RequestContext", "Status", "NdkObject", "CompletionType", "NdkObjectType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7657,7 +7739,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Deregister_MrArgs(Action<Ndkpi_Deregister_MrArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7671,15 +7753,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Deregister_MrArgs>) value; }
+            set { m_target = (Action<Ndkpi_Deregister_MrArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7687,7 +7769,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkObject", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkObject", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7722,7 +7807,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Create_CqArgs(Action<Ndkpi_Create_CqArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7736,19 +7821,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Create_CqArgs>) value; }
+            set { m_target = (Action<Ndkpi_Create_CqArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
-             XmlAttrib(sb, "CqDepth", CqDepth);
-             XmlAttribHex(sb, "CqNotificationContext", CqNotificationContext);
-             XmlAttrib(sb, "AffinityMask", AffinityMask);
-             XmlAttrib(sb, "AffinityGroup", AffinityGroup);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
+            XmlAttrib(sb, "CqDepth", CqDepth);
+            XmlAttribHex(sb, "CqNotificationContext", CqNotificationContext);
+            XmlAttrib(sb, "AffinityMask", AffinityMask);
+            XmlAttrib(sb, "AffinityGroup", AffinityGroup);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7756,7 +7841,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkAdapter", "CqDepth", "CqNotificationContext", "AffinityMask", "AffinityGroup", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkAdapter", "CqDepth", "CqNotificationContext", "AffinityMask", "AffinityGroup", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7796,7 +7884,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Create_ListenerArgs(Action<Ndkpi_Create_ListenerArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7810,16 +7898,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Create_ListenerArgs>) value; }
+            set { m_target = (Action<Ndkpi_Create_ListenerArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
-             XmlAttribHex(sb, "ConnectEventContext", ConnectEventContext);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
+            XmlAttribHex(sb, "ConnectEventContext", ConnectEventContext);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7827,7 +7915,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkAdapter", "ConnectEventContext", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkAdapter", "ConnectEventContext", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7861,7 +7952,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Create_MrArgs(Action<Ndkpi_Create_MrArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7875,16 +7966,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Create_MrArgs>) value; }
+            set { m_target = (Action<Ndkpi_Create_MrArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkPd", NdkPd);
-             XmlAttrib(sb, "FastRegister", FastRegister);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkPd", NdkPd);
+            XmlAttrib(sb, "FastRegister", FastRegister);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7892,7 +7983,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkPd", "FastRegister", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkPd", "FastRegister", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7933,7 +8027,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Create_QpArgs(Action<Ndkpi_Create_QpArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -7947,23 +8041,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Create_QpArgs>) value; }
+            set { m_target = (Action<Ndkpi_Create_QpArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkPd", NdkPd);
-             XmlAttribHex(sb, "ReceiveCq", ReceiveCq);
-             XmlAttribHex(sb, "InitiatorCq", InitiatorCq);
-             XmlAttribHex(sb, "QPContext", QPContext);
-             XmlAttrib(sb, "ReceiveQueueDepth", ReceiveQueueDepth);
-             XmlAttrib(sb, "InitiatorQueueDepth", InitiatorQueueDepth);
-             XmlAttrib(sb, "MaxReceiveRequestSge", MaxReceiveRequestSge);
-             XmlAttrib(sb, "MaxInitiatorRequestSge", MaxInitiatorRequestSge);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "NdkSrq", NdkSrq);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkPd", NdkPd);
+            XmlAttribHex(sb, "ReceiveCq", ReceiveCq);
+            XmlAttribHex(sb, "InitiatorCq", InitiatorCq);
+            XmlAttribHex(sb, "QPContext", QPContext);
+            XmlAttrib(sb, "ReceiveQueueDepth", ReceiveQueueDepth);
+            XmlAttrib(sb, "InitiatorQueueDepth", InitiatorQueueDepth);
+            XmlAttrib(sb, "MaxReceiveRequestSge", MaxReceiveRequestSge);
+            XmlAttrib(sb, "MaxInitiatorRequestSge", MaxInitiatorRequestSge);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "NdkSrq", NdkSrq);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -7971,7 +8065,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkPd", "ReceiveCq", "InitiatorCq", "QPContext", "ReceiveQueueDepth", "InitiatorQueueDepth", "MaxReceiveRequestSge", "MaxInitiatorRequestSge", "RequestContext", "NdkSrq"};
+                {
+                    payloadNames = new string[] { "NdkPd", "ReceiveCq", "InitiatorCq", "QPContext", "ReceiveQueueDepth", "InitiatorQueueDepth", "MaxReceiveRequestSge", "MaxInitiatorRequestSge", "RequestContext", "NdkSrq" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8014,13 +8111,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address NdkListener { get { return GetAddressAt(0); } }
         public int SockAddrLength { get { return GetInt32At(HostOffset(4, 1)); } }
         public byte[] SockAddr { get { return GetByteArrayAt(HostOffset(8, 1), SockAddrLength); } }
-        public Address RequestContext { get { return GetAddressAt(HostOffset(0+ (SockAddrLength*1)+8, 1)); } }
+        public Address RequestContext { get { return GetAddressAt(HostOffset(0 + (SockAddrLength * 1) + 8, 1)); } }
 
         #region Private
         internal Ndkpi_ListenArgs(Action<Ndkpi_ListenArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8028,22 +8125,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (SockAddrLength*1)+12, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (SockAddrLength*1)+12, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (SockAddrLength * 1) + 12, 2)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (SockAddrLength * 1) + 12, 2)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_ListenArgs>) value; }
+            set { m_target = (Action<Ndkpi_ListenArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkListener", NdkListener);
-             XmlAttrib(sb, "SockAddrLength", SockAddrLength);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkListener", NdkListener);
+            XmlAttrib(sb, "SockAddrLength", SockAddrLength);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8051,7 +8148,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkListener", "SockAddrLength", "SockAddr", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkListener", "SockAddrLength", "SockAddr", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8090,7 +8190,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Create_SrqArgs(Action<Ndkpi_Create_SrqArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8104,21 +8204,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Create_SrqArgs>) value; }
+            set { m_target = (Action<Ndkpi_Create_SrqArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkPd", NdkPd);
-             XmlAttrib(sb, "SrqDepth", SrqDepth);
-             XmlAttrib(sb, "MaxReceiveRequestSge", MaxReceiveRequestSge);
-             XmlAttrib(sb, "NotifyThreshold", NotifyThreshold);
-             XmlAttribHex(sb, "SrqNotificationContext", SrqNotificationContext);
-             XmlAttrib(sb, "AffinityMask", AffinityMask);
-             XmlAttrib(sb, "AffinityGroup", AffinityGroup);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkPd", NdkPd);
+            XmlAttrib(sb, "SrqDepth", SrqDepth);
+            XmlAttrib(sb, "MaxReceiveRequestSge", MaxReceiveRequestSge);
+            XmlAttrib(sb, "NotifyThreshold", NotifyThreshold);
+            XmlAttribHex(sb, "SrqNotificationContext", SrqNotificationContext);
+            XmlAttrib(sb, "AffinityMask", AffinityMask);
+            XmlAttrib(sb, "AffinityGroup", AffinityGroup);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8126,7 +8226,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkPd", "SrqDepth", "MaxReceiveRequestSge", "NotifyThreshold", "SrqNotificationContext", "AffinityMask", "AffinityGroup", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkPd", "SrqDepth", "MaxReceiveRequestSge", "NotifyThreshold", "SrqNotificationContext", "AffinityMask", "AffinityGroup", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8168,7 +8271,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Disconnect_Event_CallbackArgs(Action<Ndkpi_Disconnect_Event_CallbackArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8182,14 +8285,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Disconnect_Event_CallbackArgs>) value; }
+            set { m_target = (Action<Ndkpi_Disconnect_Event_CallbackArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "DisconnectEventContext", DisconnectEventContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "DisconnectEventContext", DisconnectEventContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8197,7 +8300,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "DisconnectEventContext"};
+                {
+                    payloadNames = new string[] { "DisconnectEventContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8233,7 +8339,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Fast_RegisterArgs(Action<Ndkpi_Fast_RegisterArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8247,22 +8353,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Fast_RegisterArgs>) value; }
+            set { m_target = (Action<Ndkpi_Fast_RegisterArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "NdkMr", NdkMr);
-             XmlAttrib(sb, "AdapterPageCount", AdapterPageCount);
-             XmlAttribHex(sb, "AdapterPageArray", AdapterPageArray);
-             XmlAttrib(sb, "FBO", FBO);
-             XmlAttrib(sb, "Length", Length);
-             XmlAttribHex(sb, "BaseVirtualAddress", BaseVirtualAddress);
-             XmlAttrib(sb, "Flags", Flags);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "NdkMr", NdkMr);
+            XmlAttrib(sb, "AdapterPageCount", AdapterPageCount);
+            XmlAttribHex(sb, "AdapterPageArray", AdapterPageArray);
+            XmlAttrib(sb, "FBO", FBO);
+            XmlAttrib(sb, "Length", Length);
+            XmlAttribHex(sb, "BaseVirtualAddress", BaseVirtualAddress);
+            XmlAttrib(sb, "Flags", Flags);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8270,7 +8376,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "NdkMr", "AdapterPageCount", "AdapterPageArray", "FBO", "Length", "BaseVirtualAddress", "Flags"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "NdkMr", "AdapterPageCount", "AdapterPageArray", "FBO", "Length", "BaseVirtualAddress", "Flags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8314,7 +8423,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_FlushArgs(Action<Ndkpi_FlushArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8328,14 +8437,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_FlushArgs>) value; }
+            set { m_target = (Action<Ndkpi_FlushArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8343,7 +8452,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp"};
+                {
+                    payloadNames = new string[] { "NdkQp" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8375,7 +8487,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Get_Connect_DataArgs(Action<Ndkpi_Get_Connect_DataArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8389,18 +8501,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Get_Connect_DataArgs>) value; }
+            set { m_target = (Action<Ndkpi_Get_Connect_DataArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkConnector", NdkConnector);
-             XmlAttrib(sb, "IRD", IRD);
-             XmlAttrib(sb, "ORD", ORD);
-             XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkConnector", NdkConnector);
+            XmlAttrib(sb, "IRD", IRD);
+            XmlAttrib(sb, "ORD", ORD);
+            XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8408,7 +8520,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkConnector", "IRD", "ORD", "PrivateDataLength", "Status"};
+                {
+                    payloadNames = new string[] { "NdkConnector", "IRD", "ORD", "PrivateDataLength", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8448,7 +8563,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Get_SockaddrArgs(Action<Ndkpi_Get_SockaddrArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8456,23 +8571,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (SockAddrLength*1)+16, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (SockAddrLength*1)+16, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (SockAddrLength * 1) + 16, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (SockAddrLength * 1) + 16, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Get_SockaddrArgs>) value; }
+            set { m_target = (Action<Ndkpi_Get_SockaddrArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttrib(sb, "NdkObjectType", NdkObjectType);
-             XmlAttrib(sb, "SockAddrType", SockAddrType);
-             XmlAttrib(sb, "SockAddrLength", SockAddrLength);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttrib(sb, "NdkObjectType", NdkObjectType);
+            XmlAttrib(sb, "SockAddrType", SockAddrType);
+            XmlAttrib(sb, "SockAddrLength", SockAddrLength);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8480,7 +8595,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "SockAddrType", "SockAddrLength", "SockAddr"};
+                {
+                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "SockAddrType", "SockAddrLength", "SockAddr" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8517,7 +8635,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Get_Sockaddr_FailureArgs(Action<Ndkpi_Get_Sockaddr_FailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8531,17 +8649,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Get_Sockaddr_FailureArgs>) value; }
+            set { m_target = (Action<Ndkpi_Get_Sockaddr_FailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttrib(sb, "NdkObjectType", NdkObjectType);
-             XmlAttrib(sb, "SockAddrType", SockAddrType);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttrib(sb, "NdkObjectType", NdkObjectType);
+            XmlAttrib(sb, "SockAddrType", SockAddrType);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8549,7 +8667,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "SockAddrType", "Status"};
+                {
+                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "SockAddrType", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8586,7 +8707,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Get_TokenArgs(Action<Ndkpi_Get_TokenArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8600,17 +8721,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Get_TokenArgs>) value; }
+            set { m_target = (Action<Ndkpi_Get_TokenArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttrib(sb, "NdkObjectType", NdkObjectType);
-             XmlAttrib(sb, "TokenType", TokenType);
-             XmlAttrib(sb, "Token", Token);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttrib(sb, "NdkObjectType", NdkObjectType);
+            XmlAttrib(sb, "TokenType", TokenType);
+            XmlAttrib(sb, "Token", Token);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8618,7 +8739,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "TokenType", "Token"};
+                {
+                    payloadNames = new string[] { "NdkObject", "NdkObjectType", "TokenType", "Token" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8655,7 +8779,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Initialize_Fast_Register_MrArgs(Action<Ndkpi_Initialize_Fast_Register_MrArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8669,17 +8793,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Initialize_Fast_Register_MrArgs>) value; }
+            set { m_target = (Action<Ndkpi_Initialize_Fast_Register_MrArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkMr", NdkMr);
-             XmlAttrib(sb, "AdapterPageCount", AdapterPageCount);
-             XmlAttrib(sb, "RemoteAccess", RemoteAccess);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkMr", NdkMr);
+            XmlAttrib(sb, "AdapterPageCount", AdapterPageCount);
+            XmlAttrib(sb, "RemoteAccess", RemoteAccess);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8687,7 +8811,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkMr", "AdapterPageCount", "RemoteAccess", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkMr", "AdapterPageCount", "RemoteAccess", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8724,7 +8851,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Interface_EventArgs(Action<Ndkpi_Interface_EventArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8738,17 +8865,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Interface_EventArgs>) value; }
+            set { m_target = (Action<Ndkpi_Interface_EventArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "EventDescription", EventDescription);
-             XmlAttrib(sb, "NDKOperational", NDKOperational);
-             XmlAttrib(sb, "StatusCode", StatusCode);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "EventDescription", EventDescription);
+            XmlAttrib(sb, "NDKOperational", NDKOperational);
+            XmlAttrib(sb, "StatusCode", StatusCode);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8756,7 +8883,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "EventDescription", "NDKOperational", "StatusCode"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "EventDescription", "NDKOperational", "StatusCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8794,7 +8924,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_InvalidateArgs(Action<Ndkpi_InvalidateArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8808,18 +8938,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_InvalidateArgs>) value; }
+            set { m_target = (Action<Ndkpi_InvalidateArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "NdkObject", NdkObject);
-             XmlAttrib(sb, "NdkObjectType", NdkObjectType);
-             XmlAttrib(sb, "Flags", Flags);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "NdkObject", NdkObject);
+            XmlAttrib(sb, "NdkObjectType", NdkObjectType);
+            XmlAttrib(sb, "Flags", Flags);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8827,7 +8957,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "NdkObject", "NdkObjectType", "Flags"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "NdkObject", "NdkObjectType", "Flags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8866,7 +8999,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Modify_SrqArgs(Action<Ndkpi_Modify_SrqArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8880,17 +9013,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Modify_SrqArgs>) value; }
+            set { m_target = (Action<Ndkpi_Modify_SrqArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkSrq", NdkSrq);
-             XmlAttrib(sb, "SrqDepth", SrqDepth);
-             XmlAttrib(sb, "NotifyThreshold", NotifyThreshold);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkSrq", NdkSrq);
+            XmlAttrib(sb, "SrqDepth", SrqDepth);
+            XmlAttrib(sb, "NotifyThreshold", NotifyThreshold);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8898,7 +9031,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkSrq", "SrqDepth", "NotifyThreshold", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkSrq", "SrqDepth", "NotifyThreshold", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8934,7 +9070,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Open_AdapterArgs(Action<Ndkpi_Open_AdapterArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -8948,16 +9084,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Open_AdapterArgs>) value; }
+            set { m_target = (Action<Ndkpi_Open_AdapterArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8965,7 +9101,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "NdkAdapter", "Status"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "NdkAdapter", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9006,7 +9145,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_ReadArgs(Action<Ndkpi_ReadArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9020,23 +9159,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_ReadArgs>) value; }
+            set { m_target = (Action<Ndkpi_ReadArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "SgeAddress", SgeAddress);
-             XmlAttrib(sb, "SgeLength", SgeLength);
-             XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
-             XmlAttrib(sb, "NumSge", NumSge);
-             XmlAttrib(sb, "Flags", Flags);
-             XmlAttrib(sb, "SgeIndex", SgeIndex);
-             XmlAttrib(sb, "RemoteAddress", RemoteAddress);
-             XmlAttrib(sb, "RemoteToken", RemoteToken);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "SgeAddress", SgeAddress);
+            XmlAttrib(sb, "SgeLength", SgeLength);
+            XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
+            XmlAttrib(sb, "NumSge", NumSge);
+            XmlAttrib(sb, "Flags", Flags);
+            XmlAttrib(sb, "SgeIndex", SgeIndex);
+            XmlAttrib(sb, "RemoteAddress", RemoteAddress);
+            XmlAttrib(sb, "RemoteToken", RemoteToken);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9044,7 +9183,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex", "RemoteAddress", "RemoteToken"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex", "RemoteAddress", "RemoteToken" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9097,7 +9239,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_SendArgs(Action<Ndkpi_SendArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9111,21 +9253,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_SendArgs>) value; }
+            set { m_target = (Action<Ndkpi_SendArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "SgeAddress", SgeAddress);
-             XmlAttrib(sb, "SgeLength", SgeLength);
-             XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
-             XmlAttrib(sb, "NumSge", NumSge);
-             XmlAttrib(sb, "Flags", Flags);
-             XmlAttrib(sb, "SgeIndex", SgeIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "SgeAddress", SgeAddress);
+            XmlAttrib(sb, "SgeLength", SgeLength);
+            XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
+            XmlAttrib(sb, "NumSge", NumSge);
+            XmlAttrib(sb, "Flags", Flags);
+            XmlAttrib(sb, "SgeIndex", SgeIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9133,7 +9275,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9179,7 +9324,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Register_MrArgs(Action<Ndkpi_Register_MrArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9193,18 +9338,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Register_MrArgs>) value; }
+            set { m_target = (Action<Ndkpi_Register_MrArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkMr", NdkMr);
-             XmlAttribHex(sb, "Mdl", Mdl);
-             XmlAttrib(sb, "Length", Length);
-             XmlAttrib(sb, "Flags", Flags);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkMr", NdkMr);
+            XmlAttribHex(sb, "Mdl", Mdl);
+            XmlAttrib(sb, "Length", Length);
+            XmlAttrib(sb, "Flags", Flags);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9212,7 +9357,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkMr", "Mdl", "Length", "Flags", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkMr", "Mdl", "Length", "Flags", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9250,7 +9398,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_RejectArgs(Action<Ndkpi_RejectArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9264,16 +9412,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_RejectArgs>) value; }
+            set { m_target = (Action<Ndkpi_RejectArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkConnector", NdkConnector);
-             XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkConnector", NdkConnector);
+            XmlAttrib(sb, "PrivateDataLength", PrivateDataLength);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9281,7 +9429,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkConnector", "PrivateDataLength", "Status"};
+                {
+                    payloadNames = new string[] { "NdkConnector", "PrivateDataLength", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9314,7 +9465,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Release_LamArgs(Action<Ndkpi_Release_LamArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9328,15 +9479,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Release_LamArgs>) value; }
+            set { m_target = (Action<Ndkpi_Release_LamArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
-             XmlAttribHex(sb, "LAMBuffer", LAMBuffer);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkAdapter", NdkAdapter);
+            XmlAttribHex(sb, "LAMBuffer", LAMBuffer);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9344,7 +9495,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkAdapter", "LAMBuffer"};
+                {
+                    payloadNames = new string[] { "NdkAdapter", "LAMBuffer" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9376,7 +9530,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Request_CompletionArgs(Action<Ndkpi_Request_CompletionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9390,16 +9544,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Request_CompletionArgs>) value; }
+            set { m_target = (Action<Ndkpi_Request_CompletionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "CompletionType", CompletionType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "CompletionType", CompletionType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9407,7 +9561,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RequestContext", "Status", "CompletionType"};
+                {
+                    payloadNames = new string[] { "RequestContext", "Status", "CompletionType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9441,7 +9598,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Resize_CqArgs(Action<Ndkpi_Resize_CqArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9455,16 +9612,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Resize_CqArgs>) value; }
+            set { m_target = (Action<Ndkpi_Resize_CqArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkCq", NdkCq);
-             XmlAttrib(sb, "CqDepth", CqDepth);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkCq", NdkCq);
+            XmlAttrib(sb, "CqDepth", CqDepth);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9472,7 +9629,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkCq", "CqDepth", "RequestContext"};
+                {
+                    payloadNames = new string[] { "NdkCq", "CqDepth", "RequestContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9512,7 +9672,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Send_InvalidateArgs(Action<Ndkpi_Send_InvalidateArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9526,22 +9686,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Send_InvalidateArgs>) value; }
+            set { m_target = (Action<Ndkpi_Send_InvalidateArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "SgeAddress", SgeAddress);
-             XmlAttrib(sb, "SgeLength", SgeLength);
-             XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
-             XmlAttrib(sb, "NumSge", NumSge);
-             XmlAttrib(sb, "Flags", Flags);
-             XmlAttrib(sb, "SgeIndex", SgeIndex);
-             XmlAttrib(sb, "RemoteToken", RemoteToken);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "SgeAddress", SgeAddress);
+            XmlAttrib(sb, "SgeLength", SgeLength);
+            XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
+            XmlAttrib(sb, "NumSge", NumSge);
+            XmlAttrib(sb, "Flags", Flags);
+            XmlAttrib(sb, "SgeIndex", SgeIndex);
+            XmlAttrib(sb, "RemoteToken", RemoteToken);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9549,7 +9709,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex", "RemoteToken"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex", "RemoteToken" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9594,7 +9757,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Srq_Notification_CallbackArgs(Action<Ndkpi_Srq_Notification_CallbackArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9608,15 +9771,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Srq_Notification_CallbackArgs>) value; }
+            set { m_target = (Action<Ndkpi_Srq_Notification_CallbackArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "SrqNotificationContext", SrqNotificationContext);
-             XmlAttrib(sb, "SrqStatus", SrqStatus);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "SrqNotificationContext", SrqNotificationContext);
+            XmlAttrib(sb, "SrqStatus", SrqStatus);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9624,7 +9787,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SrqNotificationContext", "SrqStatus"};
+                {
+                    payloadNames = new string[] { "SrqNotificationContext", "SrqStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9656,7 +9822,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Srq_Work_Request_Inline_FailureArgs(Action<Ndkpi_Srq_Work_Request_Inline_FailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9670,16 +9836,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Srq_Work_Request_Inline_FailureArgs>) value; }
+            set { m_target = (Action<Ndkpi_Srq_Work_Request_Inline_FailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkSrq", NdkSrq);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkSrq", NdkSrq);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9687,7 +9853,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkSrq", "RequestContext", "Status"};
+                {
+                    payloadNames = new string[] { "NdkSrq", "RequestContext", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9726,7 +9895,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_SrqReceiveArgs(Action<Ndkpi_SrqReceiveArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9740,21 +9909,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_SrqReceiveArgs>) value; }
+            set { m_target = (Action<Ndkpi_SrqReceiveArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkSrq", NdkSrq);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttribHex(sb, "SgeAddress", SgeAddress);
-             XmlAttrib(sb, "SgeLength", SgeLength);
-             XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
-             XmlAttrib(sb, "NumSge", NumSge);
-             XmlAttrib(sb, "Flags", Flags);
-             XmlAttrib(sb, "SgeIndex", SgeIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkSrq", NdkSrq);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttribHex(sb, "SgeAddress", SgeAddress);
+            XmlAttrib(sb, "SgeLength", SgeLength);
+            XmlAttrib(sb, "SgeMemoryRegionToken", SgeMemoryRegionToken);
+            XmlAttrib(sb, "NumSge", NumSge);
+            XmlAttrib(sb, "Flags", Flags);
+            XmlAttrib(sb, "SgeIndex", SgeIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9762,7 +9931,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkSrq", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex"};
+                {
+                    payloadNames = new string[] { "NdkSrq", "RequestContext", "SgeAddress", "SgeLength", "SgeMemoryRegionToken", "NumSge", "Flags", "SgeIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9806,7 +9978,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal Ndkpi_Work_Request_Inline_FailureArgs(Action<Ndkpi_Work_Request_Inline_FailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9820,16 +9992,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<Ndkpi_Work_Request_Inline_FailureArgs>) value; }
+            set { m_target = (Action<Ndkpi_Work_Request_Inline_FailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NdkQp", NdkQp);
-             XmlAttribHex(sb, "RequestContext", RequestContext);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NdkQp", NdkQp);
+            XmlAttribHex(sb, "RequestContext", RequestContext);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9837,7 +10009,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NdkQp", "RequestContext", "Status"};
+                {
+                    payloadNames = new string[] { "NdkQp", "RequestContext", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9870,7 +10045,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssBindingBindCompleteArgs(Action<RssBindingBindCompleteArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9884,15 +10059,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssBindingBindCompleteArgs>) value; }
+            set { m_target = (Action<RssBindingBindCompleteArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9900,7 +10075,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "AddressFamily"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "AddressFamily" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9931,7 +10109,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssBindingCapabilityArgs(Action<RssBindingCapabilityArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -9945,15 +10123,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssBindingCapabilityArgs>) value; }
+            set { m_target = (Action<RssBindingCapabilityArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "Capability", Capability);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "Capability", Capability);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -9961,7 +10139,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "Capability"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "Capability" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9993,7 +10174,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssBindingChangeArgs(Action<RssBindingChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10007,16 +10188,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssBindingChangeArgs>) value; }
+            set { m_target = (Action<RssBindingChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "Bind", Bind);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "Bind", Bind);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10024,7 +10205,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "AddressFamily", "Bind"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "AddressFamily", "Bind" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10058,7 +10242,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssBindingRundownArgs(Action<RssBindingRundownArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10072,16 +10256,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssBindingRundownArgs>) value; }
+            set { m_target = (Action<RssBindingRundownArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "PortNumber", PortNumber);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "PortNumber", PortNumber);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10089,7 +10273,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "AdapterIndex", "PortNumber"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "AdapterIndex", "PortNumber" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10123,7 +10310,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssConfigurationChangeArgs(Action<RssConfigurationChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10137,16 +10324,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssConfigurationChangeArgs>) value; }
+            set { m_target = (Action<RssConfigurationChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "Setting", Setting);
-             XmlAttrib(sb, "Value", Value);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "Setting", Setting);
+            XmlAttrib(sb, "Value", Value);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10154,7 +10341,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "Setting", "Value"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "Setting", "Value" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10188,7 +10378,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssFailureArgs(Action<RssFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10202,16 +10392,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssFailureArgs>) value; }
+            set { m_target = (Action<RssFailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "FailureDescription", FailureDescription);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "FailureDescription", FailureDescription);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10219,7 +10409,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "FailureDescription", "Status"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "FailureDescription", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10254,7 +10447,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssIndirectionChangeArgs(Action<RssIndirectionChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10268,17 +10461,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssIndirectionChangeArgs>) value; }
+            set { m_target = (Action<RssIndirectionChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "IndirectionIndex", IndirectionIndex);
-             XmlAttrib(sb, "OldProcessorIndex", OldProcessorIndex);
-             XmlAttrib(sb, "NewProcessorIndex", NewProcessorIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "IndirectionIndex", IndirectionIndex);
+            XmlAttrib(sb, "OldProcessorIndex", OldProcessorIndex);
+            XmlAttrib(sb, "NewProcessorIndex", NewProcessorIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10286,7 +10479,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "IndirectionIndex", "OldProcessorIndex", "NewProcessorIndex"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "IndirectionIndex", "OldProcessorIndex", "NewProcessorIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10317,14 +10513,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int AdapterIndex { get { return GetInt32At(0); } }
         public int IndirectionTableSize { get { return GetInt32At(4); } }
         public byte[] IndirectionTable { get { return GetByteArrayAt(8, IndirectionTableSize); } }
-        public int GroupNumber { get { return GetInt16At(0+ (IndirectionTableSize*1)+8); } }
-        public long ActiveAffinity { get { return GetInt64At(0+ (IndirectionTableSize*1)+10); } }
+        public int GroupNumber { get { return GetInt16At(0 + (IndirectionTableSize * 1) + 8); } }
+        public long ActiveAffinity { get { return GetInt64At(0 + (IndirectionTableSize * 1) + 10); } }
 
         #region Private
         internal RssInitializeIndirectionTableArgs(Action<RssInitializeIndirectionTableArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10332,23 +10528,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IndirectionTableSize*1)+18));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IndirectionTableSize*1)+18));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IndirectionTableSize * 1) + 18));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IndirectionTableSize * 1) + 18));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssInitializeIndirectionTableArgs>) value; }
+            set { m_target = (Action<RssInitializeIndirectionTableArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "IndirectionTableSize", IndirectionTableSize);
-             XmlAttrib(sb, "GroupNumber", GroupNumber);
-             XmlAttrib(sb, "ActiveAffinity", ActiveAffinity);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "IndirectionTableSize", IndirectionTableSize);
+            XmlAttrib(sb, "GroupNumber", GroupNumber);
+            XmlAttrib(sb, "ActiveAffinity", ActiveAffinity);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10356,7 +10552,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "IndirectionTableSize", "IndirectionTable", "GroupNumber", "ActiveAffinity"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "IndirectionTableSize", "IndirectionTable", "GroupNumber", "ActiveAffinity" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10390,7 +10589,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssPortBindCompleteArgs(Action<RssPortBindCompleteArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10404,14 +10603,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssPortBindCompleteArgs>) value; }
+            set { m_target = (Action<RssPortBindCompleteArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10419,7 +10618,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex"};
+                {
+                    payloadNames = new string[] { "AdapterIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10450,7 +10652,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssPortCapabilitiesArgs(Action<RssPortCapabilitiesArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10464,17 +10666,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssPortCapabilitiesArgs>) value; }
+            set { m_target = (Action<RssPortCapabilitiesArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "CapabilitiesFlags", CapabilitiesFlags);
-             XmlAttrib(sb, "NumberOfInterruptMessages", NumberOfInterruptMessages);
-             XmlAttrib(sb, "NumberOfReceiveQueues", NumberOfReceiveQueues);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "CapabilitiesFlags", CapabilitiesFlags);
+            XmlAttrib(sb, "NumberOfInterruptMessages", NumberOfInterruptMessages);
+            XmlAttrib(sb, "NumberOfReceiveQueues", NumberOfReceiveQueues);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10482,7 +10684,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "CapabilitiesFlags", "NumberOfInterruptMessages", "NumberOfReceiveQueues"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "CapabilitiesFlags", "NumberOfInterruptMessages", "NumberOfReceiveQueues" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10519,7 +10724,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssPortChangeArgs(Action<RssPortChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10533,17 +10738,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssPortChangeArgs>) value; }
+            set { m_target = (Action<RssPortChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "PortNumber", PortNumber);
-             XmlAttrib(sb, "Bind", Bind);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "PortNumber", PortNumber);
+            XmlAttrib(sb, "Bind", Bind);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10551,7 +10756,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "InterfaceIndex", "PortNumber", "Bind"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "InterfaceIndex", "PortNumber", "Bind" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10588,7 +10796,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssPortProcessorsArgs(Action<RssPortProcessorsArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10602,17 +10810,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssPortProcessorsArgs>) value; }
+            set { m_target = (Action<RssPortProcessorsArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "GroupNumber", GroupNumber);
-             XmlAttrib(sb, "MaximumProcessors", MaximumProcessors);
-             XmlAttrib(sb, "GroupAffinity", GroupAffinity);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "GroupNumber", GroupNumber);
+            XmlAttrib(sb, "MaximumProcessors", MaximumProcessors);
+            XmlAttrib(sb, "GroupAffinity", GroupAffinity);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10620,7 +10828,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "GroupNumber", "MaximumProcessors", "GroupAffinity"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "GroupNumber", "MaximumProcessors", "GroupAffinity" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10657,7 +10868,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssPortReferenceArgs(Action<RssPortReferenceArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10671,17 +10882,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssPortReferenceArgs>) value; }
+            set { m_target = (Action<RssPortReferenceArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "ExistingInterfaceIndex", ExistingInterfaceIndex);
-             XmlAttrib(sb, "ExistingPortNumber", ExistingPortNumber);
-             XmlAttrib(sb, "ReferenceAdded", ReferenceAdded);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "ExistingInterfaceIndex", ExistingInterfaceIndex);
+            XmlAttrib(sb, "ExistingPortNumber", ExistingPortNumber);
+            XmlAttrib(sb, "ReferenceAdded", ReferenceAdded);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10689,7 +10900,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "ExistingInterfaceIndex", "ExistingPortNumber", "ReferenceAdded"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "ExistingInterfaceIndex", "ExistingPortNumber", "ReferenceAdded" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10731,7 +10945,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssPortRundownArgs(Action<RssPortRundownArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10739,27 +10953,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IndirectionTableSize*1)+38));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IndirectionTableSize*1)+38));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IndirectionTableSize * 1) + 38));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IndirectionTableSize * 1) + 38));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssPortRundownArgs>) value; }
+            set { m_target = (Action<RssPortRundownArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "HashInfo", HashInfo);
-             XmlAttrib(sb, "MaximumProcessors", MaximumProcessors);
-             XmlAttrib(sb, "GroupNumber", GroupNumber);
-             XmlAttrib(sb, "GroupAffinity", GroupAffinity);
-             XmlAttrib(sb, "ActiveAffinity", ActiveAffinity);
-             XmlAttrib(sb, "ActiveMode", ActiveMode);
-             XmlAttrib(sb, "IndirectionTableSize", IndirectionTableSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "HashInfo", HashInfo);
+            XmlAttrib(sb, "MaximumProcessors", MaximumProcessors);
+            XmlAttrib(sb, "GroupNumber", GroupNumber);
+            XmlAttrib(sb, "GroupAffinity", GroupAffinity);
+            XmlAttrib(sb, "ActiveAffinity", ActiveAffinity);
+            XmlAttrib(sb, "ActiveMode", ActiveMode);
+            XmlAttrib(sb, "IndirectionTableSize", IndirectionTableSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10767,7 +10981,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "HashInfo", "MaximumProcessors", "GroupNumber", "GroupAffinity", "ActiveAffinity", "ActiveMode", "IndirectionTableSize", "IndirectionTable"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "HashInfo", "MaximumProcessors", "GroupNumber", "GroupAffinity", "ActiveAffinity", "ActiveMode", "IndirectionTableSize", "IndirectionTable" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10812,7 +11029,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssProcessorAssignmentArgs(Action<RssProcessorAssignmentArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10826,17 +11043,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssProcessorAssignmentArgs>) value; }
+            set { m_target = (Action<RssProcessorAssignmentArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "NewAdapterIndex", NewAdapterIndex);
-             XmlAttrib(sb, "ProcessorIndex", ProcessorIndex);
-             XmlAttrib(sb, "PreviousAdapterIndex", PreviousAdapterIndex);
-             XmlAttrib(sb, "TriggeringProcessorIndex", TriggeringProcessorIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "NewAdapterIndex", NewAdapterIndex);
+            XmlAttrib(sb, "ProcessorIndex", ProcessorIndex);
+            XmlAttrib(sb, "PreviousAdapterIndex", PreviousAdapterIndex);
+            XmlAttrib(sb, "TriggeringProcessorIndex", TriggeringProcessorIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10844,7 +11061,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NewAdapterIndex", "ProcessorIndex", "PreviousAdapterIndex", "TriggeringProcessorIndex"};
+                {
+                    payloadNames = new string[] { "NewAdapterIndex", "ProcessorIndex", "PreviousAdapterIndex", "TriggeringProcessorIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10879,7 +11099,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssProcessorConsolidationArgs(Action<RssProcessorConsolidationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10893,15 +11113,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssProcessorConsolidationArgs>) value; }
+            set { m_target = (Action<RssProcessorConsolidationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterIndex", AdapterIndex);
-             XmlAttrib(sb, "ProcessorIndex", ProcessorIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterIndex", AdapterIndex);
+            XmlAttrib(sb, "ProcessorIndex", ProcessorIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10909,7 +11129,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterIndex", "ProcessorIndex"};
+                {
+                    payloadNames = new string[] { "AdapterIndex", "ProcessorIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10940,7 +11163,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal RssProcessorUnassignmentArgs(Action<RssProcessorUnassignmentArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -10954,15 +11177,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RssProcessorUnassignmentArgs>) value; }
+            set { m_target = (Action<RssProcessorUnassignmentArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "PreviousAdapterIndex", PreviousAdapterIndex);
-             XmlAttrib(sb, "ProcessorIndex", ProcessorIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "PreviousAdapterIndex", PreviousAdapterIndex);
+            XmlAttrib(sb, "ProcessorIndex", ProcessorIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -10970,7 +11193,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "PreviousAdapterIndex", "ProcessorIndex"};
+                {
+                    payloadNames = new string[] { "PreviousAdapterIndex", "ProcessorIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10997,22 +11223,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int Interface { get { return GetInt32At(0); } }
         public string Protocol { get { return GetUTF8StringAt(4); } }
         public int IpAddrLength { get { return GetInt32At(SkipUTF8String(4)); } }
-        public int IPv4Address { get { return GetInt32At(SkipUTF8String(4)+4); } }
-        public byte[] IPv6Address { get { return GetByteArrayAt(SkipUTF8String(4)+8, IpAddrLength); } }
-        public int IPProtocol { get { return GetInt32At(SkipUTF8String(4)+8); } }
-        public int CurrentTime { get { return GetInt32At(SkipUTF8String(4)+12); } }
-        public int OldBaseTime { get { return GetInt32At(SkipUTF8String(4)+16); } }
-        public int OldValidTime { get { return GetInt32At(SkipUTF8String(4)+20); } }
-        public int OldPreferredTime { get { return GetInt32At(SkipUTF8String(4)+24); } }
-        public int NewBaseTime { get { return GetInt32At(SkipUTF8String(4)+28); } }
-        public int NewValidTime { get { return GetInt32At(SkipUTF8String(4)+32); } }
-        public int NewPreferredTime { get { return GetInt32At(SkipUTF8String(4)+36); } }
+        public int IPv4Address { get { return GetInt32At(SkipUTF8String(4) + 4); } }
+        public byte[] IPv6Address { get { return GetByteArrayAt(SkipUTF8String(4) + 8, IpAddrLength); } }
+        public int IPProtocol { get { return GetInt32At(SkipUTF8String(4) + 8); } }
+        public int CurrentTime { get { return GetInt32At(SkipUTF8String(4) + 12); } }
+        public int OldBaseTime { get { return GetInt32At(SkipUTF8String(4) + 16); } }
+        public int OldValidTime { get { return GetInt32At(SkipUTF8String(4) + 20); } }
+        public int OldPreferredTime { get { return GetInt32At(SkipUTF8String(4) + 24); } }
+        public int NewBaseTime { get { return GetInt32At(SkipUTF8String(4) + 28); } }
+        public int NewValidTime { get { return GetInt32At(SkipUTF8String(4) + 32); } }
+        public int NewPreferredTime { get { return GetInt32At(SkipUTF8String(4) + 36); } }
 
         #region Private
         internal task_0Args(Action<task_0Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11020,31 +11246,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4)+40));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4)+40));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4) + 40));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4) + 40));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<task_0Args>) value; }
+            set { m_target = (Action<task_0Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "Protocol", Protocol);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             XmlAttrib(sb, "CurrentTime", CurrentTime);
-             XmlAttrib(sb, "OldBaseTime", OldBaseTime);
-             XmlAttrib(sb, "OldValidTime", OldValidTime);
-             XmlAttrib(sb, "OldPreferredTime", OldPreferredTime);
-             XmlAttrib(sb, "NewBaseTime", NewBaseTime);
-             XmlAttrib(sb, "NewValidTime", NewValidTime);
-             XmlAttrib(sb, "NewPreferredTime", NewPreferredTime);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "Protocol", Protocol);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            XmlAttrib(sb, "CurrentTime", CurrentTime);
+            XmlAttrib(sb, "OldBaseTime", OldBaseTime);
+            XmlAttrib(sb, "OldValidTime", OldValidTime);
+            XmlAttrib(sb, "OldPreferredTime", OldPreferredTime);
+            XmlAttrib(sb, "NewBaseTime", NewBaseTime);
+            XmlAttrib(sb, "NewValidTime", NewValidTime);
+            XmlAttrib(sb, "NewPreferredTime", NewPreferredTime);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11052,7 +11278,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Interface", "Protocol", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol", "CurrentTime", "OldBaseTime", "OldValidTime", "OldPreferredTime", "NewBaseTime", "NewValidTime", "NewPreferredTime"};
+                {
+                    payloadNames = new string[] { "Interface", "Protocol", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol", "CurrentTime", "OldBaseTime", "OldValidTime", "OldPreferredTime", "NewBaseTime", "NewValidTime", "NewPreferredTime" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11108,7 +11337,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal task_01317Args(Action<task_01317Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11122,20 +11351,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<task_01317Args>) value; }
+            set { m_target = (Action<task_01317Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Event", Event);
-             XmlAttrib(sb, "Type", Type);
-             XmlAttrib(sb, "Processor", Processor);
-             XmlAttrib(sb, "PowerSource", PowerSource);
-             XmlAttrib(sb, "OldPartitionCount", OldPartitionCount);
-             XmlAttrib(sb, "NewPartitionCount", NewPartitionCount);
-             XmlAttrib(sb, "Progress", Progress);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Event", Event);
+            XmlAttrib(sb, "Type", Type);
+            XmlAttrib(sb, "Processor", Processor);
+            XmlAttrib(sb, "PowerSource", PowerSource);
+            XmlAttrib(sb, "OldPartitionCount", OldPartitionCount);
+            XmlAttrib(sb, "NewPartitionCount", NewPartitionCount);
+            XmlAttrib(sb, "Progress", Progress);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11143,7 +11372,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Event", "Type", "Processor", "PowerSource", "OldPartitionCount", "NewPartitionCount", "Progress"};
+                {
+                    payloadNames = new string[] { "Event", "Type", "Processor", "PowerSource", "OldPartitionCount", "NewPartitionCount", "Progress" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11187,7 +11419,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal task_01318Args(Action<task_01318Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11201,18 +11433,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<task_01318Args>) value; }
+            set { m_target = (Action<task_01318Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Component", Component);
-             XmlAttrib(sb, "PowerStateTransition", PowerStateTransition);
-             XmlAttrib(sb, "IndicatingProcessor", IndicatingProcessor);
-             XmlAttrib(sb, "CurrentTick", CurrentTick);
-             XmlAttrib(sb, "CurrentTime", CurrentTime);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Component", Component);
+            XmlAttrib(sb, "PowerStateTransition", PowerStateTransition);
+            XmlAttrib(sb, "IndicatingProcessor", IndicatingProcessor);
+            XmlAttrib(sb, "CurrentTick", CurrentTick);
+            XmlAttrib(sb, "CurrentTime", CurrentTime);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11220,7 +11452,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Component", "PowerStateTransition", "IndicatingProcessor", "CurrentTick", "CurrentTime"};
+                {
+                    payloadNames = new string[] { "Component", "PowerStateTransition", "IndicatingProcessor", "CurrentTick", "CurrentTime" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11264,7 +11499,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal task_01319Args(Action<task_01319Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11278,22 +11513,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<task_01319Args>) value; }
+            set { m_target = (Action<task_01319Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Component", Component);
-             XmlAttrib(sb, "IndicatingProcessor", IndicatingProcessor);
-             XmlAttrib(sb, "TargetProcessor", TargetProcessor);
-             XmlAttrib(sb, "CurrentTick", CurrentTick);
-             XmlAttrib(sb, "NextExpirationTick", NextExpirationTick);
-             XmlAttrib(sb, "OldScheduledExpiration", OldScheduledExpiration);
-             XmlAttrib(sb, "NewScheduledExpiration", NewScheduledExpiration);
-             XmlAttrib(sb, "DueTime", DueTime);
-             XmlAttrib(sb, "Aperiodic", Aperiodic);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Component", Component);
+            XmlAttrib(sb, "IndicatingProcessor", IndicatingProcessor);
+            XmlAttrib(sb, "TargetProcessor", TargetProcessor);
+            XmlAttrib(sb, "CurrentTick", CurrentTick);
+            XmlAttrib(sb, "NextExpirationTick", NextExpirationTick);
+            XmlAttrib(sb, "OldScheduledExpiration", OldScheduledExpiration);
+            XmlAttrib(sb, "NewScheduledExpiration", NewScheduledExpiration);
+            XmlAttrib(sb, "DueTime", DueTime);
+            XmlAttrib(sb, "Aperiodic", Aperiodic);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11301,7 +11536,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Component", "IndicatingProcessor", "TargetProcessor", "CurrentTick", "NextExpirationTick", "OldScheduledExpiration", "NewScheduledExpiration", "DueTime", "Aperiodic"};
+                {
+                    payloadNames = new string[] { "Component", "IndicatingProcessor", "TargetProcessor", "CurrentTick", "NextExpirationTick", "OldScheduledExpiration", "NewScheduledExpiration", "DueTime", "Aperiodic" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11351,7 +11589,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal task_01320Args(Action<task_01320Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11365,20 +11603,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<task_01320Args>) value; }
+            set { m_target = (Action<task_01320Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Component", Component);
-             XmlAttrib(sb, "TargetProcessor", TargetProcessor);
-             XmlAttrib(sb, "CurrentTick", CurrentTick);
-             XmlAttrib(sb, "NextExpiration", NextExpiration);
-             XmlAttrib(sb, "CurrentInterruptTime", CurrentInterruptTime);
-             XmlAttrib(sb, "ScheduledExpirationTime", ScheduledExpirationTime);
-             XmlAttrib(sb, "ExternalTrigger", ExternalTrigger);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Component", Component);
+            XmlAttrib(sb, "TargetProcessor", TargetProcessor);
+            XmlAttrib(sb, "CurrentTick", CurrentTick);
+            XmlAttrib(sb, "NextExpiration", NextExpiration);
+            XmlAttrib(sb, "CurrentInterruptTime", CurrentInterruptTime);
+            XmlAttrib(sb, "ScheduledExpirationTime", ScheduledExpirationTime);
+            XmlAttrib(sb, "ExternalTrigger", ExternalTrigger);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11386,7 +11624,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Component", "TargetProcessor", "CurrentTick", "NextExpiration", "CurrentInterruptTime", "ScheduledExpirationTime", "ExternalTrigger"};
+                {
+                    payloadNames = new string[] { "Component", "TargetProcessor", "CurrentTick", "NextExpiration", "CurrentInterruptTime", "ScheduledExpirationTime", "ExternalTrigger" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11422,18 +11663,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int LocalAddressLength { get { return GetInt32At(0); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(4, LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(0+ (LocalAddressLength*1)+4); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(0+ (LocalAddressLength*1)+8, RemoteAddressLength); } }
-        public int Status { get { return GetInt32At(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+8); } }
-        public int ProcessId { get { return GetInt32At(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12); } }
-        public int Compartment { get { return GetInt32At(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+16); } }
-        public Address Tcb { get { return GetAddressAt(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20); } }
+        public int RemoteAddressLength { get { return GetInt32At(0 + (LocalAddressLength * 1) + 4); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(0 + (LocalAddressLength * 1) + 8, RemoteAddressLength); } }
+        public int Status { get { return GetInt32At(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 8); } }
+        public int ProcessId { get { return GetInt32At(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12); } }
+        public int Compartment { get { return GetInt32At(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 16); } }
+        public Address Tcb { get { return GetAddressAt(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20); } }
 
         #region Private
         internal TcpAccpetListenerRouteLookupFailureArgs(Action<TcpAccpetListenerRouteLookupFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11441,25 +11682,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+24, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+24, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 24, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 24, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpAccpetListenerRouteLookupFailureArgs>) value; }
+            set { m_target = (Action<TcpAccpetListenerRouteLookupFailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "ProcessId", ProcessId);
-             XmlAttrib(sb, "Compartment", Compartment);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "ProcessId", ProcessId);
+            XmlAttrib(sb, "Compartment", Compartment);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11467,7 +11708,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "Status", "ProcessId", "Compartment", "Tcb"};
+                {
+                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "Status", "ProcessId", "Compartment", "Tcb" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11502,16 +11746,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address Tcb { get { return GetAddressAt(0); } }
         public int LocalAddressLength { get { return GetInt32At(HostOffset(4, 1)); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(HostOffset(8, 1), LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0+ (LocalAddressLength*1)+8, 1)); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0+ (LocalAddressLength*1)+12, 1), RemoteAddressLength); } }
-        public TCP_CONNECTION_STATE NewState { get { return (TCP_CONNECTION_STATE)GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12, 1)); } }
-        public int RexmitCount { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+16, 1)); } }
+        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0 + (LocalAddressLength * 1) + 8, 1)); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0 + (LocalAddressLength * 1) + 12, 1), RemoteAddressLength); } }
+        public TCP_CONNECTION_STATE NewState { get { return (TCP_CONNECTION_STATE)GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12, 1)); } }
+        public int RexmitCount { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 16, 1)); } }
 
         #region Private
         internal TcpAcceptListenerInsertionFailureArgs(Action<TcpAcceptListenerInsertionFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11519,24 +11763,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpAcceptListenerInsertionFailureArgs>) value; }
+            set { m_target = (Action<TcpAcceptListenerInsertionFailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttrib(sb, "NewState", NewState);
-             XmlAttrib(sb, "RexmitCount", RexmitCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttrib(sb, "NewState", NewState);
+            XmlAttrib(sb, "RexmitCount", RexmitCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11544,7 +11788,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "NewState", "RexmitCount"};
+                {
+                    payloadNames = new string[] { "Tcb", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "NewState", "RexmitCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11583,7 +11830,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpAcquirePortArgs(Action<TcpAcquirePortArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11597,17 +11844,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpAcquirePortArgs>) value; }
+            set { m_target = (Action<TcpAcquirePortArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "PortAcquirer", PortAcquirer);
-             XmlAttrib(sb, "PortNumber", PortNumber);
-             XmlAttrib(sb, "WeakReference", WeakReference);
-             XmlAttribHex(sb, "OriginalAcquirer", OriginalAcquirer);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "PortAcquirer", PortAcquirer);
+            XmlAttrib(sb, "PortNumber", PortNumber);
+            XmlAttrib(sb, "WeakReference", WeakReference);
+            XmlAttribHex(sb, "OriginalAcquirer", OriginalAcquirer);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11615,7 +11862,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "PortAcquirer", "PortNumber", "WeakReference", "OriginalAcquirer"};
+                {
+                    payloadNames = new string[] { "PortAcquirer", "PortNumber", "WeakReference", "OriginalAcquirer" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11661,7 +11911,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferTimeoutArgs(Action<TcpDataTransferTimeoutArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11675,26 +11925,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferTimeoutArgs>) value; }
+            set { m_target = (Action<TcpDataTransferTimeoutArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SSThresh", SSThresh);
-             XmlAttrib(sb, "RttSample", RttSample);
-             XmlAttrib(sb, "NumBytes", NumBytes);
-             XmlAttrib(sb, "SeqNo", SeqNo);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "Round", Round);
-             XmlAttrib(sb, "SRTT", SRTT);
-             XmlAttrib(sb, "RTO", RTO);
-             XmlAttrib(sb, "DWnd", DWnd);
-             XmlAttrib(sb, "BaseRtt", BaseRtt);
-             XmlAttrib(sb, "DupAckCount", DupAckCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SSThresh", SSThresh);
+            XmlAttrib(sb, "RttSample", RttSample);
+            XmlAttrib(sb, "NumBytes", NumBytes);
+            XmlAttrib(sb, "SeqNo", SeqNo);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "Round", Round);
+            XmlAttrib(sb, "SRTT", SRTT);
+            XmlAttrib(sb, "RTO", RTO);
+            XmlAttrib(sb, "DWnd", DWnd);
+            XmlAttrib(sb, "BaseRtt", BaseRtt);
+            XmlAttrib(sb, "DupAckCount", DupAckCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11702,7 +11952,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh", "RttSample", "NumBytes", "SeqNo", "SndUna", "Round", "SRTT", "RTO", "DWnd", "BaseRtt", "DupAckCount"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh", "RttSample", "NumBytes", "SeqNo", "SndUna", "Round", "SRTT", "RTO", "DWnd", "BaseRtt", "DupAckCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11750,15 +12003,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int LocalAddressLength { get { return GetInt32At(0); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(4, LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(0+ (LocalAddressLength*1)+4); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(0+ (LocalAddressLength*1)+8, RemoteAddressLength); } }
-        public int BufferSize { get { return GetInt32At(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+8); } }
+        public int RemoteAddressLength { get { return GetInt32At(0 + (LocalAddressLength * 1) + 4); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(0 + (LocalAddressLength * 1) + 8, RemoteAddressLength); } }
+        public int BufferSize { get { return GetInt32At(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 8); } }
 
         #region Private
         internal TcpAutoTuningBeginArgs(Action<TcpAutoTuningBeginArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11766,22 +12019,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpAutoTuningBeginArgs>) value; }
+            set { m_target = (Action<TcpAutoTuningBeginArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttrib(sb, "BufferSize", BufferSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttrib(sb, "BufferSize", BufferSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11789,7 +12042,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "BufferSize"};
+                {
+                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "BufferSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11825,7 +12081,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpLossRecoverySackExitArgs(Action<TcpLossRecoverySackExitArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11833,24 +12089,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(12, 1))+4));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(12, 1))+4));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(12, 1)) + 4));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(12, 1)) + 4));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpLossRecoverySackExitArgs>) value; }
+            set { m_target = (Action<TcpLossRecoverySackExitArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "SndMax", SndMax);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "IsSack", IsSack);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "SndMax", SndMax);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "IsSack", IsSack);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11858,7 +12114,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax", "Reason", "IsSack"};
+                {
+                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax", "Reason", "IsSack" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11890,13 +12149,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int LocalAddressLength { get { return GetInt32At(0); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(4, LocalAddressLength); } }
-        public int Status { get { return GetInt32At(0+ (LocalAddressLength*1)+4); } }
+        public int Status { get { return GetInt32At(0 + (LocalAddressLength * 1) + 4); } }
 
         #region Private
         internal TcpBindEndpointResolutionFailureArgs(Action<TcpBindEndpointResolutionFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11904,21 +12163,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (LocalAddressLength*1)+8));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (LocalAddressLength*1)+8));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (LocalAddressLength * 1) + 8));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (LocalAddressLength * 1) + 8));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpBindEndpointResolutionFailureArgs>) value; }
+            set { m_target = (Action<TcpBindEndpointResolutionFailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11926,7 +12185,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "Status"};
+                {
+                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11959,7 +12221,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpBlackHoleDetectionEntryArgs(Action<TcpBlackHoleDetectionEntryArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -11973,17 +12235,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpBlackHoleDetectionEntryArgs>) value; }
+            set { m_target = (Action<TcpBlackHoleDetectionEntryArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "BHMSS", BHMSS);
-             XmlAttrib(sb, "OriginalMSS", OriginalMSS);
-             XmlAttrib(sb, "TraceString", TraceString);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "BHMSS", BHMSS);
+            XmlAttrib(sb, "OriginalMSS", OriginalMSS);
+            XmlAttrib(sb, "TraceString", TraceString);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -11991,7 +12253,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "BHMSS", "OriginalMSS", "TraceString"};
+                {
+                    payloadNames = new string[] { "Tcb", "BHMSS", "OriginalMSS", "TraceString" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12027,7 +12292,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpLossRecoveryEntryArgs(Action<TcpLossRecoveryEntryArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12041,16 +12306,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpLossRecoveryEntryArgs>) value; }
+            set { m_target = (Action<TcpLossRecoveryEntryArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "SndMax", SndMax);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "SndMax", SndMax);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12058,7 +12323,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax"};
+                {
+                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12093,7 +12361,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpConnectionOffloadStatusArgs(Action<TcpConnectionOffloadStatusArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12107,17 +12375,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpConnectionOffloadStatusArgs>) value; }
+            set { m_target = (Action<TcpConnectionOffloadStatusArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "Interface", Interface);
-             XmlAttrib(sb, "PMax", PMax);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "Interface", Interface);
+            XmlAttrib(sb, "PMax", PMax);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12125,7 +12393,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Status", "Interface", "PMax"};
+                {
+                    payloadNames = new string[] { "Tcb", "Status", "Interface", "PMax" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12164,7 +12435,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpConnectionOffloadStateChangeArgs(Action<TcpConnectionOffloadStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12178,19 +12449,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpConnectionOffloadStateChangeArgs>) value; }
+            set { m_target = (Action<TcpConnectionOffloadStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TcbState", TcbState);
-             XmlAttrib(sb, "OcbState", OcbState);
-             XmlAttrib(sb, "SndNxt", SndNxt);
-             XmlAttrib(sb, "RcvNxt", RcvNxt);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TcbState", TcbState);
+            XmlAttrib(sb, "OcbState", OcbState);
+            XmlAttrib(sb, "SndNxt", SndNxt);
+            XmlAttrib(sb, "RcvNxt", RcvNxt);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12198,7 +12469,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TcbState", "OcbState", "SndNxt", "RcvNxt", "Tcb", "Status"};
+                {
+                    payloadNames = new string[] { "TcbState", "OcbState", "SndNxt", "RcvNxt", "Tcb", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12233,16 +12507,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address Tcb { get { return GetAddressAt(0); } }
         public int LocalAddressLength { get { return GetInt32At(HostOffset(4, 1)); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(HostOffset(8, 1), LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0+ (LocalAddressLength*1)+8, 1)); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0+ (LocalAddressLength*1)+12, 1), RemoteAddressLength); } }
-        public int State { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12, 1)); } }
-        public int Pid { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+16, 1)); } }
+        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0 + (LocalAddressLength * 1) + 8, 1)); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0 + (LocalAddressLength * 1) + 12, 1), RemoteAddressLength); } }
+        public int State { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12, 1)); } }
+        public int Pid { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 16, 1)); } }
 
         #region Private
         internal TcpConnectionRundownArgs(Action<TcpConnectionRundownArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12250,24 +12524,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpConnectionRundownArgs>) value; }
+            set { m_target = (Action<TcpConnectionRundownArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Pid", Pid);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Pid", Pid);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12275,7 +12549,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "State", "Pid"};
+                {
+                    payloadNames = new string[] { "Tcb", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "State", "Pid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12336,7 +12613,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpConnectionSummaryArgs(Action<TcpConnectionSummaryArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12350,39 +12627,39 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpConnectionSummaryArgs>) value; }
+            set { m_target = (Action<TcpConnectionSummaryArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "DataBytesOut", DataBytesOut);
-             XmlAttrib(sb, "DataBytesIn", DataBytesIn);
-             XmlAttrib(sb, "DataSegmentsOut", DataSegmentsOut);
-             XmlAttrib(sb, "DataSegmentsIn", DataSegmentsIn);
-             XmlAttrib(sb, "SegmentsOut", SegmentsOut);
-             XmlAttrib(sb, "SegmentsIn", SegmentsIn);
-             XmlAttrib(sb, "NonRecovDa", NonRecovDa);
-             XmlAttrib(sb, "NonRecovDaEpisodes", NonRecovDaEpisodes);
-             XmlAttrib(sb, "DupAcksIn", DupAcksIn);
-             XmlAttrib(sb, "BytesRetrans", BytesRetrans);
-             XmlAttrib(sb, "Timeouts", Timeouts);
-             XmlAttrib(sb, "SpuriousRtoDetections", SpuriousRtoDetections);
-             XmlAttrib(sb, "FastRetran", FastRetran);
-             XmlAttrib(sb, "MaxSsthresh", MaxSsthresh);
-             XmlAttrib(sb, "MaxSsCwnd", MaxSsCwnd);
-             XmlAttrib(sb, "MaxCaCwnd", MaxCaCwnd);
-             XmlAttrib(sb, "SndLimTransRwin", SndLimTransRwin);
-             XmlAttrib(sb, "SndLimTimeRwin", SndLimTimeRwin);
-             XmlAttrib(sb, "SndLimBytesRwin", SndLimBytesRwin);
-             XmlAttrib(sb, "SndLimTransCwnd", SndLimTransCwnd);
-             XmlAttrib(sb, "SndLimTimeCwnd", SndLimTimeCwnd);
-             XmlAttrib(sb, "SndLimBytesCwnd", SndLimBytesCwnd);
-             XmlAttrib(sb, "SndLimTransSnd", SndLimTransSnd);
-             XmlAttrib(sb, "SndLimTimeRSnd", SndLimTimeRSnd);
-             XmlAttrib(sb, "SndLimBytesRSnd", SndLimBytesRSnd);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "DataBytesOut", DataBytesOut);
+            XmlAttrib(sb, "DataBytesIn", DataBytesIn);
+            XmlAttrib(sb, "DataSegmentsOut", DataSegmentsOut);
+            XmlAttrib(sb, "DataSegmentsIn", DataSegmentsIn);
+            XmlAttrib(sb, "SegmentsOut", SegmentsOut);
+            XmlAttrib(sb, "SegmentsIn", SegmentsIn);
+            XmlAttrib(sb, "NonRecovDa", NonRecovDa);
+            XmlAttrib(sb, "NonRecovDaEpisodes", NonRecovDaEpisodes);
+            XmlAttrib(sb, "DupAcksIn", DupAcksIn);
+            XmlAttrib(sb, "BytesRetrans", BytesRetrans);
+            XmlAttrib(sb, "Timeouts", Timeouts);
+            XmlAttrib(sb, "SpuriousRtoDetections", SpuriousRtoDetections);
+            XmlAttrib(sb, "FastRetran", FastRetran);
+            XmlAttrib(sb, "MaxSsthresh", MaxSsthresh);
+            XmlAttrib(sb, "MaxSsCwnd", MaxSsCwnd);
+            XmlAttrib(sb, "MaxCaCwnd", MaxCaCwnd);
+            XmlAttrib(sb, "SndLimTransRwin", SndLimTransRwin);
+            XmlAttrib(sb, "SndLimTimeRwin", SndLimTimeRwin);
+            XmlAttrib(sb, "SndLimBytesRwin", SndLimBytesRwin);
+            XmlAttrib(sb, "SndLimTransCwnd", SndLimTransCwnd);
+            XmlAttrib(sb, "SndLimTimeCwnd", SndLimTimeCwnd);
+            XmlAttrib(sb, "SndLimBytesCwnd", SndLimBytesCwnd);
+            XmlAttrib(sb, "SndLimTransSnd", SndLimTransSnd);
+            XmlAttrib(sb, "SndLimTimeRSnd", SndLimTimeRSnd);
+            XmlAttrib(sb, "SndLimBytesRSnd", SndLimBytesRSnd);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12390,7 +12667,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "DataBytesOut", "DataBytesIn", "DataSegmentsOut", "DataSegmentsIn", "SegmentsOut", "SegmentsIn", "NonRecovDa", "NonRecovDaEpisodes", "DupAcksIn", "BytesRetrans", "Timeouts", "SpuriousRtoDetections", "FastRetran", "MaxSsthresh", "MaxSsCwnd", "MaxCaCwnd", "SndLimTransRwin", "SndLimTimeRwin", "SndLimBytesRwin", "SndLimTransCwnd", "SndLimTimeCwnd", "SndLimBytesCwnd", "SndLimTransSnd", "SndLimTimeRSnd", "SndLimBytesRSnd"};
+                {
+                    payloadNames = new string[] { "Tcb", "DataBytesOut", "DataBytesIn", "DataSegmentsOut", "DataSegmentsIn", "SegmentsOut", "SegmentsIn", "NonRecovDa", "NonRecovDaEpisodes", "DupAcksIn", "BytesRetrans", "Timeouts", "SpuriousRtoDetections", "FastRetran", "MaxSsthresh", "MaxSsCwnd", "MaxCaCwnd", "SndLimTransRwin", "SndLimTimeRwin", "SndLimBytesRwin", "SndLimTransCwnd", "SndLimTimeCwnd", "SndLimBytesCwnd", "SndLimTransSnd", "SndLimTimeRSnd", "SndLimBytesRSnd" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12465,16 +12745,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address Tcb { get { return GetAddressAt(0); } }
         public int LocalAddressLength { get { return GetInt32At(HostOffset(4, 1)); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(HostOffset(8, 1), LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0+ (LocalAddressLength*1)+8, 1)); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0+ (LocalAddressLength*1)+12, 1), RemoteAddressLength); } }
-        public int NewState { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12, 1)); } }
-        public int RexmitCount { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+16, 1)); } }
+        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0 + (LocalAddressLength * 1) + 8, 1)); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0 + (LocalAddressLength * 1) + 12, 1), RemoteAddressLength); } }
+        public int NewState { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12, 1)); } }
+        public int RexmitCount { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 16, 1)); } }
 
         #region Private
         internal TcpRequestConnectArgs(Action<TcpRequestConnectArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12482,24 +12762,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpRequestConnectArgs>) value; }
+            set { m_target = (Action<TcpRequestConnectArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttrib(sb, "NewState", NewState);
-             XmlAttrib(sb, "RexmitCount", RexmitCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttrib(sb, "NewState", NewState);
+            XmlAttrib(sb, "RexmitCount", RexmitCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12507,7 +12787,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "NewState", "RexmitCount"};
+                {
+                    payloadNames = new string[] { "Tcb", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "NewState", "RexmitCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12545,7 +12828,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpInspectConnectCompleteArgs(Action<TcpInspectConnectCompleteArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12559,16 +12842,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpInspectConnectCompleteArgs>) value; }
+            set { m_target = (Action<TcpInspectConnectCompleteArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12576,7 +12859,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Status", "AddressFamily"};
+                {
+                    payloadNames = new string[] { "Tcb", "Status", "AddressFamily" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12604,15 +12890,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int LocalAddressLength { get { return GetInt32At(0); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(4, LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(0+ (LocalAddressLength*1)+4); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(0+ (LocalAddressLength*1)+8, RemoteAddressLength); } }
-        public Address Path { get { return GetAddressAt(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+8); } }
+        public int RemoteAddressLength { get { return GetInt32At(0 + (LocalAddressLength * 1) + 4); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(0 + (LocalAddressLength * 1) + 8, RemoteAddressLength); } }
+        public Address Path { get { return GetAddressAt(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 8); } }
 
         #region Private
         internal TcpConnectTcbSkipRateLimitArgs(Action<TcpConnectTcbSkipRateLimitArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12620,22 +12906,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+12, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 12, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpConnectTcbSkipRateLimitArgs>) value; }
+            set { m_target = (Action<TcpConnectTcbSkipRateLimitArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttribHex(sb, "Path", Path);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttribHex(sb, "Path", Path);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12643,7 +12929,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "Path"};
+                {
+                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "Path" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12671,16 +12960,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public int LocalAddressLength { get { return GetInt32At(0); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(4, LocalAddressLength); } }
-        public int Status { get { return GetInt32At(0+ (LocalAddressLength*1)+4); } }
-        public int ProcessId { get { return GetInt32At(0+ (LocalAddressLength*1)+8); } }
-        public int CompartmentId { get { return GetInt32At(0+ (LocalAddressLength*1)+12); } }
-        public int AddressFamily { get { return GetInt32At(0+ (LocalAddressLength*1)+16); } }
+        public int Status { get { return GetInt32At(0 + (LocalAddressLength * 1) + 4); } }
+        public int ProcessId { get { return GetInt32At(0 + (LocalAddressLength * 1) + 8); } }
+        public int CompartmentId { get { return GetInt32At(0 + (LocalAddressLength * 1) + 12); } }
+        public int AddressFamily { get { return GetInt32At(0 + (LocalAddressLength * 1) + 16); } }
 
         #region Private
         internal TcpCreateEndpointAfFailureArgs(Action<TcpCreateEndpointAfFailureArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12688,24 +12977,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (LocalAddressLength*1)+20));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (LocalAddressLength*1)+20));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (LocalAddressLength * 1) + 20));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (LocalAddressLength * 1) + 20));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCreateEndpointAfFailureArgs>) value; }
+            set { m_target = (Action<TcpCreateEndpointAfFailureArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "ProcessId", ProcessId);
-             XmlAttrib(sb, "CompartmentId", CompartmentId);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "ProcessId", ProcessId);
+            XmlAttrib(sb, "CompartmentId", CompartmentId);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12713,7 +13002,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "Status", "ProcessId", "CompartmentId", "AddressFamily"};
+                {
+                    payloadNames = new string[] { "LocalAddressLength", "LocalAddress", "Status", "ProcessId", "CompartmentId", "AddressFamily" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12755,7 +13047,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCreateNotificationChannelRequestArgs(Action<TcpCreateNotificationChannelRequestArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12769,20 +13061,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCreateNotificationChannelRequestArgs>) value; }
+            set { m_target = (Action<TcpCreateNotificationChannelRequestArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "IsLoopback", IsLoopback);
-             XmlAttrib(sb, "ChannelStatus", ChannelStatus);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "IsLoopback", IsLoopback);
+            XmlAttrib(sb, "ChannelStatus", ChannelStatus);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12790,7 +13082,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "NcmContext", "State", "Pid", "IsLoopback", "ChannelStatus", "Status"};
+                {
+                    payloadNames = new string[] { "Tcb", "NcmContext", "State", "Pid", "IsLoopback", "ChannelStatus", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12834,7 +13129,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCreateNotificationChannelRequestProcessedArgs(Action<TcpCreateNotificationChannelRequestProcessedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12848,18 +13143,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCreateNotificationChannelRequestProcessedArgs>) value; }
+            set { m_target = (Action<TcpCreateNotificationChannelRequestProcessedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "PushNotificationGuid", PushNotificationGuid);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "PushNotificationGuid", PushNotificationGuid);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12867,7 +13162,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "NcmContext", "Pid", "Status", "PushNotificationGuid"};
+                {
+                    payloadNames = new string[] { "Tcb", "NcmContext", "Pid", "Status", "PushNotificationGuid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12905,17 +13203,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int IpAddrLength { get { return GetInt32At(HostOffset(20, 1)); } }
         public int LocalIPv4Address { get { return GetInt32At(HostOffset(24, 1)); } }
         public byte[] LocalIPv6Address { get { return GetByteArrayAt(HostOffset(28, 1), IpAddrLength); } }
-        public int IPProtocol { get { return GetInt32At(HostOffset(0+ (IpAddrLength*1)+28, 1)); } }
-        public int RemoteIPv4Address { get { return GetInt32At(HostOffset(0+ (IpAddrLength*1)+32, 1)); } }
-        public byte[] RemoteIPv6Address { get { return GetByteArrayAt(HostOffset(0+ (IpAddrLength*1)+36, 1), IpAddrLength); } }
-        public int SrcPort { get { return GetInt16At(HostOffset(0+ (IpAddrLength*1)+ (IpAddrLength*1)+36, 1)); } }
-        public int DestPort { get { return GetInt16At(HostOffset(0+ (IpAddrLength*1)+ (IpAddrLength*1)+38, 1)); } }
+        public int IPProtocol { get { return GetInt32At(HostOffset(0 + (IpAddrLength * 1) + 28, 1)); } }
+        public int RemoteIPv4Address { get { return GetInt32At(HostOffset(0 + (IpAddrLength * 1) + 32, 1)); } }
+        public byte[] RemoteIPv6Address { get { return GetByteArrayAt(HostOffset(0 + (IpAddrLength * 1) + 36, 1), IpAddrLength); } }
+        public int SrcPort { get { return GetInt16At(HostOffset(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 36, 1)); } }
+        public int DestPort { get { return GetInt16At(HostOffset(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 38, 1)); } }
 
         #region Private
         internal TcpCreateNotificationChannelRequestProcessingArgs(Action<TcpCreateNotificationChannelRequestProcessingArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -12923,30 +13221,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (IpAddrLength*1)+ (IpAddrLength*1)+40, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (IpAddrLength*1)+ (IpAddrLength*1)+40, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 40, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (IpAddrLength * 1) + (IpAddrLength * 1) + 40, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCreateNotificationChannelRequestProcessingArgs>) value; }
+            set { m_target = (Action<TcpCreateNotificationChannelRequestProcessingArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "IsRedirected", IsRedirected);
-             XmlAttrib(sb, "WfpFailure", WfpFailure);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "WaitStatus", WaitStatus);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "LocalIPv4Address", LocalIPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             XmlAttrib(sb, "RemoteIPv4Address", RemoteIPv4Address);
-             XmlAttrib(sb, "SrcPort", SrcPort);
-             XmlAttrib(sb, "DestPort", DestPort);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "IsRedirected", IsRedirected);
+            XmlAttrib(sb, "WfpFailure", WfpFailure);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "WaitStatus", WaitStatus);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "LocalIPv4Address", LocalIPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            XmlAttrib(sb, "RemoteIPv4Address", RemoteIPv4Address);
+            XmlAttrib(sb, "SrcPort", SrcPort);
+            XmlAttrib(sb, "DestPort", DestPort);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -12954,7 +13252,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "IsRedirected", "WfpFailure", "Status", "WaitStatus", "IpAddrLength", "LocalIPv4Address", "LocalIPv6Address", "IPProtocol", "RemoteIPv4Address", "RemoteIPv6Address", "SrcPort", "DestPort"};
+                {
+                    payloadNames = new string[] { "Tcb", "IsRedirected", "WfpFailure", "Status", "WaitStatus", "IpAddrLength", "LocalIPv4Address", "LocalIPv6Address", "IPProtocol", "RemoteIPv4Address", "RemoteIPv6Address", "SrcPort", "DestPort" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13003,7 +13304,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCTcpAssignedBlocksArgs(Action<TcpCTcpAssignedBlocksArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13017,15 +13318,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCTcpAssignedBlocksArgs>) value; }
+            set { m_target = (Action<TcpCTcpAssignedBlocksArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AssignedBlocks", AssignedBlocks);
-             XmlAttrib(sb, "AllocatedBlocks", AllocatedBlocks);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AssignedBlocks", AssignedBlocks);
+            XmlAttrib(sb, "AllocatedBlocks", AllocatedBlocks);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13033,7 +13334,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AssignedBlocks", "AllocatedBlocks"};
+                {
+                    payloadNames = new string[] { "AssignedBlocks", "AllocatedBlocks" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13070,7 +13374,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCTcpCongestionWndwArgs(Action<TcpCTcpCongestionWndwArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13084,21 +13388,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCTcpCongestionWndwArgs>) value; }
+            set { m_target = (Action<TcpCTcpCongestionWndwArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "DWnd", DWnd);
-             XmlAttrib(sb, "PrevDWnd", PrevDWnd);
-             XmlAttrib(sb, "BaseRtt", BaseRtt);
-             XmlAttrib(sb, "AvgRtt", AvgRtt);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "DiffWnd", DiffWnd);
-             XmlAttrib(sb, "DwndIncrement", DwndIncrement);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "DWnd", DWnd);
+            XmlAttrib(sb, "PrevDWnd", PrevDWnd);
+            XmlAttrib(sb, "BaseRtt", BaseRtt);
+            XmlAttrib(sb, "AvgRtt", AvgRtt);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "DiffWnd", DiffWnd);
+            XmlAttrib(sb, "DwndIncrement", DwndIncrement);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13106,7 +13410,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "DWnd", "PrevDWnd", "BaseRtt", "AvgRtt", "Cwnd", "DiffWnd", "DwndIncrement"};
+                {
+                    payloadNames = new string[] { "Tcb", "DWnd", "PrevDWnd", "BaseRtt", "AvgRtt", "Cwnd", "DiffWnd", "DwndIncrement" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13152,7 +13459,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferCumAck1330Args(Action<TcpDataTransferCumAck1330Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13166,18 +13473,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferCumAck1330Args>) value; }
+            set { m_target = (Action<TcpDataTransferCumAck1330Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SndWnd", SndWnd);
-             XmlAttrib(sb, "BytesAcked", BytesAcked);
-             XmlAttrib(sb, "SeqNo", SeqNo);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SndWnd", SndWnd);
+            XmlAttrib(sb, "BytesAcked", BytesAcked);
+            XmlAttrib(sb, "SeqNo", SeqNo);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13185,7 +13492,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cwnd", "SndWnd", "BytesAcked", "SeqNo"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cwnd", "SndWnd", "BytesAcked", "SeqNo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13225,7 +13535,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferDupAck1343Args(Action<TcpDataTransferDupAck1343Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13239,18 +13549,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferDupAck1343Args>) value; }
+            set { m_target = (Action<TcpDataTransferDupAck1343Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SSThresh", SSThresh);
-             XmlAttrib(sb, "DupAckCount", DupAckCount);
-             XmlAttrib(sb, "SeqNo", SeqNo);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SSThresh", SSThresh);
+            XmlAttrib(sb, "DupAckCount", DupAckCount);
+            XmlAttrib(sb, "SeqNo", SeqNo);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13258,7 +13568,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh", "DupAckCount", "SeqNo"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh", "DupAckCount", "SeqNo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13301,7 +13614,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferEcnArgs(Action<TcpDataTransferEcnArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13315,21 +13628,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferEcnArgs>) value; }
+            set { m_target = (Action<TcpDataTransferEcnArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SSThresh", SSThresh);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "Mss", Mss);
-             XmlAttrib(sb, "ThAck", ThAck);
-             XmlAttrib(sb, "DWnd", DWnd);
-             XmlAttrib(sb, "BaseRtt", BaseRtt);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SSThresh", SSThresh);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "Mss", Mss);
+            XmlAttrib(sb, "ThAck", ThAck);
+            XmlAttrib(sb, "DWnd", DWnd);
+            XmlAttrib(sb, "BaseRtt", BaseRtt);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13337,7 +13650,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh", "SndUna", "Mss", "ThAck", "DWnd", "BaseRtt"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh", "SndUna", "Mss", "ThAck", "DWnd", "BaseRtt" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13386,7 +13702,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferSend1332Args(Action<TcpDataTransferSend1332Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13400,21 +13716,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferSend1332Args>) value; }
+            set { m_target = (Action<TcpDataTransferSend1332Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SndWnd", SndWnd);
-             XmlAttrib(sb, "BytesSent", BytesSent);
-             XmlAttrib(sb, "SeqNo", SeqNo);
-             XmlAttrib(sb, "SRtt", SRtt);
-             XmlAttrib(sb, "RttVar", RttVar);
-             XmlAttrib(sb, "RTO", RTO);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SndWnd", SndWnd);
+            XmlAttrib(sb, "BytesSent", BytesSent);
+            XmlAttrib(sb, "SeqNo", SeqNo);
+            XmlAttrib(sb, "SRtt", SRtt);
+            XmlAttrib(sb, "RttVar", RttVar);
+            XmlAttrib(sb, "RTO", RTO);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13422,7 +13738,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cwnd", "SndWnd", "BytesSent", "SeqNo", "SRtt", "RttVar", "RTO"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cwnd", "SndWnd", "BytesSent", "SeqNo", "SRtt", "RttVar", "RTO" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13466,7 +13785,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCtcpDataTransferTimeout1348Args(Action<TcpCtcpDataTransferTimeout1348Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13480,16 +13799,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCtcpDataTransferTimeout1348Args>) value; }
+            set { m_target = (Action<TcpCtcpDataTransferTimeout1348Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SSThresh", SSThresh);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SSThresh", SSThresh);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13497,7 +13816,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cwnd", "SSThresh" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13532,7 +13854,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCTcpGammaArgs(Action<TcpCTcpGammaArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13546,17 +13868,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCTcpGammaArgs>) value; }
+            set { m_target = (Action<TcpCTcpGammaArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Gamma", Gamma);
-             XmlAttrib(sb, "AverageBacklog", AverageBacklog);
-             XmlAttrib(sb, "AverageBacklogAcrossLFP", AverageBacklogAcrossLFP);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Gamma", Gamma);
+            XmlAttrib(sb, "AverageBacklog", AverageBacklog);
+            XmlAttrib(sb, "AverageBacklogAcrossLFP", AverageBacklogAcrossLFP);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13564,7 +13886,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Gamma", "AverageBacklog", "AverageBacklogAcrossLFP"};
+                {
+                    payloadNames = new string[] { "Tcb", "Gamma", "AverageBacklog", "AverageBacklogAcrossLFP" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13604,7 +13929,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpCwndRestartArgs(Action<TcpCwndRestartArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13618,20 +13943,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpCwndRestartArgs>) value; }
+            set { m_target = (Action<TcpCwndRestartArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "OldCwnd", OldCwnd);
-             XmlAttrib(sb, "NewCwnd", NewCwnd);
-             XmlAttrib(sb, "Processor", Processor);
-             XmlAttrib(sb, "CurrentTick", CurrentTick);
-             XmlAttrib(sb, "IdleTick", IdleTick);
-             XmlAttrib(sb, "Rto", Rto);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "OldCwnd", OldCwnd);
+            XmlAttrib(sb, "NewCwnd", NewCwnd);
+            XmlAttrib(sb, "Processor", Processor);
+            XmlAttrib(sb, "CurrentTick", CurrentTick);
+            XmlAttrib(sb, "IdleTick", IdleTick);
+            XmlAttrib(sb, "Rto", Rto);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13639,7 +13964,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "OldCwnd", "NewCwnd", "Processor", "CurrentTick", "IdleTick", "Rto"};
+                {
+                    payloadNames = new string[] { "Tcb", "OldCwnd", "NewCwnd", "Processor", "CurrentTick", "IdleTick", "Rto" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13684,7 +14012,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferEcnAlphaArgs(Action<TcpDataTransferEcnAlphaArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13698,19 +14026,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferEcnAlphaArgs>) value; }
+            set { m_target = (Action<TcpDataTransferEcnAlphaArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SndRound", SndRound);
-             XmlAttrib(sb, "EcnTotalByteCount", EcnTotalByteCount);
-             XmlAttrib(sb, "EcnTotalMarkedCount", EcnTotalMarkedCount);
-             XmlAttrib(sb, "ThAck", ThAck);
-             XmlAttrib(sb, "EcnAlpha", EcnAlpha);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SndRound", SndRound);
+            XmlAttrib(sb, "EcnTotalByteCount", EcnTotalByteCount);
+            XmlAttrib(sb, "EcnTotalMarkedCount", EcnTotalMarkedCount);
+            XmlAttrib(sb, "ThAck", ThAck);
+            XmlAttrib(sb, "EcnAlpha", EcnAlpha);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13718,7 +14046,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SndRound", "EcnTotalByteCount", "EcnTotalMarkedCount", "ThAck", "EcnAlpha"};
+                {
+                    payloadNames = new string[] { "Tcb", "SndRound", "EcnTotalByteCount", "EcnTotalMarkedCount", "ThAck", "EcnAlpha" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13758,7 +14089,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferReceiveArgs(Action<TcpDataTransferReceiveArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13772,16 +14103,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferReceiveArgs>) value; }
+            set { m_target = (Action<TcpDataTransferReceiveArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "NumBytes", NumBytes);
-             XmlAttrib(sb, "SeqNo", SeqNo);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "NumBytes", NumBytes);
+            XmlAttrib(sb, "SeqNo", SeqNo);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13789,7 +14120,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "NumBytes", "SeqNo"};
+                {
+                    payloadNames = new string[] { "Tcb", "NumBytes", "SeqNo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13825,7 +14159,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferRetransmitRound1351Args(Action<TcpDataTransferRetransmitRound1351Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13839,18 +14173,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferRetransmitRound1351Args>) value; }
+            set { m_target = (Action<TcpDataTransferRetransmitRound1351Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "RexmitCount", RexmitCount);
-             XmlAttrib(sb, "SRTT", SRTT);
-             XmlAttrib(sb, "RTO", RTO);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "RexmitCount", RexmitCount);
+            XmlAttrib(sb, "SRTT", SRTT);
+            XmlAttrib(sb, "RTO", RTO);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13858,7 +14192,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SndUna", "RexmitCount", "SRTT", "RTO"};
+                {
+                    payloadNames = new string[] { "Tcb", "SndUna", "RexmitCount", "SRTT", "RTO" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13897,7 +14234,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferRttSample1341Args(Action<TcpDataTransferRttSample1341Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13911,17 +14248,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferRttSample1341Args>) value; }
+            set { m_target = (Action<TcpDataTransferRttSample1341Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "RttSample", RttSample);
-             XmlAttrib(sb, "RttVar", RttVar);
-             XmlAttrib(sb, "SRTT", SRTT);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "RttSample", RttSample);
+            XmlAttrib(sb, "RttVar", RttVar);
+            XmlAttrib(sb, "SRTT", SRTT);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13929,7 +14266,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "RttSample", "RttVar", "SRTT"};
+                {
+                    payloadNames = new string[] { "Tcb", "RttSample", "RttVar", "SRTT" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13964,7 +14304,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDataTransferSpuriousTimeout1345Args(Action<TcpDataTransferSpuriousTimeout1345Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -13978,15 +14318,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDataTransferSpuriousTimeout1345Args>) value; }
+            set { m_target = (Action<TcpDataTransferSpuriousTimeout1345Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SeqNo", SeqNo);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SeqNo", SeqNo);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -13994,7 +14334,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SeqNo"};
+                {
+                    payloadNames = new string[] { "Tcb", "SeqNo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14033,7 +14376,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDisconnectTcbInjectFailedArgs(Action<TcpDisconnectTcbInjectFailedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14047,23 +14390,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDisconnectTcbInjectFailedArgs>) value; }
+            set { m_target = (Action<TcpDisconnectTcbInjectFailedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttribHex(sb, "Delivery", Delivery);
-             XmlAttribHex(sb, "Request", Request);
-             XmlAttribHex(sb, "NumBytes", NumBytes);
-             XmlAttrib(sb, "RequestFlags", RequestFlags);
-             XmlAttribHex(sb, "Length", Length);
-             XmlAttrib(sb, "RequestStatus", RequestStatus);
-             XmlAttrib(sb, "IsUrgentDelivery", IsUrgentDelivery);
-             XmlAttrib(sb, "FullySatisfiedORDelayedPush", FullySatisfiedORDelayedPush);
-             XmlAttrib(sb, "RcvNxt", RcvNxt);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttribHex(sb, "Delivery", Delivery);
+            XmlAttribHex(sb, "Request", Request);
+            XmlAttribHex(sb, "NumBytes", NumBytes);
+            XmlAttrib(sb, "RequestFlags", RequestFlags);
+            XmlAttribHex(sb, "Length", Length);
+            XmlAttrib(sb, "RequestStatus", RequestStatus);
+            XmlAttrib(sb, "IsUrgentDelivery", IsUrgentDelivery);
+            XmlAttrib(sb, "FullySatisfiedORDelayedPush", FullySatisfiedORDelayedPush);
+            XmlAttrib(sb, "RcvNxt", RcvNxt);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14071,7 +14414,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Delivery", "Request", "NumBytes", "RequestFlags", "Length", "RequestStatus", "IsUrgentDelivery", "FullySatisfiedORDelayedPush", "RcvNxt"};
+                {
+                    payloadNames = new string[] { "Tcb", "Delivery", "Request", "NumBytes", "RequestFlags", "Length", "RequestStatus", "IsUrgentDelivery", "FullySatisfiedORDelayedPush", "RcvNxt" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14120,7 +14466,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDeliveryStateChangeArgs(Action<TcpDeliveryStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14134,17 +14480,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDeliveryStateChangeArgs>) value; }
+            set { m_target = (Action<TcpDeliveryStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttribHex(sb, "Delivery", Delivery);
-             XmlAttrib(sb, "OldDeliveryState", OldDeliveryState);
-             XmlAttrib(sb, "NewDeliveryState", NewDeliveryState);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttribHex(sb, "Delivery", Delivery);
+            XmlAttrib(sb, "OldDeliveryState", OldDeliveryState);
+            XmlAttrib(sb, "NewDeliveryState", NewDeliveryState);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14152,7 +14498,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Delivery", "OldDeliveryState", "NewDeliveryState"};
+                {
+                    payloadNames = new string[] { "Tcb", "Delivery", "OldDeliveryState", "NewDeliveryState" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14189,7 +14538,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpPlumbWakePatternArgs(Action<TcpPlumbWakePatternArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14203,17 +14552,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpPlumbWakePatternArgs>) value; }
+            set { m_target = (Action<TcpPlumbWakePatternArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SystemReserved", SystemReserved);
-             XmlAttrib(sb, "WolHandle", WolHandle);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SystemReserved", SystemReserved);
+            XmlAttrib(sb, "WolHandle", WolHandle);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14221,7 +14570,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SystemReserved", "WolHandle", "Status"};
+                {
+                    payloadNames = new string[] { "Tcb", "SystemReserved", "WolHandle", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14257,7 +14609,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpDisconnectTcbRequestArgs(Action<TcpDisconnectTcbRequestArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14271,16 +14623,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpDisconnectTcbRequestArgs>) value; }
+            set { m_target = (Action<TcpDisconnectTcbRequestArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Length", Length);
-             XmlAttrib(sb, "Timeout", Timeout);
-             XmlAttrib(sb, "Injected", Injected);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Length", Length);
+            XmlAttrib(sb, "Timeout", Timeout);
+            XmlAttrib(sb, "Injected", Injected);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14288,7 +14640,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Length", "Timeout", "Injected"};
+                {
+                    payloadNames = new string[] { "Length", "Timeout", "Injected" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14323,7 +14678,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpEndpointAcquirePortReservationArgs(Action<TcpEndpointAcquirePortReservationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14337,17 +14692,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpEndpointAcquirePortReservationArgs>) value; }
+            set { m_target = (Action<TcpEndpointAcquirePortReservationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ProcessId", ProcessId);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "StartPort", StartPort);
-             XmlAttrib(sb, "NumberOfPorts", NumberOfPorts);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ProcessId", ProcessId);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "StartPort", StartPort);
+            XmlAttrib(sb, "NumberOfPorts", NumberOfPorts);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14355,7 +14710,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ProcessId", "Status", "StartPort", "NumberOfPorts"};
+                {
+                    payloadNames = new string[] { "ProcessId", "Status", "StartPort", "NumberOfPorts" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14392,7 +14750,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpEndpointCreationArgs(Action<TcpEndpointCreationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14406,17 +14764,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpEndpointCreationArgs>) value; }
+            set { m_target = (Action<TcpEndpointCreationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttribHex(sb, "Endpoint", Endpoint);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "Pid", Pid);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttribHex(sb, "Endpoint", Endpoint);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "Pid", Pid);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14424,7 +14782,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Status", "Endpoint", "AddressFamily", "Pid"};
+                {
+                    payloadNames = new string[] { "Status", "Endpoint", "AddressFamily", "Pid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14459,7 +14820,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpGlobalAddInterfaceArgs(Action<TcpGlobalAddInterfaceArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14473,15 +14834,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpGlobalAddInterfaceArgs>) value; }
+            set { m_target = (Action<TcpGlobalAddInterfaceArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14489,7 +14850,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "AddressFamily"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "AddressFamily" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14524,7 +14888,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSecurityRateLimitArgs(Action<TcpSecurityRateLimitArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14538,19 +14902,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSecurityRateLimitArgs>) value; }
+            set { m_target = (Action<TcpSecurityRateLimitArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SynAttacksDetected", SynAttacksDetected);
-             XmlAttrib(sb, "ReassemblyLimitViolations", ReassemblyLimitViolations);
-             XmlAttrib(sb, "ConnectionRateLimitBacklog", ConnectionRateLimitBacklog);
-             XmlAttrib(sb, "ConnectionRateLimitViolations", ConnectionRateLimitViolations);
-             XmlAttrib(sb, "LandAttackSegmentsDropped", LandAttackSegmentsDropped);
-             XmlAttrib(sb, "ConnectionRateLimitDepth", ConnectionRateLimitDepth);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SynAttacksDetected", SynAttacksDetected);
+            XmlAttrib(sb, "ReassemblyLimitViolations", ReassemblyLimitViolations);
+            XmlAttrib(sb, "ConnectionRateLimitBacklog", ConnectionRateLimitBacklog);
+            XmlAttrib(sb, "ConnectionRateLimitViolations", ConnectionRateLimitViolations);
+            XmlAttrib(sb, "LandAttackSegmentsDropped", LandAttackSegmentsDropped);
+            XmlAttrib(sb, "ConnectionRateLimitDepth", ConnectionRateLimitDepth);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14558,7 +14922,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SynAttacksDetected", "ReassemblyLimitViolations", "ConnectionRateLimitBacklog", "ConnectionRateLimitViolations", "LandAttackSegmentsDropped", "ConnectionRateLimitDepth"};
+                {
+                    payloadNames = new string[] { "SynAttacksDetected", "ReassemblyLimitViolations", "ConnectionRateLimitBacklog", "ConnectionRateLimitViolations", "LandAttackSegmentsDropped", "ConnectionRateLimitDepth" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14599,7 +14966,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpGlobalIsbBeginThrottleArgs(Action<TcpGlobalIsbBeginThrottleArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14613,17 +14980,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpGlobalIsbBeginThrottleArgs>) value; }
+            set { m_target = (Action<TcpGlobalIsbBeginThrottleArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "HighMemoryEvent", HighMemoryEvent);
-             XmlAttrib(sb, "HighPagedPoolEvent", HighPagedPoolEvent);
-             XmlAttrib(sb, "LowMemoryEvent", LowMemoryEvent);
-             XmlAttrib(sb, "LowPagedPoolEvent", LowPagedPoolEvent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "HighMemoryEvent", HighMemoryEvent);
+            XmlAttrib(sb, "HighPagedPoolEvent", HighPagedPoolEvent);
+            XmlAttrib(sb, "LowMemoryEvent", LowMemoryEvent);
+            XmlAttrib(sb, "LowPagedPoolEvent", LowPagedPoolEvent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14631,7 +14998,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HighMemoryEvent", "HighPagedPoolEvent", "LowMemoryEvent", "LowPagedPoolEvent"};
+                {
+                    payloadNames = new string[] { "HighMemoryEvent", "HighPagedPoolEvent", "LowMemoryEvent", "LowPagedPoolEvent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14682,7 +15052,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpGlobalParametersArgs(Action<TcpGlobalParametersArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14696,31 +15066,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpGlobalParametersArgs>) value; }
+            set { m_target = (Action<TcpGlobalParametersArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "EnablePMTUDiscovery", EnablePMTUDiscovery);
-             XmlAttrib(sb, "TcpUseRFC1122UrgentPointer", TcpUseRFC1122UrgentPointer);
-             XmlAttrib(sb, "DisableTaskOffload", DisableTaskOffload);
-             XmlAttrib(sb, "EnablePMTUBHDetect", EnablePMTUBHDetect);
-             XmlAttrib(sb, "DisableTcpChimneyOffload", DisableTcpChimneyOffload);
-             XmlAttrib(sb, "DisableRss", DisableRss);
-             XmlAttrib(sb, "EcnCapability", EcnCapability);
-             XmlAttrib(sb, "TcpMaxDataRetransmissions", TcpMaxDataRetransmissions);
-             XmlAttrib(sb, "KeepAliveTime", KeepAliveTime);
-             XmlAttrib(sb, "KeepAliveInterval", KeepAliveInterval);
-             XmlAttrib(sb, "TcpTimedWaitDelay", TcpTimedWaitDelay);
-             XmlAttrib(sb, "SillyWindowTimeout", SillyWindowTimeout);
-             XmlAttrib(sb, "TcpFinWait2Delay", TcpFinWait2Delay);
-             XmlAttrib(sb, "CongestionAlgorithm", CongestionAlgorithm);
-             XmlAttrib(sb, "Tcp1323Opts", Tcp1323Opts);
-             XmlAttrib(sb, "AutoTuningLevelLocal", AutoTuningLevelLocal);
-             XmlAttrib(sb, "AutoTuningLevelGroupPolicy", AutoTuningLevelGroupPolicy);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "EnablePMTUDiscovery", EnablePMTUDiscovery);
+            XmlAttrib(sb, "TcpUseRFC1122UrgentPointer", TcpUseRFC1122UrgentPointer);
+            XmlAttrib(sb, "DisableTaskOffload", DisableTaskOffload);
+            XmlAttrib(sb, "EnablePMTUBHDetect", EnablePMTUBHDetect);
+            XmlAttrib(sb, "DisableTcpChimneyOffload", DisableTcpChimneyOffload);
+            XmlAttrib(sb, "DisableRss", DisableRss);
+            XmlAttrib(sb, "EcnCapability", EcnCapability);
+            XmlAttrib(sb, "TcpMaxDataRetransmissions", TcpMaxDataRetransmissions);
+            XmlAttrib(sb, "KeepAliveTime", KeepAliveTime);
+            XmlAttrib(sb, "KeepAliveInterval", KeepAliveInterval);
+            XmlAttrib(sb, "TcpTimedWaitDelay", TcpTimedWaitDelay);
+            XmlAttrib(sb, "SillyWindowTimeout", SillyWindowTimeout);
+            XmlAttrib(sb, "TcpFinWait2Delay", TcpFinWait2Delay);
+            XmlAttrib(sb, "CongestionAlgorithm", CongestionAlgorithm);
+            XmlAttrib(sb, "Tcp1323Opts", Tcp1323Opts);
+            XmlAttrib(sb, "AutoTuningLevelLocal", AutoTuningLevelLocal);
+            XmlAttrib(sb, "AutoTuningLevelGroupPolicy", AutoTuningLevelGroupPolicy);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14728,7 +15098,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AddressFamily", "EnablePMTUDiscovery", "TcpUseRFC1122UrgentPointer", "DisableTaskOffload", "EnablePMTUBHDetect", "DisableTcpChimneyOffload", "DisableRss", "EcnCapability", "TcpMaxDataRetransmissions", "KeepAliveTime", "KeepAliveInterval", "TcpTimedWaitDelay", "SillyWindowTimeout", "TcpFinWait2Delay", "CongestionAlgorithm", "Tcp1323Opts", "AutoTuningLevelLocal", "AutoTuningLevelGroupPolicy"};
+                {
+                    payloadNames = new string[] { "AddressFamily", "EnablePMTUDiscovery", "TcpUseRFC1122UrgentPointer", "DisableTaskOffload", "EnablePMTUBHDetect", "DisableTcpChimneyOffload", "DisableRss", "EcnCapability", "TcpMaxDataRetransmissions", "KeepAliveTime", "KeepAliveInterval", "TcpTimedWaitDelay", "SillyWindowTimeout", "TcpFinWait2Delay", "CongestionAlgorithm", "Tcp1323Opts", "AutoTuningLevelLocal", "AutoTuningLevelGroupPolicy" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14794,7 +15167,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpInterfaceRscStateChangeArgs(Action<TcpInterfaceRscStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14808,18 +15181,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpInterfaceRscStateChangeArgs>) value; }
+            set { m_target = (Action<TcpInterfaceRscStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IfIndex", IfIndex);
-             XmlAttrib(sb, "StateV4", StateV4);
-             XmlAttrib(sb, "FailureReasonV4", FailureReasonV4);
-             XmlAttrib(sb, "StateV6", StateV6);
-             XmlAttrib(sb, "FailureReasonV6", FailureReasonV6);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IfIndex", IfIndex);
+            XmlAttrib(sb, "StateV4", StateV4);
+            XmlAttrib(sb, "FailureReasonV4", FailureReasonV4);
+            XmlAttrib(sb, "StateV6", StateV6);
+            XmlAttrib(sb, "FailureReasonV6", FailureReasonV6);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14827,7 +15200,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IfIndex", "StateV4", "FailureReasonV4", "StateV6", "FailureReasonV6"};
+                {
+                    payloadNames = new string[] { "IfIndex", "StateV4", "FailureReasonV4", "StateV6", "FailureReasonV6" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14861,17 +15237,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address TcbOrEndpoint { get { return GetAddressAt(4); } }
         public int LocalAddressLength { get { return GetInt32At(HostOffset(8, 1)); } }
         public byte[] LocalAddress { get { return GetByteArrayAt(HostOffset(12, 1), LocalAddressLength); } }
-        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0+ (LocalAddressLength*1)+12, 1)); } }
-        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0+ (LocalAddressLength*1)+16, 1), RemoteAddressLength); } }
-        public int Status { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+16, 1)); } }
-        public int ProcessId { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+20, 1)); } }
-        public int InterfaceIndex { get { return GetInt32At(HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+24, 1)); } }
+        public int RemoteAddressLength { get { return GetInt32At(HostOffset(0 + (LocalAddressLength * 1) + 12, 1)); } }
+        public byte[] RemoteAddress { get { return GetByteArrayAt(HostOffset(0 + (LocalAddressLength * 1) + 16, 1), RemoteAddressLength); } }
+        public int Status { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 16, 1)); } }
+        public int ProcessId { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 20, 1)); } }
+        public int InterfaceIndex { get { return GetInt32At(HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 24, 1)); } }
 
         #region Private
         internal TcpipAoacFailFastArgs(Action<TcpipAoacFailFastArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14879,26 +15255,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+28, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteAddressLength*1)+ (LocalAddressLength*1)+28, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 28, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteAddressLength * 1) + (LocalAddressLength * 1) + 28, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipAoacFailFastArgs>) value; }
+            set { m_target = (Action<TcpipAoacFailFastArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "RequestType", RequestType);
-             XmlAttribHex(sb, "TcbOrEndpoint", TcbOrEndpoint);
-             XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
-             XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "ProcessId", ProcessId);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "RequestType", RequestType);
+            XmlAttribHex(sb, "TcbOrEndpoint", TcbOrEndpoint);
+            XmlAttrib(sb, "LocalAddressLength", LocalAddressLength);
+            XmlAttrib(sb, "RemoteAddressLength", RemoteAddressLength);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "ProcessId", ProcessId);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14906,7 +15282,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RequestType", "TcbOrEndpoint", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "Status", "ProcessId", "InterfaceIndex"};
+                {
+                    payloadNames = new string[] { "RequestType", "TcbOrEndpoint", "LocalAddressLength", "LocalAddress", "RemoteAddressLength", "RemoteAddress", "Status", "ProcessId", "InterfaceIndex" };
+                }
+
                 return payloadNames;
             }
         }
@@ -14942,15 +15321,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     {
         public string AllocationObjectString { get { return GetUnicodeStringAt(0); } }
         public Address Param1 { get { return GetAddressAt(SkipUnicodeString(0)); } }
-        public Address Param2 { get { return GetAddressAt(HostOffset(SkipUnicodeString(0)+4, 1)); } }
-        public int Param3 { get { return GetInt32At(HostOffset(SkipUnicodeString(0)+8, 2)); } }
-        public int Param4 { get { return GetInt32At(HostOffset(SkipUnicodeString(0)+12, 2)); } }
+        public Address Param2 { get { return GetAddressAt(HostOffset(SkipUnicodeString(0) + 4, 1)); } }
+        public int Param3 { get { return GetInt32At(HostOffset(SkipUnicodeString(0) + 8, 2)); } }
+        public int Param4 { get { return GetInt32At(HostOffset(SkipUnicodeString(0) + 12, 2)); } }
 
         #region Private
         internal TcpipGenericArgs(Action<TcpipGenericArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -14958,24 +15337,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(0)+16, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(0)+16, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(0) + 16, 2)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(0) + 16, 2)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipGenericArgs>) value; }
+            set { m_target = (Action<TcpipGenericArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AllocationObjectString", AllocationObjectString);
-             XmlAttribHex(sb, "Param1", Param1);
-             XmlAttribHex(sb, "Param2", Param2);
-             XmlAttrib(sb, "Param3", Param3);
-             XmlAttrib(sb, "Param4", Param4);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AllocationObjectString", AllocationObjectString);
+            XmlAttribHex(sb, "Param1", Param1);
+            XmlAttribHex(sb, "Param2", Param2);
+            XmlAttrib(sb, "Param3", Param3);
+            XmlAttrib(sb, "Param4", Param4);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -14983,7 +15362,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AllocationObjectString", "Param1", "Param2", "Param3", "Param4"};
+                {
+                    payloadNames = new string[] { "AllocationObjectString", "Param1", "Param2", "Param3", "Param4" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15019,17 +15401,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int DestIPv4Address { get { return GetInt32At(12); } }
         public int IPv6SourceIpAddrLength { get { return GetInt32At(16); } }
         public byte[] IPv6SourceAddress { get { return GetByteArrayAt(20, IPv6SourceIpAddrLength); } }
-        public int IPv6DestIpAddrLength { get { return GetInt32At(0+ (IPv6SourceIpAddrLength*1)+20); } }
-        public byte[] IPv6DestAddress { get { return GetByteArrayAt(0+ (IPv6SourceIpAddrLength*1)+24, IPv6DestIpAddrLength); } }
-        public int Reason { get { return GetInt32At(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+24); } }
-        public int PacketCount { get { return GetInt32At(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+28); } }
-        public int IPProtocol { get { return GetInt32At(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+32); } }
+        public int IPv6DestIpAddrLength { get { return GetInt32At(0 + (IPv6SourceIpAddrLength * 1) + 20); } }
+        public byte[] IPv6DestAddress { get { return GetByteArrayAt(0 + (IPv6SourceIpAddrLength * 1) + 24, IPv6DestIpAddrLength); } }
+        public int Reason { get { return GetInt32At(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 24); } }
+        public int PacketCount { get { return GetInt32At(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 28); } }
+        public int IPProtocol { get { return GetInt32At(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 32); } }
 
         #region Private
         internal TcpipNetworkPacketDropsArgs(Action<TcpipNetworkPacketDropsArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15037,28 +15419,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+36));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+36));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 36));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 36));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipNetworkPacketDropsArgs>) value; }
+            set { m_target = (Action<TcpipNetworkPacketDropsArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "SourceIPv4Address", SourceIPv4Address);
-             XmlAttrib(sb, "DestIPv4Address", DestIPv4Address);
-             XmlAttrib(sb, "IPv6SourceIpAddrLength", IPv6SourceIpAddrLength);
-             XmlAttrib(sb, "IPv6DestIpAddrLength", IPv6DestIpAddrLength);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "PacketCount", PacketCount);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "SourceIPv4Address", SourceIPv4Address);
+            XmlAttrib(sb, "DestIPv4Address", DestIPv4Address);
+            XmlAttrib(sb, "IPv6SourceIpAddrLength", IPv6SourceIpAddrLength);
+            XmlAttrib(sb, "IPv6DestIpAddrLength", IPv6DestIpAddrLength);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "PacketCount", PacketCount);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15066,7 +15448,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IPTransportProtocol", "AddressFamily", "SourceIPv4Address", "DestIPv4Address", "IPv6SourceIpAddrLength", "IPv6SourceAddress", "IPv6DestIpAddrLength", "IPv6DestAddress", "Reason", "PacketCount", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "IPTransportProtocol", "AddressFamily", "SourceIPv4Address", "DestIPv4Address", "IPv6SourceIpAddrLength", "IPv6SourceAddress", "IPv6DestIpAddrLength", "IPv6DestAddress", "Reason", "PacketCount", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15114,14 +15499,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int IpAddrLength { get { return GetInt32At(28); } }
         public int IPv4Address { get { return GetInt32At(32); } }
         public byte[] IPv6Address { get { return GetByteArrayAt(36, IpAddrLength); } }
-        public int IPProtocol { get { return GetInt32At(0+ (IpAddrLength*1)+36); } }
-        public int Status { get { return GetInt32At(0+ (IpAddrLength*1)+40); } }
+        public int IPProtocol { get { return GetInt32At(0 + (IpAddrLength * 1) + 36); } }
+        public int Status { get { return GetInt32At(0 + (IpAddrLength * 1) + 40); } }
 
         #region Private
         internal TcpipPlumbWakePatternOnInterfaceArgs(Action<TcpipPlumbWakePatternOnInterfaceArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15129,30 +15514,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (IpAddrLength*1)+44));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (IpAddrLength*1)+44));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (IpAddrLength * 1) + 44));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (IpAddrLength * 1) + 44));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipPlumbWakePatternOnInterfaceArgs>) value; }
+            set { m_target = (Action<TcpipPlumbWakePatternOnInterfaceArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "AoAcCapable", AoAcCapable);
-             XmlAttrib(sb, "BitmapPatternSupported", BitmapPatternSupported);
-             XmlAttrib(sb, "ARPNDOffloadSupported", ARPNDOffloadSupported);
-             XmlAttrib(sb, "IPAddressWakeReady", IPAddressWakeReady);
-             XmlAttrib(sb, "PatternPriority", PatternPriority);
-             XmlAttrib(sb, "PhysicalMediumType", PhysicalMediumType);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "IPv4Address", IPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "AoAcCapable", AoAcCapable);
+            XmlAttrib(sb, "BitmapPatternSupported", BitmapPatternSupported);
+            XmlAttrib(sb, "ARPNDOffloadSupported", ARPNDOffloadSupported);
+            XmlAttrib(sb, "IPAddressWakeReady", IPAddressWakeReady);
+            XmlAttrib(sb, "PatternPriority", PatternPriority);
+            XmlAttrib(sb, "PhysicalMediumType", PhysicalMediumType);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "IPv4Address", IPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15160,7 +15545,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "AoAcCapable", "BitmapPatternSupported", "ARPNDOffloadSupported", "IPAddressWakeReady", "PatternPriority", "PhysicalMediumType", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol", "Status"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "AoAcCapable", "BitmapPatternSupported", "ARPNDOffloadSupported", "IPAddressWakeReady", "PatternPriority", "PhysicalMediumType", "IpAddrLength", "IPv4Address", "IPv6Address", "IPProtocol", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15209,17 +15597,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int DestIPv4Address { get { return GetInt32At(HostOffset(16, 1)); } }
         public int IPv6SourceIpAddrLength { get { return GetInt32At(HostOffset(20, 1)); } }
         public byte[] IPv6SourceAddress { get { return GetByteArrayAt(HostOffset(24, 1), IPv6SourceIpAddrLength); } }
-        public int IPv6DestIpAddrLength { get { return GetInt32At(HostOffset(0+ (IPv6SourceIpAddrLength*1)+24, 1)); } }
-        public byte[] IPv6DestAddress { get { return GetByteArrayAt(HostOffset(0+ (IPv6SourceIpAddrLength*1)+28, 1), IPv6DestIpAddrLength); } }
-        public int Reason { get { return GetInt32At(HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+28, 1)); } }
-        public int NblCount { get { return GetInt32At(HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+32, 1)); } }
-        public int IPProtocol { get { return GetInt32At(HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+36, 1)); } }
+        public int IPv6DestIpAddrLength { get { return GetInt32At(HostOffset(0 + (IPv6SourceIpAddrLength * 1) + 24, 1)); } }
+        public byte[] IPv6DestAddress { get { return GetByteArrayAt(HostOffset(0 + (IPv6SourceIpAddrLength * 1) + 28, 1), IPv6DestIpAddrLength); } }
+        public int Reason { get { return GetInt32At(HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 28, 1)); } }
+        public int NblCount { get { return GetInt32At(HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 32, 1)); } }
+        public int IPProtocol { get { return GetInt32At(HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 36, 1)); } }
 
         #region Private
         internal TcpipReceiveSlowPathArgs(Action<TcpipReceiveSlowPathArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15227,29 +15615,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+40, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+40, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 40, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 40, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipReceiveSlowPathArgs>) value; }
+            set { m_target = (Action<TcpipReceiveSlowPathArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Nbl", Nbl);
-             XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "SourceIPv4Address", SourceIPv4Address);
-             XmlAttrib(sb, "DestIPv4Address", DestIPv4Address);
-             XmlAttrib(sb, "IPv6SourceIpAddrLength", IPv6SourceIpAddrLength);
-             XmlAttrib(sb, "IPv6DestIpAddrLength", IPv6DestIpAddrLength);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "NblCount", NblCount);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Nbl", Nbl);
+            XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "SourceIPv4Address", SourceIPv4Address);
+            XmlAttrib(sb, "DestIPv4Address", DestIPv4Address);
+            XmlAttrib(sb, "IPv6SourceIpAddrLength", IPv6SourceIpAddrLength);
+            XmlAttrib(sb, "IPv6DestIpAddrLength", IPv6DestIpAddrLength);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "NblCount", NblCount);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15257,7 +15645,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Nbl", "IPTransportProtocol", "AddressFamily", "SourceIPv4Address", "DestIPv4Address", "IPv6SourceIpAddrLength", "IPv6SourceAddress", "IPv6DestIpAddrLength", "IPv6DestAddress", "Reason", "NblCount", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "Nbl", "IPTransportProtocol", "AddressFamily", "SourceIPv4Address", "DestIPv4Address", "IPv6SourceIpAddrLength", "IPv6SourceAddress", "IPv6DestIpAddrLength", "IPv6DestAddress", "Reason", "NblCount", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15304,17 +15695,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int DestIPv4Address { get { return GetInt32At(HostOffset(16, 1)); } }
         public int IPv6SourceIpAddrLength { get { return GetInt32At(HostOffset(20, 1)); } }
         public byte[] IPv6SourceAddress { get { return GetByteArrayAt(HostOffset(24, 1), IPv6SourceIpAddrLength); } }
-        public int IPv6DestIpAddrLength { get { return GetInt32At(HostOffset(0+ (IPv6SourceIpAddrLength*1)+24, 1)); } }
-        public byte[] IPv6DestAddress { get { return GetByteArrayAt(HostOffset(0+ (IPv6SourceIpAddrLength*1)+28, 1), IPv6DestIpAddrLength); } }
-        public TCPIP_SLOW_PATH_REASON Reason { get { return (TCPIP_SLOW_PATH_REASON)GetInt32At(HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+28, 1)); } }
-        public int NblCount { get { return GetInt32At(HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+32, 1)); } }
-        public int IPProtocol { get { return GetInt32At(HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+36, 1)); } }
+        public int IPv6DestIpAddrLength { get { return GetInt32At(HostOffset(0 + (IPv6SourceIpAddrLength * 1) + 24, 1)); } }
+        public byte[] IPv6DestAddress { get { return GetByteArrayAt(HostOffset(0 + (IPv6SourceIpAddrLength * 1) + 28, 1), IPv6DestIpAddrLength); } }
+        public TCPIP_SLOW_PATH_REASON Reason { get { return (TCPIP_SLOW_PATH_REASON)GetInt32At(HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 28, 1)); } }
+        public int NblCount { get { return GetInt32At(HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 32, 1)); } }
+        public int IPProtocol { get { return GetInt32At(HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 36, 1)); } }
 
         #region Private
         internal TcpipSendSlowPathArgs(Action<TcpipSendSlowPathArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15322,29 +15713,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+40, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (IPv6DestIpAddrLength*1)+ (IPv6SourceIpAddrLength*1)+40, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 40, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (IPv6DestIpAddrLength * 1) + (IPv6SourceIpAddrLength * 1) + 40, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipSendSlowPathArgs>) value; }
+            set { m_target = (Action<TcpipSendSlowPathArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Nbl", Nbl);
-             XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "SourceIPv4Address", SourceIPv4Address);
-             XmlAttrib(sb, "DestIPv4Address", DestIPv4Address);
-             XmlAttrib(sb, "IPv6SourceIpAddrLength", IPv6SourceIpAddrLength);
-             XmlAttrib(sb, "IPv6DestIpAddrLength", IPv6DestIpAddrLength);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "NblCount", NblCount);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Nbl", Nbl);
+            XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "SourceIPv4Address", SourceIPv4Address);
+            XmlAttrib(sb, "DestIPv4Address", DestIPv4Address);
+            XmlAttrib(sb, "IPv6SourceIpAddrLength", IPv6SourceIpAddrLength);
+            XmlAttrib(sb, "IPv6DestIpAddrLength", IPv6DestIpAddrLength);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "NblCount", NblCount);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15352,7 +15743,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Nbl", "IPTransportProtocol", "AddressFamily", "SourceIPv4Address", "DestIPv4Address", "IPv6SourceIpAddrLength", "IPv6SourceAddress", "IPv6DestIpAddrLength", "IPv6DestAddress", "Reason", "NblCount", "IPProtocol"};
+                {
+                    payloadNames = new string[] { "Nbl", "IPTransportProtocol", "AddressFamily", "SourceIPv4Address", "DestIPv4Address", "IPv6SourceIpAddrLength", "IPv6SourceAddress", "IPv6DestIpAddrLength", "IPv6DestAddress", "Reason", "NblCount", "IPProtocol" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15400,7 +15794,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpipSilentModeArgs(Action<TcpipSilentModeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15414,16 +15808,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipSilentModeArgs>) value; }
+            set { m_target = (Action<TcpipSilentModeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SilentModeEvent", SilentModeEvent);
-             XmlAttribHex(sb, "Context", Context);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SilentModeEvent", SilentModeEvent);
+            XmlAttribHex(sb, "Context", Context);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15431,7 +15825,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SilentModeEvent", "Context"};
+                {
+                    payloadNames = new string[] { "Tcb", "SilentModeEvent", "Context" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15461,16 +15858,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int AddressFamily { get { return GetInt32At(4); } }
         public int LocalSockAddrLength { get { return GetInt32At(8); } }
         public byte[] LocalSockAddr { get { return GetByteArrayAt(12, LocalSockAddrLength); } }
-        public int RemoteSockAddrLength { get { return GetInt32At(0+ (LocalSockAddrLength*1)+12); } }
-        public byte[] RemoteSockAddr { get { return GetByteArrayAt(0+ (LocalSockAddrLength*1)+16, RemoteSockAddrLength); } }
-        public int Reason { get { return GetInt32At(0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+16); } }
-        public int PacketCount { get { return GetInt32At(0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+20); } }
+        public int RemoteSockAddrLength { get { return GetInt32At(0 + (LocalSockAddrLength * 1) + 12); } }
+        public byte[] RemoteSockAddr { get { return GetByteArrayAt(0 + (LocalSockAddrLength * 1) + 16, RemoteSockAddrLength); } }
+        public int Reason { get { return GetInt32At(0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 16); } }
+        public int PacketCount { get { return GetInt32At(0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 20); } }
 
         #region Private
         internal TcpipTransportPacketDropsArgs(Action<TcpipTransportPacketDropsArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15478,25 +15875,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+24));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+24));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 24));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 24));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipTransportPacketDropsArgs>) value; }
+            set { m_target = (Action<TcpipTransportPacketDropsArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             XmlAttrib(sb, "LocalSockAddrLength", LocalSockAddrLength);
-             XmlAttrib(sb, "RemoteSockAddrLength", RemoteSockAddrLength);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "PacketCount", PacketCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IPTransportProtocol", IPTransportProtocol);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            XmlAttrib(sb, "LocalSockAddrLength", LocalSockAddrLength);
+            XmlAttrib(sb, "RemoteSockAddrLength", RemoteSockAddrLength);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "PacketCount", PacketCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15504,7 +15901,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IPTransportProtocol", "AddressFamily", "LocalSockAddrLength", "LocalSockAddr", "RemoteSockAddrLength", "RemoteSockAddr", "Reason", "PacketCount"};
+                {
+                    payloadNames = new string[] { "IPTransportProtocol", "AddressFamily", "LocalSockAddrLength", "LocalSockAddr", "RemoteSockAddrLength", "RemoteSockAddr", "Reason", "PacketCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15539,13 +15939,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int InterfaceIndex { get { return GetInt32At(0); } }
         public string Property { get { return GetUTF8StringAt(4); } }
         public int Value { get { return GetInt32At(SkipUTF8String(4)); } }
-        public int InterfaceUpdateEvent { get { return GetInt32At(SkipUTF8String(4)+4); } }
+        public int InterfaceUpdateEvent { get { return GetInt32At(SkipUTF8String(4) + 4); } }
 
         #region Private
         internal TcpipUpdateInterfaceConfigFlagsArgs(Action<TcpipUpdateInterfaceConfigFlagsArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15553,23 +15953,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4)+8));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4)+8));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(4) + 8));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(4) + 8));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipUpdateInterfaceConfigFlagsArgs>) value; }
+            set { m_target = (Action<TcpipUpdateInterfaceConfigFlagsArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
-             XmlAttrib(sb, "Property", Property);
-             XmlAttrib(sb, "Value", Value);
-             XmlAttrib(sb, "InterfaceUpdateEvent", InterfaceUpdateEvent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "InterfaceIndex", InterfaceIndex);
+            XmlAttrib(sb, "Property", Property);
+            XmlAttrib(sb, "Value", Value);
+            XmlAttrib(sb, "InterfaceUpdateEvent", InterfaceUpdateEvent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15577,7 +15977,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InterfaceIndex", "Property", "Value", "InterfaceUpdateEvent"};
+                {
+                    payloadNames = new string[] { "InterfaceIndex", "Property", "Value", "InterfaceUpdateEvent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15608,19 +16011,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public long AdapterLuid { get { return GetInt64At(0); } }
         public string PatternFriendlyName { get { return GetUnicodeStringAt(8); } }
         public int DlAddrLength { get { return GetInt32At(SkipUnicodeString(8)); } }
-        public byte[] SrcDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8)+4, DlAddrLength); } }
-        public byte[] DestDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8)+4, DlAddrLength); } }
-        public int SrcAddress { get { return GetInt32At(SkipUnicodeString(8)+4); } }
-        public int DestAddress { get { return GetInt32At(SkipUnicodeString(8)+8); } }
-        public int Protocol { get { return GetInt32At(SkipUnicodeString(8)+12); } }
-        public int SrcPort { get { return GetInt16At(SkipUnicodeString(8)+16); } }
-        public int DestPort { get { return GetInt16At(SkipUnicodeString(8)+18); } }
+        public byte[] SrcDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8) + 4, DlAddrLength); } }
+        public byte[] DestDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8) + 4, DlAddrLength); } }
+        public int SrcAddress { get { return GetInt32At(SkipUnicodeString(8) + 4); } }
+        public int DestAddress { get { return GetInt32At(SkipUnicodeString(8) + 8); } }
+        public int Protocol { get { return GetInt32At(SkipUnicodeString(8) + 12); } }
+        public int SrcPort { get { return GetInt16At(SkipUnicodeString(8) + 16); } }
+        public int DestPort { get { return GetInt16At(SkipUnicodeString(8) + 18); } }
 
         #region Private
         internal TcpipWakePacketIndicatedArgs(Action<TcpipWakePacketIndicatedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15628,27 +16031,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)+20));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)+20));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8) + 20));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8) + 20));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipWakePacketIndicatedArgs>) value; }
+            set { m_target = (Action<TcpipWakePacketIndicatedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterLuid", AdapterLuid);
-             XmlAttrib(sb, "PatternFriendlyName", PatternFriendlyName);
-             XmlAttrib(sb, "DlAddrLength", DlAddrLength);
-             XmlAttrib(sb, "SrcAddress", SrcAddress);
-             XmlAttrib(sb, "DestAddress", DestAddress);
-             XmlAttrib(sb, "Protocol", Protocol);
-             XmlAttrib(sb, "SrcPort", SrcPort);
-             XmlAttrib(sb, "DestPort", DestPort);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterLuid", AdapterLuid);
+            XmlAttrib(sb, "PatternFriendlyName", PatternFriendlyName);
+            XmlAttrib(sb, "DlAddrLength", DlAddrLength);
+            XmlAttrib(sb, "SrcAddress", SrcAddress);
+            XmlAttrib(sb, "DestAddress", DestAddress);
+            XmlAttrib(sb, "Protocol", Protocol);
+            XmlAttrib(sb, "SrcPort", SrcPort);
+            XmlAttrib(sb, "DestPort", DestPort);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15656,7 +16059,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterLuid", "PatternFriendlyName", "DlAddrLength", "SrcDLAddress", "DestDLAddress", "SrcAddress", "DestAddress", "Protocol", "SrcPort", "DestPort"};
+                {
+                    payloadNames = new string[] { "AdapterLuid", "PatternFriendlyName", "DlAddrLength", "SrcDLAddress", "DestDLAddress", "SrcAddress", "DestAddress", "Protocol", "SrcPort", "DestPort" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15695,20 +16101,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public long AdapterLuid { get { return GetInt64At(0); } }
         public string PatternFriendlyName { get { return GetUnicodeStringAt(8); } }
         public int DlAddrLength { get { return GetInt32At(SkipUnicodeString(8)); } }
-        public byte[] SrcDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8)+4, DlAddrLength); } }
-        public byte[] DestDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8)+4, DlAddrLength); } }
-        public int IpAddrLength { get { return GetInt32At(SkipUnicodeString(8)+4); } }
-        public byte[] SrcAddress { get { return GetByteArrayAt(SkipUnicodeString(8)+8, IpAddrLength); } }
-        public byte[] DestAddress { get { return GetByteArrayAt(SkipUnicodeString(8)+8, IpAddrLength); } }
-        public int Protocol { get { return GetInt32At(SkipUnicodeString(8)+8); } }
-        public int SrcPort { get { return GetInt16At(SkipUnicodeString(8)+12); } }
-        public int DestPort { get { return GetInt16At(SkipUnicodeString(8)+14); } }
+        public byte[] SrcDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8) + 4, DlAddrLength); } }
+        public byte[] DestDLAddress { get { return GetByteArrayAt(SkipUnicodeString(8) + 4, DlAddrLength); } }
+        public int IpAddrLength { get { return GetInt32At(SkipUnicodeString(8) + 4); } }
+        public byte[] SrcAddress { get { return GetByteArrayAt(SkipUnicodeString(8) + 8, IpAddrLength); } }
+        public byte[] DestAddress { get { return GetByteArrayAt(SkipUnicodeString(8) + 8, IpAddrLength); } }
+        public int Protocol { get { return GetInt32At(SkipUnicodeString(8) + 8); } }
+        public int SrcPort { get { return GetInt16At(SkipUnicodeString(8) + 12); } }
+        public int DestPort { get { return GetInt16At(SkipUnicodeString(8) + 14); } }
 
         #region Private
         internal TcpipWakePacketIndicated1303Args(Action<TcpipWakePacketIndicated1303Args> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15716,26 +16122,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)+16));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)+16));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8) + 16));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8) + 16));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpipWakePacketIndicated1303Args>) value; }
+            set { m_target = (Action<TcpipWakePacketIndicated1303Args>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AdapterLuid", AdapterLuid);
-             XmlAttrib(sb, "PatternFriendlyName", PatternFriendlyName);
-             XmlAttrib(sb, "DlAddrLength", DlAddrLength);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "Protocol", Protocol);
-             XmlAttrib(sb, "SrcPort", SrcPort);
-             XmlAttrib(sb, "DestPort", DestPort);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AdapterLuid", AdapterLuid);
+            XmlAttrib(sb, "PatternFriendlyName", PatternFriendlyName);
+            XmlAttrib(sb, "DlAddrLength", DlAddrLength);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "Protocol", Protocol);
+            XmlAttrib(sb, "SrcPort", SrcPort);
+            XmlAttrib(sb, "DestPort", DestPort);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15743,7 +16149,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AdapterLuid", "PatternFriendlyName", "DlAddrLength", "SrcDLAddress", "DestDLAddress", "IpAddrLength", "SrcAddress", "DestAddress", "Protocol", "SrcPort", "DestPort"};
+                {
+                    payloadNames = new string[] { "AdapterLuid", "PatternFriendlyName", "DlAddrLength", "SrcDLAddress", "DestDLAddress", "IpAddrLength", "SrcAddress", "DestAddress", "Protocol", "SrcPort", "DestPort" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15788,7 +16197,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpIsPatternCoalescingRequiredArgs(Action<TcpIsPatternCoalescingRequiredArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15802,19 +16211,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpIsPatternCoalescingRequiredArgs>) value; }
+            set { m_target = (Action<TcpIsPatternCoalescingRequiredArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "RequireAddressCoalescing", RequireAddressCoalescing);
-             XmlAttrib(sb, "LocalPort", LocalPort);
-             XmlAttrib(sb, "RtcStartPort", RtcStartPort);
-             XmlAttrib(sb, "RtcEndPort", RtcEndPort);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "RequireAddressCoalescing", RequireAddressCoalescing);
+            XmlAttrib(sb, "LocalPort", LocalPort);
+            XmlAttrib(sb, "RtcStartPort", RtcStartPort);
+            XmlAttrib(sb, "RtcEndPort", RtcEndPort);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15822,7 +16231,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "RequireAddressCoalescing", "LocalPort", "RtcStartPort", "RtcEndPort", "Status"};
+                {
+                    payloadNames = new string[] { "Tcb", "RequireAddressCoalescing", "LocalPort", "RtcStartPort", "RtcEndPort", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15857,16 +16269,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address Listener { get { return GetAddressAt(0); } }
         public int AddressLength { get { return GetInt32At(HostOffset(4, 1)); } }
         public byte[] SocketAddress { get { return GetByteArrayAt(HostOffset(8, 1), AddressLength); } }
-        public int Status { get { return GetInt32At(HostOffset(0+ (AddressLength*1)+8, 1)); } }
-        public int ProcessId { get { return GetInt32At(HostOffset(0+ (AddressLength*1)+12, 1)); } }
-        public int CompartmentId { get { return GetInt32At(HostOffset(0+ (AddressLength*1)+16, 1)); } }
-        public int AddressFamily { get { return GetInt32At(HostOffset(0+ (AddressLength*1)+20, 1)); } }
+        public int Status { get { return GetInt32At(HostOffset(0 + (AddressLength * 1) + 8, 1)); } }
+        public int ProcessId { get { return GetInt32At(HostOffset(0 + (AddressLength * 1) + 12, 1)); } }
+        public int CompartmentId { get { return GetInt32At(HostOffset(0 + (AddressLength * 1) + 16, 1)); } }
+        public int AddressFamily { get { return GetInt32At(HostOffset(0 + (AddressLength * 1) + 20, 1)); } }
 
         #region Private
         internal TcpListenerActivationFailedAfArgs(Action<TcpListenerActivationFailedAfArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15874,25 +16286,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (AddressLength*1)+24, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (AddressLength*1)+24, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (AddressLength * 1) + 24, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (AddressLength * 1) + 24, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpListenerActivationFailedAfArgs>) value; }
+            set { m_target = (Action<TcpListenerActivationFailedAfArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Listener", Listener);
-             XmlAttrib(sb, "AddressLength", AddressLength);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "ProcessId", ProcessId);
-             XmlAttrib(sb, "CompartmentId", CompartmentId);
-             XmlAttrib(sb, "AddressFamily", AddressFamily);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Listener", Listener);
+            XmlAttrib(sb, "AddressLength", AddressLength);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "ProcessId", ProcessId);
+            XmlAttrib(sb, "CompartmentId", CompartmentId);
+            XmlAttrib(sb, "AddressFamily", AddressFamily);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15900,7 +16312,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Listener", "AddressLength", "SocketAddress", "Status", "ProcessId", "CompartmentId", "AddressFamily"};
+                {
+                    payloadNames = new string[] { "Listener", "AddressLength", "SocketAddress", "Status", "ProcessId", "CompartmentId", "AddressFamily" };
+                }
+
                 return payloadNames;
             }
         }
@@ -15939,7 +16354,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpLoopbackFastPathFailReasonArgs(Action<TcpLoopbackFastPathFailReasonArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -15953,15 +16368,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpLoopbackFastPathFailReasonArgs>) value; }
+            set { m_target = (Action<TcpLoopbackFastPathFailReasonArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Cause", Cause);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Cause", Cause);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -15969,7 +16384,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Cause"};
+                {
+                    payloadNames = new string[] { "Tcb", "Cause" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16003,7 +16421,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpLossRecoverySackEntryArgs(Action<TcpLossRecoverySackEntryArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16011,24 +16429,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(12, 1))+4));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(12, 1))+4));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(12, 1)) + 4));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(12, 1)) + 4));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpLossRecoverySackEntryArgs>) value; }
+            set { m_target = (Action<TcpLossRecoverySackEntryArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "SndMax", SndMax);
-             XmlAttrib(sb, "Reason", Reason);
-             XmlAttrib(sb, "IsSack", IsSack);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "SndMax", SndMax);
+            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "IsSack", IsSack);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16036,7 +16454,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax", "Reason", "IsSack"};
+                {
+                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax", "Reason", "IsSack" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16074,7 +16495,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpLsoArgs(Action<TcpLsoArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16088,16 +16509,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpLsoArgs>) value; }
+            set { m_target = (Action<TcpLsoArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "BytesInSegment", BytesInSegment);
-             XmlAttrib(sb, "BytesRemaining", BytesRemaining);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "BytesInSegment", BytesInSegment);
+            XmlAttrib(sb, "BytesRemaining", BytesRemaining);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16105,7 +16526,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "BytesInSegment", "BytesRemaining"};
+                {
+                    payloadNames = new string[] { "Tcb", "BytesInSegment", "BytesRemaining" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16137,7 +16561,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMemoryFailuresArgs(Action<TcpMemoryFailuresArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16151,14 +16575,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMemoryFailuresArgs>) value; }
+            set { m_target = (Action<TcpMemoryFailuresArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AllocationObjectString", AllocationObjectString);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AllocationObjectString", AllocationObjectString);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16166,7 +16590,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AllocationObjectString"};
+                {
+                    payloadNames = new string[] { "AllocationObjectString" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16194,7 +16621,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpModuleStartedArgs(Action<TcpModuleStartedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16208,14 +16635,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpModuleStartedArgs>) value; }
+            set { m_target = (Action<TcpModuleStartedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ModuleNameString", ModuleNameString);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ModuleNameString", ModuleNameString);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16223,7 +16650,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ModuleNameString"};
+                {
+                    payloadNames = new string[] { "ModuleNameString" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16256,7 +16686,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMppNppEvaluationArgs(Action<TcpMppNppEvaluationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16270,19 +16700,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMppNppEvaluationArgs>) value; }
+            set { m_target = (Action<TcpMppNppEvaluationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "PhysicalPages", PhysicalPages);
-             XmlAttrib(sb, "NonPagedPoolPages", NonPagedPoolPages);
-             XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
-             XmlAttrib(sb, "PeakWatermark", PeakWatermark);
-             XmlAttrib(sb, "HighWatermark", HighWatermark);
-             XmlAttrib(sb, "LowWatermark", LowWatermark);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "PhysicalPages", PhysicalPages);
+            XmlAttrib(sb, "NonPagedPoolPages", NonPagedPoolPages);
+            XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
+            XmlAttrib(sb, "PeakWatermark", PeakWatermark);
+            XmlAttrib(sb, "HighWatermark", HighWatermark);
+            XmlAttrib(sb, "LowWatermark", LowWatermark);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16290,7 +16720,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "PhysicalPages", "NonPagedPoolPages", "CurrentWatermark", "PeakWatermark", "HighWatermark", "LowWatermark"};
+                {
+                    payloadNames = new string[] { "PhysicalPages", "NonPagedPoolPages", "CurrentWatermark", "PeakWatermark", "HighWatermark", "LowWatermark" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16334,7 +16767,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMppStartEpisodeArgs(Action<TcpMppStartEpisodeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16348,20 +16781,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMppStartEpisodeArgs>) value; }
+            set { m_target = (Action<TcpMppStartEpisodeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LowNppEventState", LowNppEventState);
-             XmlAttrib(sb, "HighNppEventState", HighNppEventState);
-             XmlAttrib(sb, "EpisodeStartTick", EpisodeStartTick);
-             XmlAttrib(sb, "EpisodeStopTick", EpisodeStopTick);
-             XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
-             XmlAttrib(sb, "LowWatermark", LowWatermark);
-             XmlAttrib(sb, "ReentryWatermark", ReentryWatermark);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LowNppEventState", LowNppEventState);
+            XmlAttrib(sb, "HighNppEventState", HighNppEventState);
+            XmlAttrib(sb, "EpisodeStartTick", EpisodeStartTick);
+            XmlAttrib(sb, "EpisodeStopTick", EpisodeStopTick);
+            XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
+            XmlAttrib(sb, "LowWatermark", LowWatermark);
+            XmlAttrib(sb, "ReentryWatermark", ReentryWatermark);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16369,7 +16802,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LowNppEventState", "HighNppEventState", "EpisodeStartTick", "EpisodeStopTick", "CurrentWatermark", "LowWatermark", "ReentryWatermark"};
+                {
+                    payloadNames = new string[] { "LowNppEventState", "HighNppEventState", "EpisodeStartTick", "EpisodeStopTick", "CurrentWatermark", "LowWatermark", "ReentryWatermark" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16418,7 +16854,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMppStartEpochArgs(Action<TcpMppStartEpochArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16432,23 +16868,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMppStartEpochArgs>) value; }
+            set { m_target = (Action<TcpMppStartEpochArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Epoch", Epoch);
-             XmlAttrib(sb, "LowNppEventState", LowNppEventState);
-             XmlAttrib(sb, "HighNppEventState", HighNppEventState);
-             XmlAttrib(sb, "EpochStartTick", EpochStartTick);
-             XmlAttrib(sb, "EpochStopTick", EpochStopTick);
-             XmlAttrib(sb, "OldSynDropRate", OldSynDropRate);
-             XmlAttrib(sb, "NewSynDropRate", NewSynDropRate);
-             XmlAttrib(sb, "OldTcbAbortionRate", OldTcbAbortionRate);
-             XmlAttrib(sb, "NewTcbAbortionRate", NewTcbAbortionRate);
-             XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Epoch", Epoch);
+            XmlAttrib(sb, "LowNppEventState", LowNppEventState);
+            XmlAttrib(sb, "HighNppEventState", HighNppEventState);
+            XmlAttrib(sb, "EpochStartTick", EpochStartTick);
+            XmlAttrib(sb, "EpochStopTick", EpochStopTick);
+            XmlAttrib(sb, "OldSynDropRate", OldSynDropRate);
+            XmlAttrib(sb, "NewSynDropRate", NewSynDropRate);
+            XmlAttrib(sb, "OldTcbAbortionRate", OldTcbAbortionRate);
+            XmlAttrib(sb, "NewTcbAbortionRate", NewTcbAbortionRate);
+            XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16456,7 +16892,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Epoch", "LowNppEventState", "HighNppEventState", "EpochStartTick", "EpochStopTick", "OldSynDropRate", "NewSynDropRate", "OldTcbAbortionRate", "NewTcbAbortionRate", "CurrentWatermark"};
+                {
+                    payloadNames = new string[] { "Epoch", "LowNppEventState", "HighNppEventState", "EpochStartTick", "EpochStopTick", "OldSynDropRate", "NewSynDropRate", "OldTcbAbortionRate", "NewTcbAbortionRate", "CurrentWatermark" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16506,7 +16945,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMppStopEpisodeArgs(Action<TcpMppStopEpisodeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16520,18 +16959,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMppStopEpisodeArgs>) value; }
+            set { m_target = (Action<TcpMppStopEpisodeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "LowNppEventState", LowNppEventState);
-             XmlAttrib(sb, "HighNppEventState", HighNppEventState);
-             XmlAttrib(sb, "EpisodeStartTick", EpisodeStartTick);
-             XmlAttrib(sb, "EpisodeStopTick", EpisodeStopTick);
-             XmlAttrib(sb, "ReentryWatermark", ReentryWatermark);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "LowNppEventState", LowNppEventState);
+            XmlAttrib(sb, "HighNppEventState", HighNppEventState);
+            XmlAttrib(sb, "EpisodeStartTick", EpisodeStartTick);
+            XmlAttrib(sb, "EpisodeStopTick", EpisodeStopTick);
+            XmlAttrib(sb, "ReentryWatermark", ReentryWatermark);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16539,7 +16978,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "LowNppEventState", "HighNppEventState", "EpisodeStartTick", "EpisodeStopTick", "ReentryWatermark"};
+                {
+                    payloadNames = new string[] { "LowNppEventState", "HighNppEventState", "EpisodeStartTick", "EpisodeStopTick", "ReentryWatermark" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16582,7 +17024,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpMppStopEpochArgs(Action<TcpMppStopEpochArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16596,21 +17038,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpMppStopEpochArgs>) value; }
+            set { m_target = (Action<TcpMppStopEpochArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Epoch", Epoch);
-             XmlAttrib(sb, "LowNppEventState", LowNppEventState);
-             XmlAttrib(sb, "HighNppEventState", HighNppEventState);
-             XmlAttrib(sb, "EpochStartTick", EpochStartTick);
-             XmlAttrib(sb, "EpochStopTick", EpochStopTick);
-             XmlAttrib(sb, "SynDropRate", SynDropRate);
-             XmlAttrib(sb, "TcbAbortionRate", TcbAbortionRate);
-             XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Epoch", Epoch);
+            XmlAttrib(sb, "LowNppEventState", LowNppEventState);
+            XmlAttrib(sb, "HighNppEventState", HighNppEventState);
+            XmlAttrib(sb, "EpochStartTick", EpochStartTick);
+            XmlAttrib(sb, "EpochStopTick", EpochStopTick);
+            XmlAttrib(sb, "SynDropRate", SynDropRate);
+            XmlAttrib(sb, "TcbAbortionRate", TcbAbortionRate);
+            XmlAttrib(sb, "CurrentWatermark", CurrentWatermark);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16618,7 +17060,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Epoch", "LowNppEventState", "HighNppEventState", "EpochStartTick", "EpochStopTick", "SynDropRate", "TcbAbortionRate", "CurrentWatermark"};
+                {
+                    payloadNames = new string[] { "Epoch", "LowNppEventState", "HighNppEventState", "EpochStartTick", "EpochStopTick", "SynDropRate", "TcbAbortionRate", "CurrentWatermark" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16666,7 +17111,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpQueryNotificationChannelStatusRequestArgs(Action<TcpQueryNotificationChannelStatusRequestArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16680,20 +17125,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpQueryNotificationChannelStatusRequestArgs>) value; }
+            set { m_target = (Action<TcpQueryNotificationChannelStatusRequestArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "IsLoopback", IsLoopback);
-             XmlAttrib(sb, "ChannelStatus", ChannelStatus);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "IsLoopback", IsLoopback);
+            XmlAttrib(sb, "ChannelStatus", ChannelStatus);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16701,7 +17146,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "NcmContext", "State", "Pid", "IsLoopback", "ChannelStatus", "Status"};
+                {
+                    payloadNames = new string[] { "Tcb", "NcmContext", "State", "Pid", "IsLoopback", "ChannelStatus", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16741,7 +17189,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpReleaseIndicationArgs(Action<TcpReleaseIndicationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16755,14 +17203,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpReleaseIndicationArgs>) value; }
+            set { m_target = (Action<TcpReleaseIndicationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NBL", NBL);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NBL", NBL);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16770,7 +17218,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "NBL"};
+                {
+                    payloadNames = new string[] { "NBL" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16803,7 +17254,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpRscNblOobInfoArgs(Action<TcpRscNblOobInfoArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16817,19 +17268,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpRscNblOobInfoArgs>) value; }
+            set { m_target = (Action<TcpRscNblOobInfoArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "CoalescedSegCount", CoalescedSegCount);
-             XmlAttrib(sb, "DupAckCount", DupAckCount);
-             XmlAttrib(sb, "RscTcpTimestampDelta", RscTcpTimestampDelta);
-             XmlAttrib(sb, "HeaderFlags", HeaderFlags);
-             XmlAttrib(sb, "EcnCePresent", EcnCePresent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "CoalescedSegCount", CoalescedSegCount);
+            XmlAttrib(sb, "DupAckCount", DupAckCount);
+            XmlAttrib(sb, "RscTcpTimestampDelta", RscTcpTimestampDelta);
+            XmlAttrib(sb, "HeaderFlags", HeaderFlags);
+            XmlAttrib(sb, "EcnCePresent", EcnCePresent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16837,7 +17288,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "CoalescedSegCount", "DupAckCount", "RscTcpTimestampDelta", "HeaderFlags", "EcnCePresent"};
+                {
+                    payloadNames = new string[] { "Tcb", "CoalescedSegCount", "DupAckCount", "RscTcpTimestampDelta", "HeaderFlags", "EcnCePresent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16880,7 +17334,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpRssTableChangeArgs(Action<TcpRssTableChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16894,19 +17348,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpRssTableChangeArgs>) value; }
+            set { m_target = (Action<TcpRssTableChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SourceProcessor", SourceProcessor);
-             XmlAttrib(sb, "SourceActivity", SourceActivity);
-             XmlAttrib(sb, "DestinationProcessor", DestinationProcessor);
-             XmlAttrib(sb, "DestinationActivity", DestinationActivity);
-             XmlAttrib(sb, "PartitionMovesRemaining", PartitionMovesRemaining);
-             XmlAttrib(sb, "TableEntry", TableEntry);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SourceProcessor", SourceProcessor);
+            XmlAttrib(sb, "SourceActivity", SourceActivity);
+            XmlAttrib(sb, "DestinationProcessor", DestinationProcessor);
+            XmlAttrib(sb, "DestinationActivity", DestinationActivity);
+            XmlAttrib(sb, "PartitionMovesRemaining", PartitionMovesRemaining);
+            XmlAttrib(sb, "TableEntry", TableEntry);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16914,7 +17368,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SourceProcessor", "SourceActivity", "DestinationProcessor", "DestinationActivity", "PartitionMovesRemaining", "TableEntry"};
+                {
+                    payloadNames = new string[] { "SourceProcessor", "SourceActivity", "DestinationProcessor", "DestinationActivity", "PartitionMovesRemaining", "TableEntry" };
+                }
+
                 return payloadNames;
             }
         }
@@ -16953,7 +17410,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpRtcPortRangeAssignmentArgs(Action<TcpRtcPortRangeAssignmentArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -16967,15 +17424,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpRtcPortRangeAssignmentArgs>) value; }
+            set { m_target = (Action<TcpRtcPortRangeAssignmentArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "AssignedFromRtcRange", AssignedFromRtcRange);
-             XmlAttrib(sb, "Port", Port);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "AssignedFromRtcRange", AssignedFromRtcRange);
+            XmlAttrib(sb, "Port", Port);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -16983,7 +17440,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "AssignedFromRtcRange", "Port"};
+                {
+                    payloadNames = new string[] { "AssignedFromRtcRange", "Port" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17019,7 +17479,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSackUpdateArgs(Action<TcpSackUpdateArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17033,20 +17493,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSackUpdateArgs>) value; }
+            set { m_target = (Action<TcpSackUpdateArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SndUna", SndUna);
-             XmlAttrib(sb, "SndMax", SndMax);
-             XmlAttrib(sb, "SackCount", SackCount);
-             XmlAttrib(sb, "SackBytes", SackBytes);
-             XmlAttrib(sb, "SackInFlight", SackInFlight);
-             XmlAttrib(sb, "SackIsLost", SackIsLost);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SndUna", SndUna);
+            XmlAttrib(sb, "SndMax", SndMax);
+            XmlAttrib(sb, "SackCount", SackCount);
+            XmlAttrib(sb, "SackBytes", SackBytes);
+            XmlAttrib(sb, "SackInFlight", SackInFlight);
+            XmlAttrib(sb, "SackIsLost", SackIsLost);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17054,7 +17514,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax", "SackCount", "SackBytes", "SackInFlight", "SackIsLost"};
+                {
+                    payloadNames = new string[] { "Tcb", "SndUna", "SndMax", "SackCount", "SackBytes", "SackInFlight", "SackIsLost" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17091,13 +17554,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public Address Tcb { get { return GetAddressAt(0); } }
         public string Injected { get { return GetUnicodeStringAt(HostOffset(4, 1)); } }
         public int NumBytes { get { return GetInt32At(SkipUnicodeString(HostOffset(4, 1))); } }
-        public int SndNxt { get { return GetInt32At(SkipUnicodeString(HostOffset(4, 1))+4); } }
+        public int SndNxt { get { return GetInt32At(SkipUnicodeString(HostOffset(4, 1)) + 4); } }
 
         #region Private
         internal TcpSendPostedArgs(Action<TcpSendPostedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17105,23 +17568,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(4, 1))+8));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(4, 1))+8));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(4, 1)) + 8));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(4, 1)) + 8));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSendPostedArgs>) value; }
+            set { m_target = (Action<TcpSendPostedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "Injected", Injected);
-             XmlAttrib(sb, "NumBytes", NumBytes);
-             XmlAttrib(sb, "SndNxt", SndNxt);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "Injected", Injected);
+            XmlAttrib(sb, "NumBytes", NumBytes);
+            XmlAttrib(sb, "SndNxt", SndNxt);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17129,7 +17592,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "Injected", "NumBytes", "SndNxt"};
+                {
+                    payloadNames = new string[] { "Tcb", "Injected", "NumBytes", "SndNxt" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17165,7 +17631,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSetTcpOptionArgs(Action<TcpSetTcpOptionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17179,16 +17645,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSetTcpOptionArgs>) value; }
+            set { m_target = (Action<TcpSetTcpOptionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "OptionType", OptionType);
-             XmlAttrib(sb, "SoOptionType", SoOptionType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "OptionType", OptionType);
+            XmlAttrib(sb, "SoOptionType", SoOptionType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17196,7 +17662,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "OptionType", "SoOptionType"};
+                {
+                    payloadNames = new string[] { "Tcb", "OptionType", "SoOptionType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17230,7 +17699,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSetTcpSoOptionArgs(Action<TcpSetTcpSoOptionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17244,16 +17713,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSetTcpSoOptionArgs>) value; }
+            set { m_target = (Action<TcpSetTcpSoOptionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "OptionType", OptionType);
-             XmlAttrib(sb, "SoOptionType", SoOptionType);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "OptionType", OptionType);
+            XmlAttrib(sb, "SoOptionType", SoOptionType);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17261,7 +17730,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "OptionType", "SoOptionType"};
+                {
+                    payloadNames = new string[] { "Tcb", "OptionType", "SoOptionType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17299,7 +17771,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSignalNotificationChannelEventArgs(Action<TcpSignalNotificationChannelEventArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17313,20 +17785,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSignalNotificationChannelEventArgs>) value; }
+            set { m_target = (Action<TcpSignalNotificationChannelEventArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "RcvNxt", RcvNxt);
-             XmlAttrib(sb, "Delivered", Delivered);
-             XmlAttrib(sb, "Indicated", Indicated);
-             XmlAttrib(sb, "FinalEvent", FinalEvent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "RcvNxt", RcvNxt);
+            XmlAttrib(sb, "Delivered", Delivered);
+            XmlAttrib(sb, "Indicated", Indicated);
+            XmlAttrib(sb, "FinalEvent", FinalEvent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17334,7 +17806,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "NcmContext", "Pid", "RcvNxt", "Delivered", "Indicated", "FinalEvent"};
+                {
+                    payloadNames = new string[] { "Tcb", "NcmContext", "Pid", "RcvNxt", "Delivered", "Indicated", "FinalEvent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17378,7 +17853,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSrttMeasurementStartedArgs(Action<TcpSrttMeasurementStartedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17392,18 +17867,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSrttMeasurementStartedArgs>) value; }
+            set { m_target = (Action<TcpSrttMeasurementStartedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "SeqNum", SeqNum);
-             XmlAttrib(sb, "Tick", Tick);
-             XmlAttrib(sb, "RttSample", RttSample);
-             XmlAttrib(sb, "NewSrtt", NewSrtt);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "SeqNum", SeqNum);
+            XmlAttrib(sb, "Tick", Tick);
+            XmlAttrib(sb, "RttSample", RttSample);
+            XmlAttrib(sb, "NewSrtt", NewSrtt);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17411,7 +17886,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "SeqNum", "Tick", "RttSample", "NewSrtt"};
+                {
+                    payloadNames = new string[] { "Tcb", "SeqNum", "Tick", "RttSample", "NewSrtt" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17452,7 +17930,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpSwsAvoidanceBeginArgs(Action<TcpSwsAvoidanceBeginArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17466,19 +17944,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpSwsAvoidanceBeginArgs>) value; }
+            set { m_target = (Action<TcpSwsAvoidanceBeginArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "TimerValue", TimerValue);
-             XmlAttribHex(sb, "BytesToSend", BytesToSend);
-             XmlAttrib(sb, "SendAvailable", SendAvailable);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttribHex(sb, "MaxSndWnd", MaxSndWnd);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "TimerValue", TimerValue);
+            XmlAttribHex(sb, "BytesToSend", BytesToSend);
+            XmlAttrib(sb, "SendAvailable", SendAvailable);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttribHex(sb, "MaxSndWnd", MaxSndWnd);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17486,7 +17964,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "TimerValue", "BytesToSend", "SendAvailable", "Cwnd", "MaxSndWnd"};
+                {
+                    payloadNames = new string[] { "Tcb", "TimerValue", "BytesToSend", "SendAvailable", "Cwnd", "MaxSndWnd" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17528,7 +18009,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpTcbChangeIsbArgs(Action<TcpTcbChangeIsbArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17542,18 +18023,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTcbChangeIsbArgs>) value; }
+            set { m_target = (Action<TcpTcbChangeIsbArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IsbSize", IsbSize);
-             XmlAttrib(sb, "Cwnd", Cwnd);
-             XmlAttrib(sb, "SndWnd", SndWnd);
-             XmlAttrib(sb, "SendAvailable", SendAvailable);
-             XmlAttrib(sb, "SSThresh", SSThresh);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IsbSize", IsbSize);
+            XmlAttrib(sb, "Cwnd", Cwnd);
+            XmlAttrib(sb, "SndWnd", SndWnd);
+            XmlAttrib(sb, "SendAvailable", SendAvailable);
+            XmlAttrib(sb, "SSThresh", SSThresh);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17561,7 +18042,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IsbSize", "Cwnd", "SndWnd", "SendAvailable", "SSThresh"};
+                {
+                    payloadNames = new string[] { "IsbSize", "Cwnd", "SndWnd", "SendAvailable", "SSThresh" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17599,7 +18083,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpTcbStopTimerArgs(Action<TcpTcbStopTimerArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17613,16 +18097,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTcbStopTimerArgs>) value; }
+            set { m_target = (Action<TcpTcbStopTimerArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "TimerType", TimerType);
-             XmlAttrib(sb, "WaitTimeMilliseconds", WaitTimeMilliseconds);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "TimerType", TimerType);
+            XmlAttrib(sb, "WaitTimeMilliseconds", WaitTimeMilliseconds);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17630,7 +18114,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "TimerType", "WaitTimeMilliseconds"};
+                {
+                    payloadNames = new string[] { "Tcb", "TimerType", "WaitTimeMilliseconds" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17657,19 +18144,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
     public sealed class TcpTcbStartTimerArgs : TraceEvent
     {
         public Address Tcb { get { return GetAddressAt(0); } }
-        public TCP_TIMER_TYPE TimerType { get { if (Version >= 1) return (TCP_TIMER_TYPE)GetInt32At(HostOffset(4, 1)); return (TCP_TIMER_TYPE)GetInt32At(HostOffset(4, 1)); } }
+        public TCP_TIMER_TYPE TimerType { get { if (Version >= 1) { return (TCP_TIMER_TYPE)GetInt32At(HostOffset(4, 1)); } return (TCP_TIMER_TYPE)GetInt32At(HostOffset(4, 1)); } }
         public int WaitTimeMilliseconds { get { return GetInt32At(HostOffset(8, 1)); } }
-        public int Processor { get { if (Version >= 1) return GetInt32At(HostOffset(12, 1)); return 0; } }
-        public long LastInterruptTime { get { if (Version >= 1) return GetInt64At(HostOffset(16, 1)); return 0; } }
-        public long LastMicroseconds { get { if (Version >= 1) return GetInt64At(HostOffset(24, 1)); return 0; } }
-        public long CachedKQPCValues { get { if (Version >= 1) return GetInt64At(HostOffset(32, 1)); return 0; } }
-        public long CachedFrequencyValues { get { if (Version >= 1) return GetInt64At(HostOffset(40, 1)); return 0; } }
+        public int Processor { get { if (Version >= 1) { return GetInt32At(HostOffset(12, 1)); } return 0; } }
+        public long LastInterruptTime { get { if (Version >= 1) { return GetInt64At(HostOffset(16, 1)); } return 0; } }
+        public long LastMicroseconds { get { if (Version >= 1) { return GetInt64At(HostOffset(24, 1)); } return 0; } }
+        public long CachedKQPCValues { get { if (Version >= 1) { return GetInt64At(HostOffset(32, 1)); } return 0; } }
+        public long CachedFrequencyValues { get { if (Version >= 1) { return GetInt64At(HostOffset(40, 1)); } return 0; } }
 
         #region Private
         internal TcpTcbStartTimerArgs(Action<TcpTcbStartTimerArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17684,21 +18171,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTcbStartTimerArgs>) value; }
+            set { m_target = (Action<TcpTcbStartTimerArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "TimerType", TimerType);
-             XmlAttrib(sb, "WaitTimeMilliseconds", WaitTimeMilliseconds);
-             XmlAttrib(sb, "Processor", Processor);
-             XmlAttrib(sb, "LastInterruptTime", LastInterruptTime);
-             XmlAttrib(sb, "LastMicroseconds", LastMicroseconds);
-             XmlAttrib(sb, "CachedKQPCValues", CachedKQPCValues);
-             XmlAttrib(sb, "CachedFrequencyValues", CachedFrequencyValues);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "TimerType", TimerType);
+            XmlAttrib(sb, "WaitTimeMilliseconds", WaitTimeMilliseconds);
+            XmlAttrib(sb, "Processor", Processor);
+            XmlAttrib(sb, "LastInterruptTime", LastInterruptTime);
+            XmlAttrib(sb, "LastMicroseconds", LastMicroseconds);
+            XmlAttrib(sb, "CachedKQPCValues", CachedKQPCValues);
+            XmlAttrib(sb, "CachedFrequencyValues", CachedFrequencyValues);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17706,7 +18193,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "TimerType", "WaitTimeMilliseconds", "Processor", "LastInterruptTime", "LastMicroseconds", "CachedKQPCValues", "CachedFrequencyValues"};
+                {
+                    payloadNames = new string[] { "Tcb", "TimerType", "WaitTimeMilliseconds", "Processor", "LastInterruptTime", "LastMicroseconds", "CachedKQPCValues", "CachedFrequencyValues" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17751,7 +18241,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpTcbStateChangeArgs(Action<TcpTcbStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17765,17 +18255,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTcbStateChangeArgs>) value; }
+            set { m_target = (Action<TcpTcbStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OldState", OldState);
-             XmlAttrib(sb, "NewState", NewState);
-             XmlAttrib(sb, "SndNxt", SndNxt);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OldState", OldState);
+            XmlAttrib(sb, "NewState", NewState);
+            XmlAttrib(sb, "SndNxt", SndNxt);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17783,7 +18273,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OldState", "NewState", "SndNxt", "Tcb"};
+                {
+                    payloadNames = new string[] { "OldState", "NewState", "SndNxt", "Tcb" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17820,7 +18313,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpTcbSynSendArgs(Action<TcpTcbSynSendArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17834,17 +18327,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTcbSynSendArgs>) value; }
+            set { m_target = (Action<TcpTcbSynSendArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "ISN", ISN);
-             XmlAttrib(sb, "RcvWnd", RcvWnd);
-             XmlAttrib(sb, "RcvWndScale", RcvWndScale);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "ISN", ISN);
+            XmlAttrib(sb, "RcvWnd", RcvWnd);
+            XmlAttrib(sb, "RcvWndScale", RcvWndScale);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17852,7 +18345,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "ISN", "RcvWnd", "RcvWndScale"};
+                {
+                    payloadNames = new string[] { "Tcb", "ISN", "RcvWnd", "RcvWndScale" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17888,7 +18384,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpTemplateChangedArgs(Action<TcpTemplateChangedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17902,16 +18398,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTemplateChangedArgs>) value; }
+            set { m_target = (Action<TcpTemplateChangedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "TemplateType", TemplateType);
-             XmlAttrib(sb, "Context", Context);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "TemplateType", TemplateType);
+            XmlAttrib(sb, "Context", Context);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17919,7 +18415,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "TemplateType", "Context"};
+                {
+                    payloadNames = new string[] { "Tcb", "TemplateType", "Context" };
+                }
+
                 return payloadNames;
             }
         }
@@ -17959,7 +18458,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpTemplateParametersArgs(Action<TcpTemplateParametersArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -17973,22 +18472,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpTemplateParametersArgs>) value; }
+            set { m_target = (Action<TcpTemplateParametersArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             XmlAttrib(sb, "TemplateType", TemplateType);
-             XmlAttrib(sb, "MinRto", MinRto);
-             XmlAttrib(sb, "EnableCwndRestart", EnableCwndRestart);
-             XmlAttrib(sb, "InitialCwnd", InitialCwnd);
-             XmlAttrib(sb, "CongestionAlgorithm", CongestionAlgorithm);
-             XmlAttrib(sb, "MaxDataRetransmissions", MaxDataRetransmissions);
-             XmlAttrib(sb, "DelayedAckTicks", DelayedAckTicks);
-             XmlAttrib(sb, "DelayedAckFrequency", DelayedAckFrequency);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            XmlAttrib(sb, "TemplateType", TemplateType);
+            XmlAttrib(sb, "MinRto", MinRto);
+            XmlAttrib(sb, "EnableCwndRestart", EnableCwndRestart);
+            XmlAttrib(sb, "InitialCwnd", InitialCwnd);
+            XmlAttrib(sb, "CongestionAlgorithm", CongestionAlgorithm);
+            XmlAttrib(sb, "MaxDataRetransmissions", MaxDataRetransmissions);
+            XmlAttrib(sb, "DelayedAckTicks", DelayedAckTicks);
+            XmlAttrib(sb, "DelayedAckFrequency", DelayedAckFrequency);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -17996,7 +18495,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Tcb", "TemplateType", "MinRto", "EnableCwndRestart", "InitialCwnd", "CongestionAlgorithm", "MaxDataRetransmissions", "DelayedAckTicks", "DelayedAckFrequency"};
+                {
+                    payloadNames = new string[] { "Tcb", "TemplateType", "MinRto", "EnableCwndRestart", "InitialCwnd", "CongestionAlgorithm", "MaxDataRetransmissions", "DelayedAckTicks", "DelayedAckFrequency" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18046,7 +18548,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpWsdCacheEntryStateChangeArgs(Action<TcpWsdCacheEntryStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18060,20 +18562,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpWsdCacheEntryStateChangeArgs>) value; }
+            set { m_target = (Action<TcpWsdCacheEntryStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
-             XmlAttrib(sb, "Processor", Processor);
-             XmlAttrib(sb, "Entry", Entry);
-             XmlAttrib(sb, "OldState", OldState);
-             XmlAttrib(sb, "NewState", NewState);
-             XmlAttrib(sb, "ProbeCount", ProbeCount);
-             XmlAttrib(sb, "ProbeCountWs", ProbeCountWs);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
+            XmlAttrib(sb, "Processor", Processor);
+            XmlAttrib(sb, "Entry", Entry);
+            XmlAttrib(sb, "OldState", OldState);
+            XmlAttrib(sb, "NewState", NewState);
+            XmlAttrib(sb, "ProbeCount", ProbeCount);
+            XmlAttrib(sb, "ProbeCountWs", ProbeCountWs);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18081,7 +18583,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TcpWsdEtwPoint", "Processor", "Entry", "OldState", "NewState", "ProbeCount", "ProbeCountWs"};
+                {
+                    payloadNames = new string[] { "TcpWsdEtwPoint", "Processor", "Entry", "OldState", "NewState", "ProbeCount", "ProbeCountWs" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18122,7 +18627,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpWsdInitializationErrorsArgs(Action<TcpWsdInitializationErrorsArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18136,15 +18641,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpWsdInitializationErrorsArgs>) value; }
+            set { m_target = (Action<TcpWsdInitializationErrorsArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18152,7 +18657,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TcpWsdEtwPoint", "Status"};
+                {
+                    payloadNames = new string[] { "TcpWsdEtwPoint", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18183,7 +18691,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpWsdInitializationInformationArgs(Action<TcpWsdInitializationInformationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18197,15 +18705,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpWsdInitializationInformationArgs>) value; }
+            set { m_target = (Action<TcpWsdInitializationInformationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18213,7 +18721,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TcpWsdEtwPoint", "Status"};
+                {
+                    payloadNames = new string[] { "TcpWsdEtwPoint", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18246,7 +18757,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpWsdProfileStateChangeArgs(Action<TcpWsdProfileStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18260,17 +18771,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpWsdProfileStateChangeArgs>) value; }
+            set { m_target = (Action<TcpWsdProfileStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Profile", Profile);
-             XmlAttrib(sb, "State", State);
-             XmlAttrib(sb, "Qualified", Qualified);
-             XmlAttrib(sb, "EreQualified", EreQualified);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Profile", Profile);
+            XmlAttrib(sb, "State", State);
+            XmlAttrib(sb, "Qualified", Qualified);
+            XmlAttrib(sb, "EreQualified", EreQualified);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18278,7 +18789,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Profile", "State", "Qualified", "EreQualified"};
+                {
+                    payloadNames = new string[] { "Profile", "State", "Qualified", "EreQualified" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18315,7 +18829,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpWsdStateChangeArgs(Action<TcpWsdStateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18329,17 +18843,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpWsdStateChangeArgs>) value; }
+            set { m_target = (Action<TcpWsdStateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OldEnabledState", OldEnabledState);
-             XmlAttrib(sb, "NewEnabledState", NewEnabledState);
-             XmlAttrib(sb, "OldThreshold", OldThreshold);
-             XmlAttrib(sb, "NewThreshold", NewThreshold);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OldEnabledState", OldEnabledState);
+            XmlAttrib(sb, "NewEnabledState", NewEnabledState);
+            XmlAttrib(sb, "OldThreshold", OldThreshold);
+            XmlAttrib(sb, "NewThreshold", NewThreshold);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18347,7 +18861,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OldEnabledState", "NewEnabledState", "OldThreshold", "NewThreshold"};
+                {
+                    payloadNames = new string[] { "OldEnabledState", "NewEnabledState", "OldThreshold", "NewThreshold" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18382,7 +18899,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal TcpWsdWsRestrictedProfileArgs(Action<TcpWsdWsRestrictedProfileArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18396,15 +18913,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TcpWsdWsRestrictedProfileArgs>) value; }
+            set { m_target = (Action<TcpWsdWsRestrictedProfileArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
-             XmlAttribHex(sb, "Tcb", Tcb);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TcpWsdEtwPoint", TcpWsdEtwPoint);
+            XmlAttribHex(sb, "Tcb", Tcb);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18412,7 +18929,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TcpWsdEtwPoint", "Tcb"};
+                {
+                    payloadNames = new string[] { "TcpWsdEtwPoint", "Tcb" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18448,7 +18968,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal UdpCreateNotificationChannelRequestArgs(Action<UdpCreateNotificationChannelRequestArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18462,20 +18982,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<UdpCreateNotificationChannelRequestArgs>) value; }
+            set { m_target = (Action<UdpCreateNotificationChannelRequestArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "Activated", Activated);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "IsLoopback", IsLoopback);
-             XmlAttrib(sb, "ChannelStatus", ChannelStatus);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "Activated", Activated);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "IsLoopback", IsLoopback);
+            XmlAttrib(sb, "ChannelStatus", ChannelStatus);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18483,7 +19003,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Activated", "Pid", "IsLoopback", "ChannelStatus", "Status"};
+                {
+                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Activated", "Pid", "IsLoopback", "ChannelStatus", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18527,7 +19050,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal UdpCreateNotificationChannelRequestProcessedArgs(Action<UdpCreateNotificationChannelRequestProcessedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18541,18 +19064,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<UdpCreateNotificationChannelRequestProcessedArgs>) value; }
+            set { m_target = (Action<UdpCreateNotificationChannelRequestProcessedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "Status", Status);
-             XmlAttrib(sb, "PushNotificationGuid", PushNotificationGuid);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "PushNotificationGuid", PushNotificationGuid);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18560,7 +19083,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Pid", "Status", "PushNotificationGuid"};
+                {
+                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Pid", "Status", "PushNotificationGuid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18594,14 +19120,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int IpAddrLength { get { return GetInt32At(HostOffset(4, 1)); } }
         public int LocalIPv4Address { get { return GetInt32At(HostOffset(8, 1)); } }
         public byte[] LocalIPv6Address { get { return GetByteArrayAt(HostOffset(12, 1), IpAddrLength); } }
-        public int IPProtocol { get { return GetInt32At(HostOffset(0+ (IpAddrLength*1)+12, 1)); } }
-        public int SrcPort { get { return GetInt16At(HostOffset(0+ (IpAddrLength*1)+16, 1)); } }
+        public int IPProtocol { get { return GetInt32At(HostOffset(0 + (IpAddrLength * 1) + 12, 1)); } }
+        public int SrcPort { get { return GetInt16At(HostOffset(0 + (IpAddrLength * 1) + 16, 1)); } }
 
         #region Private
         internal UdpCreateNotificationChannelRequestProcessingArgs(Action<UdpCreateNotificationChannelRequestProcessingArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18609,24 +19135,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (IpAddrLength*1)+18, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (IpAddrLength*1)+18, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (IpAddrLength * 1) + 18, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (IpAddrLength * 1) + 18, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<UdpCreateNotificationChannelRequestProcessingArgs>) value; }
+            set { m_target = (Action<UdpCreateNotificationChannelRequestProcessingArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
-             XmlAttrib(sb, "IpAddrLength", IpAddrLength);
-             XmlAttrib(sb, "LocalIPv4Address", LocalIPv4Address);
-             XmlAttrib(sb, "IPProtocol", IPProtocol);
-             XmlAttrib(sb, "SrcPort", SrcPort);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
+            XmlAttrib(sb, "IpAddrLength", IpAddrLength);
+            XmlAttrib(sb, "LocalIPv4Address", LocalIPv4Address);
+            XmlAttrib(sb, "IPProtocol", IPProtocol);
+            XmlAttrib(sb, "SrcPort", SrcPort);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18634,7 +19160,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "UdpEndpoint", "IpAddrLength", "LocalIPv4Address", "LocalIPv6Address", "IPProtocol", "SrcPort"};
+                {
+                    payloadNames = new string[] { "UdpEndpoint", "IpAddrLength", "LocalIPv4Address", "LocalIPv6Address", "IPProtocol", "SrcPort" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18676,7 +19205,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal UdpQueryNotificationChannelStatusRequestArgs(Action<UdpQueryNotificationChannelStatusRequestArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18690,20 +19219,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<UdpQueryNotificationChannelStatusRequestArgs>) value; }
+            set { m_target = (Action<UdpQueryNotificationChannelStatusRequestArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "Activated", Activated);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "IsLoopback", IsLoopback);
-             XmlAttrib(sb, "ChannelStatus", ChannelStatus);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "Activated", Activated);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "IsLoopback", IsLoopback);
+            XmlAttrib(sb, "ChannelStatus", ChannelStatus);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18711,7 +19240,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Activated", "Pid", "IsLoopback", "ChannelStatus", "Status"};
+                {
+                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Activated", "Pid", "IsLoopback", "ChannelStatus", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18750,15 +19282,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         public int NumBytes { get { return GetInt32At(HostOffset(8, 1)); } }
         public int LocalSockAddrLength { get { return GetInt32At(HostOffset(12, 1)); } }
         public byte[] LocalSockAddr { get { return GetByteArrayAt(HostOffset(16, 1), LocalSockAddrLength); } }
-        public int RemoteSockAddrLength { get { return GetInt32At(HostOffset(0+ (LocalSockAddrLength*1)+16, 1)); } }
-        public byte[] RemoteSockAddr { get { return GetByteArrayAt(HostOffset(0+ (LocalSockAddrLength*1)+20, 1), RemoteSockAddrLength); } }
-        public int Pid { get { return GetInt32At(HostOffset(0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+20, 1)); } }
+        public int RemoteSockAddrLength { get { return GetInt32At(HostOffset(0 + (LocalSockAddrLength * 1) + 16, 1)); } }
+        public byte[] RemoteSockAddr { get { return GetByteArrayAt(HostOffset(0 + (LocalSockAddrLength * 1) + 20, 1), RemoteSockAddrLength); } }
+        public int Pid { get { return GetInt32At(HostOffset(0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 20, 1)); } }
 
         #region Private
         internal UdpEndpointSendMessagesArgs(Action<UdpEndpointSendMessagesArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18766,25 +19298,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+24, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (RemoteSockAddrLength*1)+ (LocalSockAddrLength*1)+24, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 24, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (RemoteSockAddrLength * 1) + (LocalSockAddrLength * 1) + 24, 1)));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<UdpEndpointSendMessagesArgs>) value; }
+            set { m_target = (Action<UdpEndpointSendMessagesArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "Endpoint", Endpoint);
-             XmlAttrib(sb, "NumMessages", NumMessages);
-             XmlAttrib(sb, "NumBytes", NumBytes);
-             XmlAttrib(sb, "LocalSockAddrLength", LocalSockAddrLength);
-             XmlAttrib(sb, "RemoteSockAddrLength", RemoteSockAddrLength);
-             XmlAttrib(sb, "Pid", Pid);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "Endpoint", Endpoint);
+            XmlAttrib(sb, "NumMessages", NumMessages);
+            XmlAttrib(sb, "NumBytes", NumBytes);
+            XmlAttrib(sb, "LocalSockAddrLength", LocalSockAddrLength);
+            XmlAttrib(sb, "RemoteSockAddrLength", RemoteSockAddrLength);
+            XmlAttrib(sb, "Pid", Pid);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18792,7 +19324,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Endpoint", "NumMessages", "NumBytes", "LocalSockAddrLength", "LocalSockAddr", "RemoteSockAddrLength", "RemoteSockAddr", "Pid"};
+                {
+                    payloadNames = new string[] { "Endpoint", "NumMessages", "NumBytes", "LocalSockAddrLength", "LocalSockAddr", "RemoteSockAddrLength", "RemoteSockAddr", "Pid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -18834,7 +19369,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         internal UdpSignalNotificationChannelEventArgs(Action<UdpSignalNotificationChannelEventArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -18848,18 +19383,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<UdpSignalNotificationChannelEventArgs>) value; }
+            set { m_target = (Action<UdpSignalNotificationChannelEventArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
-             XmlAttribHex(sb, "NcmContext", NcmContext);
-             XmlAttrib(sb, "Pid", Pid);
-             XmlAttrib(sb, "Delivered", Delivered);
-             XmlAttrib(sb, "FinalEvent", FinalEvent);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "UdpEndpoint", UdpEndpoint);
+            XmlAttribHex(sb, "NcmContext", NcmContext);
+            XmlAttrib(sb, "Pid", Pid);
+            XmlAttrib(sb, "Delivered", Delivered);
+            XmlAttrib(sb, "FinalEvent", FinalEvent);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -18867,7 +19402,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Pid", "Delivered", "FinalEvent"};
+                {
+                    payloadNames = new string[] { "UdpEndpoint", "NcmContext", "Pid", "Delivered", "FinalEvent" };
+                }
+
                 return payloadNames;
             }
         }

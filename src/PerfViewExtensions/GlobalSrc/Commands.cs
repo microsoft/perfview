@@ -1,23 +1,18 @@
 ﻿#define DEMOS
+using Graphs;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using PerfView;
+using PerfView.GuiUtilities;
+using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Graphs;
-using PerfView.GuiUtilities;
-using PerfViewExtensibility;
 using Address = System.UInt64;
-using Microsoft.Diagnostics.Utilities;
-using Diagnostics.Tracing;
-using PerfView;
-using System.Diagnostics;
-using System.Windows;
 
 // HOW PERFVIEW SUPPORTS USER EXTENSIONS
 // 
@@ -122,20 +117,25 @@ public class Commands : CommandEnvironment
             htmlWriter.WriteLine("<h1>Demonstration Title</h1>");
             htmlWriter.WriteLine("<ol>");
             for (int i = 0; i < args.Length; i++)
+            {
                 htmlWriter.WriteLine("<li>Param <a href=\"command:{0}\">{0}</a></li>", args[i]);
+            }
+
             htmlWriter.WriteLine("<li>Param <a href=\"#myAnchor\">Goto another Header</a></li>");
             htmlWriter.WriteLine("<li>Param <a href=\"command:ClearPage\">Will Clear the current page (demonstrates updating page in place)</a></li>");
 
             htmlWriter.WriteLine("</ol>");
             for (int i = 0; i < 20; i++)
+            {
                 htmlWriter.WriteLine("<p>&nbsp;</p>");  // Create some whitespace 
+            }
 
             htmlWriter.WriteLine("<h1><a id=\"myAnchor\">Another Header</a></h1>");
             htmlWriter.WriteLine("<p>This is just a demonstration of linking to other parts of the same page.</p>");  // Create some whitespace 
         }
 
         LogFile.WriteLine("[Opening {0}]", htmlFileName);
-        OpenHtmlReport(htmlFileName, "Demonstration", delegate(string command, TextWriter log, WebBrowserWindow window)
+        OpenHtmlReport(htmlFileName, "Demonstration", delegate (string command, TextWriter log, WebBrowserWindow window)
         {
             // This gets called when hyperlinks with a url that begin with 'command:' are clicked.   
 
@@ -181,7 +181,7 @@ public class Commands : CommandEnvironment
             var traceEventSource = events.GetSource();
 
             // Set it up so that this code gets called back every time an ImageLoad event is encountered. 
-            traceEventSource.Kernel.ImageLoad += delegate(ImageLoadTraceData data)
+            traceEventSource.Kernel.ImageLoad += delegate (ImageLoadTraceData data)
             {
                 LogFile.WriteLine("At {0:f3} Msec loaded at 0x{1:x} {2}", data.TimeStampRelativeMSec, data.ImageBase, data.FileName);
             };
@@ -273,7 +273,9 @@ public class Commands : CommandEnvironment
             foreach (var eventName in events.EventNames)
             {
                 if (eventName.Contains("Process") || eventName.Contains("Image"))
+                {
                     desiredEvents.Add(eventName);
+                }
             }
             events.SetEventFilter(desiredEvents);
             LogFile.WriteLine("[Opening event viewer on {0}]", etlFileName);
@@ -291,13 +293,19 @@ public class Commands : CommandEnvironment
         using (var etlFile = OpenETLFile(etlFileName))
         {
             if (processName != null)
+            {
                 CommandLineArgs.Process = processName;
+            }
+
             TraceProcess process = null;
             if (CommandLineArgs.Process != null)
             {
                 process = etlFile.Processes.LastProcessWithName(CommandLineArgs.Process);
                 if (process == null)
+                {
                     throw new ApplicationException("Could not find process named " + CommandLineArgs.Process);
+                }
+
                 LogFile.WriteLine("Focusing on process: {0} ({1}) starting at {2:n3} Msec",
                     process.Name, process.ProcessID, process.StartTimeRelativeMsec);
             }
@@ -307,10 +315,15 @@ public class Commands : CommandEnvironment
                 foreach (var processInFile in etlFile.Processes)
                 {
                     if (0 < processInFile.StartTimeRelativeMsec)
+                    {
                         process = processInFile;
+                    }
                 }
                 if (process == null)
+                {
                     throw new ApplicationException("No process started in the trace.");
+                }
+
                 LogFile.WriteLine("Focusing on first process: {0} ({1}) starting at {2:n3} Msec",
                     process.Name, process.ProcessID, process.StartTimeRelativeMsec);
             }
@@ -340,12 +353,12 @@ public class Commands : CommandEnvironment
             double IOTimeTotalMSec = 0;
             var lastIObyDisk = new double[4];                       // Needed to compute service time.  expanded as needed. 
 
-            traceEventSource.Kernel.ImageLoad += delegate(ImageLoadTraceData data)
+            traceEventSource.Kernel.ImageLoad += delegate (ImageLoadTraceData data)
             {
                 imageLoadCount++;
             };
 
-            traceEventSource.Kernel.DiskIORead += delegate(DiskIOTraceData data)
+            traceEventSource.Kernel.DiskIORead += delegate (DiskIOTraceData data)
             {
                 // Stop if we have hit idle 
                 if (imageLoadCount > 2 && data.TimeStampRelativeMSec - lastNonIdleRelativeMSec > idleDurationMSec)
@@ -377,7 +390,7 @@ public class Commands : CommandEnvironment
                 IOTimeTotalMSec += serviceTimeMSec;
                 lastIObyDisk[data.DiskNumber] = data.TimeStampRelativeMSec;
             };
-            traceEventSource.Kernel.PerfInfoSample += delegate(SampledProfileTraceData data)
+            traceEventSource.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
                 // Stop if we have hit idle 
                 if (imageLoadCount > 2 && data.TimeStampRelativeMSec - lastNonIdleRelativeMSec > idleDurationMSec)
@@ -397,7 +410,9 @@ public class Commands : CommandEnvironment
                 {
                     var moduleFile = data.Log().CodeAddresses.ModuleFile(codeAddrIdx);
                     if (moduleFile != null)
+                    {
                         moduleFilePath = moduleFile.FilePath;
+                    }
                 }
                 if (!string.IsNullOrEmpty(moduleFilePath))
                 {
@@ -429,7 +444,10 @@ public class Commands : CommandEnvironment
                 // Sort decending by CPU time.  
                 dllNames.Sort((x, y) => CpuTimeByDllMSec[y].CompareTo(CpuTimeByDllMSec[x]));
                 foreach (var dllName in dllNames)
+                {
                     htmlWriter.WriteLine("<TR><TD>{0}</TD><TD>{1:n3}</TD></TR>", Path.GetFileName(dllName), CpuTimeByDllMSec[dllName]);
+                }
+
                 htmlWriter.WriteLine("</table>");
 
                 htmlWriter.WriteLine("<h2>I/O Breakdown by DLL</h2>");
@@ -440,12 +458,15 @@ public class Commands : CommandEnvironment
                 // Sort decending by I/O time.  
                 fileNames.Sort((x, y) => IOTimeByFileMSec[y].CompareTo(IOTimeByFileMSec[x]));
                 foreach (var fileName in fileNames)
+                {
                     htmlWriter.WriteLine("<TR><TD>{0}</TD><TD>{1:n3}</TD></TR>", Path.GetFileName(fileName), IOTimeByFileMSec[fileName]);
+                }
+
                 htmlWriter.WriteLine("</table>");
             }
 
             LogFile.WriteLine("[Opening {0}]", htmlFileName);
-            OpenHtmlReport(htmlFileName, "Startup Report", delegate(string command, TextWriter log, WebBrowserWindow window)
+            OpenHtmlReport(htmlFileName, "Startup Report", delegate (string command, TextWriter log, WebBrowserWindow window)
             {
                 // This gets called when hyperlinks with a url that begin with 'command:' are clicked.   
                 // Typically you open up new Html windows or create CSV files and use OpenExcel
@@ -471,13 +492,19 @@ public class Commands : CommandEnvironment
         using (var etlFile = OpenETLFile(etlFileName))
         {
             if (processName != null)
+            {
                 CommandLineArgs.Process = processName;
+            }
+
             TraceProcess process = null;
             if (CommandLineArgs.Process != null)
             {
                 process = etlFile.Processes.LastProcessWithName(CommandLineArgs.Process);
                 if (process == null)
+                {
                     throw new ApplicationException("Could not find process named " + CommandLineArgs.Process);
+                }
+
                 LogFile.WriteLine("Focusing on process: {0} ({1}) starting at {2:n3} Msec",
                     process.Name, process.ProcessID, process.StartTimeRelativeMsec);
                 etlFile.SetFilterProcess(process);
@@ -488,10 +515,15 @@ public class Commands : CommandEnvironment
                 foreach (var processInFile in etlFile.Processes)
                 {
                     if (0 < processInFile.StartTimeRelativeMsec)
+                    {
                         process = processInFile;
+                    }
                 }
                 if (process == null)
+                {
                     throw new ApplicationException("No process started in the trace.");
+                }
+
                 LogFile.WriteLine("Focusing on first process: {0} ({1}) starting at {2:n3} Msec",
                     process.Name, process.ProcessID, process.StartTimeRelativeMsec);
                 etlFile.SetFilterProcess(process);
@@ -499,12 +531,17 @@ public class Commands : CommandEnvironment
             var myStacks = etlFile.CPUStacks();
 
             if (dllNames.Length == 0)
+            {
                 throw new ApplicationException("Must provide a list of DLLs to group by");
+            }
 
             // Set up the filter the way we want it. 
             var groups = new StringBuilder();
             foreach (var dllName in dllNames)
+            {
                 groups.Append(dllName).Append("!-> module ").Append(dllName).Append(';');
+            }
+
             groups.Append("!->OTHER");
             myStacks.Filter.GroupRegExs = groups.ToString();
             myStacks.Filter.FoldRegExs = "^Thread;^OTHER";
@@ -534,13 +571,16 @@ public class Commands : CommandEnvironment
                 foreach (CallTreeNodeBase byName in byNames)
                 {
                     if (byName.ExclusiveMetric == 0)
+                    {
                         continue;
+                    }
+
                     htmlWriter.WriteLine("<TR><TD>{0}</TD><TD>{1:n3}</TD></TR>", byName.Name, byName.ExclusiveMetric);
                 }
             }
 
             LogFile.WriteLine("[Opening {0}]", htmlFileName);
-            OpenHtmlReport(htmlFileName, "Cpu By DLL Report", delegate(string command, TextWriter log, WebBrowserWindow window)
+            OpenHtmlReport(htmlFileName, "Cpu By DLL Report", delegate (string command, TextWriter log, WebBrowserWindow window)
             {
                 // This gets called when hyperlinks with a url that begin with 'command:' are clicked.   
                 // Typically you open up new Html windows or create CSV files and use OpenExcel
@@ -591,7 +631,9 @@ public class Commands : CommandEnvironment
 
         LogFile.WriteLine("Existing persisted values");
         foreach (var keyValue in ConfigData)
+        {
             LogFile.WriteLine("   ConfigValue[{0}] = {1}", keyValue.Key, keyValue.Value);
+        }
     }
 
     /// <summary>
@@ -646,7 +688,9 @@ public class Commands : CommandEnvironment
 
         // I can  dump it as XML to look at it.
         using (var writer = File.CreateText("MyGraph.dump.xml"))
+        {
             myGraph.WriteXml(writer);
+        }
 
         // I can write the graph out as a file and read it back in later.  
         // myGraph.WriteAsBinaryFile("myGraph.gcGraph");
@@ -731,11 +775,17 @@ public class Commands : CommandEnvironment
         {
             var process = etlFile.Processes.LastProcessWithName(CommandLineArgs.Process);
             if (process == null)
+            {
                 throw new ApplicationException("Could not find process named " + CommandLineArgs.Process);
+            }
+
             events = process.EventsInProcess;
         }
         else
+        {
             events = etlFile.TraceLog.Events;           // All events in the process.
+        }
+
         return events;
     }
 
@@ -858,7 +908,7 @@ public class Commands : CommandEnvironment
         var sample = new StackSourceSample(stackSource);
 
         // Setup the callbacks, In this case we are going to watch for stacks where GCs happen
-        eventSource.Clr.GCStart += delegate(GCStartTraceData data)
+        eventSource.Clr.GCStart += delegate (GCStartTraceData data)
         {
             // An TraceLog should have a callstack associated with this event;
             CallStackIndex callStackIdx = data.CallStackIndex();
@@ -868,7 +918,7 @@ public class Commands : CommandEnvironment
                 StackSourceCallStackIndex stackCallStackIndex = stackSource.GetCallStack(callStackIdx, data);
 
                 // Add a pseudo frame on the bottom of the stack
-                StackSourceFrameIndex frameIdxForName = stackSource.Interner.FrameIntern("GC Gen " + data.Depth  + "Reason " + data.Reason);
+                StackSourceFrameIndex frameIdxForName = stackSource.Interner.FrameIntern("GC Gen " + data.Depth + "Reason " + data.Reason);
                 stackCallStackIndex = stackSource.Interner.CallStackIntern(frameIdxForName, stackCallStackIndex);
 
                 // create a sample with that stack and add it to the stack source (list of samples)

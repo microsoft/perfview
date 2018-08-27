@@ -1,20 +1,14 @@
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Controls;
-using System.Windows.Shapes;
-using System.Windows.Documents;
-using System.Windows.Data;
 using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Analysis.GC;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace PerfView
 {
@@ -23,7 +17,7 @@ namespace PerfView
     /// </summary>
     internal class GcEventWrapper
     {
-        TraceGC m_event;
+        private TraceGC m_event;
 
         internal GcEventWrapper(TraceGC evnt)
         {
@@ -145,33 +139,30 @@ namespace PerfView
             }
         }
     }
-    
-    
+
+
     /// <summary>
     /// GCInfo Panel
     /// </summary>
     public class GcInfoView
     {
-        List<GcEventWrapper> m_gcEvents;
-                
-        TextBox  m_helpBox;
-        DataGrid m_grid;
+        private List<GcEventWrapper> m_gcEvents;
+        private TextBox m_helpBox;
+        private DataGrid m_grid;
+        private CheckBox m_inducedBlocking;
+        private CheckBox m_inducedNonblocking;
+        private CheckBox m_lowMemory;
+        private CheckBox m_allocSOH;
+        private CheckBox m_AllocLOH;
+        private CheckBox m_g0;
+        private CheckBox m_g1;
+        private CheckBox m_g2Blocking;
+        private CheckBox m_g2Background;
 
-        CheckBox m_inducedBlocking;
-        CheckBox m_inducedNonblocking;
-        CheckBox m_lowMemory;
-        CheckBox m_allocSOH;
-        CheckBox m_AllocLOH;
-
-        CheckBox m_g0;
-        CheckBox m_g1;
-        CheckBox m_g2Blocking;
-        CheckBox m_g2Background;
-             
         /// <summary>
         /// Help request from Hyperlink
         /// </summary>
-        void OnHelp(object sender, RoutedEventArgs e)
+        private void OnHelp(object sender, RoutedEventArgs e)
         {
             Hyperlink link = sender as Hyperlink;
 
@@ -189,18 +180,18 @@ namespace PerfView
         /// <summary>
         /// Filter events according to checkboxes
         /// </summary>
-        IEnumerable<GcEventWrapper> FilterEvent()
+        private IEnumerable<GcEventWrapper> FilterEvent()
         {
-            bool no_g0    = m_g0.UnChecked();
-            bool no_g1    = m_g1.UnChecked();
+            bool no_g0 = m_g0.UnChecked();
+            bool no_g1 = m_g1.UnChecked();
             bool no_g2Blk = m_g2Blocking.UnChecked();
             bool no_g2Bak = m_g2Background.UnChecked();
 
             bool no_inducedBlocking = m_inducedBlocking.UnChecked();
             bool no_inducedNonBlock = m_inducedNonblocking.UnChecked();
-            bool no_lowMemory       = m_lowMemory.UnChecked();
-            bool no_allocSOH        = m_allocSOH.UnChecked();
-            bool no_allocLOH        = m_AllocLOH.UnChecked();
+            bool no_lowMemory = m_lowMemory.UnChecked();
+            bool no_allocSOH = m_allocSOH.UnChecked();
+            bool no_allocLOH = m_AllocLOH.UnChecked();
 
             foreach (GcEventWrapper er in m_gcEvents)
             {
@@ -211,16 +202,32 @@ namespace PerfView
                 switch (e.Generation)
                 {
                     case 0:
-                        if (no_g0) continue;
+                        if (no_g0)
+                        {
+                            continue;
+                        }
+
                         break;
 
                     case 1:
-                        if (no_g1) continue;
+                        if (no_g1)
+                        {
+                            continue;
+                        }
+
                         break;
 
                     case 2:
-                        if (no_g2Blk && (typ == GCType.NonConcurrentGC)) continue;
-                        if (no_g2Bak && (typ == GCType.BackgroundGC)) continue;
+                        if (no_g2Blk && (typ == GCType.NonConcurrentGC))
+                        {
+                            continue;
+                        }
+
+                        if (no_g2Bak && (typ == GCType.BackgroundGC))
+                        {
+                            continue;
+                        }
+
                         break;
                 }
 
@@ -228,22 +235,42 @@ namespace PerfView
                 {
                     case GCReason.OutOfSpaceSOH:
                     case GCReason.AllocSmall:
-                        if (no_allocSOH) continue;
+                        if (no_allocSOH)
+                        {
+                            continue;
+                        }
+
                         break;
-                    
+
                     case GCReason.InducedNotForced:
                     case GCReason.Induced:
-                        if (no_inducedBlocking && (typ == GCType.NonConcurrentGC)) continue;
-                        if (no_inducedNonBlock && (typ == GCType.BackgroundGC)) continue;
+                        if (no_inducedBlocking && (typ == GCType.NonConcurrentGC))
+                        {
+                            continue;
+                        }
+
+                        if (no_inducedNonBlock && (typ == GCType.BackgroundGC))
+                        {
+                            continue;
+                        }
+
                         break;
 
                     case GCReason.OutOfSpaceLOH:
                     case GCReason.AllocLarge:
-                        if (no_allocLOH) continue;
+                        if (no_allocLOH)
+                        {
+                            continue;
+                        }
+
                         break;
                     case GCReason.LowMemory:
                     case GCReason.InducedLowMemory:
-                        if (no_lowMemory) continue;
+                        if (no_lowMemory)
+                        {
+                            continue;
+                        }
+
                         break;
 
                     case GCReason.Empty:
@@ -259,7 +286,7 @@ namespace PerfView
         /// <summary>
         /// GCReason SelctAll
         /// </summary>
-        void ReasonSelectAll(object sender, RoutedEventArgs e)
+        private void ReasonSelectAll(object sender, RoutedEventArgs e)
         {
             if (m_inducedBlocking.UnChecked() || m_inducedNonblocking.UnChecked() || m_lowMemory.UnChecked() || m_allocSOH.UnChecked() || m_AllocLOH.UnChecked())
             {
@@ -276,7 +303,7 @@ namespace PerfView
         /// <summary>
         /// Generation SelectAll
         /// </summary>
-        void GenerationSelectAll(object sender, RoutedEventArgs e)
+        private void GenerationSelectAll(object sender, RoutedEventArgs e)
         {
             if (m_g0.UnChecked() || m_g1.UnChecked() || m_g2Blocking.UnChecked() || m_g2Background.UnChecked())
             {
@@ -292,7 +319,7 @@ namespace PerfView
         /// <summary>
         /// Event selection checkbox handler
         /// </summary>
-        void UpdateEvents(object sender, RoutedEventArgs e)
+        private void UpdateEvents(object sender, RoutedEventArgs e)
         {
             m_grid.ItemsSource = FilterEvent();
         }
@@ -300,12 +327,12 @@ namespace PerfView
         internal void SetGCEvents(List<TraceGC> events)
         {
             m_gcEvents = new List<GcEventWrapper>(events.Count);
-            
-            for (int i = 0; i < events.Count; i ++)
+
+            for (int i = 0; i < events.Count; i++)
             {
                 m_gcEvents.Add(new GcEventWrapper(events[i]));
             }
-            
+
             // Data binding
             m_grid.ItemsSource = m_gcEvents;
         }
@@ -315,18 +342,18 @@ namespace PerfView
         /// </summary>
         internal Panel CreateGCInfoPanel(TextBox helpBox)
         {
-            m_helpBox  = helpBox;
-        
+            m_helpBox = helpBox;
+
             StackPanel reason = new StackPanel();
             {
                 reason.AddTextBlock("GC Reason ", "GCReason", OnHelp, 3, 2);
                 reason.AddButton("Select All", 60, ReasonSelectAll, 3, 2);
 
-                m_inducedBlocking    = reason.AddCheckBox(true, "Induced Blocking",    3, 2, UpdateEvents);
+                m_inducedBlocking = reason.AddCheckBox(true, "Induced Blocking", 3, 2, UpdateEvents);
                 m_inducedNonblocking = reason.AddCheckBox(true, "Induced Nonblocking", 3, 0, UpdateEvents);
-                m_lowMemory          = reason.AddCheckBox(true,          "Low Memory", 3, 0, UpdateEvents);
-                m_allocSOH           = reason.AddCheckBox(true,           "Alloc SOH", 3, 0, UpdateEvents);
-                m_AllocLOH           = reason.AddCheckBox(true,           "Alloc LOH", 3, 0, UpdateEvents);
+                m_lowMemory = reason.AddCheckBox(true, "Low Memory", 3, 0, UpdateEvents);
+                m_allocSOH = reason.AddCheckBox(true, "Alloc SOH", 3, 0, UpdateEvents);
+                m_AllocLOH = reason.AddCheckBox(true, "Alloc LOH", 3, 0, UpdateEvents);
             }
 
             StackPanel gen = new StackPanel();
@@ -334,9 +361,9 @@ namespace PerfView
                 gen.AddTextBlock("Generation ", "Generation", OnHelp, 3, 2);
                 gen.AddButton("Select All", 60, GenerationSelectAll, 3, 2);
 
-                m_g0           = gen.AddCheckBox(true,             "0", 3, 0, UpdateEvents);
-                m_g1           = gen.AddCheckBox(true,             "1", 3, 0, UpdateEvents);
-                m_g2Blocking   = gen.AddCheckBox(true,   "2(Blocking)", 3, 0, UpdateEvents);
+                m_g0 = gen.AddCheckBox(true, "0", 3, 0, UpdateEvents);
+                m_g1 = gen.AddCheckBox(true, "1", 3, 0, UpdateEvents);
+                m_g2Blocking = gen.AddCheckBox(true, "2(Blocking)", 3, 0, UpdateEvents);
                 m_g2Background = gen.AddCheckBox(true, "2(Background)", 3, 0, UpdateEvents);
             }
 
@@ -352,16 +379,16 @@ namespace PerfView
             m_grid.IsReadOnly = true;
 
             // Columns
-            m_grid.AddColumn(Toolbox.CreateTextBlock("GCIndex ", "GCIndex", OnHelp),         "Number", true, Toolbox.CountFormatN0);
+            m_grid.AddColumn(Toolbox.CreateTextBlock("GCIndex ", "GCIndex", OnHelp), "Number", true, Toolbox.CountFormatN0);
             m_grid.AddColumn(Toolbox.CreateTextBlock("Gen ", "GenNumberWithSuffix", OnHelp), "GenerationName");
-            m_grid.AddColumn(Toolbox.CreateTextBlock("Reason ", "GCReason", OnHelp),         "Reason");
-            m_grid.AddColumn("PauseStart",                                                   "PauseStart",    true, Toolbox.TimeFormat);
-            m_grid.AddColumn("Pause",                                                        "PauseDuration", true, Toolbox.TimeFormat);
+            m_grid.AddColumn(Toolbox.CreateTextBlock("Reason ", "GCReason", OnHelp), "Reason");
+            m_grid.AddColumn("PauseStart", "PauseStart", true, Toolbox.TimeFormat);
+            m_grid.AddColumn("Pause", "PauseDuration", true, Toolbox.TimeFormat);
 
             m_grid.AddColumn("SizeBefore", "SizeBefore", true, Toolbox.MemoryFormatN0);
-            m_grid.AddColumn("SizeAfter",  "SizeAfter",  true, Toolbox.MemoryFormatN0);
+            m_grid.AddColumn("SizeAfter", "SizeAfter", true, Toolbox.MemoryFormatN0);
 
-            m_grid.AddColumn("GCHandle",  "GcHandleCount",  true, Toolbox.CountFormatN0);
+            m_grid.AddColumn("GCHandle", "GcHandleCount", true, Toolbox.CountFormatN0);
             m_grid.AddColumn("SyncBlock", "SyncBlockCount", true, Toolbox.CountFormatN0);
             m_grid.AddColumn("PinnedObj", "PinObjectCount", true, Toolbox.CountFormatN0);
 
@@ -370,12 +397,12 @@ namespace PerfView
             return Toolbox.DockTopLeft(null, controls, m_grid);
         }
 
-        Dictionary<string, string> HelpText = new Dictionary<string, string>();
+        private Dictionary<string, string> HelpText = new Dictionary<string, string>();
 
         /// <summary>
         /// Populate help message dictionary
         /// </summary>
-        void InitHelpText()
+        private void InitHelpText()
         {
             HelpText.Add("GCIndex", "This is the index of the GC.");
 
@@ -419,14 +446,14 @@ namespace PerfView
                              "Use Generation, Pause and GC Reason to filter the GCs you want to see.";
         }
 
-        ContextMenu cxMenu = null;
+        private ContextMenu cxMenu = null;
 
         private void GenerateGridColumns(object sender, EventArgs e)
         {
             CreateContextMenu();
         }
 
-        string GetHeaderText(object header)
+        private string GetHeaderText(object header)
         {
             TextBlock block = header as TextBlock;
 
@@ -439,7 +466,7 @@ namespace PerfView
                     return run.Text;
                 }
             }
-            
+
             return header.ToString();
         }
 
@@ -462,7 +489,7 @@ namespace PerfView
             }
         }
 
-        void menuItem_Click(object sender, RoutedEventArgs e)
+        private void menuItem_Click(object sender, RoutedEventArgs e)
         {
             MenuItem item = sender as MenuItem;
             //if (item.IsChecked)
@@ -477,7 +504,7 @@ namespace PerfView
             item.IsChecked = !item.IsChecked;
         }
 
-        void menuItem_Unchecked(object sender, RoutedEventArgs e)
+        private void menuItem_Unchecked(object sender, RoutedEventArgs e)
         {
             MenuItem item = sender as MenuItem;
 
@@ -491,7 +518,7 @@ namespace PerfView
             }
         }
 
-        void menuItem_Checked(object sender, RoutedEventArgs e)
+        private void menuItem_Checked(object sender, RoutedEventArgs e)
         {
             MenuItem item = sender as MenuItem;
             List<string> menuList = new List<string>();

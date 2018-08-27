@@ -1,20 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Diagnostics.Tracing.StackSources
 {
     /// <summary>
     /// A WTReader knows how to read a text file from the cdb (windbg) WT command output
     /// </summary>
-    class WTStackSource : InternStackSource
+    internal class WTStackSource : InternStackSource
     {
         public WTStackSource(string fileName)
         {
             using (var file = File.OpenText(fileName))
+            {
                 Read(file);
+            }
         }
         public WTStackSource(TextReader reader)
         {
@@ -22,7 +24,7 @@ namespace Diagnostics.Tracing.StackSources
         }
 
         #region private
-        struct WTStackElem
+        private struct WTStackElem
         {
             // to do the transformation we need to remember the complete stack for each call depth as well as
             // the number of instructions so far we have for that call depth.   
@@ -46,7 +48,7 @@ namespace Diagnostics.Tracing.StackSources
 #endif
         }
 
-        void Read(TextReader reader)
+        private void Read(TextReader reader)
         {
             // TODO this is relatively inefficient.  
             var regEx = new Regex(@"^\s*(\d+)\s*(\d+)\s*\[\s*(\d+)\s*\]\s*(\S*?)!?(.*)");
@@ -60,7 +62,10 @@ namespace Diagnostics.Tracing.StackSources
             {
                 var line = reader.ReadLine();
                 if (line == null)
+                {
                     break;
+                }
+
                 var match = regEx.Match(line);
                 if (match.Success)
                 {
@@ -77,7 +82,9 @@ namespace Diagnostics.Tracing.StackSources
                     // Get the parent stack for this line 
                     var parent = StackSourceCallStackIndex.Invalid;
                     if (depth > 0)
+                    {
                         parent = stack[depth - 1].FirstCallStackIndex;    // TODO handle out of range
+                    }
 
                     // Form the stack for this entry 
                     var callStackIndex = Interner.CallStackIntern(frameIndex, parent);
@@ -92,7 +99,9 @@ namespace Diagnostics.Tracing.StackSources
 
                         // We expect to return to the same method we were at at this depth.  
                         if (callStackIndex == elem.CallStackIndex)
+                        {
                             exclInstr = excInstrSoFar - elem.ExclInstrSoFar;    // We are continuing the function 
+                        }
                         else
                         {
                             // We are tail-calling to another routine.   
