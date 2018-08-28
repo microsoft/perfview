@@ -8367,7 +8367,7 @@ table {
             bool hasGC = false;
             bool hasJIT = false;
             bool hasAnyStacks = false;
-            bool hasDotNetHeapDumps = true;
+            bool hasDotNetHeapDumps = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
