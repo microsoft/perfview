@@ -4054,8 +4054,8 @@
             </p>
             <p>
                 There is an command line option /DotNetCallsSampled which works like /DotNetCalls, however it
-                samples every 97 calls rather than every call.  This cuts the overhead (and file size)
-                by a factor of ~100 which is better if overhead is a concern.
+                samples every 997 calls rather than every call.  This cuts the overhead (and file size)
+                by a factor of ~1000 which is better if overhead is a concern.
             </p>
             <p>
                 By default the runtime does not disable inlining of methods.  Thus you will not see
@@ -6052,6 +6052,7 @@
     </p>
 
     <!--  ************************ -->
+    <hr />
     <h4>
         <a id="WindowsContainers">Using PerfView inside Windows Server (Docker) Containers</a>
     </h4>
@@ -6175,6 +6176,7 @@
     </p>
 
     <!--  ************************ -->
+    <hr />
     <h4>
         <a id="ProductionMonitoring">Production Monitoring</a>
     </h4>
@@ -8315,7 +8317,7 @@
             <ul>
                 <li>
                     Added the /DotNetCallsSampled command line option that does call instrumentation
-                    but samples every 97 calls (to keep overhead low)
+                    but samples every 997 calls (to keep overhead low)
                 </li>
                 <li>
                     Added the /DisableInlining command line option that tells the runtime not to

@@ -120,16 +120,21 @@ namespace Microsoft.Diagnostics.Utilities
                     fileToDelete = fileName;
                 }
             }
-            bool ret = TryDelete(fileToDelete);
-            if (tryToDeleteOtherFiles)
+
+            bool ret = false;
+            try
             {
-                // delete any old *.deleting files that may have been left around 
-                string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
-                foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
+                ret = TryDelete(fileToDelete);
+                if (tryToDeleteOtherFiles)
                 {
-                    TryDelete(deleteingFile);
+                    // delete any old *.deleting files that may have been left around 
+                    string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
+                    foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
+                    {
+                        TryDelete(deleteingFile);
+                    }
                 }
-            }
+            } catch { };
             return ret;
         }
 

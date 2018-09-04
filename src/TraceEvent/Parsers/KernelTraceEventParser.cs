@@ -192,7 +192,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// These are the kernel events that are not allowed in containers.  Can be subtracted out.  
             /// </summary>
-            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch),
+            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch | ProcessCounters),
 
             // These are ones that I have made up  
             // All = 0x07B3FFFF, so 4'0000, 8'0000, 40'0000, and F000'00000 are free.  
@@ -3462,8 +3462,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
 #if !CONTAINER_WORKAROUND_NOT_NEEDED
-                // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognise them 
-                // because they have have the form of a GUID path \OS or \File and then the client path.   It is enough
+                // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognize them 
+                // because they have the form of a GUID path \OS or \File and then the client path.   It is enough
                 // to fix this for files in the \windows directory so we use \OS\Windows\ or \Files\Windows as the key 
                 // to tell if we have a HOST file path and we morph the name to fix it.
                 // We can pull this out when the OS fixes ETW to show client names.  
