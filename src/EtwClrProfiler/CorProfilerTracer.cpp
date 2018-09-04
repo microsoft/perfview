@@ -208,7 +208,7 @@ HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach(
 
 
 				if ((keywords & CallSampledKeyword) != 0)
-					CallSamplingRate = 97;		// TODO make it configurable.    We choose 97 because it is prime and thus likely to be uncorrelated with things.  
+					CallSamplingRate = 997;		// TODO make it configurable.    We choose 997 because it is prime and thus likely to be uncorrelated with things.  
 			}
 		}
 	}

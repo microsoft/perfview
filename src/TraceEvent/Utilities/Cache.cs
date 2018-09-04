@@ -4,11 +4,11 @@ using System.Diagnostics;
 namespace Utilities
 {
     /// <summary>
-    /// A finite cache based with a least reciently used algorithm for replacement.   
+    /// A finite cache based with a least recently used algorithm for replacement.   
     /// It is meant to be fast (fast as a hashtable), and space efficient (not much
     /// over the MaxEntry key-value pairs are stored.  (only 8 bytes per entry additional).  
     /// 
-    /// After reaching MaxEntry entries.  It uses a roughtly least-reciently used
+    /// After reaching MaxEntry entries.  It uses a roughly least-recently used
     /// algorithm to pick a entry to recycle.    To stay efficient it only searches
     /// a finite time (up to 5 entries) for a entry that is older than 1/2 of the
     /// entries in the table.  
@@ -29,7 +29,7 @@ namespace Utilities
         /// <param name="maxEntries"></param>
         public Cache(int maxEntries)
         {
-            // We use ushorts in the implemenation, so make sure we are in the regime that we can represent.  
+            // We use ushorts in the implementation, so make sure we are in the regime that we can represent.  
             if (maxEntries > 0xFFFE)
             {
                 maxEntries = 0xFFFE;
@@ -73,7 +73,7 @@ namespace Utilities
                 CacheEntry entry = m_entries[entryIndex];
                 if (entry.Hash == entryHash && entry.Key.Equals(key))
                 {
-                    // Update the age of the entry (to allow pseudo-least-reciently used recycling)
+                    // Update the age of the entry (to allow pseudo-least-recently used recycling)
                     if (entry.Age != m_curAge)
                     {
                         UpdateAge(ref m_entries[entryIndex]);
@@ -293,7 +293,7 @@ namespace Utilities
 #endif
 
         /// <summary>
-        /// Reprenents a null pointer (end of a linked list)
+        /// Represents a null pointer (end of a linked list)
         /// </summary>
         private const ushort End = 0xFFFF;
         private const int HashBits = 13;           // 13 bits for the hash

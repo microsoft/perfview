@@ -488,6 +488,8 @@ public class DotNetHeapDumpGraphReader
     /// </summary>
     internal unsafe void ConvertHeapDataToGraph()
     {
+        int maxNodeCount = 10_000_000;
+
         if (m_converted)
         {
             return;
@@ -652,6 +654,7 @@ public class DotNetHeapDumpGraphReader
         GCBulkNodeUnsafeNodes nodeStorage = new GCBulkNodeUnsafeNodes();
 
         // Process all the node and edge nodes we have collected.  
+        bool doCompletionCheck = true;
         for (; ; )
         {
             GCBulkNodeUnsafeNodes* node = GetNextNode(&nodeStorage);
@@ -693,9 +696,17 @@ public class DotNetHeapDumpGraphReader
 
             Debug.Assert(!m_graph.IsDefined(nodeIdx));
             m_graph.SetNode(nodeIdx, typeIdx, objSize, m_children);
+
+            if (m_graph.NodeCount >= maxNodeCount)
+            {
+                doCompletionCheck = false;
+                var userMessage = string.Format("Exceeded max node count {0}", maxNodeCount);
+                m_log.WriteLine("[WARNING: ]", userMessage);
+                break;
+            }
         }
 
-        if (m_curEdgeBlock != null && m_curEdgeBlock.Count != m_curEdgeIdx)
+        if (doCompletionCheck && m_curEdgeBlock != null && m_curEdgeBlock.Count != m_curEdgeIdx)
         {
             throw new ApplicationException("Error: extra edge data.  Giving up on heap dump.");
         }
