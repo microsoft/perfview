@@ -3571,14 +3571,14 @@ table {
     /// </summary>
     public class PerfViewHeapSnapshots : PerfViewTreeItem
     {
-        public PerfViewHeapSnapshots(ETLPerfViewData file)
+        public PerfViewHeapSnapshots(PerfViewFile file)
         {
             Name = "GC Heap Snapshots";
             DataFile = file;
         }
 
         public virtual string Title { get { return Name + " for " + DataFile.Title; } }
-        public ETLPerfViewData DataFile { get; private set; }
+        public PerfViewFile DataFile { get; private set; }
         public override string FilePath { get { return DataFile.FilePath; } }
 
         /// <summary>
@@ -3592,7 +3592,15 @@ table {
                 var newChildren = new List<PerfViewTreeItem>();
                 worker.StartWork("Searching for heap dumps in " + Name, delegate ()
                 {
-                    var traceLog = DataFile.GetTraceLog(worker.LogWriter);
+                    TraceLog traceLog = null;
+                    if (DataFile is ETLPerfViewData)
+                    {
+                        traceLog = ((ETLPerfViewData)DataFile).GetTraceLog(worker.LogWriter);
+                    }
+                    else if(DataFile is EventPipePerfViewData)
+                    {
+                        traceLog = ((EventPipePerfViewData)DataFile).GetTraceLog(worker.LogWriter);
+                    }
                     var source = traceLog.Events.GetSource();
                     var jsHeapParser = new JSDumpHeapTraceEventParser(source);
 
@@ -3666,7 +3674,7 @@ table {
         /// <summary>
         /// snapshotKinds should be .NET or JS
         /// </summary>
-        public PerfViewHeapSnapshot(ETLPerfViewData file, int processId, string processName, double timeRelativeMSec, string snapshotKind)
+        public PerfViewHeapSnapshot(PerfViewFile file, int processId, string processName, double timeRelativeMSec, string snapshotKind)
         {
             m_snapshotKind = snapshotKind;
             m_timeRelativeMSec = timeRelativeMSec;
@@ -8359,6 +8367,7 @@ table {
             bool hasGC = false;
             bool hasJIT = false;
             bool hasAnyStacks = false;
+            bool hasDotNetHeapDumps = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8375,6 +8384,10 @@ table {
                     else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
                     {
                         hasJIT = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("GC/BulkNode"))
+                    {
+                        hasDotNetHeapDumps = true;
                     }
                 }
             }
@@ -8398,6 +8411,9 @@ table {
                 {
                     memory.AddChild(new PerfViewGCStats(this));
                 }
+
+                if (hasDotNetHeapDumps)
+                    memory.AddChild(new PerfViewHeapSnapshots(this));
 
                 if (hasJIT)
                 {
