@@ -31,9 +31,11 @@ need to start with an existing set.  You can do this by running editing and runn
 PerfView.SupportFiles.Populate.bat script.  
 
 1.  First *look in packages directory to see what the latest version is and modify 
-    the PerfView.SupportFiles.Populate.bat* copy from that.   If you don't update this
-	file to take from the currnet version, you will end up making a package with old 
-	binaries in it, which is undoubtely not what you want.  
+    the PerfView.SupportFiles.Populate.bat* copy from that.   You can also find the latest
+    version of the SupportFiles package by looking the Directory.Build.props file at the 
+    base of the repo.   *If you don't update this
+    file to take from the currnet version, you will end up making a package with old 
+    binaries in it, which cause fixed bugs to reappear*.  
 2.  Then you can run the batch file.   This copies that files you are currently using
     to form a baseline for the new package in a subdirectory of the src\NugetSupportFiles
 	directory.  
