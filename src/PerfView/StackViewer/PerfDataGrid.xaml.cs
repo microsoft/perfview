@@ -19,9 +19,12 @@ namespace PerfView
     {
         public static bool NoPadOnCopyToClipboard = false;
 
+        public string ScrollGroup { get; }
+
         public PerfDataGrid()
         {
             InitializeComponent();
+            ScrollGroup = Guid.NewGuid().ToString();
             Grid.CopyingRowClipboardContent += delegate (object sender, DataGridRowClipboardEventArgs e)
             {
                 for (int i = 0; i < e.ClipboardRowContent.Count; i++)

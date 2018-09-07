@@ -5,20 +5,31 @@
     xmlns:src="clr-namespace:PerfView"
     xmlns:src1="clr-namespace:PerfView"
     xmlns:controls="clr-namespace:Controls"
+    xmlns:scroll="clr-namespace:Utilities"
     Title="PerfView Stacks"
     Width="919" Height="605"
     >
     <Window.Resources>
         <!-- DataContext for this template is a CallTreeViewNode -->
         <DataTemplate x:Key="TreeControlCell">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="{Binding IndentString}" FontFamily="Courier New"/>
-                <CheckBox IsChecked="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding HasChildren}"/>
-                <TextBlock Name="Name" Text="{Binding Name}" FontWeight="{Binding FontWeight}"/>
-                <TextBlock Margin="5,0,0,0" Visibility="{Binding VisibleIfDisplayingSecondary}">
-                    <Hyperlink Command="Help" CommandParameter="PrimaryAndSecondaryNodes">?</Hyperlink>
-                </TextBlock>
-            </StackPanel>
+            <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Hidden"
+                          scroll:ScrollSynchronizer.ScrollGroup="{Binding Path=ScrollGroup, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}}"
+                          scroll:ScrollViewerMouseFix.DisableMouseScroll="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Grid.Column="0">
+                        <TextBlock Text="{Binding IndentString}" FontFamily="Courier New"/>
+                        <CheckBox IsChecked="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding HasChildren}"/>
+                        <TextBlock Name="Name" Text="{Binding Name}" FontWeight="{Binding FontWeight}"/>
+                        <TextBlock Margin="5,0,0,0" Visibility="{Binding VisibleIfDisplayingSecondary}">
+                            <Hyperlink Command="Help" CommandParameter="PrimaryAndSecondaryNodes">?</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
         </DataTemplate>
         <Style x:Key="HeaderStyle">
             <Setter Property="TextBlock.FontSize" Value="14" />
