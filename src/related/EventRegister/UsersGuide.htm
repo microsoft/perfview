@@ -1,0 +1,136 @@
+<html>
+<head>
+    <title>EventRegister Users Guide</title>
+</head>
+<body>
+    <h2>
+        EventRegister Users' Guide
+    </h2>
+    <p>
+        A utility for registering Event Tracing for Windows (ETW) event providers that are
+        implemented using <b>managed</b> code and either the System.Diagnostics.Tracing.<b>EventSource</b>
+        class or the NuGet-shipped Microsoft.Diagnostics.Tracing.<b>EventSource</b>.
+    </p>
+    <h4>
+        A Quick Summary of Event Tracing for Windows (ETW)</h4>
+    <p>
+        Event Tracing for Windows is infrastructure built into the Windows operating system
+        that allows user code to generate events.&nbsp; This event logging capability is
+        fast enough that even 100K events / sec is not unreasonable (but will have a noticable
+        impact) and each event is marked with the process and thread it came from, as well
+        as the time (typically in 100ns accuracy), so even fine grained timing intervals
+        can be measured accurately.&nbsp; More information can be found in the<a href="http://msdn2.microsoft.com/en-us/library/aa964766(VS.85).aspx">
+            ETW MSDN reference</a>.&nbsp; Note that &#39;Classic&#39; events refer to an
+        older version of ETW (before windows Vista), and can be skipped initially.&nbsp;
+        Manifest based ETW is the model that managed code exposes (even if it is running
+        on an older OS).&nbsp;
+    </p>
+    <p>
+        Code that logs events is called a Provider and all providers must register themselves with
+        the Operating System&nbsp; (eg with the <a href="http://msdn2.microsoft.com/en-us/library/aa363744(VS.85).aspx">
+            EventRegister</a>) before any logging can happen.&nbsp; When a provider registers
+        it provides a GUID that is used to identify the provider.&nbsp; Once registered
+        the operating system will notify the provider if logging is desired.&nbsp;
+        The &#39;logman&#39; command (as well as the xperf command) can then be used to
+        turn providers on and off.
+    </p>
+    <p>
+        Each event that a provider creates has the following data</p>
+    <ol>
+        <li>Infomation logged for every event, including a timestamp, and the process and thread
+            that generated the event. </li>
+        <li>The GUID of the provider that created it.</li>
+        <li>A small integer indicated which event the provider is logging.</li>
+        <li>Optional information that allows events to be grouped by purpose (Tasks, Opcodes),
+            Verbosity (Levels) or Audience (Channels).&nbsp; In addition there is an event version
+            number as well as the ability to describe sets of events that are often turned on
+            or off together (Keywords).&nbsp; </li>
+        <li>Optional specific payload (arbirary binary data up to 64K)</li>
+    </ol>
+    <h4>
+        Using Events from Managed Code</h4>
+    <p>
+        It is very easy to create a new provder from managed code using the System.Diagnositics.Eventing.EventSource
+        case.&nbsp; Here is the code for a very simple provider</p>
+    <pre>sealed class MinimalProvider : EventSource
+{
+   public static MinimalProvider Log = new MinimalProvider();
+   public void Load(long ImageBase, string Name) { if (IsEnabled()) WriteEventHelper(1, ImageBase, Name); }
+   public void Unload(long ImageBase) { if (IsEnabled()) WriteEventHelper(2, ImageBase); }
+}</pre>
+    <p>
+        This creates a new provider called &#39;MinimalProvider&#39;.&nbsp; This
+        particular provider has two events (Load and Unload), and each event has extra information
+        that gets passed along into the log (ImageBase and (for Load) Name).&nbsp;
+        You can then log things simply by doing</p>
+    <pre>MinimalProvider.Log.Load(10, &quot;FileLoading&quot;);    // Log a load
+MinimalProvider.Log.Unload(10);		    // Log an unload</pre>
+    You can then log things simply by doing<pre>logman start MySessionName -p {0c836fd3-ee92-4301-bc13-d8943e0c1e77} -ets
+RUN_SCENARIO
+logman stop MySessionName -ets</pre>
+    <p>
+        Where RUN_SCENARIO activates your logging.&nbsp; Note that even if the process that
+        has the provider is already running, the provider will get notified and logging
+        will happen (no need to restart processes).&nbsp; The commands above place all the
+        logging information the a &#39;MySessionName.etl&#39; file.&nbsp;
+    </p>
+    <p>
+        An important observation is that events are fundamentally just blobs of data,
+        and it is only by knowing the schema of the event that it can be put to real use.&nbsp;
+        Thus string names need to be given to events, and the payloads of the events need
+        to be described (in a strongly typed way).&nbsp; This is the purpose of the
+        event manifest.&nbsp; The event manifest is so important that EventSource
+        writes it to the event stream before the provider writes its first event.&nbsp; That
+        way it is impossible for a log to be &#39;unreadable&#39; because you don&#39;t
+        have the decoding information.</p>
+    <h4>
+        The EventRegister Command</h4>
+    <p>
+        Some tools, however do not know how to decode the manifest that is in the event
+        stream.&nbsp; In addition, using a GUID to identify a provider in the logman
+        command is inconvenient (hard for humans to remember).&nbsp; Registering the
+        manifest solves both of these problems and this is what EventRegister.exe is designed
+        to do.&nbsp;
+    </p>
+    <p>
+        Using EventRegister is simple
+    </p>
+    <ul>
+        <li>EventRegister <b>DllThatDefinesAProvider</b></li>
+    </ul>
+    <p>
+        That is you simply give it the DLL that contains the definition of your provider.&nbsp;
+        The EventRegister command then uses the Reflection APIs to generate a manifest from
+        the code in that DLL and registers it with the system (you need to be an administrator
+        to do this).&nbsp;
+    </p>
+    <p>
+        If your event source uses channel support (first provided in the EventSource NuGet 
+        package) you will need to generate manifest and resource DLLs at build time and
+        deploy and register the manifest at the time your application is set up. To generate
+        these files simply use the /dumpRegDlls qualifier
+    </p>
+    <ul>
+        <li>EventRegister /dumpRegDlls <b>DllThatDefinesAProvider</b></li>
+    </ul>
+    <p>
+        If you want to see the manifest that would be registered, you can use the
+        /dumpManifest qualifier
+    </p>
+    <ul>
+        <li>EventRegister /dumpManifest <b>DllThatDefinesAProvider</b></li>
+    </ul>
+    <p>
+        You will need to do this on every machine where
+    </p>
+    <ul>
+        <li>You want to use a symbolic name to &#39;logMan&#39;</li>
+        <li>You want to use &#39;old style&#39; tools that need a registered manifest</li>
+    </ul>
+    <p>
+    If you are content to use GUIDs to turn your provider on and off, you only 
+    use tools that know how to fetch the manifest out of the log, and you do not
+    use channel support then you don&#39;t need to register your provider.&nbsp;
+    </p>
+</body>
+</html>
