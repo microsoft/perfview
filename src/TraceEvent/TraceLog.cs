@@ -8458,7 +8458,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         symReader.m_log.WriteLine("The /UnsafePdbMatch option will force an ambiguous match, but this is not recommended.");
                     }
                 }
-                symReader.m_log.WriteLine("Failed to to find PDB for {0}", moduleFile.FilePath);
+                symReader.m_log.WriteLine("Failed to find PDB for {0}", moduleFile.FilePath);
                 return null;
             }
 
@@ -8496,13 +8496,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private bool TraceModuleUnchanged(TraceModuleFile moduleFile, TextWriter log)
         {
-            if (!File.Exists(moduleFile.FilePath))
+            string moduleFilePath = SymbolReader.BypassSystem32FileRedirection(moduleFile.FilePath);
+            if (!File.Exists(moduleFilePath))
             {
                 log.WriteLine("The file {0} does not exist on the local machine", moduleFile.FilePath);
                 return false;
             }
 
-            using (var file = new PEFile.PEFile(moduleFile.FilePath))
+            using (var file = new PEFile.PEFile(moduleFilePath))
             {
                 if (file.Header.CheckSum != (uint)moduleFile.ImageChecksum)
                 {

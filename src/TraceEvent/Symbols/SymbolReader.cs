@@ -1517,21 +1517,24 @@ namespace Microsoft.Diagnostics.Symbols
         /// We may be a 32 bit app which has File system redirection turned on
         /// Morph System32 to SysNative in that case to bypass file system redirection         
         /// </summary>
-        private static string BypassSystem32FileRedirection(string path)
+        internal static string BypassSystem32FileRedirection(string path)
         {
-            var winDir = Environment.GetEnvironmentVariable("WinDir");
-            if (winDir != null)
+            if (0 <= path.IndexOf("System32\\", StringComparison.OrdinalIgnoreCase))
             {
-                var system32 = Path.Combine(winDir, "System32");
-                if (path.StartsWith(system32, StringComparison.OrdinalIgnoreCase))
+                var winDir = Environment.GetEnvironmentVariable("WinDir");
+                if (winDir != null)
                 {
-                    if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432") != null)
+                    var system32 = Path.Combine(winDir, "System32");
+                    if (path.StartsWith(system32, StringComparison.OrdinalIgnoreCase))
                     {
-                        var sysNative = Path.Combine(winDir, "Sysnative");
-                        var newPath = Path.Combine(sysNative, path.Substring(system32.Length + 1));
-                        if (File.Exists(newPath))
+                        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432") != null)
                         {
-                            path = newPath;
+                            var sysNative = Path.Combine(winDir, "Sysnative");
+                            var newPath = Path.Combine(sysNative, path.Substring(system32.Length + 1));
+                            if (File.Exists(newPath))
+                            {
+                                path = newPath;
+                            }
                         }
                     }
                 }
