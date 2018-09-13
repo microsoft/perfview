@@ -81,7 +81,7 @@ An object's structure is
 * EndObject Tag
 
 As mentioned a type is just another object, but the if that is true it needs a type
-which leads to infinite recursion.   Thus the type of a type is alwasy simply
+which leads to infinite recursion.   Thus the type of a type is always simply
 a special tag call the NullReference that represent null.
 
 ## The First Object: The EventTrace Object
@@ -104,6 +104,8 @@ the class that deserialize the object.   EventPipeEventSource is the class
 that deserializes the EventTrace object, so you can see its fields there. 
 These fields are the things like the time the trace was collected, the
 units of the event timestamps, and other things that apply to all events.  
+
+See [Event Serialization](EventSerialization.md) for more.  
 
 ## Next Objects : The EventBlock Object
 
@@ -238,4 +240,4 @@ seek to any particular object and only read what you need.
 The FastSerialization library supports this, but the need for this kind
 of 'random access' is not clear at this time (mostly the data needs 
 to be processed again and thus you need to read it all anyway).  For
-now it is is enough to know that this capability exists if we need it.  
+now it is enough to know that this capability exists if we need it.  
