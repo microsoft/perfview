@@ -42,6 +42,7 @@ This meta-data is sent just like any other event, but its MetaData ID is 0.   Th
     int Level;           // The verbosity (5 is verbose, 1 is only critical) for the event.
 ```
 
+### Payload Description
 Following this header there is a Payload description.   This consists of 
 
 *   int FieldCount;      // The number of fields in the payload
