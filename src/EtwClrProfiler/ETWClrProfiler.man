@@ -14,6 +14,7 @@
           <keyword name="GCAllocSampled"  mask="0x000000000008" symbol="GCAllocSampledKeyword"/>
           <keyword name="Call"            mask="0x000000000010" symbol="CallKeyword"/>
           <keyword name="CallSampled"     mask="0x000000000020" symbol="CallSampledKeyword"/>
+          <keyword name="DisableInlining" mask="0x000000000040" symbol="DisableInliningKeyword"/>
         </keywords>
         <tasks>
           <task name="GC" value="1" message="$(string.task_GC)" />
@@ -182,6 +183,7 @@
 
           <template tid="CallEnterArgs">
             <data name="FunctionID" inType="win:UInt64" />
+            <data name="SampleRate" inType="win:UInt32" />
           </template>
           
           <template tid="SendManifestArgs">

@@ -1,4 +1,8 @@
-﻿using System;
+﻿using EventSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -12,12 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using EventSources;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using System.Windows.Data;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfView
 {
@@ -49,7 +48,10 @@ namespace PerfView
             var selection = EventTypes.SelectedItems;
             selection.Clear();
             foreach (var item in template.EventTypes.SelectedItems)
+            {
                 selection.Add(item);
+            }
+
             Update();
         }
         public EventWindow(Window parent, PerfViewEventSource data)
@@ -66,22 +68,34 @@ namespace PerfView
 
                     string morphedContent = null;
                     if (e.IsColumnHeadersRow)
+                    {
                         morphedContent = GetColumnHeaderText(clipboardContent.Column);
+                    }
                     else
                     {
                         var cellContent = clipboardContent.Content;
                         if (cellContent is float)
+                        {
                             morphedContent = PerfDataGrid.GoodPrecision((float)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent is double)
+                        {
                             morphedContent = PerfDataGrid.GoodPrecision((double)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent != null)
+                        {
                             morphedContent = cellContent.ToString();
+                        }
                         else
+                        {
                             morphedContent = "";
+                        }
                     }
 
                     if (e.ClipboardRowContent.Count > 1 && i + e.StartColumnDisplayIndex != Grid.Columns.Count - 1)
+                    {
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
+                    }
 
                     // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
                     // for ranges.  
@@ -129,8 +143,12 @@ namespace PerfView
 
             m_userDefinedColumns = new List<DataGridColumn>();
             foreach (var gridColumn in Grid.Columns)
+            {
                 if (((string)gridColumn.Header).StartsWith("Field"))
+                {
                     m_userDefinedColumns.Add(gridColumn);
+                }
+            }
 
             EventTypes.ItemsSource = m_source.EventNames;
         }
@@ -168,7 +186,10 @@ namespace PerfView
                         }
                     }
                     if (hasRest)
+                    {
                         csvFile.Write("{0}Rest", listSeparator);
+                    }
+
                     csvFile.WriteLine();
 
                     // Write out events 
@@ -176,14 +197,22 @@ namespace PerfView
                     {
                         // We have exceeded MaxRet, skip it.  
                         if (_event.EventName == null)
+                        {
                             return false;
+                        }
 
                         csvFile.Write("{0}{1}{2:f3}{1}{3}", _event.EventName, listSeparator, _event.TimeStampRelatveMSec, EscapeForCsv(_event.ProcessName, listSeparator));
                         var fields = _event.DisplayFields;
                         for (int i = 0; i < maxField; i++)
+                        {
                             csvFile.Write("{0}{1}", listSeparator, EscapeForCsv(fields[i], listSeparator));
+                        }
+
                         if (hasRest)
+                        {
                             csvFile.Write("{0}{1}", listSeparator, EscapeForCsv(_event.Rest, listSeparator));
+                        }
+
                         csvFile.WriteLine();
                         return true;
                     });
@@ -211,7 +240,9 @@ namespace PerfView
                     {
                         // We have exceeded MaxRet, skip it.  
                         if (_event.EventName == null)
+                        {
                             return false;
+                        }
 
                         xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
                             _event.EventName, _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
@@ -262,7 +293,9 @@ namespace PerfView
         {
             var param = e.Parameter as string;
             if (param == null)
+            {
                 param = "EventViewerQuickStart";       // This is the F1 help
+            }
 
             StatusBar.Log("Displaying Users Guide in Web Browser.");
             MainWindow.DisplayUsersGuide(param);
@@ -274,7 +307,7 @@ namespace PerfView
         }
         private void DoOpenParent(object sender, RoutedEventArgs e)
         {
-            for (;;)
+            for (; ; )
             {
                 try
                 {
@@ -323,7 +356,9 @@ namespace PerfView
             StatusBar.Status = "";
             bool ret = Find(FindTextBox.Text);
             if (!ret)
+            {
                 StatusBar.LogError("Could not find " + FindTextBox.Text + ".");
+            }
         }
         private void DoOpenCpuStacks(object sender, ExecutedRoutedEventArgs e)
         {
@@ -402,11 +437,17 @@ namespace PerfView
                     if (dataFile != null)
                     {
                         if (stackSourceName == null)
+                        {
                             stackSourceName = dataFile.DefaultStackSourceName;
+                        }
+
                         dataSource = dataFile.GetStackSource(stackSourceName);
                     }
                     if (dataSource == null)
+                    {
                         throw new ApplicationException("Could not find stack source " + stackSourceName);
+                    }
+
                     var stackSource = dataSource.GetStackSource(StatusBar.LogWriter, startTimeRelativeMSec - .001, endTimeRelativeMSec + .001);
 
                     if (!m_lookedUpCachedSymbolsForETLData)
@@ -424,7 +465,9 @@ namespace PerfView
                                 // TODO FIX NOW, make this so that it uses the stacks in the view.  
                                 var moduleFiles = ETLPerfViewData.GetInterestingModuleFiles(etlDataFile, 5.0, StatusBar.LogWriter, null);
                                 foreach (var moduleFile in moduleFiles)
+                                {
                                     traceLog.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
+                                }
                             }
                         }
                         StatusBar.Log("Quick Done looking up symbols from PDB cache.");
@@ -451,7 +494,9 @@ namespace PerfView
         {
             var selectedCells = Grid.SelectedCells;
             if (selectedCells.Count != 1)
+            {
                 throw new ApplicationException("No cells selected.");
+            }
 
             ProcessFilterTextBox.Text = GetCellStringValue(selectedCells[0]);
             Update();
@@ -486,7 +531,9 @@ namespace PerfView
         private void DoEventTypesKey(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Return)
+            {
                 DoUpdate(sender, e);
+            }
         }
         private void DoCancel(object sender, ExecutedRoutedEventArgs e)
         {
@@ -502,7 +549,10 @@ namespace PerfView
         {
             var eventFilter = new List<string>();
             foreach (var item in EventTypes.SelectedItems)
+            {
                 eventFilter.Add((string)item);
+            }
+
             if (eventFilter.Count == 0)
             {
                 StatusBar.LogError("No event types selected.");
@@ -528,9 +578,13 @@ namespace PerfView
                 DoUpdate(sender, e);
             }
             else if (e.Key == Key.Tab)
+            {
                 UpdateColumnsToDisplay();
+            }
             else if (e.Key == Key.Escape)
+            {
                 ColumnsToDisplayPopup.IsOpen = false;
+            }
         }
         private void DoColumnsToDisplayListBoxDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -608,7 +662,9 @@ namespace PerfView
                     {
                         csvFile = baseFile + i.ToString() + ".excel.csv";
                         if (!File.Exists(csvFile))
+                        {
                             break;
+                        }
                     }
                 }
 
@@ -638,7 +694,9 @@ namespace PerfView
             for (int i = start; i < end; i++)
             {
                 if (i < m_buckets.Length)
+                {
                     total += m_buckets[i];
+                }
             }
 
             var startTimeMSec = m_bucketTimeMSec * start + m_source.StartTimeRelativeMSec;
@@ -654,19 +712,31 @@ namespace PerfView
             int guiIdx = SelectionStartIndex();
             var list = Grid.ItemsSource as System.Collections.IList;
             if (list == null)
+            {
                 return;
+            }
+
             if (list.Count <= guiIdx)
+            {
                 return;
+            }
+
             if (DataSource == null)
+            {
                 return;
+            }
 
             var traceLog = TryGetTraceLog(DataSource.DataFile);
             if (traceLog == null)
+            {
                 return;
+            }
 
             var elem = list[guiIdx] as PerfView.ETWEventSource.ETWEventRecord;
             if (elem == null)
+            {
                 return;
+            }
 
             var eventData = traceLog.GetEvent(elem.Index);
             if (eventData != null)
@@ -683,6 +753,10 @@ namespace PerfView
             if (dataFile is ETLPerfViewData)
             {
                 return ((ETLPerfViewData)dataFile).TryGetTraceLog();
+            }
+            if (dataFile is LinuxPerfViewData)
+            {
+                return ((LinuxPerfViewData)dataFile).TryGetTraceLog();
             }
             else if (dataFile is EventPipePerfViewData)
             {
@@ -717,7 +791,10 @@ namespace PerfView
                         int firstPos = (int)((min - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                         int lastPos = (int)Math.Ceiling((max - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                         if (firstPos == lastPos)
+                        {
                             lastPos++;
+                        }
+
                         int totalLength = Histogram.Text.Length;
                         if (lastPos <= totalLength)
                         {
@@ -728,10 +805,14 @@ namespace PerfView
                     }
                 }
                 else
+                {
                     StatusBar.LogError("Cells are not numbers.");
+                }
             }
             else
+            {
                 StatusBar.LogError("No Cells Selected.");
+            }
         }
 
         private void UpdateColumnsToDisplay()
@@ -757,8 +838,13 @@ namespace PerfView
             catch { }
 
             foreach (var name in m_source.EventNames)
+            {
                 if (regEx == null || regEx.IsMatch(name))
+                {
                     filteredList.Add(name);
+                }
+            }
+
             EventTypes.ItemsSource = filteredList;
         }
 
@@ -782,17 +868,23 @@ namespace PerfView
 
             var list = Grid.ItemsSource as System.Collections.IList;
             if (list == null || list.Count == 0)
+            {
                 return false;
+            }
 
-            for (;;)
+            for (; ; )
             {
                 if (startingNewSearch)
+                {
                     startingNewSearch = false;
+                }
                 else
                 {
                     curPos++;
                     if (curPos >= list.Count)
+                    {
                         curPos = 0;
+                    }
 
                     if (curPos == m_FindEnd)
                     {
@@ -808,10 +900,15 @@ namespace PerfView
                 for (int i = 0; i < fields.Length; i++)
                 {
                     if (foundItem)
+                    {
                         break;
+                    }
+
                     var field = fields[i];
                     if (field != null)
+                    {
                         foundItem = m_findPat.IsMatch(field);
+                    }
                 }
 
                 if (foundItem)
@@ -824,7 +921,9 @@ namespace PerfView
         public void Update()
         {
             if (string.IsNullOrWhiteSpace(EndTextBox.Text))
+            {
                 m_source.EndTimeRelativeMSec = m_source.MaxEventTimeRelativeMsec;
+            }
             else if (!double.TryParse(EndTextBox.Text, out m_source.EndTimeRelativeMSec))
             {
                 StatusBar.LogError("Invalid number " + EndTextBox.Text);
@@ -833,7 +932,9 @@ namespace PerfView
 
             // See if we are pasting a range.  
             if (string.IsNullOrWhiteSpace(StartTextBox.Text))
+            {
                 m_source.StartTimeRelativeMSec = 0;
+            }
             else
             {
                 var match = Regex.Match(StartTextBox.Text, @"^\s*([\d\.,]+)\s+([\d\.,]+)\s*$");
@@ -870,7 +971,9 @@ namespace PerfView
             if (!int.TryParse(MaxRetTextBox.Text, out m_source.MaxRet))
             {
                 if (MaxRetTextBox.Text == "")
+                {
                     m_source.MaxRet = 10000;
+                }
                 else
                 {
                     StatusBar.LogError("Invalid number " + MaxRetTextBox.Text);
@@ -887,7 +990,10 @@ namespace PerfView
 
             var eventFilter = new List<string>();
             foreach (var item in EventTypes.SelectedItems)
+            {
                 eventFilter.Add((string)item);
+            }
+
             m_source.SetEventFilter(eventFilter);
             m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter));
             for (int i = 0; i < m_userDefinedColumns.Count; i++)
@@ -901,7 +1007,9 @@ namespace PerfView
                     m_userDefinedColumns[i].Header = m_source.ColumnsToDisplay[i].Replace("_", "__");
                 }
                 else
+                {
                     m_userDefinedColumns[i].Visibility = System.Windows.Visibility.Hidden;
+                }
             }
 
             // Change 'spin.exe (32434)' into 'spin.exe \(32434\)'   
@@ -929,18 +1037,27 @@ namespace PerfView
                 {
                     eventCount++;
                     if (event_.EventName != null)
+                    {
                         Add(events, event_);
+                    }
 
                     // Compute the histogram of counts over time for the events.  
                     var bucketNum = (int)((event_.TimeStampRelatveMSec - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                     if (bucketNum < 0)
+                    {
                         bucketNum = 0;
+                    }
                     else if (bucketNum >= m_buckets.Length)
+                    {
                         bucketNum = m_buckets.Length - 1;
+                    }
+
                     var bucketVal = m_buckets[bucketNum] + 1;
                     m_buckets[bucketNum] = bucketVal;
                     if (bucketVal > maxBucketCount)
+                    {
                         maxBucketCount = bucketVal;
+                    }
 
                     // When we move on to a new bucket, update the Histogram string.   
                     if (lastBucketNum < bucketNum)
@@ -960,7 +1077,9 @@ namespace PerfView
                 StatusBar.EndWork(delegate ()
                 {
                     if (events.Count == m_source.MaxRet)
+                    {
                         StatusBar.Log("WARNING, returned the maximum " + events.Count + " records.");
+                    }
 
                     Histogram.Text = histString;
                     StatusBar.Log("Histogram: " + histString + " Time Bucket " + m_bucketTimeMSec.ToString("n1") + " MSec");
@@ -968,11 +1087,16 @@ namespace PerfView
                     var sb = new StringBuilder();
                     sb.Append("[Found ").Append(events.Count);
                     if (events.Count >= m_source.MaxRet)
+                    {
                         sb.Append(" (TRUNCATED. Set MaxRet for more)");
+                    }
+
                     sb.Append(" Records.  ").Append(eventCount.ToString("n0")).Append(" total events.");
 
                     if (events.Count == 0 && !string.IsNullOrWhiteSpace(m_source.TextFilterRegex))
+                    {
                         sb.Append("  WARNING: TextFilter is active.");
+                    }
 
                     // Display any column sums that are available.  
                     if (m_source.ColumnSums != null && m_source.ColumnsToDisplay != null)
@@ -1025,8 +1149,12 @@ namespace PerfView
                 // TODO should not have to be linear
                 var list = Grid.ItemsSource as System.Collections.IList;
                 for (int i = 0; i < list.Count; i++)
+                {
                     if (list[i] == cell.Item)
+                    {
                         return i;
+                    }
+                }
                 // var row = Grid.ItemContainerGenerator.ContainerFromItem(cell.Item);
                 // ret = Grid.ItemContainerGenerator.IndexFromContainer(row);
 
@@ -1041,12 +1169,18 @@ namespace PerfView
         public string PadForColumn(string content, int columnIndex)
         {
             if (m_maxColumnInSelection == null)
+            {
                 m_maxColumnInSelection = new int[Grid.Columns.Count];
+            }
+
             int maxString = m_maxColumnInSelection[columnIndex];
             if (maxString == 0)
             {
                 for (int i = 0; i < m_maxColumnInSelection.Length; i++)
+                {
                     m_maxColumnInSelection[i] = GetColumnHeaderText(Grid.Columns[i]).Length;
+                }
+
                 foreach (var cellInfo in Grid.SelectedCells)
                 {
                     var idx = cellInfo.Column.DisplayIndex;
@@ -1057,9 +1191,13 @@ namespace PerfView
 
             // TODO use the alignment attribute 
             if (columnIndex == 1)
+            {
                 return content.PadLeft(maxString);
+            }
             else
+            {
                 return content.PadRight(maxString);
+            }
         }
         public string GetCellStringValue(DataGridCellInfo cell)
         {
@@ -1067,18 +1205,30 @@ namespace PerfView
             if (record != null)
             {
                 if (cell.Column == EventNameColumn)
+                {
                     return record.EventName;
+                }
+
                 if (cell.Column == ProcessNameColumn)
+                {
                     return record.ProcessName;
+                }
+
                 if (cell.Column == TimeMSecColumn)
+                {
                     return record.TimeStampRelatveMSec.ToString("n3");
+                }
+
                 for (int i = 0; i < m_userDefinedColumns.Count; i++)
                 {
                     if (cell.Column == m_userDefinedColumns[i])
                     {
                         var value = record.DisplayFields[i];
                         if (value == null)
+                        {
                             value = "";
+                        }
+
                         return value;
 
                     }
@@ -1087,7 +1237,10 @@ namespace PerfView
             // Fallback see if we can scrape it from the GUI object.  
             FrameworkElement contents = cell.Column.GetCellContent(cell.Item);
             if (contents == null)
+            {
                 return "";
+            }
+
             return Helpers.GetText(contents);
         }
 
@@ -1143,10 +1296,14 @@ namespace PerfView
         {
             // TODO FIX NOW is this a hack?
             if (str == null)
+            {
                 return "";
+            }
             // If you don't have a comma, you are OK (we are losing leading and trailing whitespace but I don't care about that. 
             if (str.IndexOf(listSeparator) < 0)
+            {
                 return str;
+            }
 
             // Escape all " by repeating them
             str = str.Replace("\"", "\"\"");
@@ -1189,14 +1346,22 @@ namespace PerfView
                             seenHexValue = true;
                         }
                         else
+                        {
                             parseSuccessful = double.TryParse(cellStringValue, out num);
+                        }
 
                         if (parseSuccessful)
                         {
                             if (count == 0)
+                            {
                                 first = num;
+                            }
+
                             if (count == 1)
+                            {
                                 second = num;
+                            }
+
                             count++;
                             max = Math.Max(max, num);
                             min = Math.Min(min, num);
@@ -1206,7 +1371,10 @@ namespace PerfView
                     if (firstCell)
                     {
                         if (count == 0)     // Give up if the first cell is not a double.  
+                        {
                             break;
+                        }
+
                         firstCell = false;
                     }
                 }
@@ -1219,16 +1387,22 @@ namespace PerfView
                         text += string.Format("   Diff={0:n3}", max - min);
                         double ratio = Math.Abs(first / second);
                         if (.001 <= ratio && ratio <= 1000)
+                        {
                             text += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                        }
                     }
                     else
+                    {
                         text += string.Format("   Count={0}", count);
+                    }
 
                     if (seenHexValue)
                     {
                         text += string.Format(" HexSum=0x{0:x}", (long)sum);
                         if (count == 2)
+                        {
                             text += string.Format(" HexDiff=0x{0:x}", (long)(max - min));
+                        }
                     }
                     StatusBar.Status = text;
                 }
@@ -1252,13 +1426,18 @@ namespace PerfView
                     {
                         long asNum;
                         if (cellStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && long.TryParse(cellStr.Substring(2), NumberStyles.HexNumber, null, out asNum))
+                        {
                             cellAsHexDec = cellAsHexDec + " (" + asNum.ToString("n") + ")";
+                        }
                         else if (long.TryParse(cellStr.Replace(",", ""), out asNum))
+                        {
                             cellAsHexDec = cellAsHexDec + " (0x" + asNum.ToString("x") + ")";
+                        }
+
                         StatusBar.Status = "CellContents: " + cellAsHexDec;
                     }
 
-                   try
+                    try
                     {
                         var clipBoardStr = Clipboard.GetText().Trim();
                         if (clipBoardStr.Length > 0)
@@ -1273,17 +1452,21 @@ namespace PerfView
 
                                 double product = cellVal * clipBoardVal;
                                 if (Math.Abs(product) <= 1000)
+                                {
                                     reply += string.Format("   X*Y={0:n3}", product);
+                                }
 
                                 double ratio = cellVal / clipBoardVal;
                                 if (.001 <= Math.Abs(ratio) && Math.Abs(ratio) <= 1000000)
+                                {
                                     reply += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                                }
 
                                 StatusBar.Status = reply;
                             }
                         }
                     }
-                    catch(Exception eClipBoard)
+                    catch (Exception eClipBoard)
                     {
                         StatusBar.Log("Warning: exception trying to get Clipboard: " + eClipBoard.Message);
                     }
@@ -1291,7 +1474,10 @@ namespace PerfView
                 Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
             }
             else
+            {
                 Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
+            }
+
             m_maxColumnInSelection = null;
         }
 
@@ -1315,26 +1501,22 @@ namespace PerfView
             });
         }
 
-
-        int m_adds;
+        private int m_adds;
 
         /// <summary>
         /// If we have only two cells selected, even if they are on different rows we want to morph them
         /// to a single row.  These variables are for detecting this situation.  
         /// </summary>
-        string m_clipboardRangeStart;
-        string m_clipboardRangeEnd;
-
-        int[] m_maxColumnInSelection;
-        int m_FindEnd;
-        Regex m_findPat;
-
-        bool m_lookedUpCachedSymbolsForETLData;       // have we try to resolve symbols
-        EventSource m_source;
-        List<DataGridColumn> m_userDefinedColumns;
-
-        float[] m_buckets;                              // Keep track of the counts of events.  
-        double m_bucketTimeMSec;                        // Size for each bucket
+        private string m_clipboardRangeStart;
+        private string m_clipboardRangeEnd;
+        private int[] m_maxColumnInSelection;
+        private int m_FindEnd;
+        private Regex m_findPat;
+        private bool m_lookedUpCachedSymbolsForETLData;       // have we try to resolve symbols
+        private EventSource m_source;
+        private List<DataGridColumn> m_userDefinedColumns;
+        private float[] m_buckets;                              // Keep track of the counts of events.  
+        private double m_bucketTimeMSec;                        // Size for each bucket
         #endregion
     }
 }

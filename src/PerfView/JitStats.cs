@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Address = System.UInt64;
 
 namespace Stats
 {
@@ -22,11 +21,14 @@ namespace Stats
             var usersGuideFile = ClrStatsUsersGuide.WriteUsersGuide(fileName);
             bool hasInliningEvents = runtime.JIT.Stats().InliningSuccesses.Count > 0 || runtime.JIT.Stats().InliningFailures.Count > 0;
 
-            writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">JIT Stats for for Process {1,5}: {2}</font><A></H3>",stats.ProcessID, stats.ProcessID, stats.Name);
+            writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">JIT Stats for for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
             writer.WriteLine("<UL>");
             {
                 if (!string.IsNullOrEmpty(stats.CommandLine))
+                {
                     writer.WriteLine("<LI>CommandLine: {0}</LI>", stats.CommandLine);
+                }
+
                 writer.WriteLine("<LI>Process CPU Time: {0:n0} msec</LI>", stats.CPUMSec);
                 writer.WriteLine("<LI>Guidance on JIT data:");
                 writer.WriteLine("<UL>");
@@ -51,10 +53,10 @@ namespace Stats
                                 runtime.JIT.Stats().LastAssemblyLoadNameBeforeAbort, runtime.JIT.Stats().LastAssemblyLoadBeforeAbortSuccessful ? "successfully" : "unsuccessfully",
                                 runtime.JIT.Stats().LastAssemblyLoadBeforeAbortMSec);
                         }
-                        
+
                         writer.WriteLine(" </UL>");
                     }
-                    else if(runtime.JIT.Stats().BackgroundJitThread == 0)
+                    else if (runtime.JIT.Stats().BackgroundJitThread == 0)
                     {
                         if (runtime.JIT.Stats().BackgroundJITEventsOn)
                         {
@@ -137,9 +139,14 @@ namespace Stats
                 {
                     double diff = statsEx.TotalModuleStats[y].TotalCpuTimeMSec - statsEx.TotalModuleStats[x].TotalCpuTimeMSec;
                     if (diff > 0)
+                    {
                         return 1;
+                    }
                     else if (diff < 0)
+                    {
                         return -1;
+                    }
+
                     return 0;
                 });
 
@@ -205,7 +212,9 @@ namespace Stats
             // We limit the number of JIT events we ut on the page because it makes the user exerience really bad (browsers crash)
             const int maxEvents = 1000;
             if (runtime.JIT.Methods.Count >= maxEvents)
+            {
                 writer.WriteLine("<p><Font color=\"red\">Warning: Truncating JIT events to " + maxEvents + ".  <A HREF=\"command:excel/{0}\">View in excel</A> to look all of them.</font></p>", stats.ProcessID);
+            }
 
             writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
@@ -230,7 +239,9 @@ namespace Stats
                 writer.WriteLine("</TR>");
                 eventCount++;
                 if (eventCount >= maxEvents)
+                {
                     break;
+                }
             }
             writer.WriteLine("</Table>");
             writer.WriteLine("</Center>");
@@ -277,17 +288,17 @@ namespace Stats
                 name, count, countPercent, jitTimeMsec, cpuPercent);
         }
 
-        static string GetShortNameForThreadClassification(CompilationThreadKind kind)
+        private static string GetShortNameForThreadClassification(CompilationThreadKind kind)
         {
-            if(kind == CompilationThreadKind.Foreground)
+            if (kind == CompilationThreadKind.Foreground)
             {
                 return "FG";
             }
-            else if(kind == CompilationThreadKind.MulticoreJitBackground)
+            else if (kind == CompilationThreadKind.MulticoreJitBackground)
             {
                 return "MC";
             }
-            else if(kind == CompilationThreadKind.TieredCompilationBackground)
+            else if (kind == CompilationThreadKind.TieredCompilationBackground)
             {
                 return "TC";
             }
@@ -297,7 +308,7 @@ namespace Stats
             }
         }
 
-        static string GetLongNameForThreadClassification(CompilationThreadKind kind)
+        private static string GetLongNameForThreadClassification(CompilationThreadKind kind)
         {
             if (kind == CompilationThreadKind.Foreground)
             {
@@ -397,13 +408,22 @@ namespace Stats
             writer.Write(" <JitProcess Process=\"{0}\" ProcessID=\"{1}\" JitTimeMSec=\"{2:n3}\" Count=\"{3}\" ILSize=\"{4}\" NativeSize=\"{5}\"",
                 stats.Name, stats.ProcessID, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize);
             if (stats.CPUMSec != 0)
+            {
                 writer.Write(" ProcessCpuTimeMsec=\"{0}\"", stats.CPUMSec);
+            }
+
             if (!string.IsNullOrEmpty(stats.CommandLine))
+            {
                 writer.Write(" CommandLine=\"{0}\"", XmlUtilities.XmlEscape(stats.CommandLine, false));
+            }
+
             writer.WriteLine(">");
             writer.WriteLine("  <JitEvents>");
             foreach (TraceJittedMethod _event in runtime.JIT.Methods)
+            {
                 ToXml(writer, _event);
+            }
+
             writer.WriteLine("  </JitEvents>");
 
             writer.WriteLine(" <ModuleStats Count=\"{0}\" TotalCount=\"{1}\" TotalJitTimeMSec=\"{2:n3}\" TotalILSize=\"{3}\" TotalNativeSize=\"{4}\">",
@@ -415,9 +435,14 @@ namespace Stats
             {
                 double diff = statsEx.TotalModuleStats[y].TotalCpuTimeMSec - statsEx.TotalModuleStats[x].TotalCpuTimeMSec;
                 if (diff > 0)
+                {
                     return 1;
+                }
                 else if (diff < 0)
+                {
                     return -1;
+                }
+
                 return 0;
             });
 
@@ -458,7 +483,7 @@ namespace Stats
         }
     }
 
-    class JITStatsEx
+    internal class JITStatsEx
     {
         public JITStats TotalBGJITStats = new JITStats();
         public SortedDictionary<string, JITStats> TotalModuleStats = new SortedDictionary<string, JITStats>();
@@ -493,6 +518,6 @@ namespace Stats
 
             return stats;
         }
-        
+
     }
 }

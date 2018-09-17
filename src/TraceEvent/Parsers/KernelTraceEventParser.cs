@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 using Utilities;
 using Address = System.UInt64;
@@ -193,7 +192,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// These are the kernel events that are not allowed in containers.  Can be subtracted out.  
             /// </summary>
-            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch),
+            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch | ProcessCounters),
 
             // These are ones that I have made up  
             // All = 0x07B3FFFF, so 4'0000, 8'0000, 40'0000, and F000'00000 are free.  
@@ -3159,7 +3158,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             lazyFileIDToName.FinishRead();      // We don't read fileIDToName from the disk unless we need to, check
             string ret;
             if (!fileIDToName.TryGetValue(fileKey, timeQPC, out ret))
+            {
                 return "";
+            }
+
             return ret;
         }
         /// <summary>
@@ -3172,7 +3174,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             string ret;
             if (!fileIDToName.TryGetValue(fileKey, timeQPC, out ret) && !fileIDToName.TryGetValue(fileObject, timeQPC, out ret))
+            {
                 return "";
+            }
+
             return ret;
         }
 
@@ -3180,7 +3185,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             string ret;
             if (!fileIDToName.TryGetValue(objectAddress, timeQPC, out ret))
+            {
                 return "";
+            }
+
             return ret;
         }
 
@@ -3188,7 +3196,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             string ret;
             if (_objectTypeToName == null || !_objectTypeToName.TryGetValue(objectType, out ret))
+            {
                 return "";
+            }
+
             return ret;
         }
 
@@ -3199,7 +3210,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 // See if we have end-Thread information, and use that if it is there.  
                 if (threadIDtoProcessIDRundown != null && threadIDtoProcessIDRundown.TryGetValue((Address)threadID, -timeQPC, out ret))
+                {
                     return ret;
+                }
+
                 ret = -1;
             }
             return ret;
@@ -3223,7 +3237,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             if (threadIDtoProcessIDRundown == null)
+            {
                 serializer.Write(0);
+            }
             else
             {
                 serializer.Write(threadIDtoProcessIDRundown.Count);
@@ -3275,7 +3291,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 serializer.Log("</WriteCollection>\r\n");
             }
             else
+            {
                 serializer.Write(0);
+            }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -3321,13 +3339,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             });
 
-            this.lazyDiskEventTimeStamp.Read(deserializer, delegate
+            lazyDiskEventTimeStamp.Read(deserializer, delegate
             {
                 deserializer.Read(out count);
                 Debug.Assert(count >= 0);
                 deserializer.Log("<Marker name=\"diskEventTimeStamp\"/ count=\"" + count + "\">");
                 for (int i = 0; i < count; i++)
+                {
                     diskEventTimeStamp.Add(new DiskIOTime(deserializer.ReadInt(), deserializer.ReadDouble()));
+                }
             });
 
             deserializer.Read(out count);
@@ -3337,7 +3357,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 deserializer.Log("<Marker name=\"objectTypeToName\"/ count=\"" + count + "\">");
                 _objectTypeToName = new Dictionary<int, string>(count);
                 for (int i = 0; i < count; i++)
+                {
                     _objectTypeToName.Add(deserializer.ReadInt(), deserializer.ReadString());
+                }
             }
         }
 
@@ -3346,7 +3368,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get
             {
                 if (_fileIDToName == null)
+                {
                     _fileIDToName = new HistoryDictionary<string>(500);
+                }
+
                 return _fileIDToName;
             }
         }
@@ -3355,7 +3380,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get
             {
                 if (_threadIDtoProcessID == null)
+                {
                     _threadIDtoProcessID = new HistoryDictionary<int>(50);
+                }
+
                 return _threadIDtoProcessID;
             }
         }
@@ -3364,7 +3392,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get
             {
                 if (_diskEventTimeStamp.EmptyCapacity)
+                {
                     _diskEventTimeStamp = new GrowableArray<DiskIOTime>(500);
+                }
+
                 return _diskEventTimeStamp;
             }
         }
@@ -3375,7 +3406,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         internal struct DiskIOTime
         {
-            public DiskIOTime(int DiskNum, double TimeStampQPC) { this.DiskNum = DiskNum; this.TimeStampRelativeMSec = TimeStampQPC; }
+            public DiskIOTime(int DiskNum, double TimeStampQPC) { this.DiskNum = DiskNum; TimeStampRelativeMSec = TimeStampQPC; }
             public int DiskNum;
             public double TimeStampRelativeMSec;
         };
@@ -3426,24 +3457,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 // TODO confirm that you are on the local machine before initializing in this way.  
                 if (kernelToDriveMap.Count == 0)
-                    PopulateFromLocalMachine();
-
-#if !CONTAINER_WORKAROUND_NOT_NEEDED
-                // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognise them 
-                // because they have have the form of a GUID path \Files and then the client path.   We only
-                // need to fix this for windows (OS) files, so we use \Files\Windows\as the key that this is
-                // happening, and we morph the name to fix it.
-
-                // We can pull this out when the OS fixes ETW to show client names.  
-                var filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
-                if (16 < filesIdx)
                 {
-                    var ret = systemDrive + kernelName.Substring(filesIdx + 6);
-                    return ret;
+                    PopulateFromLocalMachine();
                 }
 
-#endif 
+#if !CONTAINER_WORKAROUND_NOT_NEEDED
+                // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognize them 
+                // because they have the form of a GUID path \OS or \File and then the client path.   It is enough
+                // to fix this for files in the \windows directory so we use \OS\Windows\ or \Files\Windows as the key 
+                // to tell if we have a HOST file path and we morph the name to fix it.
+                // We can pull this out when the OS fixes ETW to show client names.  
+                var filesIdx = kernelName.IndexOf(@"\OS\Windows\", StringComparison.OrdinalIgnoreCase);
+                if (0 <= filesIdx && filesIdx + 3 < kernelName.Length)
+                {
+                    return systemDrive + kernelName.Substring(filesIdx + 3);
+                }
 
+                filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
+                if (0 <= filesIdx && filesIdx + 6 < kernelName.Length)
+                {
+                    return systemDrive + kernelName.Substring(filesIdx + 6);
+                }
+#endif
                 for (int i = 0; i < kernelToDriveMap.Count; i++)
                 {
                     Debug.Assert(kernelToDriveMap[i].Key.EndsWith(@"\"));
@@ -3462,7 +3497,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // Heuristic.  If we have not found it yet, tack on the system drive letter if it is not 
                 // This is similar to what XPERF does too, but it is clear it is not perfect. 
                 if (kernelName.Length > 2 && kernelName[0] == '\\' && Char.IsLetterOrDigit(kernelName[1]))
+                {
                     return systemDrive + kernelName;
+                }
 
                 // TODO this is still not complete, compare to XPERF and align.  
                 return kernelName;
@@ -3485,7 +3522,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     string driveName = new string(curChar, 1) + @":";
                     kernelNameBuff.Length = 0;
                     if (QueryDosDeviceW(driveName, kernelNameBuff, 2048) != 0)
+                    {
                         kernelToDriveMap.Add(new KeyValuePair<string, string>(kernelNameBuff.ToString() + @"\", driveName + @"\"));
+                    }
                 }
                 logicalDriveBitVector >>= 1;
                 curChar++;
@@ -3599,7 +3638,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal EventTraceHeaderTraceData(Action<EventTraceHeaderTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -3646,7 +3685,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "BufferSize", "Version", "ProviderVersion", "NumberOfProcessors", "EndTime", "TimerResolution", "MaxFileSize", "LogFileMode", "BuffersWritten", "StartBuffers", "PointerSize", "EventsLost", "CPUSpeed", "BootTime", "PerfFreq", "StartTime", "ReservedFlags", "BuffersLost", "SessionName", "LogFileName", "UtcOffsetMinutes" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3718,13 +3760,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int GroupMask6 { get { return GetInt32At(20); } }
         public int GroupMask7 { get { return GetInt32At(24); } }
         public int GroupMask8 { get { return GetInt32At(28); } }
-        public int KernelEventVersion { get { if (Version >= 2) return GetInt32At(32); return 0; } }
+        public int KernelEventVersion { get { if (Version >= 2) { return GetInt32At(32); } return 0; } }
 
         #region Private
         internal HeaderExtensionTraceData(Action<HeaderExtensionTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -3762,7 +3804,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "GroupMask1", "GroupMask2", "GroupMask3", "GroupMask4", "GroupMask5", "GroupMask6", "GroupMask7", "GroupMask8", "KernelEventVersion" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3813,9 +3858,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     public sealed class ProcessTraceData : TraceEvent
     {
         // public int ProcessID { get { if (Version >= 1) return GetInt32At(HostOffset(4, 1)); return (int) GetHostPointer(0); } }
-        public int ParentID { get { if (Version >= 1) return GetInt32At(HostOffset(8, 1)); return (int)GetAddressAt(HostOffset(4, 1)); } }
+        public int ParentID { get { if (Version >= 1) { return GetInt32At(HostOffset(8, 1)); } return (int)GetAddressAt(HostOffset(4, 1)); } }
         // Skipping UserSID
-        public string KernelImageFileName { get { if (Version >= 1) return GetUTF8StringAt(GetKernelImageNameOffset()); return ""; } }
+        public string KernelImageFileName { get { if (Version >= 1) { return GetUTF8StringAt(GetKernelImageNameOffset()); } return ""; } }
         public string ImageFileName
         {
             get
@@ -3829,12 +3874,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
-        public Address DirectoryTableBase { get { if (Version >= 3) return GetAddressAt(HostOffset(20, 1)); return 0; } }
-        public ProcessFlags Flags { get { if (Version >= 4) return (ProcessFlags)GetInt32At(HostOffset(24, 2)); return 0; } }
+        public Address DirectoryTableBase { get { if (Version >= 3) { return GetAddressAt(HostOffset(20, 1)); } return 0; } }
+        public ProcessFlags Flags { get { if (Version >= 4) { return (ProcessFlags)GetInt32At(HostOffset(24, 2)); } return 0; } }
 
-        public int SessionID { get { if (Version >= 1) return GetInt32At(HostOffset(12, 1)); return 0; } }
-        public int ExitStatus { get { if (Version >= 1) return GetInt32At(HostOffset(16, 1)); return 0; } }
-        public Address UniqueProcessKey { get { if (Version >= 2) return GetAddressAt(0); return 0; } }
+        public int SessionID { get { if (Version >= 1) { return GetInt32At(HostOffset(12, 1)); } return 0; } }
+        public int ExitStatus { get { if (Version >= 1) { return GetInt32At(HostOffset(16, 1)); } return 0; } }
+        public Address UniqueProcessKey { get { if (Version >= 2) { return GetAddressAt(0); } return 0; } }
         public string CommandLine
         {
             get
@@ -3842,7 +3887,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 try
                 {
                     if (Version >= 2)
+                    {
                         return GetUnicodeStringAt(SkipUTF8String(GetKernelImageNameOffset()));
+                    }
                 }
                 catch { }
                 return "";
@@ -3853,7 +3900,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version >= 4)
+                {
                     return GetUnicodeStringAt(SkipUnicodeString(SkipUTF8String(GetKernelImageNameOffset())));
+                }
+
                 return "";
             }
         }
@@ -3862,7 +3912,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version >= 4)
+                {
                     return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUTF8String(GetKernelImageNameOffset()))));
+                }
+
                 return "";
             }
         }
@@ -3874,8 +3927,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ProcessTraceData(Action<ProcessTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -3912,9 +3965,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "UniqueProcessKey", UniqueProcessKey);
             XmlAttrib(sb, "CommandLine", CommandLine);
             if (PackageFullName.Length != 0)
+            {
                 XmlAttrib(sb, "PackageFullName", PackageFullName);
+            }
+
             if (ApplicationID.Length != 0)
+            {
                 XmlAttrib(sb, "ApplicationID", ApplicationID);
+            }
+
             sb.Append("/>");
             return sb;
         }
@@ -3924,9 +3983,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ProcessID", "ParentID", "ImageFileName", "PageDirectoryBase",
                         "Flags", "SessionID", "ExitStatus", "UniqueProcessKey", "CommandLine",
                         "PackageFullName", "ApplicationID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3967,7 +4029,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             // We wish to create the illusion that the events are reported by the process being started.   
             eventRecord->EventHeader.ProcessId = GetInt32At(HostOffset(4, 1));
@@ -3998,8 +4060,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ProcessCtrTraceData(Action<ProcessCtrTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -4039,7 +4101,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ProcessID", "MemoryCount", "HandleCount", "PeakVirtualSize", "PeakWorkingSetSize", "PeakPagefileUsage", "QuotaPeakPagedPoolUsage", "QuotaPeakNonPagedPoolUsage", "VirtualSize", "WorkingSetSize", "PagefileUsage", "QuotaPagedPoolUsage", "QuotaNonPagedPoolUsage", "PrivatePageCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4086,7 +4151,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -4098,20 +4163,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     {
         // public int ThreadID { get { if (Version >= 1) return GetInt32At(4); return GetInt32At(0); } }
         // public int ProcessID { get { if (Version >= 1) return GetInt32At(0); return GetInt32At(4); } }
-        public Address StackBase { get { if (Version >= 2) return GetAddressAt(8); return 0; } }
-        public Address StackLimit { get { if (Version >= 2) return GetAddressAt(HostOffset(12, 1)); return 0; } }
-        public Address UserStackBase { get { if (Version >= 2) return GetAddressAt(HostOffset(16, 2)); return 0; } }
-        public Address UserStackLimit { get { if (Version >= 2) return GetAddressAt(HostOffset(20, 3)); return 0; } }
-        public Address StartAddr { get { if (Version >= 2) return GetAddressAt(HostOffset(24, 4)); return 0; } }
-        public Address Win32StartAddr { get { if (Version >= 2) return GetAddressAt(HostOffset(28, 5)); return 0; } }
+        public Address StackBase { get { if (Version >= 2) { return GetAddressAt(8); } return 0; } }
+        public Address StackLimit { get { if (Version >= 2) { return GetAddressAt(HostOffset(12, 1)); } return 0; } }
+        public Address UserStackBase { get { if (Version >= 2) { return GetAddressAt(HostOffset(16, 2)); } return 0; } }
+        public Address UserStackLimit { get { if (Version >= 2) { return GetAddressAt(HostOffset(20, 3)); } return 0; } }
+        public Address StartAddr { get { if (Version >= 2) { return GetAddressAt(HostOffset(24, 4)); } return 0; } }
+        public Address Win32StartAddr { get { if (Version >= 2) { return GetAddressAt(HostOffset(28, 5)); } return 0; } }
         // Not present in V2 public int WaitMode { get { if (Version >= 1) return GetByteAt(HostOffset(32, 6)); return 0; } }
-        public Address TebBase { get { if (Version >= 2) return GetAddressAt(HostOffset(32, 6)); return 0; } }
-        public int SubProcessTag { get { if (Version >= 2) return GetInt32At(HostOffset(36, 7)); return 0; } }
-        public int BasePriority { get { if (Version >= 3 && EventDataLength >= HostOffset(41, 7)) return GetByteAt(HostOffset(40, 7)); return 0; } }
-        public int PagePriority { get { if (Version >= 3 && EventDataLength >= HostOffset(42, 7)) return GetByteAt(HostOffset(41, 7)); return 0; } }
-        public int IoPriority { get { if (Version >= 3 && EventDataLength >= HostOffset(43, 7)) return GetByteAt(HostOffset(42, 7)); return 0; } }
-        public int ThreadFlags { get { if (Version >= 3 && EventDataLength >= HostOffset(44, 7)) return GetByteAt(HostOffset(43, 7)); return 0; } }
-        public string ThreadName { get { if (Version >= 3 && EventDataLength >= HostOffset(46, 7)) return GetUnicodeStringAt(HostOffset(44, 7)); return ""; } }
+        public Address TebBase { get { if (Version >= 2) { return GetAddressAt(HostOffset(32, 6)); } return 0; } }
+        public int SubProcessTag { get { if (Version >= 2) { return GetInt32At(HostOffset(36, 7)); } return 0; } }
+        public int BasePriority { get { if (Version >= 3 && EventDataLength >= HostOffset(41, 7)) { return GetByteAt(HostOffset(40, 7)); } return 0; } }
+        public int PagePriority { get { if (Version >= 3 && EventDataLength >= HostOffset(42, 7)) { return GetByteAt(HostOffset(41, 7)); } return 0; } }
+        public int IoPriority { get { if (Version >= 3 && EventDataLength >= HostOffset(43, 7)) { return GetByteAt(HostOffset(42, 7)); } return 0; } }
+        public int ThreadFlags { get { if (Version >= 3 && EventDataLength >= HostOffset(44, 7)) { return GetByteAt(HostOffset(43, 7)); } return 0; } }
+        public string ThreadName { get { if (Version >= 3 && EventDataLength >= HostOffset(46, 7)) { return GetUnicodeStringAt(HostOffset(44, 7)); } return ""; } }
 
         // The thread that started this thread (only in start events 
         public int ParentThreadID
@@ -4119,7 +4184,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version < 2)
+                {
                     return -1;
+                }
+
                 return GetInt32At(4);   // This is not the standard location see FixupData, we swap the ThreadIDs   See FixupData 
                 ;
             }
@@ -4129,7 +4197,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version < 2)
+                {
                     return -1;
+                }
+
                 return GetInt32At(0);   // This is not the standard location see FixupData, we swap the Process ID   See FixupData 
                 ;
             }
@@ -4138,8 +4209,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ThreadTraceData(Action<ThreadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -4178,10 +4249,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "StackBase", "StackLimit", "UserStackBase", "UserStackLimit",
                         "StartAddr", "Win32StartAddr", "TebBase", "SubProcessTag",
                         "BasePriority", "PagePriority", "IoPriority", "ThreadFlags", "ThreadName", "ParentThreadID", "ParentProcessID"
                     };
+                }
+
                 return payloadNames;
             }
         }
@@ -4230,10 +4304,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (Version < 2)
+            {
                 return;
+            }
 
             // We wish to create the illusion that the events are reported by the thread being started.   
             var parentProcess = -1;
@@ -4269,14 +4345,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         // public int ProcessID { get { return GetInt32At(0); } }
         // public int ThreadID { get { return GetInt32At(4); } }
 
-        public string ThreadName {  get { return GetUnicodeStringAt(8);  } }
+        public string ThreadName { get { return GetUnicodeStringAt(8); } }
 
         #region Private
         internal ThreadSetNameTraceData(Action<ThreadSetNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
         }
         protected internal override Delegate Target
         {
@@ -4301,7 +4377,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ThreadName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4320,7 +4399,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
 
         private event Action<ThreadSetNameTraceData> Action;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -4366,8 +4445,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal CSwitchTraceData(Action<CSwitchTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -4405,11 +4484,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "OldThreadID", "OldProcessID", "OldProcessName",
                         "NewThreadID", "NewProcessID", "NewProcessName", "ProcessorNumber",
                         "NewThreadPriority", "OldThreadPriority", "NewThreadQuantum", "OldThreadQuantum",
                         "OldThreadWaitReason", "OldThreadWaitMode", "OldThreadState", "OldThreadWaitIdealProcessor",
                         "NewThreadWaitTime" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4460,15 +4542,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(0);
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -4477,7 +4564,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -4537,20 +4627,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal EnqueueTraceData(Action<EnqueueTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
-            if (this.eventRecord->EventHeader.ThreadId == -1)
+            if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(8);
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -4559,7 +4654,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -4585,7 +4683,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Entry" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4617,19 +4718,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DequeueTraceData(Action<DequeueTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
-            if (this.eventRecord->EventHeader.ThreadId == -1)
+            if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(0);
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -4638,7 +4744,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -4664,7 +4773,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Count", "FirstEntry" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5236,7 +5348,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                     // See if we can start were we last left off.  
                     var idx = state.lastDiskEventIdx;
                     if (timeStampRelativeMSec <= diskEvents[idx].TimeStampRelativeMSec)
+                    {
                         idx = 0;
+                    }
 
                     while (idx < diskEvents.Count)
                     {
@@ -5247,7 +5361,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                             break;
                         }
                         if (diskEvents[idx].DiskNum == diskNum)
+                        {
                             lastDiskIOTimeForDiskRelativeMSec = diskEvents[idx].TimeStampRelativeMSec;
+                        }
+
                         idx++;
                     }
                 }
@@ -5271,17 +5388,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DiskIOTraceData(Action<DiskIOTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
-            this.NeedsFixup = true;
+            NeedsFixup = true;
         }
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1 && HostOffset(44, 2) <= EventDataLength)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(HostOffset(40, 2));
+            }
 
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
         protected internal override Delegate Target
         {
@@ -5316,7 +5437,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "DiskNumber", "IrpFlags", "Priority", "TransferSize", "ByteOffset", "Irp", "ElapsedTimeMSec", "DiskServiceTimeMSec", "FileKey", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5364,17 +5488,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DiskIOInitTraceData(Action<DiskIOInitTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
-            if (this.Version >= 3 && this.eventRecord->EventHeader.ThreadId == -1)
+            if (Version >= 3 && eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(HostOffset(4, 1));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
         protected internal override Delegate Target
         {
@@ -5400,7 +5529,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Irp" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5447,17 +5579,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DiskIOFlushBuffersTraceData(Action<DiskIOFlushBuffersTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
-            if (this.Version >= 3 && this.eventRecord->EventHeader.ThreadId == -1)
+            if (Version >= 3 && eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(HostOffset(4, 1));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
         protected internal override Delegate Target
         {
@@ -5486,7 +5623,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "DiskNumber", "IrpFlags", "Irp", "ElapsedTimeMSec" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5566,7 +5706,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DriverMajorFunctionCallTraceData(Action<DriverMajorFunctionCallTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -5598,7 +5738,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MajorFunction", "MinorFunction", "RoutineAddr", "FileKey", "Irp", "UniqMatchID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5639,7 +5782,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DriverMajorFunctionReturnTraceData(Action<DriverMajorFunctionReturnTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -5667,7 +5810,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Irp", "UniqMatchID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5701,7 +5847,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DriverCompletionRoutineTraceData(Action<DriverCompletionRoutineTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -5730,7 +5876,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Routine", "IrpPtr", "UniqMatchID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5766,7 +5915,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DriverCompleteRequestTraceData(Action<DriverCompleteRequestTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -5795,7 +5944,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "RoutineAddr", "Irp", "UniqMatchID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5830,7 +5982,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DriverCompleteRequestReturnTraceData(Action<DriverCompleteRequestReturnTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -5858,7 +6010,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Irp", "UniqMatchID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5884,28 +6039,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class RegistryTraceData : TraceEvent
     {
-        private long InitialTimeQPC { get { if (Version >= 2) return GetInt64At(0); return 0; } }
+        private long InitialTimeQPC { get { if (Version >= 2) { return GetInt64At(0); } return 0; } }
 
         public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
 
-        public int Status { get { if (Version >= 2) GetInt32At(8); return 0; } }
+        public int Status { get { if (Version >= 2) { GetInt32At(8); } return 0; } }
 
-        public int Index { get { if (Version >= 2) GetInt32At(12); return 0; } }
+        public int Index { get { if (Version >= 2) { GetInt32At(12); } return 0; } }
 
-        public Address KeyHandle { get { if (Version >= 2) return GetAddressAt(16); return 0; } }
+        public Address KeyHandle { get { if (Version >= 2) { return GetAddressAt(16); } return 0; } }
 
         public string KeyName
         {
             get
             {
-                if (Version < 2) return "";
+                if (Version < 2)
+                {
+                    return "";
+                }
 
                 // TODO All of this logic is suspect.   it could use a careful review.  
                 if (NameIsKeyName(Opcode))
                 {
                     string ret = GetUnicodeStringAt(HostOffset(20, 1));
                     if (ret.Length != 0)
+                    {
                         return ret;
+                    }
                 }
                 return state.FileIDToName(KeyHandle, TimeStampQPC);
             }
@@ -5915,9 +6075,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (NameIsKeyName(Opcode))
+                {
                     return "";
+                }
                 else
+                {
                     return GetUnicodeStringAt((Version < 2 ? HostOffset(0x14, 2) : HostOffset(0x14, 1)));
+                }
             }
         }
 
@@ -5925,7 +6089,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal RegistryTraceData(Action<RegistryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -5958,7 +6122,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Status", "KeyHandle", "ElapsedTimeMSec", "KeyName", "ValueName", "Index" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5989,7 +6156,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        static internal bool NameIsKeyName(TraceEventOpcode code)
+        internal static bool NameIsKeyName(TraceEventOpcode code)
         {
             // TODO confirm this is true
             switch ((int)code)
@@ -6033,7 +6200,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SplitIoInfoTraceData(Action<SplitIoInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6061,7 +6228,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ParentIrp", "ChildIrp" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6100,7 +6270,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIONameTraceData(Action<FileIONameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6130,7 +6300,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "FileKey", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6164,7 +6337,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public string FileName { get { return state.FileIDToName(FileKey, TimeStampQPC); } }
 
         // In Version 3 we have byte offset field 
-        public long ByteOffset { get { if (Version < 3) return 0; else return GetInt64At(HostOffset(20, 3)); } }
+        public long ByteOffset
+        {
+            get
+            {
+                if (Version < 3)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return GetInt64At(HostOffset(20, 3));
+                }
+            }
+        }
 
         // TODO I am not actually that certain of this parsing.   Which Version ByteOffset got put in, and what the layout is on 32 bit.
         // but this does work on Win 10 (which uses Version 3) and for 64 bit which is the most important.    
@@ -6174,8 +6360,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MapFileTraceData(Action<MapFileTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6206,7 +6392,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ViewBase", "FileKey", "MiscInfo", "ViewSize", "ByteOffset", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6234,7 +6423,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             int processIDFromEvent = Version < 3 ? GetInt32At(HostOffset(20, 3)) : GetInt32At(HostOffset(28, 3));
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1 || eventRecord->EventHeader.ProcessId == processIDFromEvent);
@@ -6273,7 +6462,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// </summary>
         public FileShare ShareAccess { get { return (FileShare)(GetInt32At(LayoutVersion <= 2 ? HostOffset(20, 3) : HostOffset(20, 2))); } }
         public string FileName { get { return state.KernelToUser(GetUnicodeStringAt(LayoutVersion <= 2 ? HostOffset(24, 3) : HostOffset(24, 2))); } }
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -6282,7 +6471,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -6296,7 +6488,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // If it is classic, it is the kernel provider, otherwise it is the Microsoft-Windows-Kernel-File provider.  
                 int ret = Version;
                 if (!IsClassicProvider)
+                {
                     ret += 2;
+                }
+
                 return ret;
             }
         }
@@ -6304,8 +6499,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIOCreateTraceData(Action<FileIOCreateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6339,7 +6534,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "CreateDispostion", "FileAttributes", "ShareAccess", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6368,12 +6566,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(LayoutVersion <= 2 ? HostOffset(4, 1) : HostOffset(8, 2));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
         private event Action<FileIOCreateTraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
@@ -6427,7 +6630,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public string FileName { get { return state.FileIDToName(FileKey, FileObject, TimeStampQPC); } }
         public Address FileKey { get { return GetAddressAt(Version <= 2 ? HostOffset(12, 3) : HostOffset(8, 2)); } }
         // public Address TTID { get { return GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(12, 3)); } }
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -6436,7 +6639,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -6444,8 +6650,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIOSimpleOpTraceData(Action<FileIOSimpleOpTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6476,7 +6682,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IrpPtr", "FileObject", "FileKey", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6499,12 +6708,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(12, 3));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
         private event Action<FileIOSimpleOpTraceData> Action;
@@ -6519,7 +6733,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public Address FileObject { get { return GetAddressAt(Version <= 2 ? HostOffset(16, 2) : HostOffset(12, 1)); } }
         public Address FileKey { get { return GetAddressAt(Version <= 2 ? HostOffset(20, 3) : HostOffset(16, 2)); } }
         public string FileName { get { return state.FileIDToName(FileKey, FileObject, TimeStampQPC); } }
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -6528,7 +6742,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -6541,8 +6758,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIOReadWriteTraceData(Action<FileIOReadWriteTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6576,7 +6793,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Offset", "IrpPtr", "FileObject", "FileKey", "IoSize", "IoFlags", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6605,12 +6825,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(Version <= 2 ? HostOffset(12, 1) : HostOffset(20, 3));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
         private event Action<FileIOReadWriteTraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
@@ -6626,7 +6851,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public Address ExtraInfo { get { return GetAddressAt(Version <= 2 ? HostOffset(16, 4) : HostOffset(12, 3)); } }
         // public Address TTID { get { return GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(16, 4)); } }
         public int InfoClass { get { return GetInt32At(Version <= 2 ? HostOffset(20, 5) : HostOffset(20, 4)); } }
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -6635,7 +6860,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -6643,8 +6871,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIOInfoTraceData(Action<FileIOInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6677,7 +6905,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IrpPtr", "FileObject", "FileKey", "ExtraInfo", "InfoClass", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6703,12 +6934,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                     return null;
             }
         }
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(16, 4));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
         private event Action<FileIOInfoTraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
@@ -6732,7 +6968,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int InfoClass { get { return GetInt32At(Version <= 2 ? HostOffset(20, 4) : HostOffset(20, 3)); } }
         public int FileIndex { get { return GetInt32At(Version <= 2 ? HostOffset(24, 4) : HostOffset(24, 3)); } }
         public string FileName { get { return state.KernelToUser(GetUnicodeStringAt(Version <= 2 ? HostOffset(28, 4) : HostOffset(28, 3))); } }
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -6741,7 +6977,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -6749,8 +6988,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIODirEnumTraceData(Action<FileIODirEnumTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6785,7 +7024,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IrpPtr", "FileObject", "FileKey", "DirectoryName", "Length", "InfoClass", "FileIndex", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6816,12 +7058,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(12, 3));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
         private event Action<FileIODirEnumTraceData> Action;
@@ -6839,7 +7086,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal FileIOOpEndTraceData(Action<FileIOOpEndTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6868,7 +7115,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IrpPtr", "ExtraInfo", "NtStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6898,7 +7148,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     {
 
         // PID
-        public int size { get { if (Version >= 1) return GetInt32At(4); return GetInt32At(12); } }
+        public int size { get { if (Version >= 1) { return GetInt32At(4); } return GetInt32At(12); } }
         public System.Net.IPAddress daddr
         {
             get
@@ -6915,18 +7165,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return new System.Net.IPAddress(addr);
             }
         }
-        public int dport { get { if (Version >= 1) return ByteSwap16(GetInt16At(16)); return ByteSwap16(GetInt16At(8)); } }
-        public int sport { get { if (Version >= 1) return ByteSwap16(GetInt16At(18)); return ByteSwap16(GetInt16At(10)); } }
-        public Address connid { get { if (Version >= 1) return GetAddressAt(HostOffset(20, 1)); return 0; } }
-        public int seqnum { get { if (Version >= 1) return GetInt32At(HostOffset(24, 1)); return 0; } }
+        public int dport { get { if (Version >= 1) { return ByteSwap16(GetInt16At(16)); } return ByteSwap16(GetInt16At(8)); } }
+        public int sport { get { if (Version >= 1) { return ByteSwap16(GetInt16At(18)); } return ByteSwap16(GetInt16At(10)); } }
+        public Address connid { get { if (Version >= 1) { return GetAddressAt(HostOffset(20, 1)); } return 0; } }
+        public int seqnum { get { if (Version >= 1) { return GetInt32At(HostOffset(24, 1)); } return 0; } }
 
         internal static int ByteSwap16(int val) { return ((val << 8) & 0xFF00) + ((val >> 8) & 0xFF); }
         #region Private
         internal TcpIpTraceData(Action<TcpIpTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -6960,7 +7210,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "daddr", "saddr", "dport", "sport", "size", "connid", "seqnum" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6993,26 +7246,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             if (Version >= 1)
+            {
                 eventRecord->EventHeader.ProcessId = GetInt32At(0);
+            }
             else
+            {
                 eventRecord->EventHeader.ProcessId = GetInt32At(16);
+            }
         }
         #endregion
     }
     public sealed class TcpIpFailTraceData : TraceEvent
     {
-        public int Proto { get { if (Version >= 2) return GetInt16At(0); return GetInt32At(0); } }
-        public int FailureCode { get { if (Version >= 2) return GetInt16At(2); return 0; } }
+        public int Proto { get { if (Version >= 2) { return GetInt16At(0); } return GetInt32At(0); } }
+        public int FailureCode { get { if (Version >= 2) { return GetInt16At(2); } return 0; } }
 
         #region Private
         internal TcpIpFailTraceData(Action<TcpIpFailTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7041,7 +7298,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Proto", "FailureCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7086,8 +7346,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TcpIpSendTraceData(Action<TcpIpSendTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7123,7 +7383,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "size", "daddr", "saddr", "dport", "sport", "startime", "endtime", "seqnum", "connid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7160,7 +7423,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -7191,8 +7454,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TcpIpConnectTraceData(Action<TcpIpConnectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7232,7 +7495,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "size", "daddr", "saddr", "dport", "sport", "mss", "sackopt", "tsopt", "wsopt", "rcvwin", "rcvwinscale", "sndwinscale", "seqnum", "connid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7279,7 +7545,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -7301,8 +7567,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TcpIpV6TraceData(Action<TcpIpV6TraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7333,7 +7599,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "size", "daddr", "saddr", "dport", "sport", "connid", "seqnum" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7364,7 +7633,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -7388,8 +7657,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TcpIpV6SendTraceData(Action<TcpIpV6SendTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7423,7 +7692,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "size", "daddr", "saddr", "dport", "sport", "startime", "endtime", "seqnum", "connid", };
+                }
+
                 return payloadNames;
             }
         }
@@ -7458,7 +7730,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -7487,8 +7759,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TcpIpV6ConnectTraceData(Action<TcpIpV6ConnectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7526,7 +7798,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "size", "dport", "sport", "mss", "sackopt", "tsopt", "wsopt", "rcvwin", "rcvwinscale", "sndwinscale", "seqnum", "connid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7568,7 +7843,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private event Action<TcpIpV6ConnectTraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -7586,8 +7861,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return new System.Net.IPAddress(addr);
             }
         }
-        public int sport { get { if (Version >= 1) return TcpIpTraceData.ByteSwap16(GetInt16At(18)); return TcpIpTraceData.ByteSwap16(GetInt16At(HostOffset(8, 1))); } }
-        public int size { get { if (Version >= 1) return GetInt32At(4); return GetInt16At(HostOffset(10, 1)); } }
+        public int sport { get { if (Version >= 1) { return TcpIpTraceData.ByteSwap16(GetInt16At(18)); } return TcpIpTraceData.ByteSwap16(GetInt16At(HostOffset(8, 1))); } }
+        public int size { get { if (Version >= 1) { return GetInt32At(4); } return GetInt16At(HostOffset(10, 1)); } }
         public System.Net.IPAddress daddr
         {
             get
@@ -7596,15 +7871,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return new System.Net.IPAddress(addr);
             }
         }
-        public int dport { get { if (Version >= 1) return TcpIpTraceData.ByteSwap16(GetInt16At(16)); return TcpIpTraceData.ByteSwap16(GetInt16At(HostOffset(16, 1))); } }
+        public int dport { get { if (Version >= 1) { return TcpIpTraceData.ByteSwap16(GetInt16At(16)); } return TcpIpTraceData.ByteSwap16(GetInt16At(HostOffset(16, 1))); } }
         public int dsize { get { return GetInt16At(HostOffset(18, 1)); } }
         // PID  
         #region Private
         internal UdpIpTraceData(Action<UdpIpTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7638,7 +7913,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "context", "saddr", "sport", "size", "daddr", "dport", "dsize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7670,11 +7948,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private event Action<UdpIpTraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             if (Version >= 1)
+            {
                 eventRecord->EventHeader.ProcessId = GetInt32At(0);
+            }
         }
         #endregion
     }
@@ -7687,7 +7967,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal UdpIpFailTraceData(Action<UdpIpFailTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7715,7 +7995,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Proto", "FailureCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7754,8 +8037,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal UpdIpV6TraceData(Action<UpdIpV6TraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7786,7 +8069,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "size", "dport", "sport", "seqnum", "connid" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7814,7 +8100,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private event Action<UpdIpV6TraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
             eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -7826,8 +8112,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public Address ImageBase { get { return GetAddressAt(0); } }
         public int ImageSize { get { return (int)GetAddressAt(HostOffset(4, 1)); } }
         // public int ProcessID { get { if (Version >= 1) return GetInt32At(HostOffset(8, 2)); return 0; } }
-        public int ImageChecksum { get { if (Version >= 2) return GetInt32At(HostOffset(12, 2)); return 0; } }
-        public int TimeDateStamp { get { if (Version >= 2) return GetInt32At(HostOffset(16, 2)); return 0; } }
+        public int ImageChecksum { get { if (Version >= 2) { return GetInt32At(HostOffset(12, 2)); } return 0; } }
+        public int TimeDateStamp { get { if (Version >= 2) { return GetInt32At(HostOffset(16, 2)); } return 0; } }
         /// <summary>
         /// This is the TimeDateStamp converted to a DateTime
         /// TODO: daylight savings time seems to mess this up.  
@@ -7841,20 +8127,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
 
         // Skipping Reserved0
-        public Address DefaultBase { get { if (Version >= 2) return GetAddressAt(HostOffset(24, 2)); return 0; } }
+        public Address DefaultBase { get { if (Version >= 2) { return GetAddressAt(HostOffset(24, 2)); } return 0; } }
         // Skipping Reserved1
         // Skipping Reserved2
         // Skipping Reserved3
         // Skipping Reserved4
         public string FileName { get { return state.KernelToUser(KernelFileName); } }
-        private string KernelFileName { get { if (Version >= 2) return GetUnicodeStringAt(HostOffset(44, 3)); if (Version >= 1) return GetUnicodeStringAt(HostOffset(12, 2)); return ""; } }
+        private string KernelFileName { get { if (Version >= 2) { return GetUnicodeStringAt(HostOffset(44, 3)); } if (Version >= 1) { return GetUnicodeStringAt(HostOffset(12, 2)); } return ""; } }
 
         #region Private
         internal ImageLoadTraceData(Action<ImageLoadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7888,7 +8174,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ImageBase", "ImageSize", "ImageChecksum", "TimeDateStamp", "DefaultBase", "BuildTime", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7921,7 +8210,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             // We wish to create the illusion that the events are reported by the process where it is loaded. 
             // This it not actually true for DCStart and DCStop, and Stop events, so we fix it up.  
@@ -7930,7 +8219,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             {
                 eventRecord->EventHeader.ThreadId = -1;     // DCStarts and DCStops have no useful thread.
                 if (eventRecord->EventHeader.Version >= 1)
+                {
                     eventRecord->EventHeader.ProcessId = GetInt32At(HostOffset(8, 2));
+                }
             }
             // Debug.Assert(eventRecord->EventHeader.Version == 0 || eventRecord->EventHeader.ProcessId == GetInt32At(HostOffset(8, 2)));
         }
@@ -7945,7 +8236,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryPageFaultTraceData(Action<MemoryPageFaultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -7973,7 +8264,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "VirtualAddress", "ProgramCounter" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8032,8 +8326,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryHardFaultTraceData(Action<MemoryHardFaultTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8066,7 +8360,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ElapsedTimeMSec", "ReadOffset", "VirtualAddress", "FileKey", "ByteCount", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8097,15 +8394,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(HostOffset(0x18, 2));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -8114,7 +8416,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -8163,7 +8468,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (PageKind == Kernel.PageKind.File || PageKind == Kernel.PageKind.MetaFile)
+                {
                     return GetAddressAt(HostOffset(16, 2));
+                }
+
                 return GetAddressAt(HostOffset(12, 1)) & ~3UL;
             }
         }
@@ -8174,7 +8482,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (PageKind == Kernel.PageKind.File || PageKind == Kernel.PageKind.MetaFile)
+                {
                     return GetAddressAt(HostOffset(12, 1)) & ~3UL;
+                }
+
                 return 0;
             }
         }
@@ -8184,7 +8495,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryPageAccessTraceData(Action<MemoryPageAccessTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8217,7 +8528,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "PageKind", "PageList", "PageFrameIndex", "VirtualAddress", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8273,7 +8587,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryProcessMemInfoTraceData(Action<MemoryProcessMemInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override Delegate Target
         {
@@ -8284,18 +8598,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             Action(this);
         }
-        protected unsafe internal override void Validate()
+        protected internal override unsafe void Validate()
         {
             Debug.Assert(EventDataLength == 4 + ElementSize * Count);
         }
-        public unsafe override StringBuilder ToXml(StringBuilder sb)
+        public override unsafe StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "Count", Count);
             sb.AppendLine(">");
             for (int i = 0; i < Count; i++)
             {
-                var proc = this.Values(i);
+                var proc = Values(i);
                 sb.Append(" <Process ");
                 XmlAttrib(sb, "ProcessID", proc.ProcessID);
                 XmlAttrib(sb, "WorkingSetPageCount", proc.WorkingSetPageCount);
@@ -8349,7 +8663,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Count", "ProcessID", "WorkingSetPageCount", "CommitPageCount", "VirtualSizeInPages", "PrivateWorkingSetPageCount", "StoreSizePageCount", "StoredPageCount", "CommitDebtInPages", "SharedCommitInPages" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8409,8 +8726,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal IntPtr RawData { get { return (IntPtr)(((byte*)m_data.userData) + m_baseOffset); } }
 
         internal MemoryProcessMemInfoValues(TraceEvent data, int baseOffset) { m_data = data; m_baseOffset = baseOffset; }
-        TraceEvent m_data;
-        int m_baseOffset;
+
+        private TraceEvent m_data;
+        private int m_baseOffset;
         #endregion
     }
 
@@ -8425,8 +8743,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryHeapRangeRundownTraceData(Action<MemoryHeapRangeRundownTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8455,7 +8773,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "HeapRangeFlags", "HeapRangeRangeCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8480,7 +8801,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             // We always make the process id the one where the fault occured
             // TODO is this a good idea?  
@@ -8499,7 +8820,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryHeapRangeCreateTraceData(Action<MemoryHeapRangeCreateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8528,7 +8849,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "FirstRangeSize", "HeapRangeCreateFlags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8564,7 +8888,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryHeapRangeTraceData(Action<MemoryHeapRangeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8593,7 +8917,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "HeapRangeAddress", "HeapRangeSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8627,7 +8954,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryHeapRangeDestroyTraceData(Action<MemoryHeapRangeDestroyTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8654,7 +8981,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8688,7 +9018,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemoryImageLoadBackedTraceData(Action<MemoryImageLoadBackedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8718,7 +9048,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "FileKey", "DeviceChar", "FileChar", "LoadFlags", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8758,7 +9091,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemorySystemMemInfoTraceData(Action<MemorySystemMemInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8784,7 +9117,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "FreePages" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8820,7 +9156,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal MemInfoTraceData(Action<MemInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override Delegate Target
         {
@@ -8831,11 +9167,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             Action(this);
         }
-        protected unsafe internal override void Validate()
+        protected internal override unsafe void Validate()
         {
             Debug.Assert(EventDataLength >= HostOffset(17, 1) + 4);
         }
-        public unsafe override StringBuilder ToXml(StringBuilder sb)
+        public override unsafe StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttribHex(sb, "PriorityLevels", PriorityLevels);
@@ -8853,7 +9189,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "PriorityLevels", "ZeroPageCount", "FreePageCount", "ModifiedPageCount", "ModifiedNoWritePageCount", "BadPageCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8923,8 +9262,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SampledProfileTraceData(Action<SampledProfileTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -8953,7 +9292,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "InstructionPointer", "ProcessorNumber", "Priority", "ExecutingDPC", "ExecutingISR", "Rank", "Count" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8994,15 +9336,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             return callBack(this, InstructionPointer);
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(HostOffset(4, 1));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -9011,7 +9358,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -9033,8 +9383,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal PMCCounterProfTraceData(Action<PMCCounterProfTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9063,7 +9413,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "InstructionPointer", "ThreadID", "ProcessorNumber", "ProfileSource" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9098,15 +9451,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             return callBack(this, InstructionPointer);
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(HostOffset(4, 1));
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+            }
         }
 
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -9115,7 +9473,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -9240,7 +9601,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SampledProfileIntervalTraceData(Action<SampledProfileIntervalTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9269,7 +9630,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "SampleSource", "NewInterval", "OldInterval" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9303,7 +9667,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SysCallEnterTraceData(Action<SysCallEnterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9331,7 +9695,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "SysCallAddress" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9369,7 +9736,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SysCallExitTraceData(Action<SysCallExitTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9396,7 +9763,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "SysCallNtStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9432,9 +9802,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (24 <= HostOffset(20, 1))
+                {
                     return GetInt32At(HostOffset(16, 1));
+                }
                 else
+                {
                     return 0;
+                }
             }
         }
 
@@ -9442,7 +9816,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ISRTraceData(Action<ISRTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9473,7 +9847,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ElapsedTimeMSec", "Routine", "ReturnValue", "Vector", "Message", "ProcessorNumber" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9517,7 +9894,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DPCTraceData(Action<DPCTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9545,7 +9922,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ElapsedTimeMSec", "Routine", "ProcessorNumber" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9607,13 +9987,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// <summary>
         /// Access to the instruction pointers as a unsafe memory blob
         /// </summary>
-        unsafe internal void* InstructionPointers { get { return ((byte*)DataStart) + 16; } }
+        internal unsafe void* InstructionPointers { get { return ((byte*)DataStart) + 16; } }
         #region Private
         internal StackWalkStackTraceData(Action<StackWalkStackTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9630,12 +10010,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// <summary>
         /// StackWalkTraceData does not set Thread and process ID fields properly.  if that.  
         /// </summary>
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(0xC);
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = GetInt32At(8);
+            }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -9658,7 +10043,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "EventTimeStampRelativeMSec", "FrameCount", "IP0", "IP1", "IP2", "IP3" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9676,7 +10064,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 5:
                     var idx = index - 2;
                     if (idx < FrameCount)
+                    {
                         return InstructionPointer(idx);
+                    }
+
                     return 0;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -9713,8 +10104,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal StackWalkRefTraceData(Action<StackWalkRefTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9730,12 +10121,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// <summary>
         /// StackWalkTraceData does not set Thread and process ID fields properly.  if that.  
         /// </summary>
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
+            {
                 eventRecord->EventHeader.ThreadId = GetInt32At(0xC);
+            }
+
             if (eventRecord->EventHeader.ProcessId == -1)
+            {
                 eventRecord->EventHeader.ProcessId = GetInt32At(8);
+            }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -9751,7 +10147,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "EventTimeStampRelativeMSec", "StackKey" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9805,12 +10204,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// <summary>
         /// Access to the instruction pointers as a unsafe memory blob
         /// </summary>
-        unsafe internal void* InstructionPointers { get { return ((byte*)DataStart) + PointerSize; } }
+        internal unsafe void* InstructionPointers { get { return ((byte*)DataStart) + PointerSize; } }
         #region Private
         internal StackWalkDefTraceData(Action<StackWalkDefTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9844,7 +10243,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "StackKey", "FrameCount", "IP0", "IP1", "IP2", "IP3" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9862,7 +10264,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 5:
                     var idx = index - 2;
                     if (idx < FrameCount)
+                    {
                         return InstructionPointer(idx);
+                    }
+
                     return 0;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -9884,7 +10289,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ALPCSendMessageTraceData(Action<ALPCSendMessageTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9911,7 +10316,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MessageID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9941,7 +10349,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ALPCReceiveMessageTraceData(Action<ALPCReceiveMessageTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -9968,7 +10376,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MessageID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9998,7 +10409,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ALPCWaitForReplyTraceData(Action<ALPCWaitForReplyTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10025,7 +10436,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MessageID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10056,7 +10470,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ALPCWaitForNewMessageTraceData(Action<ALPCWaitForNewMessageTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10084,7 +10498,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IsServerPort", "PortName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10116,7 +10533,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ALPCUnwaitTraceData(Action<ALPCUnwaitTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10143,7 +10560,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10173,14 +10593,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int PageSize { get { return GetInt32At(12); } }
         public int AllocationGranularity { get { return GetInt32At(16); } }
         public string ComputerName { get { return GetFixedUnicodeStringAt(256, (20)); } }
-        public string DomainName { get { if (Version >= 2) return GetFixedUnicodeStringAt(134, (532)); return GetFixedUnicodeStringAt(132, (532)); } }
-        public Address HyperThreadingFlag { get { if (Version >= 2) return GetAddressAt(800); return GetAddressAt(796); } }
+        public string DomainName { get { if (Version >= 2) { return GetFixedUnicodeStringAt(134, (532)); } return GetFixedUnicodeStringAt(132, (532)); } }
+        public Address HyperThreadingFlag { get { if (Version >= 2) { return GetAddressAt(800); } return GetAddressAt(796); } }
 
         #region Private
         internal SystemConfigCPUTraceData(Action<SystemConfigCPUTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10216,7 +10636,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MHz", "NumberOfProcessors", "MemSize", "PageSize", "AllocationGranularity", "ComputerName", "DomainName", "HyperThreadingFlag" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10274,7 +10697,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigPhyDiskTraceData(Action<SystemConfigPhyDiskTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10316,7 +10739,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "DiskNumber", "BytesPerSector", "SectorsPerTrack", "TracksPerCylinder", "Cylinders", "SCSIPort", "SCSIPath", "SCSITarget", "SCSILun", "Manufacturer", "PartitionCount", "WriteCacheEnabled", "BootDriveLetter", "Spare" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10387,7 +10813,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigLogDiskTraceData(Action<SystemConfigLogDiskTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10428,7 +10854,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "StartOffset", "PartitionSize", "DiskNumber", "Size", "DriveType", "DriveLetterString", "PartitionNumber", "SectorsPerCluster", "BytesPerSector", "NumberOfFreeClusters", "TotalNumberOfClusters", "FileSystem", "VolumeExt" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10476,19 +10905,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class SystemConfigNICTraceData : TraceEvent
     {
-        public int PhysicalAddrLen { get { if (Version >= 2) return GetInt32At(8); return GetInt32At(516); } }
-        public long PhysicalAddr { get { if (Version >= 2) return GetInt64At(0); return 0; } }
-        public int Ipv4Index { get { if (Version >= 2) return GetInt32At(12); return GetInt32At(512); ; } }
-        public int Ipv6Index { get { if (Version >= 2) return GetInt32At(16); return 0; } }
-        public string NICDescription { get { if (Version >= 2) return GetUnicodeStringAt(20); return GetFixedUnicodeStringAt(256, (0)); } }
-        public string IpAddresses { get { if (Version >= 2) return GetUnicodeStringAt(SkipUnicodeString(20)); return ""; } }
-        public string DnsServerAddresses { get { if (Version >= 2) return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(20))); return ""; } }
+        public int PhysicalAddrLen { get { if (Version >= 2) { return GetInt32At(8); } return GetInt32At(516); } }
+        public long PhysicalAddr { get { if (Version >= 2) { return GetInt64At(0); } return 0; } }
+        public int Ipv4Index { get { if (Version >= 2) { return GetInt32At(12); } return GetInt32At(512); ; } }
+        public int Ipv6Index { get { if (Version >= 2) { return GetInt32At(16); } return 0; } }
+        public string NICDescription { get { if (Version >= 2) { return GetUnicodeStringAt(20); } return GetFixedUnicodeStringAt(256, (0)); } }
+        public string IpAddresses { get { if (Version >= 2) { return GetUnicodeStringAt(SkipUnicodeString(20)); } return ""; } }
+        public string DnsServerAddresses { get { if (Version >= 2) { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(20))); } return ""; } }
 
         #region Private
         internal SystemConfigNICTraceData(Action<SystemConfigNICTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10523,7 +10952,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "PhysicalAddrLen", "PhysicalAddr", "Ipv4Index", "Ipv6Index", "NICDescription", "IpAddresses", "DnsServerAddresses" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10575,7 +11007,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigVideoTraceData(Action<SystemConfigVideoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10614,7 +11046,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MemorySize", "XResolution", "YResolution", "BitsPerPixel", "VRefresh", "ChipType", "DACType", "AdapterString", "BiosString", "DeviceID", "StateFlags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10658,20 +11093,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class SystemConfigServicesTraceData : TraceEvent
     {
-        public string ServiceName { get { if (Version >= 2) return GetUnicodeStringAt(12); return GetFixedUnicodeStringAt(34, (0)); } }
-        public string DisplayName { get { if (Version >= 2) return GetUnicodeStringAt(SkipUnicodeString(12)); return GetFixedUnicodeStringAt(256, (68)); } }
+        public string ServiceName { get { if (Version >= 2) { return GetUnicodeStringAt(12); } return GetFixedUnicodeStringAt(34, (0)); } }
+        public string DisplayName { get { if (Version >= 2) { return GetUnicodeStringAt(SkipUnicodeString(12)); } return GetFixedUnicodeStringAt(256, (68)); } }
         // public new string ProcessName { get { if (Version >= 2) return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(12))); return GetFixedUnicodeStringAt(34, (580)); } }
         // public int ProcessID { get { if (Version >= 2) return GetInt32At(0); return GetInt32At(648); } }
         // TODO does this need FixupData?
-        public int ServiceState { get { if (Version >= 2) return GetInt32At(4); return 0; } }
-        public int SubProcessTag { get { if (Version >= 2) return GetInt32At(8); return 0; } }
+        public int ServiceState { get { if (Version >= 2) { return GetInt32At(4); } return 0; } }
+        public int SubProcessTag { get { if (Version >= 2) { return GetInt32At(8); } return 0; } }
 
         #region Private
         internal SystemConfigServicesTraceData(Action<SystemConfigServicesTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10705,7 +11140,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ServiceName", "DisplayName", "ProcessName", "ProcessID", "ServiceState", "SubProcessTag" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10737,13 +11175,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private KernelTraceEventParserState state;
 
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             // Preserve the illusion that this event comes from the service it is for.
             // public int ProcessID { get { if (Version >= 2) return GetInt32At(0); return GetInt32At(648); } }
             // TODO does this need FixupData?
             if (Version >= 2)
+            {
                 eventRecord->EventHeader.ProcessId = GetInt32At(0);
+            }
         }
 
         #endregion
@@ -10763,7 +11203,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigPowerTraceData(Action<SystemConfigPowerTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10796,7 +11236,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "S1", "S2", "S3", "S4", "S5" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10831,14 +11274,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public long IRQAffinity { get { return GetInt64At(0); } }
         public int IRQNum { get { return GetInt32At(8); } }
         // TODO hand modified.   Fix for real 
-        public int DeviceDescriptionLen { get { if (Version >= 3) return GetInt32At(16); else return GetInt32At(12); } }
-        public string DeviceDescription { get { if (Version >= 3) return GetUnicodeStringAt(20); else return GetUnicodeStringAt(16); } }
+        public int DeviceDescriptionLen
+        {
+            get
+            {
+                if (Version >= 3)
+                {
+                    return GetInt32At(16);
+                }
+                else
+                {
+                    return GetInt32At(12);
+                }
+            }
+        }
+        public string DeviceDescription
+        {
+            get
+            {
+                if (Version >= 3)
+                {
+                    return GetUnicodeStringAt(20);
+                }
+                else
+                {
+                    return GetUnicodeStringAt(16);
+                }
+            }
+        }
 
         #region Private
         internal SystemConfigIRQTraceData(Action<SystemConfigIRQTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10870,7 +11339,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "IRQAffinity", "IRQNum", "DeviceDescriptionLen", "DeviceDescription" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10911,7 +11383,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version < 4)
+                {
                     return "";
+                }
+
                 return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(DeviceIDStart))));
             }
         }
@@ -10920,7 +11395,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version < 4)
+                {
                     return "";
+                }
+
                 return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(DeviceIDStart)))));
             }
         }
@@ -10933,9 +11411,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (Version <= 3)
+                {
                     return 12;  // three lengths come first.  (but are redundant since the strings are null terminated)
+                }
+
                 if (Version == 4)
+                {
                     return 24;  // ClassGuid, upperFilterCount lowerFilterCount
+                }
                 // Version 5 or more 
                 return 32;  // ClassGuid, upperFilterCount lowerFilterCount DevStatus DevProblem
             }
@@ -10944,7 +11427,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigPnPTraceData(Action<SystemConfigPnPTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -10975,7 +11458,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "DeviceID", "DeviceDescription", "FriendlyName", "PdoName", "ServiceName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11015,7 +11501,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigNetworkTraceData(Action<SystemConfigNetworkTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11045,7 +11531,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TcbTablePartitions", "MaxHashTableSize", "MaxUserPort", "TcpTimedWaitDelay" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11085,7 +11574,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemConfigIDEChannelTraceData(Action<SystemConfigIDEChannelTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11116,7 +11605,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TargetID", "DeviceType", "DeviceTimingMode", "LocationInformationLen", "LocationInformation" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11174,8 +11666,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal VirtualAllocTraceData(Action<VirtualAllocTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11189,7 +11681,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             Action(this);
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             // We always choose the process ID to be the process where for the allocation happens 
             // TODO Is this really a good idea?  
@@ -11210,7 +11702,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "BaseAddr", "Length", "Flags", "LengthHex", "EndAddr" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11252,7 +11747,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ObjectHandleTraceData(Action<ObjectHandleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11282,7 +11777,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Object", "Handle", "ObjectType", "ObjectName", "ObjectTypeName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11328,7 +11826,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ObjectDuplicateHandleTraceData(Action<ObjectDuplicateHandleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11360,7 +11858,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Object", "SourceHandle", "TargetHandle", "SourceProcessID", "TargetProcessID", "ObjectType", "ObjectName", "ObjectTypeName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11407,8 +11908,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ObjectNameTraceData(Action<ObjectNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11422,7 +11923,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             Action(this);
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             // We always choose the process ID to be the process where for the allocation happens 
             // TODO Is this really a good idea?  
@@ -11444,7 +11945,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Object", "Handle", "ObjectType", "ObjectName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11481,7 +11985,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal ObjectTypeNameTraceData(Action<ObjectTypeNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11508,7 +12012,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ObjectType", "ObjectTypeName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11554,7 +12061,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int AdjustIncrement { get { return GetByteAt(5); } }
         public ReadyThreadFlags Flags { get { return (ReadyThreadFlags)GetByteAt(6); } }
         // There is a reserved byte after Flags
-        unsafe public override int ProcessID
+        public override unsafe int ProcessID
         {
             get
             {
@@ -11563,7 +12070,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 // possibly try again.  
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
+                }
+
                 return ret;
             }
         }
@@ -11571,8 +12081,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal DispatcherReadyThreadTraceData(Action<DispatcherReadyThreadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.NeedsFixup = true;
-            this.Action = action;
+            NeedsFixup = true;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11586,7 +12096,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             Action(this);
         }
 
-        internal unsafe override void FixupData()
+        internal override unsafe void FixupData()
         {
             /* TODO FIX NOW: How do we get the thread ID of who did the awakening? 
             eventRecord->EventHeader.ThreadId = GetInt32At(0);
@@ -11609,7 +12119,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "AwakenedThreadID", "AwakenedProcessID", "AdjustReason", "AdjustIncrement", "Flags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11820,7 +12333,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TPCBEnqueueTraceData(Action<TPCBEnqueueTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, ThreadPoolTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11851,7 +12364,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "PoolID", "TaskID", "CallbackFunction", "CallbackContext", "SubProcessTag" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11888,7 +12404,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TPCBDequeueTraceData(Action<TPCBDequeueTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, ThreadPoolTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11915,7 +12431,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TaskID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11945,7 +12464,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TPCBCancelTraceData(Action<TPCBCancelTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, ThreadPoolTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -11973,7 +12492,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "TaskID", "CancelCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12004,7 +12526,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TPPoolCreateCloseTraceData(Action<TPPoolCreateCloseTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, ThreadPoolTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12031,7 +12553,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "PoolID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12061,7 +12586,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal TPThreadSetTraceData(Action<TPThreadSetTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, ThreadPoolTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12089,7 +12614,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "PoolID", "ThreadNum" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12335,7 +12863,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapCreateTraceData(Action<HeapCreateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12363,7 +12891,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "HeapFlags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12405,7 +12936,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapAllocTraceData(Action<HeapAllocTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12435,7 +12966,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "AllocSize", "AllocAddress", "SourceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12475,7 +13009,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapReallocTraceData(Action<HeapReallocTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12507,7 +13041,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "NewAllocAddress", "OldAllocAddress", "NewAllocSize", "OldAllocSize", "SourceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12548,7 +13085,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapFreeTraceData(Action<HeapFreeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12577,7 +13114,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "FreeAddress", "SourceID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12616,7 +13156,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapExpandTraceData(Action<HeapExpandTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12649,7 +13189,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "CommittedSize", "CommitAddress", "FreeSpace", "CommittedSpace", "ReservedSpace", "NoOfUCRs" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12694,7 +13237,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapSnapShotTraceData(Action<HeapSnapShotTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12725,7 +13268,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "FreeSpace", "CommittedSpace", "ReservedSpace", "HeapFlags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12768,7 +13314,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapContractTraceData(Action<HeapContractTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12801,7 +13347,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle", "DeCommittedSize", "DeCommitAddress", "FreeSpace", "CommittedSpace", "ReservedSpace", "NoOfUCRs" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12842,7 +13391,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal HeapTraceData(Action<HeapTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, HeapTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -12869,7 +13418,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "HeapHandle" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12981,7 +13533,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal CritSecCollisionTraceData(Action<CritSecCollisionTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, CritSecTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -13011,7 +13563,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "LockCount", "SpinCount", "OwningThread", "CritSecAddr" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13047,7 +13602,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal CritSecInitTraceData(Action<CritSecInitTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, CritSecTraceProviderState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.state = state;
         }
         protected internal override Delegate Target
@@ -13075,7 +13630,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "SpinCount", "CritSecAddr" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13108,7 +13666,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal BuildInfoTraceData(Action<BuildInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
 
         protected internal override Delegate Target
@@ -13180,7 +13738,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal SystemPathsTraceData(Action<SystemPathsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
 
         protected internal override Delegate Target
@@ -13243,7 +13801,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal VolumeMappingTraceData(Action<VolumeMappingTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
             base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
 
         protected internal override Delegate Target

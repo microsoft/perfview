@@ -10,12 +10,12 @@ using System.Reactive.Linq;
 
 namespace TraceEventSamples
 {
-    class ObserveGCEvents
+    internal class ObserveGCEvents
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -91,7 +91,10 @@ namespace TraceEventSamples
             // Only keep the cache for 10 seconds to avoid issues with process ID reuse.  
             var now = DateTime.UtcNow;
             if ((now - s_processNameCacheLastUpdate).TotalSeconds > 10)
+            {
                 s_processNameCache.Clear();
+            }
+
             s_processNameCacheLastUpdate = now;
 
             string ret = null;
@@ -101,9 +104,15 @@ namespace TraceEventSamples
                 try { proc = Process.GetProcessById(processID); }
                 catch (Exception) { }
                 if (proc != null)
+                {
                     ret = proc.ProcessName;
+                }
+
                 if (string.IsNullOrWhiteSpace(ret))
+                {
                     ret = processID.ToString();
+                }
+
                 s_processNameCache.Add(processID, ret);
             }
             return ret;
@@ -125,7 +134,9 @@ namespace TraceEventSamples
             s_bCtrlCExecuted = false;
             // uninstall previous handler
             if (s_CtrlCHandler != null)
+            {
                 Console.CancelKeyPress -= s_CtrlCHandler;
+            }
 
             s_CtrlCHandler =
                 (object sender, ConsoleCancelEventArgs cancelArgs) =>

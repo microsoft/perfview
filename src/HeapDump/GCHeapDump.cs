@@ -1,14 +1,13 @@
-﻿using System.IO;
-using System.Collections.Generic;
+﻿using FastSerialization;
 using Graphs;
-using System.Diagnostics;
-using FastSerialization;
-using System;
-using Address = System.UInt64;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Text.RegularExpressions;
 using System.Xml;
+using Address = System.UInt64;
 
 
 /// <summary>
@@ -111,7 +110,9 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
         // Do the 64 bit processes first, then do us   
         if (EnvironmentUtilities.Is64BitOperatingSystem && !EnvironmentUtilities.Is64BitProcess)
+        {
             GetProcessesWithGCHeapsFromHeapDump(ret);
+        }
 
         var info = new ProcessInfo();
         foreach (var process in Process.GetProcesses())
@@ -119,30 +120,50 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
             try
             {
                 if (process == null)
+                {
                     continue;
+                }
 
                 info.ID = process.Id;
                 if (info.ID == 0 || info.ID == 4)       // these are special and cause failures otherwise 
+                {
                     continue;
+                }
+
                 info.UsesDotNet = false;
                 info.UsesJavaScript = false;
                 foreach (ProcessModule module in process.Modules)
                 {
                     if (module == null)
+                    {
                         continue;
+                    }
+
                     var fileName = module.FileName;
                     if (fileName.EndsWith("clr.dll", StringComparison.OrdinalIgnoreCase))
+                    {
                         info.UsesDotNet = true;
+                    }
                     else if (fileName.EndsWith("coreclr.dll", StringComparison.OrdinalIgnoreCase))
+                    {
                         info.UsesDotNet = true;
+                    }
                     else if (fileName.EndsWith("mscorwks.dll", StringComparison.OrdinalIgnoreCase))
+                    {
                         info.UsesDotNet = true;
+                    }
                     else if (0 <= fileName.IndexOf(@"\mrt", StringComparison.OrdinalIgnoreCase))
+                    {
                         info.UsesDotNet = true;
+                    }
                     else if (fileName.EndsWith("jscript9.dll", StringComparison.OrdinalIgnoreCase))
+                    {
                         info.UsesJavaScript = true;
+                    }
                     else if (fileName.EndsWith("chakra.dll", StringComparison.OrdinalIgnoreCase))
+                    {
                         info.UsesJavaScript = true;
+                    }
                 }
             }
             catch (Exception)
@@ -188,13 +209,13 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
     private GCHeapDump(Deserializer deserializer)
     {
-        deserializer.RegisterFactory(typeof(MemoryGraph), delegate() { return new MemoryGraph(1); });
-        deserializer.RegisterFactory(typeof(Graphs.Module), delegate() { return new Graphs.Module(0); });
-        deserializer.RegisterFactory(typeof(InteropInfo), delegate() { return new InteropInfo(); });
-        deserializer.RegisterFactory(typeof(GCHeapDump), delegate() { return this; });
-        deserializer.RegisterFactory(typeof(GCHeapDumpSegment), delegate() { return new GCHeapDumpSegment(); });
-        deserializer.RegisterFactory(typeof(JSHeapInfo), delegate() { return new JSHeapInfo(); });
-        deserializer.RegisterFactory(typeof(DotNetHeapInfo), delegate() { return new DotNetHeapInfo(); });
+        deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
+        deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
+        deserializer.RegisterFactory(typeof(InteropInfo), delegate () { return new InteropInfo(); });
+        deserializer.RegisterFactory(typeof(GCHeapDump), delegate () { return this; });
+        deserializer.RegisterFactory(typeof(GCHeapDumpSegment), delegate () { return new GCHeapDumpSegment(); });
+        deserializer.RegisterFactory(typeof(JSHeapInfo), delegate () { return new JSHeapInfo(); });
+        deserializer.RegisterFactory(typeof(DotNetHeapInfo), delegate () { return new DotNetHeapInfo(); });
 
         try
         {
@@ -255,12 +276,16 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         serializer.Write(TotalProcessWorkingSet);
 
         if (CountMultipliersByType == null)
+        {
             serializer.Write(0);
+        }
         else
         {
             serializer.Write(CountMultipliersByType.Length);
             for (int i = 0; i < CountMultipliersByType.Length; i++)
+            {
                 serializer.Write(CountMultipliersByType[i]);
+            }
         }
 
         // All fields after version 8 should go here and should be in
@@ -279,7 +304,9 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
             return;
         }
         if (deserializer.VersionBeingRead == 8)
+        {
             throw new SerializationException("Unsupported version GCDump version: 8");
+        }
 
         deserializer.Read(out m_graph);
         deserializer.ReadBool();                    // Used to be Is64Bit but that is now on m_graph and we want to keep compatibility. 
@@ -287,8 +314,8 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         AverageCountMultiplier = deserializer.ReadFloat();
         AverageSizeMultiplier = deserializer.ReadFloat();
 
-        this.JSHeapInfo = (JSHeapInfo)deserializer.ReadObject();
-        this.DotNetHeapInfo = (DotNetHeapInfo)deserializer.ReadObject();
+        JSHeapInfo = (JSHeapInfo)deserializer.ReadObject();
+        DotNetHeapInfo = (DotNetHeapInfo)deserializer.ReadObject();
 
         CollectionLog = deserializer.ReadString();
         TimeCollected = new DateTime(deserializer.ReadInt64());
@@ -304,7 +331,10 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         {
             var a = new float[count];
             for (int i = 0; i < a.Length; i++)
+            {
                 a[i] = deserializer.ReadFloat();
+            }
+
             CountMultipliersByType = a;
         }
 
@@ -344,9 +374,14 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
                 // Skip the segments
                 var count = deserializer.ReadInt();
                 for (int i = 0; i < count; i++)
+                {
                     deserializer.ReadObject();
+                }
+
                 if (deserializer.VersionBeingRead >= 7)
+                {
                     deserializer.ReadBool();    // Is64bit
+                }
             }
         }
     }
@@ -371,21 +406,21 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         get { return 8; }
     }
 
-    MemoryGraph m_graph;
-    InteropInfo m_interop;
-#endregion
+    private MemoryGraph m_graph;
+    private InteropInfo m_interop;
+    #endregion
 }
 
 public class JSHeapInfo : IFastSerializable
 {
-#region private
+    #region private
     void IFastSerializable.ToStream(Serializer serializer)
     {
     }
     void IFastSerializable.FromStream(Deserializer deserializer)
     {
     }
-#endregion
+    #endregion
 }
 
 public class InteropInfo : IFastSerializable
@@ -430,7 +465,7 @@ public class InteropInfo : IFastSerializable
         public string fileName;
 
         public int loadOrder;   // unused when serializing
-        string _moduleName;     // unused when serializing
+        private string _moduleName;     // unused when serializing
 
         public string moduleName
         {
@@ -674,7 +709,7 @@ public class InteropInfo : IFastSerializable
 /// </graph>
 /// 
 /// </summary>
-class XmlGcHeapDump
+internal class XmlGcHeapDump
 {
     public static GCHeapDump ReadGCHeapDumpFromXml(string fileName)
     {
@@ -689,7 +724,9 @@ class XmlGcHeapDump
     public static GCHeapDump ReadGCHeapDumpFromXml(XmlReader reader)
     {
         if (reader.NodeType != XmlNodeType.Element)
+        {
             throw new InvalidOperationException("Must advance to GCHeapDump element (e.g. call ReadToDescendant)");
+        }
 
         var elementName = reader.Name;
         var inputDepth = reader.Depth;
@@ -738,22 +775,32 @@ class XmlGcHeapDump
                 }
             }
             else if (!reader.Read())
+            {
                 break;
+            }
         }
         if (ret.MemoryGraph == null)
+        {
             throw new ApplicationException(elementName + " does not have MemoryGraph field.");
+        }
+
         return ret;
     }
 
     public static MemoryGraph ReadMemoryGraphFromXml(XmlReader reader)
     {
         if (reader.NodeType != XmlNodeType.Element)
+        {
             throw new InvalidOperationException("Must advance to MemoryGraph element (e.g. call ReadToDescendant)");
+        }
 
         var expectedSize = 1000;
         var nodeCount = reader.GetAttribute("NodeCount");
         if (nodeCount != null)
+        {
             expectedSize = int.Parse(nodeCount) + 1;        // 1 for undefined 
+        }
+
         MemoryGraph graph = new MemoryGraph(10);
         Debug.Assert((int)graph.NodeTypeIndexLimit == 1);
         var firstNode = graph.CreateNode();                             // Use one up
@@ -784,7 +831,9 @@ class XmlGcHeapDump
                 }
             }
             else if (!reader.Read())
+            {
                 break;
+            }
         }
 
         graph.AllowReading();
@@ -797,30 +846,46 @@ class XmlGcHeapDump
 
         writer.WriteLine("<TimeCollected>{0}</TimeCollected>", gcDump.TimeCollected);
         if (!string.IsNullOrWhiteSpace(gcDump.CollectionLog))
+        {
             writer.WriteLine("<CollectionLog>{0}</CollectionLog>", XmlUtilities.XmlEscape(gcDump.CollectionLog));
+        }
 
         if (!string.IsNullOrWhiteSpace(gcDump.MachineName))
+        {
             writer.WriteLine("<MachineName>{0}</MachineName>", gcDump.MachineName);
+        }
 
         if (!string.IsNullOrWhiteSpace(gcDump.ProcessName))
+        {
             writer.WriteLine("<ProcessName>{0}</ProcessName>", XmlUtilities.XmlEscape(gcDump.ProcessName));
+        }
 
         if (gcDump.ProcessID != 0)
+        {
             writer.WriteLine("<ProcessName>{0}</ProcessName>", gcDump.ProcessID);
+        }
 
         if (gcDump.TotalProcessCommit != 0)
+        {
             writer.WriteLine("<TotalProcessCommit>{0}</TotalProcessCommit>", gcDump.TotalProcessCommit);
+        }
+
         if (gcDump.TotalProcessWorkingSet != 0)
+        {
             writer.WriteLine("<TotalProcessWorkingSet>{0}</TotalProcessWorkingSet>", gcDump.TotalProcessWorkingSet);
+        }
 
         if (gcDump.CountMultipliersByType != null)
         {
             NodeType typeStorage = gcDump.MemoryGraph.AllocTypeNodeStorage();
             writer.WriteLine("<CountMultipliersByType>");
-            for(int i = 0; i < gcDump.CountMultipliersByType.Length; i++)
-                writer.WriteLine("<CountMultipliers TypeIndex=\"{0}\" TypeName=\"{1}\" Value=\"{2:f4}\"/>", i, 
-                    XmlUtilities.XmlEscape(gcDump.MemoryGraph.GetType((NodeTypeIndex) i, typeStorage).Name), 
+            for (int i = 0; i < gcDump.CountMultipliersByType.Length; i++)
+            {
+                writer.WriteLine("<CountMultipliers TypeIndex=\"{0}\" TypeName=\"{1}\" Value=\"{2:f4}\"/>", i,
+                    XmlUtilities.XmlEscape(gcDump.MemoryGraph.GetType((NodeTypeIndex)i, typeStorage).Name),
                     gcDump.CountMultipliersByType[i]);
+            }
+
             writer.WriteLine("</CountMultipliersByType>");
         }
 
@@ -831,7 +896,7 @@ class XmlGcHeapDump
         writer.WriteLine("</GCHeapDump>");
     }
 
-#region private
+    #region private
     private static void ReadCountMultipliersByTypeFromXml(XmlReader reader, List<float> countMultipliers)
     {
         Debug.Assert(reader.NodeType == XmlNodeType.Element);
@@ -854,7 +919,9 @@ class XmlGcHeapDump
                 }
             }
             else if (!reader.Read())
+            {
                 break;
+            }
         }
     }
 
@@ -880,14 +947,22 @@ class XmlGcHeapDump
                             string moduleName = reader.GetAttribute("Module");
 
                             if (typeName == null)
+                            {
                                 throw new ApplicationException("NodeType element does not have a Name attribute");
+                            }
+
                             if (readTypeIndex == NodeTypeIndex.Invalid)
+                            {
                                 throw new ApplicationException("NodeType element does not have a Index attribute.");
+                            }
+
                             if (readTypeIndex != 0 || typeName != "UNDEFINED")
                             {
                                 NodeTypeIndex typeIndex = graph.CreateType(typeName, moduleName, size);
                                 if (readTypeIndex != typeIndex)
+                                {
                                     throw new ApplicationException("NodeType Indexes do not start at 1 and increase consecutively.");
+                                }
                             }
                             reader.Skip();
                         }
@@ -899,7 +974,9 @@ class XmlGcHeapDump
                 }
             }
             else if (!reader.Read())
+            {
                 break;
+            }
         }
     }
     /// <summary>
@@ -926,9 +1003,14 @@ class XmlGcHeapDump
                             int size = FetchInt(reader, "Size");
 
                             if (readNodeIndex == NodeIndex.Invalid)
+                            {
                                 throw new ApplicationException("Node element does not have a Index attribute.");
+                            }
+
                             if (typeIndex == NodeTypeIndex.Invalid)
+                            {
                                 throw new ApplicationException("Node element does not have a TypeIndex attribute.");
+                            }
 
                             // TODO FIX NOW very inefficient.   Use ReadValueChunk and FastStream to make more efficient.  
                             children.Clear();
@@ -936,18 +1018,28 @@ class XmlGcHeapDump
                             foreach (var num in Regex.Split(body, @"\s+"))
                             {
                                 if (num.Length > 0)
+                                {
                                     children.Add((NodeIndex)int.Parse(num));
+                                }
                             }
 
                             if (size == 0)
+                            {
                                 size = graph.GetType(typeIndex, typeStorage).Size;
+                            }
 
                             // TODO should probably just reserve node index 0 to be an undefined object?
                             NodeIndex nodeIndex = 0;
                             if (readNodeIndex != 0)
+                            {
                                 nodeIndex = graph.CreateNode();
+                            }
+
                             if (readNodeIndex != nodeIndex)
+                            {
                                 throw new ApplicationException("Node Indexes do not start at 0 or 1 and increase consecutively.");
+                            }
+
                             graph.SetNode(nodeIndex, typeIndex, size, children);
                         }
                         break;
@@ -958,7 +1050,9 @@ class XmlGcHeapDump
                 }
             }
             else if (!reader.Read())
+            {
                 break;
+            }
         }
     }
     /// <summary>
@@ -969,7 +1063,10 @@ class XmlGcHeapDump
         int ret = defaultValue;
         var attrValue = reader.GetAttribute(attributeName);
         if (attrValue != null)
+        {
             int.TryParse(attrValue, out ret);
+        }
+
         return ret;
     }
 
@@ -978,11 +1075,14 @@ class XmlGcHeapDump
         float ret = defaultValue;
         var attrValue = reader.GetAttribute(attributeName);
         if (attrValue != null)
+        {
             float.TryParse(attrValue, out ret);
+        }
+
         return ret;
     }
 
-#endregion
+    #endregion
 
 
 }

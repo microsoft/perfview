@@ -2,7 +2,7 @@
 <package >
   <metadata minClientVersion="2.5">
     <id>Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles</id>
-    <version>1.0.13</version>
+    <version>1.0.16</version>
     <title>Non-Source files needed to Build TraceEvent</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <description> Basically this package contains DLLs that TraceEvent depends on but does not build itself.</description>
-    <releaseNotes>This package is a refresh with signing for the 2.0 release of TraceEvent.  It fixes the KernelTraceControl.win61.dll that was not signed properly. </releaseNotes>
+    <releaseNotes>Move to signed nuget packages.</releaseNotes>
     <tags>TraceEvent</tags>
   </metadata>
 </package>

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -15,7 +12,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
     public sealed class PerfViewTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "PerfView"; 
+        public static string ProviderName = "PerfView";
         public static Guid ProviderGuid = new Guid(unchecked((int)0xa8a71ac1), unchecked((short)0x040f), unchecked((short)0x54a2), 0x07, 0xca, 0x00, 0xa8, 0x9b, 0x5a, 0xb7, 0x61);
         public PerfViewTraceEventParser(TraceEventSource source) : base(source) { }
 
@@ -285,7 +282,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
-        static private volatile TraceEvent[] s_templates;
+        private static volatile TraceEvent[] s_templates;
         protected override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
@@ -314,8 +311,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 s_templates = templates;
             }
             foreach (var template in s_templates)
+            {
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
+                {
                     callback(template);
+                }
+            }
         }
         #endregion
     }
@@ -331,12 +332,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal MarkTraceData(Action<MarkTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<MarkTraceData>) value; }
+            set { Action = (Action<MarkTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -360,7 +361,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -390,12 +394,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal CommandLineParametersTraceData(Action<CommandLineParametersTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<CommandLineParametersTraceData>) value; }
+            set { Action = (Action<CommandLineParametersTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -421,7 +425,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "commandLine", "currentDirectory", "version" };
+                }
+
                 return payloadNames;
             }
         }
@@ -456,12 +463,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal SessionParametersTraceData(Action<SessionParametersTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<SessionParametersTraceData>) value; }
+            set { Action = (Action<SessionParametersTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -488,7 +495,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "sessionName", "sessionFileName", "bufferSizeMB", "circularBuffSizeMB" };
+                }
+
                 return payloadNames;
             }
         }
@@ -523,12 +533,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal KernelEnableParametersTraceData(Action<KernelEnableParametersTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<KernelEnableParametersTraceData>) value; }
+            set { Action = (Action<KernelEnableParametersTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -553,7 +563,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "keywords", "stacks" };
+                }
+
                 return payloadNames;
             }
         }
@@ -584,12 +597,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal ClrEnableParametersTraceData(Action<ClrEnableParametersTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<ClrEnableParametersTraceData>) value; }
+            set { Action = (Action<ClrEnableParametersTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -614,7 +627,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "keywords", "level" };
+                }
+
                 return payloadNames;
             }
         }
@@ -649,12 +665,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal ProviderEnableParametersTraceData(Action<ProviderEnableParametersTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<ProviderEnableParametersTraceData>) value; }
+            set { Action = (Action<ProviderEnableParametersTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -683,7 +699,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "providerName", "providerGuid", "level", "keywords", "options", "values" };
+                }
+
                 return payloadNames;
             }
         }
@@ -722,12 +741,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal StartAndStopTimesTraceData(Action<StartAndStopTimesTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<StartAndStopTimesTraceData>) value; }
+            set { Action = (Action<StartAndStopTimesTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -752,7 +771,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "startTimeRelMSec", "stopTimeRelMSec" };
+                }
+
                 return payloadNames;
             }
         }
@@ -782,12 +804,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal DebugMessageTraceData(Action<DebugMessageTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<DebugMessageTraceData>) value; }
+            set { Action = (Action<DebugMessageTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -811,7 +833,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -840,12 +865,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal CpuCountersConfiguredTraceData(Action<CpuCountersConfiguredTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<CpuCountersConfiguredTraceData>) value; }
+            set { Action = (Action<CpuCountersConfiguredTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -870,7 +895,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "profileSourceName", "profileSourceCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -900,12 +928,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal TickTraceData(Action<TickTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<TickTraceData>) value; }
+            set { Action = (Action<TickTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -929,7 +957,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -957,12 +988,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal StopReasonTraceData(Action<StopReasonTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<StopReasonTraceData>) value; }
+            set { Action = (Action<StopReasonTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -986,7 +1017,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1015,12 +1049,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal StopTriggerDebugMessageTraceData(Action<StopTriggerDebugMessageTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<StopTriggerDebugMessageTraceData>) value; }
+            set { Action = (Action<StopTriggerDebugMessageTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -1045,7 +1079,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "sessionRelMSec", "message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1075,12 +1112,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal PerfViewLogTraceData(Action<PerfViewLogTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<PerfViewLogTraceData>) value; }
+            set { Action = (Action<PerfViewLogTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -1104,7 +1141,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1134,12 +1174,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
         internal TriggerHeapSnapshotTraceData(Action<TriggerHeapSnapshotTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<TriggerHeapSnapshotTraceData>) value; }
+            set { Action = (Action<TriggerHeapSnapshotTraceData>)value; }
         }
         protected override void Dispatch()
         {
@@ -1165,7 +1205,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.PerfView
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "outputFile", "inputArg", "qualifiers" };
+                }
+
                 return payloadNames;
             }
         }

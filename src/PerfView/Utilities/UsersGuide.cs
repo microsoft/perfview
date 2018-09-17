@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace PerfView 
+namespace PerfView
 {
     /// <summary>
     /// Privides a quick HTML users guide.  
@@ -20,7 +20,10 @@ namespace PerfView
         {
             string tempDir = Environment.GetEnvironmentVariable("TEMP");
             if (tempDir == null)
+            {
                 return false;
+            }
+
             string appPath = System.Reflection.Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName;
             string appName = Path.GetFileNameWithoutExtension(appPath);
             string appDir = Path.Combine(tempDir, appName);
@@ -31,7 +34,9 @@ namespace PerfView
                 string uri = usersGuideFilePath;
                 {
                     if (!string.IsNullOrEmpty(anchor))
+                    {
                         uri = "file:///" + uri.Replace('\\', '/').Replace(" ", "%20") + "#" + anchor;
+                    }
                 }
                 Process.Start(uri);
                 // process.StartInfo = new ProcessStartInfo("iexplore", uri);

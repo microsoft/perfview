@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Media;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace PerfView
@@ -19,14 +18,18 @@ namespace PerfView
             m_processes = processes;
             InitializeComponent();
             if (!hasAllProc)
+            {
                 AllProcsButton.Visibility = System.Windows.Visibility.Hidden;
+            }
 
             UpdateItemSource();
             var filteredProcesses = Grid.ItemsSource as List<IProcess>;
 
             // Set selection point to the first process
             if (filteredProcesses.Count > 0)
+            {
                 Select(filteredProcesses[0]);
+            }
 
             Grid.Focus();
         }
@@ -43,7 +46,9 @@ namespace PerfView
                 var cell = cells[0];
                 var row = Grid.ItemContainerGenerator.ContainerFromItem(cell.Item);
                 if (row != null)
+                {
                     ret = Grid.ItemContainerGenerator.IndexFromContainer(row);
+                }
             }
             return ret;
         }
@@ -58,26 +63,38 @@ namespace PerfView
             Debug.Assert(start >= 0);
             Debug.Assert(prefix != null && prefix.Length > 0);
             if (start >= processes.Count)
+            {
                 return -1;
+            }
 
             int cur = start;
             for (; ; )
             {
                 if (processes[cur].Name.TrimStart().StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
                     return cur;
+                }
 
                 cur++;
                 if (cur >= processes.Count)
+                {
                     cur = 0;
+                }
+
                 if (cur == start)
+                {
                     return -1;
+                }
             }
         }
         private void UpdateItemSource()
         {
             // This is also called in layout and we don't care at that point
             if (Grid == null)
+            {
                 return;
+            }
+
             Grid.ItemsSource = m_processes;
         }
 
@@ -92,7 +109,10 @@ namespace PerfView
             }
             var ret = new List<IProcess>();
             foreach (var item in items)
+            {
                 ret.Add((IProcess)item);
+            }
+
             m_action(ret);
             Close();
         }
@@ -116,9 +136,14 @@ namespace PerfView
                 var startIdx = GetSelectionIndex(-1);
                 var nextIdx = FindNextWithPrefix(processes, startIdx + 1, prefix);
                 if (nextIdx >= 0)
+                {
                     Select(processes[nextIdx]);
+                }
                 else
+                {
                     SystemSounds.Beep.Play();
+                }
+
                 e.Handled = true;
             }
         }

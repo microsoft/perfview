@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+﻿using Graphs;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using Graphs;
-using Address = System.UInt64;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.PerfView;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using Address = System.UInt64;
 
 namespace PerfView
 {
@@ -181,10 +177,10 @@ namespace PerfView
             // Get the full path to the directory.
             string directoryPath = Path.GetDirectoryName(etlFilePath);
             string filePrefix = null;
-            if(Path.GetExtension(etlFilePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+            if (Path.GetExtension(etlFilePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 string intermediateFilePrefix = Path.GetFileNameWithoutExtension(etlFilePath);
-                if(Path.GetExtension(intermediateFilePrefix).Equals(".etl", StringComparison.OrdinalIgnoreCase))
+                if (Path.GetExtension(intermediateFilePrefix).Equals(".etl", StringComparison.OrdinalIgnoreCase))
                 {
                     filePrefix = Path.GetFileNameWithoutExtension(intermediateFilePrefix);
                 }
@@ -193,7 +189,7 @@ namespace PerfView
                     throw new FormatException("Invalid filename format.");
                 }
             }
-            else if(Path.GetExtension(etlFilePath).Equals(".etl", StringComparison.OrdinalIgnoreCase))
+            else if (Path.GetExtension(etlFilePath).Equals(".etl", StringComparison.OrdinalIgnoreCase))
             {
                 filePrefix = Path.GetFileNameWithoutExtension(etlFilePath);
             }
@@ -215,7 +211,7 @@ namespace PerfView
             PerfViewTraceEventParser perfViewParser = new PerfViewTraceEventParser(eventDispatcher);
 
             // we want the state of the heap at the time the snapshot was taken.  
-            perfViewParser.TriggerHeapSnapshot += delegate(TriggerHeapSnapshotTraceData data)
+            perfViewParser.TriggerHeapSnapshot += delegate (TriggerHeapSnapshotTraceData data)
             {
                 eventDispatcher.StopProcessing();
             };
@@ -230,6 +226,7 @@ namespace PerfView
                 // Try to match the object in the heap snapshot with an object in the ETL.
                 PinningStackAnalysisObject liveObjectInfo = heapWithPinningInfo.GetPinningInfo(pinnedPair.Key);
                 if (liveObjectInfo != null)
+                {
                     // Found a match, write the appropriate call stacks.
                     if (viewType == GCPinnedObjectViewType.PinnedObjectAllocations)
                     {
@@ -239,6 +236,7 @@ namespace PerfView
                     {
                         WritePinningStacks(pinnedPair.Key, pinnedPair.Value, liveObjectInfo);
                     }
+                }
             }
         }
 
@@ -514,21 +512,29 @@ namespace PerfView
         private void OnSetGCHandle(SetGCHandleTraceData data)
         {
             if (Process.ProcessID != data.ProcessID)
+            {
                 return;
+            }
 
             // This is not a pinned handle.
             if ((GCHandleKind.AsyncPinned != data.Kind) && (GCHandleKind.Pinned != data.Kind))
+            {
                 return;
+            }
 
             PinningStackAnalysisObject objectInfo = GetPinningInfo(data.ObjectID);
             Debug.Assert(objectInfo != null);
             if (objectInfo == null)
+            {
                 return;
+            }
 
             // TODO FIX NOW worry about duplicates between the public and private CLR providers. 
 
             if (objectInfo.PinInfo == null)
+            {
                 objectInfo.PinInfo = new List<PinningStackAnalysisPinInfo>();
+            }
 
             var stackIndex = StackSource.GetCallStack(data.CallStackIndex(), data);
             objectInfo.PinInfo.Add(new PinningStackAnalysisPinInfo(data.TimeStampRelativeMSec, stackIndex, data.Kind));
@@ -540,7 +546,7 @@ namespace PerfView
     /// GCHeapSimulatorObject, is what we know about any object on the GC heap.  PinningAnalysis adds extra i
     /// nfromation to GCHeapSimulatorObject about pinning.  
     /// </summary>
-    class PinningStackAnalysisObject : GCHeapSimulatorObject
+    internal class PinningStackAnalysisObject : GCHeapSimulatorObject
     {
         // we also want to keep track of every place the object was pinned. 
         public List<PinningStackAnalysisPinInfo> PinInfo;
@@ -549,7 +555,7 @@ namespace PerfView
     /// <summary>
     /// Information we know about one particular set operation of a pinning GC handle 
     /// </summary>
-    class PinningStackAnalysisPinInfo
+    internal class PinningStackAnalysisPinInfo
     {
         public double PinTimeRelativeMSec;
         public StackSourceCallStackIndex PinStack;

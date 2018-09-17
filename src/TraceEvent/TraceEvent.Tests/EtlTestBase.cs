@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing;
+using PerfView.TestUtilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Microsoft.Diagnostics.Tracing;
-using PerfView.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -36,7 +36,9 @@ namespace TraceEventTests
         private static void UnzipDataFiles()
         {
             if (s_fileUnzipped)
+            {
                 return;
+            }
 
             Trace.WriteLine(string.Format("Current Directory: {0}", Environment.CurrentDirectory));
             Trace.WriteLine(string.Format("TestDataDir Directory: {0}", Path.GetFullPath(TestDataDir)));
@@ -54,7 +56,10 @@ namespace TraceEventTests
                     zipReader.UnpackArchive();
                 }
                 else
+                {
                     Trace.WriteLine(string.Format("using cached ETL file {0}", etlFilePath));
+                }
+
                 Assert.True(File.Exists(etlFilePath));
             }
             Trace.WriteLine("Finished unzipping data");
@@ -73,7 +78,10 @@ namespace TraceEventTests
             Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
+            {
                 Directory.Delete(OutputDir, true);
+            }
+
             Directory.CreateDirectory(OutputDir);
             Output.WriteLine(string.Format("OutputDir: {0}", OutputDir));
             Assert.True(Path.GetFullPath(OutputDir) == OutputDir);

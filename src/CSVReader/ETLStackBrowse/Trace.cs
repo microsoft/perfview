@@ -1,68 +1,58 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
-using System.IO.Compression;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization;
 
 namespace ETLStackBrowse
 {
     public partial class ETLTrace
     {
-        ITraceParameters itparms;
-        ITraceParameters initial_parms;
-        ITraceUINotify itnotify;
+        private ITraceParameters itparms;
+        private ITraceParameters initial_parms;
+        private ITraceUINotify itnotify;
+        private string filename;
+        private string traceinfo;
+        private List<ThreadInfo> threads = new List<ThreadInfo>();
+        private List<ProcessInfo> processes = new List<ProcessInfo>();
+        private ByteAtomTable atomsProcesses = null;
+        private ByteAtomTable atomsFields = null;
+        private ByteAtomTable atomsRecords = null;
+        private List<List<int>> listEventFields = null;
+        private int[] sortedThreads = null;
+        private int[] sortedProcesses = null;
+        private RecordInfo[] recordInfo = null;
+        private long tmax = 0;
 
-        string filename;
-        string traceinfo;
-        List<ThreadInfo> threads = new List<ThreadInfo>();
-        List<ProcessInfo> processes = new List<ProcessInfo>();
-        ByteAtomTable atomsProcesses = null;
-        ByteAtomTable atomsFields = null;
-        ByteAtomTable atomsRecords = null;
-        List<List<int>> listEventFields = null;
-        int[] sortedThreads = null;
-        int[] sortedProcesses = null;
-        RecordInfo[] recordInfo = null;
-        long tmax = 0;
+        public int[] SortedThreads { get { return sortedThreads; } }
+        public int[] SortedProcesses { get { return sortedProcesses; } }
+        public ByteAtomTable ProcessAtoms { get { return atomsProcesses; } }
+        public ByteAtomTable FieldAtoms { get { return atomsFields; } }
+        public ByteAtomTable RecordAtoms { get { return atomsRecords; } }
+        public List<ThreadInfo> Threads { get { return threads; } }
+        public List<ProcessInfo> Processes { get { return processes; } }
+        public List<List<int>> EventFields { get { return listEventFields; } }
+        public string Info { get { return traceinfo; } }
+        public string FileName { get { return filename; } }
+        public ITraceParameters Parameters { get { return itparms; } set { itparms = value; } }
+        public long TMax { get { return tmax; } }
+        public bool[] StackTypes { get { return stackTypes; } }
+        public RecordInfo[] CommonFieldIds { get { return recordInfo; } }
+        public int MaxCPU { get { return maxCPU; } }
+        public bool[] StackIgnoreEvents { get { return stackIgnoreEvents; } }
 
-        public int[] SortedThreads          { get { return sortedThreads; } }
-        public int[] SortedProcesses        { get { return sortedProcesses; } }
-        public ByteAtomTable ProcessAtoms   { get { return atomsProcesses; } }
-        public ByteAtomTable FieldAtoms     { get { return atomsFields; } }
-        public ByteAtomTable RecordAtoms    { get { return atomsRecords; } }
-        public List<ThreadInfo> Threads     { get { return threads; } }
-        public List<ProcessInfo> Processes  { get { return processes; } }
-        public List<List<int>> EventFields  { get { return listEventFields; } }
-        public string Info                  { get { return traceinfo; } }
-        public string FileName              { get { return filename; } }
-        public ITraceParameters Parameters  { get { return itparms; } set { itparms = value; } }
-        public long TMax                    { get { return tmax; } }
-        public bool[] StackTypes            { get { return stackTypes; } }
-        public RecordInfo[] CommonFieldIds  { get { return recordInfo; } }
-        public int MaxCPU                   { get { return maxCPU; } }
-        public bool[] StackIgnoreEvents     { get { return stackIgnoreEvents; } }
+        public int IdleThreadIndex { get { return FindThreadInfoIndex(0, 0); } }
 
-        public int IdleThreadIndex          { get { return FindThreadInfoIndex(0, 0); } }
-
-        string[] bars = { "     ", "*    ", "**   ", "***  ", "**** ", "*****" };
-
-        bool[] stackIgnoreEvents = null;
-        string[] stackIgnoreEventStrings = { "DPC", "DPCTmr", "Interrupt", "FileNameRundown" };
-
-        BigStream stm = null;
-        List<long> offsets = new List<long>();
-
-        Dictionary<int, int> mp_tid_firstindex = null;
-
-        bool[] stackTypes = null;
-
-        const int fldTStartProcess = 2;
-        const int fldTStartThreadProc = 10;
-        const int fldTStartThreadId = 3;
-
-        const int typeLen = 23;  // standard record length, the type field is 23 characters
+        private string[] bars = { "     ", "*    ", "**   ", "***  ", "**** ", "*****" };
+        private bool[] stackIgnoreEvents = null;
+        private string[] stackIgnoreEventStrings = { "DPC", "DPCTmr", "Interrupt", "FileNameRundown" };
+        private BigStream stm = null;
+        private List<long> offsets = new List<long>();
+        private Dictionary<int, int> mp_tid_firstindex = null;
+        private bool[] stackTypes = null;
+        private const int fldTStartProcess = 2;
+        private const int fldTStartThreadProc = 10;
+        private const int fldTStartThreadId = 3;
+        private const int typeLen = 23;  // standard record length, the type field is 23 characters
 
         [Serializable]
         public class ProcessInfo
@@ -74,7 +64,9 @@ namespace ETLStackBrowse
                 get
                 {
                     if (processPid == null || processPid.Length == 0)
+                    {
                         return "";
+                    }
 
                     return ByteWindow.MakeString(processPid);
                 }
@@ -113,16 +105,24 @@ namespace ETLStackBrowse
             int IComparable<ThreadInfo>.CompareTo(ThreadInfo other)
             {
                 if (threadid < other.threadid)
+                {
                     return -1;
+                }
 
                 if (threadid > other.threadid)
+                {
                     return 1;
+                }
 
                 if (timestamp < other.timestamp)
+                {
                     return -1;
+                }
 
                 if (timestamp > other.timestamp)
+                {
                     return 1;
+                }
 
                 return 0;
             }
@@ -132,7 +132,9 @@ namespace ETLStackBrowse
                 get
                 {
                     if (processPid == null || processPid.Length == 0)
+                    {
                         return "";
+                    }
 
                     return ByteWindow.MakeString(processPid);
                 }
@@ -143,7 +145,9 @@ namespace ETLStackBrowse
                 get
                 {
                     if (processNopid == null || processNopid.Length == 0)
+                    {
                         return "";
+                    }
 
                     return ByteWindow.MakeString(processNopid);
                 }
@@ -154,14 +158,16 @@ namespace ETLStackBrowse
                 get
                 {
                     if (threadproc == null || threadproc.Length == 0)
+                    {
                         return "";
+                    }
 
                     return ByteWindow.MakeString(threadproc);
                 }
             }
         }
 
-        struct CPUState
+        private struct CPUState
         {
             public long time;
             public int tid;
@@ -169,7 +175,7 @@ namespace ETLStackBrowse
             public int usage;
         }
 
-        struct PreviousEvent
+        private struct PreviousEvent
         {
             public int filenameId;
             public long time;
@@ -208,24 +214,24 @@ namespace ETLStackBrowse
             public ETWLineReader(ETLTrace trace)
             {
                 this.trace = trace;
-                this.t0 = trace.itparms.T0;
-                this.t1 = trace.itparms.T1;
+                t0 = trace.itparms.T0;
+                t1 = trace.itparms.T1;
                 int slot = (int)(t0 / 100000);
                 long offset = trace.offsets[slot];
 
                 stm = trace.stm;
                 stm.Position = offset;
 
-                this.idThreadId = trace.atomsFields.Lookup("ThreadID");
-                this.idNewTID = trace.atomsFields.Lookup("New TID");
-                this.idOldTID = trace.atomsFields.Lookup("Old TID");
-                this.idBaseAddr = trace.atomsFields.Lookup("BaseAddr");
-                this.idEndAddr = trace.atomsFields.Lookup("EndAddr");
-                this.idVirtualAddr = trace.atomsFields.Lookup("VirtualAddr");
-                this.idProcessPid = trace.atomsFields.Lookup("Process Name ( PID)");
-                this.threadFilters = trace.itparms.GetThreadFilters();
-                this.processFilters = trace.itparms.GetProcessFilters();
-                this.byFilterText = new byte[0]; // trace.itparms.FilterText;
+                idThreadId = trace.atomsFields.Lookup("ThreadID");
+                idNewTID = trace.atomsFields.Lookup("New TID");
+                idOldTID = trace.atomsFields.Lookup("Old TID");
+                idBaseAddr = trace.atomsFields.Lookup("BaseAddr");
+                idEndAddr = trace.atomsFields.Lookup("EndAddr");
+                idVirtualAddr = trace.atomsFields.Lookup("VirtualAddr");
+                idProcessPid = trace.atomsFields.Lookup("Process Name ( PID)");
+                threadFilters = trace.itparms.GetThreadFilters();
+                processFilters = trace.itparms.GetProcessFilters();
+                byFilterText = new byte[0]; // trace.itparms.FilterText;
 
                 idType = -1;
 
@@ -243,26 +249,32 @@ namespace ETLStackBrowse
                 var str = trace.itparms.MemoryFilters;
 
                 if (str == null)
+                {
                     return;
- 
+                }
+
                 StringReader sr = new StringReader(str);
 
                 string line = null;
 
-                char[] spacetab = new char[] {' ', '\t'};
+                char[] spacetab = new char[] { ' ', '\t' };
 
                 while ((line = sr.ReadLine()) != null)
                 {
                     line = line.Trim();
                     int ich = line.IndexOfAny(spacetab);
                     if (ich < 0)
+                    {
                         continue;
+                    }
 
                     ulong start = ParseHex(line, 0);
                     ulong end = ParseHex(line, ich);
 
                     if (start >= end)
+                    {
                         continue;
+                    }
 
                     // we always add pairs
                     listMemRanges.Add(start);
@@ -275,7 +287,9 @@ namespace ETLStackBrowse
                 while (stm.ReadLine(b))
                 {
                     if (b.len < typeLen)
+                    {
                         continue;
+                    }
 
                     // strip the newline but leave the CR so there is some kind of delimeter left
                     // this assists in parsing (a non-numeric trail character is always at the end)
@@ -283,7 +297,9 @@ namespace ETLStackBrowse
 
                     t = b.GetLong(1);
                     if (t < t0)
+                    {
                         continue;
+                    }
 
                     bAll.Assign(b);
 
@@ -293,21 +309,29 @@ namespace ETLStackBrowse
 
                     // unknown record
                     if (idType < 0)
+                    {
                         continue;
+                    }
 
                     // ignoreable record
                     if (trace.recordInfo[idType].count <= 0)
+                    {
                         continue;
+                    }
 
                     // wait to get a little past the desired area
                     // because lines are sometimes slightly out of order
                     // 1ms cushion is all we do
                     if (t > t1 + 1000)
+                    {
                         break;
+                    }
 
                     // don't use any line that is beyond the desired region
                     if (t > t1)
+                    {
                         continue;
+                    }
 
                     yield return b;
                 }
@@ -316,9 +340,13 @@ namespace ETLStackBrowse
             public bool MatchingRecordType(bool[] filters)
             {
                 if (filters[idType])
+                {
                     return true;
+                }
                 else
+                {
                     return false;
+                }
             }
 
             public bool MatchingTextFilter()
@@ -329,7 +357,9 @@ namespace ETLStackBrowse
             public bool MatchingMemory()
             {
                 if (listMemRanges.Count == 0)
+                {
                     return true;
+                }
 
                 List<int> fieldList = trace.listEventFields[idType];
                 int fld = -1;
@@ -338,10 +368,10 @@ namespace ETLStackBrowse
                 if (fld >= 0)
                 {
                     long addr = b.GetLong(fld);
-                    return CheckMemRange(addr, addr+1);
+                    return CheckMemRange(addr, addr + 1);
                 }
 
-                int fStart  = fieldList.IndexOf(idBaseAddr);
+                int fStart = fieldList.IndexOf(idBaseAddr);
                 if (fStart >= 0)
                 {
                     int fEnd = fieldList.IndexOf(idEndAddr);
@@ -363,11 +393,13 @@ namespace ETLStackBrowse
                 for (int i = 0; i < listMemRanges.Count; i += 2)
                 {
                     ulong membase = listMemRanges[i];
-                    ulong memend = listMemRanges[i+1];
+                    ulong memend = listMemRanges[i + 1];
 
                     // if the memory range for the record overlaps with the indicated range, then we keep it
                     if (start < memend && end > membase)
+                    {
                         return true;
+                    }
                 }
 
                 return false;
@@ -381,12 +413,19 @@ namespace ETLStackBrowse
 
                 fld = fieldList.IndexOf(idThreadId);
                 if (fld < 0)
+                {
                     fld = fieldList.IndexOf(idNewTID);
-                if (fld < 0)
-                    fld = fieldList.IndexOf(idOldTID);
+                }
 
                 if (fld < 0)
+                {
+                    fld = fieldList.IndexOf(idOldTID);
+                }
+
+                if (fld < 0)
+                {
                     return false;
+                }
 
                 int tid = b.GetInt(fld);
                 int idx = trace.FindThreadInfoIndex(t, tid);
@@ -401,30 +440,38 @@ namespace ETLStackBrowse
 
                 fld = fieldList.IndexOf(idProcessPid);
                 if (fld < 0)
+                {
                     return false;
+                }
 
                 bRecord.Assign(b, fld).Trim();
                 int idx = trace.atomsProcesses.Lookup(bRecord);
 
                 if (idx == -1)
+                {
                     return false;
+                }
 
                 return processFilters[idx];
             }
         }
 
-        static public ulong ParseHex(string str, int index)
+        public static ulong ParseHex(string str, int index)
         {
             while (index < str.Length)
             {
                 if (str[index] != ' ' && str[index] != '\t')
+                {
                     break;
+                }
 
                 index++;
             }
 
             if (index + 2 < str.Length && str[index] == '0' && str[index + 1] == 'x')
+            {
                 index += 2;
+            }
 
             ulong val = 0;
 
@@ -432,21 +479,29 @@ namespace ETLStackBrowse
             {
                 char ch = str[index++];
                 if (ch >= '0' && ch <= '9')
+                {
                     val = val * 16 + ch - '0';
+                }
                 else if (ch >= 'a' && ch <= 'f')
+                {
                     val = val * 16 + 10 + ch - 'a';
+                }
                 else if (ch >= 'A' && ch <= 'F')
+                {
                     val = val * 16 + 10 + ch - 'A';
+                }
                 else
+                {
                     break;
+                }
             }
 
             return val;
         }
 
-    
+
         [Serializable]
-        class SavedState
+        private class SavedState
         {
             public List<ThreadInfo> threads;
             public List<ProcessInfo> processes;
@@ -469,33 +524,33 @@ namespace ETLStackBrowse
 
         public const string cacheSuffix = ".cache.v9A";
 
-        string CacheName(string file)
+        private string CacheName(string file)
         {
             return file + cacheSuffix;
         }
 
-        void TrySaveState()
+        private void TrySaveState()
         {
-            BinaryFormatter bf = new BinaryFormatter(); 
+            BinaryFormatter bf = new BinaryFormatter();
             SavedState s = new SavedState();
 
-            s.threads            =  this.threads;
-            s.processes          =  this.processes;
-            s.atomsProcesses     =  this.atomsProcesses;
-            s.atomsFields        =  this.atomsFields;
-            s.atomsRecords       =  this.atomsRecords;
-            s.listEventFields    =  this.listEventFields;
-            s.sortedThreads      =  this.sortedThreads;
-            s.sortedProcesses    =  this.sortedProcesses;
-            s.tmax               =  this.tmax;
-            s.stackIgnoreEvents  =  this.stackIgnoreEvents;
-            s.offsets            =  this.offsets;
-            s.mp_tid_firstindex  =  this.mp_tid_firstindex;
-            s.stackTypes         =  this.stackTypes;
-            s.listInitialTime    =  this.listInitialTime;
-            s.recordInfo         =  this.recordInfo;
+            s.threads = threads;
+            s.processes = processes;
+            s.atomsProcesses = atomsProcesses;
+            s.atomsFields = atomsFields;
+            s.atomsRecords = atomsRecords;
+            s.listEventFields = listEventFields;
+            s.sortedThreads = sortedThreads;
+            s.sortedProcesses = sortedProcesses;
+            s.tmax = tmax;
+            s.stackIgnoreEvents = stackIgnoreEvents;
+            s.offsets = offsets;
+            s.mp_tid_firstindex = mp_tid_firstindex;
+            s.stackTypes = stackTypes;
+            s.listInitialTime = listInitialTime;
+            s.recordInfo = recordInfo;
             // s.maxCPU             =  this.maxCPU;
-            s.traceinfo          =  this.traceinfo;
+            s.traceinfo = traceinfo;
 
             try
             {
@@ -510,17 +565,19 @@ namespace ETLStackBrowse
             }
         }
 
-        bool TryLoadState()
+        private bool TryLoadState()
         {
-            BinaryFormatter bf = new BinaryFormatter(); 
+            BinaryFormatter bf = new BinaryFormatter();
             SavedState s = new SavedState();
             string cacheName = CacheName(filename);
             if (File.Exists(cacheName) && File.GetLastWriteTimeUtc(cacheName) > File.GetLastWriteTimeUtc(filename))
             {
                 try
                 {
-                    using (FileStream fs = new FileStream(cacheName, FileMode.Open, FileAccess.Read, FileShare.Read|FileShare.Delete))
+                    using (FileStream fs = new FileStream(cacheName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+                    {
                         s = (SavedState)bf.Deserialize(fs);
+                    }
                 }
                 catch (Exception)
                 {
@@ -529,25 +586,27 @@ namespace ETLStackBrowse
                 }
             }
             else
+            {
                 return false;       // cache out of date, ignore.  
+            }
 
-            this.threads             =  s.threads;
-            this.processes           =  s.processes;
-            this.atomsProcesses      =  s.atomsProcesses;
-            this.atomsFields         =  s.atomsFields;
-            this.atomsRecords        =  s.atomsRecords;
-            this.listEventFields     =  s.listEventFields;
-            this.sortedThreads       =  s.sortedThreads;
-            this.sortedProcesses     =  s.sortedProcesses;
-            this.tmax                =  s.tmax;
-            this.stackIgnoreEvents   =  s.stackIgnoreEvents;
-            this.offsets             =  s.offsets;
-            this.mp_tid_firstindex   =  s.mp_tid_firstindex;
-            this.stackTypes          =  s.stackTypes;
-            this.listInitialTime     =  s.listInitialTime;
-            this.recordInfo          =  s.recordInfo;
+            threads = s.threads;
+            processes = s.processes;
+            atomsProcesses = s.atomsProcesses;
+            atomsFields = s.atomsFields;
+            atomsRecords = s.atomsRecords;
+            listEventFields = s.listEventFields;
+            sortedThreads = s.sortedThreads;
+            sortedProcesses = s.sortedProcesses;
+            tmax = s.tmax;
+            stackIgnoreEvents = s.stackIgnoreEvents;
+            offsets = s.offsets;
+            mp_tid_firstindex = s.mp_tid_firstindex;
+            stackTypes = s.stackTypes;
+            listInitialTime = s.listInitialTime;
+            recordInfo = s.recordInfo;
             // this.maxCPU              =  s.maxCPU;
-            this.traceinfo           =  s.traceinfo;
+            traceinfo = s.traceinfo;
 
             idRecordEscape = atomsFields.Lookup("$R");
             idTimeOffsetEscape = atomsFields.Lookup("$TimeOffset");
@@ -563,7 +622,7 @@ namespace ETLStackBrowse
         public ETLTrace(ITraceParameters itparms, ITraceUINotify itnotify, string filename)
         {
             this.filename = filename;
-            this.initial_parms = itparms; // the original parameters
+            initial_parms = itparms; // the original parameters
             this.itparms = itparms;
             this.itnotify = itnotify;
 
@@ -586,7 +645,9 @@ namespace ETLStackBrowse
             for (int i = 0; i < atomsRecords.Count; i++)
             {
                 if (recordInfo[i].count > 0)
+                {
                     itnotify.AddEventToEventList(atomsRecords.MakeString(i));
+                }
             }
 
             for (int i = 0; i < sortedThreads.Length; i++)
@@ -604,18 +665,20 @@ namespace ETLStackBrowse
             for (int i = 0; i < stackTypes.Length; i++)
             {
                 if (stackTypes[i])
+                {
                     itnotify.AddEventToStackEventList(atomsRecords.MakeString(i));
+                }
             }
         }
 
-        int idRecordEscape;
-        int idTimeEscape;
-        int idTimeOffsetEscape;
-        int idWhenEscape;
-        int idFirstEscape;
-        int idLastEscape;
+        private int idRecordEscape;
+        private int idTimeEscape;
+        private int idTimeOffsetEscape;
+        private int idWhenEscape;
+        private int idFirstEscape;
+        private int idLastEscape;
 
-        void InitializeFromPrimary()
+        private void InitializeFromPrimary()
         {
             atomsFields = new ByteAtomTable();
             atomsRecords = new ByteAtomTable();
@@ -624,7 +687,7 @@ namespace ETLStackBrowse
 
             byte[] byRecordEscape = ByteWindow.MakeBytes("$R");
             idRecordEscape = atomsFields.EnsureContains(byRecordEscape);
-            
+
             byte[] byTimeEscape = ByteWindow.MakeBytes("$T");
             idTimeEscape = atomsFields.EnsureContains(byTimeEscape);
 
@@ -641,7 +704,7 @@ namespace ETLStackBrowse
             idLastEscape = atomsFields.EnsureContains(byLastEscape);
 
             byte[] byBeginHeader = ByteWindow.MakeBytes("BeginHeader");
-            byte[] byEndHeader   = ByteWindow.MakeBytes("EndHeader");
+            byte[] byEndHeader = ByteWindow.MakeBytes("EndHeader");
 
             ByteWindow b = new ByteWindow();
 
@@ -651,13 +714,17 @@ namespace ETLStackBrowse
             while (stm.ReadLine(b))
             {
                 if (b.StartsWith(byBeginHeader))
+                {
                     break;
+                }
             }
 
             while (stm.ReadLine(b))
             {
                 if (b.StartsWith(byEndHeader))
+                {
                     break;
+                }
 
                 b.Field(0).Trim();
 
@@ -674,7 +741,7 @@ namespace ETLStackBrowse
                 listFields.Add(0); // the ID for $R, the record escape field
 
                 // start from field 1 -- that skips only field 0 which is already mapped to $R
-                for (int i = 1;  i < b.fieldsLen; i++)
+                for (int i = 1; i < b.fieldsLen; i++)
                 {
                     b.Field(i).Trim();
                     int id = atomsFields.EnsureContains(b);
@@ -688,7 +755,9 @@ namespace ETLStackBrowse
             {
                 int id = atomsRecords.Lookup(strEvent);
                 if (id >= 0)
+                {
                     stackIgnoreEvents[id] = true;
+                }
             }
 
             recordInfo = new RecordInfo[atomsRecords.Count];
@@ -707,22 +776,26 @@ namespace ETLStackBrowse
                 recordInfo[i].sizeField = fieldList.IndexOf(idSizeField);
 
                 if (-1 == recordInfo[i].sizeField)
+                {
                     recordInfo[i].sizeField = fieldList.IndexOf(idIOSizeField);
-                
+                }
+
                 recordInfo[i].goodNameField = fieldList.IndexOf(idFileNameField);
                 if (-1 == recordInfo[i].goodNameField)
+                {
                     recordInfo[i].goodNameField = fieldList.IndexOf(idTypeField);
+                }
 
                 recordInfo[i].elapsedTimeField = fieldList.IndexOf(idElapsedTimeField);
             }
 
-            int idT_DCEnd   = atomsRecords.Lookup("T-DCEnd");
+            int idT_DCEnd = atomsRecords.Lookup("T-DCEnd");
             int idT_DCStart = atomsRecords.Lookup("T-DCStart");
-            int idT_Start   = atomsRecords.Lookup("T-Start");
-            int idT_End     = atomsRecords.Lookup("T-End");
-            int idCSwitch   = atomsRecords.Lookup("CSwitch");
-            int idStack     = atomsRecords.Lookup("Stack");
-            int idAlloc     = atomsRecords.Lookup("Allocation");
+            int idT_Start = atomsRecords.Lookup("T-Start");
+            int idT_End = atomsRecords.Lookup("T-End");
+            int idCSwitch = atomsRecords.Lookup("CSwitch");
+            int idStack = atomsRecords.Lookup("Stack");
+            int idAlloc = atomsRecords.Lookup("Allocation");
 
             int idFirstReliableEventTimeStamp = atomsRecords.Lookup("FirstReliableEventTimeStamp");
             int idFirstReliableCSwitchEventTimeStamp = atomsRecords.Lookup("FirstReliableCSwitchEventTimeStamp");
@@ -741,7 +814,7 @@ namespace ETLStackBrowse
             const int maxEvent = 16;
             PreviousEvent[] prev = new PreviousEvent[maxEvent];
             int iNextEvent = 0;
-            
+
             stackTypes = new bool[atomsRecords.Count];
 
             Dictionary<int, int> dictStartedThreads = new Dictionary<int, int>();
@@ -752,30 +825,42 @@ namespace ETLStackBrowse
 
             // the first line of the trace is the trace info, that, importantly, has the OSVersion tag
             if (stm.ReadLine(b))
+            {
                 traceinfo = b.GetString();
+            }
             else
+            {
                 traceinfo = "None";
+            }
 
             while (stm.ReadLine(b))
             {
                 if (b.len < typeLen)
+                {
                     continue;
+                }
 
                 record.Assign(b, 0).Trim();
                 int idrec = atomsRecords.Lookup(record);
 
                 if (idrec < 0)
+                {
                     continue;
+                }
 
                 if (idrec == idFirstReliableCSwitchEventTimeStamp ||
                     idrec == idFirstReliableEventTimeStamp)
+                {
                     continue;
+                }
 
                 recordInfo[idrec].count++;
 
                 t = b.GetLong(1);
                 while (t >= tNext)
+                {
                     tNext = AddTimeRow(tNext, state);
+                }
 
                 if (idrec != idStack && !stackIgnoreEvents[idrec])
                 {
@@ -788,12 +873,16 @@ namespace ETLStackBrowse
                 {
                     int i = iNextEvent;
                     for (; ; )
-                    {                      
-                        if (--i < 0) 
-                            i = maxEvent-1;
+                    {
+                        if (--i < 0)
+                        {
+                            i = maxEvent - 1;
+                        }
 
                         if (i == iNextEvent)
+                        {
                             break;
+                        }
 
                         if (prev[i].time == t)
                         {
@@ -814,19 +903,27 @@ namespace ETLStackBrowse
                     bool fStarted = dictStartedThreads.ContainsKey(ti.threadid);
 
                     if (idrec == idT_Start)
+                    {
                         ti.timestamp = t;
+                    }
                     else if (idrec == idT_DCStart)
+                    {
                         ti.timestamp = 0;
+                    }
                     else
                     {
                         if (fStarted)
+                        {
                             continue;
+                        }
 
                         ti.timestamp = 0;
                     }
 
                     if (!fStarted)
+                    {
                         dictStartedThreads.Add(ti.threadid, 0);
+                    }
 
                     bThreadProc.Assign(b, fldTStartThreadProc).Trim();
                     bProcess.Assign(b, fldTStartProcess).Trim();
@@ -855,7 +952,9 @@ namespace ETLStackBrowse
                     int cpu = b.GetInt(fldCSwitchCPU);
 
                     if (cpu < 0 || cpu > state.Length)
+                    {
                         continue;
+                    }
 
                     int tusage = (int)(t - state[cpu].time);
 
@@ -869,7 +968,7 @@ namespace ETLStackBrowse
                     state[cpu].active = true;
                 }
             }
-            
+
             AddTimeRow(t, state);
 
             threads.Sort();
@@ -888,23 +987,31 @@ namespace ETLStackBrowse
 
             sortedThreads = new int[threads.Count];
             for (int i = 0; i < sortedThreads.Length; i++)
+            {
                 sortedThreads[i] = i;
+            }
 
             Array.Sort(sortedThreads,
-                delegate(int id1, int id2)
+                delegate (int id1, int id2)
                 {
                     byte[] b1 = threads[id1].processPid;
                     byte[] b2 = threads[id2].processPid;
 
                     int cmp = ByteWindow.CompareBytes(b1, b2, true);
                     if (cmp != 0)
+                    {
                         return cmp;
+                    }
 
                     if (threads[id1].threadid < threads[id2].threadid)
+                    {
                         return -1;
+                    }
 
                     if (threads[id1].threadid > threads[id2].threadid)
+                    {
                         return 1;
+                    }
 
                     return 0;
                 }
@@ -913,10 +1020,12 @@ namespace ETLStackBrowse
 
             sortedProcesses = new int[processes.Count];
             for (int i = 0; i < sortedProcesses.Length; i++)
+            {
                 sortedProcesses[i] = i;
+            }
 
             Array.Sort(sortedProcesses,
-                delegate(int id1, int id2)
+                delegate (int id1, int id2)
                 {
                     byte[] b1 = processes[id1].processPid;
                     byte[] b2 = processes[id2].processPid;
@@ -978,10 +1087,14 @@ namespace ETLStackBrowse
             for (; i < threads.Count; i++)
             {
                 if (threads[i].timestamp > t)
+                {
                     break;
+                }
 
                 if (threads[i].threadid != tid)
+                {
                     break;
+                }
 
                 iBest = i;
             }
@@ -998,7 +1111,7 @@ namespace ETLStackBrowse
         private void AddZoomedTimeRow(long timeStart, long timeEnd, string row)
         {
             itnotify.AddTimeToZoomedTimeList(row);
-            
+
             TimeMark tm = new TimeMark();
             tm.t0 = timeStart;
             tm.t1 = timeEnd;
@@ -1015,7 +1128,9 @@ namespace ETLStackBrowse
             for (cpu = 0; cpu < state.Length; cpu++)
             {
                 if (!state[cpu].active)
+                {
                     break;
+                }
 
                 if (state[cpu].tid != 0)
                 {
@@ -1027,32 +1142,42 @@ namespace ETLStackBrowse
                 }
 
                 if (state[cpu].usage > 0)
+                {
                     usage += state[cpu].usage;
+                }
 
                 state[cpu].usage = 0;
                 state[cpu].time = timeEnd;
-                maxCPU = cpu+1;
+                maxCPU = cpu + 1;
             }
 
             long maxusage = cpu * (timeEnd - timeStart);
             double pct;
 
             if (usage > maxusage)
+            {
                 usage = maxusage;
+            }
 
             if (maxusage == 0)
+            {
                 pct = 0.0;
+            }
             else
+            {
                 pct = (usage * 100.0 / maxusage);
+            }
 
             int ibar = (int)Math.Floor(pct / 100 * 6);
             if (ibar >= bars.Length)
+            {
                 ibar = bars.Length - 1;
+            }
 
             return String.Format("{0,12:n0} {1,5:f1}% {2}", timeStart, pct, bars[ibar]);
         }
 
-        void ClearZoomedTimes()
+        private void ClearZoomedTimes()
         {
             itnotify.ClearZoomedTimes();
             listMark = new List<TimeMark>(50);
@@ -1100,7 +1225,9 @@ namespace ETLStackBrowse
                 }
 
                 if (l.idType != idCSwitch)
+                {
                     continue;
+                }
 
                 int newTid = b.GetInt(fldCSwitchNewTID);
                 int oldTid = b.GetInt(fldCSwitchOldTID);
@@ -1109,7 +1236,9 @@ namespace ETLStackBrowse
                 int tusage = (int)(l.t - state[cpu].time);
 
                 if (state[cpu].tid != 0)
+                {
                     state[cpu].usage += tusage;
+                }
 
                 state[cpu].time = l.t;
                 state[cpu].tid = newTid;
@@ -1131,14 +1260,18 @@ namespace ETLStackBrowse
             bool[] fields = new bool[atomsFields.Count];
 
             itnotify.ClearEventFields();
-           
+
             for (int eventid = 0; eventid < events.Length; eventid++)
             {
                 if (!events[eventid])
+                {
                     continue;
+                }
 
                 foreach (int fid in listEventFields[eventid])
+                {
                     fields[fid] = true;
+                }
             }
 
             fields[idRecordEscape] = true; // always add $R
@@ -1149,8 +1282,12 @@ namespace ETLStackBrowse
             fields[idLastEscape] = true; // always add $When
 
             for (int fid = 0; fid < fields.Length; fid++)
+            {
                 if (fields[fid])
+                {
                     itnotify.AddEventField(atomsFields.MakeString(fid));
+                }
+            }
         }
 
         public string ComputeMatches()
@@ -1161,7 +1298,9 @@ namespace ETLStackBrowse
             bool[] filters = itparms.EventFilters.GetFilters();
 
             if (filters == null)
+            {
                 return "No filter specified";
+            }
 
             int countLimit = 10000;
             int count = 0;
@@ -1172,19 +1311,29 @@ namespace ETLStackBrowse
             foreach (ByteWindow b in l.Lines())
             {
                 if (!l.MatchingRecordType(filters))
+                {
                     continue;
+                }
 
                 if (fFilterThreads && !l.MatchingThread())
+                {
                     continue;
+                }
 
                 if (fFilterProcesses && !l.MatchingProcess())
+                {
                     continue;
+                }
 
                 if (!l.MatchingTextFilter())
+                {
                     continue;
+                }
 
                 if (!l.MatchingMemory())
+                {
                     continue;
+                }
 
                 sw.WriteLine(b.GetString());
 
@@ -1209,7 +1358,9 @@ namespace ETLStackBrowse
             for (int recordid = 0; recordid < filters.Length; recordid++)
             {
                 if (!filters[recordid])
+                {
                     continue;
+                }
 
                 sw.Write("{0}", atomsRecords.MakeString(recordid));
 
@@ -1298,7 +1449,9 @@ namespace ETLStackBrowse
             {
                 matrix[i] = new char[cols];
                 for (int j = 0; j < cols; j++)
+                {
                     matrix[i][j] = ' ';
+                }
             }
 
             long min = 0;
@@ -1307,10 +1460,17 @@ namespace ETLStackBrowse
             for (int i = 0; i < counts.Length; i++)
             {
                 total += counts[i];
-                if (total < min) min = total;
-                if (total > max) max = total;
+                if (total < min)
+                {
+                    min = total;
+                }
+
+                if (total > max)
+                {
+                    max = total;
+                }
             }
-           
+
             // recalibrate for the new zero point if the zero point is negative
             long current = -min;
             total = (max - min);
@@ -1318,25 +1478,39 @@ namespace ETLStackBrowse
             if (min < 0)
             {
                 int row = (int)((current + 1) * rows / total);
-                for (int i = 0; i < cols; i += 4) 
+                for (int i = 0; i < cols; i += 4)
+                {
                     matrix[row][i] = '-';
+                }
             }
 
             for (int i = 0; i < counts.Length; i++)
             {
                 long c = counts[i];
                 if (c == 0)
+                {
                     continue;
+                }
 
                 int row0 = (int)((current + 1) * rows / total);
                 current += c;
                 int row1 = (int)((current) * rows / total);
 
-                if (row0 >= rows) row0 = rows - 1;
-                if (row1 >= rows) row1 = rows - 1;
+                if (row0 >= rows)
+                {
+                    row0 = rows - 1;
+                }
+
+                if (row1 >= rows)
+                {
+                    row1 = rows - 1;
+                }
 
                 int col = i;
-                if (col >= cols) col = cols - 1;
+                if (col >= cols)
+                {
+                    col = cols - 1;
+                }
 
                 if (c < row1 - row0)
                 {
@@ -1355,18 +1529,22 @@ namespace ETLStackBrowse
                 }
             }
 
-            for (int i = rows; --i >= 0; )
+            for (int i = rows; --i >= 0;)
             {
                 int ich = rows - i - 1;
                 char ch = ' ';
                 if (ich < yLabel.Length)
+                {
                     ch = yLabel[ich];
+                }
 
                 sw.WriteLine("{0}|{1}", ch, new String(matrix[i]));
             }
 
-            for (int i = cols; --i >= 0; )
+            for (int i = cols; --i >= 0;)
+            {
                 matrix[0][i] = '-';
+            }
 
             sw.WriteLine(" \\{0}", new String(matrix[0]));
             sw.WriteLine(" {0} {1:n0} to {2:n0}", xLabel, min, max);
@@ -1388,14 +1566,17 @@ namespace ETLStackBrowse
         public void ZoomedTimeSelect(int ilo, int ihi)
         {
             if (ilo < 0 || ihi < 0)
+            {
                 return;
+            }
 
             if (ilo >= listMark.Count || ihi >= listMark.Count)
+            {
                 return;
-
+            }
 
             itparms.T0 = listMark[ilo].t0;
             itparms.T1 = listMark[ihi].t1;
         }
-    }     
+    }
 }

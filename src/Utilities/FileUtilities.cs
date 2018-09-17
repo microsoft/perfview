@@ -17,10 +17,10 @@ namespace Microsoft.Diagnostics.Utilities
     /// <summary>
     /// General purpose utilities dealing with archiveFile system files. 
     /// </summary>
-#if UTILITIES_PUBLIC 
+#if UTILITIES_PUBLIC
     public 
 #endif
-    static class FileUtilities
+    internal static class FileUtilities
     {
         /// <summary>
         /// GetLines works much like File.ReadAllLines, however instead of returning a
@@ -57,10 +57,15 @@ namespace Microsoft.Diagnostics.Utilities
             {
                 string dir = Path.GetDirectoryName(fileSpec);
                 if (dir.Length == 0)
+                {
                     dir = ".";
+                }
+
                 string file = Path.GetFileName(fileSpec);
                 foreach (string fileName in DirectoryUtilities.GetFiles(dir, file, searchOpt))
+                {
                     yield return fileName;
+                }
             }
         }
 
@@ -79,10 +84,14 @@ namespace Microsoft.Diagnostics.Utilities
         public static bool ForceDelete(string fileName)
         {
             if (Directory.Exists(fileName))
+            {
                 return DirectoryUtilities.Clean(fileName) != 0;
+            }
 
             if (!File.Exists(fileName))
+            {
                 return true;
+            }
 
             // First move the archiveFile out of the way, so that even if it is locked
             // The original archiveFile is still gone.  
@@ -96,7 +105,10 @@ namespace Microsoft.Diagnostics.Utilities
                 {
                     fileToDelete = fileName + "." + i.ToString() + ".deleting";
                     if (!File.Exists(fileToDelete))
+                    {
                         break;
+                    }
+
                     tryToDeleteOtherFiles = true;
                 }
                 try
@@ -108,14 +120,21 @@ namespace Microsoft.Diagnostics.Utilities
                     fileToDelete = fileName;
                 }
             }
-            bool ret = TryDelete(fileToDelete);
-            if (tryToDeleteOtherFiles)
+
+            bool ret = false;
+            try
             {
-                // delete any old *.deleting files that may have been left around 
-                string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
-                foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
-                    TryDelete(deleteingFile);
-            }
+                ret = TryDelete(fileToDelete);
+                if (tryToDeleteOtherFiles)
+                {
+                    // delete any old *.deleting files that may have been left around 
+                    string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
+                    foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
+                    {
+                        TryDelete(deleteingFile);
+                    }
+                }
+            } catch { };
             return ret;
         }
 
@@ -126,7 +145,10 @@ namespace Microsoft.Diagnostics.Utilities
         {
             bool ret = false;
             if (!File.Exists(fileName))
+            {
                 return true;
+            }
+
             try
             {
                 FileAttributes attribs = File.GetAttributes(fileName);
@@ -176,10 +198,17 @@ namespace Microsoft.Diagnostics.Utilities
                     int count1 = file1.Read(buffer1, 0, buffer1.Length);
                     int count2 = file2.Read(buffer2, 0, buffer2.Length);
                     if (count1 != count2)
+                    {
                         return false;
+                    }
+
                     for (int i = 0; i < count1; i++)
+                    {
                         if (buffer1[i] != buffer2[i])
+                        {
                             return false;
+                        }
+                    }
                 }
             }
             return true;
@@ -192,12 +221,12 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    static class PathUtil
+    internal static class PathUtil
     {
         /// <summary>
         /// Given a path and a superdirectory path relativeToDirectory compute the relative path (the path from) relativeToDirectory
         /// </summary>
-        static public string PathRelativeTo(string path, string relativeToDirectory)
+        public static string PathRelativeTo(string path, string relativeToDirectory)
         {
             Debug.Assert(!relativeToDirectory.EndsWith("\\"));
 
@@ -211,7 +240,10 @@ namespace Microsoft.Diagnostics.Utilities
                 if (i >= fullCurrentDirectory.Length)
                 {
                     if (cFullPath == '\\')
+                    {
                         commonToSlashIndex = i;
+                    }
+
                     break;
                 }
                 char cCurrentDirectory = fullCurrentDirectory[i];
@@ -219,35 +251,58 @@ namespace Microsoft.Diagnostics.Utilities
                 if (cCurrentDirectory != cFullPath)
                 {
                     if (char.IsLower(cCurrentDirectory))
+                    {
                         cCurrentDirectory = (char)(cCurrentDirectory - (char)('a' - 'A'));
+                    }
+
                     if (char.IsLower(cFullPath))
+                    {
                         cFullPath = (char)(cFullPath - (char)('a' - 'A'));
+                    }
+
                     if (cCurrentDirectory != cFullPath)
+                    {
                         break;
+                    }
                 }
 
                 if (cCurrentDirectory == '\\')
+                {
                     commonToSlashIndex = i;
+                }
             }
 
             // There is no common prefix between the two paths, we give up.
             if (commonToSlashIndex < 0)
+            {
                 return path;
+            }
 
             string returnVal = "";
             int nextSlash = commonToSlashIndex;
             for (; ; )
             {
                 if (nextSlash >= fullCurrentDirectory.Length)
+                {
                     break;
+                }
+
                 if (returnVal.Length > 0)
+                {
                     returnVal += "\\";
+                }
+
                 returnVal += @"..";
                 if (nextSlash + 1 == fullCurrentDirectory.Length)
+                {
                     break;
+                }
+
                 nextSlash = fullCurrentDirectory.IndexOf('\\', nextSlash + 1);
                 if (nextSlash < 0)
+                {
                     break;
+                }
             }
 
             string rest = fullPath.Substring(commonToSlashIndex + 1);

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -2868,18 +2865,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthAnonPasswdChangeNeeded(Action<W3AuthAnonPasswdChangeNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthAnonPasswdChangeNeeded>)value; }
@@ -2897,7 +2894,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2925,18 +2925,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthBadBasicHeader(Action<W3AuthBadBasicHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthBadBasicHeader>)value; }
@@ -2954,7 +2954,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2983,18 +2986,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthBasicLogonFailed(Action<W3AuthBasicLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthBasicLogonFailed>)value; }
@@ -3013,7 +3016,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3043,18 +3049,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthEnd(Action<W3AuthEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthEnd>)value; }
@@ -3072,7 +3078,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3101,18 +3110,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthIISDigestLogonFailed(Action<W3AuthIISDigestLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthIISDigestLogonFailed>)value; }
@@ -3131,7 +3140,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3162,18 +3174,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthInvalidAnonAccount(Action<W3AuthInvalidAnonAccount> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthInvalidAnonAccount>)value; }
@@ -3192,7 +3204,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3227,18 +3242,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthKerberosFailed(Action<W3AuthKerberosFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(20)) + 4)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(20)) + 4)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthKerberosFailed>)value; }
@@ -3261,7 +3276,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "KMUsed", "APUserName", "SPNName", "ADConfigIsOK", "KerberosInfo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3299,18 +3317,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthNTLMNullSession(Action<W3AuthNTLMNullSession> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthNTLMNullSession>)value; }
@@ -3328,7 +3346,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3357,18 +3378,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthPassportLogonFailed(Action<W3AuthPassportLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthPassportLogonFailed>)value; }
@@ -3387,7 +3408,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3417,18 +3441,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthPasswdChangeDisabled(Action<W3AuthPasswdChangeDisabled> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthPasswdChangeDisabled>)value; }
@@ -3446,7 +3470,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3474,18 +3501,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthPasswdChangeNeeded(Action<W3AuthPasswdChangeNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthPasswdChangeNeeded>)value; }
@@ -3503,7 +3530,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3532,18 +3562,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthRequestAuthType(Action<W3AuthRequestAuthType> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthRequestAuthType>)value; }
@@ -3562,7 +3592,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "RequestAuthType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3593,18 +3626,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthSSPIContinueNeeded(Action<W3AuthSSPIContinueNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthSSPIContinueNeeded>)value; }
@@ -3623,7 +3656,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "PackageName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3654,18 +3690,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthSSPILogonFailed(Action<W3AuthSSPILogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthSSPILogonFailed>)value; }
@@ -3684,7 +3720,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3715,18 +3754,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthStart(Action<W3AuthStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthStart>)value; }
@@ -3745,7 +3784,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "AuthTypeSupported" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3780,18 +3822,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthSucceeded(Action<W3AuthSucceeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24)) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(24)) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthSucceeded>)value; }
@@ -3814,7 +3856,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "AuthType", "NTLMUsed", "RemoteUserName", "AuthUserName", "TokenImpersonationLevel" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3852,18 +3897,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthTypeNotSupported(Action<W3AuthTypeNotSupported> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthTypeNotSupported>)value; }
@@ -3881,7 +3926,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3910,18 +3958,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3AuthWDigestLogonFailed(Action<W3AuthWDigestLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3AuthWDigestLogonFailed>)value; }
@@ -3940,7 +3988,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3977,18 +4028,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CacheFileCacheAccessEnd(Action<W3CacheFileCacheAccessEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(40)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(40)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CacheFileCacheAccessEnd>)value; }
@@ -4013,7 +4064,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Successful", "FileFromCache", "FileAddedToCache", "FileDirmoned", "LastModCheckErrorIgnored", "ErrorCode", "LastModifiedTime" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4058,18 +4112,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CacheFileCacheAccessStart(Action<W3CacheFileCacheAccessStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CacheFileCacheAccessStart>)value; }
@@ -4090,7 +4144,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName", "UserName", "DomainName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4128,18 +4185,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CacheHttpsysCacheable(Action<W3CacheHttpsysCacheable> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 32));
             Debug.Assert(!(Version > 1 && EventDataLength < 32));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CacheHttpsysCacheable>)value; }
@@ -4161,7 +4218,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HttpsysCacheable", "Reason", "CachePolicy", "TimeToLive" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4197,18 +4257,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3OutputCacheDisabled(Action<W3OutputCacheDisabled> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3OutputCacheDisabled>)value; }
@@ -4226,7 +4286,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4255,18 +4318,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3OutputCacheLookupEnd(Action<W3OutputCacheLookupEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3OutputCacheLookupEnd>)value; }
@@ -4285,7 +4348,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Result" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4315,18 +4381,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3OutputCacheLookupStart(Action<W3OutputCacheLookupStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3OutputCacheLookupStart>)value; }
@@ -4344,7 +4410,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4373,18 +4442,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3OutputCacheUpdateEnd(Action<W3OutputCacheUpdateEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3OutputCacheUpdateEnd>)value; }
@@ -4403,7 +4472,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Result" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4435,18 +4507,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3OutputCacheUpdateStart(Action<W3OutputCacheUpdateStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3OutputCacheUpdateStart>)value; }
@@ -4466,7 +4538,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "CachePolicy", "TimeToLive" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4502,18 +4577,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CacheURLCacheAccessEnd(Action<W3CacheURLCacheAccessEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 12));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 12));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CacheURLCacheAccessEnd>)value; }
@@ -4535,7 +4610,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "PhysicalPath", "URLInfoFromCache", "URLInfoAddedToCache", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4572,18 +4650,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CacheURLCacheAccessStart(Action<W3CacheURLCacheAccessStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CacheURLCacheAccessStart>)value; }
@@ -4602,7 +4680,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "RequestURL" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4632,18 +4713,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIEnd(Action<W3CGIEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIEnd>)value; }
@@ -4661,7 +4742,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4689,18 +4773,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIHeadersReceived(Action<W3CGIHeadersReceived> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIHeadersReceived>)value; }
@@ -4718,7 +4802,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4749,18 +4836,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGILaunch(Action<W3CGILaunch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGILaunch>)value; }
@@ -4781,7 +4868,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "CommandLine", "ErrorCode", "ProcessId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4816,18 +4906,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIPrematureTermination(Action<W3CGIPrematureTermination> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIPrematureTermination>)value; }
@@ -4846,7 +4936,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Headers" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4876,18 +4969,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIRequestEntitySent(Action<W3CGIRequestEntitySent> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIRequestEntitySent>)value; }
@@ -4905,7 +4998,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4933,18 +5029,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIStart(Action<W3CGIStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIStart>)value; }
@@ -4962,7 +5058,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -4991,18 +5090,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGITimeout(Action<W3CGITimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGITimeout>)value; }
@@ -5021,7 +5120,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Headers" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5053,18 +5155,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3DynamicCompressionDo(Action<W3DynamicCompressionDo> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3DynamicCompressionDo>)value; }
@@ -5084,7 +5186,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OriginalSize", "CompressedSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5116,18 +5221,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3DynamicCompressionEnd(Action<W3DynamicCompressionEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3DynamicCompressionEnd>)value; }
@@ -5145,7 +5250,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5174,18 +5282,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3DynamicCompressionNotSuccess(Action<W3DynamicCompressionNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3DynamicCompressionNotSuccess>)value; }
@@ -5204,7 +5312,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5234,18 +5345,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3DynamicCompressionStart(Action<W3DynamicCompressionStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3DynamicCompressionStart>)value; }
@@ -5263,7 +5374,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5291,18 +5405,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3DynamicCompressionSuccess(Action<W3DynamicCompressionSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3DynamicCompressionSuccess>)value; }
@@ -5320,7 +5434,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5353,18 +5470,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3StaticCompressionCreateEnd(Action<W3StaticCompressionCreateEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(20) + 4) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(20) + 4) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3StaticCompressionCreateEnd>)value; }
@@ -5387,7 +5504,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode", "OriginalFileName", "OriginalFileSize", "CompressedFileName", "CompressedFileSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5426,18 +5546,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3StaticCompressionCreateStart(Action<W3StaticCompressionCreateStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3StaticCompressionCreateStart>)value; }
@@ -5456,7 +5576,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OriginalFileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5486,18 +5609,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3StaticCompressionEnd(Action<W3StaticCompressionEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3StaticCompressionEnd>)value; }
@@ -5515,7 +5638,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5544,18 +5670,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3StaticCompressionNotSuccess(Action<W3StaticCompressionNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3StaticCompressionNotSuccess>)value; }
@@ -5574,7 +5700,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5604,18 +5733,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3StaticCompressionStart(Action<W3StaticCompressionStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3StaticCompressionStart>)value; }
@@ -5633,7 +5762,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5661,18 +5793,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3StaticCompressionSuccess(Action<W3StaticCompressionSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3StaticCompressionSuccess>)value; }
@@ -5690,7 +5822,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5718,18 +5853,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFActivityTimeout(Action<W3CGIFActivityTimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFActivityTimeout>)value; }
@@ -5747,7 +5882,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5775,18 +5913,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFAddJobObjectFail(Action<W3CGIFAddJobObjectFail> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFAddJobObjectFail>)value; }
@@ -5804,7 +5942,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5832,18 +5973,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFAppMgrShutdown(Action<W3CGIFAppMgrShutdown> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFAppMgrShutdown>)value; }
@@ -5861,7 +6002,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5893,18 +6037,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFAssignProcess(Action<W3CGIFAssignProcess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 12));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 12));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFAssignProcess>)value; }
@@ -5926,7 +6070,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "CommandLine", "IsNewProcess", "ProcessId", "RequestNumber" };
+                }
+
                 return payloadNames;
             }
         }
@@ -5962,18 +6109,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFEnd(Action<W3CGIFEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFEnd>)value; }
@@ -5991,7 +6138,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6019,18 +6169,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFPathNotFound(Action<W3CGIFPathNotFound> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFPathNotFound>)value; }
@@ -6048,7 +6198,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6076,18 +6229,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFQueueFull(Action<W3CGIFQueueFull> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFQueueFull>)value; }
@@ -6105,7 +6258,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6135,18 +6291,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFQueueRequest(Action<W3CGIFQueueRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFQueueRequest>)value; }
@@ -6166,7 +6322,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "PositionInQueue", "MaxInstances" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6198,18 +6357,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFRapidFailureProtection(Action<W3CGIFRapidFailureProtection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFRapidFailureProtection>)value; }
@@ -6227,7 +6386,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6255,18 +6417,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFRequestTimeout(Action<W3CGIFRequestTimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFRequestTimeout>)value; }
@@ -6284,7 +6446,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6312,18 +6477,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFResponseWritten(Action<W3CGIFResponseWritten> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFResponseWritten>)value; }
@@ -6341,7 +6506,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6369,18 +6537,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFScriptProcessorMissing(Action<W3CGIFScriptProcessorMissing> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFScriptProcessorMissing>)value; }
@@ -6398,7 +6566,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6426,18 +6597,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFStart(Action<W3CGIFStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFStart>)value; }
@@ -6455,7 +6626,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6484,18 +6658,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFTraceError(Action<W3CGIFTraceError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFTraceError>)value; }
@@ -6514,7 +6688,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6545,18 +6722,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFTraceInfo(Action<W3CGIFTraceInfo> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFTraceInfo>)value; }
@@ -6575,7 +6752,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6606,18 +6786,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFTraceWarning(Action<W3CGIFTraceWarning> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFTraceWarning>)value; }
@@ -6636,7 +6816,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6666,18 +6849,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFUnexpectedExit(Action<W3CGIFUnexpectedExit> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFUnexpectedExit>)value; }
@@ -6695,7 +6878,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6724,18 +6910,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFUnknownError(Action<W3CGIFUnknownError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFUnknownError>)value; }
@@ -6754,7 +6940,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6784,18 +6973,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3CGIFWaitingForResponse(Action<W3CGIFWaitingForResponse> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3CGIFWaitingForResponse>)value; }
@@ -6813,7 +7002,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6841,18 +7033,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAccessDeniedEnd(Action<W3FilterAccessDeniedEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAccessDeniedEnd>)value; }
@@ -6870,7 +7062,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6901,18 +7096,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAccessDeniedStart(Action<W3FilterAccessDeniedStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAccessDeniedStart>)value; }
@@ -6933,7 +7128,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "RequestedURL", "PhysicalPath", "DenialReason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -6969,18 +7167,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAddReqHeader(Action<W3FilterAddReqHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAddReqHeader>)value; }
@@ -7000,7 +7198,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7034,18 +7235,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAddRespHeader(Action<W3FilterAddRespHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAddRespHeader>)value; }
@@ -7065,7 +7266,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7097,18 +7301,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAuthCompleteEnd(Action<W3FilterAuthCompleteEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAuthCompleteEnd>)value; }
@@ -7126,7 +7330,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7154,18 +7361,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAuthCompleteStart(Action<W3FilterAuthCompleteStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAuthCompleteStart>)value; }
@@ -7183,7 +7390,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7213,18 +7423,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAuthenticationEnd(Action<W3FilterAuthenticationEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAuthenticationEnd>)value; }
@@ -7244,7 +7454,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FinalUserName", "PasswordChanged" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7277,18 +7490,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterAuthenticationStart(Action<W3FilterAuthenticationStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterAuthenticationStart>)value; }
@@ -7307,7 +7520,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OrigUserName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7338,18 +7554,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterEnd(Action<W3FilterEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterEnd>)value; }
@@ -7368,7 +7584,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "NotificationStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7398,18 +7617,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterEndOfRequestEnd(Action<W3FilterEndOfRequestEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterEndOfRequestEnd>)value; }
@@ -7427,7 +7646,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7455,18 +7677,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterEndOfRequestStart(Action<W3FilterEndOfRequestStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterEndOfRequestStart>)value; }
@@ -7484,7 +7706,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7513,18 +7738,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterError(Action<W3FilterError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterError>)value; }
@@ -7543,7 +7768,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7581,18 +7809,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterLogEnd(Action<W3FilterLogEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterLogEnd>)value; }
@@ -7618,7 +7846,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FinalClientHostName", "FinalClientUserName", "FinalServerName", "FinalOperation", "FinalTarget", "FinalParameters", "FinalHttpStatus", "FinalWin32Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7670,18 +7901,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterLogStart(Action<W3FilterLogStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterLogStart>)value; }
@@ -7707,7 +7938,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OrigClientHostName", "OrigClientUserName", "OrigServerName", "OrigOperation", "OrigTarget", "OrigParameters", "OrigHttpStatus", "OrigWin32Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7751,18 +7985,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterPreprocEnd(Action<W3FilterPreprocEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterPreprocEnd>)value; }
@@ -7780,7 +8014,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7808,18 +8045,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterPreprocStart(Action<W3FilterPreprocStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterPreprocStart>)value; }
@@ -7837,7 +8074,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7865,18 +8105,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterSendRawDataEnd(Action<W3FilterSendRawDataEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterSendRawDataEnd>)value; }
@@ -7894,7 +8134,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7922,18 +8165,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterSendRawDataStart(Action<W3FilterSendRawDataStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterSendRawDataStart>)value; }
@@ -7951,7 +8194,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -7979,18 +8225,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterSendResponseEnd(Action<W3FilterSendResponseEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterSendResponseEnd>)value; }
@@ -8008,7 +8254,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8037,18 +8286,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterSendResponseStart(Action<W3FilterSendResponseStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterSendResponseStart>)value; }
@@ -8067,7 +8316,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HttpStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8099,18 +8351,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterSetReqHeader(Action<W3FilterSetReqHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterSetReqHeader>)value; }
@@ -8130,7 +8382,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8164,18 +8419,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterSetRespHeader(Action<W3FilterSetRespHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterSetRespHeader>)value; }
@@ -8195,7 +8450,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8228,18 +8486,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterStart(Action<W3FilterStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterStart>)value; }
@@ -8258,7 +8516,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FilterName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8294,18 +8555,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterURLMapEnd(Action<W3FilterURLMapEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterURLMapEnd>)value; }
@@ -8329,7 +8590,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FinalURL", "FinalPath", "AccessPerms", "MatchingPath", "MatchingURL", "ScriptMapEntry" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8375,18 +8639,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3FilterURLMapStart(Action<W3FilterURLMapStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3FilterURLMapStart>)value; }
@@ -8410,7 +8674,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OrigURL", "OrigPath", "AccessPerms", "MatchingPath", "MatchingURL", "ScriptMapEntry" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8451,18 +8718,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralConfigChangeNotification(Action<IISGeneralConfigChangeNotification> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralConfigChangeNotification>)value; }
@@ -8481,7 +8748,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ConfigPath" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8512,18 +8782,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralFileChangeNotification(Action<IISGeneralFileChangeNotification> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralFileChangeNotification>)value; }
@@ -8542,7 +8812,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FilePath" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8572,18 +8845,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralCGIHandler(Action<W3GeneralCGIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralCGIHandler>)value; }
@@ -8601,7 +8874,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8632,18 +8908,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralChildRequestEnd(Action<W3GeneralChildRequestEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 26));
             Debug.Assert(!(Version > 1 && EventDataLength < 26));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralChildRequestEnd>)value; }
@@ -8664,7 +8940,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BytesSent", "HttpStatus", "HttpSubStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8702,18 +8981,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralChildRequestStart(Action<W3GeneralChildRequestStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUnicodeString(20)) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUnicodeString(20)) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralChildRequestStart>)value; }
@@ -8735,7 +9014,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "SiteId", "RequestURL", "RequestVerb", "RecursiveLevel" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8772,18 +9054,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralDavHandler(Action<W3GeneralDavHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralDavHandler>)value; }
@@ -8802,7 +9084,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8836,18 +9121,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralEndpointInformation(Action<W3GeneralEndpointInformation> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralEndpointInformation>)value; }
@@ -8869,7 +9154,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "RemoteAddress", "RemotePort", "LocalAddress", "LocalPort" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8907,18 +9195,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralFlushResponseEnd(Action<W3GeneralFlushResponseEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralFlushResponseEnd>)value; }
@@ -8938,7 +9226,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BytesSent", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -8970,18 +9261,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralFlushResponseStart(Action<W3GeneralFlushResponseStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralFlushResponseStart>)value; }
@@ -8999,7 +9290,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9029,18 +9323,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralGetURLMetadata(Action<W3GeneralGetURLMetadata> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralGetURLMetadata>)value; }
@@ -9060,7 +9354,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "PhysicalPath", "AccessPerms" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9092,18 +9389,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralISAPIHandler(Action<W3GeneralISAPIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralISAPIHandler>)value; }
@@ -9121,7 +9418,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9149,18 +9449,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralMapHandler(Action<W3GeneralMapHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralMapHandler>)value; }
@@ -9178,7 +9478,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9208,18 +9511,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralModuleFactoryFailed(Action<W3GeneralModuleFactoryFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralModuleFactoryFailed>)value; }
@@ -9239,7 +9542,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9272,18 +9578,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralNotSendCustomError(Action<W3GeneralNotSendCustomError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralNotSendCustomError>)value; }
@@ -9302,7 +9608,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9335,18 +9644,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralOopISAPIHandler(Action<W3GeneralOopISAPIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 28));
             Debug.Assert(!(Version > 1 && EventDataLength < 28));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralOopISAPIHandler>)value; }
@@ -9367,7 +9676,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ProcessId", "TotalReqs", "CurrentReqs" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9401,18 +9713,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralOptionsHandler(Action<W3GeneralOptionsHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralOptionsHandler>)value; }
@@ -9430,7 +9742,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9460,18 +9775,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralReadEntityEnd(Action<W3GeneralReadEntityEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralReadEntityEnd>)value; }
@@ -9491,7 +9806,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BytesReceived", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9523,18 +9841,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralReadEntityStart(Action<W3GeneralReadEntityStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralReadEntityStart>)value; }
@@ -9552,7 +9870,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9581,18 +9902,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralRedirectionHandler(Action<W3GeneralRedirectionHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralRedirectionHandler>)value; }
@@ -9611,7 +9932,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "RedirectedURL" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9645,18 +9969,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralEndNewRequest(Action<W3GeneralEndNewRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 30));
             Debug.Assert(!(Version > 1 && EventDataLength < 30));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralEndNewRequest>)value; }
@@ -9678,7 +10002,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BytesSent", "BytesReceived", "HttpStatus", "HttpSubStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9715,18 +10042,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralRequestEntity(Action<W3GeneralRequestEntity> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralRequestEntity>)value; }
@@ -9745,7 +10072,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Buffer" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9776,18 +10106,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralRequestHeaders(Action<W3GeneralRequestHeaders> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralRequestHeaders>)value; }
@@ -9806,7 +10136,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Headers" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9842,18 +10175,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralStartNewRequest(Action<W3GeneralStartNewRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(20) + 16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(20) + 16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralStartNewRequest>)value; }
@@ -9877,7 +10210,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "SiteId", "AppPoolId", "ConnId", "RawConnId", "RequestURL", "RequestVerb" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9918,18 +10254,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralResponseEntityBuffer(Action<W3GeneralResponseEntityBuffer> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralResponseEntityBuffer>)value; }
@@ -9948,7 +10284,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Buffer" };
+                }
+
                 return payloadNames;
             }
         }
@@ -9981,18 +10320,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralResponseEntityFile(Action<W3GeneralResponseEntityFile> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 16));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralResponseEntityFile>)value; }
@@ -10013,7 +10352,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName", "Offset", "Size" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10048,18 +10390,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralResponseHeaders(Action<W3GeneralResponseHeaders> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralResponseHeaders>)value; }
@@ -10078,7 +10420,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Headers" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10111,18 +10456,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralSendCustomError(Action<W3GeneralSendCustomError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(22)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(22)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralSendCustomError>)value; }
@@ -10143,7 +10488,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HttpStatus", "HttpSubStatus", "FileNameOrURL" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10180,18 +10528,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralSetRequestHeader(Action<W3GeneralSetRequestHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralSetRequestHeader>)value; }
@@ -10212,7 +10560,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue", "Replace" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10247,18 +10598,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralStaticFileHandler(Action<W3GeneralStaticFileHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralStaticFileHandler>)value; }
@@ -10277,7 +10628,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10307,18 +10661,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3GeneralTraceHandler(Action<W3GeneralTraceHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3GeneralTraceHandler>)value; }
@@ -10336,7 +10690,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10369,18 +10726,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralHandlerChanged(Action<IISGeneralHandlerChanged> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralHandlerChanged>)value; }
@@ -10403,7 +10760,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OldHandlerName", "NewHandlerName", "NewHandlerModules", "NewHandlerScriptProcessor", "NewHandlerType" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10443,18 +10803,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralHandlerPreconditionNotMatch(Action<IISGeneralHandlerPreconditionNotMatch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralHandlerPreconditionNotMatch>)value; }
@@ -10474,7 +10834,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Name", "Precondition" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10508,18 +10871,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralModulePreconditionNotMatch(Action<IISGeneralModulePreconditionNotMatch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralModulePreconditionNotMatch>)value; }
@@ -10539,7 +10902,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Name", "Precondition" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10573,18 +10939,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralUrlChanged(Action<IISGeneralUrlChanged> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralUrlChanged>)value; }
@@ -10604,7 +10970,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "OldUrl", "NewUrl" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10639,18 +11008,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralUserSet(Action<IISGeneralUserSet> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16)) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16)) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralUserSet>)value; }
@@ -10671,7 +11040,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "AuthType", "UserName", "SupportsIsInRole" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10707,18 +11079,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISGeneralVirtualModuleUnresolved(Action<IISGeneralVirtualModuleUnresolved> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISGeneralVirtualModuleUnresolved>)value; }
@@ -10738,7 +11110,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Name", "Type" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10770,18 +11145,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3ISAPIEnd(Action<W3ISAPIEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3ISAPIEnd>)value; }
@@ -10799,7 +11174,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10827,18 +11205,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3ISAPIStart(Action<W3ISAPIStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3ISAPIStart>)value; }
@@ -10856,7 +11234,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10888,18 +11269,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleCriticalError(Action<IISModuleEventsModuleCriticalError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleCriticalError>)value; }
@@ -10921,7 +11302,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -10961,18 +11345,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleEnd(Action<IISModuleEventsModuleEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleEnd>)value; }
@@ -10994,7 +11378,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11034,18 +11421,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleError(Action<IISModuleEventsModuleError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleError>)value; }
@@ -11067,7 +11454,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11107,18 +11497,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleInformation(Action<IISModuleEventsModuleInformation> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleInformation>)value; }
@@ -11140,7 +11530,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11180,18 +11573,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleStart(Action<IISModuleEventsModuleStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleStart>)value; }
@@ -11213,7 +11606,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11253,18 +11649,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleVerbose(Action<IISModuleEventsModuleVerbose> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleVerbose>)value; }
@@ -11286,7 +11682,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11326,18 +11725,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISModuleEventsModuleWarning(Action<IISModuleEventsModuleWarning> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISModuleEventsModuleWarning>)value; }
@@ -11359,7 +11758,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11402,18 +11804,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsResponseErrorStatus(Action<IISRequestNotificationEventsResponseErrorStatus> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUTF8String(SkipUnicodeString(16) + 8) + 6)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUTF8String(SkipUnicodeString(16) + 8) + 6)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsResponseErrorStatus>)value; }
@@ -11438,7 +11840,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "HttpStatus", "HttpReason", "HttpSubStatus", "ErrorCode", "ConfigExceptionInfo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11484,18 +11889,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsResponseSuccessStatus(Action<IISRequestNotificationEventsResponseSuccessStatus> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUnicodeString(16) + 8)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUnicodeString(16) + 8)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsResponseSuccessStatus>)value; }
@@ -11517,7 +11922,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "HttpStatus", "HttpReason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11558,18 +11966,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsCompletion(Action<IISRequestNotificationEventsCompletion> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 16));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsCompletion>)value; }
@@ -11592,7 +12000,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotificationEvent", "CompletionBytes", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11634,18 +12045,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsEnd(Action<IISRequestNotificationEventsEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 12));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 12));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsEnd>)value; }
@@ -11667,7 +12078,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotificationEvent", "NotificationStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11706,18 +12120,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsStart(Action<IISRequestNotificationEventsStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsStart>)value; }
@@ -11738,7 +12152,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotification" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11774,18 +12191,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationPreBeginEnd(Action<IISRequestNotificationPreBeginEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationPreBeginEnd>)value; }
@@ -11805,7 +12222,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "NotificationStatus" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11838,18 +12258,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationPreBeginStart(Action<IISRequestNotificationPreBeginStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationPreBeginStart>)value; }
@@ -11868,7 +12288,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11901,18 +12324,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsError(Action<IISRequestNotificationEventsError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsError>)value; }
@@ -11933,7 +12356,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -11968,18 +12394,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal IISRequestNotificationEventsResponseErrorDescription(Action<IISRequestNotificationEventsResponseErrorDescription> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<IISRequestNotificationEventsResponseErrorDescription>)value; }
@@ -11998,7 +12424,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorDescription" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12030,18 +12459,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecDeniedByAccessFlags(Action<W3SecDeniedByAccessFlags> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecDeniedByAccessFlags>)value; }
@@ -12061,7 +12490,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "CurrentFlags", "NeededFlags" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12094,18 +12526,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecDeniedByCGIRestriction(Action<W3SecDeniedByCGIRestriction> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecDeniedByCGIRestriction>)value; }
@@ -12124,7 +12556,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ImageName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12155,18 +12590,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecDeniedByISAPIRestriction(Action<W3SecDeniedByISAPIRestriction> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecDeniedByISAPIRestriction>)value; }
@@ -12185,7 +12620,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ImageName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12216,18 +12654,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecDeniedByMimemap(Action<W3SecDeniedByMimemap> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecDeniedByMimemap>)value; }
@@ -12246,7 +12684,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12279,18 +12720,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecFileAccessDenied(Action<W3SecFileAccessDenied> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecFileAccessDenied>)value; }
@@ -12311,7 +12752,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName", "AccountName", "DomainName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12346,18 +12790,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecIllegalShortFilename(Action<W3SecIllegalShortFilename> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecIllegalShortFilename>)value; }
@@ -12376,7 +12820,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "FileName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12407,18 +12854,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecRejectedHostname(Action<W3SecRejectedHostname> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecRejectedHostname>)value; }
@@ -12437,7 +12884,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "HostName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12468,18 +12918,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecRejectedIP(Action<W3SecRejectedIP> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecRejectedIP>)value; }
@@ -12498,7 +12948,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "IPAddress" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12528,18 +12981,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3SecRequireSSL128(Action<W3SecRequireSSL128> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3SecRequireSSL128>)value; }
@@ -12557,7 +13010,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12585,18 +13041,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketApplicationCloseConnection(Action<W3WebSocketApplicationCloseConnection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketApplicationCloseConnection>)value; }
@@ -12614,7 +13070,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12643,18 +13102,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketEndFailure(Action<W3WebSocketEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketEndFailure>)value; }
@@ -12673,7 +13132,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12703,18 +13165,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketStart(Action<W3WebSocketStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketStart>)value; }
@@ -12732,7 +13194,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12760,18 +13225,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketEndSuccess(Action<W3WebSocketEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketEndSuccess>)value; }
@@ -12789,7 +13254,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12818,18 +13286,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketInitializeNotSuccess(Action<W3WebSocketInitializeNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketInitializeNotSuccess>)value; }
@@ -12848,7 +13316,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12879,18 +13350,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketModuleCloseConnection(Action<W3WebSocketModuleCloseConnection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketModuleCloseConnection>)value; }
@@ -12909,7 +13380,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -12940,18 +13414,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketReadFragmentEndFailure(Action<W3WebSocketReadFragmentEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketReadFragmentEndFailure>)value; }
@@ -12970,7 +13444,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13000,18 +13477,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketReadFragmentEndPending(Action<W3WebSocketReadFragmentEndPending> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketReadFragmentEndPending>)value; }
@@ -13029,7 +13506,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13058,18 +13538,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketReadFragmentEndSuccess(Action<W3WebSocketReadFragmentEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketReadFragmentEndSuccess>)value; }
@@ -13088,7 +13568,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BytesReceived" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13119,18 +13602,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketReadFragmentStart(Action<W3WebSocketReadFragmentStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketReadFragmentStart>)value; }
@@ -13149,7 +13632,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BufferSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13180,18 +13666,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketReadIoFailed(Action<W3WebSocketReadIoFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketReadIoFailed>)value; }
@@ -13210,7 +13696,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13242,18 +13731,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketCloseReceived(Action<W3WebSocketCloseReceived> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(20)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(20)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketCloseReceived>)value; }
@@ -13273,7 +13762,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Status", "Reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13306,18 +13798,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketCloseSendFailure(Action<W3WebSocketCloseSendFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketCloseSendFailure>)value; }
@@ -13336,7 +13828,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13366,18 +13861,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketCloseSendSuccess(Action<W3WebSocketCloseSendSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketCloseSendSuccess>)value; }
@@ -13395,7 +13890,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13425,18 +13923,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketCloseSendStart(Action<W3WebSocketCloseSendStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(20)));
             Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(20)));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketCloseSendStart>)value; }
@@ -13456,7 +13954,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "Status", "Reason" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13489,18 +13990,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketWriteFragmentEndFailure(Action<W3WebSocketWriteFragmentEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketWriteFragmentEndFailure>)value; }
@@ -13519,7 +14020,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13549,18 +14053,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketWriteFragmentEndPending(Action<W3WebSocketWriteFragmentEndPending> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 16));
             Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketWriteFragmentEndPending>)value; }
@@ -13578,7 +14082,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13607,18 +14114,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketWriteFragmentEndSuccess(Action<W3WebSocketWriteFragmentEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketWriteFragmentEndSuccess>)value; }
@@ -13637,7 +14144,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "BytesSent" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13669,18 +14179,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketWriteFragmentStart(Action<W3WebSocketWriteFragmentStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 24));
             Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketWriteFragmentStart>)value; }
@@ -13700,7 +14210,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "DataType", "DataSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -13733,18 +14246,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal W3WebSocketWriteIoFailed(Action<W3WebSocketWriteIoFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
-        internal protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        internal protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != 20));
             Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<W3WebSocketWriteIoFailed>)value; }
@@ -13763,7 +14276,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "ContextId", "ErrorCode" };
+                }
+
                 return payloadNames;
             }
         }

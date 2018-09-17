@@ -1,14 +1,9 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,7 +38,7 @@ namespace TraceEventSamples
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -147,7 +142,7 @@ namespace TraceEventSamples
             });
 
             // Set up a timer to stop processing after monitoringTimeSec 
-            var timer = new Timer(delegate(object state)
+            var timer = new Timer(delegate (object state)
             {
                 Out.WriteLine("Stopped Monitoring after {0} sec", monitoringTimeSec);
                 StopSessions();
@@ -160,15 +155,21 @@ namespace TraceEventSamples
             timer.Dispose();
         }
 
-        static bool s_stopping = false;
-        static void StopSessions()
+        private static bool s_stopping = false;
+
+        private static void StopSessions()
         {
             s_stopping = true;
             Out.WriteLine("Insuring all ETW sessions are stopped.");
             if (s_kernelSession != null)
+            {
                 s_kernelSession.Dispose();
+            }
+
             if (s_userSession != null)
+            {
                 s_userSession.Dispose();
+            }
         }
 
         /// <summary>
@@ -176,22 +177,28 @@ namespace TraceEventSamples
         /// lock any read-write data you access.   It turns out Out.Writeline is already thread safe so
         /// there is nothing I have to do in this case. 
         /// </summary>
-        static void Print(TraceEvent data)
+        private static void Print(TraceEvent data)
         {
             if (s_stopping)        // Ctrl-C will stop the sessions, but buffered events may still come in, ignore these.  
+            {
                 return;
+            }
 
             // There are a lot of data collection start on entry that I don't want to see (but often they are quite handy
             if (data.Opcode == TraceEventOpcode.DataCollectionStart)
+            {
                 return;
+            }
 
             Out.WriteLine(data.ToString());
             if (data is UnhandledTraceEvent)
+            {
                 Out.WriteLine(data.Dump());
+            }
         }
 
-        static TraceEventSession s_userSession;
-        static TraceEventSession s_kernelSession;
+        private static TraceEventSession s_userSession;
+        private static TraceEventSession s_kernelSession;
     }
 }
 

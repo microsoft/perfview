@@ -15,11 +15,11 @@ namespace PerfView
         /// <summary>
         /// The one and only main GUI window of the application.  
         /// </summary>
-        public new static MainWindow MainWindow;
+        public static new MainWindow MainWindow;
 
         public GuiApp(bool installUnhandledExceptionHandlers = true)
         {
-            Startup += delegate(object sender, StartupEventArgs e) { ApplicationStarted(); };
+            Startup += delegate (object sender, StartupEventArgs e) { ApplicationStarted(); };
 
             if (installUnhandledExceptionHandlers)
             {
@@ -63,14 +63,17 @@ namespace PerfView
                 var eula = new PerfView.Dialogs.EULADialog();
                 bool? accepted = eula.ShowDialog();
                 if (!(accepted ?? false))
+                {
                     Environment.Exit(-10);
+                }
+
                 App.AcceptEula();       // Remember that we have accepted the EULA for next time. 
             }
 
-            MainWindow.Loaded += delegate(object sender, RoutedEventArgs ev)
+            MainWindow.Loaded += delegate (object sender, RoutedEventArgs ev)
             {
                 string[] providers = App.CommandLineArgs.Providers;
-            
+
                 if (App.CommandLineArgs.CommandLineFailure != null)
                 {
                     var message = App.CommandLineArgs.CommandLineFailure.Message;
@@ -80,18 +83,25 @@ namespace PerfView
                         MainWindow.StatusBar.Log(message);
                     }
                     else
+                    {
                         MainWindow.StatusBar.LogError("Command Line Error: " + message);
+                    }
+
                     return;
                 }
 
                 if (App.CommandLineArgs.DoCommand == null)
+                {
                     App.CommandLineArgs.DoCommand = App.CommandProcessor.View;
+                }
 
                 string commandName = "View";
                 Action continuation = delegate
                 {
                     if (App.CommandLineArgs.DataFile != null)
+                    {
                         MainWindow.OpenPath(App.CommandLineArgs.DataFile);
+                    }
                 };
                 if (App.CommandLineArgs.DoCommand != App.CommandProcessor.View)
                 {
@@ -138,7 +148,7 @@ namespace PerfView
         {
             // TODO discriminate between the GUI and Non_GUI case.  
             var feedbackSent = AppLog.SendFeedback("Unhandled Exception\r\n" + e.ExceptionObject.ToString(), true);
-            MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(e.ExceptionObject, feedbackSent);
                 var ret = dialog.ShowDialog();

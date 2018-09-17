@@ -1,13 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Globalization;
-using System.IO.Compression;
-using System.IO;
-using Microsoft.Diagnostics.Tracing.Stacks;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Collections.Generic;
-using System.Runtime.Serialization.Json;
+using System.Diagnostics;
+using System.IO;
+using System.Xml;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -28,12 +23,14 @@ namespace Diagnostics.Tracing.StackSources
         public XmlTreeStackSource(string fileName)
         {
             using (Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+            {
                 Read(stream);
+            }
         }
 
         #region private
 
-        void Read(Stream rawStream)
+        private void Read(Stream rawStream)
         {
             XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
             XmlReader reader = XmlTextReader.Create(rawStream, settings);
@@ -61,7 +58,10 @@ namespace Diagnostics.Tracing.StackSources
                             string recoredObectsStr = reader.GetAttribute("recorded_objects");
                             int recoredObects = 0;
                             if (recoredObectsStr != null)
+                            {
                                 int.TryParse(recoredObectsStr, out recoredObects);
+                            }
+
                             sample.Count = recoredObects;
                         }
                         else
@@ -78,7 +78,10 @@ namespace Diagnostics.Tracing.StackSources
                                 string countStr = reader.GetAttribute("count");
                                 int count = 0;
                                 if (countStr != null)
+                                {
                                     int.TryParse(countStr, out count);
+                                }
+
                                 sample.Count = count;
                             }
                         }
@@ -112,7 +115,9 @@ namespace Diagnostics.Tracing.StackSources
                     {
                         StackSourceSample sample = stack.Pop();
                         if ((sample.Count > 0 || sample.Metric > 0) && sample.StackIndex != StackSourceCallStackIndex.Invalid)
+                        {
                             AddSample(sample);
+                        }
                     }
                 }
             }

@@ -34,12 +34,12 @@ class ClassInfo
 {
 public:
 	ClassInfo() {
-		ID = 0; Token = 0; ModuleInfo = NULL; Size = 0; Flags = (CorTypeAttr) 0; Name = NULL; 
-		elemType=ELEMENT_TYPE_END; elemClassId = 0; rank = 0; 
+		ID = 0; Token = 0; ModuleInfo = NULL; Size = 0; Flags = (CorTypeAttr)0; Name = NULL;
+		elemType = ELEMENT_TYPE_END; elemClassId = 0; rank = 0;
 		TickOfCurrentTimeBucket = 0; AllocCountInCurrentBucket = 0; AllocPerMSec = 0; SamplingRate = 0; AllocsIgnored = 0; IgnoredSize = 0;
 		ForceKeepSize = 10000;			// By default we keep all instances greater than 10K for all types.  
 	}
-	~ClassInfo() { if (Name != NULL) delete Name; } 
+	~ClassInfo() { if (Name != NULL) delete Name; }
 
 	ClassID ID;
 	wchar_t* Name;              // We DO own this pointer (we delete it when we die)
@@ -69,14 +69,14 @@ public:
 
 //============================================================================
 // Elements of this class are put in the m_moduleInfo to remember things about our module
-class ModuleInfo 
+class ModuleInfo
 {
 public:
 	ModuleInfo() { ID = 0; AssemblyID = 0; MetaDataImport = NULL; Path = NULL; }
-	~ModuleInfo() { 
-		if (MetaDataImport != NULL) MetaDataImport->Release(); 
-		if (Path != NULL) delete Path; 
-	} 
+	~ModuleInfo() {
+		if (MetaDataImport != NULL) MetaDataImport->Release();
+		if (Path != NULL) delete Path;
+	}
 	ModuleID ID;
 	AssemblyID AssemblyID;
 	IMetaDataImport* MetaDataImport;    // We Release() this pointer on when we die
@@ -95,7 +95,7 @@ void WINAPI ProfilerControlCallback(
 	PEVENT_FILTER_DESCRIPTOR FilterData,
 	PVOID CallbackContext)
 {
-	CorProfilerTracer* profiler = (CorProfilerTracer*) CallbackContext;
+	CorProfilerTracer* profiler = (CorProfilerTracer*)CallbackContext;
 	LOG_TRACE(L"ProfilerControlCallback DoETWCommand IsEnabled 0x%x Level 0x%xI64 MatchAny 0x%x\n", IsEnabled, Level, MatchAnyKeywords);
 	profiler->DoETWCommand(IsEnabled, Level, MatchAnyKeywords, FilterData);
 }
@@ -106,64 +106,51 @@ void WINAPI ProfilerControlCallback(
 // TODO presently unused.   Only needed if the callback needs the TracerState
 // static CorProfilerTracer* s_tracer = NULL;
 
-EXTERN_C void __stdcall EnterMethod(FunctionID functionID)
-{   
-	EventWriteCallEnterEvent(functionID);
-}
+//************************
+EXTERN_C int CallSampleCount = 1;	// This counts down to 0 for sampling 
+int CallSamplingRate = 1;			// The number of calls to skip before taking a sample.  
 
-EXTERN_C void __stdcall TailcallMethod(FunctionID functionID)
-{   
-	EnterMethod(functionID);
+EXTERN_C void __stdcall EnterMethod(FunctionID functionID)
+{
+	EventWriteCallEnterEvent(functionID, CallSamplingRate);
+	CallSampleCount = CallSamplingRate;
 }
 
 #if defined(_M_IX86)
 // see http://msdn.microsoft.com/en-us/library/4ks26t93.aspx  for inline assembly.   Not supported on X64.   
 
-void __declspec( naked ) __stdcall EnterMethodNaked(FunctionID funcID)
+void __declspec(naked) __stdcall EnterMethodNaked(FunctionIDOrClientID funcID)
 {
 	__asm
 	{
-		push eax
-		push ecx
-		push edx
-		push [esp + 16]		// Push the function ID
-		call EnterMethod
-		pop edx
-		pop ecx
-		pop eax
+		lock dec[CallSampleCount]
+		jle TakeSample
 		ret 4
+
+		TakeSample:
+		push eax
+			push ecx
+			push edx
+			push[esp + 16]		// Push the function ID
+			call EnterMethod
+			pop edx
+			pop ecx
+			pop eax
+			ret 4
 	}
 } // EnterNaked
 
-// Currently we don't care about the leave method (can we avoid making the call?
-void __declspec( naked ) __stdcall LeaveMethodNaked(FunctionID funcID)
+void __declspec(naked) __stdcall TailcallMethodNaked(FunctionIDOrClientID funcID)
 {
 	__asm
 	{
-		ret 4
-	}
-}
-
-void __declspec(naked) __stdcall TailcallMethodNaked(FunctionID funcID)
-{
-	__asm
-	{
-		push eax
-		push ecx
-		push edx
-		push [esp + 16]
-		call TailcallMethod
-		pop edx
-		pop ecx	
-		pop eax
-		ret 4
+		jmp EnterMethodNaked
 	}
 }
 
 #else
-	EXTERN_C void __stdcall EnterMethodNaked(FunctionID functionID);
-	EXTERN_C void __stdcall LeaveMethodNaked(FunctionID functionID);
-	EXTERN_C void __stdcall TailcallMethodNaked(FunctionID functionID);
+EXTERN_C void __stdcall EnterMethodNaked(FunctionIDOrClientID functionID);
+EXTERN_C void __stdcall TailcallMethodNaked(FunctionIDOrClientID functionID);
 #endif 
 
 //==========================================================================
@@ -172,18 +159,18 @@ void __declspec(naked) __stdcall TailcallMethodNaked(FunctionID funcID)
 // this routine.   In particular we register ProfilerControlCallback with
 // ETW.
 // We make Initialize call this routine with pvClientData = NULL, cbClientData = -1;
-HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach( 
+HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach(
 	/* [in] */ IUnknown *pICorProfilerInfoUnk,
 	/* [in] */ void *pvClientData,
 	/* [in] */ UINT cbClientData)
 {
-	HRESULT             hr              = S_OK;
+	HRESULT             hr = S_OK;
 	LOG_TRACE(L"ClrProfiler Initializing\n");
 	CALL_N_LOGONBADHR(pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo3), (void **)&m_info));
 
 	// In my Initialize() method I call InitializeForAttach with cbClientData == -1.   This is convenient 
 	// since most of the logic is the same.  
-	m_profilerLoadedAtStartup = ((int) cbClientData < 0);
+	m_profilerLoadedAtStartup = ((int)cbClientData < 0);
 
 	// Initialize the ETW Provider.  
 	LOG_TRACE(L"Registering the ETW provider\n");
@@ -201,15 +188,28 @@ HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach(
 		DWORD keywords = 0;
 		DWORD keywordsSize = sizeof(keywords);
 		int hr = RegGetValue(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\.NETFramework", L"PerfView_Keywords", RRF_RT_DWORD, NULL, &keywords, &keywordsSize);
-		if (hr == ERROR_SUCCESS && (keywords & (CallKeyword | CallSampledKeyword)) != 0)
+		if (hr == ERROR_SUCCESS)
 		{
-			// assert(s_tracer == NULL);	// Don't need any information passed around so I don't need this.  
-			// s_tracer = this;
+			if ((keywords & DisableInliningKeyword) != 0)
+			{
+				CALL_N_LOGONBADHR(m_info->GetEventMask(&oldFlags));
+				CALL_N_LOGONBADHR(m_info->SetEventMask(oldFlags | COR_PRF_DISABLE_INLINING));
+			}
 
-			// Turn on the Call entry and leave hooks.  
-			CALL_N_LOGONBADHR(m_info->SetEnterLeaveFunctionHooks(EnterMethodNaked, LeaveMethodNaked, TailcallMethodNaked));
-			CALL_N_LOGONBADHR(m_info->GetEventMask(&oldFlags));
-			CALL_N_LOGONBADHR(m_info->SetEventMask(oldFlags | COR_PRF_MONITOR_ENTERLEAVE));
+			if ((keywords & (CallKeyword | CallSampledKeyword)) != 0)
+			{
+				// assert(s_tracer == NULL);	// Don't need any information passed around so I don't need this.  
+				// s_tracer = this;
+
+				// Turn on the Call entry and leave hooks.  
+				CALL_N_LOGONBADHR(m_info->SetEnterLeaveFunctionHooks3(EnterMethodNaked, 0, TailcallMethodNaked));
+				CALL_N_LOGONBADHR(m_info->GetEventMask(&oldFlags));
+				CALL_N_LOGONBADHR(m_info->SetEventMask(oldFlags | COR_PRF_MONITOR_ENTERLEAVE));
+
+
+				if ((keywords & CallSampledKeyword) != 0)
+					CallSamplingRate = 997;		// TODO make it configurable.    We choose 997 because it is prime and thus likely to be uncorrelated with things.  
+			}
 		}
 	}
 exit:
@@ -221,7 +221,7 @@ exit:
 // This routine does the work of responding to a ETW request from the controller 
 void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG MatchAnyKeywords, struct _EVENT_FILTER_DESCRIPTOR* filterData)
 {
-	LOG_TRACE(L"DoETWCommand(IsEnabled=%d, Level=%d Keywords=0x%x,%x)\n", IsEnabled, Level, (int) (MatchAnyKeywords>>32), (int) MatchAnyKeywords);
+	LOG_TRACE(L"DoETWCommand(IsEnabled=%d, Level=%d Keywords=0x%x,%x)\n", IsEnabled, Level, (int)(MatchAnyKeywords >> 32), (int)MatchAnyKeywords);
 
 	const DWORD FLAGS_CAN_SET = (COR_PRF_MONITOR_OBJECT_ALLOCATED | COR_PRF_MONITOR_GC);
 	DWORD oldFlags = 0;
@@ -235,7 +235,7 @@ void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG Mat
 		{
 			if (filterData->Ptr != NULL && filterData->Size > 0)
 			{
-				byte* ptr = (byte*) filterData->Ptr;
+				byte* ptr = (byte*)filterData->Ptr;
 
 			}
 		}
@@ -251,7 +251,7 @@ void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG Mat
 		{
 			newFlags |= COR_PRF_MONITOR_OBJECT_ALLOCATED;
 			if ((MatchAnyKeywords & GCAllocSampledKeyword) != 0)
-				m_smartSampling = true;  
+				m_smartSampling = true;
 		}
 		if ((MatchAnyKeywords & CallKeyword) != 0 && m_profilerLoadedAtStartup)
 			newFlags |= COR_PRF_MONITOR_ENTERLEAVE;
@@ -261,7 +261,7 @@ void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG Mat
 		{
 #if 0 
 			LOG_TRACE(L"Sending Manifest\n");
-			EventWriteSendManifestEvent(1, 1, 0, 0x5B, 1, 0, "<instrumentationManifest/>"); THis is not right, it is not null terminated.  
+			EventWriteSendManifestEvent(1, 1, 0, 0x5B, 1, 0, "<instrumentationManifest/>"); THis is not right, it is not null terminated.
 				m_sentManifest = true;
 #endif 
 		}
@@ -271,7 +271,7 @@ void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG Mat
 		EventWriteCaptureStateStart();
 
 		// You send the manifest if you don't ask for any other type of rundown or you asked for every other type of rundown.
-		if (MatchAnyKeywords == 0 || MatchAnyKeywords == 0xFFFFFFFFFFFFFFFF) 
+		if (MatchAnyKeywords == 0 || MatchAnyKeywords == 0xFFFFFFFFFFFFFFFF)
 		{
 #if 0 
 			LOG_TRACE(L"Sending Manifest\n");
@@ -328,8 +328,8 @@ void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG Mat
 // The constuctor does almost nothing, the real action happens
 // in initialize (where we have a ProfilerInfo to call back to
 // the runtime with)
-CorProfilerTracer :: CorProfilerTracer( )
-{   
+CorProfilerTracer::CorProfilerTracer()
+{
 #if DEBUG
 	// We put the log in the temp directory in a file called ETWClrProfiler.log
 	wchar_t logFilePath[MAX_PATH];
@@ -342,11 +342,11 @@ CorProfilerTracer :: CorProfilerTracer( )
 		OPEN_LOG(TRACE_LOGGER, logFilePath);
 #endif 
 
-	LOG_TRACE(L"Creating new CorProfilerInstance\n"); 
+	LOG_TRACE(L"Creating new CorProfilerInstance\n");
 	m_refCount = 0;
 	m_info = NULL;
 	m_gcCount = 0;
-	m_curAllocSize = 0; 
+	m_curAllocSize = 0;
 	m_smartSampling = false;
 	m_forcingGC = false;
 	m_currentKeywords = 0;
@@ -358,41 +358,41 @@ CorProfilerTracer :: CorProfilerTracer( )
 }
 
 //==============================================================================
-CorProfilerTracer :: ~CorProfilerTracer( )
-{    
+CorProfilerTracer :: ~CorProfilerTracer()
+{
 	if (m_info != NULL)
 		m_info->Release();
 
 	DeleteCriticalSection(&m_lock);
-	LOG_TRACE(L"Destroying CorProfilerInstance\n"); 
+	LOG_TRACE(L"Destroying CorProfilerInstance\n");
 	CLOSE_LOG(TRACE_LOGGER);
 }
 
 //==============================================================================
-HRESULT CorProfilerTracer :: QueryInterface( 
-	REFIID  riid        , 
-	void ** ppInterface )
+HRESULT CorProfilerTracer::QueryInterface(
+	REFIID  riid,
+	void ** ppInterface)
 {
 	if (riid == IID_IUnknown)
-		*ppInterface                    = static_cast<ICorProfilerCallback*>(this);
-	else if(riid == IID_ICorProfilerCallback)
-		*ppInterface                    = static_cast<ICorProfilerCallback*>(this);
-	else if(riid == IID_ICorProfilerCallback2)
-		*ppInterface                    = static_cast<ICorProfilerCallback2*>(this);
-	else if(riid == IID_ICorProfilerCallback3)
-		*ppInterface                    = static_cast<ICorProfilerCallback3*>(this);
+		*ppInterface = static_cast<ICorProfilerCallback*>(this);
+	else if (riid == IID_ICorProfilerCallback)
+		*ppInterface = static_cast<ICorProfilerCallback*>(this);
+	else if (riid == IID_ICorProfilerCallback2)
+		*ppInterface = static_cast<ICorProfilerCallback2*>(this);
+	else if (riid == IID_ICorProfilerCallback3)
+		*ppInterface = static_cast<ICorProfilerCallback3*>(this);
 	// TODO FIX NOW add support or ICorProfilerCallback4 (for large objects)
 	else
 	{
-		*ppInterface                    = NULL ;
+		*ppInterface = NULL;
 		return E_NOTIMPL;
 	}
-	reinterpret_cast<IUnknown *>( *ppInterface )->AddRef();
+	reinterpret_cast<IUnknown *>(*ppInterface)->AddRef();
 	return S_OK;
 }
 
 //==============================================================================
-HRESULT CorProfilerTracer :: Shutdown( )
+HRESULT CorProfilerTracer::Shutdown()
 {
 	LOG_TRACE(L"Shutdown \n");
 	EventWriteProfilerShutdown();
@@ -409,14 +409,14 @@ HRESULT CorProfilerTracer :: Shutdown( )
 //==============================================================================
 // Sends out the accumulated class (and module) information events.  This is for
 // rundown.  
-void CorProfilerTracer :: DumpClassInfo( )
+void CorProfilerTracer::DumpClassInfo()
 {
-	for(auto moduleIter = m_moduleInfo.begin(); moduleIter != m_moduleInfo.end(); moduleIter++)
+	for (auto moduleIter = m_moduleInfo.begin(); moduleIter != m_moduleInfo.end(); moduleIter++)
 	{
 		ModuleInfo* moduleInfo = moduleIter->second;
 		EventWriteModuleIDDefintionEvent(moduleInfo->ID, moduleInfo->AssemblyID, moduleInfo->Path);
 	}
-	for(auto classIter = m_classInfo.begin(); classIter != m_classInfo.end(); classIter++)
+	for (auto classIter = m_classInfo.begin(); classIter != m_classInfo.end(); classIter++)
 	{
 		ClassInfo* classInfo = classIter->second;
 		EventWriteClassIDDefintionEvent(classInfo->ID, classInfo->Token, classInfo->Flags, classInfo->ModuleInfo->ID, classInfo->Name);
@@ -425,13 +425,13 @@ void CorProfilerTracer :: DumpClassInfo( )
 
 //==============================================================================
 // Clears out all remembered information from our tables.  
-void CorProfilerTracer :: ClearTables( )
+void CorProfilerTracer::ClearTables()
 {
-	for(auto classIter = m_classInfo.begin(); classIter != m_classInfo.end(); classIter++)
+	for (auto classIter = m_classInfo.begin(); classIter != m_classInfo.end(); classIter++)
 		delete classIter->second;
 	m_classInfo.clear();
 
-	for(auto moduleIter = m_moduleInfo.begin(); moduleIter != m_moduleInfo.end(); moduleIter++)
+	for (auto moduleIter = m_moduleInfo.begin(); moduleIter != m_moduleInfo.end(); moduleIter++)
 		delete moduleIter->second;
 	m_moduleInfo.clear();
 }
@@ -440,7 +440,7 @@ void CorProfilerTracer :: ClearTables( )
 DWORD WINAPI CorProfilerTracer::ForceGCBody(LPVOID lpParameter)
 {
 	LOG_TRACE(L"ForceGCBody");
-	CorProfilerTracer* profiler = (CorProfilerTracer*) lpParameter;
+	CorProfilerTracer* profiler = (CorProfilerTracer*)lpParameter;
 	HRESULT hr = profiler->m_info->ForceGC();
 	LOG_TRACE(L"ForceGC Call returns 0x%x\n", hr);
 	if (hr != S_OK)
@@ -451,12 +451,12 @@ DWORD WINAPI CorProfilerTracer::ForceGCBody(LPVOID lpParameter)
 
 //==============================================================================
 // We do the GC on another thread to avoid 'poluting' the ETW callback thread. 
-void CorProfilerTracer :: ForceGC( )
+void CorProfilerTracer::ForceGC()
 {
 	m_forcingGC = true;
-	HANDLE thread = CreateThread(0,0, ForceGCBody, this, 0, NULL);
+	HANDLE thread = CreateThread(0, 0, ForceGCBody, this, 0, NULL);
 	LOG_TRACE(L"ForceGC: thread 0x%x\n", thread);
-	for(int i = 0; i < 2000; i++)
+	for (int i = 0; i < 2000; i++)
 	{
 		if (!m_forcingGC)
 			break;
@@ -465,7 +465,7 @@ void CorProfilerTracer :: ForceGC( )
 }
 
 //==============================================================================
-STDMETHODIMP CorProfilerTracer::ObjectAllocated(ObjectID objectId, ClassID classId) 
+STDMETHODIMP CorProfilerTracer::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
 	EnterCriticalSection(&m_lock);
 	// TODO this is probably inefficient, should only call back on classes that are variable sized
@@ -506,28 +506,28 @@ STDMETHODIMP CorProfilerTracer::ObjectAllocated(ObjectID objectId, ClassID class
 		int minAllocPerMSec = classInfo->AllocCountInCurrentBucket / 16;		// This is an underestimation of the true rate.  
 		if (delta >= 16 || (minAllocPerMSec > 2 && minAllocPerMSec > classInfo->AllocPerMSec * 1.5F))
 		{
-			float newAllocPerMSec  = 0;
+			float newAllocPerMSec = 0;
 			if (delta >= 16)
 			{
 				// This is the normal case, our allocation rate is under control with the current throttling.   
-				newAllocPerMSec  = ((float) classInfo->AllocCountInCurrentBucket) / delta;
+				newAllocPerMSec = ((float)classInfo->AllocCountInCurrentBucket) / delta;
 				// Do a exponential decay window that is 5 * max(16, AllocationInterval)  
-				classInfo->AllocPerMSec = 0.8F *  classInfo->AllocPerMSec + 0.2F * newAllocPerMSec; 
+				classInfo->AllocPerMSec = 0.8F *  classInfo->AllocPerMSec + 0.2F * newAllocPerMSec;
 				classInfo->TickOfCurrentTimeBucket = ticks;
 				classInfo->AllocCountInCurrentBucket = 0;
 			}
-			else 
+			else
 			{
-				newAllocPerMSec = (float) minAllocPerMSec;
+				newAllocPerMSec = (float)minAllocPerMSec;
 				// This means the second clause above is true, which means our sampling rate is too low
 				// so we need to throttle quickly. 
-				classInfo->AllocPerMSec = (float) minAllocPerMSec;
+				classInfo->AllocPerMSec = (float)minAllocPerMSec;
 			}
 
 			// We want to sample at a rate that insures less 100 allocations per second per type.  
 			// However don't sample less than 1/1000, 
 			int oldSamplingRate = classInfo->SamplingRate;
-			classInfo->SamplingRate = min((int) (classInfo->AllocPerMSec * 10), 1000);	 
+			classInfo->SamplingRate = min((int)(classInfo->AllocPerMSec * 10), 1000);
 			if (classInfo->SamplingRate == 1)
 				classInfo->SamplingRate = 0;
 
@@ -549,11 +549,11 @@ Done:
 }
 
 //==============================================================================
-STDMETHODIMP CorProfilerTracer::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[  ], COR_PRF_GC_REASON reason)
+STDMETHODIMP CorProfilerTracer::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
 	LOG_TRACE(L"GC Started\n");
 	int maxGenCollected = 0;
-	for(int i = 0; i < cGenerations; i++)
+	for (int i = 0; i < cGenerations; i++)
 		if (generationCollected[i])
 			maxGenCollected = i;
 
@@ -572,10 +572,10 @@ STDMETHODIMP CorProfilerTracer::GarbageCollectionStarted(int cGenerations, BOOL 
 }
 
 //==============================================================================
-STDMETHODIMP CorProfilerTracer::GarbageCollectionFinished(void) 
+STDMETHODIMP CorProfilerTracer::GarbageCollectionFinished(void)
 {
 	LOG_TRACE(L"GC End\r\n");
-	EventWriteGCStopEvent(m_gcCount);       
+	EventWriteGCStopEvent(m_gcCount);
 	return S_OK;
 }
 
@@ -589,7 +589,7 @@ STDMETHODIMP CorProfilerTracer::FinalizeableObjectQueued(DWORD finalizerFlags, O
 	m_info->GetClassFromObject(objectID, &classID);
 	EventWriteFinalizeableObjectQueuedEvent(objectID, classID);
 #endif
-	return S_OK;    
+	return S_OK;
 }
 
 //==============================================================================
@@ -597,29 +597,29 @@ STDMETHODIMP CorProfilerTracer::MovedReferences(ULONG cMovedObjectIDRanges, Obje
 {
 	LOG_TRACE(L"Moved Ref\n");
 	const int maxCount = MaxEventPayload / (1 * sizeof(int) + 2 * sizeof(void*));
-	for(ULONG idx = 0; idx < cMovedObjectIDRanges; idx += maxCount)
+	for (ULONG idx = 0; idx < cMovedObjectIDRanges; idx += maxCount)
 	{
-		EventWriteObjectsMovedEvent(min(cMovedObjectIDRanges - idx, maxCount), 
-			(const void**) &oldObjectIDRangeStart[idx], (const void**) &newObjectIDRangeStart[idx], (const unsigned int*) &cObjectIDRangeLength[idx]);
+		EventWriteObjectsMovedEvent(min(cMovedObjectIDRanges - idx, maxCount),
+			(const void**)&oldObjectIDRangeStart[idx], (const void**)&newObjectIDRangeStart[idx], (const unsigned int*)&cObjectIDRangeLength[idx]);
 	}
 	return S_OK;
 }
 
 //==============================================================================
-STDMETHODIMP CorProfilerTracer::SurvivingReferences(ULONG cSurvivingObjectIDRanges, ObjectID objectIDRangeStart[  ], ULONG cObjectIDRangeLength[  ]) 
+STDMETHODIMP CorProfilerTracer::SurvivingReferences(ULONG cSurvivingObjectIDRanges, ObjectID objectIDRangeStart[], ULONG cObjectIDRangeLength[])
 {
 	LOG_TRACE(L"Surviving references\n");
 	const int maxCount = MaxEventPayload / (1 * sizeof(int) + 1 * sizeof(void*));
-	for(ULONG idx = 0; idx < cSurvivingObjectIDRanges; idx += maxCount)
+	for (ULONG idx = 0; idx < cSurvivingObjectIDRanges; idx += maxCount)
 	{
-		EventWriteObjectsSurvivedEvent(min(cSurvivingObjectIDRanges - idx, maxCount), 
-			(const void**) &objectIDRangeStart[idx], (const unsigned int*) &cObjectIDRangeLength[idx]);
+		EventWriteObjectsSurvivedEvent(min(cSurvivingObjectIDRanges - idx, maxCount),
+			(const void**)&objectIDRangeStart[idx], (const unsigned int*)&cObjectIDRangeLength[idx]);
 	}
-	return S_OK;    
+	return S_OK;
 }
 
 //==============================================================================
-STDMETHODIMP CorProfilerTracer::RootReferences2(ULONG cRootRefs, ObjectID rootRefIds[  ], COR_PRF_GC_ROOT_KIND rootKinds[  ], COR_PRF_GC_ROOT_FLAGS rootFlags[  ], UINT_PTR rootIds[  ])
+STDMETHODIMP CorProfilerTracer::RootReferences2(ULONG cRootRefs, ObjectID rootRefIds[], COR_PRF_GC_ROOT_KIND rootKinds[], COR_PRF_GC_ROOT_FLAGS rootFlags[], UINT_PTR rootIds[])
 {
 	// If we did not ask for the GCHeap events, do nothing.  
 	if ((m_currentKeywords & GCHeapKeyword) == 0)
@@ -627,10 +627,10 @@ STDMETHODIMP CorProfilerTracer::RootReferences2(ULONG cRootRefs, ObjectID rootRe
 
 	LOG_TRACE(L"RootReferences2\n");
 	const int maxCount = MaxEventPayload / (2 * sizeof(int) + 2 * sizeof(void*));
-	for(ULONG idx = 0; idx < cRootRefs; idx += maxCount)
+	for (ULONG idx = 0; idx < cRootRefs; idx += maxCount)
 	{
-		EventWriteRootReferencesEvent(min(cRootRefs - idx, maxCount), 
-			(const void**) &rootRefIds[idx], (unsigned int*) &rootKinds[idx], (unsigned int*) &rootFlags[idx], (const void**) &rootIds[idx]);
+		EventWriteRootReferencesEvent(min(cRootRefs - idx, maxCount),
+			(const void**)&rootRefIds[idx], (unsigned int*)&rootKinds[idx], (unsigned int*)&rootFlags[idx], (const void**)&rootIds[idx]);
 	}
 	return S_OK;
 }
@@ -644,21 +644,21 @@ STDMETHODIMP CorProfilerTracer::ObjectReferences(ObjectID objectId, ClassID clas
 
 	// We do this for the side effect of logging the class  
 	ClassInfo* classInfo = GetClassInfo(classId);
-	/** TODO FIX NOW 
+	/** TODO FIX NOW
 	if (classInfo == NULL)
 	return E_FAIL;
 	**/
 	ULONG size = 0;
 	m_info->GetObjectSize(objectId, &size);
 
-	EventWriteObjectReferencesEvent(objectId, classId, size, cObjectRefs, (const void**) objectRefIds);
+	EventWriteObjectReferencesEvent(objectId, classId, size, cObjectRefs, (const void**)objectRefIds);
 	return S_OK;
 }
 
 //==============================================================================
 STDMETHODIMP CorProfilerTracer::HandleCreated(GCHandleID handleId, ObjectID initialObjectId)
 {
-	if ((m_currentKeywords & (GCHeapKeyword|GCAllocKeyword|GCAllocSampledKeyword)) == 0)
+	if ((m_currentKeywords & (GCHeapKeyword | GCAllocKeyword | GCAllocSampledKeyword)) == 0)
 		return S_OK;
 
 	LOG_TRACE(L"HandleCreated\n");
@@ -672,7 +672,7 @@ STDMETHODIMP CorProfilerTracer::HandleCreated(GCHandleID handleId, ObjectID init
 //==============================================================================
 STDMETHODIMP CorProfilerTracer::HandleDestroyed(GCHandleID handleId)
 {
-	if ((m_currentKeywords & (GCHeapKeyword|GCAllocKeyword|GCAllocSampledKeyword)) == 0)
+	if ((m_currentKeywords & (GCHeapKeyword | GCAllocKeyword | GCAllocSampledKeyword)) == 0)
 		return S_OK;
 
 	LOG_TRACE(L"HandleDestroyed\n");
@@ -715,13 +715,13 @@ ClassInfo* CorProfilerTracer::GetClassInfo(ClassID classId)
 			wcscpy_s(classInfo->Name, buffLen, elemName);
 			wchar_t* ptr = classInfo->Name + elemLen;
 			*ptr++ = '[';
-			for(unsigned int i = 1; i < classInfo->rank; i++)
+			for (unsigned int i = 1; i < classInfo->rank; i++)
 				*ptr++ = ',';
 			*ptr++ = ']';
 			*ptr = '\0';
 			classInfo->ID = classId;
 		}
-		else 
+		else
 		{
 			ULONG numFields;
 			ULONG size;
@@ -738,14 +738,14 @@ ClassInfo* CorProfilerTracer::GetClassInfo(ClassID classId)
 					DWORD classFlagsBuff = 0;
 					mdToken baseClass;
 					// Get the size of the name 
-					hr = moduleInfo->MetaDataImport->GetTypeDefProps (classInfo->Token, 0, 0, &classNameLength, &classFlagsBuff, &baseClass);
+					hr = moduleInfo->MetaDataImport->GetTypeDefProps(classInfo->Token, 0, 0, &classNameLength, &classFlagsBuff, &baseClass);
 					if (0 < classNameLength)
 					{
-						classInfo->Flags = (CorTypeAttr) classFlagsBuff;
+						classInfo->Flags = (CorTypeAttr)classFlagsBuff;
 
 						// Actually get the name 
 						classInfo->Name = new wchar_t[classNameLength];
-						hr = moduleInfo->MetaDataImport->GetTypeDefProps (classInfo->Token, classInfo->Name, classNameLength, &classNameLength, &classFlagsBuff, &baseClass);
+						hr = moduleInfo->MetaDataImport->GetTypeDefProps(classInfo->Token, classInfo->Name, classNameLength, &classNameLength, &classFlagsBuff, &baseClass);
 						if (hr == S_OK)
 							classInfo->ID = classId;
 					}
@@ -763,16 +763,16 @@ ClassInfo* CorProfilerTracer::GetClassInfo(ClassID classId)
 #ifdef PIN_INVESTIGATION
 		classInfo->ForceKeepSize = 1000000000;
 		if (wcscmp(classInfo->Name, L"System.Byte[]") == 0)
-		 	classInfo->ForceKeepSize = 0x100;
+			classInfo->ForceKeepSize = 0x100;
 		else if (wcsstr(classInfo->Name, L"OverlappedData") != NULL)
-		 	classInfo->ForceKeepSize = 0x0;
+			classInfo->ForceKeepSize = 0x0;
 #endif 
 
 		if (classInfo->ID != -1)
 		{
 			EventWriteClassIDDefintionEvent(classInfo->ID, classInfo->Token, classFlags, moduleId, classInfo->Name);
 		}
-		else 
+		else
 		{
 			LOG_TRACE(L"Error getting information for class ID 0x%x\n", classId);
 		}
@@ -794,7 +794,7 @@ ModuleInfo* CorProfilerTracer::GetModuleInfo(ModuleID moduleId)
 	if (moduleInfo->ID == 0)
 	{
 		moduleInfo->ID = -1;
-		HRESULT hr = m_info->GetModuleMetaData(moduleId, ofRead, IID_IMetaDataImport, (IUnknown**) &moduleInfo->MetaDataImport);
+		HRESULT hr = m_info->GetModuleMetaData(moduleId, ofRead, IID_IMetaDataImport, (IUnknown**)&moduleInfo->MetaDataImport);
 		LPCBYTE baseAddr = 0;
 		ULONG pathLength;
 		hr = m_info->GetModuleInfo(moduleId, &baseAddr, 0, &pathLength, 0, &moduleInfo->AssemblyID);

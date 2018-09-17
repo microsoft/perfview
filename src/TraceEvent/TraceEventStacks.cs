@@ -4,22 +4,12 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
-using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using Microsoft.Diagnostics.Tracing.EventPipe;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Symbols;
-using Address = System.UInt64;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
@@ -61,12 +51,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             Debug.Assert(m_log == null);
             if (events != null)
+            {
                 m_log = events.Log;
+            }
+
             m_goodTopModuleIndex = ModuleFileIndex.Invalid;
             m_curSample = new StackSourceSample(this);
             m_curSample.Metric = (float)events.Log.SampleProfileInterval.TotalMilliseconds;
             m_events = events;
-            m_maxPseudoStack = m_log.CodeAddresses.Count  * 2 + m_log.Threads.Count;     // This really is a guess as to how many stacks we need.   You can have as many as codeAddresses*threads   
+            m_maxPseudoStack = m_log.CodeAddresses.Count * 2 + m_log.Threads.Count;     // This really is a guess as to how many stacks we need.   You can have as many as codeAddresses*threads   
         }
 
         // These are TraceEventStackSource specific.  
@@ -76,7 +69,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public TraceLog TraceLog { get { return m_log; } }
         /// <summary>
         /// Normally addresses without symbolic names are listed as ?, however sometimes it is useful 
-        /// to see the actual address as a hexidecimal number.  Setting this will do that.  
+        /// to see the actual address as a hexadecimal number.  Setting this will do that.  
         /// </summary>
         public bool ShowUnknownAddresses { get; set; }
         /// <summary>
@@ -88,14 +81,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public void LookupWarmSymbols(int minCount, SymbolReader reader, StackSource stackSource = null, Predicate<TraceModuleFile> shouldLoadSymbols = null)
         {
             if (stackSource == null)
+            {
                 stackSource = this;
+            }
 
-            Debug.Assert(stackSource.CallFrameIndexLimit == this.CallFrameIndexLimit);
-            Debug.Assert(stackSource.CallStackIndexLimit == this.CallStackIndexLimit);
+            Debug.Assert(stackSource.CallFrameIndexLimit == CallFrameIndexLimit);
+            Debug.Assert(stackSource.CallStackIndexLimit == CallStackIndexLimit);
 
             reader.Log.WriteLine("Resolving all symbols for modules with inclusive times > {0}", minCount);
             if ((reader.Options & SymbolReaderOptions.CacheOnly) != 0)
+            {
                 reader.Log.WriteLine("Cache-Only set: will only look on the local machine.");
+            }
 
             // Get a list of all the unique frames.   We also keep track of unique stacks for efficiency
             var stackModuleLists = new ModuleList[stackSource.CallStackIndexLimit];
@@ -149,7 +146,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             uint codeAddressIndex = (uint)frameIndex - (uint)StackSourceFrameIndex.Start;
             if (codeAddressIndex >= m_log.CodeAddresses.Count)
+            {
                 return CodeAddressIndex.Invalid;
+            }
+
             return (CodeAddressIndex)codeAddressIndex;
         }
 
@@ -204,7 +204,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             stackIndex -= m_log.Threads.Count + m_log.Processes.Count;
 
             if (stackIndex < m_log.Threads.Count)      // Is it a broken stack 
+            {
                 return StackSourceFrameIndex.Broken;
+            }
+
             stackIndex -= m_log.Threads.Count;
 
             // Is it a 'single node' stack (e.g. a profile sample without a stack)
@@ -245,7 +248,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     }
                 }
                 else
+                {
                     nextIndex += (int)nextCallStackIndex;
+                }
+
                 return (StackSourceCallStackIndex)nextIndex;
             }
             curIndex -= m_log.CallStacks.Count;                                 // Now is a thread index
@@ -260,7 +266,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             curIndex -= m_log.Threads.Count;                                      // Now is a broken thread index
 
             if (curIndex < m_log.Processes.Count)
+            {
                 return StackSourceCallStackIndex.Invalid;                                   // Process has no parent
+            }
+
             curIndex -= m_log.Processes.Count;                                    // Now is a broken thread index
 
             if (curIndex < m_log.Threads.Count)                                    // It is a broken stack
@@ -290,7 +299,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             uint codeAddressIndex = (uint)frameIndex - (uint)StackSourceFrameIndex.Start;
             if (codeAddressIndex >= m_log.CodeAddresses.Count)
+            {
                 return null;
+            }
+
             return m_log.CodeAddresses.GetSourceLine(reader, (CodeAddressIndex)codeAddressIndex);
         }
         /// <summary>
@@ -304,13 +316,21 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (frameIndex < StackSourceFrameIndex.Start)
             {
                 if (frameIndex == StackSourceFrameIndex.Broken)
+                {
                     return "BROKEN";
+                }
                 else if (frameIndex == StackSourceFrameIndex.Overhead)
+                {
                     return "OVERHEAD";
+                }
                 else if (frameIndex == StackSourceFrameIndex.Root)
+                {
                     return "ROOT";
+                }
                 else
+                {
                     return "?!?";
+                }
             }
             int index = (int)frameIndex - (int)StackSourceFrameIndex.Start;
             if (index < m_log.CodeAddresses.Count)
@@ -318,11 +338,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 var codeAddressIndex = (CodeAddressIndex)index;
                 MethodIndex methodIndex = m_log.CallStacks.CodeAddresses.MethodIndex(codeAddressIndex);
                 if (methodIndex != MethodIndex.Invalid)
+                {
                     methodName = m_log.CodeAddresses.Methods.FullMethodName(methodIndex);
+                }
                 else
                 {
                     if (ShowUnknownAddresses)
+                    {
                         methodName = "0x" + m_log.CallStacks.CodeAddresses.Address(codeAddressIndex).ToString("x");
+                    }
                 }
                 moduleFileIdx = m_log.CodeAddresses.ModuleFileIndex(codeAddressIndex);
             }
@@ -330,7 +354,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 index -= m_log.CodeAddresses.Count;
                 if (index < m_log.Threads.Count)
+                {
                     return m_log.Threads[(ThreadIndex)index].VerboseThreadName;
+                }
+
                 index -= m_log.Threads.Count;
                 if (index < m_log.Processes.Count)
                 {
@@ -342,11 +369,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         // Remove the name of the EXE from the command line (thus just the args).  
                         int endExeNameIdx = -1;
                         if (cmdLine[0] == '"')
+                        {
                             endExeNameIdx = cmdLine.IndexOf('"', 1);
+                        }
                         else
+                        {
                             endExeNameIdx = cmdLine.IndexOf(' ');
+                        }
+
                         if (0 <= endExeNameIdx)
+                        {
                             cmdLine = cmdLine.Substring(endExeNameIdx + 1, cmdLine.Length - endExeNameIdx - 1);
+                        }
                     }
                     return "Process" + ptrSize + " " + process.Name + " (" + process.ProcessID + ") Args: " + cmdLine;
                 }
@@ -362,10 +396,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     moduleName = m_log.CodeAddresses.ModuleFiles[moduleFileIdx].FilePath;
                     if (moduleName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
                         moduleName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    {
                         moduleName = moduleName.Substring(0, moduleName.Length - 4);        // Remove the .dll or .exe
+                    }
                 }
                 else
+                {
                     moduleName = m_log.CodeAddresses.ModuleFiles[moduleFileIdx].Name;
+                }
             }
 
             return moduleName + "!" + methodName;
@@ -407,7 +445,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // ret = the module list for the rest of the frames. 
                 var callerIdx = GetCallerIndex(stackIdx);
                 if (callerIdx != StackSourceCallStackIndex.Invalid)
+                {
                     ret = GetModulesForStack(stackModuleLists, callerIdx);
+                }
 
                 // Compute the module for the top most frame, and add it to the list (if we find a module)  
                 TraceModuleFile module = null;
@@ -433,12 +473,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// A ModuleList is a linked list of modules.  It is only used in GetModulesForStack and LookupWarmSymbols
         /// </summary>
-        class ModuleList
+        private class ModuleList
         {
             public static ModuleList SetAdd(TraceModuleFile module, ModuleList list)
             {
                 if (!Member(module, list))
+                {
                     return new ModuleList(module, list);
+                }
+
                 return list;
             }
             public static bool Member(TraceModuleFile module, ModuleList rest)
@@ -446,7 +489,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 while (rest != null)
                 {
                     if ((object)module == (object)rest.Module)
+                    {
                         return true;
+                    }
+
                     rest = rest.Next;
                 }
                 return false;
@@ -471,7 +517,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         // Sometimes we just have a code address and thread, but no actual ETW stack.  Create a 'one element'
         // stack whose index is the index into the m_pseudoStacks array
-        struct PseudoStack : IEquatable<PseudoStack>
+        private struct PseudoStack : IEquatable<PseudoStack>
         {
             public PseudoStack(ThreadIndex threadIndex, CodeAddressIndex codeAddressIndex)
             {
@@ -498,16 +544,23 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         private int GetPseudoStack(ThreadIndex threadIndex, CodeAddressIndex codeAddrIndex)
         {
             if (m_pseudoStacksTable == null)
+            {
                 m_pseudoStacksTable = new Dictionary<PseudoStack, int>();
+            }
 
             var pseudoStack = new PseudoStack(threadIndex, codeAddrIndex);
             int ret;
             if (m_pseudoStacksTable.TryGetValue(pseudoStack, out ret))
+            {
                 return ret;
+            }
 
             ret = m_pseudoStacks.Count;
             if (ret >= m_maxPseudoStack)
+            {
                 return -1;
+            }
+
             m_pseudoStacks.Add(pseudoStack);
             m_pseudoStacksTable.Add(pseudoStack, ret);
             return ret;
@@ -521,18 +574,24 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 var thread = event_.Thread();
                 if (thread == null)
+                {
                     return StackSourceCallStackIndex.Invalid;
+                }
 
                 // If the event is a sample profile, or page fault we can make a one element stack with the EIP in the event 
                 CodeAddressIndex codeAddrIdx = CodeAddressIndex.Invalid;
                 var asSampleProfile = event_ as SampledProfileTraceData;
                 if (asSampleProfile != null)
+                {
                     codeAddrIdx = asSampleProfile.IntructionPointerCodeAddressIndex();
+                }
                 else
                 {
                     var asPageFault = event_ as MemoryHardFaultTraceData;
                     if (asPageFault != null)
+                    {
                         codeAddrIdx = asSampleProfile.IntructionPointerCodeAddressIndex();
+                    }
                 }
 
                 if (codeAddrIdx != CodeAddressIndex.Invalid)
@@ -541,12 +600,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     int pseudoStackIndex = GetPseudoStack(thread.ThreadIndex, codeAddrIdx);
                     // Psuedostacks happen after all the others.  
                     if (0 <= pseudoStackIndex)
+                    {
                         ret = m_log.CallStacks.Count + 2 * m_log.Threads.Count + m_log.Processes.Count + pseudoStackIndex;
+                    }
                 }
 
                 // If we have run out of pseudo-stacks, we encode the stack as being at the thread.  
                 if (ret == (int)CallStackIndex.Invalid)
+                {
                     ret = m_log.CallStacks.Count + (int)thread.ThreadIndex;
+                }
             }
             else
             {
@@ -567,11 +630,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 CodeAddressIndex codeAddressIndex = m_log.CallStacks.CodeAddressIndex((CallStackIndex)index);
                 ModuleFileIndex moduleFileIndex = m_log.CallStacks.CodeAddresses.ModuleFileIndex(codeAddressIndex);
                 if (m_goodTopModuleIndex == moduleFileIndex)        // optimization
+                {
                     return true;
+                }
 
                 TraceModuleFile moduleFile = m_log.CallStacks.CodeAddresses.ModuleFile(codeAddressIndex);
                 if (moduleFile == null)
+                {
                     return false;
+                }
 
                 // We allow things that end in ntdll to be considered unbroken (TODO is this too strong?)
                 if (moduleFile.FilePath.EndsWith("ntdll.dll", StringComparison.OrdinalIgnoreCase))
@@ -595,9 +662,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             return false;
         }
 
-        StackSourceSample m_curSample;
-        TraceEvents m_events;
-        ModuleFileIndex m_goodTopModuleIndex;       // This is a known good module index for a 'good' stack (probably ntDll!RtlUserStackStart
+        private StackSourceSample m_curSample;
+        private TraceEvents m_events;
+        private ModuleFileIndex m_goodTopModuleIndex;       // This is a known good module index for a 'good' stack (probably ntDll!RtlUserStackStart
         internal /*protected*/ TraceLog m_log;
         #endregion
     }
@@ -638,7 +705,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             sampleCopy.SampleIndex = (StackSourceSampleIndex)m_samples.Count;
             m_samples.Add(sampleCopy);
             if (sampleCopy.TimeRelativeMSec > m_sampleTimeRelativeMSecLimit)
+            {
                 m_sampleTimeRelativeMSecLimit = sampleCopy.TimeRelativeMSec;
+            }
+
             return sampleCopy;
         }
         /// <summary>
@@ -654,11 +724,19 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 (x, y) =>
                 {
                     int res = x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec);
-                    if (res != 0) return res;
-                    else return ((int)(x.StackIndex)).CompareTo((int)(y.StackIndex));
+                    if (res != 0)
+                    {
+                        return res;
+                    }
+                    else
+                    {
+                        return ((int)(x.StackIndex)).CompareTo((int)(y.StackIndex));
+                    }
                 });
             for (int i = 0; i < m_samples.Count; i++)
+            {
                 m_samples[i].SampleIndex = (StackSourceSampleIndex)i;
+            }
         }
 
         /// <summary>
@@ -692,7 +770,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (callStackIndex == CallStackIndex.Invalid)
             {
                 if (thread == null)
+                {
                     return StackSourceCallStackIndex.Invalid;
+                }
+
                 return GetCallStackForThread(thread);
             }
             var idx = (int)StackSourceCallStackIndex.Start + (int)callStackIndex;
@@ -708,10 +789,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (callStackIndex == CallStackIndex.Invalid)
             {
                 if (data == null)
+                {
                     return StackSourceCallStackIndex.Invalid;
+                }
+
                 var thread = data.Thread();
                 if (thread == null)
+                {
                     return StackSourceCallStackIndex.Invalid;
+                }
+
                 return GetCallStackForThread(thread);
             }
             var idx = (int)StackSourceCallStackIndex.Start + (int)callStackIndex;
@@ -743,14 +830,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public StackSourceCallStackIndex GetCallStack(CallStackIndex callStackIndex, StackSourceCallStackIndex top, CallStackMap callStackMap = null)
         {
             if (callStackIndex == CallStackIndex.Invalid)
+            {
                 return top;
+            }
 
             StackSourceCallStackIndex cachedValue;
             if (callStackMap != null)
             {
                 cachedValue = callStackMap.Get(callStackIndex);
                 if (cachedValue != StackSourceCallStackIndex.Invalid)
+                {
                     return cachedValue;
+                }
             }
 
             var frameIdx = GetFrameIndex(m_log.CallStacks.CodeAddressIndex(callStackIndex));
@@ -776,11 +867,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 }
             }
             else
+            {
                 callerIdx = GetCallStack(nonInternedCallerIdx, top, callStackMap);
+            }
 
             var ret = m_Interner.CallStackIntern(frameIdx, callerIdx);
             if (callStackMap != null)
+            {
                 callStackMap.Put(callStackIndex, ret);
+            }
+
             return ret;
         }
 
@@ -799,7 +895,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public override StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex)
         {
             if (m_Interner.CallStackStartIndex <= callStackIndex)
+            {
                 return m_Interner.GetCallerIndex(callStackIndex);
+            }
+
             return base.GetCallerIndex(callStackIndex);
         }
         /// <summary>
@@ -808,7 +907,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public override StackSourceFrameIndex GetFrameIndex(StackSourceCallStackIndex callStackIndex)
         {
             if (m_Interner.CallStackStartIndex <= callStackIndex)
+            {
                 return m_Interner.GetFrameIndex(callStackIndex);
+            }
+
             return base.GetFrameIndex(callStackIndex);
         }
         /// <summary>
@@ -817,7 +919,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public StackSourceModuleIndex GetModuleIndex(StackSourceFrameIndex frameIndex)
         {
             if (m_Interner.FrameStartIndex <= frameIndex)
+            {
                 return m_Interner.GetModuleIndex(frameIndex);
+            }
 
             return StackSourceModuleIndex.Invalid;      // TODO FIX NOW this is a poor approximation
         }
@@ -827,7 +931,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public override string GetFrameName(StackSourceFrameIndex frameIndex, bool fullModulePath)
         {
             if (frameIndex >= (StackSourceFrameIndex)base.CallFrameIndexLimit)
+            {
                 return m_Interner.GetFrameName(frameIndex, fullModulePath);
+            }
+
             return base.GetFrameName(frameIndex, fullModulePath);
         }
         /// <summary>
@@ -847,7 +954,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public override void ForEach(Action<StackSourceSample> callback)
         {
             for (int i = 0; i < m_samples.Count; i++)
+            {
                 callback(m_samples[i]);
+            }
         }
         /// <summary>
         /// Implementation of StackSource protocol. 
@@ -878,7 +987,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         protected StackSourceModuleIndex m_emptyModuleIdx;
         internal GrowableArray<StackSourceSample> m_samples;
-        double m_sampleTimeRelativeMSecLimit;
+        private double m_sampleTimeRelativeMSecLimit;
         #endregion
     }
 }

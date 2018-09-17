@@ -1,20 +1,14 @@
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Controls;
-
-using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Analysis.GC;
+using System.Windows.Media;
 
 namespace PerfView
 {
-    enum IssueType
+    internal enum IssueType
     {
         Profiling,
         Cpu,
@@ -26,18 +20,18 @@ namespace PerfView
         HeapBalance
     }
 
-    class Issue
+    internal class Issue
     {
-        public int       Id          { get; set; }
-        public IssueType Type        { get; set; }
-        public string    Description { get; set; }
-        public string    Suggestion  { get; set; }
+        public int Id { get; set; }
+        public IssueType Type { get; set; }
+        public string Description { get; set; }
+        public string Suggestion { get; set; }
 
         public string Action { get; set; }
-        
-        public Visibility Visible 
-        { 
-            get 
+
+        public Visibility Visible
+        {
+            get
             {
                 if (OnClick != null)
                 {
@@ -46,8 +40,8 @@ namespace PerfView
                 else
                 {
                     return Visibility.Collapsed;
-                } 
-            } 
+                }
+            }
         }
 
         internal RoutedEventHandler OnClick;
@@ -58,14 +52,13 @@ namespace PerfView
     /// </summary>
     public class IssueView
     {
-        int LeftPanelWidth = 240;
+        private int LeftPanelWidth = 240;
+        private StackPanel m_leftPanel;
+        private DataGrid m_grid;
+        private ProcessMemoryInfo m_heapInfo;
+        private TextBox m_help;
 
-        StackPanel             m_leftPanel;
-        DataGrid               m_grid;
-        ProcessMemoryInfo      m_heapInfo;
-        TextBox                m_help;
-
-        void OnClick(object sender, RoutedEventArgs e)
+        private void OnClick(object sender, RoutedEventArgs e)
         {
             FrameworkElement elm = sender as FrameworkElement;
 
@@ -79,7 +72,7 @@ namespace PerfView
                 }
             }
         }
-        
+
         internal Panel CreateIssuePanel(TextBox help)
         {
             m_help = help;
@@ -89,10 +82,10 @@ namespace PerfView
             m_grid.IsReadOnly = true;
 
             // Columns
-            m_grid.AddColumn("Id",          "Id");
-            m_grid.AddColumn("Type",        "Type");
+            m_grid.AddColumn("Id", "Id");
+            m_grid.AddColumn("Type", "Type");
             m_grid.AddColumn("Description", "Description");
-            m_grid.AddColumn("Suggestion",  "Suggestion");
+            m_grid.AddColumn("Suggestion", "Suggestion");
             m_grid.AddButtonColumn(typeof(Issue), "Action", "Action", OnClick);
 
             m_leftPanel = new StackPanel();
@@ -104,7 +97,7 @@ namespace PerfView
             return issuePanel;
         }
 
-        List<Issue> m_issues;
+        private List<Issue> m_issues;
 
         internal void SetData(ProcessMemoryInfo heapInfo)
         {
@@ -116,12 +109,12 @@ namespace PerfView
         }
     }
 
-    partial class ProcessMemoryInfo : HeapDiagramGenerator
+    internal partial class ProcessMemoryInfo : HeapDiagramGenerator
     {
-        List<Issue> m_issues;
-        Issue       m_issue;
+        private List<Issue> m_issues;
+        private Issue m_issue;
 
-        void AddIssue(IssueType typ, string description, string suggestion = null)
+        private void AddIssue(IssueType typ, string description, string suggestion = null)
         {
             m_issue = new Issue();
 
@@ -133,12 +126,11 @@ namespace PerfView
             m_issues.Add(m_issue);
         }
 
-        int    m_induced;
-        double m_inducedPause;
+        private int m_induced;
+        private double m_inducedPause;
+        private int m_allocLarge;
+        private double m_allocLargePause;
 
-        int    m_allocLarge;
-        double m_allocLargePause;
-            
         public List<Issue> GetIssues()
         {
             m_issues = new List<Issue>();
@@ -179,7 +171,7 @@ namespace PerfView
 
                 if (e.IsInduced())
                 {
-                    m_induced ++;
+                    m_induced++;
                     m_inducedPause += e.PauseDurationMSec;
                 }
 
@@ -193,7 +185,7 @@ namespace PerfView
             if (m_induced != 0)
             {
                 AddIssue(
-                    IssueType.Cpu, 
+                    IssueType.Cpu,
                     String.Format("There are {0:N0} induced GCs, causing total {1:N3} ms pause", m_induced, m_inducedPause),
                     "Check call stack to figure out who is inducing GC");
 
@@ -215,7 +207,7 @@ namespace PerfView
             return m_issues;
         }
 
-        void OnOpenLargeAllocStacks(object sender, RoutedEventArgs e)
+        private void OnOpenLargeAllocStacks(object sender, RoutedEventArgs e)
         {
             StackSource stacks = m_dataFile.CreateStackSource("GC Heap Alloc Ignore Free (Coarse Sampling)", m_process.ProcessID, m_statusBar.LogWriter, true);
 
@@ -224,13 +216,13 @@ namespace PerfView
             m_dataFile.StackWindowTo(null, ref stackWin, stacks, "LOH Heap Alloc");
         }
 
-        void OnOpenInducedStacks(object sender, RoutedEventArgs e)
+        private void OnOpenInducedStacks(object sender, RoutedEventArgs e)
         {
             StackSourceBuilder builder = new StackSourceBuilder(m_traceLog);
 
             List<TraceGC> events = m_runtime.GC.GCs;
 
-            for (int i = 0; i < events.Count; i ++)
+            for (int i = 0; i < events.Count; i++)
             {
                 TraceGC ev = events[i];
 

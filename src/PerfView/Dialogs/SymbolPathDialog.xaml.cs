@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.Diagnostics.Symbols;
+using System;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Text.RegularExpressions;
-using Microsoft.Diagnostics.Symbols;
 
 namespace PerfView.Dialogs
 {
@@ -28,7 +20,9 @@ namespace PerfView.Dialogs
             InitializeComponent();
             m_kind = kind;
             if (kind != "Symbol")
+            {
                 AddMSSymbols.Visibility = System.Windows.Visibility.Hidden;
+            }
 
             m_action = action;
             Title = "Setting " + kind + " Path";
@@ -56,7 +50,7 @@ namespace PerfView.Dialogs
             symPath.Add("SRV*http://msdl.microsoft.com/download/symbols");
             SymbolPathTextBox.Text = symPath.InsureHasCache(symPath.DefaultSymbolCache()).CacheFirst().ToString();
             GetValue();
-        } 
+        }
 
         private string GetValue()
         {
@@ -71,7 +65,9 @@ namespace PerfView.Dialogs
         private void DoKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
+            {
                 Close();
+            }
         }
 
         private Action<string> m_action;

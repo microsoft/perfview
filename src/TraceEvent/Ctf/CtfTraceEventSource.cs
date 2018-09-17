@@ -29,7 +29,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
     }
 
-    public unsafe sealed class CtfTraceEventSource : TraceEventDispatcher, IDisposable
+    public sealed unsafe class CtfTraceEventSource : TraceEventDispatcher, IDisposable
     {
         private string _filename;
         private ZipArchive _zip;
@@ -83,7 +83,10 @@ namespace Microsoft.Diagnostics.Tracing
 
                 var firstChannel = (new ChannelList(_channels)).FirstOrDefault();
                 if (firstChannel == null)
+                {
                     throw new EndOfStreamException("No CTF Information found in ZIP file.");
+                }
+
                 long firstEventTimestamp = (long)firstChannel.Current.Timestamp;
 
                 _QPCFreq = (long)clock.Frequency;
@@ -102,7 +105,9 @@ namespace Microsoft.Diagnostics.Tracing
             finally
             {
                 if (!success)
+                {
                     Dispose();      // This closes the ZIP file we opened.  We don't want to leave it dangling.  
+                }
             }
         }
 
@@ -487,7 +492,9 @@ namespace Microsoft.Diagnostics.Tracing
             foreach (ChannelEntry entry in list)
             {
                 if (stopProcessing)
+                {
                     break;
+                }
 
                 CtfEventHeader header = entry.Current;
                 CtfEvent evt = header.Event;
@@ -509,10 +516,14 @@ namespace Microsoft.Diagnostics.Tracing
 
                 ETWMapping etw = GetTraceEvent(evt);
                 if (etw.IsNull)
+                {
                     continue;
+                }
 
                 if (!string.IsNullOrWhiteSpace(header.ProcessName))
+                {
                     _processNames[header.Pid] = header.ProcessName;
+                }
 
                 var hdr = InitEventRecord(header, entry.Reader, etw);
                 TraceEvent traceEvent = Lookup(hdr);
@@ -534,7 +545,9 @@ namespace Microsoft.Diagnostics.Tracing
             string result;
 
             if (_processNames.TryGetValue(processID, out result))
+            {
                 return result;
+            }
 
             return base.ProcessName(processID, timeQPC);
         }
@@ -544,9 +557,13 @@ namespace Microsoft.Diagnostics.Tracing
             _header->EventHeader.Size = (ushort)sizeof(TraceEventNativeMethods.EVENT_TRACE_HEADER);
             _header->EventHeader.Flags = 0;
             if (pointerSize == 8)
+            {
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
+            }
             else
+            {
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
+            }
 
             _header->EventHeader.TimeStamp = (long)header.Timestamp;
             _header->EventHeader.ProviderId = etw.Guid;
@@ -619,9 +636,9 @@ namespace Microsoft.Diagnostics.Tracing
         // into one chronological stream of events.
         #region Enumeration Helper
 
-        class ChannelList : IEnumerable<ChannelEntry>
+        private class ChannelList : IEnumerable<ChannelEntry>
         {
-            List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
+            private List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
 
             public ChannelList(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
             {
@@ -639,11 +656,11 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        class ChannelListEnumerator : IEnumerator<ChannelEntry>
+        private class ChannelListEnumerator : IEnumerator<ChannelEntry>
         {
-            bool _first = true;
-            List<ChannelEntry> _channels;
-            int _current;
+            private bool _first = true;
+            private List<ChannelEntry> _channels;
+            private int _current;
 
             public ChannelListEnumerator(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
             {
@@ -654,13 +671,19 @@ namespace Microsoft.Diagnostics.Tracing
             private int GetCurrent()
             {
                 if (_channels.Count == 0)
+                {
                     return -1;
+                }
 
                 int min = 0;
 
                 for (int i = 1; i < _channels.Count; i++)
+                {
                     if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
+                    {
                         min = i;
+                    }
+                }
 
                 return min;
             }
@@ -673,7 +696,9 @@ namespace Microsoft.Diagnostics.Tracing
             public void Dispose()
             {
                 foreach (var channel in _channels)
+                {
                     channel.Dispose();
+                }
 
                 _channels = null;
             }
@@ -686,7 +711,9 @@ namespace Microsoft.Diagnostics.Tracing
             public bool MoveNext()
             {
                 if (_current == -1)
+                {
                     return false;
+                }
 
                 if (_first)
                 {
@@ -711,7 +738,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        class ChannelEntry : IDisposable
+        private class ChannelEntry : IDisposable
         {
             public string FileName { get; private set; }
             public CtfChannel Channel { get; private set; }
@@ -738,7 +765,9 @@ namespace Microsoft.Diagnostics.Tracing
 
                 IDisposable enumerator = _events as IDisposable;
                 if (enumerator != null)
+                {
                     enumerator.Dispose();
+                }
             }
 
             public bool MoveNext()

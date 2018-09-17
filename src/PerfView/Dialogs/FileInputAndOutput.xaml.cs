@@ -4,15 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Media;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using Path = System.IO.Path;
 
 namespace PerfView.Dialogs
@@ -50,7 +43,9 @@ namespace PerfView.Dialogs
         public new void Show()
         {
             if (CurrentDirectory == null || !Directory.Exists(CurrentDirectory))
+            {
                 CurrentDirectory = ".";
+            }
 
             if (Instructions != null)
             {
@@ -59,7 +54,9 @@ namespace PerfView.Dialogs
             }
 
             if (HelpAnchor == null)
+            {
                 HelpHyperlink.Visibility = System.Windows.Visibility.Hidden;
+            }
 
             OutputFileName.Text = Path.GetFullPath(CurrentDirectory) + @"\";
             InputFileTextChanged(null, null);
@@ -81,13 +78,21 @@ namespace PerfView.Dialogs
             {
                 Debug.Assert(Directory.Exists(value));
                 if (value == m_CurrentDirectory)        // Optimization.  
+                {
                     return;
+                }
+
                 m_CurrentDirectory = value;
                 if (m_CurrentDirectory.Length == 0)
+                {
                     m_CurrentDirectory = ".";
+                }
+
                 CurrentDir.Text = Path.GetFullPath(m_CurrentDirectory);
                 if (string.IsNullOrEmpty(m_CurrentDirectory))
+                {
                     m_candidates = new List<string>();
+                }
                 else
                 {
                     // Get all the directories.  
@@ -142,10 +147,15 @@ namespace PerfView.Dialogs
                 var selection = Files.SelectedItem as string;
                 var origFileName = InputFileName.Text;
                 if (selection != null)
+                {
                     SetInputFileName(selection);
+                }
 
                 if (SelectingDirectories && e.Key == Key.Return && origFileName == InputFileName.Text)
+                {
                     OKClicked(null, null);
+                }
+
                 return;
             }
             if (e.Key == Key.Down)
@@ -153,7 +163,10 @@ namespace PerfView.Dialogs
                 e.Handled = true;
                 var index = Files.SelectedIndex;
                 if (0 <= index)
+                {
                     Files.SelectedIndex = index + 1;
+                }
+
                 Files.Focus();
                 return;
             }
@@ -162,7 +175,10 @@ namespace PerfView.Dialogs
                 e.Handled = true;
                 var index = Files.SelectedIndex;
                 if (0 < index)
+                {
                     Files.SelectedIndex = index - 1;
+                }
+
                 Files.Focus();
                 return;
             }
@@ -201,7 +217,9 @@ namespace PerfView.Dialogs
             // Select the first item
             var first = filteredList.FirstOrDefault();
             if (first != null)
+            {
                 Files.SelectedItem = first;
+            }
 
             // Update the OuputFileName as well 
             string newOutputFileName = Path.GetFileNameWithoutExtension(fileName);
@@ -210,14 +228,18 @@ namespace PerfView.Dialogs
                 var fullFilePathDir = Path.GetFullPath(CurrentDirectory);
                 newOutputFileName = Path.GetFileName(fullFilePathDir);
                 if (string.IsNullOrEmpty(newOutputFileName) && 2 <= fullFilePathDir.Length && fullFilePathDir.Length <= 3 && fullFilePathDir[1] == ':')
+                {
                     newOutputFileName = fullFilePathDir.Substring(0, 1) + "Drive";      // if this is C:\ then use CDrive
+                }
             }
             newOutputFileName += OutputExtension;
             string newOutputFilePath = ReplaceFileInPath(OutputFileName.Text, newOutputFileName);
             OutputFileName.Text = newOutputFilePath;
             var indexOfExtension = newOutputFilePath.IndexOf(OutputExtension);
             if (0 <= indexOfExtension)
+            {
                 OutputFileName.CaretIndex = indexOfExtension;
+            }
         }
 
         private void FilesDoubleClick(object sender, MouseButtonEventArgs e)
@@ -227,7 +249,9 @@ namespace PerfView.Dialogs
             {
                 SetInputFileName(selection);
                 if (!SelectingDirectories && File.Exists(Path.Combine(CurrentDirectory, InputFileName.Text)))
+                {
                     OKClicked(null, null);
+                }
             }
         }
 
@@ -238,23 +262,32 @@ namespace PerfView.Dialogs
             if (SelectingDirectories)
             {
                 if (inputFileName.Length == 0)
+                {
                     inputFileName = ".";
+                }
+
                 success = Directory.Exists(inputFileName);
             }
             else
+            {
                 success = File.Exists(inputFileName);
+            }
 
             if (success)
             {
                 // Remove any trailing \
                 if (inputFileName.EndsWith(@"\"))
+                {
                     inputFileName = inputFileName.Substring(0, inputFileName.Length - 1);
+                }
 
                 Close();
                 m_onOK(inputFileName, OutputFileName.Text);
             }
             else
+            {
                 SystemSounds.Beep.Play();
+            }
         }
 
         private void CancelClicked(object sender, RoutedEventArgs e)
@@ -279,17 +312,22 @@ namespace PerfView.Dialogs
             try
             {
                 if (!(filePath.Length == 3 && filePath.EndsWith(@":\")))
-                    filePath =  Path.GetDirectoryName(filePath);
+                {
+                    filePath = Path.GetDirectoryName(filePath);
+                }
 
-                while(filePath != null)
+                while (filePath != null)
                 {
                     if (Directory.Exists(filePath))
+                    {
                         return filePath;
+                    }
+
                     filePath = Path.GetDirectoryName(filePath);
                 }
             }
-            catch (Exception) {}
-                return null;
+            catch (Exception) { }
+            return null;
         }
 
         /// <summary>
@@ -300,16 +338,22 @@ namespace PerfView.Dialogs
         private void SetInputFileName(string fileName)
         {
             if (fileName == null)
+            {
                 return;
+            }
 
             if (Directory.Exists(Path.Combine(CurrentDirectory, fileName)))
+            {
                 fileName += @"\";
+            }
 
             //If we try to set the input file name when we have already set it, assume 
             // that the user wants to complete the dialog box.  Thus Tab-Tab  
             // or RETURN-RETURN is often a shorcut for (select item and close)
             if (InputFileName.Text == fileName)
+            {
                 OKClicked(null, null);
+            }
             else
             {
                 InputFileName.Text = fileName;
@@ -323,11 +367,18 @@ namespace PerfView.Dialogs
         private bool ExtensionFilter(string name)
         {
             if (InputExtentions == null)
+            {
                 return true;
+            }
 
             foreach (var inputExtention in InputExtentions)
+            {
                 if (name.EndsWith(inputExtention, StringComparison.OrdinalIgnoreCase))
+                {
                     return true;
+                }
+            }
+
             return false;
         }
 
@@ -347,11 +398,13 @@ namespace PerfView.Dialogs
                 return Path.Combine(directoryName, fileName);
             }
             else
+            {
                 return fileName;
+            }
         }
 
-        Action<string, string> m_onOK;
-        List<string> m_candidates;
+        private Action<string, string> m_onOK;
+        private List<string> m_candidates;
         private string m_CurrentDirectory;
         #endregion
     }

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Utilities;
 
@@ -32,7 +31,9 @@ namespace Diagnostics.Tracing.StackSources
             // We initialize this when we see the first sample
             m_firstSampleTime = new double[m_sourceCount];
             for (int j = 0; j < m_firstSampleTime.Length; j++)
+            {
                 m_firstSampleTime[j] = double.NegativeInfinity;
+            }
 
             // True if all sub-sources support retrieving samples by index.
             bool supportsSamples = true;
@@ -104,7 +105,9 @@ namespace Diagnostics.Tracing.StackSources
             for (int src = 0; src < ScenarioCount; src++)
             {
                 if (scenariosIncluded == null || scenariosIncluded[src])
-                    m_sources[src + 1].ForEach(sample => callback(this.ConvertSample(sample, m_sampleStorage, src + 1)));
+                {
+                    m_sources[src + 1].ForEach(sample => callback(ConvertSample(sample, m_sampleStorage, src + 1)));
+                }
             }
         }
 
@@ -113,11 +116,13 @@ namespace Diagnostics.Tracing.StackSources
         /// </summary>
         public void ParallelForEach(Action<StackSourceSample> callback, bool[] scenariosIncluded, int desiredParallelism = 0)
         {
-            Parallel.For(0, ScenarioCount, delegate(int src, ParallelLoopState state)
+            Parallel.For(0, ScenarioCount, delegate (int src, ParallelLoopState state)
             {
-                var sampleStorage = new StackSourceSample(this);                
+                var sampleStorage = new StackSourceSample(this);
                 if (scenariosIncluded == null || scenariosIncluded[src])
-                    m_sources[src + 1].ForEach(sample => callback(this.ConvertSample(sample, sampleStorage, src + 1)));
+                {
+                    m_sources[src + 1].ForEach(sample => callback(ConvertSample(sample, sampleStorage, src + 1)));
+                }
             });
         }
 
@@ -275,7 +280,10 @@ namespace Diagnostics.Tracing.StackSources
             // We normalize all the scenarios so that they start on their first sample time.   
             var timeOrigin = m_firstSampleTime[sourceIdx];
             if (timeOrigin < 0)
+            {
                 timeOrigin = m_firstSampleTime[sourceIdx] = input.TimeRelativeMSec;
+            }
+
             storage.TimeRelativeMSec = input.TimeRelativeMSec - timeOrigin;
 
             storage.StackIndex = m_stackMap.IndexOf(sourceIdx, input.StackIndex);

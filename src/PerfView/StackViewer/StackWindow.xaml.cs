@@ -1,4 +1,13 @@
-﻿using System;
+﻿using Controls;
+using Diagnostics.Tracing.StackSources;
+using Graphs;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Utilities;
+using PerfView.Dialogs;
+using PerfViewModel;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,26 +17,15 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml;
-using Controls;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using Graphs;
-using PerfView.Dialogs;
-using PerfViewModel;
-using Microsoft.Diagnostics.Symbols;
-using Address = System.UInt64;
-using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Utilities;
-using System.Threading;
-using PerfView.GuiUtilities;
 using Utilities;
+using Address = System.UInt64;
 using Path = System.IO.Path;
 
 namespace PerfView
@@ -86,21 +84,29 @@ namespace PerfView
             foreach (var colName in ByNameDataGrid.ColumnNames())
             {
                 if (!templateColumnNames.Contains(colName))
+                {
                     RemoveColumn(colName);
+                }
             }
         }
         public string GetDefaultFoldPercentage()
         {
             string defaultFoldPercentage = App.ConfigData["DefaultFoldPercent"];
             if (defaultFoldPercentage == null)
+            {
                 defaultFoldPercentage = "1";
+            }
+
             return defaultFoldPercentage;
         }
         public string GetDefaultFoldPat()
         {
             string defaultFoldPat = App.ConfigData["DefaultFoldPat"];
             if (defaultFoldPat == null)
+            {
                 defaultFoldPat = "ntoskrnl!%ServiceCopyEnd";
+            }
+
             return defaultFoldPat;
         }
         public string GetDefaultGroupPat()
@@ -109,14 +115,17 @@ namespace PerfView
 
             // By default, it is Just My App.  
             if (defaultGroupPat == null)
+            {
                 defaultGroupPat = @"[Just My App]";
+            }
+
             return defaultGroupPat;
         }
         public void RemoveColumn(string columnName)
         {
             // Remove View First or else GetColumnIndex will not work
             // Assumes ByNameDataGrid.Columns == CallTreeDataGrid.Columns == CalleesDataGrid.Columns == CallersDataGrid.Columns
-            RemoveViewMenuColumn(ByNameDataGrid, this.ViewMenu, columnName);
+            RemoveViewMenuColumn(ByNameDataGrid, ViewMenu, columnName);
 
             ByNameDataGrid.RemoveColumn(columnName);
             CallTreeDataGrid.RemoveColumn(columnName);
@@ -233,22 +242,31 @@ namespace PerfView
             Debug.Assert(m_callTree != null);
 
             if (!ValidateStartAndEnd(newSource))
+            {
                 return;
+            }
 
             // Synchronize the sample rate if the source supports it.  
             // TODO - Currently nothing uses sampling.  USE OR REMOVE 
             if (newSource.SamplingRate == null)
+            {
                 SamplingStackPanel.Visibility = System.Windows.Visibility.Collapsed;
+            }
             else
             {
                 if (SamplingTextBox.Text.Length == 0)
+                {
                     SamplingTextBox.Text = newSource.SamplingRate.Value.ToString("f1");
+                }
                 else
                 {
                     var sampleRate = 1.0F;
                     float.TryParse(SamplingTextBox.Text, out sampleRate);
                     if (sampleRate < 1)
+                    {
                         sampleRate = 1;
+                    }
+
                     newSource.SamplingRate = sampleRate;
                 }
             }
@@ -263,16 +281,24 @@ namespace PerfView
             {
                 // Remove any 'forward' history
                 if (m_historyPos + 1 < m_history.Count)
+                {
                     m_history.RemoveRange(m_historyPos + 1, m_history.Count - m_historyPos - 1);
+                }
+
                 if (m_history.Count > 100)
+                {
                     m_history.RemoveAt(0);
+                }
+
                 m_history.Add(new FilterParams(filterParams));
                 m_historyPos = m_history.Count - 1;
             }
 
             var asMemoryGraphSource = newSource as Graphs.MemoryGraphStackSource;
             if (asMemoryGraphSource != null)
+            {
                 asMemoryGraphSource.PriorityRegExs = filterParams.TypePriority;
+            }
 
 #if false    // TODO decide if we want this. 
             if (m_computingStacks)
@@ -289,18 +315,26 @@ namespace PerfView
 
                 m_stackSource = newSource;
                 if (m_stackSource == null)
+                {
                     m_stackSource = new CopyStackSource();      // This is only needed for the degenerate case of no data.  
+                }
 
                 double histogramStart = 0;
                 if (double.TryParse(filterParams.StartTimeRelativeMSec, out histogramStart))
+                {
                     histogramStart -= .0006;
+                }
 
                 double histogramEnd = double.MaxValue;
                 if (double.TryParse(filterParams.EndTimeRelativeMSec, out histogramEnd))
+                {
                     histogramEnd += .0006;
+                }
 
                 if (histogramEnd > histogramStart)
+                {
                     newCallTree.TimeHistogramController = new TimeHistogramController(newCallTree, histogramStart, histogramEnd);
+                }
 
                 if (m_stackSource.ScenarioCount > 0)
                 {
@@ -308,7 +342,9 @@ namespace PerfView
                     {
                         filterParams.ScenarioList = new int[m_stackSource.ScenarioCount];
                         for (int i = 0; i < m_stackSource.ScenarioCount; i++)
+                        {
                             filterParams.ScenarioList[i] = i;
+                        }
                     }
                     string[] names = null;
                     var aggregate = m_stackSource as AggregateStackSource;
@@ -337,7 +373,9 @@ namespace PerfView
                 // Fold away all small nodes.                     
                 float minIncusiveTimePercent;
                 if (float.TryParse(filterParams.MinInclusiveTimePercent, out minIncusiveTimePercent) && minIncusiveTimePercent > 0)
+                {
                     newCallTree.FoldNodesUnder(minIncusiveTimePercent * newCallTree.Root.InclusiveMetric / 100, true);
+                }
 
                 // Compute the byName items sorted by exclusive time.  
                 var byNameItems = newCallTree.ByIDSortedExclusiveMetric();
@@ -387,7 +425,9 @@ namespace PerfView
                     }
 
                     if (ExtraTopStats != null)
+                    {
                         stats = stats + " " + ExtraTopStats;
+                    }
 
                     if (ComputeMaxInTopStats)
                     {
@@ -429,7 +469,10 @@ namespace PerfView
         private void FixupJustMyCodeInGroupPats(StackSource stackSource)
         {
             if (m_fixedUpJustMyCode)
+            {
                 return;
+            }
+
             m_fixedUpJustMyCode = true;
 
             // Get tbe name and create the 'justMyApp pattern. 
@@ -438,7 +481,9 @@ namespace PerfView
             if (exeName != null)
             {
                 if (string.Compare(exeName, "w3wp", StringComparison.OrdinalIgnoreCase) == 0)
+                {
                     justMyApp = @"[ASP.NET Just My App] \Temporary ASP.NET Files\->;!dynamicClass.S->;!=>OTHER";
+                }
                 else if (!exeName.StartsWith("IISAspHost", StringComparison.OrdinalIgnoreCase) &&
                         string.Compare(exeName, "WWAHost", StringComparison.OrdinalIgnoreCase) != 0 &&
                         string.Compare(exeName, "iexplore", StringComparison.OrdinalIgnoreCase) != 0 &&
@@ -449,11 +494,15 @@ namespace PerfView
                     {
                         var dirName = Path.GetDirectoryName(exePath);
                         if (!string.IsNullOrEmpty(dirName))
+                        {
                             justMyApp = @"[Just My App]           \" + Path.GetFileName(dirName) + @"\%!->;!=>OTHER";
+                        }
                     }
 
                     if (justMyApp == null)
+                    {
                         StatusBar.Log("Could not determine EXE path, could not add 'Just my app' group");
+                    }
                 }
             }
 
@@ -461,14 +510,19 @@ namespace PerfView
             if (GroupRegExTextBox.Text.StartsWith("[Just My App]"))
             {
                 if (justMyApp == null)
+                {
                     justMyApp = @"[group module entries]  {%}!=>module $1";
+                }
+
                 GroupRegExTextBox.Text = justMyApp;
             }
 
 
             // If we have a JustMyApp, add it to list of Group Pattern possibilities 
             if (justMyApp != null)
+            {
                 GroupRegExTextBox.Items.Insert(0, justMyApp);
+            }
         }
 
         /// <summary>
@@ -477,7 +531,9 @@ namespace PerfView
         public void Update()
         {
             if (m_stackSource != null)
+            {
                 SetStackSource(m_stackSource);  //  This forces a recomputation of the calltree.  
+            }
         }
 
         public CallTree CallTree
@@ -556,27 +612,44 @@ namespace PerfView
         private void ReadIntoTextBox(HistoryComboBox textBox, TextBoxGuiState guiState)
         {
             if (guiState == null)
+            {
                 return;
+            }
+
             if (guiState.Value != null)
+            {
                 textBox.Text = guiState.Value;
+            }
+
             if (guiState.History != null)
+            {
                 textBox.SetHistory(guiState.History);
+            }
         }
 
         private void WriteFromTextBox(HistoryComboBox textBox, TextBoxGuiState guiState)
         {
             var val = textBox.Text;
             if (!string.IsNullOrWhiteSpace(val))
+            {
                 guiState.Value = val;
+            }
 
             if (textBox.Items.Count > 0)
             {
                 var itemList = new List<string>();
                 foreach (string item in textBox.Items)
+                {
                     if (!string.IsNullOrWhiteSpace(item))
+                    {
                         itemList.Add(item);
+                    }
+                }
+
                 if (itemList.Count > 0)
+                {
                     guiState.History = itemList;
+                }
             }
         }
 
@@ -587,7 +660,9 @@ namespace PerfView
             {
                 name = FocusName;       // Use the old focus name
                 if (name == null)
+                {
                     name = "ROOT";
+                }
             }
 
             // TODO FIX NOW in case of duplicates
@@ -606,7 +681,10 @@ namespace PerfView
             {
                 // We want to aways succeed for root. 
                 if (name != "ROOT")
+                {
                     StatusBar.LogError("Could not find node named " + name + " (folded away?)");
+                }
+
                 node = m_callTree.Root;
                 name = node.Name;
             }
@@ -615,16 +693,25 @@ namespace PerfView
 
             m_calleesView.SetRoot(AggregateCallTreeNode.CalleeTree(node));
             if (IsMemoryWindow)
+            {
                 CalleesTitle.Text = "Objects that are referred to by " + node.Name;
+            }
             else
+            {
                 CalleesTitle.Text = "Methods that are called by " + node.Name;
+            }
 
             m_callersView.SetRoot(AggregateCallTreeNode.CallerTree(node));
 
             if (IsMemoryWindow)
+            {
                 CallersTitle.Text = "Objects that refer to " + node.Name;
+            }
             else
+            {
                 CallersTitle.Text = "Methods that call " + node.Name;
+            }
+
             DataContext = node;
             return true;
         }
@@ -693,7 +780,9 @@ namespace PerfView
                 finally
                 {
                     if (!success)
+                    {
                         Filter = origFilter;
+                    }
                 }
 
                 m_settingFromHistory = false;
@@ -702,7 +791,9 @@ namespace PerfView
         private void CanDoBack(object sender, CanExecuteRoutedEventArgs e)
         {
             if (m_historyPos > 0)
+            {
                 e.CanExecute = true;
+            }
         }
         private void DoForward(object sender, RoutedEventArgs e)
         {
@@ -718,7 +809,9 @@ namespace PerfView
         private void CanDoForward(object sender, CanExecuteRoutedEventArgs e)
         {
             if (m_historyPos + 1 < m_history.Count)
+            {
                 e.CanExecute = true;
+            }
         }
         private void DoClose(object sender, RoutedEventArgs e)
         {
@@ -775,7 +868,10 @@ namespace PerfView
 
             var defaultGroupPat = GroupRegExTextBox.Text;
             if (defaultGroupPat.StartsWith("[Just My App]"))
+            {
                 defaultGroupPat = defaultGroupPat.Substring(0, 13);
+            }
+
             App.ConfigData["DefaultGroupPat"] = defaultGroupPat;
         }
         private void DoSaveAs(object sender, RoutedEventArgs e)
@@ -794,7 +890,9 @@ namespace PerfView
                 {
                     saveDialog.FileName = baseName + ".View" + i.ToString() + ".perfView.xml.zip";
                     if (!File.Exists(saveDialog.FileName))
+                    {
                         break;
+                    }
                 }
                 saveDialog.InitialDirectory = Path.GetDirectoryName(DataSource.FilePath);
                 saveDialog.Title = "File to save view";
@@ -815,7 +913,9 @@ namespace PerfView
             if (m_fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
             {
                 if (!ByNameTab.IsSelected)
+                {
                     throw new ApplicationException("Saving as a CSV is only supported in the ByName tab");
+                }
 
                 string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
 
@@ -834,7 +934,9 @@ namespace PerfView
                     foreach (var item in items)
                     {
                         if (hasWhichColumn)
+                        {
                             whichValue = item.InclusiveMetricByScenario.ToString();
+                        }
 
                         csvFile.WriteLine("{0}{1}{2:f1}{1}{3:f0}{1}{4}{5}", EventWindow.EscapeForCsv(item.Name, listSeparator), listSeparator,
                             item.ExclusiveMetricPercent, item.ExclusiveMetric, item.ExclusiveCount, whichValue);
@@ -844,9 +946,14 @@ namespace PerfView
             else
             {
                 if (m_fileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+                {
                     m_fileName = m_fileName + ".zip";
+                }
+
                 if (!m_fileName.EndsWith(".xml.zip"))
+                {
                     throw new ApplicationException("File names for views must end in .xml.zip");
+                }
 
                 // Intern to compact it, only take samples in the view but leave the names unmorphed. 
                 var filteredSource = new FilterStackSource(Filter, StackSource, ScalingPolicy);
@@ -887,7 +994,7 @@ namespace PerfView
             var baselineWindow = menuItem.Tag as StackWindow;
 
             var dataFile = new DiffPerfViewData(DataSource, baselineWindow.DataSource);
-            var testFilter = new FilterParams(this.Filter);
+            var testFilter = new FilterParams(Filter);
             testFilter.MinInclusiveTimePercent = "";
             var baselineFilter = new FilterParams(baselineWindow.Filter);
             baselineFilter.MinInclusiveTimePercent = "";
@@ -923,7 +1030,7 @@ namespace PerfView
             stackWindow.StatusBar.StartWork("Computing " + dataFile.Name, delegate ()
             {
                 var source = InternStackSource.Diff(
-                    new FilterStackSource(testFilter, this.StackSource, ScalingPolicy), this.StackSource,
+                    new FilterStackSource(testFilter, StackSource, ScalingPolicy), StackSource,
                     new FilterStackSource(baselineFilter, baselineWindow.StackSource, ScalingPolicy), baselineWindow.StackSource);
                 stackWindow.StatusBar.EndWork(delegate ()
                 {
@@ -984,7 +1091,10 @@ namespace PerfView
                 bool exclusiveSamples = false;
                 var colName = ((TextBlock)cell.Column.Header).Name;
                 if (colName.StartsWith("Exc"))
+                {
                     exclusiveSamples = true;
+                }
+
                 if (colName.StartsWith("Fold"))
                 {
                     StatusBar.LogError("Cannot drill into folded samples.  Use Exc instead.");
@@ -997,7 +1107,9 @@ namespace PerfView
                 {
                     var asCallTreeViewNode = item as CallTreeViewNode;
                     if (asCallTreeViewNode != null)
+                    {
                         asCallTreeNodeBase = asCallTreeViewNode.Data;
+                    }
                     else
                     {
                         StatusBar.LogError("Could not find data item.");
@@ -1014,7 +1126,9 @@ namespace PerfView
                     return true;
                 });
                 if (name.Length == 0)
+                {
                     name = (exclusiveSamples ? "Exc" : "Inc") + " of " + asCallTreeNodeBase.Name;
+                }
                 else if (!addedDots)
                 {
                     name = name + "...";
@@ -1037,7 +1151,9 @@ namespace PerfView
             bool[] sampleSet;
             string sampleSetName;
             if (GetSamplesForSelection(out sampleSet, out sampleSetName))
+            {
                 return;
+            }
 
             int count = 0;
             List<NodeIndex> nodeIdxs = new List<NodeIndex>();
@@ -1047,7 +1163,9 @@ namespace PerfView
                 {
                     count++;
                     if (nodeIdxs.Count < 3)
+                    {
                         nodeIdxs.Add(asMemoryStackSource.GetNodeIndexForSample((StackSourceSampleIndex)i));
+                    }
                 }
             }
 
@@ -1116,13 +1234,17 @@ namespace PerfView
                 bool[] sampleSet;
                 string sampleSetName;
                 if (!GetSamplesForSelection(out sampleSet, out sampleSetName))
+                {
                     return;
+                }
 
                 nodeIdxs = new List<NodeIndex>();
                 for (int i = 0; i < sampleSet.Length; i++)
                 {
                     if (sampleSet[i])
+                    {
                         nodeIdxs.Add(asMemoryStackSource.GetNodeIndexForSample((StackSourceSampleIndex)i));
+                    }
                 }
                 nodeCount = nodeIdxs.Count;
             }
@@ -1138,13 +1260,17 @@ namespace PerfView
             bool[] sampleSet;
             string sampleSetName;
             if (!GetSamplesForSelection(out sampleSet, out sampleSetName))
+            {
                 return;
+            }
 
             var drillIntoSamples = new CopyStackSource(m_stackSource);
             for (int i = 0; i < sampleSet.Length; i++)
             {
                 if (sampleSet[i])
+                {
                     drillIntoSamples.AddSample(m_stackSource.GetSampleByIndex((StackSourceSampleIndex)i));
+                }
             }
             var newStackWindow = new StackWindow(this, this);
             newStackWindow.ExcludeRegExTextBox.Text = "";
@@ -1176,7 +1302,9 @@ namespace PerfView
                 for (int i = 0; i < sampleSet.Length; i++)
                 {
                     if (sampleSet[i])
+                    {
                         yield return m_stackSource.GetSampleByIndex((StackSourceSampleIndex)i);
+                    }
                 }
             }
         }
@@ -1233,9 +1361,13 @@ namespace PerfView
         {
             string str = SelectedCellStringValue();
             if (str != null)
+            {
                 FindByName(str);
+            }
             else
+            {
                 StatusBar.LogError("No selected cells found.");
+            }
         }
         private void DoFindInCallTreeName(object sender, ExecutedRoutedEventArgs e)
         {
@@ -1247,22 +1379,30 @@ namespace PerfView
                 Find(Regex.Escape(str));
             }
             else
+            {
                 StatusBar.LogError("No selected cells found.");
+            }
         }
         private void DoViewInCallerCallee(object sender, RoutedEventArgs e)
         {
             if (SetFocusNodeToSelection())
+            {
                 CallerCalleeTab.IsSelected = true;
+            }
         }
         private void DoViewInCallers(object sender, ExecutedRoutedEventArgs e)
         {
             if (SetFocusNodeToSelection())
+            {
                 CallersTab.IsSelected = true;
+            }
         }
         private void DoViewInCallees(object sender, ExecutedRoutedEventArgs e)
         {
             if (SetFocusNodeToSelection())
+            {
                 CalleesTab.IsSelected = true;
+            }
         }
 
         private void DoEntryGroupModule(object sender, ExecutedRoutedEventArgs e)
@@ -1288,12 +1428,18 @@ namespace PerfView
                 else
                 {
                     if (badStrs.Length > 0)
+                    {
                         badStrs += " ";
+                    }
+
                     badStrs += cellStr;
                 }
             }
             if (badStrs.Length > 0)
+            {
                 StatusBar.LogError("Could not find a module pattern in text " + badStrs + ".");
+            }
+
             GroupRegExTextBox.Text = str;
             Update();
         }
@@ -1346,7 +1492,9 @@ namespace PerfView
                                         // If there are no substitution patterns at all then simply remove the
                                         // pattern from the list.  However we keep exclusion patterns (empty groups)
                                         if (groupPat.Length > 0)
+                                        {
                                             continue;
+                                        }
                                     }
                                     else
                                     {
@@ -1361,7 +1509,10 @@ namespace PerfView
                                             captureNum++;
                                             var varValue = match.Groups["V" + new string(captureNum, 1)];
                                             if (varValue != null)
+                                            {
                                                 return varValue.Value;
+                                            }
+
                                             return m.Groups[0].Value;
                                         });
                                         newGroups = ConcatinateSeparatedBy(newGroups, newPat + oper, ";");
@@ -1375,9 +1526,13 @@ namespace PerfView
                 }
             }
             if (matchedSomething)
+            {
                 Update();
+            }
             else
+            {
                 StatusBar.LogError("Cell does not have the pattern that can be ungrouped.");
+            }
         }
 
         private void DoRaiseItemPriority(object sender, ExecutedRoutedEventArgs e)
@@ -1407,11 +1562,16 @@ namespace PerfView
                 {
                     Match m = Regex.Match(cellStr, @"\b([\w.]*?)!");
                     if (m.Success)
+                    {
                         str = m.Groups[1].Value + "!";
+                    }
                     else
                     {
                         if (badStrs.Length > 0)
+                        {
                             badStrs += " ";
+                        }
+
                         badStrs += cellStr;
                     }
                 }
@@ -1437,25 +1597,38 @@ namespace PerfView
                             }
                         }
                         else
+                        {
                             StatusBar.LogError("Priority string '" + priorityPat + "' does not have the syntax Pat->Num.");
+                        }
                     }
 
                     if (priorities.Length == 0)
+                    {
                         priorities = updatedPriorityPat;
+                    }
                     else
+                    {
                         priorities = priorities + ";" + updatedPriorityPat;
+                    }
                 }
                 if (!found)
                 {
                     var newPat = str + "->" + delta.ToString();
                     if (priorities.Length == 0)
+                    {
                         priorities = newPat;
+                    }
                     else
+                    {
                         priorities = newPat + ";" + priorities;
+                    }
                 }
             }
             if (badStrs.Length > 0)
+            {
                 StatusBar.LogError("Could not find a module pattern in text " + badStrs + ".");
+            }
+
             PriorityTextBox.Text = priorities;
             Update();
         }
@@ -1463,7 +1636,10 @@ namespace PerfView
         private static string ConcatinateSeparatedBy(string str1, string str2, string sep)
         {
             if (str1.Length == 0)
+            {
                 return str2;
+            }
+
             return str1 + sep + str2;
         }
 
@@ -1475,12 +1651,16 @@ namespace PerfView
                 string module = null;
                 var match = Regex.Match(cellStr, @"([\w.]+)!");
                 if (match.Success)
+                {
                     module = match.Groups[1].Value;
+                }
                 else
                 {
                     match = Regex.Match(cellStr, @"module (\S+)");
                     if (match.Success)
+                    {
                         module = match.Groups[1].Value;
+                    }
                 }
 
                 if (module != null)
@@ -1496,9 +1676,13 @@ namespace PerfView
                 }
             }
             if (matchedSomething)
+            {
                 Update();
+            }
             else
+            {
                 StatusBar.LogError("Cell does not have the pattern of a entry group.");
+            }
         }
         private void DoFoldModule(object sender, ExecutedRoutedEventArgs e)
         {
@@ -1514,7 +1698,10 @@ namespace PerfView
         {
             var str = FoldRegExTextBox.Text;
             foreach (string cellStr in SelectedCellsStringValue())
+            {
                 str = AddSet(str, FilterParams.EscapeRegEx(cellStr));        // TODO need a good anchor
+            }
+
             FoldRegExTextBox.Text = str;
             Update();
         }
@@ -1533,7 +1720,9 @@ namespace PerfView
             e.CanExecute = false;
             var asETLData = DataSource.DataFile as ETLPerfViewData;
             if (asETLData != null)
+            {
                 e.CanExecute = true;
+            }
         }
         private void DoOpenEvents(object sender, ExecutedRoutedEventArgs e)
         {
@@ -1543,7 +1732,9 @@ namespace PerfView
                 var start = GetCellStringValue(cells[0]);
                 var end = start;
                 if (cells.Count == 2)
+                {
                     end = GetCellStringValue(cells[1]);
+                }
 
                 double dummy;
                 if (!double.TryParse(start, out dummy) || !double.TryParse(end, out dummy))
@@ -1557,7 +1748,9 @@ namespace PerfView
                 {
                     eventSource = child as PerfViewEventSource;
                     if (eventSource != null)
+                    {
                         break;
+                    }
                 }
                 if (eventSource == null)
                 {
@@ -1576,14 +1769,18 @@ namespace PerfView
 
             }
             else
+            {
                 StatusBar.LogError("You must select one or two cells to act as the focus region.");
+            }
         }
 
         private void DoSetTimeRange(object sender, ExecutedRoutedEventArgs e)
         {
             var focusTextBox = Keyboard.FocusedElement as TextBox;
             if (focusTextBox == null && PerfDataGrid.EditingBox != null && PerfDataGrid.EditingBox.IsFocused)
+            {
                 focusTextBox = PerfDataGrid.EditingBox;
+            }
 
             if (focusTextBox != null)
             {
@@ -1595,7 +1792,9 @@ namespace PerfView
 
                     // If you accidently select the space before the selection, skip it
                     if (0 <= selectionStartIndex && selectionStartIndex < text.Length && text[selectionStartIndex] == ' ')
+                    {
                         selectionStartIndex++;
+                    }
 
                     // grab the last 32 bytes of the string.  
                     var histStart = text.Length - CallTree.TimeHistogramController.BucketCount;
@@ -1627,7 +1826,9 @@ namespace PerfView
                     Update();
                 }
                 else
+                {
                     StatusBar.LogError("Could not set time range.");
+                }
             }
         }
 
@@ -1637,7 +1838,10 @@ namespace PerfView
         {
             var asViewNode = viewOrDataObject as CallTreeViewNode;
             if (asViewNode != null)
+            {
                 return asViewNode.Data;
+            }
+
             return viewOrDataObject as CallTreeNodeBase;
         }
 
@@ -1652,15 +1856,21 @@ namespace PerfView
             var asDO = originalSource as DependencyObject;
 
             if (asDO == null)
+            {
                 return false;
+            }
 
             var cell = asDO.AncestorOfType<DataGridCell>();
             if (cell == null || cell.Column == null)
+            {
                 return false;
+            }
 
             var grid = cell.AncestorOfType<PerfDataGrid>();
             if (grid == null)
+            {
                 return false;
+            }
 
             return (cell.Column == grid.ScenarioHistogramColumn);
         }
@@ -1679,7 +1889,9 @@ namespace PerfView
         {
             var box = Keyboard.FocusedElement as TextBox;
             if (box == null)
+            {
                 return;
+            }
 
             var scenarioList = m_callTree.ScenarioHistogram.GetScenariosForCharacterRange(
                 (HistogramCharacterIndex)(box.SelectionStart),
@@ -1716,12 +1928,16 @@ namespace PerfView
                     (HistogramCharacterIndex)(box.SelectionStart),
                     (HistogramCharacterIndex)(box.SelectionStart + box.SelectionLength));
                 foreach (var scenario in scenarioList)
+                {
                     sb.AppendLine(m_callTree.ScenarioHistogram.GetNameForScenario(scenario));
+                }
             }
             else
             {
                 for (int i = 0; i < m_callTree.StackSource.ScenarioCount; i++)
+                {
                     sb.AppendLine(m_callTree.ScenarioHistogram.GetNameForScenario(i));
+                }
             }
             Clipboard.SetText(sb.ToString());
         }
@@ -1763,15 +1979,21 @@ namespace PerfView
         {
             var asDO = Keyboard.FocusedElement as DependencyObject;
             if (asDO == null)
+            {
                 return;
+            }
 
             var cell = asDO.AncestorOfType<DataGridCell>();
             if (cell == null)
+            {
                 return;
+            }
 
             var context = cell.DataContext as CallTreeNodeBase;
             if (context == null)
+            {
                 return;
+            }
 
             SortScenariosByNode(context);
         }
@@ -1783,11 +2005,16 @@ namespace PerfView
             foreach (string cellStr in SelectedCellsStringValue())
             {
                 if (incPat.Length != 0)
+                {
                     incPat += "|";
+                }
 
                 var pat = cellStr;
                 if (pat.IndexOf('!') < 0)
+                {
                     pat = "^" + pat;
+                }
+
                 incPat += FilterParams.EscapeRegEx(pat);
             }
 
@@ -1801,7 +2028,10 @@ namespace PerfView
             {
                 var pat = cellStr;
                 if (pat.IndexOf('!') < 0)
+                {
                     pat = "^" + pat;
+                }
+
                 str = AddSet(str, FilterParams.EscapeRegEx(pat));
             }
             ExcludeRegExTextBox.Text = str;
@@ -1811,7 +2041,10 @@ namespace PerfView
         {
             StringBuilder sb = new StringBuilder();
             using (XmlWriter writer = XmlWriter.Create(sb, new XmlWriterSettings() { Indent = true, NewLineOnAttributes = true }))
+            {
                 FilterGuiState.WriteToXml("FilterGuiState", writer);
+            }
+
             Clipboard.SetText(sb.ToString());
         }
         private void DoMergeFilterParams(object sender, ExecutedRoutedEventArgs e)
@@ -1835,7 +2068,9 @@ namespace PerfView
             {
                 // TODO we can do a better job here.  If we have mulitple processe specs we simply don't focus right now. 
                 if (!m.Groups[2].Value.Contains("Process"))
+                {
                     processID = int.Parse(m.Groups[1].Value);
+                }
             }
 
             var etlDataFile = DataSource.DataFile as ETLPerfViewData;
@@ -1871,7 +2106,7 @@ namespace PerfView
         /// Given a source of stacks, a process ID, and and ETL file look up all the symbols for any module in
         /// that process that has more than 5% CPU time inclusive.   
         /// </summary>
-        static void PrimeWarmSymbols(StackSource stackSource, int processID, ETLPerfViewData etlFile, TextWriter log)
+        private static void PrimeWarmSymbols(StackSource stackSource, int processID, ETLPerfViewData etlFile, TextWriter log)
         {
             // Compute inclusive metric for every module into moduleMetrics
             var moduleMetrics = new GrowableArray<float>(50);
@@ -1954,7 +2189,9 @@ namespace PerfView
             {
                 // TODO we can do a better job here.  If we have multiple processes specs we simply don't focus right now. 
                 if (!m.Groups[2].Value.Contains("Process"))
+                {
                     processID = int.Parse(m.Groups[1].Value);
+                }
             }
 
             //create the list of module names to look up
@@ -2027,7 +2264,9 @@ namespace PerfView
             {
                 var asCallTreeViewNode = item as CallTreeViewNode;
                 if (asCallTreeViewNode != null)
+                {
                     asCallTreeNodeBase = asCallTreeViewNode.Data;
+                }
                 else
                 {
                     StatusBar.LogError("Could not find data item.");
@@ -2050,7 +2289,9 @@ namespace PerfView
                     var sourceFile = sourceLocation.SourceFile;
                     logicalSourcePath = sourceFile.GetSourceFile();
                     if (logicalSourcePath != null)
+                    {
                         checksumMatches = sourceFile.ChecksumMatches;
+                    }
 
                     sourcePathToOpen = logicalSourcePath;
                     if (sourcePathToOpen != null)
@@ -2072,11 +2313,12 @@ namespace PerfView
 
                         // TODO FIX NOW this is a hack
                         var notepad2 = Command.FindOnPath("notepad2.exe");
-
                         Window dialogParentWindow = this;
                         if (notepad2 != null)
+                        {
                             Command.Run(Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
                                 + Command.Quote(sourcePathToOpen), new CommandOptions().AddStart());
+                        }
                         else
                         {
                             StatusBar.Log("Opening editor on " + sourcePathToOpen);
@@ -2087,12 +2329,9 @@ namespace PerfView
                             textEditorWindow.Show();
                             textEditorWindow.TextEditor.GotoLine(sourceLocation.LineNumber);
                         }
-
                         if (!checksumMatches)
                         {
-                            MessageBox.Show(dialogParentWindow, "CheckSum Mismatch",
-                                "WARNING: The source file being shown does not precisely match the build time version.\r\n" +
-                                "The source code and line numbers are at best approximate.");
+                            StatusBar.LogError("Warning: Source code Mismatch for " + Path.GetFileName(logicalSourcePath));
                         }
                     }
                 });
@@ -2106,7 +2345,9 @@ namespace PerfView
             metricOnLine = null;
             var m = Regex.Match(cellText, "<<(.*!.*)>>");
             if (m.Success)
+            {
                 cellText = m.Groups[1].Value;
+            }
 
             // Find the most numerous call stack
             // TODO this can be reasonably expensive.   If it is a problem do something about it (e.g. sampling)
@@ -2122,7 +2363,10 @@ namespace PerfView
                     var frameIndex = m_stackSource.GetFrameIndex(callStackIdx);
                     var frameName = m_stackSource.GetFrameName(frameIndex, false);
                     if (frameName == cellText)
+                    {
                         matchingFrameIndex = frameIndex;        // We keep overwriting it, so we get the entry closest to the root.  
+                    }
+
                     callStackIdx = m_stackSource.GetCallerIndex(callStackIdx);
                 }
                 if (matchingFrameIndex != StackSourceFrameIndex.Invalid)
@@ -2156,15 +2400,6 @@ namespace PerfView
                 return null;
             }
 
-            // TODO FIX NOW remove restrictions
-            var etlData = DataSource.DataFile as ETLPerfViewData;
-            if (etlData == null)
-            {
-                StatusBar.LogError("Lookup source only works on ETL files.");
-                return null;
-            }
-            var reader = etlData.GetSymbolReader(StatusBar.LogWriter);
-
             // Find the most primitive TraceEventStackSource
             TraceEventStackSource asTraceEventStackSource = PerfViewExtensibility.Stacks.GetTraceEventStackSource(m_stackSource);
             if (asTraceEventStackSource == null)
@@ -2172,6 +2407,8 @@ namespace PerfView
                 StatusBar.LogError("Source does not support symbolic lookup.");
                 return null;
             }
+
+            var reader = DataSource.DataFile.GetSymbolReader(StatusBar.LogWriter);
 
             var frameToLine = new Dictionary<StackSourceFrameIndex, int>();
 
@@ -2211,9 +2448,14 @@ namespace PerfView
                     if (methodIdx != MethodIndex.Invalid)
                     {
                         if (!commonMethodIdxSet)
+                        {
                             commonMethodIdx = methodIdx;            // First time, set it as the common method.  
+                        }
                         else if (methodIdx != commonMethodIdx)
+                        {
                             methodIdx = MethodIndex.Invalid;        // More than one method, give up.  
+                        }
+
                         commonMethodIdxSet = true;
                     }
 
@@ -2227,7 +2469,9 @@ namespace PerfView
             StatusBar.LogWriter.WriteLine("Metric as a function of code address");
             StatusBar.LogWriter.WriteLine("      Address    :   Line     Metric");
             foreach (var keyValue in nativeAddressFreq)
+            {
                 StatusBar.LogWriter.WriteLine("    {0,12:x} : {1,6} {2,10:f1}", keyValue.Key, keyValue.Value.Item1, keyValue.Value.Item2);
+            }
 
             if (sourceLocation == null)
             {
@@ -2238,7 +2482,9 @@ namespace PerfView
             StatusBar.LogWriter.WriteLine();
             StatusBar.LogWriter.WriteLine("Metric per line in the file {0}", Path.GetFileName(sourceLocation.SourceFile.BuildTimeFilePath));
             foreach (var keyVal in metricOnLine)
+            {
                 StatusBar.LogWriter.WriteLine("    Line {0,5}:  Metric {1,5:n1}", keyVal.Key, keyVal.Value);
+            }
 
             return sourceLocation;
         }
@@ -2253,16 +2499,26 @@ namespace PerfView
                 {
                     var line = inFile.ReadLine();
                     if (line == null)
+                    {
                         break;
+                    }
+
                     lineNum++;
 
                     float value;
                     if (lineData.TryGetValue(lineNum, out value))
+                    {
                         outFile.Write(ToCompactString(value));
+                    }
                     else if (lineNum == 1)
+                    {
                         outFile.Write("Metric|");
+                    }
                     else
+                    {
                         outFile.Write("       ");
+                    }
+
                     outFile.WriteLine(line);
                 }
             }
@@ -2277,16 +2533,27 @@ namespace PerfView
             for (int i = 0; ; i++)
             {
                 if (value < 999.95)
+                {
                     return value.ToString("f1").PadLeft(5) + suffix;
+                }
+
                 value = value / 1000;
                 if (i == 0)
+                {
                     suffix = "K|";
+                }
                 else if (i == 1)
+                {
                     suffix = "M|";
+                }
                 else if (i == 2)
+                {
                     suffix = "G|";
+                }
                 else
+                {
                     return "******|";
+                }
             }
         }
 
@@ -2294,14 +2561,22 @@ namespace PerfView
         {
             CallTreeViewNode selectedNode = null;
             if (CallTreeTab.IsSelected)
+            {
                 selectedNode = CallTreeView.SelectedNode;
+            }
             else if (CallersTab.IsSelected)
+            {
                 selectedNode = m_callersView.SelectedNode;
+            }
             else if (CalleesTab.IsSelected)
+            {
                 selectedNode = m_calleesView.SelectedNode;
+            }
 
             if (selectedNode != null)
+            {
                 selectedNode.ExpandToDepth(int.MaxValue, selectExpandedNode: false); // we don't want to select every node while expanding, it takes too much time
+            }
         }
 
         private void DoExpand(object sender, ExecutedRoutedEventArgs e)
@@ -2309,11 +2584,17 @@ namespace PerfView
             CallTreeViewNode selectedNode = null;
             CallTreeView view = null;
             if (CallTreeTab.IsSelected)
+            {
                 view = CallTreeView;
+            }
             else if (CallersTab.IsSelected)
+            {
                 view = m_callersView;
+            }
             else if (CalleesTab.IsSelected)
+            {
                 view = m_calleesView;
+            }
 
             if (view != null)
             {
@@ -2330,7 +2611,10 @@ namespace PerfView
 
                         var children = selectedNode.VisibleChildren;
                         if (children.Count < 1)
+                        {
                             break;
+                        }
+
                         selectedNode = children[0];
                     }
                 }
@@ -2342,17 +2626,25 @@ namespace PerfView
             CallTreeViewNode selectedNode = null;
             CallTreeView view = null;
             if (CallTreeTab.IsSelected)
+            {
                 view = CallTreeView;
+            }
             else if (CallersTab.IsSelected)
+            {
                 view = m_callersView;
+            }
             else if (CalleesTab.IsSelected)
+            {
                 view = m_calleesView;
+            }
 
             if (view != null)
             {
                 selectedNode = view.SelectedNode;
                 if (selectedNode != null)
+                {
                     selectedNode.IsExpanded = false;
+                }
             }
         }
 
@@ -2383,11 +2675,17 @@ namespace PerfView
             CallTreeViewNode selectedNode = null;
             CallTreeView view = null;
             if (CallTreeTab.IsSelected)
+            {
                 view = CallTreeView;
+            }
             else if (CallersTab.IsSelected)
+            {
                 view = m_callersView;
+            }
             else if (CalleesTab.IsSelected)
+            {
                 view = m_calleesView;
+            }
 
             if (view != null)
             {
@@ -2415,14 +2713,20 @@ namespace PerfView
         {
             float newVal;
             if (float.TryParse(FoldPercentTextBox.Text, out newVal))
+            {
                 FoldPercentTextBox.Text = (newVal * 1.6).ToString("f2");
+            }
+
             Update();
         }
         private void DoDecreaseFoldPercent(object sender, ExecutedRoutedEventArgs e)
         {
             float newVal;
             if (float.TryParse(FoldPercentTextBox.Text, out newVal))
+            {
                 FoldPercentTextBox.Text = (newVal / 1.6).ToString("f2");
+            }
+
             Update();
         }
         // turns off menus for options that only make sence in the callTree view.  
@@ -2434,40 +2738,58 @@ namespace PerfView
         {
             var param = e.Parameter as string;
             if (param == null)
+            {
                 param = "StackViewerQuickStart";       // This is the F1 help
+            }
 
             // We have specific help for GC heap stacks 
             if (DataSource.DataFile is ClrProfilerHeapPerfViewFile ||
                 DataSource.DataFile is HeapDumpPerfViewFile)
             {
                 if (param == "StartingAnAnalysis" || param == "UnderstandingPerfData" || param == "StackViewerQuickStart" || param == "Tutorial")
+                {
                     param += "GCHeap";
+                }
             }
             else if (DataSource.SourceName.Contains("Thread Time"))
             {
                 if (param == "StartingAnAnalysis")
+                {
                     param = "BlockedTimeInvestigation";
+                }
                 else if (param == "UnderstandingPerfData")
                 {
                     if (DataSource.SourceName.Contains("with Tasks"))
+                    {
                         param = "UnderstandingPerfDataThreadTimeWithTasks";
+                    }
                     else
+                    {
                         param = "UnderstandingPerfDataThreadTime";
+                    }
                 }
             }
             else if (DataSource.SourceName.StartsWith("GC Heap"))
             {
                 if (param == "StartingAnAnalysis")
+                {
                     param = "GCHeapNetMemStacks";
+                }
                 else if (param == "UnderstandingPerfData")
+                {
                     param = "GCHeapNetMemStacks";
+                }
             }
             else if (DataSource.SourceName.StartsWith("Net Virtual") || DataSource.SourceName == "Net OS Heap Alloc")
             {
                 if (param == "StartingAnAnalysis")
+                {
                     param = "UnmanagedMemoryAnalysis";
+                }
                 else if (param == "UnderstandingPerfData")
+                {
                     param = "UnmanagedMemoryAnalysis";
+                }
             }
 
             StatusBar.Log("Displaying Users Guide in Web Browser.");
@@ -2485,10 +2807,15 @@ namespace PerfView
             {
                 // if it looks like a number, don't event try, just ignore 
                 if (Regex.IsMatch(str, @"^[_\d,.]*$"))
+                {
                     return false;
+                }
 
                 if (!SetFocus(str))
+                {
                     return true;
+                }
+
                 return true;
             }
             else
@@ -2513,7 +2840,9 @@ namespace PerfView
 
             // If it is the 'name' field, then set that to be the focus treeNode. 
             if (asTextBlock != null)
+            {
                 SetFocus(asTextBlock.Text);
+            }
         }
 
         private void Notes_GotFocus(object sender, RoutedEventArgs e)
@@ -2526,7 +2855,10 @@ namespace PerfView
             set
             {
                 if (value == m_NotesPaneHidden)
+                {
                     return;
+                }
+
                 if (value)
                 {
                     App.ConfigData["NotesPaneHidden"] = "true";
@@ -2541,7 +2873,8 @@ namespace PerfView
                 }
             }
         }
-        bool m_NotesPaneHidden;
+
+        private bool m_NotesPaneHidden;
 
         /// <summary>
         /// This is whether the sample being shown represent time and thus should be divided up or not.  
@@ -2556,7 +2889,10 @@ namespace PerfView
         private void Notes_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (m_IgnoreNotesChange)
+            {
                 return;
+            }
+
             if (!m_ViewsShouldBeSaved)
             {
                 m_ViewsShouldBeSaved = true;
@@ -2564,8 +2900,8 @@ namespace PerfView
             }
         }
 
-        bool m_NotesTabActive;          // Are we looking at the Notes tab (rather than the Notes pane).  
-        bool m_IgnoreNotesChange;       // If set, we don't assume a change in the Notes text is done by the user 
+        private bool m_NotesTabActive;          // Are we looking at the Notes tab (rather than the Notes pane).  
+        private bool m_IgnoreNotesChange;       // If set, we don't assume a change in the Notes text is done by the user 
         private void NotesTab_GotFocus(object sender, RoutedEventArgs e)
         {
             m_IgnoreNotesChange = true;
@@ -2583,7 +2919,10 @@ namespace PerfView
             m_IgnoreNotesChange = false;
 
             if (!m_NotesPaneHidden)
+            {
                 NodePaneRowDef.MaxHeight = Double.PositiveInfinity;
+            }
+
             m_NotesTabActive = false;
         }
 
@@ -2592,7 +2931,9 @@ namespace PerfView
         private void FlameGraphTab_GotFocus(object sender, RoutedEventArgs e)
         {
             if (FlameGraphCanvas.IsEmpty || m_RedrawFlameGraphWhenItBecomesVisible)
+            {
                 RedrawFlameGraph();
+            }
         }
 
         private void FlameGraphCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => RedrawFlameGraphIfVisible();
@@ -2600,9 +2941,13 @@ namespace PerfView
         private void RedrawFlameGraphIfVisible()
         {
             if (FlameGraphTab.IsSelected)
+            {
                 RedrawFlameGraph();
+            }
             else
+            {
                 m_RedrawFlameGraphWhenItBecomesVisible = true;
+            }
         }
 
         private void RedrawFlameGraph()
@@ -2618,7 +2963,9 @@ namespace PerfView
         private void FlameGraphCanvas_CurrentFlameBoxChanged(object sender, string toolTipText)
         {
             if (StatusBar.LoggedError)
+            {
                 return;
+            }
 
             StatusBar.Status = toolTipText;
         }
@@ -2632,7 +2979,9 @@ namespace PerfView
             {
                 saveDialog.FileName = baseName + ".flameGraph" + i.ToString() + ".png";
                 if (!File.Exists(saveDialog.FileName))
+                {
                     break;
+                }
             }
             saveDialog.InitialDirectory = Path.GetDirectoryName(DataSource.FilePath);
             saveDialog.Title = "File to save flame graph";
@@ -2643,7 +2992,9 @@ namespace PerfView
 
             var result = saveDialog.ShowDialog();
             if (result == true)
+            {
                 FlameGraph.Export(FlameGraphCanvas, saveDialog.FileName);
+            }
         }
 
         private TabItem SelectedTab
@@ -2651,19 +3002,33 @@ namespace PerfView
             get
             {
                 if (ByNameTab.IsSelected)
+                {
                     return ByNameTab;
+                }
                 else if (CallerCalleeTab.IsSelected)
+                {
                     return CallerCalleeTab;
+                }
                 else if (CallTreeTab.IsSelected)
+                {
                     return CallTreeTab;
+                }
                 else if (CallersTab.IsSelected)
+                {
                     return CallersTab;
+                }
                 else if (CalleesTab.IsSelected)
+                {
                     return CalleesTab;
+                }
                 else if (FlameGraphTab.IsSelected)
+                {
                     return FlameGraphTab;
+                }
                 else if (NotesTab.IsSelected)
+                {
                     return NotesTab;
+                }
 
                 Debug.Assert(false, "No tab selected!");
                 return null;
@@ -2685,7 +3050,10 @@ namespace PerfView
 
                 var selectedTab = SelectedTab;
                 if (selectedTab != null)
+                {
                     ret.TabSelected = SelectedTab.Name;
+                }
+
                 ret.FocusName = FocusName;
 
                 var columns = new List<string>();
@@ -2748,14 +3116,20 @@ namespace PerfView
                 if (m_callTree != null)
                 {
                     if (value.FocusName != null)
+                    {
                         SetFocus(value.FocusName);
+                    }
                 }
 
                 if (value.Columns != null)
                 {
                     foreach (var columnName in ByNameDataGrid.ColumnNames())
+                    {
                         if (!value.Columns.Contains(columnName) && columnName != "NameColumn")
+                        {
                             RemoveColumn(columnName);
+                        }
+                    }
                 }
 
                 NotesPaneHidden = value.NotesPaneHidden;
@@ -2882,8 +3256,8 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.Space) });
         public static RoutedUICommand CollapseCommand = new RoutedUICommand("Collapse", "Collapse", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.Space, ModifierKeys.Shift) });
-        public static RoutedUICommand SetBrownBackgroundColorCommand = new RoutedUICommand("Set Brown Background Color", "SetBrownBackgroundColor", typeof(StackWindow)); 
-        public static RoutedUICommand SetBlueBackgroundColorCommand = new RoutedUICommand("Set Blue Background Color", "SetBlueBackgroundColor", typeof(StackWindow)); 
+        public static RoutedUICommand SetBrownBackgroundColorCommand = new RoutedUICommand("Set Brown Background Color", "SetBrownBackgroundColor", typeof(StackWindow));
+        public static RoutedUICommand SetBlueBackgroundColorCommand = new RoutedUICommand("Set Blue Background Color", "SetBlueBackgroundColor", typeof(StackWindow));
         public static RoutedUICommand SetRedBackgroundColorCommand = new RoutedUICommand("Set Red Background Color", "SetRedBackgroundColor", typeof(StackWindow));
         public static RoutedUICommand FoldPercentCommand = new RoutedUICommand("Fold %", "FoldPercent", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.F6) });
@@ -2905,15 +3279,21 @@ namespace PerfView
             // Put the exlusive columns first if they are not already there.  
             var col = ByNameDataGrid.GetColumnIndex("ExcPercentColumn");
             if (0 <= col && col != 1)
+            {
                 ByNameDataGrid.Grid.Columns.Move(col, 1);
+            }
 
             col = ByNameDataGrid.GetColumnIndex("ExcColumn");
             if (0 <= col && col != 2)
+            {
                 ByNameDataGrid.Grid.Columns.Move(col, 2);
+            }
 
             col = ByNameDataGrid.GetColumnIndex("ExcCountColumn");
             if (0 <= col && col != 3)
+            {
                 ByNameDataGrid.Grid.Columns.Move(col, 3);
+            }
 
             // Initialize the CallTree, Callers, and Callees tabs
             // TODO:  Gross that the caller has to pass this in.  
@@ -2964,7 +3344,9 @@ namespace PerfView
                         return;
                     }
                     if (result == MessageBoxResult.Yes)
+                    {
                         DoSave(null, null);
+                    }
 
                     if (m_ViewsShouldBeSaved)
                     {
@@ -2973,7 +3355,7 @@ namespace PerfView
                     }
                 }
 
-                if (StackWindows[0] == this && this.WindowState != System.Windows.WindowState.Maximized)
+                if (StackWindows[0] == this && WindowState != System.Windows.WindowState.Maximized)
                 {
                     App.ConfigData["StackWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
                     App.ConfigData["StackWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
@@ -2984,15 +3366,22 @@ namespace PerfView
                 StackWindows.Remove(this);
                 UpdateDiffMenus(StackWindows);
                 if (DataSource != null)
+                {
                     DataSource.ViewClosing(this);
+                }
                 // Insure our parent is visible
                 DoOpenParent(null, null);
 
                 // Throw the old call tree nodes away (GUI keeps reference to them, so disconnecting saves memory)
                 if (m_callTree != null)
+                {
                     m_callTree.FreeMemory();
+                }
+
                 if (m_callTreeView != null)
+                {
                     m_calleesView.Dispose();
+                }
             };
             TopStats.PreviewMouseDoubleClick += delegate (object sender, MouseButtonEventArgs e)
             {
@@ -3147,16 +3536,23 @@ namespace PerfView
             {
                 Match m = Regex.Match(cellStr, @"([ \w.-]+)!");
                 if (m.Success)
+                {
                     moduleAction(m.Groups[1].Value);
+                }
                 else
                 {
                     m = Regex.Match(cellStr, @"^module ([ \w.-]+)");
                     if (m.Success)
+                    {
                         moduleAction(m.Groups[1].Value);
+                    }
                     else
                     {
                         if (badStrs.Length > 0)
+                        {
                             badStrs += " ";
+                        }
+
                         badStrs += cellStr;
                     }
                 }
@@ -3181,7 +3577,9 @@ namespace PerfView
             {
                 Match m = Regex.Match(incPat, @"^Process%\s+([^();]+[^(); ])", RegexOptions.IgnoreCase);
                 if (m.Success)
+                {
                     procName = m.Groups[1].Value;
+                }
             }
             return procName;
         }
@@ -3189,11 +3587,15 @@ namespace PerfView
         private static string FindExePath(StackSource stackSource, string procName)
         {
             if (procName == null)
+            {
                 return null;
+            }
 
             // Get the unfiltered source 
             while (stackSource.BaseStackSource != stackSource)
+            {
                 stackSource = stackSource.BaseStackSource;
+            }
 
             // Look in the frames for a path that ends in the process name 
             for (int frameidx = (int)StackSourceFrameIndex.Start; frameidx < stackSource.CallFrameIndexLimit; frameidx++)
@@ -3203,7 +3605,9 @@ namespace PerfView
                 if (match.Success)
                 {
                     if (string.Compare(match.Groups[2].Value, procName, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         return match.Groups[1].Value;
+                    }
                 }
             }
             return null;
@@ -3217,7 +3621,9 @@ namespace PerfView
             {
                 double limit = newSource.SampleTimeRelativeMSecLimit;
                 if (limit != 0)
+                {
                     EndTextBox.Text = (newSource.SampleTimeRelativeMSecLimit).ToString("n3");
+                }
             }
             else if (!double.TryParse(EndTextBox.Text, out val2))
             {
@@ -3226,7 +3632,9 @@ namespace PerfView
                 return false;
             }
             else
+            {
                 EndTextBox.Text = val2.ToString("n3");
+            }
 
             // See if we are pasting a range into the start text box
             if (double.TryParse(StartTextBox.Text, out val1))
@@ -3279,15 +3687,25 @@ namespace PerfView
             bool ret = true;
 
             if (ByNameTab.IsSelected)
+            {
                 ret = ByNameDataGrid.Find(pat);
+            }
             else if (CallTreeTab.IsSelected)
+            {
                 ret = CallTreeView.Find(pat);
+            }
             else if (CallerCalleeTab.IsSelected)
+            {
                 ret = CallerCalleeView.Find(pat);
+            }
             else if (CallersTab.IsSelected)
+            {
                 ret = m_callersView.Find(pat);
+            }
             else if (CalleesTab.IsSelected)
+            {
                 ret = m_calleesView.Find(pat);
+            }
             //             else if (NotesTab.IsSelected)        // TODO FIX NOW implement find.  
             else
             {
@@ -3296,7 +3714,10 @@ namespace PerfView
             }
 
             if (!ret)
+            {
                 StatusBar.LogError("Could not find " + pat + ".");
+            }
+
             return ret;
         }
 
@@ -3311,7 +3732,10 @@ namespace PerfView
         {
             var dataGrid = GetDataGrid();
             if (dataGrid == null)
+            {
                 return null;
+            }
+
             return dataGrid.SelectedCells;
         }
         internal DataGrid GetDataGrid()
@@ -3327,11 +3751,18 @@ namespace PerfView
                 if (dependencyObject != null)
                 {
                     if (CallerCalleeView.CallersGrid.Grid.IsAncestorOf(dependencyObject))
+                    {
                         return CallerCalleeView.CallersGrid.Grid;
+                    }
                     else if (CallerCalleeView.CalleesGrid.Grid.IsAncestorOf(dependencyObject))
+                    {
                         return CallerCalleeView.CalleesGrid.Grid;
+                    }
+
                     if (CallerCalleeView.FocusGrid.Grid.IsAncestorOf(dependencyObject))
+                    {
                         return CallerCalleeView.FocusGrid.Grid;
+                    }
                 }
 
                 return null;
@@ -3357,20 +3788,29 @@ namespace PerfView
         {
             var dataGrid = GetDataGrid();
             if (dataGrid == null)
+            {
                 yield break;
+            }
+
             var cells = dataGrid.SelectedCells;
             if (cells == null)
+            {
                 yield break;
+            }
 
             for (int i = 0; i < cells.Count; i++)
             {
                 DataGridCellInfo cell = cells[i];
                 var str = GetCellStringValue(cell);
                 if (str.Length != 0)
+                {
                     yield return str;
+                }
 
                 if (StartsFullRow(cells, i, dataGrid.Columns.Count))
+                {
                     i += dataGrid.Columns.Count - 1;
+                }
             }
         }
         /// <summary>
@@ -3379,11 +3819,18 @@ namespace PerfView
         private static bool StartsFullRow(IList<DataGridCellInfo> cells, int startIdx, int numColumns)
         {
             if (startIdx + numColumns > cells.Count)
+            {
                 return false;
+            }
 
             for (int i = 0; i < numColumns; i++)
+            {
                 if (cells[i + startIdx].Column.DisplayIndex != i)
+                {
                     return false;
+                }
+            }
+
             return true;
         }
         /// <summary>
@@ -3393,19 +3840,30 @@ namespace PerfView
         {
             var dataGrid = GetDataGrid();
             if (dataGrid == null)
+            {
                 return null;
+            }
+
             var cells = dataGrid.SelectedCells;
             if (cells == null)
+            {
                 return null;
+            }
+
             if (cells.Count == 0)
+            {
                 return null;
+            }
+
             if (cells.Count > 1)
             {
                 int numCols = dataGrid.Columns.Count;
                 // fail unless we have selected a whole row
                 // TODO should we bother?
                 if (cells.Count != numCols || !StartsFullRow(cells, 0, numCols))
+                {
                     return null;
+                }
             }
             return GetCellStringValue(cells[0]);
         }
@@ -3430,7 +3888,10 @@ namespace PerfView
             foreach (var menuEntry in stackWindows)
             {
                 if (menuEntry == stackWindow)
+                {
                     continue;
+                }
+
                 var childMenuItem = new MenuItem();
                 childMenuItem.Header = "With Baseline: " + menuEntry.Title;
                 childMenuItem.Tag = menuEntry;
@@ -3504,7 +3965,7 @@ namespace PerfView
 
         private void DoSaveAsPreset(object sender, RoutedEventArgs e)
         {
-            string groupPat = this.GroupRegExTextBox.Text.Trim();
+            string groupPat = GroupRegExTextBox.Text.Trim();
             string nameCandidate = "Preset " + (m_presets.Count + 1).ToString();
             // Try to extract pattern name as a [Name] prefix
             if (groupPat[0] == '[')
@@ -3516,7 +3977,7 @@ namespace PerfView
                     groupPat = groupPat.Substring(closingBracketIndex + 1).Trim();
                 }
             }
-            
+
             var newPresetDialog = new NewPresetDialog(nameCandidate, m_presets.Select(x => x.Name).ToList());
             newPresetDialog.Owner = this;
             if (!(newPresetDialog.ShowDialog() ?? false))
@@ -3527,8 +3988,8 @@ namespace PerfView
             Preset preset = m_presets.FirstOrDefault(x => x.Name == newPresetDialog.PresetName) ?? new Preset();
             preset.Name = newPresetDialog.PresetName;
             preset.GroupPat = groupPat;
-            preset.FoldPercentage = this.FoldPercentTextBox.Text;
-            preset.FoldPat = this.FoldRegExTextBox.Text;
+            preset.FoldPercentage = FoldPercentTextBox.Text;
+            preset.FoldPat = FoldRegExTextBox.Text;
 
             if (m_presets.FindIndex(x => x.Name == newPresetDialog.PresetName) == -1)
             {
@@ -3556,9 +4017,9 @@ namespace PerfView
             string presetName = menuItem.Tag as string;
 
             var preset = m_presets.Find(x => x.Name == presetName);
-            this.GroupRegExTextBox.AddToHistory($"[{preset.Name}] {preset.GroupPat}");
-            this.FoldPercentTextBox.AddToHistory(preset.FoldPercentage);
-            this.FoldRegExTextBox.AddToHistory(preset.FoldPat);
+            GroupRegExTextBox.AddToHistory($"[{preset.Name}] {preset.GroupPat}");
+            FoldPercentTextBox.AddToHistory(preset.FoldPercentage);
+            FoldRegExTextBox.AddToHistory(preset.FoldPat);
             Update();
         }
 
@@ -3566,20 +4027,30 @@ namespace PerfView
         {
             toCollection.Clear();
             foreach (var item in fromCollection)
+            {
                 toCollection.Add(item);
+            }
         }
         private double GetDouble(string value, double defaultValue)
         {
             if (value.Length == 0)
+            {
                 return defaultValue;
+            }
+
             return double.Parse(value);
         }
         private static string AddSet(string target, string addend)
         {
             if (target.Length == 0)
+            {
                 return addend;
+            }
+
             if (addend.Length == 0)
+            {
                 return target;
+            }
 
             // Remove the comment (we put it back at the end)
             var match = Regex.Match(target, @"(^\s*(\[.*?\])?\s*)(.*?)\s*$");
@@ -3590,17 +4061,23 @@ namespace PerfView
             {
                 int index = target.IndexOf(addend, pos);
                 if (index < 0)
+                {
                     break;
+                }
 
                 // Already exists, nothing to do.  
                 int next = index + addend.Length;
                 if ((index == 0 || target[index] == ';') &&
                     (next == target.Length || target[next] == ';'))
+                {
                     return target;
+                }
 
                 pos = next + 1;
                 if (pos >= target.Length)
+                {
                     break;
+                }
             }
             return comment + target + ";" + addend;
         }
@@ -3628,9 +4105,15 @@ namespace PerfView
                         if (double.TryParse(content, out num))
                         {
                             if (count == 0)
+                            {
                                 first = num;
+                            }
+
                             if (count == 1)
+                            {
                                 second = num;
+                            }
+
                             count++;
                             max = Math.Max(max, num);
                             min = Math.Min(min, num);
@@ -3640,7 +4123,10 @@ namespace PerfView
                     if (firstCell)
                     {
                         if (count == 0)     // Give up if the first cell is not a double.  
+                        {
                             break;
+                        }
+
                         firstCell = false;
                     }
                 }
@@ -3653,10 +4139,14 @@ namespace PerfView
                         text += string.Format("   X-Y={0:n3}", max - min);
                         double ratio = Math.Abs(first / second);
                         if (.0000001 <= ratio && ratio <= 10000000)
+                        {
                             text += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                        }
                     }
                     else
+                    {
                         text += string.Format("   Count={0}", count);
+                    }
 
                     StatusBar.Status = text;
                 }
@@ -3673,7 +4163,9 @@ namespace PerfView
                     {
                         var asLong = (long)asNum;
                         if (Math.Abs(asLong - asNum) < .005)
+                        {
                             cellContentsToPrint += " (0x" + asLong.ToString("x") + ")";
+                        }
                     }
                     StatusBar.Status = "Cell Contents: " + cellContentsToPrint;
                 }
@@ -3692,11 +4184,15 @@ namespace PerfView
 
                         double product = cellVal * clipBoardVal;
                         if (Math.Abs(product) <= 1000)
+                        {
                             reply += string.Format("   X*Y={0:n3}", product);
+                        }
 
                         double ratio = cellVal / clipBoardVal;
                         if (.001 <= Math.Abs(ratio) && Math.Abs(ratio) <= 1000000)
+                        {
                             reply += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                        }
 
                         StatusBar.Status = reply;
                     }
@@ -3708,10 +4204,14 @@ namespace PerfView
         internal void RestoreWindow(StackWindowGuiState guiState, string fileName)
         {
             if (fileName != null)
+            {
                 m_fileName = fileName;
+            }
 
             if (guiState != null)
+            {
                 FilterGuiState = guiState.FilterGuiState;
+            }
 
             if (m_ViewsShouldBeSaved)
             {
@@ -3720,14 +4220,14 @@ namespace PerfView
             }
         }
 
-        StackSource m_stackSource;
+        private StackSource m_stackSource;
         internal CallTree m_callTree;
 
         // Keep track of the parameters we have already seeen. 
-        List<FilterParams> m_history;
-        int m_historyPos;
-        bool m_settingFromHistory;      // true if the filter parameters are being udpated from the history list
-        bool m_fixedUpJustMyCode;
+        private List<FilterParams> m_history;
+        private int m_historyPos;
+        private bool m_settingFromHistory;      // true if the filter parameters are being udpated from the history list
+        private bool m_fixedUpJustMyCode;
 
         // State for the ByName OpenStacks
         internal List<CallTreeNodeBase> m_byNameView;
@@ -3740,10 +4240,10 @@ namespace PerfView
         internal CallTreeView m_callersView;
 
         // What fileName to save as
-        string m_fileName;
+        private string m_fileName;
 
         // List of presets loaded from configuration (and then maybe adjusted later)
-        List<Preset> m_presets;
+        private List<Preset> m_presets;
 
         #endregion
     }

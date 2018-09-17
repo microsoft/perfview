@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// Please see <see href="https://github.com/Microsoft/perfview/blob/master/src/TraceEvent/EventPipe/EventPipeFormat.md" />for details on the file format.
     /// 
     /// By conventions files of such a format are given the .netperf suffix and are logically
-    /// very much like a ETL file in that they have a header that indicete things about
+    /// very much like a ETL file in that they have a header that indicate things about
     /// the trace as a whole, and a list of events.    Like more modern ETL files the
     /// file as a whole is self-describing.    Some of the events are 'MetaData' events
     /// that indicate the provider name, event name, and payload field names and types.   
@@ -23,7 +23,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// events have a name some basic information (process, thread, timestamp, activity
     /// ID) and user defined field names and values of various types.  
     /// </summary>
-    unsafe public class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
+    public unsafe class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
     {
         public EventPipeEventSource(string fileName)
         {
@@ -148,7 +148,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
 
-                // Read in the header (The header does not inlcude payload parameter information)
+                // Read in the header (The header does not include payload parameter information)
                 var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
                 _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
 
@@ -162,9 +162,13 @@ namespace Microsoft.Diagnostics.Tracing
             else
             {
                 if (_eventMetadataDictionary.TryGetValue(eventData->MetaDataId, out var metaData))
+                {
                     ret = metaData.GetEventRecordForEventData(eventData);
+                }
                 else
+                {
                     Debug.Assert(false, "Warning can't find metaData for ID " + eventData->MetaDataId.ToString("x"));
+                }
             }
 
             reader.Goto(eventDataEnd);
@@ -225,13 +229,13 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
 #if SUPPORT_V1_V2
-        StreamLabel _endOfEventStream;
+        private StreamLabel _endOfEventStream;
 #endif
-        int _fileFormatVersionNumber;
-        Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
-        Deserializer _deserializer;
-        EventPipeTraceEventParser _eventParser; // TODO does this belong here?
-        string _processName;
+        private int _fileFormatVersionNumber;
+        private Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
+        private Deserializer _deserializer;
+        private EventPipeTraceEventParser _eventParser; // TODO does this belong here?
+        private string _processName;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
         #endregion
@@ -249,7 +253,7 @@ namespace Microsoft.Diagnostics.Tracing
     {
         public EventPipeEventBlock(EventPipeEventSource source) => _source = source;
 
-        unsafe public void FromStream(Deserializer deserializer)
+        public unsafe void FromStream(Deserializer deserializer)
         {
             // blockSizeInBytes INCLUDES any padding bytes to ensure alignment.  
             var blockSizeInBytes = deserializer.ReadInt();
@@ -289,9 +293,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         public void ToStream(Serializer serializer) => throw new InvalidOperationException();
 
-        StreamLabel _startEventData;
-        StreamLabel _endEventData;
-        EventPipeEventSource _source;
+        private StreamLabel _startEventData;
+        private StreamLabel _endEventData;
+        private EventPipeEventSource _source;
     }
 
     /// <summary>
@@ -305,13 +309,13 @@ namespace Microsoft.Diagnostics.Tracing
     /// 
     /// This class has two main functions
     ///    1. The constructor takes a PinnedStreamReader and decodes the serialized metadata
-    ///       so you can access the data conviniently (but it does not decode the parameter info)
+    ///       so you can access the data conveniently (but it does not decode the parameter info)
     ///    2. It remembers a EVENT_RECORD structure (from ETW) that contains this data)
     ///       and has a function GetEventRecordForEventData which converts from a 
     ///       EventPipeEventHeader (the raw serialized data) to a EVENT_RECORD (which
     ///       is what TraceEvent needs to look up the event an pass it up the stack.  
     /// </summary>
-    unsafe class EventPipeEventMetaDataHeader
+    internal unsafe class EventPipeEventMetaDataHeader
     {
         /// <summary>
         /// Creates a new MetaData instance from the serialized data at the current position of 'reader'
@@ -321,7 +325,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// whole stream (since it needs to be put into the EVENT_RECORD.
         /// 
         /// When this constructor returns the reader has read up to the serialized information about
-        /// the parameters.  We do this because this code does not know the best represenation for
+        /// the parameters.  We do this because this code does not know the best representation for
         /// this parameter information and so it just lets other code handle it.  
         /// </summary>
         public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
@@ -331,9 +335,13 @@ namespace Microsoft.Diagnostics.Tracing
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
 
             if (pointerSize == 4)
+            {
                 _eventRecord->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
+            }
             else
+            {
                 _eventRecord->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
+            }
 
             _eventRecord->EventHeader.ProcessId = processId;
 
@@ -351,7 +359,9 @@ namespace Microsoft.Diagnostics.Tracing
             }
 #if SUPPORT_V1_V2
             else
+            {
                 ReadObsoleteEventMetaData(reader, fileFormatVersionNumber);
+            }
 #endif
 
             // Check for parameter metadata so that it can be consumed by the parser.
@@ -366,7 +376,10 @@ namespace Microsoft.Diagnostics.Tracing
             if (_eventRecord != null)
             {
                 if (_eventRecord->ExtendedData != null)
+                {
                     Marshal.FreeHGlobal((IntPtr)_eventRecord->ExtendedData);
+                }
+
                 Marshal.FreeHGlobal((IntPtr)_eventRecord);
                 _eventRecord = null;
             }
@@ -374,8 +387,8 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Given a EventPipeEventHeader takes a EventPipeEventHeader that is specific to an event, copies it
-        /// on top of the static information in its EVENT_RECORD which is specialized this this meta-data 
-        /// and returns a pinter to it.  Thus this makes the EventPipe look like an ETW provider from
+        /// on top of the static information in its EVENT_RECORD which is specialized meta-data 
+        /// and returns a pointer to it.  Thus this makes the EventPipe look like an ETW provider from
         /// the point of view of the upper level TraceEvent logic.  
         /// </summary>
         internal TraceEventNativeMethods.EVENT_RECORD* GetEventRecordForEventData(EventPipeEventHeader* eventData)
@@ -388,8 +401,8 @@ namespace Microsoft.Diagnostics.Tracing
             // EVENT_RECORD does not field for ReleatedActivityID (because it is rarely used).  See GetRelatedActivityID;
             _eventRecord->UserDataLength = (ushort)eventData->PayloadSize;
 
-            // TODO the extra || operator is a hack becase the runtime actually tries to emit events that
-            // exceed this for the GC/BulkSurvivingObjectRanges (event id == 21).  We supress that assert 
+            // TODO the extra || operator is a hack because the runtime actually tries to emit events that
+            // exceed this for the GC/BulkSurvivingObjectRanges (event id == 21).  We suppress that assert 
             // for now but this is a real bug in the runtime's event logging.  ETW can't handle payloads > 64K.  
             Debug.Assert(_eventRecord->UserDataLength == eventData->PayloadSize ||
                 _eventRecord->EventHeader.ProviderId == ClrTraceEventParser.ProviderGuid && _eventRecord->EventHeader.Id == 21);
@@ -397,21 +410,29 @@ namespace Microsoft.Diagnostics.Tracing
 
             int stackBytesSize = EventPipeEventHeader.StackBytesSize(eventData);
 
-            // TODO remove once .NET Core has been fixed to not emit stacks on CLR method events which are just for bookeeping.  
+            // TODO remove once .NET Core has been fixed to not emit stacks on CLR method events which are just for bookkeeping.  
             if (ProviderId == ClrRundownTraceEventParser.ProviderGuid ||
                (ProviderId == ClrTraceEventParser.ProviderGuid && (140 <= EventId && EventId <= 144 || EventId == 190)))     // These are various CLR method Events.  
+            {
                 stackBytesSize = 0;
+            }
 
             if (0 < stackBytesSize)
             {
                 // Lazy allocation (destructor frees it). 
                 if (_eventRecord->ExtendedData == null)
+                {
                     _eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM));
+                }
 
                 if ((_eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER) != 0)
+                {
                     _eventRecord->ExtendedData->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE32;
+                }
                 else
+                {
                     _eventRecord->ExtendedData->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64;
+                }
 
                 // DataPtr should point at a EVENT_EXTENDED_ITEM_STACK_TRACE*.  These have a ulong MatchID field which is NOT USED before the stack data.
                 // Since that field is not used, I can backup the pointer by 8 bytes and synthesize a EVENT_EXTENDED_ITEM_STACK_TRACE from the raw buffer 
@@ -422,7 +443,9 @@ namespace Microsoft.Diagnostics.Tracing
                 _eventRecord->ExtendedDataCount = 1;        // Mark that we have the stack data.  
             }
             else
+            {
                 _eventRecord->ExtendedDataCount = 0;
+            }
 
             return _eventRecord;
         }
@@ -455,9 +478,13 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Deduce the opcode from the name.   
             if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+            {
                 _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Start;
+            }
             else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
+            {
                 _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Stop;
+            }
 
             _eventRecord->EventHeader.Keyword = (ulong)reader.ReadInt64();
 
@@ -478,7 +505,9 @@ namespace Microsoft.Diagnostics.Tracing
             MetaDataId = ((int)reader.Current) - EventPipeEventHeader.HeaderSize;
 
             if (fileFormatVersionNumber == 1)
+            {
                 _eventRecord->EventHeader.ProviderId = reader.ReadGuid();
+            }
             else
             {
                 ProviderName = reader.ReadNullTerminatedUnicodeString();
@@ -495,7 +524,9 @@ namespace Microsoft.Diagnostics.Tracing
 
             int metadataLength = reader.ReadInt32();
             if (0 < metadataLength)
+            {
                 ReadEventMetaData(reader, fileFormatVersionNumber);
+            }
         }
 #endif
 
@@ -512,35 +543,53 @@ namespace Microsoft.Diagnostics.Tracing
         public static Guid GetProviderGuidFromProviderName(string name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return Guid.Empty;
+            }
 
             // Legacy GUID lookups (events which existed before the current Guid generation conventions)
             if (name == TplEtwProviderTraceEventParser.ProviderName)
+            {
                 return TplEtwProviderTraceEventParser.ProviderGuid;
+            }
             else if (name == ClrTraceEventParser.ProviderName)
+            {
                 return ClrTraceEventParser.ProviderGuid;
+            }
             else if (name == ClrPrivateTraceEventParser.ProviderName)
+            {
                 return ClrPrivateTraceEventParser.ProviderGuid;
+            }
             else if (name == ClrRundownTraceEventParser.ProviderName)
+            {
                 return ClrRundownTraceEventParser.ProviderGuid;
+            }
             else if (name == ClrStressTraceEventParser.ProviderName)
+            {
                 return ClrStressTraceEventParser.ProviderGuid;
+            }
             else if (name == FrameworkEventSourceTraceEventParser.ProviderName)
+            {
                 return FrameworkEventSourceTraceEventParser.ProviderGuid;
+            }
 #if SUPPORT_V1_V2
             else if (name == SampleProfilerTraceEventParser.ProviderName)
+            {
                 return SampleProfilerTraceEventParser.ProviderGuid;
+            }
 #endif
             // Hash the name according to current event source naming conventions
             else
+            {
                 return TraceEventProviders.GetEventSourceGuidFromName(name);
+            }
         }
 
-        TraceEventNativeMethods.EVENT_RECORD* _eventRecord;
+        private TraceEventNativeMethods.EVENT_RECORD* _eventRecord;
     }
 
     /// <summary>
-    /// Private utilty class.
+    /// Private utility class.
     /// 
     /// At the start of every event from an EventPipe is a header that contains
     /// common fields like its size, threadID timestamp etc.  EventPipeEventHeader
@@ -551,9 +600,9 @@ namespace Microsoft.Diagnostics.Tracing
     /// It is not a public type, but used in low level parsing of EventPipeEventSource.  
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    unsafe struct EventPipeEventHeader
+    internal unsafe struct EventPipeEventHeader
     {
-        private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT incode the size of the EventSize field itself. 
+        private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT encode the size of the EventSize field itself. 
         public int MetaDataId;          // a number identifying the description of this event.  
         public int ThreadId;
         public long TimeStamp;
@@ -569,18 +618,18 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Header Size is defined to be the number of bytes before the Payload bytes.  
         /// </summary>
-        static public int HeaderSize => sizeof(EventPipeEventHeader) - 4;
+        public static int HeaderSize => sizeof(EventPipeEventHeader) - 4;
 
-        static public EventPipeEventHeader* HeaderFromPayloadPointer(byte* payloadPtr)
+        public static EventPipeEventHeader* HeaderFromPayloadPointer(byte* payloadPtr)
             => (EventPipeEventHeader*)(payloadPtr - HeaderSize);
 
-        static public int StackBytesSize(EventPipeEventHeader* header)
+        public static int StackBytesSize(EventPipeEventHeader* header)
             => *((int*)(&header->Payload[header->PayloadSize]));
 
-        static public byte* StackBytes(EventPipeEventHeader* header)
+        public static byte* StackBytes(EventPipeEventHeader* header)
             => &header->Payload[header->PayloadSize + 4];
 
-        static public byte* PayloadBytes(EventPipeEventHeader* header)
+        public static byte* PayloadBytes(EventPipeEventHeader* header)
             => &header->Payload[0];
     }
     #endregion

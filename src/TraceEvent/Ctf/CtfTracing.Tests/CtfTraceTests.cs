@@ -7,7 +7,7 @@ namespace Tests
 {
     public class CtfTraceTests
     {
-        static string TestDataDirectory = @"..\..\inputs";
+        private static string TestDataDirectory = @"..\..\inputs";
 
         [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
         public void LTTng_GCAllocationTick()
@@ -25,7 +25,9 @@ namespace Tests
                         string s = obj.ToString();
                         var d = obj.TimeStamp;
                         if (obj is GCAllocationTickTraceData)
+                        {
                             allocTicksFromAll++;
+                        }
                     };
 
                     ctfSource.Clr.GCCreateSegment += delegate (GCCreateSegmentTraceData d)
@@ -100,28 +102,28 @@ namespace Tests
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
             {
-                ctfSource.AllEvents += delegate(TraceEvent obj)
+                ctfSource.AllEvents += delegate (TraceEvent obj)
                 {
                 };
 
-                ctfSource.Clr.GCRestartEEStart += delegate(GCNoUserDataTraceData obj)
+                ctfSource.Clr.GCRestartEEStart += delegate (GCNoUserDataTraceData obj)
                 {
                 };
 
-                ctfSource.Clr.GCRestartEEStop += delegate(GCNoUserDataTraceData obj)
-                {
-                };
-
-
-                ctfSource.Clr.GCSuspendEEStart += delegate(GCSuspendEETraceData obj)
+                ctfSource.Clr.GCRestartEEStop += delegate (GCNoUserDataTraceData obj)
                 {
                 };
 
 
-                ctfSource.Clr.GCSuspendEEStop += delegate(GCNoUserDataTraceData obj)
+                ctfSource.Clr.GCSuspendEEStart += delegate (GCSuspendEETraceData obj)
                 {
                 };
-                
+
+
+                ctfSource.Clr.GCSuspendEEStop += delegate (GCNoUserDataTraceData obj)
+                {
+                };
+
 
                 ctfSource.Process();
             }

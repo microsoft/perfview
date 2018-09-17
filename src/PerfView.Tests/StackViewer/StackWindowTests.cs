@@ -1,4 +1,9 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.VisualStudio.Threading;
+using PerfView;
+using PerfView.TestUtilities;
+using PerfViewTests.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11,11 +16,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.VisualStudio.Threading;
-using PerfView;
-using PerfView.TestUtilities;
-using PerfViewTests.Utilities;
 using Utilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -141,41 +141,47 @@ namespace PerfViewTests.StackViewer
             PerfDataGrid dataGrid;
             switch (grid)
             {
-            case KnownDataGrid.ByName:
-                tabControl.SelectedItem = stackWindow.ByNameTab;
-                dataGrid = stackWindow.ByNameDataGrid;
-                break;
+                case KnownDataGrid.ByName:
+                    tabControl.SelectedItem = stackWindow.ByNameTab;
+                    dataGrid = stackWindow.ByNameDataGrid;
+                    break;
 
-            case KnownDataGrid.CallerCalleeCallers:
-            case KnownDataGrid.CallerCalleeFocus:
-            case KnownDataGrid.CallerCalleeCallees:
-                tabControl.SelectedItem = stackWindow.CallerCalleeTab;
-                if (grid == KnownDataGrid.CallerCalleeCallers)
-                    dataGrid = stackWindow.CallerCalleeView.CallersGrid;
-                else if (grid == KnownDataGrid.CallerCalleeFocus)
-                    dataGrid = stackWindow.CallerCalleeView.FocusGrid;
-                else
-                    dataGrid = stackWindow.CallerCalleeView.CalleesGrid;
+                case KnownDataGrid.CallerCalleeCallers:
+                case KnownDataGrid.CallerCalleeFocus:
+                case KnownDataGrid.CallerCalleeCallees:
+                    tabControl.SelectedItem = stackWindow.CallerCalleeTab;
+                    if (grid == KnownDataGrid.CallerCalleeCallers)
+                    {
+                        dataGrid = stackWindow.CallerCalleeView.CallersGrid;
+                    }
+                    else if (grid == KnownDataGrid.CallerCalleeFocus)
+                    {
+                        dataGrid = stackWindow.CallerCalleeView.FocusGrid;
+                    }
+                    else
+                    {
+                        dataGrid = stackWindow.CallerCalleeView.CalleesGrid;
+                    }
 
-                break;
+                    break;
 
-            case KnownDataGrid.CallTree:
-                tabControl.SelectedItem = stackWindow.CallTreeTab;
-                dataGrid = stackWindow.CallTreeDataGrid;
-                break;
+                case KnownDataGrid.CallTree:
+                    tabControl.SelectedItem = stackWindow.CallTreeTab;
+                    dataGrid = stackWindow.CallTreeDataGrid;
+                    break;
 
-            case KnownDataGrid.Callers:
-                tabControl.SelectedItem = stackWindow.CallersTab;
-                dataGrid = stackWindow.CallersDataGrid;
-                break;
+                case KnownDataGrid.Callers:
+                    tabControl.SelectedItem = stackWindow.CallersTab;
+                    dataGrid = stackWindow.CallersDataGrid;
+                    break;
 
-            case KnownDataGrid.Callees:
-                tabControl.SelectedItem = stackWindow.CalleesTab;
-                dataGrid = stackWindow.CalleesDataGrid;
-                break;
+                case KnownDataGrid.Callees:
+                    tabControl.SelectedItem = stackWindow.CalleesTab;
+                    dataGrid = stackWindow.CalleesDataGrid;
+                    break;
 
-            default:
-                throw new ArgumentException("Unsupported data grid.", nameof(grid));
+                default:
+                    throw new ArgumentException("Unsupported data grid.", nameof(grid));
             }
 
             await WaitForUIAsync(stackWindow.Dispatcher, cancellationToken);
@@ -445,7 +451,9 @@ namespace PerfViewTests.StackViewer
             public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName)
             {
                 if (frameIndex >= StackSourceFrameIndex.Start)
+                {
                     return (frameIndex - StackSourceFrameIndex.Start).ToString();
+                }
 
                 return frameIndex.ToString();
             }

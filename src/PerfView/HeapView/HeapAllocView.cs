@@ -1,19 +1,11 @@
+using Microsoft.Diagnostics.Tracing.Etlx;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Controls;
-using System.Windows.Shapes;
-using System.Windows.Documents;
-using System.Windows.Data;
 using System.Globalization;
-
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Stats;
-using Microsoft.Diagnostics.Tracing.Etlx;
+using System.Linq;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 
 
 namespace PerfView
@@ -21,16 +13,15 @@ namespace PerfView
     /// <summary>
     /// Unique Allocation Tick Site: type + location
     /// </summary>
-    class AllocTick
+    internal class AllocTick
     {
         internal string m_type;
         internal CodeAddressIndex m_caller1;
         internal CodeAddressIndex m_caller2;
-
-        double m_allocSmall;
-        int m_countSmall;
-        double m_allocLarge;
-        int m_countLarge;
+        private double m_allocSmall;
+        private int m_countSmall;
+        private double m_allocLarge;
+        private int m_countLarge;
 
         internal void Add(bool large, double val)
         {
@@ -122,7 +113,7 @@ namespace PerfView
     /// <summary>
     /// AllocTickKey comparer
     /// </summary>
-    class AllocTickComparer : IEqualityComparer<AllocTick>
+    internal class AllocTickComparer : IEqualityComparer<AllocTick>
     {
         public bool Equals(AllocTick a, AllocTick b)
         {
@@ -146,15 +137,15 @@ namespace PerfView
             return hash;
         }
     }
-           
-    
+
+
     /// <summary>
     /// Displaying Allocation Tick events in DataGrid
     /// </summary>
     public class HeapAllocView
     {
-        DataGrid m_grid;
-             
+        private DataGrid m_grid;
+
         /// <summary>
         /// Create HeapAllocView panel
         /// </summary>
@@ -163,7 +154,7 @@ namespace PerfView
             StackPanel controls = new StackPanel();
             controls.Background = Brushes.LightGray;
             controls.Width = 240;
-            
+
             m_grid = new DataGrid();
             m_grid.Background = Brushes.LightGray;
 
@@ -173,9 +164,9 @@ namespace PerfView
             AllocTickConverter converter = new AllocTickConverter(traceLog);
 
             // Columns
-            m_grid.AddColumn("Type",  "Type");
-            
-            m_grid.AddColumn("CountL", "CountLarge", true);            
+            m_grid.AddColumn("Type", "Type");
+
+            m_grid.AddColumn("CountL", "CountLarge", true);
             m_grid.AddColumn("AllocL", "AllocLarge", converter, null, true);
             m_grid.AddColumn("CountS", "CountSmall", true);
             m_grid.AddColumn("AllocS", "AllocSmall", converter, null, true);
@@ -185,7 +176,7 @@ namespace PerfView
             return Toolbox.DockTopLeft(null, controls, m_grid);
         }
 
-        List<AllocTick> m_allocSites;
+        private List<AllocTick> m_allocSites;
 
         internal void SetAllocEvents(List<AllocTick> allocSites)
         {
@@ -201,7 +192,7 @@ namespace PerfView
     /// </summary>
     public class AllocTickConverter : IValueConverter
     {
-        TraceLog m_traceLog;
+        private TraceLog m_traceLog;
 
         public AllocTickConverter(TraceLog log)
         {
@@ -225,7 +216,7 @@ namespace PerfView
             }
             else if (valueType == typeof(CodeAddressIndex))
             {
-                return m_traceLog.GetMethodName((CodeAddressIndex) value);
+                return m_traceLog.GetMethodName((CodeAddressIndex)value);
             }
             else
             {

@@ -1,8 +1,8 @@
-﻿using System.IO;
+﻿using Microsoft.Diagnostics.Utilities;
 using System;
-using Microsoft.Diagnostics.Utilities;
-using System.Reflection;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
 namespace Utilities
 {
@@ -10,7 +10,7 @@ namespace Utilities
     /// Some applications need to make files that are associated with the application
     /// but also have affinity with other files on the disk.   This class helps manage this
     /// </summary>
-    static class CacheFiles
+    internal static class CacheFiles
     {
         public static float KeepTimeInDays { get; set; }
         public static string CacheDir
@@ -24,7 +24,10 @@ namespace Utilities
                     string exeName = Path.GetFileNameWithoutExtension(exePath);
                     string tempDir = Environment.GetEnvironmentVariable("TEMP");
                     if (tempDir == null)
+                    {
                         tempDir = ".";
+                    }
+
                     s_CacheDir = Path.Combine(tempDir, exeName);
 
                     string keepTimeEnvVarName = exeName + "_Cache_KeepTimeInDays";
@@ -34,11 +37,16 @@ namespace Utilities
                     {
                         // Insure that keep time is at least 10 mins.   This avoids files disappearing while in use. 
                         if (keepTimeEnvVarValue < .007f)
+                        {
                             keepTimeEnvVarValue = .007f;
+                        }
+
                         KeepTimeInDays = keepTimeEnvVarValue;
                     }
                     else if (KeepTimeInDays == 0)
+                    {
                         KeepTimeInDays = 5;
+                    }
 
                     Directory.CreateDirectory(s_CacheDir);
                 }
@@ -72,7 +80,9 @@ namespace Utilities
             {
                 // See if it is up to date. 
                 if (File.GetLastWriteTimeUtc(ret) < baseFileInfo.LastWriteTimeUtc)
+                {
                     FileUtilities.ForceDelete(ret);
+                }
                 else
                 {
                     // Set the last access time so we can clean up files based on their last usage.
@@ -89,12 +99,12 @@ namespace Utilities
             }
             return ret;
         }
-        static public void Cleanup()
+        public static void Cleanup()
         {
             CleanupDirectory(CacheDir, KeepTimeInDays);
         }
 
-        static public void CleanupDirectory(string directory, float keepTimeInDays)
+        public static void CleanupDirectory(string directory, float keepTimeInDays)
         {
             var nowUTC = DateTime.UtcNow;
             foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
@@ -119,8 +129,8 @@ namespace Utilities
         }
 
         #region private 
-        static string s_CacheDir;
-        static bool s_didCleanup;
+        private static string s_CacheDir;
+        private static bool s_didCleanup;
         #endregion 
     }
 }
