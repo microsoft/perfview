@@ -573,7 +573,7 @@ namespace ETWManifest
         public ushort Id { get; private set; }
         public ulong Keywords { get; private set; }
         /// <summary>
-        /// A convininece method that returns the keywords as symbol names (comma separated)
+        /// A convenience method that returns the keywords as symbol names (comma separated)
         /// </summary>
         public string KeywordsString { get { return Provider.GetKeywordSetString(Keywords); } }
         public byte Version { get; private set; }
