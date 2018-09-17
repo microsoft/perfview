@@ -288,7 +288,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if (m_scratchBufferSize < requriedSize)
             {
-                if ((IntPtr)m_scratchBuffer != IntPtr.Zero)
+                if (m_scratchBuffer != null)
                     m_scratchBuffer = (byte*)Marshal.ReAllocHGlobal((IntPtr)m_scratchBuffer, (IntPtr)requriedSize);
                 else
                     m_scratchBuffer = (byte*)Marshal.AllocHGlobal(requriedSize);
