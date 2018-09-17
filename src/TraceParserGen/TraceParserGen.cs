@@ -353,7 +353,7 @@ internal class TraceParserGen
         {
             var eventName = keyValue.Key;
             var versionsForEvent = keyValue.Value;
-
+     
             // We have to accumulate all the information needed to fetch a field, across all the versions of the event
             // Only then can we emit the code that will work for all fields simultaneously.  
             var fieldVersions = new SortedDictionary<string, List<FieldInfo>>();
@@ -596,6 +596,11 @@ internal class TraceParserGen
             output.WriteLine("            }");
             output.WriteLine("        }");
             output.WriteLine("");
+
+            // Write out the keywords belonging to this template
+            output.WriteLine("        public static ulong GetKeywords() { return " + versionsForEvent[0].Keywords + "; }");
+            output.WriteLine("        public static string GetProviderName() { return \"" + versionsForEvent[0].Provider.Name + "\"; }");
+            output.WriteLine("        public static Guid GetProviderGuid() { return new Guid(\"" + versionsForEvent[0].Provider.Id + "\"); }");
 
             // Write out the fields specific to this TraceEvent (that are not payload)
             output.WriteLine("        private event Action<" + templateClassName + "> m_target;");
