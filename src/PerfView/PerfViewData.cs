@@ -4192,6 +4192,7 @@ table {
                 computer.UseTasks = true;
                 computer.GroupByStartStopActivity = true;
                 computer.ExcludeReadyThread = true;
+                computer.NoAwaitTime = streamName.Contains("(CPU ONLY)");
                 computer.GenerateThreadTimeStacks(startStopSource);
 
                 return startStopSource;
