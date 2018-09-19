@@ -82,6 +82,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// LIke the GroupByAspNetRequest but use start-stop activities instead of ASP.NET Requests as the grouping construct. 
         /// </summary>
         public bool GroupByStartStopActivity;
+        /// <summary>
+        /// Don't show AwaitTime.  For CPU only traces showing await time is misleading since
+        /// blocked time will not show up.  
+        /// </summary>
+        public bool NoAwaitTime;
 
         /// <summary>
         /// Generate the thread time stacks, outputting to 'stackSource'.  
@@ -113,7 +118,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // We don't do AWAIT_TIME if we don't have blocked time (that is we are CPU ONLY) because it is confusing
                 // since we have SOME blocked time but not all of it.   
-                if (m_traceHasCSwitches)
+                if (!NoAwaitTime)
                 {
                     m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
                     {
