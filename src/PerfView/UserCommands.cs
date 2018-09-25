@@ -36,6 +36,16 @@ namespace PerfViewExtensibility
     /// </summary>
     public class Commands : CommandEnvironment
     {
+        // If you add new build-in commands you need to add lines to src\PerfView\SupportFiles\PerfVIew.xml.
+        // This is the file that contains the help for the user commands.   If you don't update this
+        // file, your new command will not have help.   
+        //
+        // This can be as simple as coping the PerfView.xml file from output directory to src\PerfView\SupportFiles.
+        // HOwever you can do better than this by removing all 'method' entries that are not user commands
+        // That is members of this class.   THis makes the file (and therefore PerfView.exe) smaller.  
+    
+#if false // TODO Ideally you don't need Linux Specific versions, and it should be based
+          // on eventPipe.   You can delete after 1/2018
         public void LinuxGCStats(string traceFileName)
         {
             var options = new TraceLogOptions();
@@ -140,6 +150,7 @@ namespace PerfViewExtensibility
             }
         }
 
+#endif 
 #if !PERFVIEW_COLLECT
         /// <summary>
         /// Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
@@ -369,15 +380,6 @@ namespace PerfViewExtensibility
             LogFile.WriteLine("[Created {0} manifest files in {1}]", manifestCount, outputDirectory);
         }
 
-        /// <summary>
-        /// This is a test hook.  
-        /// </summary>
-        public void DumpJSHeapAsEtlFile(string processID)
-        {
-            JavaScriptHeapDumper.DumpAsEtlFile(int.Parse(processID), processID + ".etl", LogFile);
-        }
-
-        /// <summary>
         /// Generate a GCDumpFile of a JavaScript heap from ETW data in 'etlFileName'
         /// </summary>
         public void JSGCDumpFromETLFile(string etlFileName, string gcDumpOutputFileName = null)
@@ -986,6 +988,7 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
+#if false
         /// <summary>
         /// Mainly here for testing
         /// </summary>
@@ -1000,6 +1003,7 @@ namespace PerfViewExtensibility
             else
                 LogFile.WriteLine("[Could not find PDB for {0}]", dllName);
         }
+#endif 
 
         public void LookupSymbols(string pdbFileName, string pdbGuid, string pdbAge)
         {
@@ -1124,6 +1128,11 @@ namespace PerfViewExtensibility
             }
         }
 
+        /// <summary>
+        /// Given an NGEN image 'ngenImagePath' create a 'heap' description of what is
+        /// in the NGEN image (where the metric is size).  
+        /// </summary>
+        /// <param name="ngenImagePath"></param>
         public void NGenImageSize(string ngenImagePath)
         {
             SymbolReader symReader = App.GetSymbolReader();
