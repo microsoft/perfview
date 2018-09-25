@@ -1,0 +1,301 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PerfView</name>
+    </assembly>
+    <members>
+        <member name="T:PerfViewExtensibility.Commands">
+            <summary>
+            Commands is an actual use of the extensibility functionality.   Normally a 'Commands'
+            class is compiled into a user defined DLL.
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DumpEventsAsXml(System.String,System.String)">
+            <summary>
+            Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
+            If the output file name is not given, the input filename's extension is changed to '.etl.xml' and that is used. 
+            
+            This command is particularly useful for EventSources, where you want to post-process the data in some other tool.  
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.SaveCPUStacks(System.String,System.String)">
+            <summary>
+            Save the CPU stacks from 'etlFileName'.  If the /process qualifier is present use it to narrow what
+            is put into the file to a single process.  
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.SaveScenarioCPUStacks(System.String)">
+            <summary>
+            Save the CPU stacks for a set of traces.
+            
+            If 'scenario' is an XML file, it will be used as a configuration file.
+            
+            Otherwise, 'scenario' must refer to a directory. All ETL files in that directory and
+            any subdirectories will be processed according to the default rules.
+            
+            Summary of config XML:      ([] used instead of brackets)
+                [ScenarioConfig]
+                    [Scenarios files="*.etl" process="$1.exe" name="scenario $1" /]
+                [/ScenarioConfig]
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DumpEventSourceManifests(System.String,System.String,System.String)">
+            <summary>
+            If there are System.Diagnostics.Tracing.EventSources that are logging data to the ETL file
+            then there are manifests for each of these EventSources in event stream.  This method 
+            dumps these to 'outputDirectory' (each manifest file is 'ProviderName'.manifest.xml)
+            
+            If outputDirectory is not present, then the directory 'EtwManifests' in the same directory
+            as the 'etlFileName' is used as the output directory.  
+            If 'pattern' is present this is a .NET regular expression and only EventSources that match 
+            the pattern will be output. 
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:PerfViewExtensibility.Commands.JSGCDumpFromETLFile(System.String,System.String)" -->
+        <member name="M:PerfViewExtensibility.Commands.DotNetGCDumpFromETLFile(System.String,System.String,System.String)">
+            <summary>
+            Generate a GCDumpFile of a DotNet heap from ETW data in 'etlFileName', 
+            need to have a V4.5.1 runtime (preferably V4.5.2) to have the proper events.    
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DumpRawDotNetGCHeapEvents(System.String,System.String,System.String)">
+            <summary>
+            Pretty prints the raw .NET GC dump events (GCBulk*) with minimal processing as XML.   This is mostly
+            useful for debugging, to see if the raw data sane if there is a question on why something is not showing
+            up properly in a more user-friendly view.  
+            </summary>
+            <param name="etlFileName">The input ETW file containing the GC dump events</param>
+            <param name="processId">The process to focus on.  0 (the default) says to pick the first process with Bulk GC events.</param>
+            <param name="outputFileName">The output XML file.</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DumpGCDumpFile(System.String)">
+            <summary>
+            Dumps a GCDump file as XML.  Useful for debugging heap dumping issues.   It is easier to read than 
+            what is produced by 'WriteGCDumpAsXml' but can't be read in with as a '.gcdump.xml' file.  
+            </summary>
+            <param name="gcDumpFileName"></param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.WriteGCDumpAsXml(System.String,System.String)">
+            <summary>
+            Dumps a GCDump file as gcdump.xml file.  THese files can be read back by PerfView.   
+            </summary>
+            <param name="gcDumpFileName">The input file (.gcdump)</param>
+            <param name="outputFileName">The output file name (defaults to input file with .gcdump.xml suffix)</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DumpRegisteredManifest(System.String,System.String)">
+            <summary>
+            Given a name (or guid) of a provider registered on the system, generate a '.manifest.xml' file that 
+            represents the manifest for that provider.   
+            </summary>  
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.Listen(System.String)">
+            <summary>
+            Opens a text window that displays events from the given set of event source names
+            By default the output goes to a GUI window but you can use the /LogFile option to 
+            redirect it elsewhere.  
+            </summary>
+            <param name="etwProviderNames"> a comma separated list of providers specs (just like /Providers value)</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DirectorySize(System.String,System.String)">
+            <summary>
+            Creates perfView.xml file that represents the directory size of 'directoryPath' and places
+            it in 'outputFileName'.  
+            </summary>
+            <param name="directoryPath">The directory whose size is being computed (default to the current dir)</param>
+            <param name="outputFileName">The output fileName (defaults to NAME.dirSize.PerfView.xml.zip) where NAME is
+            the simple name of the directory.</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.PerfScript(System.String,System.String)">
+            <summary>
+            Creates a .perfView.xml.zip that represents the profiling data from a perf script output dump. Adding a
+            --threadtime tag enables blocked time investigations on the perf script dump.
+            </summary>
+            <param name="path">The path to the perf script dump, right now, either a file with suffix perf.data.dump,
+            .trace.zip or .data.txt will be accepted.</param>
+            <param name="threadTime">Option to turn on thread time on the perf script dump.</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.TextHistogram(System.String)">
+            <summary>
+            Creates a stack source out of the textFileName where each line is a frame (which is directly rooted)
+            and every such line has a metric of 1.  Thus it allows you to form histograms for these lines nicely
+            in perfView.  
+            </summary>
+            <param name="textFilePath"></param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ProjectNMetaData(System.String)">
+            <summary>
+            Reads a project N metaData.csv file (From ILC.exe)  and converts it to a .GCDump file (a heap)
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ReflectionUse(System.String)">
+            <summary>
+            This is used to visualize the Project N ILTransformed\*.reflectionlog.csv file so it can viewed 
+            in PerfVIew.   
+            </summary>
+            <param name="reflectionLogFile">The name of the file to view</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ImageSize(System.String,System.String)">
+            <summary>
+            ImageSize generates a XML report (by default inputExeName.imageSize.xml) that 
+            breaks down the executable file 'inputExeName' by the symbols in it (fetched from
+            its PDB.  The PDB needs to be locatable (either on the _NT_SYMBOL_PATH, or next to 
+            the file, or in its original build location).   This report can be viewed with
+            PerfView (it looks like a GC heap).  
+            </summary>
+            <param name="inputExeName">The name of the EXE (or DLL) that you wish to analyze.  If blank it will prompt for one.</param>
+            <param name="outputFileName">The name of the report file.  Defaults to the inputExeName
+            with a .imageSize.xml suffix.</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.PdbSignature(System.String)">
+            <summary>
+            Dumps the PDB signature associated with pdb 'pdbName'
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.GetDynamicAssemblySymbols(System.String)">
+            <summary>
+            Listen for the CLR CodeSymbols events and when you find them write them 
+            to the directory targetSymbolCachePath using standard symbol server conventions
+            (Name.Pdb\GUID-AGE\Name.Pdb)
+            
+            Usage 
+            </summary>
+            <param name="targetSymbolCachePath"></param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.NGenImageSize(System.String)">
+            <summary>
+            Given an NGEN image 'ngenImagePath' create a 'heap' description of what is
+            in the NGEN image (where the metric is size).  
+            </summary>
+            <param name="ngenImagePath"></param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.GCStats(System.String)">
+            <summary>
+            Computes the GCStats HTML report for etlFile.  
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ServerGCReport(System.String)">
+            <summary>
+            Outputs some detailed Server GC analysis to a file.
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.JITStats(System.String)">
+            <summary>
+            Computes the JITStats HTML report for etlFile.  
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ListProviderKeywords(System.String)">
+            <summary>
+            Gets the ETW keywords (bitset definitions of what can be turned on in the provider) for a given provider. 
+            Currently does not work for EventSources 
+            </summary>
+            <param name="providerNameOrGuid">The name or GUID of the provider to look up</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ListProvidersInProcess(System.String)">
+            <summary>
+            returns a list of providers that exist (can be enabled) in a particular process.  Currently EventSouces 
+            are returned as GUIDs.  
+            </summary>
+            <param name="processNameOrId">The process name (exe without extension) or process ID of the process of interest.</param>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.ListPublishedProviders">
+            <summary>
+            returns a list of all providers that have published their meta-data to the Operating system.  This does NOT
+            include EventSources and is a long list.  Some of these are not actually active and thus will have no effect
+            if they are enabled (see ListProvidersInProcess). 
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.FetchSymbolsForProcess(System.String,System.String)">
+            <summary>
+            Fetch all the PDBs files needed for viewing 'etlFileName' locally.   If 'processName'
+            is present we only fetch PDBs needed for that process.  This can be either a process
+            name (exe without extention or path) or a decimal numeric ID.  
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.StripFileExt(System.String)">
+            <summary>
+            Strips the file extension for files and if extension is .etl.zip removes both.
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.GetTraceEventsWithProcessFilter(PerfViewExtensibility.ETLDataFile)">
+            <summary>
+            Gets the TraceEvents list of events from etlFile, applying a process filter if the /process argument is given. 
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.SaveCPUStacksForProcess(PerfViewExtensibility.ETLDataFile,Microsoft.Diagnostics.Tracing.Etlx.TraceProcess,Diagnostics.Tracing.StackSources.FilterParams,System.String)">
+            <summary>
+            Save the CPU stacks for an ETL file into a perfView.xml.zip file.
+            </summary>
+            <param name="etlFile">The ETL file to save.</param>
+            <param name="process">The process to save. If null, save all processes.</param>
+            <param name="filter">The filter to apply to the stacks. If null, apply no filter.</param>
+            <param name="outputName">The name of the file to output data to. If null, use the default.</param>
+        </member>
+        <member name="T:PerfViewExtensibility.Commands.ScenarioConfig">
+            <summary>
+            The configuration data for an ETL file dumped by SaveCPUStacksForProcess.
+            </summary>
+        </member>
+        <member name="F:PerfViewExtensibility.Commands.ScenarioConfig.InputFile">
+            <summary>
+            The file to read in.
+            </summary>
+        </member>
+        <member name="F:PerfViewExtensibility.Commands.ScenarioConfig.ProcessFilter">
+            <summary>
+            The name of the process of interest for the scenario.
+            
+            If null, use heuristic detection.
+            </summary>
+        </member>
+        <member name="F:PerfViewExtensibility.Commands.ScenarioConfig.StartTime">
+            <summary>
+            The relative time to start taking samples from the ETL file.
+            
+            Set to double.NegativeInfinity to take samples from the beginning.
+            </summary>
+        </member>
+        <member name="F:PerfViewExtensibility.Commands.ScenarioConfig.EndTime">
+            <summary>
+            The time to stop taking samples from the ETL file.
+            
+            Set to double.PositiveInfinity to take samples until the end.
+            </summary>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.DeserializeScenarioConfig(System.Xml.XmlReader,System.Xml.XmlWriter,System.IO.TextWriter,System.String)">
+            <summary>
+            Parse a scenario config XML file, creating a mapping of filenames to file configurations.
+            </summary>
+            <param name="reader">The XmlReader to read config data from.</param>
+            <param name="output">The XmlWriter to write a corresponding scenario-set definition to.</param>
+            <param name="log">The log to write progress to.</param>
+            <param name="baseDir">The base directory for relative path lookups.</param>
+            <returns>A Dictionary mapping output filenames to ScenarioConfig objects holding configuration information.</returns>
+            <remarks>
+            Example config file:
+            <ScenarioConfig>
+            <Scenarios files="*.etl" />
+            <Scenarios files="foo.etl.zip" name="scenario $1" process="bar" start="500" end="1000" />
+            </ScenarioConfig>
+            
+            Attributes on Scenarios element:
+            - files (required)
+              The wildcard file pattern of ETL/ETL.ZIP files to include.
+            - name (optional)
+              A pattern by which to name these scenarios. Passed through to scenario-set definition.
+            - process (optional)
+              The name of the process of interest for this trace. If unset, the process of interest will be auto detected
+            - start, end (optional)
+              The start and end times of the region of interest in the trace.
+            - output (optional)
+              Specify name of output perfview.xml.zip.  This is needed to allow outputting different scenarios with the same etl file name to different file. 
+            </remarks>
+        </member>
+        <member name="M:PerfViewExtensibility.Commands.FindProcessOfInterest(PerfViewExtensibility.ETLDataFile)">
+            <summary>
+            Heuristically find the process of interest for a given ETL trace.
+            </summary>
+            <param name="etlFile">The ETL file to search.</param>
+            <returns>The "most interesting" process in the trace.</returns>
+        </member>
+    </members>
+</doc>
