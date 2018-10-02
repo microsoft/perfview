@@ -8315,17 +8315,48 @@
     </li>
     -->
         <li>
+            Version 2.0.28 10/2/18
+            <ul>
+                <li>
+                    Fixed parsing of Task Parallel library parsing to include the .NET Core 2.1 event
+                    System.Threading.Tasks.TplEventSource/IncompleteAsyncMethod used to find 'orphaned' Async operations.  
+                    Also added this event  to the default collection for TPL, so that it is always 'just here'.
+
+                    Basically this is a new feature of the .NET Core task library that notices when tasks are created,
+                    but then collected without ever being completed one way or the other.   This can happen if the
+                    TaskCompletionSource dies before it calls 'Complete' on the task.  
+
+                    The string in the event is the name of the method where the orphaned machine (Task) will return
+                    when it continues.   The code that was supposed to trigger the 'await' to complete is at fault.  
+                    
+                    This feature needs to be friendlier but it is a big step from knowing nothing.  
+                </li>
+                <li> modified the TraceEvent library's concept of what the 'version of the manifest is to' include
+                a term that is 100 * the largest event ID.   Thus if you add a new event (at the end), you can 
+                remove (clean up) a few dozen unused events and still be considered 'better'.   Note that this should
+                be used with care, as it implys that the deleted events are not EVER useful (even for old code that
+                still emits them), because TraceEvent will not parse them going forward (The TPL EventSource did just
+                this which is why it came up here.)
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 2.0.27 9/25/18
             <ul>
-                <li> Fixed 'PerfView Listen EVENTSOURCE' so that it works without the * prefix for EventSources. 
+                <li>
+                    Fixed 'PerfView Listen EVENTSOURCE' so that it works without the * prefix for EventSources.
                 </li>
                 <li>Fixed missing descriptions for user commands</li>
-                <li>Added support for the /SessionName=XXXX parameter which renames both the user and kernel
-                    session names that perfView uses (which allow you to have two PerfView's running or run 
-                    with other tools that use the kernel provider)  </li>
+                <li>
+                    Added support for the /SessionName=XXXX parameter which renames both the user and kernel
+                    session names that perfView uses (which allow you to have two PerfView's running or run
+                    with other tools that use the kernel provider)
+                </li>
                 <li>Use stack compression by default</li>
-                <li>Stop the kernel and user mode session concurrently.  This helps when the disks are very 
-                slow (VMs), to keep the two sessions overlapping maximally</li>
+                <li>
+                    Stop the kernel and user mode session concurrently.  This helps when the disks are very
+                    slow (VMs), to keep the two sessions overlapping maximally
+                </li>
             </ul>
         </li>
         <li>

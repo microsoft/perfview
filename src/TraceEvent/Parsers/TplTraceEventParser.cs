@@ -26,7 +26,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Asynccausalitysynchronouswork = 0x20,
             Taskstops = 0x40,
             TasksFlowActivityIds = 0x80,
-            Default = Tasktransfer | Tasks | Parallel | Asynccausalityoperation | Asynccausalityrelation | Asynccausalitysynchronouswork | Taskstops | TasksFlowActivityIds,
+            AsyncMethod = 0x100,
+            Default = Tasktransfer | Tasks | Parallel | Asynccausalityoperation | Asynccausalityrelation | Asynccausalitysynchronouswork | Taskstops | TasksFlowActivityIds | AsyncMethod, 
         };
 
         public TplEtwProviderTraceEventParser(TraceEventSource source) : base(source) { }
@@ -229,6 +230,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 18, ProviderGuid);
             }
         }
+        public event Action<IncompleteAsyncMethodArgs> IncompleteAsyncMethod
+        {
+            add
+            {
+                source.RegisterEventTemplate(IncompleteAsyncMethodTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 27, ProviderGuid);
+            }
+        }
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
@@ -305,13 +317,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TraceSynchronousWorkStopArgs(action, 18, 9, "TraceSynchronousWork", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
-
+        static private IncompleteAsyncMethodArgs IncompleteAsyncMethodTemplate(Action<IncompleteAsyncMethodArgs> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new IncompleteAsyncMethodArgs(action, 27, 65507, "IncompleteAsyncMethod", Guid.Empty, 0, "", ProviderGuid, ProviderName);
+        }
+        
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[18];
+                var templates = new TraceEvent[19];
                 templates[0] = LoopStartTemplate(null);
                 templates[1] = LoopStopTemplate(null);
                 templates[2] = InvokeStartTemplate(null);
@@ -330,6 +346,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[15] = TraceOperationStopTemplate(null);
                 templates[16] = TraceSynchronousWorkStartTemplate(null);
                 templates[17] = TraceSynchronousWorkStopTemplate(null);
+                templates[18] = IncompleteAsyncMethodTemplate(null);
+
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -1583,6 +1601,67 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         private event Action<TraceSynchronousWorkStopArgs> m_target;
         #endregion
     }
+    public sealed class IncompleteAsyncMethodArgs : TraceEvent
+    {
+        public string stateMachineDescription { get { return GetUnicodeStringAt(0); } }
+
+        #region Private
+        internal IncompleteAsyncMethodArgs(Action<IncompleteAsyncMethodArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0)));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0)));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IncompleteAsyncMethodArgs>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "stateMachineDescription", stateMachineDescription);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "stateMachineDescription" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return stateMachineDescription;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 256; }
+        public static string GetProviderName() { return "System.Threading.Tasks.TplEventSource"; }
+        public static Guid GetProviderGuid() { return new Guid("2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"); }
+        private event Action<IncompleteAsyncMethodArgs> m_target;
+        #endregion
+    }
+
     public enum AsyncCausalityStatus
     {
         Started = 0x0,
