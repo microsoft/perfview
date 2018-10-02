@@ -10402,6 +10402,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         InducedCompacting = 0xa,
         LowMemoryHost = 0xb,
         PMFullGC = 0xc,
+        LowMemoryHostBlocking = 0xd
     }
     public enum GCSuspendEEReason
     {
