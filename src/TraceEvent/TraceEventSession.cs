@@ -2581,7 +2581,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 return true;
             }
             // FrameworkEventSource predated the Guid selection convention that most eventSources use.  
-            // Opt it in explicity 
+            // Opt it in explicitly 
             if (providerGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
             {
                 return true;
