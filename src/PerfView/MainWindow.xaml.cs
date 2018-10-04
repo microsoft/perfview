@@ -1856,6 +1856,10 @@ namespace PerfView
             StatusBar.Log("Displaying the reference guide.");
             DisplayUsersGuide("ReferenceGuide");
         }
+        private void DoFocusDirectory(object sender, RoutedEventArgs e)
+        {
+            Directory.Focus();
+        }
 
         private void UpdateFileFilter()
         {
@@ -1958,6 +1962,8 @@ namespace PerfView
 
         public static RoutedUICommand HeapSnapshotFromDumpCommand = new RoutedUICommand("Take Heap Snapshot from Process Dump", "HeapSnapshotFromDump",
             typeof(MainWindow));
+        public static RoutedUICommand FocusDirectoryCommand = new RoutedUICommand("Focus Directory", "FocusDirectory", typeof(MainWindow),
+            new InputGestureCollection() { new KeyGesture(Key.L, ModifierKeys.Control) });
         #region private
         internal static List<string> ParseWordsOrQuotedStrings(string commandAndArgs)
         {
