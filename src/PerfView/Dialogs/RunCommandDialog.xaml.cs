@@ -17,11 +17,11 @@ namespace PerfView
     /// <summary>
     /// Interaction logic for RunCommandDialog.xaml
     /// </summary>
-    public partial class RunCommandDialog : Window
+    public partial class RunCommandDialog : WindowBase
     {
-        public RunCommandDialog(CommandLineArgs args, MainWindow mainWindow, bool isCollect = false, Action continuation = null)
+        public RunCommandDialog(CommandLineArgs args, MainWindow mainWindow, bool isCollect = false, Action continuation = null) : base(mainWindow)
         {
-            Owner = mainWindow;
+            //Owner = mainWindow;
             if (mainWindow.CollectWindow != null)
             {
                 throw new ApplicationException("Collection Dialog already open.");

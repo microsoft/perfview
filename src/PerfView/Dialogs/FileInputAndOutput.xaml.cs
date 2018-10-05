@@ -15,7 +15,7 @@ namespace PerfView.Dialogs
     /// 
     /// It allows you to select a file (or directory) as input and also a file as output.   
     /// </summary>
-    public partial class FileInputAndOutput : Window
+    public partial class FileInputAndOutput : WindowBase
     {
 
         /// <summary>
@@ -23,8 +23,9 @@ namespace PerfView.Dialogs
         /// and then call onOK, with the first argument being the input file selected and the second being the output file.
         /// After setting any properties, you can call Show() to actually open the dialog box.  
         /// </summary>
+        /// <param name="parentWindow"></param>
         /// <param name="onOK"></param>
-        public FileInputAndOutput(Action<string, string> onOK)
+        public FileInputAndOutput(Window parentWindow, Action<string, string> onOK) : base(parentWindow)
         {
             m_onOK = onOK;
             InitializeComponent();

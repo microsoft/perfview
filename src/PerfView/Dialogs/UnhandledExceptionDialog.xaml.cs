@@ -6,9 +6,9 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for UnhandledExceptionDialog.xaml
     /// </summary>
-    public partial class UnhandledExceptionDialog : Window
+    public partial class UnhandledExceptionDialog : WindowBase
     {
-        public UnhandledExceptionDialog(object exception, bool feedbackSent)
+        public UnhandledExceptionDialog(Window parentWindow, object exception, bool feedbackSent) : base(parentWindow)
         {
             InitializeComponent();
 

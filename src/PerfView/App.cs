@@ -985,7 +985,7 @@ namespace PerfView
             // We are on the GUI thread, we can just open the dialog 
             if (GuiApp.MainWindow.Dispatcher.CheckAccess())
             {
-                var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog();
+                var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog(GuiApp.MainWindow);
                 emptyPathDialog.Owner = GuiApp.MainWindow;
                 emptyPathDialog.ShowDialog();
                 ret = emptyPathDialog.UseMSSymbols;
@@ -999,7 +999,7 @@ namespace PerfView
                 {
                     try
                     {
-                        var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog();
+                        var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog(GuiApp.MainWindow);
                         emptyPathDialog.Owner = GuiApp.MainWindow;
                         emptyPathDialog.ShowDialog();
                         ret = emptyPathDialog.UseMSSymbols;

@@ -10,9 +10,9 @@ namespace PerfView.GuiUtilities
     /// <summary>
     /// Interaction logic for WebBrowserWindow.xaml
     /// </summary>
-    public partial class WebBrowserWindow : Window
+    public partial class WebBrowserWindow : WindowBase
     {
-        public WebBrowserWindow()
+        public WebBrowserWindow(Window parentWindow) : base(parentWindow)
         {
             InitializeComponent();
         }

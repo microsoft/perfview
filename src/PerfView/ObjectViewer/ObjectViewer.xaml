@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.ObjectViewer"
+﻿<src:WindowBase x:Class="PerfView.ObjectViewer"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
@@ -47,4 +47,4 @@
             <src:TreeViewGrid x:Name="TreeViewGrid" Margin="0,0,20,0"/>
         </Grid>
     </DockPanel>
-</Window>
+</src:WindowBase>

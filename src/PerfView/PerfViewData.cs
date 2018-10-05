@@ -1105,7 +1105,7 @@ table {
 
                     worker.EndWork(delegate ()
                     {
-                        Viewer = new WebBrowserWindow();
+                        Viewer = new WebBrowserWindow(parentWindow);
                         Viewer.WindowState = System.Windows.WindowState.Maximized;
                         Viewer.Closing += delegate (object sender, CancelEventArgs e)
                         {
@@ -1228,7 +1228,7 @@ table {
                 string logFile = command.Substring(command.IndexOf(':') + 1);
                 worker.Parent.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var logTextWindow = new Controls.TextEditorWindow();
+                    var logTextWindow = new Controls.TextEditorWindow(GuiApp.MainWindow);
                     logTextWindow.TextEditor.OpenText(logFile);
                     logTextWindow.TextEditor.IsReadOnly = true;
                     logTextWindow.Title = "Collection time log";
@@ -3929,7 +3929,7 @@ table {
                         {
                             if (DataFile.InitiallyIncludedProcesses == null)
                             {
-                                m_SelectProcess = new SelectProcess(processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
+                                m_SelectProcess = new SelectProcess(parentWindow, processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
                                 {
                                     launchViewer(selectedProcesses);
                                 }, hasAllProc: true);

@@ -7,12 +7,12 @@ namespace PerfView.Dialogs
     /// 
     /// It is intended that this be a modal dialog (ShowDialog)
     /// </summary>
-    public partial class EmptySymbolPathDialog : Window
+    public partial class EmptySymbolPathDialog : WindowBase
     {
         /// <summary>
         /// The action is given a 'true' value if MSSymbols should be used.  
         /// </summary>
-        public EmptySymbolPathDialog()
+        public EmptySymbolPathDialog(Window parentWindow) : base(parentWindow)
         {
             InitializeComponent();
         }
