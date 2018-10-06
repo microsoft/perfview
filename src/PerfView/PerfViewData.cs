@@ -815,7 +815,7 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Add(@"[no grouping]");
             if (windows)
             {
-                stackWindow.GroupRegExTextBox.Items.Add(@"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1");
+                stackWindow.GroupRegExTextBox.Items.Add(@"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.Xaml.*!=>WPF;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1");
             }
 
             stackWindow.GroupRegExTextBox.Items.Add(@"[group modules]           {%}!->module $1");
