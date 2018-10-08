@@ -27,7 +27,7 @@
                     <List Margin="0,2,0,0">
                         <ListItem>
                             <Paragraph>
-                                <Bold>Use the Microsoft symbol sever.</Bold>  This will allow you to see the 
+                                <Bold>Use the Microsoft symbol server.</Bold>  This will allow you to see the 
                                 symbolic names for code developed by Microsoft, including the operating system
                                 DLLs as well as the .NET framework.   To do this PerfView try to contact the
                                 Microsoft symbol server on the web when 'Lookup Symbols' command are executed 
