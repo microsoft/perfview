@@ -440,6 +440,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void AutoRestart(TraceEvent data, TraceThread thread)
         {
+            if (thread == null)
+                return;
+
             // TODO: ideally we just call OnCreated, and OnStarted. 
             // Can't remember why I did not do this... 
 
