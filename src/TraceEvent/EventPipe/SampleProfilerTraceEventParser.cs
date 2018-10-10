@@ -29,6 +29,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
+        // This is obsolete in the V3 version of the EventPipe format (released in .NET Core V2.1)  Can remove in 2019.  
         public event Action<ClrThreadStackWalkTraceData> ThreadStackWalk
         {
             add
