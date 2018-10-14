@@ -11,7 +11,7 @@ current version of PerfView.
 
 ### Are you here about the TraceEvent Library?
 
-PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
+PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programmatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
 
 ### Learning about PerfView 
 
@@ -29,7 +29,7 @@ called 'question' that you should use as well that marks your issue as a questio
 If the question is is specific to a particular trace (*.ETL.ZIP file) you can drag that file onto the issue and it will be downloaded.
 This allows those watching for issues to reproduce your environment and give much more detailed and useful answer.
 
-Note that once you have your question answered, if the issue is likley to be common, you should strongly consider updating the
+Note that once you have your question answered, if the issue is likely to be common, you should strongly consider updating the
 documentation to include the information.  The documentation is pretty much just
 one file https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm.
 You will need to clone the repository and create a pull request (see [OpenSourceGitWorkflow](https://github.com/Microsoft/perfview/blob/master/documentation/OpenSourceGitWorkflow.md)
@@ -67,8 +67,8 @@ installed easily from [here](https://www.microsoft.com/net/download/windows).
 
 ### Cloning the PerfView GitHub Repository. 
 
-The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.
-If you are already familiar with how GIT, GitHub, and Visual Studio 2017 GIT support works, than you can skip this section.
+The first step in getting started with the PerfView source code is to clone the PerfView GitHub repository.
+If you are already familiar with how GIT, GitHub, and Visual Studio 2017 GIT support works, then you can skip this section.
 However, if not, the [Setting up a Local GitHub repository with Visual Studio 2017](documentation/SettingUpRepoInVS.md) document
 will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2017 installed.
 
