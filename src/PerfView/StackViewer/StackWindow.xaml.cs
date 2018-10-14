@@ -861,6 +861,14 @@ namespace PerfView
             });
             symPathDialog.Show();
         }
+        private void DoSetTextEditorPath(object sender, RoutedEventArgs e)
+        {
+            var symPathDialog = new SymbolPathDialog(App.TextEditorPath, "TextEditor", delegate (string newPath)
+            {
+                App.TextEditorPath = newPath;
+            });
+            symPathDialog.Show();
+        }
         private void DoSetStartupPreset(object sender, RoutedEventArgs e)
         {
             App.ConfigData["DefaultFoldPercent"] = FoldPercentTextBox.Text;
@@ -2232,7 +2240,7 @@ namespace PerfView
                     Update();
                 });
             });
-        }
+        }        
         private void DoGotoSource(object sender, ExecutedRoutedEventArgs e)
         {
             var cells = SelectedCells();
@@ -2309,20 +2317,25 @@ namespace PerfView
                 {
                     if (sourcePathToOpen != null)
                     {
-                        StatusBar.Log("Viewing line " + sourceLocation.LineNumber + " in " + logicalSourcePath);
+                        StatusBar.Log("Viewing file " + logicalSourcePath);
+                        var textEditorPath = App.TextEditorPath;
 
-                        // TODO FIX NOW this is a hack
-                        var notepad2 = Command.FindOnPath("notepad2.exe");
-                        Window dialogParentWindow = this;
-                        if (notepad2 != null)
+                        if (textEditorPath != null)
                         {
-                            Command.Run(Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
+                            if (!File.Exists(textEditorPath))
+                            {
+                                StatusBar.LogError("The text editor configured could not be found.");
+                                return;
+                            }
+
+                            Command.Run(Command.Quote(textEditorPath) + " "
                                 + Command.Quote(sourcePathToOpen), new CommandOptions().AddStart());
                         }
                         else
                         {
                             StatusBar.Log("Opening editor on " + sourcePathToOpen);
                             var textEditorWindow = new TextEditorWindow();
+                            Window dialogParentWindow = this;
                             dialogParentWindow = textEditorWindow;
                             textEditorWindow.TextEditor.IsReadOnly = true;
                             textEditorWindow.TextEditor.OpenText(sourcePathToOpen);

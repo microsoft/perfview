@@ -13,7 +13,7 @@ namespace PerfView.Dialogs
     public partial class SymbolPathDialog : Window
     {
         /// <summary>
-        /// Kind should be either 'symbol' or 'source' depending on which path variable to set.  
+        /// Kind should be either 'symbol', 'source' or 'texteditor' depending on which path variable to set.  
         /// </summary>
         public SymbolPathDialog(string defaultValue, string kind, Action<string> action)
         {
@@ -72,7 +72,5 @@ namespace PerfView.Dialogs
 
         private Action<string> m_action;
         private string m_kind;
-
-
     }
 }

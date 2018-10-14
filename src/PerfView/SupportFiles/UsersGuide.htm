@@ -2823,7 +2823,8 @@
         </li>
         <li>
             <strong>Goto Source</strong> - You can select name in the stack viewer, right click
-            and select 'Goto Source' (Alt D), and it will open a text editor with the source
+            and select 'Goto Source' (Alt D), and it will open a default text editor (or the one
+            defined in _NT_TEXTEDITOR_PATH variable) with the source
             code of the file with that method where each line is annotated with the metric on
             that line. This feature is very valuable, but can be fragile. See <a href="#SourceCodeLookup">
                 Source
@@ -7784,7 +7785,8 @@
         One very useful feature that is easy to miss is PerfView's source code support.
         This support is activated by selecting a name in the stack viewer and typing Alt-D
         (D for definition), or right clicking and selecting 'Goto Source'. This will bring
-        up the source code for that name in a text editor, where every line has been annotated
+        up the source code for that name in a default text editor (or the one
+        defined in _NT_TEXTEDITOR_PATH variable), where every line has been annotated
         with metric for that line. This feature is indispensable for doing analysis within
         a method, and is also just generally useful for understanding what the code is doing
         in general.
@@ -7848,7 +7850,7 @@
     </p>
     <!--  ******** -->
     <h4>
-        <a id="SourcePathTextBox">Setting _NT_SOURCE_PATH in the GUI</a>
+        <a id="SourcePathTextBox">Setting _NT_SOURCE_PATH and _NT_TEXTEDITOR_PATH in the GUI</a>
     </h4>
     <p>
         Often you don't need to set the _NT_SOURCE_PATH variable because by default PerfView
@@ -7856,9 +7858,15 @@
         on the same machine you run) as well as the symbol server specified in the PDB symbol
         file (Which works if the code was indexed with the source server. However in other
         cases you must set the _NT_SOURCE_PATH. Just like the case of _NT_SYMBOL_PATH, you
-        can set this variable in the GUI by going to the File -> 'Set Source Path' menu
+        can set this variable in the GUI by going to the File -> User Config -> 'Set Source Path' menu
         entry of the stack viewer. This value is persisted across different invocations
         of the perfView program.
+    </p>
+    <p>
+        The same thing applyes to _NT_TEXTEDITOR_PATH. PerfView has a built-in text editor to open source code
+        files. But, if you prefer, you can indicate the path of your editor of preference. You can set
+        this variable in File -> User Config -> 'Set Text Editor Path' menu of stack viewer, that will
+        have the same behavior as the others variables.
     </p>
     <p>
         See also <a href="#SourceCodeLookup">Source Code Lookup.</a>

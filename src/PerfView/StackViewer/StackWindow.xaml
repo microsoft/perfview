@@ -197,11 +197,14 @@
             <Menu Grid.Column="0" Background="#FFD1D1D1">
                 <MenuItem Header="_File">
                     <MenuItem Header="Parent _Window" Click="DoOpenParent"/>
-                    <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
-                    <MenuItem Header="Set Source Path" Click="DoSetSourcePath" ToolTip="Sets the locations to look for source code."/>
                     <MenuItem Header="Save" Command="{x:Static src:StackWindow.SaveCommand}" />
                     <MenuItem Header="Save View As" Command="{x:Static src:StackWindow.SaveAsCommand}" />
                     <MenuItem Header="_Close" Click="DoClose"/>
+                    <MenuItem Header="User Config" >
+                        <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
+                        <MenuItem Header="Set Source Path" Click="DoSetSourcePath" ToolTip="Sets the locations to look for source code."/>
+                        <MenuItem Header="Set Text Editor Path" Click="DoSetTextEditorPath" ToolTip="Sets the locations to look for default text editor to open source code."/>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem x:Name="ViewMenu" Header="_View">
                 </MenuItem>

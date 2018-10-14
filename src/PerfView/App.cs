@@ -729,6 +729,30 @@ namespace PerfView
                 App.ConfigData["_NT_SOURCE_PATH"] = value;
             }
         }
+        public static string TextEditorPath
+        {
+            get
+            {
+                if (m_TextEditorPath == null)
+                {
+                    var symPath = new SymbolPath(Environment.GetEnvironmentVariable("_NT_TEXTEDITOR_PATH"));
+                    var savedPath = App.ConfigData["_NT_TEXTEDITOR_PATH"];
+                    if (savedPath != null)
+                    {
+                        symPath.Add(savedPath);
+                    }
+
+                    // Remember it.  
+                    TextEditorPath = symPath.ToString();
+                }
+                return m_TextEditorPath;
+            }
+            set
+            {
+                m_TextEditorPath = value;
+                App.ConfigData["_NT_TEXTEDITOR_PATH"] = value;
+            }
+        }
 
         /// <summary>
         /// A SymbolReader contains all the context (symbol path, symbol lookup preferences ...) needed
@@ -1023,6 +1047,7 @@ namespace PerfView
         }
         private static string m_SymbolPath;
         private static string m_SourcePath;
+        private static string m_TextEditorPath;
 
         #region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
