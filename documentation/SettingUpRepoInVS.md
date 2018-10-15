@@ -16,7 +16,7 @@ the vast majority of this section applies to any open source GitHub hosted proje
 
 The step-by-step instructions will not make a whole lot of sense however without
 a certain amount of background knowledge about a basic understanding of what GIT
-and GitHub do and some of the basic concepts associate with the GIT source code
+and GitHub do and some of the basic concepts associated with the GIT source code
 control system.  This is where we start.  
 
 ## Background: GitHub Repos, Commits Branches and GitHub  
@@ -27,7 +27,7 @@ collection of snapshots called *commits* which represents a set of files at one
 point in time.   The data in any such snapshot is hashed (including all its meta
 data like when the commit was made), and this hash is the ID for the commit.
 In theory the ID is very long (64+ bytes), but in practice all
-GIT commands will take a unambiguous prefix.  Typically 8 Hex digits is more than
+GIT commands will take an unambiguous prefix.  Typically 8 Hex digits are more than
 sufficient so you will see instructions talking about commit 534aab38 or commit 3abcd333. 
 
 One of the very nice properties of naming commits using a hash of the data is
@@ -96,14 +96,14 @@ because there is no way people without write access to contribute updates.
 In an open source project, we want the ability for ANYONE to PROPOSE a change 
 to the main repository, but we need an APPROVAL process so that only those with
 special permissions (the maintainers) can actually update the main repository.  
-GitHub accomplishes this with a process know as the *pull request*.   A pull request
+GitHub accomplishes this with a process known as the *pull request*.   A pull request
 is GitHub procedure where any user can indicate that he would like a particular change
 (commit) integrated to the GitHub repository.   People who do have write permission
 to the repository can look at the change and determine if it meets
 the standards of the repository and if so merge (pull) the change into it.   In this way
 arbitrary users can contribute fixes to a repository in a controlled way.   
    
-There is a logistic problem with pull requests on where to put the tenative (proposed)
+There is a logistic problem with pull requests on where to put the tentative (proposed)
 changes.   We need a commit (set of file changes) that anyone can create, but can 
 easily be integrated into the main GIT repository.    This commit can't be created the 
 main repository (because it was created by a user without write permissions to the main repository).   It also 
@@ -116,7 +116,7 @@ Thus the typical flow for an open source project is
 
  1. Create a *Fork* (copy of the repo) of the open source repository (e.g. https://github.com/Microsoft/perfview) 
  that is writable by you.  There is a button on the project's  GitHub page (upper right corner called 'fork') that does
- this.   Every GitHub user has a 'area' assigned to their GitHub user name that can host these writable forks.  There may
+ this.   Every GitHub user has an 'area' assigned to their GitHub user name that can host these writable forks.  There may
  be other locations (shared by a group) that you may put the fork, so when clicking the 'Fork' button may prompt 
  you with choices of where to put it.   Typically you want to use the area associated with just your user.  For example my
  GitHub user name is vancem, so the fork created when I click on fork button of https://github.com/Microsoft/perfview creates 
@@ -133,7 +133,7 @@ Thus the typical flow for an open source project is
 	  2. Create one or more commits in this branch that embody the change you want.  
 	  3. Push your changes to your GitHub Fork.   
 
- 4. Once you have a branch you are happy with in your own fork, there is a button on YOUR FORKs GitHub page that 
+ 4. Once you have a branch you are happy within your own fork, there is a button on YOUR FORKs GitHub page that 
  allow you to submit that branch as a pull request.   When you do this you write a description / rationale for The
  change where you are persuading the maintainers to accept your request.   There is an area for discussion, and typically
  the maintainers ask for changes.   You update your branch as needed, and the pull request automatically gets updated
