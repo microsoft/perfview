@@ -7,18 +7,14 @@
 /****************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.IO;
-using System.Reflection;
-using System.CodeDom.Compiler;
 using System.Diagnostics;           // for StackTrace; Process
+using System.IO;
 
 /******************************************************************************/
 /// <summary>
 /// General purpose utilities dealing with archiveFile system directories. 
 /// </summary>
-static public class DirectoryUtilities
+public static class DirectoryUtilities
 {
     public static string GetRelativePath(string fileName, string directory)
     {
@@ -26,9 +22,15 @@ static public class DirectoryUtilities
 
         int directoryEnd = directory.Length;
         if (directoryEnd == 0)
+        {
             return fileName;
+        }
+
         while (directoryEnd < fileName.Length && fileName[directoryEnd] == '\\')
+        {
             directoryEnd++;
+        }
+
         string relativePath = fileName.Substring(directoryEnd);
         return relativePath;
     }
@@ -50,7 +52,9 @@ static public class DirectoryUtilities
     public static void Copy(string sourceDirectory, string targetDirectory, SearchOption searchOptions)
     {
         if (!Directory.Exists(targetDirectory))
+        {
             Directory.CreateDirectory(targetDirectory);
+        }
 
         foreach (string sourceFile in Directory.GetFiles(sourceDirectory))
         {
@@ -77,15 +81,23 @@ static public class DirectoryUtilities
     public static int Clean(string directory)
     {
         if (!Directory.Exists(directory))
+        {
             return 0;
+        }
 
         int ret = 0;
         foreach (string file in Directory.GetFiles(directory))
+        {
             if (!FileUtilities.ForceDelete(file))
+            {
                 ret++;
+            }
+        }
 
         foreach (string subDir in Directory.GetDirectories(directory))
+        {
             ret += Clean(subDir);
+        }
 
         if (ret == 0)
         {
@@ -99,7 +111,10 @@ static public class DirectoryUtilities
             }
         }
         else
+        {
             ret++;
+        }
+
         return ret;
     }
 
@@ -113,14 +128,18 @@ static public class DirectoryUtilities
     public static bool DeleteOldest(string directoryPath, int numberToKeep)
     {
         if (!Directory.Exists(directoryPath))
+        {
             return true;
+        }
 
         string[] dirs = Directory.GetDirectories(directoryPath);
         int numToDelete = dirs.Length - numberToKeep;
         if (numToDelete <= 0)
+        {
             return true;
+        }
 
-        Array.Sort<string>(dirs, delegate(string x, string y)
+        Array.Sort<string>(dirs, delegate (string x, string y)
         {
             return File.GetLastWriteTimeUtc(x).CompareTo(File.GetLastWriteTimeUtc(y));
         });

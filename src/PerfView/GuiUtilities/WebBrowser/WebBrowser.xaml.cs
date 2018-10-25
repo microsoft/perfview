@@ -56,12 +56,16 @@ namespace PerfView.GuiUtilities
         private void BackClick(object sender, RoutedEventArgs e)
         {
             if (Browser.CanGoBack)
+            {
                 Browser.GoBack();
+            }
         }
         private void ForwardClick(object sender, RoutedEventArgs e)
         {
             if (Browser.CanGoForward)
+            {
                 Browser.GoForward();
+            }
         }
         /// <summary>
         /// We hide rather than close the editor.  
@@ -81,10 +85,14 @@ namespace PerfView.GuiUtilities
         private void Browser_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (m_notFirst)
+            {
                 Browser.Navigate(Browser.Source);
+            }
+
             m_notFirst = true;
         }
-        bool m_notFirst;
+
+        private bool m_notFirst;
         #endregion 
     }
 }

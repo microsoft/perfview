@@ -1,5 +1,5 @@
-﻿using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Etlx;
+﻿using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -18,10 +18,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Triggers;
-using Trigger = Triggers.Trigger;
 using Utilities;
-using Address = System.UInt64;
-using Microsoft.Diagnostics.Symbols;
+using Trigger = Triggers.Trigger;
 
 namespace PerfView
 {
@@ -88,15 +86,21 @@ namespace PerfView
             var exeFullPath = Command.FindOnPath(exeName);
 
             if (string.Compare(Path.GetExtension(exeFullPath), ".exe", StringComparison.OrdinalIgnoreCase) == 0 && parsedArgs.Process == null)
+            {
                 parsedArgs.Process = Path.GetFileNameWithoutExtension(exeFullPath);
+            }
 
             if (exeFullPath == null && string.Compare(exeName, "start", StringComparison.OrdinalIgnoreCase) != 0)
+            {
                 throw new FileNotFoundException("Could not find command " + exeName + " on path.");
+            }
 
             var fullCmdLine = parsedArgs.CommandLine;
             if (string.Compare(Path.GetExtension(exeFullPath), ".exe", StringComparison.OrdinalIgnoreCase) != 0 ||
                 fullCmdLine.IndexOfAny(new char[] { '<', '>', '&' }) >= 0)   // File redirection ...
+            {
                 fullCmdLine = "cmd /c call " + parsedArgs.CommandLine;
+            }
 
             // OK actually do the work.
             parsedArgs.NoNGenRundown = true;        // You don't need rundown for the run command because the process of interest will have died.  
@@ -135,7 +139,9 @@ namespace PerfView
                 if (cmd.HasExited)
                 {
                     if (cmd.ExitCode != 0)
+                    {
                         LogFile.WriteLine("Warning: Command exited with non-success error code 0x{0:x}", cmd.ExitCode);
+                    }
                 }
                 else
                 {
@@ -149,7 +155,10 @@ namespace PerfView
                 if (!success)
                 {
                     if (cmd != null)
+                    {
                         cmd.Kill();
+                    }
+
                     Abort(parsedArgs);
                 }
             }
@@ -169,7 +178,9 @@ namespace PerfView
             for (int collectionNum = 1; ;)
             {
                 if (parsedArgs.CollectMultiple > 1)
+                {
                     LogFile.WriteLine("[************** CollectMultple={0} collecting {1} ****************]", parsedArgs.CollectMultiple, collectionNum);
+                }
 
                 bool success = false;
                 ManualResetEvent collectionCompleted = new ManualResetEvent(false);
@@ -177,9 +188,13 @@ namespace PerfView
                 {
                     m_aborted = false;
                     if (parsedArgs.NoGui)
+                    {
                         SetupWaitNoGui(collectionCompleted, parsedArgs);
+                    }
                     else
+                    {
                         SetupWaitGui(collectionCompleted, parsedArgs);
+                    }
 
                     WaitForStart(parsedArgs, collectionCompleted);
 
@@ -192,7 +207,9 @@ namespace PerfView
                         Start(parsedArgs);
                         WaitUntilCollectionDone(collectionCompleted, parsedArgs, DateTime.Now);
                         if (m_aborted)
+                        {
                             throw new ThreadInterruptedException();
+                        }
 
                         Stop(parsedArgs);
                         success = true;
@@ -202,12 +219,16 @@ namespace PerfView
                 {
                     collectionCompleted.Set();  // This insures that the GUI window closes.  
                     if (!success)
+                    {
                         Abort(parsedArgs);
+                    }
                 }
 
                 collectionNum++;
                 if (collectionNum > parsedArgs.CollectMultiple)
+                {
                     break;
+                }
             }
         }
 
@@ -222,7 +243,9 @@ namespace PerfView
             if (parsedArgs.StartOnPerfCounter != null)
             {
                 if (!App.IsElevated)
+                {
                     throw new ApplicationException("Must be elevated to collect ETW information.");
+                }
 
                 DateTime waitStartTime = DateTime.Now;
                 DateTime lastProgressReportTime = waitStartTime;
@@ -245,7 +268,10 @@ namespace PerfView
                     while (!collectionCompleted.WaitOne(200))
                     {
                         if (startTriggered)
+                        {
                             break;
+                        }
+
                         var now = DateTime.Now;
                         if ((now - lastProgressReportTime).TotalSeconds > 10)
                         {
@@ -254,7 +280,9 @@ namespace PerfView
                             {
                                 var triggerStatus = startTrigger.Status;
                                 if (triggerStatus.Length != 0)
+                                {
                                     LogFile.WriteLine(triggerStatus);
+                                }
                             }
                             lastProgressReportTime = now;
                         }
@@ -263,7 +291,9 @@ namespace PerfView
                 finally
                 {
                     foreach (var startTrigger in startTigggers)
+                    {
                         startTrigger.Dispose();
+                    }
                 }
             }
 #endif
@@ -297,13 +327,29 @@ namespace PerfView
 
             ETWClrProfilerTraceEventParser.Keywords profilerKeywords = 0;
             if (parsedArgs.DotNetCalls)
+            {
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.Call;
+            }
+
             if (parsedArgs.DotNetCallsSampled)
+            {
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.CallSampled;
+            }
+
             if (parsedArgs.DotNetAlloc)
+            {
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.GCAlloc;
+            }
+
             if (parsedArgs.DotNetAllocSampled)
+            {
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.GCAllocSampled;
+            }
+
+            if (parsedArgs.DisableInlining)
+            {
+                profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.DisableInlining;
+            }
 
             if (profilerKeywords != 0)
             {
@@ -312,21 +358,31 @@ namespace PerfView
             }
 
             if (parsedArgs.DataFile == null)
+            {
                 parsedArgs.DataFile = "PerfViewData.etl";
+            }
 
             // The DataFile does not have the .zip associated with it (it is implied)
             if (parsedArgs.DataFile.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+            {
                 parsedArgs.DataFile = parsedArgs.DataFile.Substring(0, parsedArgs.DataFile.Length - 4);
+            }
 
             // Don't clobber the results file if we were told not to.  
             if (parsedArgs.CollectMultiple > 1)
             {
                 var finalResultFile = parsedArgs.DataFile;
                 if (parsedArgs.ShouldZip)
+                {
                     finalResultFile = finalResultFile + ".zip";
+                }
+
                 finalResultFile = GetNewFile(finalResultFile);
                 if (parsedArgs.ShouldZip)
+                {
                     finalResultFile = finalResultFile.Substring(0, finalResultFile.Length - 4);
+                }
+
                 parsedArgs.DataFile = finalResultFile;
             }
 
@@ -341,14 +397,18 @@ namespace PerfView
             try
             {
                 foreach (var fileName in fileNames)
+                {
                     FileUtilities.ForceDelete(fileName);
+                }
             }
             catch (IOException)
             {
                 LogFile.WriteLine("Files in use, aborting and trying again.");
                 Abort(parsedArgs);
                 foreach (var fileName in fileNames)
+                {
                     FileUtilities.ForceDelete(fileName);
+                }
             }
             if (parsedArgs.Wpr)
             {
@@ -362,9 +422,14 @@ namespace PerfView
             // Create the sessions
 
             if (parsedArgs.InMemoryCircularBuffer)
+            {
                 kernelFileName = null;              // In memory buffers dont have a file name  
+            }
             else
+            {
                 LogFile.WriteLine("[Kernel Log: {0}]", Path.GetFullPath(kernelFileName));
+            }
+
             using (TraceEventSession kernelModeSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, kernelFileName))
             {
                 if (parsedArgs.CpuCounters != null)
@@ -375,7 +440,9 @@ namespace PerfView
                 else
                 {
                     if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.PMCProfile) != 0)
+                    {
                         throw new ApplicationException("The PMCProfile should not be set explicitly.  Simply set the CpuCounters.");
+                    }
                 }
 
                 LogFile.WriteLine("Kernel keywords enabled: {0}", parsedArgs.KernelEvents);
@@ -393,13 +460,18 @@ namespace PerfView
 
                     // If these are on, turn on Virtual Allocs as well.  
                     if (parsedArgs.OSHeapProcess != 0 || parsedArgs.OSHeapExe != null || parsedArgs.DotNetAlloc || parsedArgs.DotNetAllocSampled)
+                    {
                         parsedArgs.KernelEvents |= KernelTraceEventParser.Keywords.VirtualAlloc;
+                    }
 
                     kernelModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
                     kernelModeSession.StackCompression = parsedArgs.StackCompression;
                     kernelModeSession.CpuSampleIntervalMSec = parsedArgs.CpuSampleMSec;
                     if (parsedArgs.CircularMB != 0)
+                    {
                         kernelModeSession.CircularBufferMB = parsedArgs.CircularMB;
+                    }
+
                     kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
                 }
 
@@ -408,14 +480,18 @@ namespace PerfView
                 if (parsedArgs.OSHeapProcess != 0 || parsedArgs.OSHeapExe != null)
                 {
                     if (parsedArgs.OSHeapProcess != 0 && parsedArgs.OSHeapExe != null)
+                    {
                         throw new ApplicationException("OSHeapProcess and OSHeapExe cannot both be specified simultaneously.");
+                    }
 
                     heapSession = new TraceEventSession(s_HeapSessionName, heapFileName);
                     // Default is 256Meg and twice whatever the others are
                     heapSession.BufferSizeMB = Math.Max(256, parsedArgs.BufferSizeMB * 2);
 
                     if (parsedArgs.CircularMB != 0)
+                    {
                         LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering.]");
+                    }
 
                     if (parsedArgs.OSHeapProcess != 0)
                     {
@@ -432,15 +508,22 @@ namespace PerfView
 
                 var stacksEnabled = new TraceEventProviderOptions() { StacksEnabled = true };
                 if (parsedArgs.InMemoryCircularBuffer)
+                {
                     userFileName = null;                    // In memory buffers don't have a file name 
+                }
                 else
+                {
                     LogFile.WriteLine("[User mode Log: {0}]", Path.GetFullPath(userFileName));
+                }
+
                 using (TraceEventSession userModeSession = new TraceEventSession(s_UserModeSessionName, userFileName))
                 {
                     userModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
                     // DotNetAlloc needs a large buffer size too.  
                     if (parsedArgs.DotNetAlloc || parsedArgs.DotNetCalls)
+                    {
                         userModeSession.BufferSizeMB = Math.Max(512, parsedArgs.BufferSizeMB * 2);
+                    }
                     // Note that you don't need the rundown 300Meg if you are V4.0.   
                     if (parsedArgs.CircularMB != 0)
                     {
@@ -465,10 +548,14 @@ namespace PerfView
 
                     // If you turn on allocation sampling, then you also need the types and names and deaths.  
                     if ((parsedArgs.ClrEvents & (ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh | ClrTraceEventParser.Keywords.GCSampledObjectAllocationLow)) != 0)
+                    {
                         parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement;
+                    }
 
                     if (parsedArgs.Wpr)
+                    {
                         SetWPRProviders(userModeSession);
+                    }
                     else if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.None)
                     {
 
@@ -613,7 +700,7 @@ namespace PerfView
                                 "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
                                 "Response.StatusCode";
                             diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
-                            const ulong IgnoreShortCutKeywords = 0x0800;
+                            const ulong IgnoreShortCutKeywords = 0x0800;    // Turing this OFF enables all the shortcut keywords (ASP.NET and Entity Framework).  
                             EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
                                 TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
@@ -624,10 +711,14 @@ namespace PerfView
                                 TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
 
                             // Turn on Power stuff
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5D);
-                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", ulong.MaxValue);
-                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCfg", ulong.MaxValue);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Power",
+                                new Guid("331C3B3A-2005-44C2-AC5E-77220C37D6B4"), TraceEventLevel.Informational, 0xFFB);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power",
+                                new Guid("0F67E49F-FE51-4E9F-B490-6F2948CC6027"), TraceEventLevel.Informational, 0xE5D);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCpl",
+                                new Guid("B1F90B27-4551-49D6-B2BD-DFC6453762A6"), TraceEventLevel.Informational, ulong.MaxValue);
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCfg",
+                                 new Guid("9F0C4EA8-EC01-4200-A00D-B9701CBEA5D8"), TraceEventLevel.Informational, ulong.MaxValue);
 
                             // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
                             // It does not increase the volume in a significant way and they can be pretty useful.     
@@ -743,11 +834,15 @@ namespace PerfView
 
                         // Turn off NGEN if they asked for it.  
                         if (parsedArgs.NoNGenRundown)
+                        {
                             parsedArgs.ClrEvents &= ~ClrTraceEventParser.Keywords.NGen;
+                        }
 
                         // Force NGEN rundown if they asked for it. 
                         if (parsedArgs.ForceNgenRundown)
+                        {
                             parsedArgs.ClrEvents &= ~ClrTraceEventParser.Keywords.SupressNGen;
+                        }
 
                         LogFile.WriteLine("Enabling CLR Events: {0}", parsedArgs.ClrEvents);
                         EnableUserProvider(userModeSession, "CLR", ClrTraceEventParser.ProviderGuid,
@@ -756,7 +851,10 @@ namespace PerfView
 
                     // Start network monitoring capture if needed
                     if (parsedArgs.NetMonCapture)
+                    {
                         parsedArgs.NetworkCapture = true;
+                    }
+
                     if (parsedArgs.NetworkCapture)
                     {
                         string maxSize = "maxSize=1";
@@ -793,7 +891,9 @@ namespace PerfView
                         // Make sure that if we are on a 64 bit machine we run the 64 bit version of netsh.  
                         var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "cmd.exe");
                         if (!File.Exists(cmdExe))
+                        {
                             cmdExe = cmdExe.Replace("SysNative", "System32");
+                        }
 
                         commandLine = cmdExe + " /c " + commandLine;
                         var command = Command.Run(commandLine, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
@@ -802,22 +902,31 @@ namespace PerfView
                         File.WriteAllText(netMonFile, "");      // mark that Network monitoring is potentially active 
 
                         if (command.ExitCode != 0)
+                        {
                             throw new ApplicationException("Could not turn on network packet monitoring with the 'netsh trace' command.");
+                        }
 
                         LogFile.WriteLine("netsh trace command succeeded.");
                     }
                     if (parsedArgs.CCWRefCount)
+                    {
                         EnableUserProvider(userModeSession, "InteropEventProvider", new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+                    }
 
                     LogFile.WriteLine("Enabling Providers specified by the user.");
                     if (parsedArgs.Providers != null)
+                    {
                         EnableAdditionalProviders(userModeSession, parsedArgs.Providers, parsedArgs.CommandLine);
+                    }
 
                     // OK at this point, we want to leave both sessions for an indefinite period of time (even past process exit)
                     kernelModeSession.StopOnDispose = false;
                     userModeSession.StopOnDispose = false;
                     if (heapSession != null)
+                    {
                         heapSession.StopOnDispose = false;
+                    }
+
                     PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
                 }
             }
@@ -978,11 +1087,15 @@ namespace PerfView
         public void Stop(CommandLineArgs parsedArgs)
         {
             if (parsedArgs.DataFile == null)
+            {
                 parsedArgs.DataFile = "PerfViewData.etl";
+            }
 
             // The DataFile does not have the .zip associated with it (it is implied)
             if (parsedArgs.DataFile.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+            {
                 parsedArgs.DataFile = parsedArgs.DataFile.Substring(0, parsedArgs.DataFile.Length - 4);
+            }
 
             LaunchPerfViewElevatedIfNeeded("Stop", parsedArgs);
 
@@ -1012,7 +1125,10 @@ namespace PerfView
                 foreach (var cpuCounter in cpuCounters.Values)
                 {
                     if (string.CompareOrdinal(cpuCounter.Name, "Timer") == 0)
+                    {
                         continue;
+                    }
+
                     PerfViewLogger.Log.CpuCountersConfigured(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                     // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                 }
@@ -1021,7 +1137,7 @@ namespace PerfView
             // Try to stop the kernel session
             try
             {
-               if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.None)
+                if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.None)
                 {
                     using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
                     {
@@ -1049,7 +1165,7 @@ namespace PerfView
                 }
             }
             catch (FileNotFoundException) { LogFile.WriteLine("No Kernel events were active for this trace."); }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping Kernel session: " + e.Message); throw; }
+            catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping Kernel session: " + e.Message); } throw; }
 
             string dataFile = null;
             try
@@ -1062,32 +1178,41 @@ namespace PerfView
                         clrSession.SetFileName(dataFile);   // Flush the file 
                     }
                     else
+                    {
                         dataFile = clrSession.FileName;
+                    }
+
                     clrSession.Stop();
 
                     // Try to force the rundown of CLR method and loader events.  This routine does not fail.  
                     DoClrRundownForSession(dataFile, clrSession.SessionName, parsedArgs);
                 }
             }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping User session: " + e.Message); throw; }
+            catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping User session: " + e.Message); } throw; }
 
             try
             {
                 using (var heapSession = new TraceEventSession(s_HeapSessionName, TraceEventSessionOptions.Attach))
+                {
                     heapSession.Stop();
+                }
             }
             catch (FileNotFoundException) { LogFile.WriteLine("No Heap events were active for this trace."); }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping Heap session: " + e.Message); throw; }
+            catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping Heap session: " + e.Message); } throw; }
 
             UninstallETWClrProfiler(LogFile);
 
             if (dataFile == null || !File.Exists(dataFile))
+            {
                 LogFile.WriteLine("Warning: no data generated. (Separate Start and Stop does not work with /InMemoryCircularBuffer)\n");
+            }
             else
             {
                 parsedArgs.DataFile = dataFile;
                 if (parsedArgs.ShouldMerge)
+                {
                     Merge(parsedArgs);
+                }
             }
             CollectingData = false;
 
@@ -1102,12 +1227,16 @@ namespace PerfView
                 // We are in the wow, so run this in 64 bit if we need 
                 var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
                 if (!File.Exists(cmdExe))
+                {
                     cmdExe = cmdExe.Replace("SysNative", "System32");
+                }
 
                 commandToRun = cmdExe + " /c " + commandToRun;
                 var cmd = Command.Run(commandToRun, new CommandOptions().AddOutputStream(LogFile).AddNoThrow().AddTimeout(60000));
                 if (cmd.ExitCode != 0)
+                {
                     LogFile.WriteLine("Error: On Stop command return error code {0}", cmd.ExitCode);
+                }
 
                 LogFile.WriteLine("/StopCommand complete {0}", commandToRun);
             }
@@ -1121,7 +1250,10 @@ namespace PerfView
         public void Mark(CommandLineArgs parsedArgs)
         {
             if (parsedArgs.Message == null)
+            {
                 parsedArgs.Message = "";
+            }
+
             PerfViewLogger.Log.Mark(parsedArgs.Message);
         }
         public void Abort(CommandLineArgs parsedArgs)
@@ -1130,42 +1262,55 @@ namespace PerfView
             lock (s_UserModeSessionName)    // Insure only one thread can be aborting at a time.
             {
                 if (s_abortInProgress)
+                {
                     return;
+                }
+
                 s_abortInProgress = true;
                 m_logFile.WriteLine("Aborting tracing for sessions '" +
                     KernelTraceEventParser.KernelSessionName + "' and '" + s_UserModeSessionName + "'.");
                 try
                 {
                     using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
+                    {
                         kernelSession.Stop(true);
+                    }
                 }
                 catch (Exception) { }
 
                 try
                 {
                     using (var heapSession = new TraceEventSession(s_HeapSessionName, TraceEventSessionOptions.Attach))
+                    {
                         heapSession.Stop(true);
+                    }
                 }
                 catch (Exception) { }
 
                 try
                 {
                     using (var userSession = new TraceEventSession(s_UserModeSessionName, TraceEventSessionOptions.Attach))
+                    {
                         userSession.Stop(true);
+                    }
                 }
                 catch (Exception) { }
 
                 try
                 {
                     using (var gcHeapSession = new TraceEventSession("PerfViewGCHeapSession", TraceEventSessionOptions.Attach))
+                    {
                         gcHeapSession.Stop(true);
+                    }
                 }
                 catch (Exception) { }
 
                 try
                 {
                     using (var gcHeapSession = new TraceEventSession("PerfViewJSHeapSession", TraceEventSessionOptions.Attach))
+                    {
                         gcHeapSession.Stop(true);
+                    }
                 }
                 catch (Exception) { }
 
@@ -1177,7 +1322,9 @@ namespace PerfView
                         try
                         {
                             using (var triggerSession = new TraceEventSession(sessionName, TraceEventSessionOptions.Attach))
+                            {
                                 triggerSession.Stop(true);
+                            }
                         }
                         catch (Exception) { }
                     }
@@ -1187,7 +1334,9 @@ namespace PerfView
                 try
                 {
                     using (var rundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", TraceEventSessionOptions.Attach))
+                    {
                         rundownSession.Stop(true);
+                    }
                 }
                 catch (Exception) { }
                 CollectingData = false;
@@ -1208,16 +1357,22 @@ namespace PerfView
         public static bool IsGuiCollection(CommandLineArgs parsedArgs)
         {
             if (parsedArgs.RestartingToElevelate == null)
+            {
                 return parsedArgs.DoCommand != App.CommandProcessor.Run && parsedArgs.DoCommand != App.CommandProcessor.Collect;
+            }
             else
+            {
                 return parsedArgs.RestartingToElevelate == "";
+            }
         }
 
         public void Merge(CommandLineArgs parsedArgs)
         {
             // If users have not set up a symbol server, don't notify the user.  
             if (parsedArgs.DataFile == null)
+            {
                 parsedArgs.DataFile = "PerfViewData.etl";
+            }
 
             LogFile.WriteLine("[Merging data files to " + Path.GetFileName(parsedArgs.DataFile) + ".  Can take 10s of seconds... (can skip if data analyzed on same machine with PerfView)]");
             Stopwatch sw = Stopwatch.StartNew();
@@ -1234,17 +1389,31 @@ namespace PerfView
             // Set up the writer parameters.  
             ZippedETLWriter etlWriter = new ZippedETLWriter(parsedArgs.DataFile, LogFile);
             if (parsedArgs.LowPriority)
+            {
                 etlWriter.LowPriority = true;
+            }
+
             if (parsedArgs.NoRundown || parsedArgs.NoNGenPdbs)
+            {
                 etlWriter.NGenSymbolFiles = false;
+            }
+
             etlWriter.SymbolReader = App.GetSymbolReader(parsedArgs.DataFile);
             if (!parsedArgs.ShouldZip)
+            {
                 etlWriter.Zip = false;
+            }
+
             if (parsedArgs.StackCompression)
+            {
                 etlWriter.CompressETL = true;
+            }
+
             etlWriter.DeleteInputFile = false;
             if (File.Exists(App.LogFileName))
+            {
                 etlWriter.AddFile(App.LogFileName, "LogFile.txt");
+            }
 
             // remember the .etlx file that would coorespond to the etl file 
             // that we are about to merge.   It is importnat to do this here
@@ -1311,11 +1480,17 @@ namespace PerfView
                 else
                 {
                     if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                    {
                         unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
+                    }
                     else if (inputFileName.EndsWith(".vspx", StringComparison.OrdinalIgnoreCase))
+                    {
                         unzipedEtlFile = Path.ChangeExtension(inputFileName, ".etl");
+                    }
                     else
+                    {
                         throw new ApplicationException("File does not end with the .etl.zip file extension");
+                    }
                 }
 
                 ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
@@ -1323,17 +1498,26 @@ namespace PerfView
 
                 // Figure out where to put the symbols.  
                 if (wprConventions)
+                {
                     etlReader.SymbolDirectory = Path.ChangeExtension(inputFileName, ".ngenpdb");
+                }
                 else
                 {
                     var inputDir = Path.GetDirectoryName(inputFileName);
                     if (inputDir.Length == 0)
+                    {
                         inputDir = ".";
+                    }
+
                     var symbolsDir = Path.Combine(inputDir, "symbols");
                     if (Directory.Exists(symbolsDir))
+                    {
                         etlReader.SymbolDirectory = symbolsDir;
+                    }
                     else
+                    {
                         etlReader.SymbolDirectory = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
+                    }
                 }
                 log.WriteLine("Putting symbols in {0}", etlReader.SymbolDirectory);
 
@@ -1392,7 +1576,9 @@ namespace PerfView
         {
             var processID = HeapDumper.GetProcessID(parsedArgs.Process);
             if (processID < 0)
+            {
                 throw new ApplicationException("Could not find a process with a name or ID of '" + parsedArgs.Process + "'");
+            }
 
 #if !DOTNET_CORE // perf counters dont exist on .NET Core
             // Support StartOnPerfCounter 
@@ -1405,7 +1591,9 @@ namespace PerfView
                     done = true;
                 });
                 while (!done)
+                {
                     Thread.Sleep(10);
+                }
             }
 #endif
             HeapDumper.ForceGC(processID, LogFile);
@@ -1413,7 +1601,9 @@ namespace PerfView
         public void HeapSnapshot(CommandLineArgs parsedArgs)
         {
             if (parsedArgs.DataFile == null)
+            {
                 parsedArgs.DataFile = "PerfViewGCHeap.gcDump";
+            }
 
             parsedArgs.DataFile = Path.ChangeExtension(parsedArgs.DataFile, ".gcdump");
 
@@ -1430,25 +1620,41 @@ namespace PerfView
             int processID = -1;
             string qualifiers = "";
             if (parsedArgs.SaveETL)
+            {
                 qualifiers += " /SaveETL /UseEtw";
+            }
+
             if (parsedArgs.DumpData)
+            {
                 qualifiers += " /DumpData";
+            }
+
             if (parsedArgs.MaxDumpCountK > 0)
+            {
                 qualifiers += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
+            }
+
             if (parsedArgs.MaxNodeCountK > 0)
+            {
                 qualifiers += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
+            }
+
             if (parsedArgs.Process != null)
             {
                 LogFile.WriteLine("Collecting a GC Heap SnapShot for process {0}", parsedArgs.Process);
                 processID = HeapDumper.GetProcessID(parsedArgs.Process);
                 if (processID < 0)
+                {
                     throw new ApplicationException("Could not find a process with a name or ID of '" + parsedArgs.Process + "'");
+                }
 
                 LogFile.WriteLine("[Taking heap snapshot of process '{0}' ID {1} to {2}.  This can take 10s of seconds to minutes.]", parsedArgs.Process, processID, parsedArgs.DataFile);
                 LogFile.WriteLine("During the dump the process will be frozen.   If the dump is aborted, the process being dumped will need to be killed.");
 
                 if (parsedArgs.Freeze)
+                {
                     qualifiers += " /Freeze";
+                }
             }
             else
             {
@@ -1457,9 +1663,14 @@ namespace PerfView
 
             LogFile.WriteLine("Starting dump at " + DateTime.Now);
             if (processID >= 0)
+            {
                 HeapDumper.DumpGCHeap(processID, parsedArgs.DataFile, LogFile, qualifiers);
+            }
             else
+            {
                 HeapDumper.DumpGCHeap(parsedArgs.ProcessDumpFile, parsedArgs.DataFile, LogFile, qualifiers);
+            }
+
             LogFile.WriteLine("Finished dump at " + DateTime.Now);
 
             LogFile.WriteLine("[Done taking snapshot to {0}]", Path.GetFullPath(parsedArgs.DataFile));
@@ -1551,11 +1762,15 @@ namespace PerfView
             // We do this to avoid a common mistake where people will create extensions on shared copies of perfView.  
             if (PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(@"\\") ||
                 PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new ApplicationException("Currently PerView.exe must be a machine-local copy of the EXE.  Copy it locally first.");
+            }
 
             var extensionSrcDir = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, parsedArgs.ExtensionName + "Src");
             if (Directory.Exists(extensionSrcDir))
+            {
                 throw new ApplicationException("The extension directory " + extensionSrcDir + " already exists.");
+            }
 
             Directory.CreateDirectory(extensionSrcDir);
 
@@ -1587,7 +1802,9 @@ namespace PerfView
                 var extensionName = shortDirName.Substring(0, shortDirName.Length - 3);   // Remove .src
                 var projFile = Path.Combine(dirName, extensionName + ".csproj");
                 if (File.Exists(projFile))
+                {
                     projectFiles.Add(projFile);
+                }
             }
 
             var extensionsSolnName = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "Extensions.sln");
@@ -1601,7 +1818,9 @@ namespace PerfView
         public void UserCommand(CommandLineArgs parsedArgs)
         {
             if (parsedArgs.CommandAndArgs.Length < 1)
+            {
                 throw new CommandLineParserException("User command missing.");
+            }
 
             LogFile.WriteLine("[Running User Command: {0}]", string.Join(" ", parsedArgs.CommandAndArgs));
 
@@ -1634,7 +1853,9 @@ namespace PerfView
         public static string GetNewFile(string path)
         {
             if (!File.Exists(path))
+            {
                 return path;
+            }
 
             var extension = Path.GetExtension(path);
             var fileNameBase = path.Substring(0, path.Length - extension.Length);
@@ -1652,9 +1873,14 @@ namespace PerfView
             if (0 < idx)
             {
                 while (0 < idx && Char.IsDigit(fileNameBase[idx]))
+                {
                     --idx;
+                }
+
                 if (fileNameBase[idx] == '.')
+                {
                     fileNameBase = fileNameBase.Substring(0, idx);
+                }
             }
 
             // Find a unique file by adding .N. before the extension. 
@@ -1662,7 +1888,9 @@ namespace PerfView
             {
                 var filePath = fileNameBase + "." + ctr.ToString() + extension;
                 if (!File.Exists(filePath))
+                {
                     return filePath;
+                }
             }
         }
 
@@ -1699,7 +1927,9 @@ namespace PerfView
                 // We are in the wow, so run this in 64 bit if we need 
                 var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
                 if (!File.Exists(cmdExe))
+                {
                     cmdExe = cmdExe.Replace("SysNative", "System32");
+                }
 
                 commandToRun = cmdExe + " /c " + commandToRun;
 
@@ -1724,19 +1954,27 @@ namespace PerfView
 
                 var m = Regex.Match(cpuCounterSpec, @"(.*?):(\d+)");
                 if (!m.Success)
+                {
                     throw new ApplicationException("Cpu Counter specifications must be of the form NAME:COUNT.");
+                }
 
                 var name = m.Groups[1].Value;
                 var count = int.Parse(m.Groups[2].Value);
 
                 if (!sourceInfos.ContainsKey(name))
+                {
                     throw new ApplicationException("Cpu Counter " + name + " does not exist.  Use ListCpuCounters for valid values.");
+                }
 
                 var sourceInfo = sourceInfos[name];
                 if (count < sourceInfo.MinInterval)
+                {
                     throw new ApplicationException("Cpu Counter " + name + " has a count that is below the minimum of " + sourceInfo.MinInterval);
+                }
                 else if (sourceInfo.MaxInterval < count)
+                {
                     throw new ApplicationException("Cpu Counter " + name + " has a count that is above the maximum of " + sourceInfo.MaxInterval);
+                }
 
                 LogFile.WriteLine("Configuring Cpu Counter (ProfileSource) {0} ID: {1} to Interval {2}", name, sourceInfo.ID, count);
                 // Can't log to PerfViewLogger because it is not on yet (kernel session turns on first).  
@@ -1856,7 +2094,9 @@ namespace PerfView
                         {
                             var triggerStatus = trigger.Status;
                             if (triggerStatus.Length != 0)
+                            {
                                 status = status + " " + triggerStatus;
+                            }
                         }
                         LogFile.WriteLine("[" + status + "]");
                         PerfViewLogger.Log.Tick(status);
@@ -1876,14 +2116,18 @@ namespace PerfView
                 {
                     LogFile.WriteLine("Turning off monitoring for stop triggers");
                     foreach (Trigger trigger in triggers)
+                    {
                         trigger.Dispose();
+                    }
                 }
 #if !DOTNET_CORE // perf counters dont exist on .NET Core
                 if (monitors.Count > 0)
                 {
                     LogFile.WriteLine("Turning off perf monitoring.");
                     foreach (var monitor in monitors)
+                    {
                         monitor.Dispose();
+                    }
                 }
 #endif
             }
@@ -1928,11 +2172,15 @@ namespace PerfView
 
                     parsedArgs.Merge = collectWindow.MergeCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Merge.HasValue)
+                    {
                         App.ConfigData["Merge"] = parsedArgs.Merge.Value.ToString();
+                    }
 
                     parsedArgs.Zip = collectWindow.ZipCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Zip.HasValue)
+                    {
                         App.ConfigData["Zip"] = parsedArgs.Zip.Value.ToString();
+                    }
 
                     parsedArgs.NoRundown = !(collectWindow.RundownCheckBox.IsChecked ?? false);
                     int.TryParse(collectWindow.RundownTimeoutTextBox.Text, out parsedArgs.RundownTimeout);
@@ -1961,16 +2209,23 @@ namespace PerfView
         {
             Console.WriteLine("");
             if (parsedArgs.NoNGenRundown)
+            {
                 Console.WriteLine("Pre V4.0 .NET Rundown disabled, Type 'E' to enable symbols for V3.5 processes.");
+            }
             else
+            {
                 Console.WriteLine("Pre V4.0 .NET Rundown enabled, Type 'D' to disable and speed up .NET Rundown.");
+            }
 
 #if !PERFVIEW_COLLECT
             Console.WriteLine("Do NOT close this console window.   It will leave collection on!");
 #endif
             var consider = "";
             if (parsedArgs.MaxCollectSec == 0)
+            {
                 consider = "(Also consider /MaxCollectSec:N)";
+            }
+
             Console.WriteLine("Type S to stop collection, 'A' will abort.  {0}", consider);
 
             Task.Factory.StartNew(delegate
@@ -2020,19 +2275,26 @@ namespace PerfView
 
                 fileSizeMB = new FileInfo(parsedArgs.DataFile).Length / 1048576.0;      // MB here are defined as 2^20 
                 if (!droppingData && parsedArgs.CircularMB != 0 && parsedArgs.CircularMB <= fileSizeMB)
+                {
                     droppingData = true;
+                }
+
                 var kernelName = Path.ChangeExtension(parsedArgs.DataFile, ".kernel.etl");
                 if (File.Exists(kernelName))
                 {
                     var kernelFileSizeMB = new FileInfo(kernelName).Length / 1048576.0;
                     if (!droppingData && parsedArgs.CircularMB != 0 && parsedArgs.CircularMB <= kernelFileSizeMB)
+                    {
                         droppingData = true;
+                    }
+
                     fileSizeMB += kernelFileSizeMB;
                 }
 
                 if (droppingData && startedDropping.Length == 0)
-
+                {
                     startedDropping = "  Recycling started at " + TimeStr(durationSec) + ".";
+                }
             }
 
             return string.Format("Collecting {0,8}: Size={1,5:n1} MB.{2}", TimeStr(durationSec), fileSizeMB, startedDropping);
@@ -2042,13 +2304,22 @@ namespace PerfView
         {
             string ret;
             if (durationSec < 60)
+            {
                 ret = durationSec.ToString("f0") + " sec";
+            }
             else if (durationSec < 3600)
+            {
                 ret = (durationSec / 60).ToString("f1") + " min";
+            }
             else if (durationSec < 86400)
+            {
                 ret = (durationSec / 3600).ToString("f1") + " hr";
+            }
             else
+            {
                 ret = (durationSec / 86400).ToString("f1") + " days";
+            }
+
             return ret;
         }
 
@@ -2112,7 +2383,9 @@ namespace PerfView
                 }
             }
             else
+            {
                 log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
+            }
 
             // If we are on a 64 bit system (in the wow), also enable the 64 bit version.     
             var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
@@ -2130,7 +2403,9 @@ namespace PerfView
                     }
                 }
                 else
+                {
                     log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", nativeArch);
+                }
             }
             // If we are amd64 process, also install in the 32 bit subsystem.  
             else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
@@ -2147,7 +2422,9 @@ namespace PerfView
                     }
                 }
                 else
+                {
                     log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
+                }
             }
         }
 
@@ -2167,7 +2444,9 @@ namespace PerfView
                 dotnetHive.SetValue("PerfView_Keywords", profilerKeywords);
             }
             else
+            {
                 log.WriteLine("ERROR there is an existing CLR Profiler arch {0} {1}.", nativeArch, existingValue);
+            }
         }
 
         private static void UninstallETWClrProfiler(TextWriter log)
@@ -2220,7 +2499,9 @@ namespace PerfView
                     dotnetHive.DeleteValue("PerfView_Keywords", false);
                 }
                 else
+                {
                     log.WriteLine("ERROR trying to remove EtwClrProfiler, found an existing Profiler {0} doing nothing.", existingValue);
+                }
             }
         }
 
@@ -2275,7 +2556,9 @@ namespace PerfView
                     writer.WriteLine();
                 }
                 else
+                {
                     writer.WriteLine("Error: Could not access Kernel memory management registry keys.");
+                }
             }
             catch (Exception e)
             {
@@ -2302,172 +2585,385 @@ namespace PerfView
         {
             // Nothing to do if already elevated. 
             if (App.IsElevated)
+            {
                 return;
+            }
+#if PERFVIEW_COLLECT
+            throw new ApplicationException("PerfViewCollect needs to run with elevated privileges.");
+#else
             LaunchPerfViewElevated(command, parsedArgs);
+#endif
         }
 
         private static string ParsedArgsAsString(string command, CommandLineArgs parsedArgs)
         {
             var cmdLineArgs = "";
             if (parsedArgs.DataFile != null)
+            {
                 cmdLineArgs += " " + Command.Quote("/DataFile:" + parsedArgs.DataFile);
+            }
+
             if (parsedArgs.MinRundownTime != 0)
+            {
                 cmdLineArgs += " /MinRundownTime:" + parsedArgs.MinRundownTime;
+            }
+
             if (parsedArgs.BufferSizeMB != 64)
+            {
                 cmdLineArgs += " /BufferSizeMB:" + parsedArgs.BufferSizeMB;
+            }
+
             if (parsedArgs.StackCompression)
+            {
                 cmdLineArgs += " /StackCompression";
+            }
+
             if (parsedArgs.CircularMB != 0)
+            {
                 cmdLineArgs += " /CircularMB:" + parsedArgs.CircularMB;
+            }
+
             if (parsedArgs.InMemoryCircularBuffer)
+            {
                 cmdLineArgs += " /InMemoryCircularBuffer";
+            }
+
             if (parsedArgs.CpuSampleMSec != 1)
+            {
                 cmdLineArgs += " /CpuSampleMSec:" + parsedArgs.CpuSampleMSec;
+            }
+
             if (parsedArgs.MaxCollectSec != 0)
+            {
                 cmdLineArgs += " /MaxCollectSec:" + parsedArgs.MaxCollectSec;
+            }
+
             if (parsedArgs.RundownTimeout != 120)
+            {
                 cmdLineArgs += " /RundownTimeout:" + parsedArgs.RundownTimeout;
+            }
+
             if (parsedArgs.CpuCounters != null)
+            {
                 cmdLineArgs += " /CpuCounters:" + Command.Quote(string.Join(",", parsedArgs.CpuCounters));
+            }
 
             if (parsedArgs.SafeMode)
+            {
                 cmdLineArgs += " /SafeMode";
+            }
+
             if (parsedArgs.CollectMultiple != 0)
+            {
                 cmdLineArgs += " /CollectMultiple:" + parsedArgs.CollectMultiple;
+            }
+
             if (parsedArgs.StopOnPerfCounter != null)
+            {
                 cmdLineArgs += " /StopOnPerfCounter:" + Command.Quote(string.Join(",", parsedArgs.StopOnPerfCounter));
+            }
+
             if (parsedArgs.MonitorPerfCounter != null)
+            {
                 cmdLineArgs += " /MonitorPerfCounter:" + Command.Quote(string.Join(",", parsedArgs.MonitorPerfCounter));
+            }
+
             if (parsedArgs.StopOnGen2GC)
+            {
                 cmdLineArgs += " /StopOnGen2GC";
+            }
 
             if (parsedArgs.StopOnEventLogMessage != null)
+            {
                 cmdLineArgs += " /StopOnEventLogMessage:" + Command.Quote(parsedArgs.StopOnEventLogMessage);
+            }
+
             if (parsedArgs.StopOnAppFabricOverMsec != 0)
+            {
                 cmdLineArgs += " /StopOnAppFabricOverMsec:" + parsedArgs.StopOnAppFabricOverMsec;
+            }
+
             if (parsedArgs.StopOnGCOverMsec != 0)
+            {
                 cmdLineArgs += " /StopOnGcOverMsec:" + parsedArgs.StopOnGCOverMsec;
+            }
+
             if (parsedArgs.StopOnBGCFinalPauseOverMsec != 0)
+            {
                 cmdLineArgs += " /StopOnBGCFinalPauseOverMsec:" + parsedArgs.StopOnBGCFinalPauseOverMsec;
+            }
 
             if (parsedArgs.StopOnEtwEvent != null)
+            {
                 cmdLineArgs += " /StopOnEtwEvent:" + Command.Quote(string.Join(",", parsedArgs.StopOnEtwEvent));
+            }
+
             if (parsedArgs.StopOnException != null)
+            {
                 cmdLineArgs += " /StopOnException:" + Command.Quote(parsedArgs.StopOnException);
+            }
+
             if (parsedArgs.DecayToZeroHours != 0)
+            {
                 cmdLineArgs += " /DecayToZeroHours:" + parsedArgs.DecayToZeroHours.ToString("f3");
+            }
+
             if (parsedArgs.MinSecForTrigger != 3)
+            {
                 cmdLineArgs += " /MinSecForTrigger:" + parsedArgs.MinSecForTrigger.ToString();
+            }
+
             if (parsedArgs.DelayAfterTriggerSec != 5)
+            {
                 cmdLineArgs += " /DelayAfterTriggerSec:" + parsedArgs.DelayAfterTriggerSec;
+            }
+
             if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.Default)
+            {
                 cmdLineArgs += " /KernelEvents:" + parsedArgs.KernelEvents.ToString().Replace(" ", "");
+            }
+
             if (parsedArgs.StartOnPerfCounter != null)
+            {
                 cmdLineArgs += " /StartOnPerfCounter:" + Command.Quote(string.Join(",", parsedArgs.StartOnPerfCounter));
+            }
+
             if (parsedArgs.Process != null)
+            {
                 cmdLineArgs += " /Process:" + Command.Quote(parsedArgs.Process);
+            }
+
             if (parsedArgs.StopCommand != null)
+            {
                 cmdLineArgs += " /StopCommand:" + Command.Quote(parsedArgs.StopCommand);
+            }
 
             if (parsedArgs.ClrEventLevel != Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose)
+            {
                 cmdLineArgs += " /ClrEventLevel:" + parsedArgs.ClrEventLevel.ToString();
+            }
+
             if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.Default)
+            {
                 cmdLineArgs += " /ClrEvents:" + parsedArgs.ClrEvents.ToString().Replace(" ", "");
+            }
+
             if (parsedArgs.Providers != null)
+            {
                 cmdLineArgs += " /Providers:" + Command.Quote(string.Join(",", parsedArgs.Providers));
+            }
+
             if (parsedArgs.KeepAllEvents)
+            {
                 cmdLineArgs += " /KeepAllEvents";
+            }
+
             if (parsedArgs.UnsafePDBMatch)
+            {
                 cmdLineArgs += " /UnsafePdbMatch";
+            }
+
             if (parsedArgs.ShowUnknownAddresses)
+            {
                 cmdLineArgs += " /ShowUnknownAddresses";
+            }
+
             if (parsedArgs.ContinueOnError)
+            {
                 cmdLineArgs += " /ContinueOnError";
+            }
+
             if (parsedArgs.MaxEventCount != 0)
+            {
                 cmdLineArgs += " /MaxEventCount:" + parsedArgs.MaxEventCount.ToString();
+            }
+
             if (parsedArgs.SkipMSec != 0)
+            {
                 cmdLineArgs += " /SkipMSec:" + parsedArgs.SkipMSec.ToString("f3");
+            }
+
             if (parsedArgs.NoGui)
+            {
                 cmdLineArgs += " /NoGui";
+            }
 
             if (s_UserModeSessionName != "PerfViewSession")
+            {
                 cmdLineArgs += " /SessionName:" + s_UserModeSessionName;
+            }
 
             if (parsedArgs.LogFile != null)
+            {
                 cmdLineArgs += " /LogFile:" + Command.Quote(parsedArgs.LogFile);
+            }
+
             if (parsedArgs.NoRundown)
+            {
                 cmdLineArgs += " /NoRundown";
+            }
+
             if (parsedArgs.NoNGenPdbs)
+            {
                 cmdLineArgs += " /NoNGenPdbs";
+            }
+
             if (parsedArgs.NoNGenRundown)
+            {
                 cmdLineArgs += " /NoNGenRundown";
+            }
+
             if (parsedArgs.ForceNgenRundown)
+            {
                 cmdLineArgs += " /ForceNgenRundown";
+            }
+
             if (parsedArgs.NoClrRundown)
+            {
                 cmdLineArgs += " /NoClrRundown";
+            }
+
             if (parsedArgs.Merge.HasValue)
+            {
                 cmdLineArgs += " /Merge:" + parsedArgs.Merge.Value;
+            }
+
             if (parsedArgs.Wpr)
+            {
                 cmdLineArgs += " /Wpr";
+            }
+
             if (parsedArgs.Zip.HasValue)
+            {
                 cmdLineArgs += " /Zip:" + parsedArgs.Zip.Value;
+            }
+
             if (parsedArgs.NoView)
+            {
                 cmdLineArgs += " /NoView";
+            }
+
             if (parsedArgs.GCCollectOnly)
+            {
                 cmdLineArgs += " /GCCollectOnly";
+            }
+
             if (parsedArgs.DotNetAlloc)
+            {
                 cmdLineArgs += " /DotNetAlloc";
+            }
+
             if (parsedArgs.DotNetAllocSampled)
+            {
                 cmdLineArgs += " /DotNetAllocSampled";
+            }
+
             if (parsedArgs.DotNetCalls)
+            {
                 cmdLineArgs += " /DotNetCalls";
+            }
+
             if (parsedArgs.DotNetCallsSampled)
+            {
                 cmdLineArgs += " /DotNetCallsSampled";
+            }
+
+            if (parsedArgs.DisableInlining)
+            {
+                cmdLineArgs += " /DisableInlining";
+            }
+
             if (parsedArgs.JITInlining)
+            {
                 cmdLineArgs += " /JITInlining";
+            }
+
             if (parsedArgs.OSHeapExe != null)
+            {
                 cmdLineArgs += " /OSHeapExe:" + Command.Quote(parsedArgs.OSHeapExe);
+            }
+
             if (parsedArgs.OSHeapProcess != 0)
+            {
                 cmdLineArgs += " /OSHeapProcess:" + parsedArgs.OSHeapProcess.ToString();
+            }
+
             if (parsedArgs.NetworkCapture)
+            {
                 cmdLineArgs += " /NetworkCapture";
+            }
+
             if (parsedArgs.NetMonCapture)
+            {
                 cmdLineArgs += " /NetMonCapture";
+            }
 
             if (parsedArgs.DumpHeap)
+            {
                 cmdLineArgs += " /DumpHeap";
+            }
 
             if (parsedArgs.GCOnly)
+            {
                 cmdLineArgs += " /GCOnly";
+            }
 
             if (parsedArgs.Freeze)
+            {
                 cmdLineArgs += " /Freeze";
+            }
+
             if (parsedArgs.SaveETL)
+            {
                 cmdLineArgs += " /SaveETL";
+            }
+
             if (parsedArgs.DumpData)
+            {
                 cmdLineArgs += " /DumpData";
+            }
+
             if (parsedArgs.MaxDumpCountK != 0)
+            {
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
+            }
+
             if (parsedArgs.MaxNodeCountK != 0)
+            {
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
+            }
+
             if (parsedArgs.CCWRefCount)
+            {
                 cmdLineArgs += " /CCWRefCount";
+            }
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
             if (command == null)
             {
                 command = "";
                 if (!string.IsNullOrEmpty(parsedArgs.CommandLine))
+                {
                     command = "run";
+                }
             }
 
             cmdLineArgs += " " + command;
             if (string.Compare(command, "run", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 cmdLineArgs += " " + parsedArgs.CommandLine;
+            }
+
             if (string.Compare(command, "HeapSnapshot", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 cmdLineArgs += " " + Command.Quote(parsedArgs.Process);
+            }
+
             if (string.Compare(command, "HeapSnapshotFromProcessDump", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 cmdLineArgs += " " + Command.Quote(parsedArgs.ProcessDumpFile);
+            }
+
             return cmdLineArgs;
         }
 
@@ -2477,20 +2973,28 @@ namespace PerfView
             var perfView = SupportFiles.ExePath;
 
             if (parsedArgs.RestartingToElevelate != null)
+            {
                 throw new ApplicationException("PerfView has attempted to restart to gain Administrative Permissions but failed to do so.");
+            }
 
             string arg = "";
             if (parsedArgs.DoCommand == App.CommandProcessor.Collect)
+            {
                 arg = "collect";
+            }
             else if (parsedArgs.DoCommand == App.CommandProcessor.Run)
+            {
                 arg = "run";
+            }
 
             var cmdLine = Command.Quote(perfView) + " /RestartingToElevelate:" + arg + " " + ParsedArgsAsString(command, parsedArgs);
             Command.Run(cmdLine, new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite).AddElevate());
 
             // Kill the current version if we have not opened a log file yet.   
             if (!NoExitOnElevate)
+            {
                 Environment.Exit(0);
+            }
 
             throw new UnauthorizedAccessException("Launching PerfView as an elevated app. Consider closing this instance.");
         }
@@ -2502,7 +3006,9 @@ namespace PerfView
         {
             string wildCardFileName = null;
             if (commandLine != null)
+            {
                 wildCardFileName = Command.FindOnPath(GetExeName(commandLine));
+            }
 
             var parsedProviders = ProviderParser.ParseProviderSpecs(providerSpecs, wildCardFileName, LogFile);
             foreach (var parsedProvider in parsedProviders)
@@ -2524,7 +3030,9 @@ namespace PerfView
         private void CheckAndWarnAboutAspNet(Guid guid)
         {
             if (guid != AspNetTraceEventParser.ProviderGuid)
+            {
                 return;
+            }
 
             // We turned on the ASP.NET provider, make sure ASP.NET is enabled 
             var iisCorePath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR"), @"System32\inetsrv\iiscore.dll");
@@ -2555,7 +3063,9 @@ namespace PerfView
 
             var warnedAboutAspNetTracing = App.ConfigData["WarnedAboutAspNetTracing"];
             if (warnedAboutAspNetTracing == "true")
+            {
                 return;
+            }
 
             ShowAspNetWarningBox(message);
             App.ConfigData["WarnedAboutAspNetTracing"] = "true";
@@ -2563,7 +3073,7 @@ namespace PerfView
 
         // In its own routine so that we don't run WPF on ARM.  
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        void ShowAspNetWarningBox(string message)
+        private void ShowAspNetWarningBox(string message)
         {
 #if !PERFVIEW_COLLECT
             // Are we activating with the GUI, then pop a dialog box
@@ -2577,7 +3087,7 @@ namespace PerfView
 #endif
         }
 
-        void EnableUserProvider(TraceEventSession userModeSession, string providerName, Guid providerGuid,
+        private void EnableUserProvider(TraceEventSession userModeSession, string providerName, Guid providerGuid,
             TraceEventLevel providerLevel, ulong matchAnyKeywords, TraceEventProviderOptions options = null)
         {
             var valuesStr = "";
@@ -2586,14 +3096,20 @@ namespace PerfView
             if (options != null)
             {
                 if (options.StacksEnabled)
+                {
                     stacksEnabled = 1;
+                }
+
                 if (options.Arguments != null)
                 {
 
                     foreach (var keyValue in options.Arguments)
                     {
                         if (valuesStr.Length != 0)
+                        {
                             valuesStr += ",";
+                        }
+
                         valuesStr += keyValue.Key + "=" + keyValue.Value;
                     }
                 }
@@ -2604,13 +3120,19 @@ namespace PerfView
                 // ALso turn on the Project N provider
                 TraceEventProviderOptions optionsProjectN;
                 if (options == null)
+                {
                     optionsProjectN = new TraceEventProviderOptions();
+                }
                 else
+                {
                     optionsProjectN = options.Clone();
+                }
 
                 // We turn on stacks for the project N provider to get allocation tick events (TODO use event options to limit)
                 if (((ClrTraceEventParser.Keywords)matchAnyKeywords & ClrTraceEventParser.Keywords.GC) != 0 && providerLevel >= TraceEventLevel.Verbose)
+                {
                     optionsProjectN.StacksEnabled = true;
+                }
 
                 EnableUserProvider(userModeSession, "ClrNative", ClrTraceEventParser.NativeProviderGuid, providerLevel, matchAnyKeywords, optionsProjectN);
                 PerfViewLogger.Log.ClrEnableParameters(matchAnyKeywords, providerLevel);
@@ -2618,7 +3140,10 @@ namespace PerfView
             else
             {
                 if (providerGuid == ClrPrivateTraceEventParser.ProviderGuid)
+                {
                     EnableUserProvider(userModeSession, "ClrPrivateNative", ClrPrivateTraceEventParser.NativeProviderGuid, providerLevel, matchAnyKeywords, options);
+                }
+
                 PerfViewLogger.Log.ProviderEnableParameters(providerName, providerGuid, providerLevel, matchAnyKeywords, stacksEnabled, valuesStr);
             }
 
@@ -2653,7 +3178,10 @@ namespace PerfView
         {
             Match m = Regex.Match(commandLine, "^\\s*\"(.*?)\"");    // Is it quoted?
             if (!m.Success)
+            {
                 m = Regex.Match(commandLine, @"\s*(\S*)");           // Nope, then whatever is before the first space.
+            }
+
             return m.Groups[1].Value;
         }
 
@@ -2663,10 +3191,16 @@ namespace PerfView
         private void DoClrRundownForSession(string fileName, string sessionName, CommandLineArgs parsedArgs)
         {
             if (string.IsNullOrEmpty(fileName))
+            {
                 return;
+            }
+
             LogFile.WriteLine("[Sending rundown command to CLR providers...]");
             if (!parsedArgs.NoNGenRundown)
+            {
                 LogFile.WriteLine("[Use /NoNGenRundown if you don't care about pre V4.0 runtimes]");
+            }
+
             Stopwatch sw = Stopwatch.StartNew();
             TraceEventSession clrRundownSession = null;
             try
@@ -2682,7 +3216,7 @@ namespace PerfView
                         TraceEventLevel.Verbose, ulong.MaxValue);
                     Thread.Sleep(20);       // Give it time to startup 
                     PerfViewLogger.Log.StartRundown();
-                    
+
                     // If full rundown is configured, enable the specified providers.
                     if (!parsedArgs.NoRundown)
                     {
@@ -2719,21 +3253,30 @@ namespace PerfView
 
                             // If user explicitly suppressed ILToNativeMap then do so on rundown as well. 
                             if ((parsedArgs.ClrEvents & ClrTraceEventParser.Keywords.JittedMethodILToNativeMap) == 0)
+                            {
                                 rundownKeywords &= ~ClrRundownTraceEventParser.Keywords.JittedMethodILToNativeMap;
+                            }
 
                             if (parsedArgs.ForceNgenRundown)
+                            {
                                 rundownKeywords &= ~ClrRundownTraceEventParser.Keywords.SupressNGen;
+                            }
 
                             if (parsedArgs.NoNGenRundown)
+                            {
                                 rundownKeywords &= ~ClrRundownTraceEventParser.Keywords.NGen;
+                            }
                         }
 
                         // The runtime does method rundown first then the module rundown.  This means if you have a large
                         // number of methods and method rundown does not complete you don't get ANYTHING.   To avoid this
                         // we first trigger all module (loader) rundown and then trigger the method rundown
                         if ((rundownKeywords & ClrRundownTraceEventParser.Keywords.Loader) != 0)
+                        {
                             EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
                                 (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown));
+                        }
+
                         Thread.Sleep(500);                  // Give it some time to complete, so we don't have so many events firing simultaneously.  
                                                             // when we do the method rundown below.  
 
@@ -2769,13 +3312,18 @@ namespace PerfView
                 finally
                 {
                     if (clrRundownSession != null)
+                    {
                         clrRundownSession.Stop();
+                    }
                 }
             }
             catch (Exception e)
             {
                 if (!(e is ThreadInterruptedException))
+                {
                     LogFile.WriteLine("Warning: failure during CLR Rundown " + e.Message);
+                }
+
                 throw;
             }
         }
@@ -2815,18 +3363,19 @@ namespace PerfView
 
         internal static string s_UserModeSessionName = "PerfViewSession";
         private static string s_HeapSessionName { get { return s_UserModeSessionName + "Heap"; } }
-        static bool s_addedSupportDirToPath;
-        static bool s_abortInProgress;      // We are currently in Abort()
 
-        TextWriter m_logFile;
-        bool m_aborted;
+        private static bool s_addedSupportDirToPath;
+        private static bool s_abortInProgress;      // We are currently in Abort()
+
+        private TextWriter m_logFile;
+        private bool m_aborted;
         #endregion
     }
 
     /// <summary>
     /// ProviderParser knows how to take a string provider specification and parse it.  
     /// </summary>
-    static class ProviderParser
+    internal static class ProviderParser
     {
         public class ParsedProvider
         {
@@ -2847,7 +3396,9 @@ namespace PerfView
             foreach (var providerSpec in providerSpecs)
             {
                 if (log != null)
+                {
                     log.WriteLine("Parsing ETW Provider Spec: {0}", providerSpec);
+                }
 
                 TraceEventProviderOptions options = new TraceEventProviderOptions();
                 TraceEventLevel level = TraceEventLevel.Verbose;
@@ -2863,7 +3414,9 @@ namespace PerfView
                 if (providerStr == "@" || providerStr.Length == 0 && wildCardFileName != null)
                 {
                     if (log != null)
+                    {
                         log.WriteLine("No file name provided using {0}", wildCardFileName);
+                    }
 
                     providerStr = "@" + wildCardFileName;
                 }
@@ -2886,9 +3439,13 @@ namespace PerfView
                             goto RETRY;
                         }
                         if (matchAnyKeywordsStr == "*")
+                        {
                             matchAnyKeywords = ulong.MaxValue;
+                        }
                         else
+                        {
                             matchAnyKeywords = ParseKeywords(matchAnyKeywordsStr, providerStr);
+                        }
                     }
 
                     // handle level 
@@ -2901,9 +3458,13 @@ namespace PerfView
                         {
                             int intLevel;
                             if (levelStr == "*")
+                            {
                                 level = TraceEventLevel.Verbose;
+                            }
                             else if (int.TryParse(levelStr, out intLevel) && 0 <= intLevel && intLevel < 256)
+                            {
                                 level = (TraceEventLevel)intLevel;
+                            }
                             else
                             {
                                 try { level = (TraceEventLevel)Enum.Parse(typeof(TraceEventLevel), levelStr); }
@@ -2917,7 +3478,9 @@ namespace PerfView
                             var stackStr = m.Groups[1].Value;
                             rest = m.Groups[3].Value;
                             if (stackStr == "stack" || stackStr == "stacks")
+                            {
                                 options.StacksEnabled = true;
+                            }
                         }
                     }
                 }
@@ -2931,7 +3494,10 @@ namespace PerfView
                         var regex = new Regex(@"\s*(@?\w+)=([^;]*)");
                         var match = regex.Match(rest, pos);
                         if (!match.Success || match.Groups[1].Index != pos)
+                        {
                             throw new ApplicationException("Could not parse values '" + rest + "'");
+                        }
+
                         var key = match.Groups[1].Value;
                         var value = match.Groups[2].Value;
                         value = value.Replace(@" \n", " \n");   // Allow escaped newlines in values.   
@@ -2939,21 +3505,37 @@ namespace PerfView
                         if (key.StartsWith("@"))
                         {
                             if (key == "@StacksEnabled")
+                            {
                                 options.StacksEnabled = string.Compare(value, "false", StringComparison.OrdinalIgnoreCase) != 0;
+                            }
                             else if (key == "@ProcessIDFilter")
+                            {
                                 options.ProcessIDFilter = ParseIntList(value);
+                            }
                             else if (key == "@ProcessNameFilter")
+                            {
                                 options.ProcessNameFilter = ParseStringList(value);
+                            }
                             else if (key == "@EventIDsToEnable")
+                            {
                                 options.EventIDsToEnable = ParseIntList(value);
+                            }
                             else if (key == "@EventIDsToDisable")
+                            {
                                 options.EventIDsToDisable = ParseIntList(value);
+                            }
                             else if (key == "@EventIDStacksToEnable")
+                            {
                                 options.EventIDStacksToEnable = ParseIntList(value);
+                            }
                             else if (key == "@EventIDStacksToDisable")
+                            {
                                 options.EventIDStacksToDisable = ParseIntList(value);
+                            }
                             else
+                            {
                                 throw new ApplicationException("Unrecognized '@' value '" + key + "'");
+                            }
                         }
                         else
                         {
@@ -2961,7 +3543,9 @@ namespace PerfView
                         }
                         pos += match.Length;
                         if (pos < rest.Length && rest[pos] == ';')
+                        {
                             pos++;
+                        }
                     }
                 }
                 ParseProviderSpec(providerStr, level, (TraceEventKeyword)matchAnyKeywords, options, ret, log);
@@ -2976,7 +3560,10 @@ namespace PerfView
             foreach (var id in ids)
             {
                 if (id.Length == 0)
+                {
                     continue;
+                }
+
                 ret.Add(id);
             }
             return ret;
@@ -2991,7 +3578,10 @@ namespace PerfView
             foreach (var id in ids)
             {
                 if (id.Length == 0)
+                {
                     continue;
+                }
+
                 ret.Add(int.Parse(id));
             }
             return ret;
@@ -3005,7 +3595,9 @@ namespace PerfView
             if (Regex.IsMatch(providerSpec, "........-....-....-....-............"))
             {
                 if (!Guid.TryParse(providerSpec, out providerGuid))
+                {
                     throw new ApplicationException("Could not parse Guid '" + providerSpec + "'");
+                }
             }
             else if (providerSpec.StartsWith("*"))
             {
@@ -3014,44 +3606,78 @@ namespace PerfView
             }
             // Is it specially known.  TODO should we remove some of these?
             else if (string.Compare(providerSpec, "Clr", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = ClrTraceEventParser.ProviderGuid;
+            }
             else if (string.Compare(providerSpec, "ClrRundown", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = ClrRundownTraceEventParser.ProviderGuid;
+            }
             else if (string.Compare(providerSpec, "ClrStress", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = ClrStressTraceEventParser.ProviderGuid;
+            }
             else if (string.Compare(providerSpec, "ClrPrivate", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = ClrPrivateTraceEventParser.ProviderGuid;
+            }
             else if (string.Compare(providerSpec, "ClrNative", StringComparison.OrdinalIgnoreCase) == 0)           // ProjectN
+            {
                 providerGuid = ClrTraceEventParser.NativeProviderGuid;
+            }
             else if (string.Compare(providerSpec, "ClrNativePrivate", StringComparison.OrdinalIgnoreCase) == 0)    // ProjectN Private
+            {
                 providerGuid = ClrPrivateTraceEventParser.NativeProviderGuid;
+            }
             else if (string.Compare(providerSpec, "ASP.Net", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid("AFF081FE-0247-4275-9C4E-021F3DC1DA35");
+            }
             else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid("d781ca11-61c0-4387-b83d-af52d3d2dd6a");
+            }
             else if (string.Compare(providerSpec, ".NetTasks", StringComparison.OrdinalIgnoreCase) == 0 ||
                 string.Compare(providerSpec, "System.Threading.Tasks.TplEventSource", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 220, 0xd7, 0xb5);
+            }
             else if (string.Compare(providerSpec, ".NetFramework", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid(0x8e9f5090, 0x2d75, 0x4d03, 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1);
+            }
             else if (string.Compare(providerSpec, ".NetPLinq", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid(0x159eeeec, 0x4a14, 0x4418, 0xa8, 0xfe, 250, 0xab, 0xcd, 0x98, 120, 0x87);
+            }
             else if (string.Compare(providerSpec, ".NetConcurrentCollections", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid(0x35167f8e, 0x49b2, 0x4b96, 0xab, 0x86, 0x43, 0x5b, 0x59, 0x33, 0x6b, 0x5e);
+            }
             else if (string.Compare(providerSpec, ".NetSync", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid(0xec631d38, 0x466b, 0x4290, 0x93, 6, 0x83, 0x49, 0x71, 0xba, 2, 0x17);
+            }
             else if (string.Compare(providerSpec, "MeasurementBlock", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54");
+            }
             else if (string.Compare(providerSpec, "CodeMarkers", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E");
+            }
             else if (string.Compare(providerSpec, "Heap Trace Provider", StringComparison.OrdinalIgnoreCase) == 0)
+            {
                 providerGuid = HeapTraceProviderTraceEventParser.ProviderGuid;
+            }
             else
             {
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
                 // Look it up by name 
                 if (providerGuid == Guid.Empty)
+                {
                     throw new ApplicationException("Could not find provider name '" + providerSpec + "'");
+                }
             }
 
             retList.Add(new ParsedProvider()
@@ -3074,7 +3700,9 @@ namespace PerfView
             if (providerGuid != Guid.Empty)
             {
                 foreach (var keyword in TraceEventProviders.GetProviderKeywords(providerGuid))
+                {
                     keys.Add(keyword.Name.ToString(), keyword);
+                }
             }
 
             //breaks keywordString into tokens separated by '|' and parse each token
@@ -3084,14 +3712,21 @@ namespace PerfView
             {
                 ulong numberForToken;
                 if (keys.ContainsKey(keyString))
+                {
                     numberForToken = keys[keyString].Value;
+                }
                 else
                 {
                     string numberKeystring = keyString;
                     if (keyString.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                    {
                         numberKeystring = keyString.Substring(2);
+                    }
+
                     if (!ulong.TryParse(numberKeystring, System.Globalization.NumberStyles.HexNumber, null, out numberForToken))
+                    {
                         throw new CommandLineParserException("Could not parse as a hexadecimal keyword specification " + numberKeystring);
+                    }
                 }
                 returnValue = returnValue | numberForToken;
             }
@@ -3103,7 +3738,7 @@ namespace PerfView
     /// <summary>
     /// EventSourceFinder is a class that can find all the EventSources in a file
     /// </summary>
-    static class EventSourceFinder
+    internal static class EventSourceFinder
     {
         // TODO remove and depend on framework for these instead.  
         public static Guid GetGuid(Type eventSource)
@@ -3161,14 +3796,18 @@ namespace PerfView
                     string childPath = Path.Combine(assemblyDirectory, childAssemblyName.Name + ".dll");
                     Assembly childAssembly = null;
                     if (File.Exists(childPath))
+                    {
                         childAssembly = Assembly.ReflectionOnlyLoadFrom(childPath);
+                    }
 
                     //TODO do we care about things in the GAC?   it expands the search quite a bit. 
                     //else
                     //    childAssembly = Assembly.Load(childAssemblyName);
 
                     if (childAssembly != null && !soFar.ContainsKey(childAssembly))
+                    {
                         GetStaticReferencedAssemblies(childAssembly, soFar);
+                    }
                 }
                 catch (Exception)
                 {

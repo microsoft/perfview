@@ -7,19 +7,15 @@
 /****************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.IO;
-using System.Reflection;
-using System.CodeDom.Compiler;
 using System.Diagnostics;           // for StackTrace; Process
+using System.IO;
 
 
 /******************************************************************************/
 /// <summary>
 /// General purpose utilities dealing with archiveFile system files. 
 /// </summary>
-static public class FileUtilities
+public static class FileUtilities
 {
     /// <summary>
     /// GetLines works much like File.ReadAllLines, however instead of returning a
@@ -56,10 +52,15 @@ static public class FileUtilities
         {
             string dir = Path.GetDirectoryName(fileSpec);
             if (dir.Length == 0)
+            {
                 dir = ".";
+            }
+
             string file = Path.GetFileName(fileSpec);
             foreach (string fileName in DirectoryUtilities.GetFiles(dir, file, searchOpt))
+            {
                 yield return fileName;
+            }
         }
     }
     public static IEnumerable<string> ExpandWildcards(string[] fileSpecifications) { return ExpandWildcards(fileSpecifications, SearchOption.TopDirectoryOnly); }
@@ -79,7 +80,9 @@ static public class FileUtilities
     public static bool ForceDelete(string fileName)
     {
         if (!File.Exists(fileName))
+        {
             return true;
+        }
 
         // First move the archiveFile out of the way, so that even if it is locked
         // The original archiveFile is still gone.  
@@ -89,21 +92,27 @@ static public class FileUtilities
         {
             renamedFile = fileName + "." + i.ToString() + ".deleting";
             if (!File.Exists(renamedFile))
+            {
                 break;
+            }
         }
 
         File.Move(fileName, renamedFile);
         bool ret = TryDelete(renamedFile);
         // TODO send to log instead of console 
         if (!ret)
+        {
             Console.WriteLine("Did not delete " + renamedFile);
+        }
 
         if (i > 0)
         {
             // delete any old *.deleting files that may have been left around 
             string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
             foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
+            {
                 TryDelete(deleteingFile);
+            }
         }
         return ret;
     }
@@ -161,19 +170,26 @@ static public class FileUtilities
                 int count1 = file1.Read(buffer1, 0, buffer1.Length);
                 int count2 = file2.Read(buffer2, 0, buffer2.Length);
                 if (count1 != count2)
+                {
                     return false;
+                }
+
                 for (int i = 0; i < count1; i++)
+                {
                     if (buffer1[i] != buffer2[i])
+                    {
                         return false;
+                    }
+                }
             }
         }
         return true;
     }
 }
 
-static public class PathUtil
+public static class PathUtil
 {
-    static public string PathRelativeTo(string path, string relativeToDirectory)
+    public static string PathRelativeTo(string path, string relativeToDirectory)
     {
         Debug.Assert(!relativeToDirectory.EndsWith("\\"));
 
@@ -187,7 +203,10 @@ static public class PathUtil
             if (i >= fullCurrentDirectory.Length)
             {
                 if (cFullPath == '\\')
+                {
                     commonToSlashIndex = i;
+                }
+
                 break;
             }
             char cCurrentDirectory = fullCurrentDirectory[i];
@@ -195,33 +214,53 @@ static public class PathUtil
             if (cCurrentDirectory != cFullPath)
             {
                 if (char.IsLower(cCurrentDirectory))
+                {
                     cCurrentDirectory = (char)(cCurrentDirectory - (char)('a' - 'A'));
+                }
+
                 if (char.IsLower(cFullPath))
+                {
                     cFullPath = (char)(cFullPath - (char)('a' - 'A'));
+                }
+
                 if (cCurrentDirectory != cFullPath)
+                {
                     break;
+                }
             }
 
             if (cCurrentDirectory == '\\')
+            {
                 commonToSlashIndex = i;
+            }
         }
 
         // There is no common prefix between the two paths, we give up.
         if (commonToSlashIndex < 0)
+        {
             return path;
+        }
 
         string returnVal = "";
         int nextSlash = commonToSlashIndex;
         for (; ; )
         {
             if (nextSlash >= fullCurrentDirectory.Length)
+            {
                 break;
+            }
+
             returnVal = returnVal + @"..\";
             if (nextSlash + 1 == fullCurrentDirectory.Length)
+            {
                 break;
+            }
+
             nextSlash = fullCurrentDirectory.IndexOf('\\', nextSlash + 1);
             if (nextSlash < 0)
+            {
                 break;
+            }
         }
 
         returnVal = returnVal + fullPath.Substring(commonToSlashIndex + 1);

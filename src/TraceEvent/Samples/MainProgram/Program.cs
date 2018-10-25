@@ -1,9 +1,6 @@
-﻿using System;
-using TraceEventSamples;
-
-class Program
+﻿internal class Program
 {
-    static void Main(string[] args)
+    private static void Main(string[] args)
     {
         TraceEventSamples.AllSamples.Run();
     }

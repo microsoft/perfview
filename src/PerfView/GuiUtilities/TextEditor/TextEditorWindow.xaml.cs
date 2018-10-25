@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using System.Windows;
 
 namespace Controls
 {
@@ -12,8 +12,10 @@ namespace Controls
         {
             InitializeComponent();
 
-            if (args !=null && args.Length == 1)
+            if (args != null && args.Length == 1)
+            {
                 TextEditor.OpenText(args[0]);
+            }
 
             TextEditor.Body.Focus();
         }

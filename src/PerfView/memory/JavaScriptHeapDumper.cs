@@ -16,7 +16,7 @@ public class JavaScriptHeapDumper
     /// If 'memoryGraph is non-null also update it to contain the JSDump.  If null you get just the ETL file. 
     /// returns true if successful. 
     /// </summary>
-    static public bool DumpAsEtlFile(int processID, string etlFileName, TextWriter log, MemoryGraph memoryGraph = null)
+    public static bool DumpAsEtlFile(int processID, string etlFileName, TextWriter log, MemoryGraph memoryGraph = null)
     {
         var ver = Environment.OSVersion.Version;
         var intVer = ver.Major * 10 + ver.Minor;
@@ -67,7 +67,7 @@ public class JavaScriptHeapDumper
     /// don't update the memoryGraph.  Thus it is only done for the side effect of triggering a JS heap 
     /// dump. returns true if successful. 
     /// </summary>
-    static public bool Dump(int processID, MemoryGraph memoryGraph, TextWriter log)
+    public static bool Dump(int processID, MemoryGraph memoryGraph, TextWriter log)
     {
         var ver = Environment.OSVersion.Version;
         var intVer = ver.Major * 10 + ver.Minor;
@@ -95,7 +95,7 @@ public class JavaScriptHeapDumper
                 session = new TraceEventSession(sessionName, null);
                 // Set up the JScript heap listener
                 var etwJSParser = new JSDumpHeapTraceEventParser(session.Source);
-                etwJSParser.JSDumpHeapEnvelopeStop += delegate(SummaryTraceData data)
+                etwJSParser.JSDumpHeapEnvelopeStop += delegate (SummaryTraceData data)
                 {
                     if (data.ProcessID == processID)
                     {
@@ -105,19 +105,22 @@ public class JavaScriptHeapDumper
                     }
                 };
 
-                etwJSParser.JSDumpHeapEnvelopeStart += delegate(SettingsTraceData data)
+                etwJSParser.JSDumpHeapEnvelopeStart += delegate (SettingsTraceData data)
                 {
                     log.WriteLine("{0,5:n1}s: JS Heap Dump Started...", sw.Elapsed.TotalSeconds);
                     jsDataPresent = true;
                 };
 
-                etwJSParser.JSDumpHeapBulkEdge += delegate(BulkEdgeTraceData data)
+                etwJSParser.JSDumpHeapBulkEdge += delegate (BulkEdgeTraceData data)
                 {
                     if (data.ProcessID == processID)
                     {
                         edgeRecords++;
                         if ((sw.Elapsed - lastJSUpdate).TotalMilliseconds > 500)
+                        {
                             log.WriteLine("{0,5:n1}s: Making JS GC Heap Progress...", sw.Elapsed.TotalSeconds);
+                        }
+
                         lastJSUpdate = sw.Elapsed;
                     }
                 };
@@ -128,14 +131,20 @@ public class JavaScriptHeapDumper
 
                 listening = true;
                 if (memoryGraph != null)
+                {
                     dumper.SetupCallbacks(memoryGraph, session.Source, processID);
+                }
+
                 session.Source.Process();
                 log.WriteLine("{0,5:n1}s: ETW Listener dieing", sw.Elapsed.TotalSeconds);
             });
 
             // Wait for thread above to start listening (should be very fast)
             while (!listening)
+            {
                 readerTask.Wait(1);
+            }
+
             Debug.Assert(session != null);
 
             // Start the providers and trigger the GCs.  
@@ -151,7 +160,9 @@ public class JavaScriptHeapDumper
             for (; ; )
             {
                 if (readerTask.Wait(100))
+                {
                     break;
+                }
 
                 if (!jsDataPresent && sw.Elapsed.TotalSeconds > 5)
                 {
@@ -166,23 +177,31 @@ public class JavaScriptHeapDumper
                 }
                 // TODO FIX NOW, time out faster if we seek to be stuck
                 if (dumpComplete)
+                {
                     break;
+                }
             }
             if (jsDataPresent)
+            {
                 dumper.ConvertHeapDataToGraph();        // Finish the conversion.  
+            }
         }
         finally
         {
             // Stop the ETW providers
             log.WriteLine("{0,5:n1}s: Shutting down ETW session", sw.Elapsed.TotalSeconds);
             if (session != null)
+            {
                 session.Dispose();
+            }
         }
         if (readerTask != null)
         {
             log.WriteLine("{0,5:n1}s: Waiting for shutdown to complete.", sw.Elapsed.TotalSeconds);
             if (!readerTask.Wait(2000))
+            {
                 log.WriteLine("{0,5:n1}s: Shutdown wait timed out after 2 seconds.", sw.Elapsed.TotalSeconds);
+            }
         }
         log.WriteLine("Collected {0} JSHeap Bulk Edge Events.", edgeRecords);
         log.WriteLine("[{0,5:n1}s: Done Dumping JScript heap success={1}]", sw.Elapsed.TotalSeconds, dumpComplete);

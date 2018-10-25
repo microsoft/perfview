@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using FastSerialization;
+using System.Collections.Generic;
 using System.Diagnostics;
-using FastSerialization;
 using Address = System.UInt64;
 
 namespace Graphs
@@ -23,8 +23,8 @@ namespace Graphs
         {
             Deserializer deserializer = new Deserializer(inputFileName);
             deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
-            deserializer.RegisterFactory(typeof(MemoryGraph), delegate() { return new MemoryGraph(1); });
-            deserializer.RegisterFactory(typeof(Graphs.Module), delegate() { return new Graphs.Module(0); });
+            deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
+            deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
             return (MemoryGraph)deserializer.GetEntryObject();
         }
 
@@ -33,11 +33,14 @@ namespace Graphs
         /// as part of normal graph processing, it needs to be set by the caller.   MemoryGraph is only 
         /// acting as storage.  
         /// </summary>
-        public bool Is64Bit { get; set; } 
+        public bool Is64Bit { get; set; }
         public Address GetAddress(NodeIndex nodeIndex)
         {
             if (nodeIndex == NodeIndex.Invalid)
+            {
                 return 0;
+            }
+
             return m_nodeAddresses[(int)nodeIndex];
         }
         public void SetAddress(NodeIndex nodeIndex, Address nodeAddress)
@@ -54,7 +57,7 @@ namespace Graphs
         }
         public override Node AllocNodeStorage()
         {
-            return new MemoryNode   (this);
+            return new MemoryNode(this);
         }
         public override long SizeOfGraphDescription()
         {
@@ -91,7 +94,7 @@ namespace Graphs
             NodeIndex nodeIndex;
             if (!m_addressToNodeIndex.TryGetValue(objectAddress, out nodeIndex))
             {
-                nodeIndex = this.CreateNode();
+                nodeIndex = CreateNode();
                 m_nodeAddresses[(int)nodeIndex] = objectAddress;
                 m_addressToNodeIndex.Add(objectAddress, nodeIndex);
             }
@@ -100,7 +103,7 @@ namespace Graphs
         }
         public bool IsInGraph(Address objectAddress)
         {
-            return m_addressToNodeIndex.ContainsKey(objectAddress); 
+            return m_addressToNodeIndex.ContainsKey(objectAddress);
         }
 
         /// <summary>
@@ -118,7 +121,10 @@ namespace Graphs
             // Write out the Memory addresses of each object 
             serializer.Write(m_nodeAddresses.Count);
             for (int i = 0; i < m_nodeAddresses.Count; i++)
+            {
                 serializer.Write((long)m_nodeAddresses[i]);
+            }
+
             serializer.WriteTagged(Is64Bit);
         }
 
@@ -129,7 +135,9 @@ namespace Graphs
             int addressCount = deserializer.ReadInt();
             m_nodeAddresses = new GrowableArray<Address>(addressCount);
             for (int i = 0; i < addressCount; i++)
+            {
                 m_nodeAddresses.Add((Address)deserializer.ReadInt64());
+            }
 
             bool is64bit = false;
             deserializer.TryReadTagged(ref is64bit);
@@ -157,13 +165,14 @@ namespace Graphs
 
         public override void WriteXml(System.IO.TextWriter writer, bool includeChildren = true, string prefix = "", NodeType typeStorage = null, string additinalAttribs = "")
         {
-            Address end = Address + (uint) Size;
+            Address end = Address + (uint)Size;
             // base.WriteXml(writer, prefix, storage, typeStorage, additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\"");
-            base.WriteXml(writer, includeChildren, prefix, typeStorage, 
-                additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\"" 
+            base.WriteXml(writer, includeChildren, prefix, typeStorage,
+                additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\""
                                  + " End=\"0x" + end.ToString("x") + "\"");
         }
-        MemoryGraph m_memoryGraph;
+
+        private MemoryGraph m_memoryGraph;
         #endregion
     }
 
@@ -175,14 +184,17 @@ namespace Graphs
     /// </summary>
     public class MemoryNodeBuilder
     {
-        public MemoryNodeBuilder(MemoryGraph graph, string typeName, string moduleName=null, NodeIndex nodeIndex = NodeIndex.Invalid)
+        public MemoryNodeBuilder(MemoryGraph graph, string typeName, string moduleName = null, NodeIndex nodeIndex = NodeIndex.Invalid)
         {
             Debug.Assert(typeName != null);
             m_graph = graph;
             TypeName = typeName;
             Index = nodeIndex;
             if (Index == NodeIndex.Invalid)
+            {
                 Index = m_graph.CreateNode();
+            }
+
             Debug.Assert(m_graph.m_nodes[(int)Index] == m_graph.m_undefinedObjDef, "SetNode cannot be called on the nodeIndex passed");
             ModuleName = moduleName;
             m_mutableChildren = new List<MemoryNodeBuilder>();
@@ -199,12 +211,14 @@ namespace Graphs
         /// present, it will be created.  Note it will ONLY find MutableNode children
         /// (not children added with AddChild(NodeIndex).  
         /// </summary>
-        public MemoryNodeBuilder FindOrCreateChild(string childTypeName, string childModuleName=null)
+        public MemoryNodeBuilder FindOrCreateChild(string childTypeName, string childModuleName = null)
         {
             foreach (var child in m_mutableChildren)
             {
                 if (child.TypeName == childTypeName)
+                {
                     return child;
+                }
             }
 
             var ret = new MemoryNodeBuilder(m_graph, childTypeName, childModuleName);
@@ -232,7 +246,9 @@ namespace Graphs
         public NodeIndex Build()
         {
             if (m_typeIndex == NodeTypeIndex.Invalid)
+            {
                 AllocateTypeIndexes();
+            }
 
             if (m_mutableChildren != null)
             {
@@ -241,7 +257,9 @@ namespace Graphs
                 var mutableChildren = m_mutableChildren;
                 m_mutableChildren = null;           // Signals that I have been built
                 foreach (var child in mutableChildren)
+                {
                     child.Build();
+                }
             }
             return Index;
         }
@@ -258,14 +276,16 @@ namespace Graphs
                     types.Add(TypeName, m_typeIndex);
                 }
                 foreach (var child in m_mutableChildren)
+                {
                     child.AllocateTypeIndexes(types);
+                }
             }
         }
 
-        NodeTypeIndex m_typeIndex;
-        List<MemoryNodeBuilder> m_mutableChildren;
-        GrowableArray<NodeIndex> m_unmutableChildren;
-        MemoryGraph m_graph;
+        private NodeTypeIndex m_typeIndex;
+        private List<MemoryNodeBuilder> m_mutableChildren;
+        private GrowableArray<NodeIndex> m_unmutableChildren;
+        private MemoryGraph m_graph;
         #endregion
     }
 }

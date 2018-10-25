@@ -10,12 +10,12 @@ using System.Reactive.Linq;
 
 namespace TraceEventSamples
 {
-    class ObserveJitEvents
+    internal class ObserveJitEvents
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         /// <summary>
         /// Sample function demonstrating how to match pairs of events in a live ETW stream,
@@ -56,7 +56,7 @@ namespace TraceEventSamples
             using (var userSession = new TraceEventSession("ObserveJitEvents1"))
             {
                 // Set up Ctrl-C to stop both user mode and kernel mode sessions
-                SetupCtrlCHandler(() => { if (userSession != null) userSession.Stop(); });
+                SetupCtrlCHandler(() => { if (userSession != null) { userSession.Stop(); } });
 
                 // enable the CLR JIT compiler events. 
                 userSession.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Default));
@@ -119,16 +119,23 @@ namespace TraceEventSamples
             var sigWithRet = data.MethodSignature;
             var parenIdx = sigWithRet.IndexOf('(');
             if (0 <= parenIdx)
+            {
                 sig = sigWithRet.Substring(parenIdx);
+            }
 
             // prepare class name (strip namespace)
             var className = data.MethodNamespace;
             var lastDot = className.LastIndexOf('.');
             if (0 <= lastDot)
+            {
                 className = className.Substring(lastDot + 1);
+            }
+
             var sep = ".";
             if (className.Length == 0)
+            {
                 sep = "";
+            }
 
             return className + sep + data.MethodName + sig;
         }
@@ -183,7 +190,10 @@ namespace TraceEventSamples
             // Only keep the cache for 10 seconds to avoid issues with process ID reuse.  
             var now = DateTime.UtcNow;
             if ((now - s_processNameCacheLastUpdate).TotalSeconds > 10)
+            {
                 s_processNameCache.Clear();
+            }
+
             s_processNameCacheLastUpdate = now;
 
             string ret = null;
@@ -193,9 +203,15 @@ namespace TraceEventSamples
                 try { proc = Process.GetProcessById(processID); }
                 catch (Exception) { }
                 if (proc != null)
+                {
                     ret = proc.ProcessName;
+                }
+
                 if (string.IsNullOrWhiteSpace(ret))
+                {
                     ret = processID.ToString();
+                }
+
                 s_processNameCache.Add(processID, ret);
             }
             return ret;
@@ -217,7 +233,9 @@ namespace TraceEventSamples
             s_bCtrlCExecuted = false;
             // uninstall previous handler
             if (s_CtrlCHandler != null)
+            {
                 Console.CancelKeyPress -= s_CtrlCHandler;
+            }
 
             s_CtrlCHandler =
                 (object sender, ConsoleCancelEventArgs cancelArgs) =>

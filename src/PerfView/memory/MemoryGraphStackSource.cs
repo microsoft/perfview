@@ -53,9 +53,11 @@ namespace Graphs
             {
                 for (NodeIndex idx = 0; idx < asMemoryGraph.NodeIndexLimit; idx++)
                 {
-                    Address endAddress = asMemoryGraph.GetAddress(idx) +(uint)asMemoryGraph.GetNode(idx, m_nodeStorage).Size;
+                    Address endAddress = asMemoryGraph.GetAddress(idx) + (uint)asMemoryGraph.GetNode(idx, m_nodeStorage).Size;
                     if (m_maxAddress < endAddress)
+                    {
                         m_maxAddress = endAddress;
+                    }
                 }
             }
         }
@@ -69,7 +71,10 @@ namespace Graphs
             get
             {
                 if (m_refGraph == null)
+                {
                     m_refGraph = new RefGraph(m_graph);
+                }
+
                 return m_refGraph;
             }
         }
@@ -115,7 +120,10 @@ namespace Graphs
             get
             {
                 if (m_priorityRegExs == null)
+                {
                     PriorityRegExs = DefaultPriorities;
+                }
+
                 return m_priorityRegExs;
             }
             set
@@ -155,8 +163,15 @@ namespace Graphs
                     {
                         byte val = m_refCounts[(int)childIndex];
                         if (val == 0)
+                        {
                             nodesToVisit.Enqueue(childIndex);
-                        val++; if (val == 0) val = 255;     // increment, but never wrap-around. 
+                        }
+
+                        val++; if (val == 0)
+                        {
+                            val = 255;     // increment, but never wrap-around. 
+                        }
+
                         m_refCounts[(int)childIndex] = val;
                     }
                 }
@@ -169,11 +184,17 @@ namespace Graphs
                 {
                     totalRefs += refCount;
                     if (refCount == 1)
+                    {
                         singletons++;
+                    }
                     else if (refCount == 0)
+                    {
                         orphans++;
+                    }
                     else if (refCount == 255)
+                    {
                         max++;
+                    }
                 }
                 Trace.WriteLine("Total = " + m_refCounts.Length);
                 Trace.WriteLine("Singletons = " + singletons);
@@ -193,7 +214,9 @@ namespace Graphs
 
             // reset the visited information.
             for (int i = 0; i < m_parent.Length; i++)
+            {
                 m_parent[i] = NodeIndex.Invalid;
+            }
 
             MemoryGraph asMemoryGraph = m_graph as MemoryGraph;
 
@@ -201,7 +224,9 @@ namespace Graphs
             for (int i = 0; ; i++)
             {
                 if ((i & 0x1FFF) == 0)  // Every 8K
+                {
                     System.Threading.Thread.Sleep(0);       // Allow interruption.  
+                }
 
                 NodeIndex nodeIndex;
                 if (nodesToVisit.Count == 0)
@@ -212,7 +237,9 @@ namespace Graphs
                         AddOrphansToQueue(nodesToVisit);
                     }
                     if (nodesToVisit.Count == 0)
+                    {
                         return;
+                    }
                 }
 
                 nodeIndex = nodesToVisit.Dequeue();
@@ -233,7 +260,9 @@ namespace Graphs
                 // We use the address as the timestamp.  This allows you to pick particular instances
                 // and see where particular instances are in memory by looking at the 'time'.  
                 if (asMemoryGraph != null)
+                {
                     m_sampleStorage.TimeRelativeMSec = asMemoryGraph.GetAddress(node.Index);
+                }
 
                 m_sampleStorage.SampleIndex = (StackSourceSampleIndex)node.Index;
                 m_sampleStorage.StackIndex = (StackSourceCallStackIndex)node.Index;
@@ -255,7 +284,10 @@ namespace Graphs
         {
             // Initialize the priority 
             if (m_typePriorities == null)
+            {
                 PriorityRegExs = DefaultPriorities;
+            }
+
             Debug.Assert(m_typePriorities != null);
 
             // Initialize the breadth-first work queue.
@@ -264,7 +296,9 @@ namespace Graphs
 
             // reset the visited information.
             for (int i = 0; i < m_parent.Length; i++)
+            {
                 m_parent[i] = NodeIndex.Invalid;
+            }
 
             // We keep track of node depth so that we can limit it.   
             int[] nodeDepth = new int[m_parent.Length];
@@ -277,7 +311,9 @@ namespace Graphs
             for (int i = 0; ; i++)
             {
                 if ((i & 0x1FFF) == 0)  // Every 8K
+                {
                     System.Threading.Thread.Sleep(0);       // Allow interruption.  
+                }
 
                 NodeIndex nodeIndex;
                 double nodePriority;
@@ -290,7 +326,9 @@ namespace Graphs
                         AddOrphansToQueue(nodesToVisit);
                     }
                     if (nodesToVisit.Count == 0)
+                    {
                         return;
+                    }
                 }
                 nodeIndex = nodesToVisit.Dequeue(out nodePriority);
 
@@ -299,7 +337,7 @@ namespace Graphs
                 var parentPriority = nodePriorities[(int)node.Index];
                 for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
                 {
-                    if (m_parent[(int)childIndex] == NodeIndex.Invalid && childIndex != m_graph.RootIndex) 
+                    if (m_parent[(int)childIndex] == NodeIndex.Invalid && childIndex != m_graph.RootIndex)
                     {
                         m_parent[(int)childIndex] = nodeIndex;
                         int parentDepth = nodeDepth[(int)nodeIndex];
@@ -322,7 +360,9 @@ namespace Graphs
                 // We use the address as the timestamp.  This allows you to pick particular instances
                 // and see where particular instances are in memory by looking at the 'time'.  
                 if (asMemoryGraph != null)
+                {
                     m_sampleStorage.TimeRelativeMSec = asMemoryGraph.GetAddress(node.Index);
+                }
 
                 m_sampleStorage.SampleIndex = (StackSourceSampleIndex)node.Index;
                 m_sampleStorage.StackIndex = (StackSourceCallStackIndex)node.Index;
@@ -349,7 +389,9 @@ namespace Graphs
 
             // Orphan node support 
             if (nodeIndex == m_graph.NodeIndexLimit)
+            {
                 return (StackSourceFrameIndex)m_graph.NodeTypeIndexLimit;
+            }
 
             NodeTypeIndex typeIndex = m_graph.GetNode(nodeIndex, m_nodeStorage).TypeIndex;
             return (StackSourceFrameIndex)typeIndex;
@@ -361,7 +403,9 @@ namespace Graphs
 
             // Orphan node support 
             if (typeIndex == m_graph.NodeTypeIndexLimit)
+            {
                 return "[not reachable from roots]";
+            }
 
             string[] typeNames = verboseName ? m_verboseTypeNames : m_typeNames;
             if (typeNames == null)
@@ -383,7 +427,9 @@ namespace Graphs
                     {
                         int length = moduleName.Length - 4;
                         if ((length >= 0) && (moduleName[length] == '.'))
+                        {
                             moduleName = moduleName.Substring(0, length);
+                        }
                     }
                     else if (moduleName.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
                     {
@@ -391,7 +437,9 @@ namespace Graphs
                     }
 
                     if (moduleName.Length == 0)
+                    {
                         moduleName = "?";
+                    }
 
                     ret = moduleName + "!" + ShortenNameSpaces(type);
                 }
@@ -415,9 +463,14 @@ namespace Graphs
             m_sampleStorage.SampleIndex = (StackSourceSampleIndex)node.Index;
             m_sampleStorage.StackIndex = (StackSourceCallStackIndex)node.Index;
             if (m_asMemoryGraph != null)
+            {
                 m_sampleStorage.TimeRelativeMSec = m_asMemoryGraph.GetAddress(node.Index);
+            }
             else
+            {
                 m_sampleStorage.TimeRelativeMSec = 0;
+            }
+
             return m_sampleStorage;
         }
 
@@ -440,13 +493,17 @@ namespace Graphs
             // the normal call tree (thus by returning nothing we just get the tree nodes).   You an imagine cases where 
             // we really do need to report the correct data. 
             if (index == m_graph.NodeIndexLimit)
+            {
                 return;
+            }
 
             if (dir == RefDirection.From)
             {
                 var node = m_graph.GetNode(index, AllocNodeStorage());
                 for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
+                {
                     callback((StackSourceSampleIndex)childIndex);
+                }
 
                 FreeNodeStorage(node);
             }
@@ -457,13 +514,17 @@ namespace Graphs
                 // Compute the references if we have not already done so.  
                 var refGraph = RefGraph;
                 if (m_refNodeStorage == null)
+                {
                     m_refNodeStorage = m_refGraph.AllocNodeStorage();
+                }
 
                 // If this code blows up, it could be because m_refNodeStorage is being reused inappropriately (reentrant) 
                 // Just make the storage a local var
                 var node = refGraph.GetNode(index, m_refNodeStorage);
                 for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
+                {
                     callback((StackSourceSampleIndex)childIndex);
+                }
             }
         }
         /// <summary>
@@ -484,7 +545,9 @@ namespace Graphs
             for (int i = 0; i < (int)m_graph.NodeIndexLimit; i++)
             {
                 if (m_parent[i] == NodeIndex.Invalid)
+                {
                     MarkDecendentsIgnoringCycles((NodeIndex)i);
+                }
             }
 
             // Collect up all the nodes that are not reachable from other nodes as the roots of the
@@ -507,7 +570,9 @@ namespace Graphs
                         }
                     }
                     else
+                    {
                         m_parent[(int)nodeIndex] = NodeIndex.Invalid;
+                    }
                 }
             }
         }
@@ -523,7 +588,9 @@ namespace Graphs
             for (int i = 0; i < (int)m_graph.NodeIndexLimit; i++)
             {
                 if (m_parent[i] == NodeIndex.Invalid)
+                {
                     MarkDecendentsIgnoringCycles((NodeIndex)i);
+                }
             }
 
             // Collect up all the nodes that are not reachable from other nodes as the roots of the
@@ -545,7 +612,9 @@ namespace Graphs
                         }
                     }
                     else
+                    {
                         m_parent[(int)nodeIndex] = NodeIndex.Invalid;
+                    }
                 }
             }
         }
@@ -572,19 +641,19 @@ namespace Graphs
                 var nodeIndex = workList.Peek();
                 switch (m_parent[(int)nodeIndex])
                 {
-                case orphanVisitingMarker:
-                    m_parent[(int)nodeIndex] = orphanVisitedMarker;
-                    goto case orphanVisitedMarker;
+                    case orphanVisitingMarker:
+                        m_parent[(int)nodeIndex] = orphanVisitedMarker;
+                        goto case orphanVisitedMarker;
 
-                case orphanVisitedMarker:
-                    workList.Pop();
-                    continue;
+                    case orphanVisitedMarker:
+                        workList.Pop();
+                        continue;
 
-                case NodeIndex.Invalid:
-                    break;
+                    case NodeIndex.Invalid:
+                        break;
 
-                default:
-                    throw new InvalidOperationException();
+                    default:
+                        throw new InvalidOperationException();
                 }
 
                 m_parent[(int)nodeIndex] = orphanVisitingMarker;        // We are now visitING
@@ -624,16 +693,23 @@ namespace Graphs
         {
             var ret = m_cachedNodeStorage;                // See if we have a free node. 
             if (ret == null)
+            {
                 ret = m_graph.AllocNodeStorage();
+            }
             else
+            {
                 m_cachedNodeStorage = null;               // mark that that node is in use.  
+            }
+
             return ret;
         }
 
         private void SetTypePriorities(string priorityPats)
         {
             if (m_typePriorities == null)
+            {
                 m_typePriorities = new double[(int)m_graph.NodeTypeIndexLimit];
+            }
 
             string[] priorityPatArray = priorityPats.Split(';');
             Regex[] priorityRegExArray = new Regex[priorityPatArray.Length];
@@ -644,7 +720,10 @@ namespace Graphs
                 if (!m.Success)
                 {
                     if (string.IsNullOrWhiteSpace(priorityPatArray[i]))
+                    {
                         continue;
+                    }
+
                     throw new ApplicationException("Priority pattern " + priorityPatArray[i] + " is not of the form Pat->Num.");
                 }
 
@@ -664,7 +743,9 @@ namespace Graphs
                 {
                     var priorityRegEx = priorityRegExArray[regExIdx];
                     if (priorityRegEx == null)
+                    {
                         continue;
+                    }
 
                     var m = priorityRegEx.Match(fullName);
                     if (m.Success)
@@ -689,49 +770,60 @@ namespace Graphs
                 var systemIdx = shortTypeName.IndexOf("System.");
                 if (0 <= systemIdx)
                 {
-                    if (string.Compare(shortTypeName, systemIdx+7, "Collections.", 0, 12, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Compare(shortTypeName, systemIdx + 7, "Collections.", 0, 12, StringComparison.OrdinalIgnoreCase) == 0)
                     {
-                        if (string.Compare(shortTypeName, systemIdx+19, "Generic.", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Compare(shortTypeName, systemIdx + 19, "Generic.", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
                             shortTypeName = shortTypeName.Substring(0, systemIdx) + shortTypeName.Substring(systemIdx + 27);
-                        else if (string.Compare(shortTypeName, systemIdx+19, "Concurrent.", 0, 11, StringComparison.OrdinalIgnoreCase) == 0)
+                        }
+                        else if (string.Compare(shortTypeName, systemIdx + 19, "Concurrent.", 0, 11, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
                             shortTypeName = shortTypeName.Substring(0, systemIdx) + shortTypeName.Substring(systemIdx + 30);
-                        else if (string.Compare(shortTypeName, systemIdx+19, "ObjectModel.", 0, 12, StringComparison.OrdinalIgnoreCase) == 0)
+                        }
+                        else if (string.Compare(shortTypeName, systemIdx + 19, "ObjectModel.", 0, 12, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
                             shortTypeName = shortTypeName.Substring(0, systemIdx) + shortTypeName.Substring(systemIdx + 31);
+                        }
                         else
+                        {
                             shortTypeName = shortTypeName.Substring(0, systemIdx) + shortTypeName.Substring(systemIdx + 19);
+                        }
                     }
-                    else if (string.Compare(shortTypeName, systemIdx+7, "Threading.", 0, 10, StringComparison.OrdinalIgnoreCase) == 0)
+                    else if (string.Compare(shortTypeName, systemIdx + 7, "Threading.", 0, 10, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         shortTypeName = shortTypeName.Substring(0, systemIdx) + shortTypeName.Substring(systemIdx + 17);
+                    }
                     else
+                    {
                         shortTypeName = shortTypeName.Substring(0, systemIdx) + shortTypeName.Substring(systemIdx + 7);
+                    }
+
                     continue;
                 }
                 return shortTypeName;
             }
         }
 
-        RefGraph m_refGraph;
-        RefNode m_refNodeStorage;
-
-        MemoryGraph m_asMemoryGraph;
-        Graph m_graph;
-        string[] m_typeNames;
-        string[] m_verboseTypeNames;
-        NodeIndex[] m_parent;               // We keep track of the parents of each node in our breadth-first scan. 
-        byte[] m_refCounts;                 // Used to implemented the 'RefCounts' property. 
+        private RefGraph m_refGraph;
+        private RefNode m_refNodeStorage;
+        private MemoryGraph m_asMemoryGraph;
+        private Graph m_graph;
+        private string[] m_typeNames;
+        private string[] m_verboseTypeNames;
+        private NodeIndex[] m_parent;               // We keep track of the parents of each node in our breadth-first scan. 
+        private byte[] m_refCounts;                 // Used to implemented the 'RefCounts' property. 
 
         // We give each type a priority (using the m_priority Regular expressions) which guide the breadth-first scan. 
-        string m_priorityRegExs;
-        double[] m_typePriorities;
-
-        NodeType m_typeStorage;
-        Node m_nodeStorage;                 // Only for things that can't be reentrant
-        Node m_childStorage;
-        Node m_cachedNodeStorage;           // Used when it could be reentrant
-        StackSourceSample m_sampleStorage;
-        double[] m_countMultipliers;
-        Address m_maxAddress;               // The maximum memory address in the graph (needed by SampleTimeRelativeMSecLimit)     
-        TextWriter m_log;                   // processing messages 
+        private string m_priorityRegExs;
+        private double[] m_typePriorities;
+        private NodeType m_typeStorage;
+        private Node m_nodeStorage;                 // Only for things that can't be reentrant
+        private Node m_childStorage;
+        private Node m_cachedNodeStorage;           // Used when it could be reentrant
+        private StackSourceSample m_sampleStorage;
+        private double[] m_countMultipliers;
+        private Address m_maxAddress;               // The maximum memory address in the graph (needed by SampleTimeRelativeMSecLimit)     
+        private TextWriter m_log;                   // processing messages 
         #endregion
     }
 

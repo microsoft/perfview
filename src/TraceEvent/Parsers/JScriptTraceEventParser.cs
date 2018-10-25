@@ -1,9 +1,7 @@
-using System;
-using System.Text;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.JScript;
+using System;
+using System.Diagnostics;
+using System.Text;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -13,10 +11,10 @@ using Address = System.UInt64;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
-    public sealed class JScriptTraceEventParser : TraceEventParser 
+    public sealed class JScriptTraceEventParser : TraceEventParser
     {
         public static readonly string ProviderName = "Microsoft-JScript";
-        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x57277741), unchecked((short) 0x3638), unchecked((short) 0x4a4b), 0xbd, 0xba, 0x0a, 0xc6, 0xe4, 0x5d, 0xa5, 0x6c);
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x57277741), unchecked((short)0x3638), unchecked((short)0x4a4b), 0xbd, 0xba, 0x0a, 0xc6, 0xe4, 0x5d, 0xa5, 0x6c);
         public enum Keywords : long
         {
             JScriptRuntime = 0x1,
@@ -34,13 +32,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             JScriptObjectCleanup = 0x2000,
         };
 
-        public JScriptTraceEventParser(TraceEventSource source) : base(source) {}
+        public JScriptTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<EmptyTraceData> MethodRundownDCStartInit
         {
             add
             {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new EmptyTraceData(value, 1, 3, "MethodRundown", new Guid(), 14, "DCStartInit", ProviderGuid, ProviderName));
             }
             remove
@@ -1843,10 +1841,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value,  2,  Jscript_GC_SweepTaskGuid);
             }
         }
-#endif 
+#endif
 
 
-    #region private
+        #region private
         protected override string GetProviderName() { return ProviderName; }
 #if !PERFVIEW 
         static private volatile TraceEvent[] s_templates;
@@ -1996,46 +1994,46 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #endif
         }
 
-        private static readonly Guid Jscript_Projection_ResolveTypeTaskGuid = new Guid(unchecked((int) 0x65e6ec90), unchecked((short) 0x7758), unchecked((short) 0x4fa8), 0xb8, 0x8a, 0x26, 0x11, 0x97, 0x15, 0x1e, 0x49);
-        private static readonly Guid Jscript_Projection_ConstructRuntimeClassTaskGuid = new Guid(unchecked((int) 0xfa44b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
-        private static readonly Guid Jscript_Projection_MethodCallTaskGuid = new Guid(unchecked((int) 0xe044b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xb6, 0x61);
-        private static readonly Guid Jscript_Projection_RawMethodCallTaskGuid = new Guid(unchecked((int) 0xc944b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
-        private static readonly Guid Jscript_Projection_InvokesJsDelegateTaskGuid = new Guid(unchecked((int) 0x9a94b47d), unchecked((short) 0x8adf), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x23);
-        private static readonly Guid Jscript_Projection_InvokeNativeDelegateTaskGuid = new Guid(unchecked((int) 0x9a94b47d), unchecked((short) 0xfda8), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x24);
-        private static readonly Guid Jscript_Projection_AddEventListenerTaskGuid = new Guid(unchecked((int) 0x9a9c947d), unchecked((short) 0x8adf), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x23);
-        private static readonly Guid Jscript_Projection_RemoveEventListenerTaskGuid = new Guid(unchecked((int) 0xab9c947d), unchecked((short) 0x8aef), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x02);
-        private static readonly Guid Jscript_Projection_GetTypeMetaDataInformationTaskGuid = new Guid(unchecked((int) 0x6d44b4fa), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x31);
-        private static readonly Guid Jscript_Projection_SetEventHandlerTaskGuid = new Guid(unchecked((int) 0x4c42d2ac), unchecked((short) 0x7b3e), unchecked((short) 0x48ab), 0x91, 0xce, 0xc7, 0xe3, 0xff, 0xac, 0xf8, 0xbf);
-        private static readonly Guid Jscript_Projection_RemoveAllEventsAndEventHandlersTaskGuid = new Guid(unchecked((int) 0xb4fb623e), unchecked((short) 0xa94c), unchecked((short) 0x4226), 0xb0, 0xe4, 0xfc, 0x82, 0x53, 0xf2, 0x9d, 0xe5);
-        private static readonly Guid Jscript_Projection_InvokeEventTaskGuid = new Guid(unchecked((int) 0xf0c3c89f), unchecked((short) 0xc1d3), unchecked((short) 0x46e6), 0x85, 0x23, 0x2d, 0x4b, 0x71, 0xe2, 0x91, 0x94);
-        private static readonly Guid Jscript_Projection_InvokeEventEvParamPrepTaskGuid = new Guid(unchecked((int) 0x670b4b95), unchecked((short) 0xbaf8), unchecked((short) 0x42e1), 0xa1, 0xfd, 0xbf, 0xd4, 0x78, 0xcb, 0xf7, 0x20);
-        private static readonly Guid Jscript_Projection_GetExprFromConcreteTypeNameTaskGuid = new Guid(unchecked((int) 0x90df5cdf), unchecked((short) 0x6eed), unchecked((short) 0x47a4), 0xb6, 0x98, 0x54, 0x8c, 0x7a, 0xbf, 0x4f, 0xe9);
-        private static readonly Guid Jscript_Projection_GetTypeFromTypeNamePartsTaskGuid = new Guid(unchecked((int) 0x17395d83), unchecked((short) 0x1e5c), unchecked((short) 0x43ad), 0xa5, 0xd4, 0x41, 0x63, 0x1d, 0x33, 0x4f, 0x3c);
-        private static readonly Guid Jscript_Projection_ReferenceOrArrayGetValueTaskGuid = new Guid(unchecked((int) 0x97b5c7a6), unchecked((short) 0x8cc5), unchecked((short) 0x4e4d), 0xbb, 0x85, 0x38, 0x87, 0xed, 0x68, 0x73, 0x04);
-        private static readonly Guid Jscript_Projection_PropertyValueVarFromGRCNTaskGuid = new Guid(unchecked((int) 0x8a960840), unchecked((short) 0x27ea), unchecked((short) 0x487f), 0xb7, 0xc0, 0x7a, 0x6e, 0x87, 0x64, 0x56, 0x3e);
-        private static readonly Guid Jscript_Projection_VarFromGRCNTaskGuid = new Guid(unchecked((int) 0x9fcf06d2), unchecked((short) 0x7907), unchecked((short) 0x46b4), 0xa2, 0xe4, 0x4b, 0x56, 0x32, 0x94, 0x59, 0x65);
-        private static readonly Guid Jscript_Projection_WriteIReferenceTaskGuid = new Guid(unchecked((int) 0x1ebc5e72), unchecked((short) 0x4c4a), unchecked((short) 0x455e), 0xa9, 0xaa, 0x53, 0xc1, 0x1b, 0x32, 0xe3, 0xe1);
-        private static readonly Guid Jscript_Projection_WriteInspectableTaskGuid = new Guid(unchecked((int) 0x48b75069), unchecked((short) 0xb48d), unchecked((short) 0x404b), 0x95, 0x45, 0x92, 0x40, 0xb6, 0x9c, 0xb7, 0xf3);
-        private static readonly Guid Jscript_Projection_GetNonArrayTypeAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x60990a40), unchecked((short) 0x3dc5), unchecked((short) 0x418e), 0x8c, 0x2e, 0x08, 0xe5, 0xfa, 0xde, 0x7f, 0x8d);
-        private static readonly Guid Jscript_Projection_GetNonArrayBasicTypeAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x3d8fedce), unchecked((short) 0xcf8e), unchecked((short) 0x4d65), 0x8e, 0xb9, 0xbd, 0x1c, 0xbb, 0xc8, 0x90, 0xd5);
-        private static readonly Guid Jscript_Projection_GetTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x1dc3ab0f), unchecked((short) 0x3c64), unchecked((short) 0x405a), 0x98, 0x52, 0x58, 0x95, 0xc1, 0x33, 0xf9, 0xa8);
-        private static readonly Guid Jscript_Projection_GetBasicTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x4110d5bd), unchecked((short) 0x5ff8), unchecked((short) 0x4ff2), 0xa3, 0x3d, 0xd1, 0xb9, 0x2b, 0x12, 0x76, 0x06);
-        private static readonly Guid Jscript_GC_ResetMarksTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd4);
-        private static readonly Guid Jscript_GC_ScanRootsTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd5);
-        private static readonly Guid Jscript_GC_ScanStackTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd6);
-        private static readonly Guid Jscript_GC_MarkTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd7);
-        private static readonly Guid Jscript_GC_RescanTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd8);
-        private static readonly Guid Jscript_GC_SweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd9);
-        private static readonly Guid Jscript_GC_SetupBackgroundSweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xda);
-        private static readonly Guid Jscript_GC_BackgroundSweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdb);
-        private static readonly Guid Jscript_GC_TransferSweptObjectsTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdc);
-        private static readonly Guid Jscript_GC_DisposeTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdd);
-        private static readonly Guid Jscript_GC_BackgroundMarkTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xde);
-        private static readonly Guid Jscript_GC_ResetWriteWatchTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdf);
-        private static readonly Guid Jscript_GC_IdleCollectTaskGuid = new Guid(unchecked((int) 0x196a6ce6), unchecked((short) 0x8826), unchecked((short) 0x4d5f), 0x9b, 0x33, 0x55, 0xba, 0x2d, 0x3a, 0xcc, 0xbe);
-        private static readonly Guid Jscript_Page_Allocator_SizeTaskGuid = new Guid(unchecked((int) 0x313cb172), unchecked((short) 0x9dd2), unchecked((short) 0x4f8c), 0xa4, 0x1f, 0xba, 0xf7, 0x42, 0x64, 0x74, 0x90);
-        private static readonly Guid Jscript_Recycler_AllocationTaskGuid = new Guid(unchecked((int) 0x2d68a40e), unchecked((short) 0xb890), unchecked((short) 0x4c6f), 0x8c, 0x2e, 0xb4, 0xc8, 0x56, 0xcc, 0x21, 0xcf);
-    #endregion
+        private static readonly Guid Jscript_Projection_ResolveTypeTaskGuid = new Guid(unchecked((int)0x65e6ec90), unchecked((short)0x7758), unchecked((short)0x4fa8), 0xb8, 0x8a, 0x26, 0x11, 0x97, 0x15, 0x1e, 0x49);
+        private static readonly Guid Jscript_Projection_ConstructRuntimeClassTaskGuid = new Guid(unchecked((int)0xfa44b46d), unchecked((short)0x38df), unchecked((short)0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
+        private static readonly Guid Jscript_Projection_MethodCallTaskGuid = new Guid(unchecked((int)0xe044b46d), unchecked((short)0x38df), unchecked((short)0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xb6, 0x61);
+        private static readonly Guid Jscript_Projection_RawMethodCallTaskGuid = new Guid(unchecked((int)0xc944b46d), unchecked((short)0x38df), unchecked((short)0x4cc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
+        private static readonly Guid Jscript_Projection_InvokesJsDelegateTaskGuid = new Guid(unchecked((int)0x9a94b47d), unchecked((short)0x8adf), unchecked((short)0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x23);
+        private static readonly Guid Jscript_Projection_InvokeNativeDelegateTaskGuid = new Guid(unchecked((int)0x9a94b47d), unchecked((short)0xfda8), unchecked((short)0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x24);
+        private static readonly Guid Jscript_Projection_AddEventListenerTaskGuid = new Guid(unchecked((int)0x9a9c947d), unchecked((short)0x8adf), unchecked((short)0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x23);
+        private static readonly Guid Jscript_Projection_RemoveEventListenerTaskGuid = new Guid(unchecked((int)0xab9c947d), unchecked((short)0x8aef), unchecked((short)0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x02);
+        private static readonly Guid Jscript_Projection_GetTypeMetaDataInformationTaskGuid = new Guid(unchecked((int)0x6d44b4fa), unchecked((short)0x38df), unchecked((short)0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x31);
+        private static readonly Guid Jscript_Projection_SetEventHandlerTaskGuid = new Guid(unchecked((int)0x4c42d2ac), unchecked((short)0x7b3e), unchecked((short)0x48ab), 0x91, 0xce, 0xc7, 0xe3, 0xff, 0xac, 0xf8, 0xbf);
+        private static readonly Guid Jscript_Projection_RemoveAllEventsAndEventHandlersTaskGuid = new Guid(unchecked((int)0xb4fb623e), unchecked((short)0xa94c), unchecked((short)0x4226), 0xb0, 0xe4, 0xfc, 0x82, 0x53, 0xf2, 0x9d, 0xe5);
+        private static readonly Guid Jscript_Projection_InvokeEventTaskGuid = new Guid(unchecked((int)0xf0c3c89f), unchecked((short)0xc1d3), unchecked((short)0x46e6), 0x85, 0x23, 0x2d, 0x4b, 0x71, 0xe2, 0x91, 0x94);
+        private static readonly Guid Jscript_Projection_InvokeEventEvParamPrepTaskGuid = new Guid(unchecked((int)0x670b4b95), unchecked((short)0xbaf8), unchecked((short)0x42e1), 0xa1, 0xfd, 0xbf, 0xd4, 0x78, 0xcb, 0xf7, 0x20);
+        private static readonly Guid Jscript_Projection_GetExprFromConcreteTypeNameTaskGuid = new Guid(unchecked((int)0x90df5cdf), unchecked((short)0x6eed), unchecked((short)0x47a4), 0xb6, 0x98, 0x54, 0x8c, 0x7a, 0xbf, 0x4f, 0xe9);
+        private static readonly Guid Jscript_Projection_GetTypeFromTypeNamePartsTaskGuid = new Guid(unchecked((int)0x17395d83), unchecked((short)0x1e5c), unchecked((short)0x43ad), 0xa5, 0xd4, 0x41, 0x63, 0x1d, 0x33, 0x4f, 0x3c);
+        private static readonly Guid Jscript_Projection_ReferenceOrArrayGetValueTaskGuid = new Guid(unchecked((int)0x97b5c7a6), unchecked((short)0x8cc5), unchecked((short)0x4e4d), 0xbb, 0x85, 0x38, 0x87, 0xed, 0x68, 0x73, 0x04);
+        private static readonly Guid Jscript_Projection_PropertyValueVarFromGRCNTaskGuid = new Guid(unchecked((int)0x8a960840), unchecked((short)0x27ea), unchecked((short)0x487f), 0xb7, 0xc0, 0x7a, 0x6e, 0x87, 0x64, 0x56, 0x3e);
+        private static readonly Guid Jscript_Projection_VarFromGRCNTaskGuid = new Guid(unchecked((int)0x9fcf06d2), unchecked((short)0x7907), unchecked((short)0x46b4), 0xa2, 0xe4, 0x4b, 0x56, 0x32, 0x94, 0x59, 0x65);
+        private static readonly Guid Jscript_Projection_WriteIReferenceTaskGuid = new Guid(unchecked((int)0x1ebc5e72), unchecked((short)0x4c4a), unchecked((short)0x455e), 0xa9, 0xaa, 0x53, 0xc1, 0x1b, 0x32, 0xe3, 0xe1);
+        private static readonly Guid Jscript_Projection_WriteInspectableTaskGuid = new Guid(unchecked((int)0x48b75069), unchecked((short)0xb48d), unchecked((short)0x404b), 0x95, 0x45, 0x92, 0x40, 0xb6, 0x9c, 0xb7, 0xf3);
+        private static readonly Guid Jscript_Projection_GetNonArrayTypeAsPropertyValueTaskGuid = new Guid(unchecked((int)0x60990a40), unchecked((short)0x3dc5), unchecked((short)0x418e), 0x8c, 0x2e, 0x08, 0xe5, 0xfa, 0xde, 0x7f, 0x8d);
+        private static readonly Guid Jscript_Projection_GetNonArrayBasicTypeAsPropertyValueTaskGuid = new Guid(unchecked((int)0x3d8fedce), unchecked((short)0xcf8e), unchecked((short)0x4d65), 0x8e, 0xb9, 0xbd, 0x1c, 0xbb, 0xc8, 0x90, 0xd5);
+        private static readonly Guid Jscript_Projection_GetTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int)0x1dc3ab0f), unchecked((short)0x3c64), unchecked((short)0x405a), 0x98, 0x52, 0x58, 0x95, 0xc1, 0x33, 0xf9, 0xa8);
+        private static readonly Guid Jscript_Projection_GetBasicTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int)0x4110d5bd), unchecked((short)0x5ff8), unchecked((short)0x4ff2), 0xa3, 0x3d, 0xd1, 0xb9, 0x2b, 0x12, 0x76, 0x06);
+        private static readonly Guid Jscript_GC_ResetMarksTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd4);
+        private static readonly Guid Jscript_GC_ScanRootsTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd5);
+        private static readonly Guid Jscript_GC_ScanStackTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd6);
+        private static readonly Guid Jscript_GC_MarkTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd7);
+        private static readonly Guid Jscript_GC_RescanTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd8);
+        private static readonly Guid Jscript_GC_SweepTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd9);
+        private static readonly Guid Jscript_GC_SetupBackgroundSweepTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xda);
+        private static readonly Guid Jscript_GC_BackgroundSweepTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdb);
+        private static readonly Guid Jscript_GC_TransferSweptObjectsTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdc);
+        private static readonly Guid Jscript_GC_DisposeTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdd);
+        private static readonly Guid Jscript_GC_BackgroundMarkTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xde);
+        private static readonly Guid Jscript_GC_ResetWriteWatchTaskGuid = new Guid(unchecked((int)0x56aa7888), unchecked((short)0xcd74), unchecked((short)0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdf);
+        private static readonly Guid Jscript_GC_IdleCollectTaskGuid = new Guid(unchecked((int)0x196a6ce6), unchecked((short)0x8826), unchecked((short)0x4d5f), 0x9b, 0x33, 0x55, 0xba, 0x2d, 0x3a, 0xcc, 0xbe);
+        private static readonly Guid Jscript_Page_Allocator_SizeTaskGuid = new Guid(unchecked((int)0x313cb172), unchecked((short)0x9dd2), unchecked((short)0x4f8c), 0xa4, 0x1f, 0xba, 0xf7, 0x42, 0x64, 0x74, 0x90);
+        private static readonly Guid Jscript_Recycler_AllocationTaskGuid = new Guid(unchecked((int)0x2d68a40e), unchecked((short)0xb890), unchecked((short)0x4c6f), 0x8c, 0x2e, 0xb4, 0xc8, 0x56, 0xcc, 0x21, 0xcf);
+        #endregion
     }
 }
 
@@ -2058,37 +2056,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal MethodLoadUnloadJSTraceData(Action<MethodLoadUnloadJSTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<MethodLoadUnloadJSTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<MethodLoadUnloadJSTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(40, 2))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(40, 2))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             XmlAttribHex(sb, "MethodStartAddress", MethodStartAddress);
-             XmlAttrib(sb, "MethodSize", MethodSize);
-             XmlAttrib(sb, "MethodID", MethodID);
-             XmlAttrib(sb, "MethodFlags", MethodFlags);
-             XmlAttrib(sb, "MethodAddressRangeID", MethodAddressRangeID);
-             XmlAttrib(sb, "SourceID", SourceID);
-             XmlAttrib(sb, "Line", Line);
-             XmlAttrib(sb, "Column", Column);
-             XmlAttrib(sb, "MethodName", MethodName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            XmlAttribHex(sb, "MethodStartAddress", MethodStartAddress);
+            XmlAttrib(sb, "MethodSize", MethodSize);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodFlags", MethodFlags);
+            XmlAttrib(sb, "MethodAddressRangeID", MethodAddressRangeID);
+            XmlAttrib(sb, "SourceID", SourceID);
+            XmlAttrib(sb, "Line", Line);
+            XmlAttrib(sb, "Column", Column);
+            XmlAttrib(sb, "MethodName", MethodName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2096,7 +2094,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ScriptContextID", "MethodStartAddress", "MethodSize", "MethodID", "MethodFlags", "MethodAddressRangeID", "SourceID", "Line", "Column", "MethodName"};
+                {
+                    payloadNames = new string[] { "ScriptContextID", "MethodStartAddress", "MethodSize", "MethodID", "MethodFlags", "MethodAddressRangeID", "SourceID", "Line", "Column", "MethodName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2142,28 +2143,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ScriptContextLoadUnloadTraceData(Action<ScriptContextLoadUnloadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ScriptContextLoadUnloadTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ScriptContextLoadUnloadTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(4, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(4, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2171,7 +2172,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ScriptContextID"};
+                {
+                    payloadNames = new string[] { "ScriptContextID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2199,28 +2203,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ProjectionTypeNameTraceData(Action<ProjectionTypeNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ProjectionTypeNameTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ProjectionTypeNameTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(0)));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(0)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2228,7 +2232,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName"};
+                {
+                    payloadNames = new string[] { "TypeName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2257,29 +2264,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ProjectionTypeNameAndMethodNameTraceData(Action<ProjectionTypeNameAndMethodNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ProjectionTypeNameAndMethodNameTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ProjectionTypeNameAndMethodNameTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "MethodName", MethodName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "MethodName", MethodName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2287,7 +2294,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "MethodName"};
+                {
+                    payloadNames = new string[] { "TypeName", "MethodName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2312,35 +2322,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
     public sealed class ProjectionTypeNameAndEventNameTraceData : TraceEvent
     {
         public string TypeName { get { return GetUnicodeStringAt(0); } }
-        new public string EventName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
+        public new string EventName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
 
         #region Private
         internal ProjectionTypeNameAndEventNameTraceData(Action<ProjectionTypeNameAndEventNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ProjectionTypeNameAndEventNameTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ProjectionTypeNameAndEventNameTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(0))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(0))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "EventName", EventName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "EventName", EventName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2348,7 +2358,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeName", "EventName"};
+                {
+                    payloadNames = new string[] { "TypeName", "EventName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2381,31 +2394,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal SourceLoadUnloadTraceData(Action<SourceLoadUnloadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<SourceLoadUnloadTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<SourceLoadUnloadTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(16, 1))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(16, 1))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SourceID", SourceID);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             XmlAttrib(sb, "SourceFlags", SourceFlags);
-             XmlAttrib(sb, "Url", Url);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SourceID", SourceID);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            XmlAttrib(sb, "SourceFlags", SourceFlags);
+            XmlAttrib(sb, "Url", Url);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2413,7 +2426,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SourceID", "ScriptContextID", "SourceFlags", "Url"};
+                {
+                    payloadNames = new string[] { "SourceID", "ScriptContextID", "SourceFlags", "Url" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2447,28 +2463,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ProjectionIsBoxedInterfaceTraceData(Action<ProjectionIsBoxedInterfaceTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ProjectionIsBoxedInterfaceTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ProjectionIsBoxedInterfaceTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 4));
             Debug.Assert(!(Version > 0 && EventDataLength < 4));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "IsBoxed", IsBoxed);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "IsBoxed", IsBoxed);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2476,7 +2492,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IsBoxed"};
+                {
+                    payloadNames = new string[] { "IsBoxed" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2509,33 +2528,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ParseStartStopTraceData(Action<ParseStartStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ParseStartStopTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ParseStartStopTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(24, 1))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(24, 1))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SourceID", SourceID);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             XmlAttrib(sb, "MethodID", MethodID);
-             XmlAttrib(sb, "ASTSize", ASTSize);
-             XmlAttrib(sb, "IsDeferred", IsDeferred);
-             XmlAttrib(sb, "MethodName", MethodName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SourceID", SourceID);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "ASTSize", ASTSize);
+            XmlAttrib(sb, "IsDeferred", IsDeferred);
+            XmlAttrib(sb, "MethodName", MethodName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2543,7 +2562,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SourceID", "ScriptContextID", "MethodID", "ASTSize", "IsDeferred", "MethodName"};
+                {
+                    payloadNames = new string[] { "SourceID", "ScriptContextID", "MethodID", "ASTSize", "IsDeferred", "MethodName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2586,33 +2608,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal BytecodeGenInfoTraceData(Action<BytecodeGenInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<BytecodeGenInfoTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<BytecodeGenInfoTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(24, 1))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(24, 1))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SourceID", SourceID);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             XmlAttrib(sb, "MethodID", MethodID);
-             XmlAttrib(sb, "BytecodeCount", BytecodeCount);
-             XmlAttrib(sb, "BytecodeSize", BytecodeSize);
-             XmlAttrib(sb, "MethodName", MethodName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SourceID", SourceID);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "BytecodeCount", BytecodeCount);
+            XmlAttrib(sb, "BytecodeSize", BytecodeSize);
+            XmlAttrib(sb, "MethodName", MethodName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2620,7 +2642,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SourceID", "ScriptContextID", "MethodID", "BytecodeCount", "BytecodeSize", "MethodName"};
+                {
+                    payloadNames = new string[] { "SourceID", "ScriptContextID", "MethodID", "BytecodeCount", "BytecodeSize", "MethodName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2658,28 +2683,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal GCPhaseTraceData(Action<GCPhaseTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<GCPhaseTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<GCPhaseTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength < HostOffset(4, 1)));    // Changed by hand to < (we got 5 instead of 4).  
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(4, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "RecyclerID", RecyclerID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "RecyclerID", RecyclerID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2687,7 +2712,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RecyclerID"};
+                {
+                    payloadNames = new string[] { "RecyclerID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2716,29 +2744,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal GCPhaseCollectTraceData(Action<GCPhaseCollectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<GCPhaseCollectTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<GCPhaseCollectTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(8, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(8, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "RecyclerID", RecyclerID);
-             XmlAttrib(sb, "SweptBytes", SweptBytes);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "RecyclerID", RecyclerID);
+            XmlAttrib(sb, "SweptBytes", SweptBytes);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2746,7 +2774,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "RecyclerID", "SweptBytes"};
+                {
+                    payloadNames = new string[] { "RecyclerID", "SweptBytes" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2779,31 +2810,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ProfileSaveTraceData(Action<ProfileSaveTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ProfileSaveTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ProfileSaveTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(20, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(20, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SourceID", SourceID);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "IsSaveOnClose", IsSaveOnClose);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SourceID", SourceID);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "IsSaveOnClose", IsSaveOnClose);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2811,7 +2842,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SourceID", "ScriptContextID", "Size", "IsSaveOnClose"};
+                {
+                    payloadNames = new string[] { "SourceID", "ScriptContextID", "Size", "IsSaveOnClose" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2845,28 +2879,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal StartupCompleteTraceData(Action<StartupCompleteTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<StartupCompleteTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<StartupCompleteTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(4, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(4, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2874,7 +2908,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ScriptContextID"};
+                {
+                    payloadNames = new string[] { "ScriptContextID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2903,29 +2940,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal ProfileLoadTraceData(Action<ProfileLoadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<ProfileLoadTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<ProfileLoadTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(12, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(12, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SourceID", SourceID);
-             XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SourceID", SourceID);
+            XmlAttribHex(sb, "ScriptContextID", ScriptContextID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2933,7 +2970,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SourceID", "ScriptContextID"};
+                {
+                    payloadNames = new string[] { "SourceID", "ScriptContextID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -2966,31 +3006,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal InlineInfoTraceData(Action<InlineInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<InlineInfoTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<InlineInfoTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(8))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(8))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "CallerMethodID", CallerMethodID);
-             XmlAttrib(sb, "InlineeMethodID", InlineeMethodID);
-             XmlAttrib(sb, "Caller", Caller);
-             XmlAttrib(sb, "Inlinee", Inlinee);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "CallerMethodID", CallerMethodID);
+            XmlAttrib(sb, "InlineeMethodID", InlineeMethodID);
+            XmlAttrib(sb, "Caller", Caller);
+            XmlAttrib(sb, "Inlinee", Inlinee);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -2998,7 +3038,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "CallerMethodID", "InlineeMethodID", "Caller", "Inlinee"};
+                {
+                    payloadNames = new string[] { "CallerMethodID", "InlineeMethodID", "Caller", "Inlinee" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3029,43 +3072,43 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         public int MethodID { get { return GetInt32At(0); } }
         public string MethodName { get { return GetUnicodeStringAt(4); } }
         public Address ScriptContext { get { return GetAddressAt(SkipUnicodeString(4)); } }
-        public int InterpretedCount { get { return GetInt32At(HostOffset(SkipUnicodeString(4)+4, 1)); } }
-        public int SourceCodeSize { get { return GetInt32At(HostOffset(SkipUnicodeString(4)+8, 1)); } }
-        public int ByteCodeSize { get { return GetInt32At(HostOffset(SkipUnicodeString(4)+12, 1)); } }
-        public int ByteCodeInLoopSize { get { return GetInt32At(HostOffset(SkipUnicodeString(4)+16, 1)); } }
+        public int InterpretedCount { get { return GetInt32At(HostOffset(SkipUnicodeString(4) + 4, 1)); } }
+        public int SourceCodeSize { get { return GetInt32At(HostOffset(SkipUnicodeString(4) + 8, 1)); } }
+        public int ByteCodeSize { get { return GetInt32At(HostOffset(SkipUnicodeString(4) + 12, 1)); } }
+        public int ByteCodeInLoopSize { get { return GetInt32At(HostOffset(SkipUnicodeString(4) + 16, 1)); } }
 
         #region Private
         internal JitMethodStartTraceData(Action<JitMethodStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JitMethodStartTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JitMethodStartTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(4)+20, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(4)+20, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(4) + 20, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(4) + 20, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "MethodID", MethodID);
-             XmlAttrib(sb, "MethodName", MethodName);
-             XmlAttribHex(sb, "ScriptContext", ScriptContext);
-             XmlAttrib(sb, "InterpretedCount", InterpretedCount);
-             XmlAttrib(sb, "SourceCodeSize", SourceCodeSize);
-             XmlAttrib(sb, "ByteCodeSize", ByteCodeSize);
-             XmlAttrib(sb, "ByteCodeInLoopSize", ByteCodeInLoopSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttribHex(sb, "ScriptContext", ScriptContext);
+            XmlAttrib(sb, "InterpretedCount", InterpretedCount);
+            XmlAttrib(sb, "SourceCodeSize", SourceCodeSize);
+            XmlAttrib(sb, "ByteCodeSize", ByteCodeSize);
+            XmlAttrib(sb, "ByteCodeInLoopSize", ByteCodeInLoopSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3073,7 +3116,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodID", "MethodName", "ScriptContext", "InterpretedCount", "SourceCodeSize", "ByteCodeSize", "ByteCodeInLoopSize"};
+                {
+                    payloadNames = new string[] { "MethodID", "MethodName", "ScriptContext", "InterpretedCount", "SourceCodeSize", "ByteCodeSize", "ByteCodeInLoopSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3110,41 +3156,41 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         public int MethodID { get { return GetInt32At(0); } }
         public string MethodName { get { return GetUnicodeStringAt(4); } }
         public Address ScriptContext { get { return GetAddressAt(SkipUnicodeString(4)); } }
-        public int InterpretedCount { get { return GetInt32At(HostOffset(SkipUnicodeString(4)+4, 1)); } }
-        public Address MethodStartAddress { get { return GetAddressAt(HostOffset(SkipUnicodeString(4)+8, 1)); } }
-        public long MethodSize { get { return GetInt64At(HostOffset(SkipUnicodeString(4)+12, 2)); } }
+        public int InterpretedCount { get { return GetInt32At(HostOffset(SkipUnicodeString(4) + 4, 1)); } }
+        public Address MethodStartAddress { get { return GetAddressAt(HostOffset(SkipUnicodeString(4) + 8, 1)); } }
+        public long MethodSize { get { return GetInt64At(HostOffset(SkipUnicodeString(4) + 12, 2)); } }
 
         #region Private
         internal JitMethodStopTraceData(Action<JitMethodStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JitMethodStopTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JitMethodStopTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(4)+20, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(4)+20, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(4) + 20, 2)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(4) + 20, 2)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "MethodID", MethodID);
-             XmlAttrib(sb, "MethodName", MethodName);
-             XmlAttribHex(sb, "ScriptContext", ScriptContext);
-             XmlAttrib(sb, "InterpretedCount", InterpretedCount);
-             XmlAttribHex(sb, "MethodStartAddress", MethodStartAddress);
-             XmlAttrib(sb, "MethodSize", MethodSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttribHex(sb, "ScriptContext", ScriptContext);
+            XmlAttrib(sb, "InterpretedCount", InterpretedCount);
+            XmlAttribHex(sb, "MethodStartAddress", MethodStartAddress);
+            XmlAttrib(sb, "MethodSize", MethodSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3152,7 +3198,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodID", "MethodName", "ScriptContext", "InterpretedCount", "MethodStartAddress", "MethodSize"};
+                {
+                    payloadNames = new string[] { "MethodID", "MethodName", "ScriptContext", "InterpretedCount", "MethodStartAddress", "MethodSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3187,37 +3236,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         public int MethodID { get { return GetInt32At(0); } }
         public string MethodName { get { return GetUnicodeStringAt(4); } }
         public Address ScriptContext { get { return GetAddressAt(SkipUnicodeString(4)); } }
-        public int InterpretedCount { get { return GetInt32At(HostOffset(SkipUnicodeString(4)+4, 1)); } }
+        public int InterpretedCount { get { return GetInt32At(HostOffset(SkipUnicodeString(4) + 4, 1)); } }
 
         #region Private
         internal JitMethodQueueDequeueTraceData(Action<JitMethodQueueDequeueTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JitMethodQueueDequeueTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JitMethodQueueDequeueTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(4)+8, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(4)+8, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(4) + 8, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(4) + 8, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "MethodID", MethodID);
-             XmlAttrib(sb, "MethodName", MethodName);
-             XmlAttribHex(sb, "ScriptContext", ScriptContext);
-             XmlAttrib(sb, "InterpretedCount", InterpretedCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttribHex(sb, "ScriptContext", ScriptContext);
+            XmlAttrib(sb, "InterpretedCount", InterpretedCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3225,7 +3274,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodID", "MethodName", "ScriptContext", "InterpretedCount"};
+                {
+                    payloadNames = new string[] { "MethodID", "MethodName", "ScriptContext", "InterpretedCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3259,28 +3311,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptSizeInBytesTraceData(Action<JscriptSizeInBytesTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptSizeInBytesTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptSizeInBytesTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 8));
             Debug.Assert(!(Version > 0 && EventDataLength < 8));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "SizeInBytes", SizeInBytes);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "SizeInBytes", SizeInBytes);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3288,7 +3340,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "SizeInBytes"};
+                {
+                    payloadNames = new string[] { "SizeInBytes" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3318,30 +3373,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptRecyclerFreeTraceData(Action<JscriptRecyclerFreeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptRecyclerFreeTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptRecyclerFreeTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             // Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(12, 1))); TODO FIX NOW disabled why wrong?
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(12, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Count", Count);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "Size", Size);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "Size", Size);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3349,7 +3404,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "MemoryAddress", "Size"};
+                {
+                    payloadNames = new string[] { "Count", "MemoryAddress", "Size" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3383,30 +3441,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptRecyclerFreeBlockTraceData(Action<JscriptRecyclerFreeBlockTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptRecyclerFreeBlockTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptRecyclerFreeBlockTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(12, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(12, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "BlockSize", BlockSize);
-             XmlAttrib(sb, "ObjectSize", ObjectSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "BlockSize", BlockSize);
+            XmlAttrib(sb, "ObjectSize", ObjectSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3414,7 +3472,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "BlockSize", "ObjectSize"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "BlockSize", "ObjectSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3446,28 +3507,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptAllocationTraceData(Action<JscriptAllocationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptAllocationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptAllocationTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(4, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(4, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3475,7 +3536,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress"};
+                {
+                    payloadNames = new string[] { "MemoryAddress" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3504,29 +3568,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptAllocateFunctionTraceData(Action<JscriptAllocateFunctionTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptAllocateFunctionTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptAllocateFunctionTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(8, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(8, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "MethodID", MethodID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "MethodID", MethodID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3534,7 +3598,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "MethodID"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "MethodID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3565,29 +3632,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptDOMAllocationTraceData(Action<JscriptDOMAllocationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptDOMAllocationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptDOMAllocationTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(8, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(8, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "TypeId", TypeId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "TypeId", TypeId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3595,7 +3662,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "TypeId"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "TypeId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3626,29 +3696,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JScriptWinRTObjectAllocationTraceData(Action<JScriptWinRTObjectAllocationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JScriptWinRTObjectAllocationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JScriptWinRTObjectAllocationTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(4, 1))));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(4, 1))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "TypeName", TypeName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "TypeName", TypeName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3656,7 +3726,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "TypeName"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "TypeName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3688,30 +3761,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptWinRTWrapperAllocationTraceData(Action<JscriptWinRTWrapperAllocationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptWinRTWrapperAllocationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptWinRTWrapperAllocationTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(HostOffset(4, 1))+4, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(HostOffset(4, 1))+4, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(SkipUnicodeString(HostOffset(4, 1)) + 4, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(SkipUnicodeString(HostOffset(4, 1)) + 4, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttribHex(sb, "jsVar", jsVar);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttribHex(sb, "jsVar", jsVar);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3719,7 +3792,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "TypeName", "jsVar"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "TypeName", "jsVar" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3748,37 +3824,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         public Address MemoryAddress { get { return GetAddressAt(0); } }
         public string TypeName { get { return GetUnicodeStringAt(HostOffset(4, 1)); } }
         public Address callback { get { return GetAddressAt(SkipUnicodeString(HostOffset(4, 1))); } }
-        new public string EventName { get { return GetUnicodeStringAt(HostOffset(SkipUnicodeString(HostOffset(4, 1))+4, 1)); } }
+        public new string EventName { get { return GetUnicodeStringAt(HostOffset(SkipUnicodeString(HostOffset(4, 1)) + 4, 1)); } }
 
         #region Private
         internal JscriptWinRTEventHandlerAllocationTraceData(Action<JscriptWinRTEventHandlerAllocationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptWinRTEventHandlerAllocationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptWinRTEventHandlerAllocationTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(SkipUnicodeString(HostOffset(4, 1))+4, 1))));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(SkipUnicodeString(HostOffset(4, 1))+4, 1))));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(SkipUnicodeString(HostOffset(4, 1)) + 4, 1))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(SkipUnicodeString(HostOffset(4, 1)) + 4, 1))));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttribHex(sb, "callback", callback);
-             XmlAttrib(sb, "EventName", EventName);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttribHex(sb, "callback", callback);
+            XmlAttrib(sb, "EventName", EventName);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3786,7 +3862,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "TypeName", "callback", "EventName"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "TypeName", "callback", "EventName" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3822,30 +3901,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptWinRTPropertyValueAllocationTraceData(Action<JscriptWinRTPropertyValueAllocationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptWinRTPropertyValueAllocationTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptWinRTPropertyValueAllocationTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(4, 1))+4));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(4, 1))+4));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(4, 1)) + 4));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(4, 1)) + 4));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttrib(sb, "IsArray", IsArray);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttrib(sb, "IsArray", IsArray);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3853,7 +3932,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress", "TypeName", "IsArray"};
+                {
+                    payloadNames = new string[] { "MemoryAddress", "TypeName", "IsArray" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3885,28 +3967,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         internal JscriptWinRTWrapperFreeTraceData(Action<JscriptWinRTWrapperFreeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
-         protected internal override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
         protected internal override Delegate Target
         {
-             get { return Action; }
-             set { Action = (Action<JscriptWinRTWrapperFreeTraceData>) value; }
+            get { return Action; }
+            set { Action = (Action<JscriptWinRTWrapperFreeTraceData>)value; }
         }
-         protected internal override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(4, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(4, 1)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "MemoryAddress", MemoryAddress);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -3914,7 +3996,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MemoryAddress"};
+                {
+                    payloadNames = new string[] { "MemoryAddress" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3934,12 +4019,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
         private event Action<JscriptWinRTWrapperFreeTraceData> Action;
         #endregion
     }
-        public enum MethodAddressRange
-        {
-            Interpreted = 0x1,
-            JIT = 0x2,
-            JITLoopBody = 0x3,
-#if false 
+    public enum MethodAddressRange
+    {
+        Interpreted = 0x1,
+        JIT = 0x2,
+        JITLoopBody = 0x3,
+#if false
             JITLoopBody = 0x4,
             JITLoopBody = 0x5,
             JITLoopBody = 0x6,
@@ -3948,6 +4033,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.JScript
             JITLoopBody = 0x9,
             JITLoopBody = 0xA,
 #endif
-        }
+    }
 
 }

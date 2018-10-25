@@ -5,15 +5,13 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
 using System;
-using System.Text;      // For StringBuilder.
-using System.IO;
 using System.Diagnostics;
-using System.Collections.Generic;
-using DeferedStreamLabel = FastSerialization.StreamLabel;
+using System.IO;
+using System.Text;      // For StringBuilder.
 using System.IO.MemoryMappedFiles;
-using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using DeferedStreamLabel = FastSerialization.StreamLabel;
 
 namespace FastSerialization
 {
@@ -48,7 +46,9 @@ namespace FastSerialization
         public void Read(byte[] data, int offset, int length)
         {
             if (length > endPosition - position)
+            {
                 Fill(length);
+            }
 
             Buffer.BlockCopy(bytes, position, data, offset, length);
             position += length;
@@ -59,7 +59,10 @@ namespace FastSerialization
         public byte ReadByte()
         {
             if (position >= endPosition)
+            {
                 Fill(1);
+            }
+
             return bytes[position++];
         }
         /// <summary>
@@ -68,7 +71,10 @@ namespace FastSerialization
         public short ReadInt16()
         {
             if (position + sizeof(short) > endPosition)
+            {
                 Fill(sizeof(short));
+            }
+
             int ret = bytes[position] + (bytes[position + 1] << 8);
             position += sizeof(short);
             return unchecked((short)ret);
@@ -79,7 +85,10 @@ namespace FastSerialization
         public int ReadInt32()
         {
             if (position + sizeof(int) > endPosition)
+            {
                 Fill(sizeof(int));
+            }
+
             int ret = bytes[position] + ((bytes[position + 1] + ((bytes[position + 2] + (bytes[position + 3] << 8)) << 8)) << 8);
             position += sizeof(int);
             return ret;
@@ -106,7 +115,10 @@ namespace FastSerialization
             }
 
             if (sb == null)
+            {
                 sb = new StringBuilder(len);
+            }
+
             sb.Length = 0;
 
             Debug.Assert(len < Length);
@@ -114,7 +126,9 @@ namespace FastSerialization
             {
                 int b = ReadByte();
                 if (b < 0x80)
+                {
                     sb.Append((char)b);
+                }
                 else if (b < 0xE0)
                 {
                     // TODO test this for correctness
@@ -251,7 +265,10 @@ namespace FastSerialization
         public void Write(byte value)
         {
             if (endPosition >= bytes.Length)
+            {
                 MakeSpace();
+            }
+
             bytes[endPosition++] = value;
         }
         /// <summary>
@@ -260,7 +277,9 @@ namespace FastSerialization
         public unsafe void Write(short value)
         {
             if (endPosition + sizeof(short) > bytes.Length)
+            {
                 MakeSpace();
+            }
 
             fixed (byte* data = bytes)
             {
@@ -275,7 +294,9 @@ namespace FastSerialization
         public unsafe void Write(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
+            {
                 MakeSpace();
+            }
 
             fixed (byte* data = bytes)
             {
@@ -290,7 +311,9 @@ namespace FastSerialization
         public unsafe void Write(long value)
         {
             if (endPosition + sizeof(long) > bytes.Length)
+            {
                 MakeSpace();
+            }
 
             fixed (byte* data = bytes)
             {
@@ -322,7 +345,9 @@ namespace FastSerialization
                 {
                     char c = value[i];
                     if (c <= 0x7F)
+                    {
                         Write((byte)value[i]);                 // Only need one byte for UTF8
+                    }
                     else if (c <= 0x7FF)
                     {
                         // TODO confirm that this is correct!
@@ -381,11 +406,17 @@ namespace FastSerialization
 
             // Make sure we don't exceed max possible size
             if (bytes.Length < (maxLength / 3) * 2)
+            {
                 newLength = (bytes.Length / 2) * 3;
+            }
             else if (bytes.Length < maxLength - sizeof(long))      // Write(long) expects Makespace to make at 8 bytes of space.   
+            {
                 newLength = maxLength;                             // If we can do this, use up the last available length 
+            }
             else
+            {
                 throw new OutOfMemoryException();                  // Can't make space anymore
+            }
 
             Debug.Assert(bytes.Length + sizeof(long) <= newLength);
             byte[] newBytes = new byte[newLength];
@@ -577,9 +608,13 @@ namespace FastSerialization
             _leaveOpen = leaveOpen;
 
             if (IntPtr.Size == 4)
+            {
                 _capacity = Math.Min(_fileLength, MemoryMappedFileStreamWriter.BlockCopyCapacity);
+            }
             else
+            {
                 _capacity = _fileLength;
+            }
 
             _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Read);
             _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
@@ -608,7 +643,9 @@ namespace FastSerialization
             {
                 var result = _file;
                 if (result == null)
+                {
                     throw new ObjectDisposedException(nameof(MemoryMappedFileStreamReader));
+                }
 
                 return result;
             }
@@ -623,7 +660,9 @@ namespace FastSerialization
         public void Seek(long offset)
         {
             if (offset < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(offset));
+            }
 
             // see if we can just change the offset
             if (offset >= _viewOffset && offset < _viewOffset + _capacity)
@@ -648,7 +687,9 @@ namespace FastSerialization
         public void Goto(DeferedStreamLabel label)
         {
             if (label < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(label));
+            }
 
             // see if we can just change the offset
             int absoluteOffset = (int)label;
@@ -680,16 +721,29 @@ namespace FastSerialization
         public unsafe void Read(byte[] data, int offset, int length)
         {
             if (data == null)
+            {
                 throw new ArgumentNullException(nameof(data));
+            }
+
             if (offset < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
             if (length < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
             if (length > data.Length - offset)
+            {
                 throw new ArgumentNullException(nameof(length));
+            }
 
             if (_offset + length > _capacity)
+            {
                 Resize(length);
+            }
 
             Marshal.Copy((IntPtr)((byte*)_viewAddress + _offset), data, 0, length);
             _offset += length;
@@ -704,7 +758,9 @@ namespace FastSerialization
             int size = Marshal.SizeOf<T>();
 #endif
             if (_offset + size > _capacity)
+            {
                 Resize(size);
+            }
 
             T result;
 
@@ -729,7 +785,9 @@ namespace FastSerialization
         public unsafe byte ReadByte()
         {
             if (_offset + sizeof(byte) > _capacity)
+            {
                 Resize(sizeof(byte));
+            }
 
             var result = *((byte*)_viewAddress + _offset);
             _offset += sizeof(byte);
@@ -739,7 +797,9 @@ namespace FastSerialization
         public unsafe short ReadInt16()
         {
             if (_offset + sizeof(short) > _capacity)
+            {
                 Resize(sizeof(short));
+            }
 
             var result = *(short*)((byte*)_viewAddress + _offset);
             _offset += sizeof(short);
@@ -749,7 +809,9 @@ namespace FastSerialization
         public unsafe int ReadInt32()
         {
             if (_offset + sizeof(int) > _capacity)
+            {
                 Resize(sizeof(int));
+            }
 
             var result = *(int*)((byte*)_viewAddress + _offset);
             _offset += sizeof(int);
@@ -759,7 +821,9 @@ namespace FastSerialization
         public unsafe long ReadInt64()
         {
             if (_offset + sizeof(long) > _capacity)
+            {
                 Resize(sizeof(long));
+            }
 
             var result = *(long*)((byte*)_viewAddress + _offset);
             _offset += sizeof(long);
@@ -825,7 +889,9 @@ namespace FastSerialization
             // See if we can do nothing
             long available = _capacity - _offset;
             if (available >= capacity)
+            {
                 return;
+            }
 
             // We can no longer use the current view, so go ahead and dispose of it
             _view.Dispose();
@@ -860,7 +926,9 @@ namespace FastSerialization
                 var file = _file;
                 _file = null;
                 if (!_leaveOpen)
+                {
                     file?.Dispose();
+                }
             }
         }
     }
@@ -884,7 +952,9 @@ namespace FastSerialization
         {
             long subPageSize = initialCapacity % PageSize;
             if (subPageSize != 0)
+            {
                 initialCapacity += PageSize - subPageSize;
+            }
 
             _mapName = Guid.NewGuid().ToString("N");
             _file = MemoryMappedFile.CreateNew(_mapName, InitialCapacity);
@@ -907,7 +977,9 @@ namespace FastSerialization
             {
                 var result = _file;
                 if (result == null)
+                {
                     throw new ObjectDisposedException(nameof(MemoryMappedFileStreamWriter));
+                }
 
                 return result;
             }
@@ -921,7 +993,9 @@ namespace FastSerialization
         public void Clear()
         {
             if (_viewOffset == 0 && _offset == 0)
+            {
                 return;
+            }
 
             _view.Dispose();
 
@@ -942,20 +1016,35 @@ namespace FastSerialization
         public void Write(byte[] data, int offset, int length)
         {
             if (data == null)
+            {
                 throw new ArgumentNullException(nameof(data));
+            }
+
             if (offset < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
             if (length < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
             if (length > data.Length - offset)
+            {
                 throw new ArgumentNullException(nameof(length));
+            }
 
             if (_offset + length > _capacity)
+            {
                 Resize(length);
+            }
 
 #if NETSTANDARD1_6
             for (int i = 0; i < length; i++)
+            {
                 _view.Write(_offset + i, data[offset + i]);
+            }
 #else
             _view.WriteArray(_offset, data, offset, length);
 #endif
@@ -965,7 +1054,9 @@ namespace FastSerialization
         public void Write(byte value)
         {
             if (_offset + sizeof(byte) > _capacity)
+            {
                 Resize(sizeof(byte));
+            }
 
             _view.Write(_offset, value);
             _offset += sizeof(byte);
@@ -974,7 +1065,9 @@ namespace FastSerialization
         public void Write(short value)
         {
             if (_offset + sizeof(short) > _capacity)
+            {
                 Resize(sizeof(short));
+            }
 
             _view.Write(_offset, value);
             _offset += sizeof(short);
@@ -983,7 +1076,9 @@ namespace FastSerialization
         public void Write(int value)
         {
             if (_offset + sizeof(int) > _capacity)
+            {
                 Resize(sizeof(int));
+            }
 
             _view.Write(_offset, value);
             _offset += sizeof(int);
@@ -992,7 +1087,9 @@ namespace FastSerialization
         public void Write(long value)
         {
             if (_offset + sizeof(long) > _capacity)
+            {
                 Resize(sizeof(long));
+            }
 
             _view.Write(_offset, value);
             _offset += sizeof(long);
@@ -1056,7 +1153,9 @@ namespace FastSerialization
                     finally
                     {
                         if (pointer != null)
+                        {
                             _view.SafeMemoryMappedViewHandle.ReleasePointer();
+                        }
                     }
                 }
             }
@@ -1074,7 +1173,9 @@ namespace FastSerialization
             // See if we can do nothing
             int available = _capacity - _offset;
             if (available >= capacity)
+            {
                 return;
+            }
 
             // We can no longer use the current view, so go ahead and dispose of it
             _view.Dispose();
@@ -1086,7 +1187,9 @@ namespace FastSerialization
                 long minimumFileSize = _fileCapacity - availableInFile + capacity;
                 long newFileSize = _fileCapacity;
                 while (newFileSize < minimumFileSize)
+                {
                     newFileSize = (newFileSize / 2) * 3;
+                }
 
                 var newMapName = Guid.NewGuid().ToString("N");
                 var newFile = MemoryMappedFile.CreateNew(newMapName, newFileSize);
@@ -1194,7 +1297,9 @@ namespace FastSerialization
                 position = endPosition = 0;
             }
             else
+            {
                 position = (int)offset;
+            }
         }
         /// <summary>
         /// Implementation of MemoryStreamReader
@@ -1211,7 +1316,9 @@ namespace FastSerialization
             if (disposing)
             {
                 if (!leaveOpen)
+                {
                     inputStream.Dispose();
+                }
             }
 
             base.Dispose(disposing);
@@ -1231,7 +1338,10 @@ namespace FastSerialization
             {
                 int slideAmount = position & ~(align - 1);             // round down to stay aligned.  
                 for (int i = slideAmount; i < endPosition; i++)        // Slide everything down.  
+                {
                     bytes[i - slideAmount] = bytes[i];
+                }
+
                 endPosition -= slideAmount;
                 position -= slideAmount;
                 positionInStream += (uint)slideAmount;
@@ -1244,9 +1354,14 @@ namespace FastSerialization
                 // if you are within one read of the end of file, go backward to read the whole block.  
                 uint lastBlock = (uint)(((int)inputStream.Length - bytes.Length + align) & ~(align - 1));
                 if (positionInStream >= lastBlock)
+                {
                     position = (int)(positionInStream - lastBlock);
+                }
                 else
+                {
                     position = (int)positionInStream & (align - 1);
+                }
+
                 positionInStream -= (uint)position;
             }
 
@@ -1259,15 +1374,21 @@ namespace FastSerialization
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
                     int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
                     if (count == 0)
+                    {
                         break;
+                    }
 
                     endPosition += count;
                     if (endPosition == bytes.Length)
+                    {
                         break;
+                    }
                 }
             }
             if (endPosition - position < minimum)
+            {
                 throw new Exception("Read past end of stream.");
+            }
         }
         internal /*protected*/  Stream inputStream;
         private bool leaveOpen;
@@ -1284,7 +1405,7 @@ namespace FastSerialization
 #if STREAMREADER_PUBLIC
     public
 #endif
-    unsafe sealed class PinnedStreamReader : IOStreamStreamReader
+    sealed unsafe class PinnedStreamReader : IOStreamStreamReader
     {
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given file.  You can optionally set the size of the read buffer.  
@@ -1304,7 +1425,9 @@ namespace FastSerialization
             // Pin the array
             pinningHandle = System.Runtime.InteropServices.GCHandle.Alloc(bytes, System.Runtime.InteropServices.GCHandleType.Pinned);
             fixed (byte* bytesAsPtr = &bytes[0])
+            {
                 bufferStart = bytesAsPtr;
+            }
         }
 
         /// <summary>
@@ -1337,10 +1460,15 @@ namespace FastSerialization
         public unsafe byte* GetPointer(int length)
         {
             if (position + length > endPosition)
+            {
                 Fill(length);
+            }
 #if DEBUG
             fixed (byte* bytesAsPtr = &bytes[0])
+            {
                 Debug.Assert(bytesAsPtr == bufferStart, "Error, buffer not pinnned");
+            }
+
             Debug.Assert(position < bytes.Length);
 #endif
             return (byte*)(&bufferStart[position]);
@@ -1349,18 +1477,21 @@ namespace FastSerialization
         #region private
         ~PinnedStreamReader()
         {
-            this.Dispose(false);
+            Dispose(false);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (pinningHandle.IsAllocated)
+            {
                 pinningHandle.Free();
+            }
+
             base.Dispose(disposing);
         }
 
         private System.Runtime.InteropServices.GCHandle pinningHandle;
-        byte* bufferStart;
+        private byte* bufferStart;
         #endregion
     }
 
@@ -1512,7 +1643,10 @@ namespace FastSerialization
         {
             long len = Length;
             if (len != (uint)len)
+            {
                 throw new NotSupportedException("Streams larger than 4 GB.  You need to use /MaxEventCount to limit the size.");
+            }
+
             return (StreamLabel)len;
         }
         /// <summary>
@@ -1550,15 +1684,17 @@ namespace FastSerialization
             {
                 Flush();
                 if (!leaveOpen)
+                {
                     outputStream.Dispose();
+                }
             }
             base.Dispose(disposing);
         }
 
-        const int defaultBufferSize = 1024 * 8 - sizeof(long);
-        Stream outputStream;
-        bool leaveOpen;
-        long streamLength;
+        private const int defaultBufferSize = 1024 * 8 - sizeof(long);
+        private Stream outputStream;
+        private bool leaveOpen;
+        private long streamLength;
 
         #endregion
     }

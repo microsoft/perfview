@@ -1,7 +1,6 @@
 using System;
-using System.Text;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ETLStackBrowse
 {
@@ -47,14 +46,14 @@ namespace ETLStackBrowse
 
         public StackResult ComputeStacksRaw()
         {
-            IStackParameters parms = this.Parameters.StackParameters;
+            IStackParameters parms = Parameters.StackParameters;
             var computer = new TreeComputer();
             return computer.ComputeStacks(this, parms);
         }
 
         public StackResult StackStream(Action<Frame, TreeComputer, long, ulong> callback)
         {
-            IStackParameters parms = this.Parameters.StackParameters;
+            IStackParameters parms = Parameters.StackParameters;
             var computer = new TreeComputer();
             computer.callback = callback;
             return computer.ComputeStacks(this, parms);        // This will call back on each sample. 
@@ -68,7 +67,7 @@ namespace ETLStackBrowse
 
         public class TreeComputer
         {
-            struct FrameState
+            private struct FrameState
             {
                 public Frame root;
                 public long time;
@@ -78,69 +77,68 @@ namespace ETLStackBrowse
                 public int eventId;
             }
 
-            enum FrameFilterType
+            private enum FrameFilterType
             {
                 NonePresent = 0,
                 AllPresent = 1,
                 AnyPresent = 2,
             }
 
-            const int fldStackThreadId = 2;  // the index of the threadid field in stack records (fixed)
-            const int fldStackSymbol = 5;   // the index of the symbol in stack records (fixed)
+            private const int fldStackThreadId = 2;  // the index of the threadid field in stack records (fixed)
+            private const int fldStackSymbol = 5;   // the index of the symbol in stack records (fixed)
 
-            byte[][] byThreadDesc = null;
+            private byte[][] byThreadDesc = null;
 
             internal Action<Frame, TreeComputer, long, ulong> callback = null;
-            int cStitchedStacks = 0;
+            private int cStitchedStacks = 0;
             public ByteAtomTable atomsNodeNames = new ByteAtomTable();
-            List<TreeNode> rollupStats = new List<TreeNode>();
-            TreeNode treeRoot;
-            Dictionary<int, List<int>> lastKnownThreadFrames = new Dictionary<int, List<int>>();
-            List<FrameFilterType> filterRequiredState = new List<FrameFilterType>();
-            FrameState[] frameStates = null;
-            IStackParameters parms = null;
-            ByteAtomTable atomsRecords = null;
-            ByteAtomTable atomsFields = null;
-            RecordInfo[] recordInfo;
-            List<List<int>> listEventFields = null;
-            List<ThreadInfo> threads = null;
-            bool[] stackIgnoreEvents = null;
-            ETLTrace trace = null;
+            private List<TreeNode> rollupStats = new List<TreeNode>();
+            private TreeNode treeRoot;
+            private Dictionary<int, List<int>> lastKnownThreadFrames = new Dictionary<int, List<int>>();
+            private List<FrameFilterType> filterRequiredState = new List<FrameFilterType>();
+            private FrameState[] frameStates = null;
+            private IStackParameters parms = null;
+            private ByteAtomTable atomsRecords = null;
+            private ByteAtomTable atomsFields = null;
+            private RecordInfo[] recordInfo;
+            private List<List<int>> listEventFields = null;
+            private List<ThreadInfo> threads = null;
+            private bool[] stackIgnoreEvents = null;
+            private ETLTrace trace = null;
             public Dictionary<string, string> fullModuleNames = new Dictionary<string, string>();  // Maps short module names to full path
 
-            int idPivot;
-            long t0, t1;
-            bool fUseExeFrame = true;
-            bool fUsePid = true;
-            bool fUseTid = true;
-            bool fFoldModules = false;
-            bool fUseRootAI = false;
-            bool fUseIODuration = false;
-            bool fReserved = true;
-            bool fUnmangleBartok = false;
-            bool fElideGenerics = false;
-
-            string frameFilters = "";
-            string butterflyPivot = "";
+            private int idPivot;
+            private long t0, t1;
+            private bool fUseExeFrame = true;
+            private bool fUsePid = true;
+            private bool fUseTid = true;
+            private bool fFoldModules = false;
+            private bool fUseRootAI = false;
+            private bool fUseIODuration = false;
+            private bool fReserved = true;
+            private bool fUnmangleBartok = false;
+            private bool fElideGenerics = false;
+            private string frameFilters = "";
+            private string butterflyPivot = "";
 
             // some interesting record id's
-            int idFileIoOpEnd, idDiskRead, idDiskReadInit, idDiskWrite, idDiskWriteInit;
-            int idDPC, idStack, idVAlloc, idVFree, idCSwitch, idIStart, idIDCStart, idIEnd;
-
-            ByteWindow bsym = new ByteWindow();
-
-            int[] backpatchRecordType = null;
+            private int idFileIoOpEnd, idDiskRead, idDiskReadInit, idDiskWrite, idDiskWriteInit;
+            private int idDPC, idStack, idVAlloc, idVFree, idCSwitch, idIStart, idIDCStart, idIEnd;
+            private ByteWindow bsym = new ByteWindow();
+            private int[] backpatchRecordType = null;
 
             public StackResult ComputeStacks(ETLTrace trace, IStackParameters parms)
             {
                 this.parms = parms;
                 this.trace = trace;
 
-                this.t0 = trace.Parameters.T0;
-                this.t1 = trace.Parameters.T1;
+                t0 = trace.Parameters.T0;
+                t1 = trace.Parameters.T1;
 
                 if (t0 == t1)
+                {
                     t1 = t0 + 1; // just add 1ms to get a non-zero window
+                }
 
                 atomsRecords = trace.atomsRecords;
                 atomsFields = trace.atomsFields;
@@ -199,7 +197,9 @@ namespace ETLStackBrowse
                 }
 
                 for (int i = 0; i < stats.Length; i++)
+                {
                     stats[i].time = t0;
+                }
 
                 // we keep previous events in the event stream so that
                 // we can associate a stack with one of those events
@@ -225,7 +225,9 @@ namespace ETLStackBrowse
                 int victim = 0;
 
                 for (int i = 0; i < maxPendingStacks; i++)
+                {
                     frameStates[i].threadId = -1;
+                }
 
                 bool[] threadFilters = trace.Parameters.GetThreadFilters();
                 bool[] filters = ComputeStackEventFilters(trace);
@@ -239,14 +241,18 @@ namespace ETLStackBrowse
                 {
                     // if this is an event that we don't recognized then skip it
                     if (l.idType < 0)
+                    {
                         continue;
+                    }
 
                     // if it's not a stack event then this might be an event that is introducing a stack
                     // so record the event and the time in the circular buffer in that case
                     if (l.idType != idStack)
                     {
                         if (stackIgnoreEvents[l.idType])
+                        {
                             continue;
+                        }
 
                         if (l.idType == idIStart || l.idType == idIDCStart)
                         {
@@ -271,7 +277,9 @@ namespace ETLStackBrowse
 
                         // this is where we use DiskRead, DiskWrite, and FileIoOpEnd events to patch the past
                         if (TryChangeWeightOfPastEvent(l, b))
+                        {
                             continue;
+                        }
 
                         prev[iNextEvent].time = l.t;
 
@@ -322,16 +330,24 @@ namespace ETLStackBrowse
                                 if (l.idType == idVAlloc)
                                 {
                                     if (fReserved)
+                                    {
                                         size = memEffect.reserved;
+                                    }
                                     else
+                                    {
                                         size = memEffect.committed;
+                                    }
                                 }
                                 else
                                 {
                                     if (fReserved)
+                                    {
                                         size = memEffect.released;
+                                    }
                                     else
+                                    {
                                         size = memEffect.decommitted;
+                                    }
                                 }
 
                                 // this allocation didn't affect the statistic of interest... ignore it
@@ -358,7 +374,9 @@ namespace ETLStackBrowse
                             {
                                 // get IO Size if appropriate
                                 if (!fUseIODuration)
+                                {
                                     prev[iNextEvent].weight = (ulong)b.GetLong(recordInfo[l.idType].sizeField);
+                                }
                             }
 
                             // add the synthetic filename field if there is one in the leaf record type
@@ -368,7 +386,9 @@ namespace ETLStackBrowse
                                 prev[iNextEvent].filenameId = atomsNodeNames.EnsureContains(bsym);
                             }
                             else
+                            {
                                 prev[iNextEvent].filenameId = -1;
+                            }
                         }
 
                         iNextEvent = (iNextEvent + 1) % maxEvent;
@@ -384,7 +404,9 @@ namespace ETLStackBrowse
                     int idx = trace.FindThreadInfoIndex(l.t, threadId);
 
                     if (!threadFilters[idx])
+                    {
                         continue;
+                    }
 
                     // we care about this thread, look up the state this thread is in
                     // do we have a pending stack already
@@ -393,7 +415,9 @@ namespace ETLStackBrowse
                     for (iStack = 0; iStack < maxPendingStacks; iStack++)
                     {
                         if (frameStates[iStack].threadId == threadId && frameStates[iStack].time == l.t)
+                        {
                             break;
+                        }
                     }
 
                     // this is a new stack, not a continuation, so we may have to flush
@@ -408,7 +432,9 @@ namespace ETLStackBrowse
                         for (; ; )
                         {
                             if (--i < 0)
+                            {
                                 i = maxEvent - 1;
+                            }
 
                             // if the time matches and this is a desired event type then many we can use it
                             if (prev[i].time == l.t && prev[i].eventId >= 0 && filters[prev[i].eventId])
@@ -416,10 +442,14 @@ namespace ETLStackBrowse
                                 // the previous event has to be non-thread-specific (like VirtualAlloc)
                                 // or else the thread has to match (for context switches)
                                 if (prev[i].tid == -1)
+                                {
                                     break;
+                                }
 
                                 if (prev[i].tid == threadId)
+                                {
                                     break;
+                                }
                             }
 
                             if (i == iNextEvent)
@@ -434,17 +464,23 @@ namespace ETLStackBrowse
                         // then we skip this stack entirely
 
                         if (!fFound)
+                        {
                             continue;
+                        }
 
                         victim++;
                         if (victim == maxPendingStacks)
+                        {
                             victim = 0;
+                        }
 
                         // ok we're going with this stack, so we have to flush a stack we've been building up (it's done by now)
                         // because only one stack can be pending for any given CPU at any time index
 
                         if (frameStates[victim].root != null)
+                        {
                             ProcessFrames(treeRoot, victim);
+                        }
 
                         frameStates[victim].root = null;
                         frameStates[victim].threadId = threadId;
@@ -462,10 +498,14 @@ namespace ETLStackBrowse
                     bsym.Assign(b, fldStackSymbol).Trim();
 
                     if (fElideGenerics || fUnmangleBartok)
+                    {
                         PostProcessSymbol(bsym);
+                    }
 
                     if (fFoldModules)
+                    {
                         bsym.Truncate((byte)'!');
+                    }
 
                     int id = atomsNodeNames.EnsureContains(bsym);
 
@@ -482,7 +522,9 @@ namespace ETLStackBrowse
                 for (int i = 0; i < maxPendingStacks; i++)
                 {
                     if (frameStates[i].root != null)
+                    {
                         ProcessFrames(treeRoot, i);
+                    }
                 }
 
                 frameStates = null;
@@ -502,7 +544,7 @@ namespace ETLStackBrowse
                 return result;
             }
 
-            static byte[] unescaped = new byte[40960];
+            private static byte[] unescaped = new byte[40960];
 
             private void PostProcessSymbol(ByteWindow bsym)
             {
@@ -525,25 +567,49 @@ namespace ETLStackBrowse
                         switch ((char)buf[ib + 1])
                         {
                             case 'L':
-                                if (skip == 0) unescaped[c2++] = (byte)'<';
-                                if (fElideGenerics) skip++;
+                                if (skip == 0)
+                                {
+                                    unescaped[c2++] = (byte)'<';
+                                }
+
+                                if (fElideGenerics)
+                                {
+                                    skip++;
+                                }
+
                                 ib++;
                                 break;
 
                             case 'G':
-                                if (fElideGenerics) skip--;
+                                if (fElideGenerics)
+                                {
+                                    skip--;
+                                }
+
                                 ib++;
-                                if (skip == 0) unescaped[c2++] = (byte)'>';
+                                if (skip == 0)
+                                {
+                                    unescaped[c2++] = (byte)'>';
+                                }
+
                                 break;
 
                             case 'S':
                                 ib++;
-                                if (skip == 0) unescaped[c2++] = (byte)'-';
+                                if (skip == 0)
+                                {
+                                    unescaped[c2++] = (byte)'-';
+                                }
+
                                 break;
 
                             case '_':
                                 ib++;
-                                if (skip == 0) unescaped[c2++] = (byte)'_';
+                                if (skip == 0)
+                                {
+                                    unescaped[c2++] = (byte)'_';
+                                }
+
                                 break;
 
                             case '0':
@@ -567,12 +633,19 @@ namespace ETLStackBrowse
                                         t += by - 'A' + 10;
                                     }
                                 }
-                                if (skip == 0) unescaped[c2++] = (byte)t;
+                                if (skip == 0)
+                                {
+                                    unescaped[c2++] = (byte)t;
+                                }
+
                                 break;
 
                             case 'A':
                                 while (buf[++ib] != ':')
+                                {
                                     continue;
+                                }
+
                                 ib++;
                                 break;
 
@@ -584,7 +657,9 @@ namespace ETLStackBrowse
                     }
 
                     if (by == (byte)'>' && fElideGenerics)
+                    {
                         skip--;
+                    }
 
                     if (skip == 0)
                     {
@@ -592,8 +667,9 @@ namespace ETLStackBrowse
                     }
 
                     if (by == (byte)'<' && fElideGenerics)
+                    {
                         skip++;
-
+                    }
                 }
 
                 bsym.buffer = unescaped;
@@ -630,11 +706,17 @@ namespace ETLStackBrowse
             private static bool ByteArrayStartsWith(byte[] main, byte[] prefix)
             {
                 if (main.Length < prefix.Length)
+                {
                     return false;
+                }
 
                 for (int i = 0; i < prefix.Length; i++)
+                {
                     if (main[i] != prefix[i])
+                    {
                         return false;
+                    }
+                }
 
                 return true;
             }
@@ -654,19 +736,27 @@ namespace ETLStackBrowse
 
                     // don't backpatch anything that we aren't analyzing
                     if (!filters[i])
+                    {
                         continue;
+                    }
 
                     byte[] byRecordName = atomsRecords.GetBytes(i);
 
                     if (ByteArrayStartsWith(byRecordName, byFileIo))
+                    {
                         backpatchRecordType[i] = idFileIoOpEnd;
+                    }
                 }
 
                 if (idDiskReadInit >= 0 && filters[idDiskReadInit])
+                {
                     backpatchRecordType[idDiskReadInit] = idDiskRead;
+                }
 
                 if (idDiskWriteInit >= 0 && filters[idDiskWriteInit])
+                {
                     backpatchRecordType[idDiskWriteInit] = idDiskWrite;
+                }
             }
 
             private bool TryChangeWeightOfPastEvent(ETWLineReader l, ByteWindow b)
@@ -688,7 +778,9 @@ namespace ETLStackBrowse
                     long cost = elapsed;
 
                     if (!fUseIODuration)
+                    {
                         cost = b.GetLong(recordInfo[l.idType].sizeField);
+                    }
 
                     for (int i = 0; i < frameStates.Length; i++)
                     {
@@ -745,7 +837,9 @@ namespace ETLStackBrowse
             {
 
                 if (frameFilters == null)
+                {
                     frameFilters = "";
+                }
 
                 if (butterflyPivot.Length > 0)
                 {
@@ -767,7 +861,9 @@ namespace ETLStackBrowse
                         ByteWindow by = new ByteWindow(sym);
 
                         if (atomsNodeNames.Lookup(by) >= 0)
+                        {
                             continue;
+                        }
 
                         atomsNodeNames.EnsureContains(by);
                         filterRequiredState.Add(FrameFilterType.AllPresent);
@@ -779,7 +875,9 @@ namespace ETLStackBrowse
                         ByteWindow by = new ByteWindow(sym);
 
                         if (atomsNodeNames.Lookup(by) >= 0)
+                        {
                             continue;
+                        }
 
                         atomsNodeNames.EnsureContains(by);
                         filterRequiredState.Add(FrameFilterType.NonePresent);
@@ -790,7 +888,9 @@ namespace ETLStackBrowse
                         ByteWindow by = new ByteWindow(sym);
 
                         if (atomsNodeNames.Lookup(by) >= 0)
+                        {
                             continue;
+                        }
 
                         atomsNodeNames.EnsureContains(by);
                         filterRequiredState.Add(FrameFilterType.AnyPresent);
@@ -846,8 +946,12 @@ namespace ETLStackBrowse
 
                             int i = 0;
                             for (i = 0; i < lastKnownFrames.Count; i++)
+                            {
                                 if (lastKnownFrames[i] == frameRoot.id)
+                                {
                                     break;
+                                }
+                            }
 
                             if (i < lastKnownFrames.Count)
                             {
@@ -866,7 +970,9 @@ namespace ETLStackBrowse
 
                             }
                             else
+                            {
                                 i = 0; // we're keeping nothing, we have at least 20 good new frames
+                            }
 
                             lastKnownFrames.RemoveRange(i, lastKnownFrames.Count - i);
                             Frame fr = frameRootOriginal;
@@ -932,7 +1038,9 @@ namespace ETLStackBrowse
                     while (fr != null)
                     {
                         if (fr.id < found.Length)
+                        {
                             found[fr.id] = true;
+                        }
 
                         fr = fr.next;
                     }
@@ -946,24 +1054,35 @@ namespace ETLStackBrowse
                         {
                             case FrameFilterType.NonePresent:
                                 if (found[i])
+                                {
                                     return;
+                                }
+
                                 break;
 
                             case FrameFilterType.AllPresent:
                                 if (!found[i])
+                                {
                                     return;
+                                }
+
                                 break;
 
                             case FrameFilterType.AnyPresent:
                                 anyRequired = true;
                                 if (found[i])
+                                {
                                     anyPresent = true;
+                                }
+
                                 break;
                         }
                     }
 
                     if (anyRequired != anyPresent)
+                    {
                         return;
+                    }
                 }
 
                 // If all we are asked do to is get a stream of samples, then send it out and we are done.  
@@ -1008,11 +1127,15 @@ namespace ETLStackBrowse
                 {
                     Frame fr = frameRoot;
                     while (fr != null && fr.id != idPivot)
+                    {
                         fr = fr.next;
+                    }
 
                     // skip this stack, it doesn't contribute
                     if (fr == null)
+                    {
                         return;
+                    }
 
                     Frame frRev = frameRoot;
                     Frame frPrev = null;
@@ -1043,17 +1166,23 @@ namespace ETLStackBrowse
             private void ProcessOrderedFrames(TreeNode treeRoot, Frame frameRoot, long time, ulong weight)
             {
                 if (frameRoot == null)
+                {
                     return;
+                }
 
                 TreeNode tr = treeRoot;
                 tr.inclusive++;
                 tr.weight += weight;
 
                 if (time < tr.timeFirst)
+                {
                     tr.timeFirst = time;
+                }
 
                 if (time > tr.timeLast)
+                {
                     tr.timeLast = time;
+                }
 
                 UInt32 bit = (UInt32)(((time - t0) * 32 / (t1 - t0)));
                 UInt32 mask = (((UInt32)1) << (int)bit);
@@ -1076,14 +1205,18 @@ namespace ETLStackBrowse
                     ch.id = frameRoot.id;
                     tr.children.Add(ch);
 
-                process:
+                    process:
                     ch.mask |= mask;
 
                     if (time < ch.timeFirst)
+                    {
                         ch.timeFirst = time;
+                    }
 
                     if (time > ch.timeLast)
+                    {
                         ch.timeLast = time;
+                    }
 
                     if (frameRoot.next != null)
                     {
@@ -1104,34 +1237,29 @@ namespace ETLStackBrowse
             }
         }
 
-        class TreeDumper
+        private class TreeDumper
         {
-            const int maxStackSize = 1024;
-            char[] stackLevelChars = new char[maxStackSize];
-            int idOther;
-            int cStitchedStacks = 0;
-
-            ulong totalweight = 0;
-            int totalsamples = 0;
-
-            ByteAtomTable atomsNodeNames = null;
-            ByteAtomTable atomsRecords = null;
-            IStackParameters parms = null;
-            StackResult result = null;
-            StringWriter sw = null;
+            private const int maxStackSize = 1024;
+            private char[] stackLevelChars = new char[maxStackSize];
+            private int idOther;
+            private int cStitchedStacks = 0;
+            private ulong totalweight = 0;
+            private int totalsamples = 0;
+            private ByteAtomTable atomsNodeNames = null;
+            private ByteAtomTable atomsRecords = null;
+            private IStackParameters parms = null;
+            private StackResult result = null;
+            private StringWriter sw = null;
 
             // this is to capture the 'magic' points in the stack with new interesting masks
             // and signficant cost
-            Dictionary<int, bool> idsMagic = new Dictionary<int, bool>();
-            Dictionary<uint, int> masksMagic = new Dictionary<uint, int>();
-
-            bool fSkipThunks = true;
-            bool fShowWhen = false;
-            bool fIndentLess = false;
-
-            double minIncl = 2.0;
-
-            bool[] stackTypes = null;
+            private Dictionary<int, bool> idsMagic = new Dictionary<int, bool>();
+            private Dictionary<uint, int> masksMagic = new Dictionary<uint, int>();
+            private bool fSkipThunks = true;
+            private bool fShowWhen = false;
+            private bool fIndentLess = false;
+            private double minIncl = 2.0;
+            private bool[] stackTypes = null;
 
             public string DumpStacks(ETLTrace trace, StackResult result)
             {
@@ -1145,7 +1273,7 @@ namespace ETLStackBrowse
                 totalsamples = result.treeRoot.inclusive;
 
                 this.result = result;
-                this.parms = result.parms;
+                parms = result.parms;
 
                 fSkipThunks = parms.SkipThunks;
                 fShowWhen = parms.ShowWhen;
@@ -1218,9 +1346,14 @@ namespace ETLStackBrowse
                 if ((idVAlloc >= 0 && result.stackFilters[idVAlloc]) || (idVFree >= 0 && result.stackFilters[idVFree]))
                 {
                     if (parms.AnalyzeReservedMemory)
+                    {
                         sw.WriteLine("Memory costs were based on RESERVED memory");
+                    }
                     else
+                    {
                         sw.WriteLine("Memory costs were based on COMMITTED memory");
+                    }
+
                     sw.WriteLine("");
                 }
 
@@ -1232,7 +1365,9 @@ namespace ETLStackBrowse
                 idOther = atomsNodeNames.EnsureContains(ByteWindow.MakeBytes("Other"));
 
                 for (int i = 0; i < stackLevelChars.Length; i++)
+                {
                     stackLevelChars[i] = ' ';
+                }
 
                 if (totalsamples > 0)
                 {
@@ -1277,14 +1412,16 @@ namespace ETLStackBrowse
                 sw.WriteLine("------");
             }
 
-            void DumpTree(TreeNode current, TreeNode parent, int indent, bool fLastChild, int chainCount)
+            private void DumpTree(TreeNode current, TreeNode parent, int indent, bool fLastChild, int chainCount)
             {
                 if (!fIndentLess)
+                {
                     chainCount = 0;
+                }
 
                 bool fSkipped = false;
 
-            top:
+                top:
 
                 if (fSkipThunks && parent != null)
                 {
@@ -1318,17 +1455,23 @@ namespace ETLStackBrowse
                         othernode.weight += ch.weight;
 
                         if (othernode.timeFirst > ch.timeFirst)
+                        {
                             othernode.timeFirst = ch.timeFirst;
+                        }
 
                         if (ch.timeLast > othernode.timeLast)
+                        {
                             othernode.timeLast = ch.timeLast;
+                        }
 
                         othernode.mask |= ch.mask;
                     }
                 }
 
                 if (IncludeNode(othernode))
+                {
                     effectiveChildren++;
+                }
 
                 // abort the chain if this would have been the first guy to use => notation
                 // and he's also the last guy to use that notation
@@ -1345,26 +1488,40 @@ namespace ETLStackBrowse
                 WriteTreeNode(current, indent, fLastChild, fSkipped, chainCount);
 
                 if (fSkipped && chainCount <= 2)
+                {
                     indent += 3;
+                }
 
                 if (effectiveChildren > 1 && chainCount > 2)
+                {
                     indent += 3;
+                }
 
                 if (effectiveChildren == 1)
+                {
                     chainCount++;
+                }
                 else
+                {
                     chainCount = 0;
+                }
 
                 if (effectiveChildren > 1)
+                {
                     stackLevelChars[indent] = '|';
+                }
                 else
+                {
                     stackLevelChars[indent] = ' ';
+                }
 
                 int indentNew = indent;
 
                 // keep indenting until we get 2 singleton children in a row, then enconomize indenting
                 if (chainCount <= 2)
+                {
                     indentNew++;
+                }
 
                 int currentChild = 0;
 
@@ -1389,9 +1546,13 @@ namespace ETLStackBrowse
             private bool IncludeNode(TreeNode ch)
             {
                 if (totalweight == 0)
+                {
                     return ch.inclusive > 0 && ch.inclusive / (double)totalsamples >= minIncl;
+                }
                 else
+                {
                     return ch.weight > 0 && ch.weight / (double)totalweight >= minIncl;
+                }
             }
 
             private void WriteTreeNode(TreeNode current, int indent, bool fLastChild, bool fSkipped, int chainCount)
@@ -1403,9 +1564,13 @@ namespace ETLStackBrowse
                 for (int i = 0; i < 32; i++)
                 {
                     if ((current.mask & (1 << i)) != 0)
+                    {
                         maskbuff[i] = 'X';
+                    }
                     else
+                    {
                         maskbuff[i] = '_';
+                    }
                 }
 
                 sw.Write(" {0,6} {1,6} {2,6}% {3,6}%",
@@ -1430,21 +1595,33 @@ namespace ETLStackBrowse
                 }
 
                 if (indent > 0 && idsMagic.ContainsKey(current.id))
+                {
                     sw.Write(" * ");
+                }
                 else
+                {
                     sw.Write("   ");
+                }
 
                 for (int i = 0; i < indent; i++)
+                {
                     sw.Write(stackLevelChars[i]);
+                }
 
                 if (fLastChild)
+                {
                     stackLevelChars[indent - 1] = ' ';
+                }
 
                 if (chainCount > 2)
+                {
                     sw.Write("=> ");
+                }
 
                 if (fSkipped)
+                {
                     sw.Write("...");
+                }
 
                 sw.WriteLine(s);
             }
@@ -1458,32 +1635,48 @@ namespace ETLStackBrowse
                     double inc = 0;
 
                     if (totalweight == 0)
+                    {
                         inc = current.inclusive / (double)totalsamples;
+                    }
                     else
+                    {
                         inc = current.weight / (double)totalweight;
+                    }
 
                     if (inc > .70)
+                    {
                         continue;
+                    }
 
                     if (masksMagic.ContainsKey(current.mask))
+                    {
                         continue;
+                    }
 
                     string name = atomsNodeNames.MakeString(current.id);
 
                     if (name.StartsWith("Unknown!"))
+                    {
                         continue;
+                    }
 
                     if (name.EndsWith("IL_STUB"))
+                    {
                         continue;
+                    }
 
                     if (name.Contains("!0x"))
+                    {
                         continue;
+                    }
 
                     masksMagic.Add(current.mask, current.id);
                     idsMagic.Add(current.id, true);
 
                     if (idsMagic.Count >= 20)
+                    {
                         break;
+                    }
                 }
             }
 
@@ -1504,12 +1697,18 @@ namespace ETLStackBrowse
                     double inc = 0;
 
                     if (totalweight == 0)
+                    {
                         inc = current.inclusive / (double)totalsamples;
+                    }
                     else
+                    {
                         inc = current.weight / (double)totalweight;
+                    }
 
                     if (inc < minIncl)
+                    {
                         break;
+                    }
 
                     WriteTreeNode(current, 0, false, false, 0);
                 }
@@ -1524,7 +1723,9 @@ namespace ETLStackBrowse
                 foreach (TreeNode current in result.rollupStats)
                 {
                     if (!idsMagic.ContainsKey(current.id))
+                    {
                         continue;
+                    }
 
                     WriteTreeNode(current, 0, false, false, 0);
                 }
@@ -1543,10 +1744,14 @@ namespace ETLStackBrowse
                 foreach (TreeNode current in result.rollupStats)
                 {
                     if (count++ > 20)
+                    {
                         break;
+                    }
 
                     if (current.exclusive == 0)
+                    {
                         break;
+                    }
 
                     WriteTreeNode(current, 0, false, false, 0);
                 }
@@ -1555,23 +1760,33 @@ namespace ETLStackBrowse
             private void SortStatsExclusive()
             {
                 if (totalweight == 0)
+                {
                     result.rollupStats.Sort(
                         (TreeNode t1, TreeNode t2) =>
                         {
                             if (t1.exclusive < t2.exclusive)
+                            {
                                 return 1;
+                            }
 
                             if (t1.exclusive > t2.exclusive)
+                            {
                                 return -1;
+                            }
 
                             if (t1.id > t2.id)
+                            {
                                 return 1;
+                            }
 
                             if (t1.id < t2.id)
+                            {
                                 return -1;
+                            }
 
                             return 0;
                         });
+                }
                 else
                 {
                     result.rollupStats.Sort(
@@ -1581,28 +1796,44 @@ namespace ETLStackBrowse
                             bool e2 = t2.exclusive > 0;
 
                             if (!e1 && e2)
+                            {
                                 return 1;
+                            }
 
                             if (e1 && !e2)
+                            {
                                 return -1;
+                            }
 
                             if (t1.weight < t2.weight)
+                            {
                                 return 1;
+                            }
 
                             if (t1.weight > t2.weight)
+                            {
                                 return -1;
+                            }
 
                             if (t1.exclusive < t2.exclusive)
+                            {
                                 return 1;
+                            }
 
                             if (t1.exclusive > t2.exclusive)
+                            {
                                 return -1;
+                            }
 
                             if (t1.id > t2.id)
+                            {
                                 return 1;
+                            }
 
                             if (t1.id < t2.id)
+                            {
                                 return -1;
+                            }
 
                             return 0;
                         });
@@ -1613,39 +1844,57 @@ namespace ETLStackBrowse
             private void SortStatsInclusive()
             {
                 if (totalweight == 0)
+                {
                     result.rollupStats.Sort(
                         (TreeNode t1, TreeNode t2) =>
                         {
                             if (t1.inclusive < t2.inclusive)
+                            {
                                 return 1;
+                            }
 
                             if (t1.inclusive > t2.inclusive)
+                            {
                                 return -1;
+                            }
 
                             if (t1.id > t2.id)
+                            {
                                 return 1;
+                            }
 
                             if (t1.id < t2.id)
+                            {
                                 return -1;
+                            }
 
                             return 0;
                         });
+                }
                 else
                 {
                     result.rollupStats.Sort(
                         (TreeNode t1, TreeNode t2) =>
                         {
                             if (t1.weight < t2.weight)
+                            {
                                 return 1;
+                            }
 
                             if (t1.weight > t2.weight)
+                            {
                                 return -1;
+                            }
 
                             if (t1.id > t2.id)
+                            {
                                 return 1;
+                            }
 
                             if (t1.id < t2.id)
+                            {
                                 return -1;
+                            }
 
                             return 0;
                         });

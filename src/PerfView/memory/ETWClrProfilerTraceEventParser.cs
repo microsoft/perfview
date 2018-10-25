@@ -1,8 +1,6 @@
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -14,10 +12,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
-    public sealed class ETWClrProfilerTraceEventParser : TraceEventParser 
+    public sealed class ETWClrProfilerTraceEventParser : TraceEventParser
     {
         public static string ProviderName = "ETWClrProfiler";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0x6652970f), unchecked((short) 0x1756), unchecked((short) 0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x84);
+        public static Guid ProviderGuid = new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x84);
         public enum Keywords : long
         {
             GC = 0x1,
@@ -26,10 +24,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             GCAllocSampled = 0x8,
             Call = 0x10,
             CallSampled = 0x20,
+            DisableInlining = 0x40,
             Detach = 0x800000000000,
         };
 
-        public ETWClrProfilerTraceEventParser(TraceEventSource source) : base(source) {}
+        public ETWClrProfilerTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<CallEnterArgs> CallEnter
         {
@@ -246,79 +245,79 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         static private CallEnterArgs CallEnterTemplate(Action<CallEnterArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new CallEnterArgs(action, 29, 29, "CallEnter", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new CallEnterArgs(action, 29, 29, "CallEnter", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private EmptyTraceData CaptureStateStartTemplate(Action<EmptyTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new EmptyTraceData(action, 24, 24, "CaptureState", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new EmptyTraceData(action, 24, 24, "CaptureState", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private EmptyTraceData CaptureStateStopTemplate(Action<EmptyTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new EmptyTraceData(action, 25, 24, "CaptureState", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new EmptyTraceData(action, 25, 24, "CaptureState", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private ClassIDDefintionArgs ClassIDDefintionTemplate(Action<ClassIDDefintionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ClassIDDefintionArgs(action, 1, 10, "ClassIDDefintion", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ClassIDDefintionArgs(action, 1, 10, "ClassIDDefintion", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private FinalizeableObjectQueuedArgs FinalizeableObjectQueuedTemplate(Action<FinalizeableObjectQueuedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new FinalizeableObjectQueuedArgs(action, 11, 13, "FinalizeableObjectQueued", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new FinalizeableObjectQueuedArgs(action, 11, 13, "FinalizeableObjectQueued", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private GCStartArgs GCStartTemplate(Action<GCStartArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GCStartArgs(action, 20, 1, "GC", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new GCStartArgs(action, 20, 1, "GC", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private GCStopArgs GCStopTemplate(Action<GCStopArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GCStopArgs(action, 21, 1, "GC", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new GCStopArgs(action, 21, 1, "GC", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private HandleCreatedArgs HandleCreatedTemplate(Action<HandleCreatedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new HandleCreatedArgs(action, 12, 14, "HandleCreated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new HandleCreatedArgs(action, 12, 14, "HandleCreated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private HandleDestroyedArgs HandleDestroyedTemplate(Action<HandleDestroyedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new HandleDestroyedArgs(action, 13, 15, "HandleDestroyed", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new HandleDestroyedArgs(action, 13, 15, "HandleDestroyed", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private ModuleIDDefintionArgs ModuleIDDefintionTemplate(Action<ModuleIDDefintionArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ModuleIDDefintionArgs(action, 2, 11, "ModuleIDDefintion", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ModuleIDDefintionArgs(action, 2, 11, "ModuleIDDefintion", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private ObjectAllocatedArgs ObjectAllocatedTemplate(Action<ObjectAllocatedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ObjectAllocatedArgs(action, 10, 12, "ObjectAllocated", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ObjectAllocatedArgs(action, 10, 12, "ObjectAllocated", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private ObjectReferencesArgs ObjectReferencesTemplate(Action<ObjectReferencesArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ObjectReferencesArgs(action, 16, 23, "ObjectReferences", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ObjectReferencesArgs(action, 16, 23, "ObjectReferences", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private ObjectsMovedArgs ObjectsMovedTemplate(Action<ObjectsMovedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ObjectsMovedArgs(action, 22, 20, "ObjectsMoved", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ObjectsMovedArgs(action, 22, 20, "ObjectsMoved", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private ObjectsSurvivedArgs ObjectsSurvivedTemplate(Action<ObjectsSurvivedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ObjectsSurvivedArgs(action, 23, 21, "ObjectsSurvived", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ObjectsSurvivedArgs(action, 23, 21, "ObjectsSurvived", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private ProfilerErrorArgs ProfilerErrorTemplate(Action<ProfilerErrorArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ProfilerErrorArgs(action, 26, 26, "ProfilerError", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new ProfilerErrorArgs(action, 26, 26, "ProfilerError", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private EmptyTraceData ProfilerShutdownTemplate(Action<EmptyTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new EmptyTraceData(action, 27, 27, "ProfilerShutdown", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new EmptyTraceData(action, 27, 27, "ProfilerShutdown", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private RootReferencesArgs RootReferencesTemplate(Action<RootReferencesArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new RootReferencesArgs(action, 15, 22, "RootReferences", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new RootReferencesArgs(action, 15, 22, "RootReferences", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private SamplingRateChangeArgs SamplingRateChangeTemplate(Action<SamplingRateChangeArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new SamplingRateChangeArgs(action, 28, 28, "SamplingRateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new SamplingRateChangeArgs(action, 28, 28, "SamplingRateChange", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private SendManifestArgs SendManifestTemplate(Action<SendManifestArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new SendManifestArgs(action, 65534, 65534, "SendManifest", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new SendManifestArgs(action, 65534, 65534, "SendManifest", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -361,13 +360,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
 {
     public sealed class CallEnterArgs : TraceEvent
     {
-        public Address FunctionID { get { return (Address) GetInt64At(0); } }
-
+        public Address FunctionID { get { return (Address)GetInt64At(0); } }
+        public int SamplingRate { get { if (EventDataLength >= 12) { return GetInt32At(8); } return 1; } }
         #region Private
         internal CallEnterArgs(Action<CallEnterArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -381,14 +380,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<CallEnterArgs>) value; }
+            set { m_target = (Action<CallEnterArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "FunctionID", FunctionID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "FunctionID", FunctionID);
+            XmlAttrib(sb, "SamplingRate", SamplingRate);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -396,7 +396,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "FunctionID"};
+                {
+                    payloadNames = new string[] { "FunctionID", "SamplingRate" };
+                }
+
                 return payloadNames;
             }
         }
@@ -407,6 +410,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             {
                 case 0:
                     return FunctionID;
+                case 1:
+                    return SamplingRate;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -418,17 +423,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     }
     public sealed class ClassIDDefintionArgs : TraceEvent
     {
-        public Address ClassID { get { return (Address) GetInt64At(0); } }
+        public Address ClassID { get { return (Address)GetInt64At(0); } }
         public int Token { get { return GetInt32At(8); } }
         public ClassDefinitionFlags Flags { get { return (ClassDefinitionFlags)GetInt32At(12); } }
-        public Address ModuleID { get { return (Address) GetInt64At(16); } }
+        public Address ModuleID { get { return (Address)GetInt64At(16); } }
         public string Name { get { return GetUnicodeStringAt(24); } }
 
         #region Private
         internal ClassIDDefintionArgs(Action<ClassIDDefintionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -442,18 +447,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ClassIDDefintionArgs>) value; }
+            set { m_target = (Action<ClassIDDefintionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ClassID", ClassID);
-             XmlAttrib(sb, "Token", Token);
-             XmlAttrib(sb, "Flags", Flags);
-             XmlAttrib(sb, "ModuleID", ModuleID);
-             XmlAttrib(sb, "Name", Name);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ClassID", ClassID);
+            XmlAttrib(sb, "Token", Token);
+            XmlAttrib(sb, "Flags", Flags);
+            XmlAttrib(sb, "ModuleID", ModuleID);
+            XmlAttrib(sb, "Name", Name);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -461,7 +466,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ClassID", "Token", "Flags", "ModuleID", "Name"};
+                {
+                    payloadNames = new string[] { "ClassID", "Token", "Flags", "ModuleID", "Name" };
+                }
+
                 return payloadNames;
             }
         }
@@ -498,7 +506,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal FinalizeableObjectQueuedArgs(Action<FinalizeableObjectQueuedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -512,15 +520,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<FinalizeableObjectQueuedArgs>) value; }
+            set { m_target = (Action<FinalizeableObjectQueuedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ObjectID", ObjectID);
-             XmlAttrib(sb, "ClassID", ClassID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ObjectID", ObjectID);
+            XmlAttrib(sb, "ClassID", ClassID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -528,7 +536,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ObjectID", "ClassID"};
+                {
+                    payloadNames = new string[] { "ObjectID", "ClassID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -560,7 +571,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal GCStartArgs(Action<GCStartArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -574,16 +585,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<GCStartArgs>) value; }
+            set { m_target = (Action<GCStartArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "GCID", GCID);
-             XmlAttrib(sb, "Generation", Generation);
-             XmlAttrib(sb, "Induced", Induced);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "GCID", GCID);
+            XmlAttrib(sb, "Generation", Generation);
+            XmlAttrib(sb, "Induced", Induced);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -591,7 +602,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "GCID", "Generation", "Induced"};
+                {
+                    payloadNames = new string[] { "GCID", "Generation", "Induced" };
+                }
+
                 return payloadNames;
             }
         }
@@ -623,7 +637,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal GCStopArgs(Action<GCStopArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -637,14 +651,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<GCStopArgs>) value; }
+            set { m_target = (Action<GCStopArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "GCID", GCID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "GCID", GCID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -652,7 +666,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "GCID"};
+                {
+                    payloadNames = new string[] { "GCID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -681,7 +698,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal HandleCreatedArgs(Action<HandleCreatedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -695,15 +712,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<HandleCreatedArgs>) value; }
+            set { m_target = (Action<HandleCreatedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "HandleID", HandleID);
-             XmlAttrib(sb, "InitialObjectID", InitialObjectID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "HandleID", HandleID);
+            XmlAttrib(sb, "InitialObjectID", InitialObjectID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -711,7 +728,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HandleID", "InitialObjectID"};
+                {
+                    payloadNames = new string[] { "HandleID", "InitialObjectID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -741,7 +761,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal HandleDestroyedArgs(Action<HandleDestroyedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -755,14 +775,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<HandleDestroyedArgs>) value; }
+            set { m_target = (Action<HandleDestroyedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "HandleID", HandleID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "HandleID", HandleID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -770,7 +790,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HandleID"};
+                {
+                    payloadNames = new string[] { "HandleID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -792,15 +815,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     }
     public sealed class ModuleIDDefintionArgs : TraceEvent
     {
-        public Address ModuleID { get { return (Address) GetInt64At(0); } }
-        public Address AssemblyID { get { return (Address) GetInt64At(8); } }
+        public Address ModuleID { get { return (Address)GetInt64At(0); } }
+        public Address AssemblyID { get { return (Address)GetInt64At(8); } }
         public string Path { get { return GetUnicodeStringAt(16); } }
 
         #region Private
         internal ModuleIDDefintionArgs(Action<ModuleIDDefintionArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -814,16 +837,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ModuleIDDefintionArgs>) value; }
+            set { m_target = (Action<ModuleIDDefintionArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ModuleID", ModuleID);
-             XmlAttrib(sb, "AssemblyID", AssemblyID);
-             XmlAttrib(sb, "Path", Path);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ModuleID", ModuleID);
+            XmlAttrib(sb, "AssemblyID", AssemblyID);
+            XmlAttrib(sb, "Path", Path);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -831,7 +854,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ModuleID", "AssemblyID", "Path"};
+                {
+                    payloadNames = new string[] { "ModuleID", "AssemblyID", "Path" };
+                }
+
                 return payloadNames;
             }
         }
@@ -857,8 +883,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     }
     public sealed class ObjectAllocatedArgs : TraceEvent
     {
-        public Address ObjectID { get { return (Address) GetInt64At(0); } }
-        public Address ClassID { get { return (Address) GetInt64At(8); } }
+        public Address ObjectID { get { return (Address)GetInt64At(0); } }
+        public Address ClassID { get { return (Address)GetInt64At(8); } }
         public long Size { get { return GetInt64At(16); } }
         public long RepresentativeSize { get { return GetInt64At(24); } }
 
@@ -866,7 +892,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal ObjectAllocatedArgs(Action<ObjectAllocatedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -880,17 +906,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ObjectAllocatedArgs>) value; }
+            set { m_target = (Action<ObjectAllocatedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ObjectID", ObjectID);
-             XmlAttrib(sb, "ClassID", ClassID);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "RepresentativeSize", RepresentativeSize);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ObjectID", ObjectID);
+            XmlAttrib(sb, "ClassID", ClassID);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "RepresentativeSize", RepresentativeSize);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -898,7 +924,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ObjectID", "ClassID", "Size", "RepresentativeSize"};
+                {
+                    payloadNames = new string[] { "ObjectID", "ClassID", "Size", "RepresentativeSize" };
+                }
+
                 return payloadNames;
             }
         }
@@ -930,13 +959,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         public long ClassID { get { return GetInt64At(8); } }
         public long Size { get { return GetInt64At(16); } }
         public int ObjectRefCount { get { return GetInt32At(24); } }
-        public Address ObjectRefs(int arrayIndex) { return GetAddressAt(28 + (arrayIndex * HostOffset(4, 1))); }
+        public Address ObjectRefs(int arrayIndex) { return GetAddressAt(28 + (arrayIndex * PointerSize)); }
 
         #region Private
         internal ObjectReferencesArgs(Action<ObjectReferencesArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -944,23 +973,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (ObjectRefCount*4)+28, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (ObjectRefCount*4)+28, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0 + (ObjectRefCount * 4) + 28, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0 + (ObjectRefCount * 4) + 28, 1)));
         }
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ObjectReferencesArgs>) value; }
+            set { m_target = (Action<ObjectReferencesArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ObjectID", ObjectID);
-             XmlAttrib(sb, "ClassID", ClassID);
-             XmlAttrib(sb, "Size", Size);
-             XmlAttrib(sb, "ObjectRefCount", ObjectRefCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ObjectID", ObjectID);
+            XmlAttrib(sb, "ClassID", ClassID);
+            XmlAttrib(sb, "Size", Size);
+            XmlAttrib(sb, "ObjectRefCount", ObjectRefCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -968,7 +997,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ObjectID", "ClassID", "Size", "ObjectRefCount", "ObjectRefs"};
+                {
+                    payloadNames = new string[] { "ObjectID", "ClassID", "Size", "ObjectRefCount", "ObjectRefs" };
+                }
+
                 return payloadNames;
             }
         }
@@ -997,15 +1029,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class ObjectsMovedArgs : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
-        public Address RangeBases(int arrayIndex) { return GetAddressAt(4 + (arrayIndex * HostOffset(4, 1))); }
-        public Address TargetBases(int arrayIndex) { return GetAddressAt(HostOffset(0+ (Count*4)+4, 1) + (arrayIndex * HostOffset(4, 1))); }
-        public int Lengths(int arrayIndex) { return GetInt32At(HostOffset(0+ (Count*4)+ (Count*4)+4, 2) + (arrayIndex * HostOffset(4, 0))); }
+        public Address RangeBases(int arrayIndex) { return GetAddressAt(4 + (PointerSize * arrayIndex)); }
+        public Address TargetBases(int arrayIndex) { return GetAddressAt(4 + (PointerSize * Count) + (PointerSize * arrayIndex)); }
+        public int Lengths(int arrayIndex) { return GetInt32At(4 + 2 * (PointerSize * Count) + (4 * arrayIndex)); }
 
         #region Private
         internal ObjectsMovedArgs(Action<ObjectsMovedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1013,20 +1045,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (Count*4)+ (Count*4)+ (Count*4)+4, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (Count*4)+ (Count*4)+ (Count*4)+4, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + 2 * (PointerSize * Count) + (4 * Count)));
+            Debug.Assert(!(Version > 0 && EventDataLength < 4 + 2 * (PointerSize * Count) + (4 * Count)));
         }
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ObjectsMovedArgs>) value; }
+            set { m_target = (Action<ObjectsMovedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Count", Count);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1034,7 +1066,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "RangeBases", "TargetBases", "Lengths"};
+                {
+                    payloadNames = new string[] { "Count", "RangeBases", "TargetBases", "Lengths" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1057,14 +1092,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class ObjectsSurvivedArgs : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
-        public Address RangeBases(int arrayIndex) { return GetAddressAt(4 + (arrayIndex * HostOffset(4, 1))); }
-        public int Lengths(int arrayIndex) { return GetInt32At(HostOffset(0+ (Count*4)+4, 1) + (arrayIndex * HostOffset(4, 0))); }
+
+        public Address RangeBases(int arrayIndex)
+        {
+            // The ranges are a block of pointer sized elements. that is after the 4 byte length field 
+            return GetAddressAt(4 + (PointerSize * arrayIndex));
+        }
+        public int Lengths(int arrayIndex)
+        {
+            // The lengths are a blob of 32 bit integers that are after the RangeBases  
+            return GetInt32At(4 + (PointerSize * Count) + (4 * arrayIndex));
+        }
 
         #region Private
         internal ObjectsSurvivedArgs(Action<ObjectsSurvivedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1072,20 +1116,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (Count*4)+ (Count*4)+4, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (Count*4)+ (Count*4)+4, 1)));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + (PointerSize * Count) + (4 * Count)));
+            Debug.Assert(!(Version > 0 && EventDataLength < 4 + (PointerSize * Count) + (4 * Count)));
         }
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ObjectsSurvivedArgs>) value; }
+            set { m_target = (Action<ObjectsSurvivedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Count", Count);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1093,7 +1137,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "RangeBases", "Lengths"};
+                {
+                    payloadNames = new string[] { "Count", "RangeBases", "Lengths" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1122,7 +1169,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal ProfilerErrorArgs(Action<ProfilerErrorArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1136,15 +1183,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ProfilerErrorArgs>) value; }
+            set { m_target = (Action<ProfilerErrorArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ErrorCode", ErrorCode);
-             XmlAttrib(sb, "Message", Message);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            XmlAttrib(sb, "Message", Message);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1152,7 +1199,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ErrorCode", "Message"};
+                {
+                    payloadNames = new string[] { "ErrorCode", "Message" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1177,16 +1227,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
     public sealed class RootReferencesArgs : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
-        public Address ObjectIDs(int arrayIndex) { return GetAddressAt(4 + (arrayIndex * HostOffset(4, 1))); }
-        public GCRootKind GCRootKinds(int arrayIndex) { return (GCRootKind)GetInt32At(HostOffset(0+ (Count*4)+4, 1) + (arrayIndex * HostOffset(4, 0))); }
-        public GCRootFlags GCRootFlags(int arrayIndex) { return (GCRootFlags)GetInt32At(HostOffset(0+ (Count*4)+ (Count*4)+4, 1) + (arrayIndex * HostOffset(4, 0))); }
-        public Address RootIDs(int arrayIndex) { return GetAddressAt(HostOffset(0+ (Count*4)+ (Count*4)+ (Count*4)+4, 1) + (arrayIndex * HostOffset(4, 1))); }
+        public Address ObjectIDs(int arrayIndex) { return GetAddressAt(4 + (PointerSize * arrayIndex)); }
+        public GCRootKind GCRootKinds(int arrayIndex)
+        {
+            int ret = GetInt32At(4 + PointerSize * Count + (4 * arrayIndex));
+            Debug.Assert((ret & 0xFFFFFF00) == 0);  // assert is is less than 256, we only use 4 bits so far.  
+            return (GCRootKind)ret;
+        }
+        public GCRootFlags GCRootFlags(int arrayIndex)
+        {
+            int ret = GetInt32At(4 + PointerSize * Count + 4 * Count + 4 * arrayIndex);
+            Debug.Assert((ret & 0xFFFFFFF0) == 0);  // assert is is less than 16, we only use 4 values so far. 
+
+            return (GCRootFlags)ret;
+        }
+        public Address RootIDs(int arrayIndex) { return GetAddressAt(4 + PointerSize * Count + (2 * 4 * Count) + PointerSize * arrayIndex); }
 
         #region Private
         internal RootReferencesArgs(Action<RootReferencesArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1194,20 +1255,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(0+ (Count*4)+ (Count*4)+ (Count*4)+ (Count*4)+4, 2)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(0+ (Count*4)+ (Count*4)+ (Count*4)+ (Count*4)+4, 2)));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + (2 * PointerSize * Count) + (2 * 4 * Count)));
+            Debug.Assert(!(Version > 0 && EventDataLength < 4 + (2 * PointerSize * Count) + (2 * 4 * Count)));
         }
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<RootReferencesArgs>) value; }
+            set { m_target = (Action<RootReferencesArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Count", Count);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1215,7 +1276,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "ObjectIDs", "GCRootKinds", "GCRootFlags", "RootIDs"};
+                {
+                    payloadNames = new string[] { "Count", "ObjectIDs", "GCRootKinds", "GCRootFlags", "RootIDs" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1240,16 +1304,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         public long ClassID { get { return GetInt64At(0); } }
         public string ClassName { get { return GetUnicodeStringAt(8); } }
         public int MSecDelta { get { return GetInt32At(SkipUnicodeString(8)); } }
-        public int MinAllocPerMSec { get { return GetInt32At(SkipUnicodeString(8)+4); } }
-        public float NewAllocPerMSec { get { return GetSingleAt(SkipUnicodeString(8)+8); } }
-        public float AllocPerMSec { get { return GetSingleAt(SkipUnicodeString(8)+12); } }
-        public int SampleRate { get { return GetInt32At(SkipUnicodeString(8)+16); } }
+        public int MinAllocPerMSec { get { return GetInt32At(SkipUnicodeString(8) + 4); } }
+        public float NewAllocPerMSec { get { return GetSingleAt(SkipUnicodeString(8) + 8); } }
+        public float AllocPerMSec { get { return GetSingleAt(SkipUnicodeString(8) + 12); } }
+        public int SampleRate { get { return GetInt32At(SkipUnicodeString(8) + 16); } }
 
         #region Private
         internal SamplingRateChangeArgs(Action<SamplingRateChangeArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1257,26 +1321,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         }
         protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)+20));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)+20));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8) + 20));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8) + 20));
         }
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<SamplingRateChangeArgs>) value; }
+            set { m_target = (Action<SamplingRateChangeArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "ClassID", ClassID);
-             XmlAttrib(sb, "ClassName", ClassName);
-             XmlAttrib(sb, "MSecDelta", MSecDelta);
-             XmlAttrib(sb, "MinAllocPerMSec", MinAllocPerMSec);
-             XmlAttrib(sb, "NewAllocPerMSec", NewAllocPerMSec);
-             XmlAttrib(sb, "AllocPerMSec", AllocPerMSec);
-             XmlAttrib(sb, "SampleRate", SampleRate);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "ClassID", ClassID);
+            XmlAttrib(sb, "ClassName", ClassName);
+            XmlAttrib(sb, "MSecDelta", MSecDelta);
+            XmlAttrib(sb, "MinAllocPerMSec", MinAllocPerMSec);
+            XmlAttrib(sb, "NewAllocPerMSec", NewAllocPerMSec);
+            XmlAttrib(sb, "AllocPerMSec", AllocPerMSec);
+            XmlAttrib(sb, "SampleRate", SampleRate);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1284,7 +1348,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ClassID", "ClassName", "MSecDelta", "MinAllocPerMSec", "NewAllocPerMSec", "AllocPerMSec", "SampleRate"};
+                {
+                    payloadNames = new string[] { "ClassID", "ClassName", "MSecDelta", "MinAllocPerMSec", "NewAllocPerMSec", "AllocPerMSec", "SampleRate" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1330,7 +1397,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         internal SendManifestArgs(Action<SendManifestArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected override void Dispatch()
         {
@@ -1344,20 +1411,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
         protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<SendManifestArgs>) value; }
+            set { m_target = (Action<SendManifestArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Format", Format);
-             XmlAttrib(sb, "MajorVersion", MajorVersion);
-             XmlAttrib(sb, "MinorVersion", MinorVersion);
-             XmlAttrib(sb, "Magic", Magic);
-             XmlAttrib(sb, "TotalChunks", TotalChunks);
-             XmlAttrib(sb, "ChunkNumger", ChunkNumger);
-             XmlAttrib(sb, "Data", Data);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Format", Format);
+            XmlAttrib(sb, "MajorVersion", MajorVersion);
+            XmlAttrib(sb, "MinorVersion", MinorVersion);
+            XmlAttrib(sb, "Magic", Magic);
+            XmlAttrib(sb, "TotalChunks", TotalChunks);
+            XmlAttrib(sb, "ChunkNumger", ChunkNumger);
+            XmlAttrib(sb, "Data", Data);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1365,7 +1432,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumger", "Data"};
+                {
+                    payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumger", "Data" };
+                }
+
                 return payloadNames;
             }
         }

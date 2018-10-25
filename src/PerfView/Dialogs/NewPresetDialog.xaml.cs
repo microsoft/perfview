@@ -47,9 +47,14 @@ namespace PerfView.Dialogs
         private void DoKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
+            {
                 Close();
+            }
+
             if (e.Key == Key.Enter)
+            {
                 OKClicked(null, null);
+            }
         }
 
         private List<string> m_existingPresets;

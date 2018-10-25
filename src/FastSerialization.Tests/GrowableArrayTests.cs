@@ -62,7 +62,9 @@ namespace FastSerializationTests
                     Assert.Equal(i, (int)testArray[index]);
                 }
                 else
+                {
                     Assert.True(index + 1 <= testArray.Count);
+                }
             }
             return successes;
         }

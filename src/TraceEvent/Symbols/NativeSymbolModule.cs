@@ -44,7 +44,10 @@ namespace Microsoft.Diagnostics.Symbols
         {
             System.Threading.Thread.Sleep(0);           // Allow cancellation.  
             if (m_symbolsByAddr == null)
+            {
                 return "";
+            }
+
             IDiaSymbol symbol = m_symbolsByAddr.symbolByRVA(rva);
             if (symbol == null)
             {
@@ -81,12 +84,19 @@ namespace Microsoft.Diagnostics.Symbols
                 string unmangled = null;
                 symbol.get_undecoratedNameEx(0x1000, out unmangled);
                 if (unmangled != null)
+                {
                     ret = unmangled;
+                }
 
                 if (ret.StartsWith("@"))
+                {
                     ret = ret.Substring(1);
+                }
+
                 if (ret.StartsWith("_"))
+                {
                     ret = ret.Substring(1);
+                }
 
 #if false // TODO FIX NOW remove  
                 var m = Regex.Match(ret, @"(.*)@\d+$");
@@ -97,14 +107,18 @@ namespace Microsoft.Diagnostics.Symbols
 #else
                 var atIdx = ret.IndexOf('@');
                 if (0 < atIdx)
+                {
                     ret = ret.Substring(0, atIdx);
+                }
 #endif
             }
 
             // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
             var dollarIdx = ret.LastIndexOf('$');
             if (0 <= dollarIdx && dollarIdx + 2 < ret.Length && ret[dollarIdx + 1] == '#' && 0 <= ret.IndexOf('#', dollarIdx + 2))
+            {
                 ret = ret.Substring(0, dollarIdx);
+            }
 
             // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
             var mergedAssembliesMap = GetMergedAssembliesMap();
@@ -124,7 +138,9 @@ namespace Microsoft.Diagnostics.Symbols
                 // the assembly containing System.Object - the implicit module number is int.MaxValue
 
                 if (!prefixMatchFound)
+                {
                     ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
+                }
             }
             return ret;
         }
@@ -217,10 +233,15 @@ namespace Microsoft.Diagnostics.Symbols
                                 ilAssemblyName = Path.GetFileNameWithoutExtension(SymbolFilePath);
                                 // strip off the .ni if present
                                 if (ilAssemblyName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                                {
                                     ilAssemblyName = ilAssemblyName.Substring(0, ilAssemblyName.Length - 3);
+                                }
                             }
                             else
+                            {
                                 ilAssemblyName = name.Substring(suffixIdx + 2, tokenIdx - (suffixIdx + 2));
+                            }
+
                             methodMetadataToken = (uint)token;
                             ilOffset = 0;           // If we don't find an IL offset, we 'guess' an ILOffset of 0
 
@@ -238,7 +259,10 @@ namespace Microsoft.Diagnostics.Symbols
                                 }
                                 ilOffset = (int)sourceLoc.lineNumber;
                                 if (ilOffset != 0xFEEFEE)
+                                {
                                     break;
+                                }
+
                                 m_reader.m_log.WriteLine("SourceLocationForRva: got illegal offset FEEFEE picking next offset.");
                                 ilOffset = 0;
                             }
@@ -257,7 +281,10 @@ namespace Microsoft.Diagnostics.Symbols
 
             var sourceFile = new MicrosoftPdbSourceFile(this, diaSrcFile);
             if (lineNum == 0xFEEFEE)
+            {
                 lineNum = 0;
+            }
+
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
             m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
             return sourceLocation;
@@ -316,11 +343,16 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 lineNum = (int)sourceLoc.lineNumber;
                 if (lineNum != 0xFEEFEE)
+                {
                     break;
+                }
+
                 lineNum = 0;
                 sourceLocs.Next(1, out sourceLoc, out fetchCount);
                 if (fetchCount == 0)
+                {
                     break;
+                }
             }
 
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
@@ -404,16 +436,22 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     string target = base.Url; // See if it is in sourceLink information.
                     if (target != null)
+                    {
                         return target;
+                    }
 
                     // Use srcsrv information 
                     string command;
                     GetSourceServerTargetAndCommand(out target, out command);
 
                     if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
+                    {
                         return target;
+                    }
                     else
+                    {
                         return null;
+                    }
                 }
             }
 
@@ -443,7 +481,9 @@ namespace Microsoft.Diagnostics.Symbols
                 // Try getting the source from the source server using SourceLink information.  
                 var ret = base.GetSourceFromSrcServer();
                 if (ret != null)
+                {
                     return ret;
+                }
 
                 var cacheDir = _symbolModule.SymbolReader.SourceCacheDirectory;
 
@@ -461,7 +501,9 @@ namespace Microsoft.Diagnostics.Symbols
                             target = null;
                             var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
                             if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped), uri.AbsolutePath, newTarget))
+                            {
                                 target = newTarget;
+                            }
 
                             if (target == null)
                             {
@@ -487,7 +529,10 @@ namespace Microsoft.Diagnostics.Symbols
                         if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
                         {
                             if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
+                            {
                                 _log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
+                            }
+
                             addToPath = archToolsDir;
                         }
                         else
@@ -514,12 +559,17 @@ namespace Microsoft.Diagnostics.Symbols
                         fetchCmdStr = "cmd /c " + fetchCmdStr;
                         var options = new CommandOptions().AddOutputStream(_log).AddNoThrow();
                         if (addToPath != null)
+                        {
                             options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
+                        }
 
                         _log.WriteLine("Source Server command {0}", fetchCmdStr);
                         var fetchCmd = Command.Run(fetchCmdStr, options);
                         if (fetchCmd.ExitCode != 0)
+                        {
                             _log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
+                        }
+
                         if (File.Exists(target))
                         {
                             // If TF.exe command files it might still create an empty output file.   Fix that 
@@ -530,15 +580,24 @@ namespace Microsoft.Diagnostics.Symbols
                             }
                         }
                         else
+                        {
                             target = null;
+                        }
 
                         if (target == null)
+                        {
                             _log.WriteLine("Source Server command failed to produce the output file.");
+                        }
                         else
+                        {
                             _log.WriteLine("Source Server command succeeded creating {0}", target);
+                        }
                     }
                     else
+                    {
                         _log.WriteLine("Found an existing source server file {0}.", target);
+                    }
+
                     return target;
                 }
 
@@ -548,7 +607,7 @@ namespace Microsoft.Diagnostics.Symbols
 
 
             #region private
-            unsafe internal MicrosoftPdbSourceFile(NativeSymbolModule module, IDiaSourceFile sourceFile) : base(module)
+            internal unsafe MicrosoftPdbSourceFile(NativeSymbolModule module, IDiaSourceFile sourceFile) : base(module)
             {
                 BuildTimeFilePath = sourceFile.fileName;
 
@@ -557,11 +616,17 @@ namespace Microsoft.Diagnostics.Symbols
                 // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
                 // 3 checksum generated with the SHA256 hashing algorithm.
                 if (sourceFile.checksumType == 1)
+                {
                     _hashAlgorithm = System.Security.Cryptography.MD5.Create();
+                }
                 else if (sourceFile.checksumType == 2)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
+                }
                 else if (sourceFile.checksumType == 3)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
+                }
 
                 if (_hashAlgorithm != null)
                 {
@@ -576,7 +641,10 @@ namespace Microsoft.Diagnostics.Symbols
 
                     uint bytesFetched;
                     fixed (byte* bufferPtr = _hash)
+                    {
                         sourceFile.get_checksum((uint)_hash.Length, out bytesFetched, out *bufferPtr);
+                    }
+
                     Debug.Assert(bytesFetched == _hash.Length);
                 }
             }
@@ -666,13 +734,17 @@ namespace Microsoft.Diagnostics.Symbols
                 var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 if (localDirectoryToPlaceSourceFiles != null)
+                {
                     vars.Add("targ", localDirectoryToPlaceSourceFiles);
+                }
 
                 for (; ; )
                 {
                     var line = reader.ReadLine();
                     if (line == null)
+                    {
                         break;
+                    }
 
                     // log.WriteLine("Got srcsrv line {0}", line);
                     if (line.StartsWith("SRCSRV: "))
@@ -692,7 +764,9 @@ namespace Microsoft.Diagnostics.Symbols
                             {
                                 // Create variables for each of the pieces.  
                                 for (int i = 0; i < pieces.Length; i++)
+                                {
                                     vars.Add("var" + (i + 1).ToString(), pieces[i]);
+                                }
 
                                 target = SourceServerFetchVar("SRCSRVTRG", vars);
                                 command = SourceServerFetchVar("SRCSRVCMD", vars);
@@ -706,7 +780,9 @@ namespace Microsoft.Diagnostics.Symbols
                         // Gather up the KEY=VALUE pairs into a dictionary.  
                         var m = Regex.Match(line, @"^(\w+)=(.*?)\s*$");
                         if (m.Success)
+                        {
                             vars[m.Groups[1].Value] = m.Groups[2].Value;
+                        }
                     }
                 }
             }
@@ -720,7 +796,10 @@ namespace Microsoft.Diagnostics.Symbols
                 // If you have VS installed used that TF.exe associated with that.  
                 var progFiles = Environment.GetEnvironmentVariable("ProgramFiles (x86)");
                 if (progFiles == null)
+                {
                     progFiles = Environment.GetEnvironmentVariable("ProgramFiles");
+                }
+
                 if (progFiles != null)
                 {
                     // Find the oldest Visual Studio directory;
@@ -731,7 +810,9 @@ namespace Microsoft.Diagnostics.Symbols
                         var VSDir = Path.Combine(dirs[dirs.Length - 1], @"Common7\IDE");
                         var tfexe = Path.Combine(VSDir, "tf.exe");
                         if (File.Exists(tfexe))
+                        {
                             return tfexe;
+                        }
                     }
                 }
                 return null;
@@ -743,7 +824,10 @@ namespace Microsoft.Diagnostics.Symbols
                 if (vars.TryGetValue(variable, out result))
                 {
                     if (0 <= result.IndexOf('%'))
+                    {
                         _log.WriteLine("SourceServerFetchVar: Before Evaluation {0} = '{1}'", variable, result);
+                    }
+
                     result = SourceServerEvaluate(result, vars);
                 }
                 _log.WriteLine("SourceServerFetchVar: {0} = '{1}'", variable, result);
@@ -840,7 +924,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
 
         private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
         {
-            this.m_reader = reader;
+            m_reader = reader;
 
             m_source = DiaLoader.GetDiaSourceObject();
             loadData();
@@ -888,9 +972,14 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             if (len == 0)
             {
                 if (0 <= SymbolFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase))
+                {
                     log.WriteLine("Error, trying to look up source information on an NGEN file, giving up");
+                }
                 else
+                {
                     log.WriteLine("Pdb {0} does not have source server information (srcsrv stream) in it", SymbolFilePath);
+                }
+
                 return null;
             }
 
@@ -936,7 +1025,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             get
             {
                 if (m_managedPdbName == null)
+                {
                     return this;
+                }
 
                 if (!m_managedPdbAttempted)
                 {
@@ -949,7 +1040,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                         m_managedPdb = m_reader.OpenSymbolFile(managedPdbPath);
                     }
                     else
+                    {
                         m_reader.m_log.WriteLine("Could not find managed PDB {0}", m_managedPdbName);
+                    }
                 }
                 return m_managedPdb;
             }
@@ -964,19 +1057,24 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             {
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
                 m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
-                for (; ;)
+                for (; ; )
                 {
                     IDiaInputAssemblyFile inputAssembly;
                     uint fetchCount;
                     diaMergedAssemblyRecords.Next(1, out inputAssembly, out fetchCount);
                     if (fetchCount != 1)
+                    {
                         break;
+                    }
 
                     int index = (int)inputAssembly.index;
                     string assemblyName = inputAssembly.fileName;
 
                     if (m_mergedAssemblies == null)
+                    {
                         m_mergedAssemblies = new Dictionary<int, string>();
+                    }
+
                     m_mergedAssemblies.Add(index, assemblyName);
                 }
                 m_checkedForMergedAssemblies = true;
@@ -1068,8 +1166,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return buf;
         }
 
-        bool m_checkedForMergedAssemblies;
-        Dictionary<int, string> m_mergedAssemblies;
+        private bool m_checkedForMergedAssemblies;
+        private Dictionary<int, string> m_mergedAssemblies;
 
         private string m_managedPdbName;
         private Guid m_managedPdbGuid;
@@ -1079,8 +1177,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
 
         internal SymbolReader m_reader;
         internal IDiaSession m_session;
-        IDiaDataSource3 m_source;
-        IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        private IDiaDataSource3 m_source;
+        private IDiaEnumSymbolsByAddr m_symbolsByAddr;
 
         #endregion
     }
@@ -1148,7 +1246,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             IDiaEnumSymbols symEnum = null;
             m_module.m_session.findChildren(m_diaSymbol, tag, null, 0, out symEnum);
             if (symEnum == null)
+            {
                 return null;
+            }
 
             uint fetchCount;
             var ret = new List<Symbol>();
@@ -1157,7 +1257,10 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
                 if (fetchCount == 0)
+                {
                     break;
+                }
+
                 SymTagEnum symTag = (SymTagEnum)sym.symTag;
                 ret.Add(new Symbol(m_module, sym));
             }
@@ -1233,7 +1336,9 @@ internal sealed class ComStreamWrapper : IStream
         fixed (byte* p = &pv)
         {
             for (int i = 0; i < bytesRead; i++)
+            {
                 p[i] = buf[i];
+            }
         }
     }
 
@@ -1358,7 +1463,7 @@ namespace Dia2Lib
         /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
         /// after use.
         /// </summary>
-        static bool s_loadedNativeDll;
+        private static bool s_loadedNativeDll;
         #endregion
     }
 }

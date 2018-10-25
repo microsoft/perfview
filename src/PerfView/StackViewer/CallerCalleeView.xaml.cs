@@ -1,17 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Stacks;
 using Utilities;
 
 namespace PerfView
@@ -41,7 +32,10 @@ namespace PerfView
             {
                 var focusNode = FocusNode;
                 if (focusNode == null)
+                {
                     return null;
+                }
+
                 return FocusNode.Name;
             }
         }
@@ -53,7 +47,10 @@ namespace PerfView
                 if (ret == null)
                 {
                     if (m_callTree == null)
+                    {
                         return null;
+                    }
+
                     return m_callTree.Root;
                 }
                 return ret;
@@ -63,11 +60,19 @@ namespace PerfView
         public bool SetFocus(string value, CallTree tree = null)
         {
             if (tree != null)
+            {
                 m_callTree = tree;
+            }
+
             if (m_callTree == null)
+            {
                 return false;
+            }
+
             if (value == null)
+            {
                 value = m_callTree.Root.Name;
+            }
 
             var ret = true;
             var newNode = new CallerCalleeNode(value, m_callTree);
@@ -79,7 +84,9 @@ namespace PerfView
 
             var oldFocus = DataContext as CallerCalleeNode;
             if (oldFocus != null)
+            {
                 oldFocus.FreeMemory();
+            }
 
             DataContext = newNode;
             CallersGrid.Grid.ItemsSource = newNode.Callers;
@@ -106,7 +113,9 @@ namespace PerfView
             for (; ; )
             {
                 if (m_curFindGrid.Find(pat))
+                {
                     return true;
+                }
 
                 m_curFindGrid = NextGrid(m_curFindGrid);
                 if (m_curFindGrid == null)
@@ -123,23 +132,32 @@ namespace PerfView
             var depObj = sender as DependencyObject;
             var stackWindow = depObj.AncestorOfType<StackWindow>();
             if (stackWindow == null)
+            {
                 return;
+            }
+
             stackWindow.DataGrid_MouseDoubleClick(sender, e);
         }
 
         private PerfDataGrid NextGrid(PerfDataGrid grid)
         {
             if (grid == CallersGrid)
+            {
                 return FocusGrid;
+            }
+
             if (grid == FocusGrid)
+            {
                 return CalleesGrid;
+            }
+
             Debug.Assert(grid == CalleesGrid);
             return null;
         }
 
-        CallTree m_callTree;
+        private CallTree m_callTree;
         internal PerfDataGrid m_curFindGrid;
-        string m_findPat;
+        private string m_findPat;
         #endregion
     }
 }

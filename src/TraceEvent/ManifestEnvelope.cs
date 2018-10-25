@@ -1,10 +1,4 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using FastSerialization;
-using Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace System.Diagnostics.Tracing
 {

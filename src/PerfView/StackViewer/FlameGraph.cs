@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace PerfView
 {
@@ -71,13 +71,15 @@ namespace PerfView
                     nextBoxX += childBoxWidth;
 
                     if (child.Callees != null)
+                    {
                         nodesToVisit.Enqueue(new FlamePair(childBox, child));
+                    }
 
                     yield return childBox;
                 }
             }
         }
-        
+
         public static void Export(Canvas flameGraphCanvas, string filePath)
         {
             var rectangle = new Rect(flameGraphCanvas.RenderSize);
@@ -88,7 +90,9 @@ namespace PerfView
             pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
             using (var file = System.IO.File.Create(filePath))
+            {
                 pngEncoder.Save(file);
+            }
         }
 
         private static double GetMaxDepth(CallTreeNode callTree)
@@ -96,8 +100,12 @@ namespace PerfView
             double deepest = 0;
 
             if (callTree.Callees != null)
+            {
                 foreach (var callee in callTree.Callees)
+                {
                     deepest = Math.Max(deepest, GetMaxDepth(callee));
+                }
+            }
 
             return deepest + 1;
         }

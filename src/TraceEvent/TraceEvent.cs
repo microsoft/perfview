@@ -4,9 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
-using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -156,7 +154,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// <para>The normal user pattern is to create a TraceEventSource, create TraceEventParsers attached to the TraceEventSource, and then subscribe
     /// event callbacks using the TraceEventParsers</para>
     /// </summary>
-    abstract unsafe public class TraceEventSource : ITraceParserServices, IDisposable
+    public abstract unsafe class TraceEventSource : ITraceParserServices, IDisposable
     {
         // Properties to subscribe to find important parsers (these are convenience routines). 
 
@@ -169,7 +167,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (_CLR == null)
+                {
                     _CLR = new ClrTraceEventParser(this);
+                }
+
                 return _CLR;
             }
         }
@@ -184,7 +185,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (_Kernel == null)
+                {
                     _Kernel = new KernelTraceEventParser(this);
+                }
+
                 return _Kernel;
             }
         }
@@ -203,7 +207,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (_Dynamic == null)
+                {
                     _Dynamic = new DynamicTraceEventParser(this);
+                }
+
                 return _Dynamic;
             }
         }
@@ -220,7 +227,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (_Registered == null)
+                {
                     _Registered = new RegisteredTraceEventParser(this);
+                }
+
                 return _Registered;
             }
         }
@@ -338,17 +348,17 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // [SecuritySafeCritical]
-        abstract internal void RegisterEventTemplateImpl(TraceEvent template);
+        internal abstract void RegisterEventTemplateImpl(TraceEvent template);
         // [SecuritySafeCritical]
-        abstract internal void UnregisterEventTemplateImpl(Delegate action, Guid providerGuid, int eventId);
+        internal abstract void UnregisterEventTemplateImpl(Delegate action, Guid providerGuid, int eventId);
         // [SecuritySafeCritical]
-        abstract internal void RegisterParserImpl(TraceEventParser parser);
+        internal abstract void RegisterParserImpl(TraceEventParser parser);
         // [SecuritySafeCritical]
-        abstract internal void RegisterUnhandledEventImpl(Func<TraceEvent, bool> callback);
+        internal abstract void RegisterUnhandledEventImpl(Func<TraceEvent, bool> callback);
         // [SecuritySafeCritical]
-        virtual internal string TaskNameForGuidImpl(Guid guid) { return null; }
+        internal virtual string TaskNameForGuidImpl(Guid guid) { return null; }
         // [SecuritySafeCritical]
-        virtual internal string ProviderNameForGuidImpl(Guid taskOrProviderGuid) { return null; }
+        internal virtual string ProviderNameForGuidImpl(Guid taskOrProviderGuid) { return null; }
 
         /// <summary>
         /// Dispose pattern
@@ -430,7 +440,9 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // Insure that we have a certain amount of sanity (events don't occur before sessionStartTime).  
             if (QPCTime < sessionStartTimeQPC)
+            {
                 QPCTime = sessionStartTimeQPC;
+            }
 
             // We used to have a sanity check to insure that the time was always inside sessionEndTimeQPC
             // ETLX files enforce this, but sometimes ETWTraceEventParser (ETL) traces have bad session times.
@@ -476,14 +488,19 @@ namespace Microsoft.Diagnostics.Tracing
         internal DateTime QPCTimeToDateTimeUTC(long QPCTime)
         {
             if (QPCTime == long.MaxValue)   // We treat maxvalue as a special case.  
+            {
                 return DateTime.MaxValue;
+            }
 
             // We expect all the time variables used to compute this to be set.   
             Debug.Assert(_syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq) + _syncTimeUTC.Ticks;
             // Avoid illegal DateTime values.   
             if (inTicks < 0 || DateTime.MaxValue.Ticks < inTicks)
+            {
                 inTicks = DateTime.MaxValue.Ticks;
+            }
+
             var ret = new DateTime(inTicks, DateTimeKind.Utc);
             return ret;
         }
@@ -500,13 +517,18 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal virtual int LastChanceGetThreadID(TraceEvent data) { return -1; }
         internal virtual int LastChanceGetProcessID(TraceEvent data) { return -1; }
-        internal unsafe virtual Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        internal virtual unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             var extendedData = eventRecord->ExtendedData;
             Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.  
             for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
+            {
                 if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                {
                     return *((Guid*)extendedData[i].DataPtr);
+                }
+            }
+
             return Guid.Empty;
         }
         #endregion
@@ -525,7 +547,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// do not have to call Clone() when processing with IObservables (but these are slower).  
     /// </para>
     /// </summary>
-    public unsafe abstract class TraceEvent
+    public abstract unsafe class TraceEvent
 #if !NETSTANDARD1_6
         // To support DLR access of dynamic payload data ("((dynamic) myEvent).MyPayloadName"),
         // we derive from DynamicObject and override a couple of methods. If for some reason in
@@ -549,16 +571,26 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     Guid guid = providerGuid;
                     if (guid == Guid.Empty)
+                    {
                         guid = taskGuid;
-                    ITraceParserServices asParserServces = this.Source as ITraceParserServices;
+                    }
+
+                    ITraceParserServices asParserServces = Source as ITraceParserServices;
                     if (asParserServces != null)
+                    {
                         providerName = asParserServces.ProviderNameForGuid(guid);
+                    }
+
                     if (providerName == null)
                     {
                         if (providerGuid == Guid.Empty)
+                        {
                             providerName = "UnknownProvider";
+                        }
                         else
+                        {
                             providerName = "Provider(" + providerGuid.ToString() + ")";
+                        }
                     }
                 }
                 return providerName;
@@ -576,9 +608,13 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     var taskName = TaskName;
                     if (Opcode == TraceEventOpcode.Info || eventNameIsJustTaskName || string.IsNullOrEmpty(OpcodeName))
+                    {
                         eventName = taskName;
+                    }
                     else
+                    {
                         eventName = taskName + "/" + OpcodeName;
+                    }
                 }
                 return eventName;
             }
@@ -615,19 +651,28 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (taskGuid != Guid.Empty)
                     {
-                        ITraceParserServices asParserServces = this.Source as ITraceParserServices;
+                        ITraceParserServices asParserServces = Source as ITraceParserServices;
                         if (asParserServces != null)
+                        {
                             taskName = asParserServces.TaskNameForGuid(taskGuid);
+                        }
+
                         if (taskName == null)
+                        {
                             taskName = "Task(" + taskGuid + ")";
+                        }
                     }
                     else
                     {
                         eventNameIsJustTaskName = true;     // Don't suffix this with the opcode.  
                         if (eventID == 0)
+                        {
                             taskName = "EventWriteString";
+                        }
                         else
+                        {
                             taskName = "EventID(" + ID + ")";
+                        }
                     }
                 }
                 // Old EventSources did not have tasks for event names so we make an exception for these 
@@ -655,7 +700,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (opcodeName == null)
+                {
                     opcodeName = ToString(Opcode);
+                }
+
                 return opcodeName;
             }
         }
@@ -728,7 +776,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var ret = eventRecord->EventHeader.ThreadId;
                 if (ret == -1)
+                {
                     ret = source.LastChanceGetThreadID(this);     // See if the source has additional information (like a stack event associated with it)
+                }
+
                 return ret;
             }
         }
@@ -736,14 +787,17 @@ namespace Microsoft.Diagnostics.Tracing
         /// The process ID of the process which logged the event. 
         /// <para>This field may return -1 for some events when the process ID is not known.</para>
         /// </summary>
-        virtual public int ProcessID
+        public virtual int ProcessID
         {
             // [SecuritySafeCritical]
             get
             {
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
+                {
                     ret = source.LastChanceGetProcessID(this);     // See if the source has additional information (like a stack event associated with it)
+                }
+
                 return ret;
             }
         }
@@ -803,12 +857,16 @@ namespace Microsoft.Diagnostics.Tracing
                 if (myBuffer != IntPtr.Zero)
                 {
                     if (myBuffer != (IntPtr)eventRecord)
+                    {
                         return *((Guid*)myBuffer);
+                    }
                 }
                 else
                 {
                     if (eventRecord->ExtendedDataCount > 0)
+                    {
                         return source.GetRelatedActivityID(eventRecord);
+                    }
                 }
                 return Guid.Empty;
             }
@@ -829,7 +887,10 @@ namespace Microsoft.Diagnostics.Tracing
             // This lets simple string payloads be shown as the FormattedMessage.  
             if (IsEventWriteString ||
                (eventRecord->EventHeader.Id == 0 && eventRecord->EventHeader.Opcode == 0 && eventRecord->EventHeader.Task == 0))
+            {
                 return EventDataAsString();
+            }
+
             return null;
         }
 
@@ -882,7 +943,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            result = this.PayloadByName(binder.Name);
+            result = PayloadByName(binder.Name);
             return result != null;
         }
 #endif
@@ -910,10 +971,14 @@ namespace Microsoft.Diagnostics.Tracing
                 var value = PayloadValue(index);
 
                 if (value == null)
+                {
                     return "";
+                }
 
                 if (value is Address)
+                {
                     return "0x" + ((Address)value).ToString("x", formatProvider);
+                }
 
                 if (value is int)
                 {
@@ -927,28 +992,42 @@ namespace Microsoft.Diagnostics.Tracing
                                ((intValue >> 24) & 0xFF).ToString();
                     }
                     if (formatProvider != null)
+                    {
                         return intValue.ToString(formatProvider);
+                    }
                     else
+                    {
                         return intValue.ToString("n0");
+                    }
                 }
 
                 if (value is long)
                 {
                     if (payloadNames[index] == "objectId")      // TODO this is a hack.  
+                    {
                         return "0x" + ((long)value).ToString("x");
+                    }
 
                     if (formatProvider != null)
+                    {
                         return ((long)value).ToString(formatProvider);
+                    }
                     else
+                    {
                         return ((long)value).ToString("n0");
+                    }
                 }
 
                 if (value is double)
                 {
                     if (formatProvider != null)
+                    {
                         return ((double)value).ToString(formatProvider);
+                    }
                     else
+                    {
                         return ((double)value).ToString("n3");
+                    }
                 }
 
                 if (value is DateTime)
@@ -961,7 +1040,9 @@ namespace Microsoft.Diagnostics.Tracing
                         ret += " (" + (asDateTime - source.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
                     else
+                    {
                         ret = asDateTime.ToString(formatProvider);
+                    }
 
                     return ret;
                 }
@@ -1000,7 +1081,9 @@ namespace Microsoft.Diagnostics.Tracing
                             sb.Append(HexDigit((b % 16)));
                         }
                         if (limit < asByteArray.Length)
+                        {
                             sb.Append("...");
+                        }
                     }
                     return sb.ToString();
                 }
@@ -1013,14 +1096,21 @@ namespace Microsoft.Diagnostics.Tracing
                     foreach (var elem in asArray)
                     {
                         if (!first)
+                        {
                             sb.Append(',');
+                        }
+
                         first = false;
 
                         var asStruct = elem as IDictionary<string, object>;
                         if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
+                        {
                             sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
+                        }
                         else
+                        {
                             sb.Append(elem.ToString());
+                        }
                     }
                     sb.Append(']');
                     return sb.ToString();
@@ -1040,8 +1130,13 @@ namespace Microsoft.Diagnostics.Tracing
         {
             string[] propertyNames = PayloadNames;
             for (int i = 0; i < propertyNames.Length; i++)
+            {
                 if (propertyName == propertyNames[i])
+                {
                     return i;
+                }
+            }
+
             return -1;
         }
         /// <summary>
@@ -1053,7 +1148,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int index = PayloadIndex(propertyName);
             if (0 <= index)
+            {
                 return PayloadValue(index);
+            }
+
             return null;
         }
         /// <summary>
@@ -1065,7 +1163,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int index = PayloadIndex(propertyName);
             if (0 <= index)
+            {
                 return PayloadString(index, formatProvider);
+            }
+
             return null;
         }
         // Raw payload bytes
@@ -1103,11 +1204,16 @@ namespace Microsoft.Diagnostics.Tracing
             }
             // TODO overflow
             if (sourceStartIndex + length > EventDataLength)
+            {
                 throw new IndexOutOfRangeException();
+            }
 
             IntPtr start = (IntPtr)((byte*)DataStart.ToPointer() + sourceStartIndex);
             if (length > 0)
+            {
                 Marshal.Copy(start, targetBuffer, targetStartIndex, length);
+            }
+
             return targetBuffer;
         }
 
@@ -1117,7 +1223,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <para>This method is more expensive than copy out all the event data from the TraceEvent instance
         /// to a type of your construction.</para>
         /// </summary>
-        public unsafe virtual TraceEvent Clone()
+        public virtual unsafe TraceEvent Clone()
         {
             TraceEvent ret = (TraceEvent)MemberwiseClone();     // Clone myself. 
             ret.next = null;                                    // the clone is not in any linked list.  
@@ -1129,7 +1235,9 @@ namespace Microsoft.Diagnostics.Tracing
                 // We need to copy out the RelatedActivityID if it is there.  
                 Guid relatedActivityID = RelatedActivityID;
                 if (relatedActivityID != default(Guid))
+                {
                     extendedDataLength += sizeof(Guid);
+                }
 
                 IntPtr extendedDataBuffer = Marshal.AllocHGlobal(extendedDataLength + sizeof(TraceEventNativeMethods.EVENT_RECORD) + userDataLength);
                 IntPtr eventRecordBuffer = (IntPtr)(((byte*)extendedDataBuffer) + extendedDataLength);
@@ -1137,7 +1245,10 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // store the related activity ID
                 if (extendedDataLength != 0)
+                {
                     *((Guid*)extendedDataBuffer) = relatedActivityID;
+                }
+
                 ret.myBuffer = extendedDataBuffer;
 
                 CopyBlob((IntPtr)eventRecord, eventRecordBuffer, sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -1185,10 +1296,16 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Prefix(sb);
             if (ProviderGuid != Guid.Empty)
+            {
                 XmlAttrib(sb, "ProviderName", ProviderName);
+            }
+
             string message = GetFormattedMessage(formatProvider);
             if (message != null)
+            {
                 XmlAttrib(sb, "FormattedMessage", message);
+            }
+
             string[] payloadNames = PayloadNames;
             for (int i = 0; i < payloadNames.Length; i++)
             {
@@ -1198,7 +1315,9 @@ namespace Microsoft.Diagnostics.Tracing
                 // Note that this is not perfect, but avoids the likley cases
                 if (payloadName == "ProviderName" || payloadName == "FormattedMessage" || payloadName == "MSec" ||
                     payloadName == "PID" || payloadName == "PName" || payloadName == "TID" || payloadName == "ActivityID")
+                {
                     payloadName = "_" + payloadName;
+                }
 
                 XmlAttrib(sb, payloadName, PayloadString(i, formatProvider));
             }
@@ -1226,7 +1345,10 @@ namespace Microsoft.Diagnostics.Tracing
             XmlAttrib(sb, "Level", Level);
             XmlAttrib(sb, "ProviderName", ProviderName);
             if (ProviderGuid != Guid.Empty && !ProviderName.Contains(ProviderGuid.ToString()))
+            {
                 XmlAttrib(sb, "ProviderGuid", ProviderGuid);
+            }
+
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
             XmlAttrib(sb, "ProcessorNumber", ProcessorNumber);
             sb.AppendLine().Append(" ");
@@ -1238,13 +1360,17 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     XmlAttrib(sb, "ActivityID", StartStopActivityComputer.ActivityPathString(ActivityID));
                     if (StartStopActivityComputer.IsActivityPath(ActivityID, ProcessID))        // Also print out the raw GUID
+                    {
                         XmlAttrib(sb, "RawActivityID", ActivityID);
+                    }
                 }
                 if (RelatedActivityID != Guid.Empty)
                 {
                     XmlAttrib(sb, "RelatedActivityID", StartStopActivityComputer.ActivityPathString(RelatedActivityID));
                     if (StartStopActivityComputer.IsActivityPath(RelatedActivityID, ProcessID))   // Also print out the raw GUID
+                    {
                         XmlAttrib(sb, "RawRelatedActivityID", RelatedActivityID);
+                    }
                 }
                 sb.AppendLine().Append(" ");
             }
@@ -1254,16 +1380,21 @@ namespace Microsoft.Diagnostics.Tracing
             if (taskGuid != Guid.Empty)
             {
                 if (!TaskName.Contains(taskGuid.ToString()))
+                {
                     XmlAttrib(sb, "TaskGuid", taskGuid);
+                }
             }
             else
+            {
                 XmlAttrib(sb, "Task", Task);
+            }
+
             XmlAttrib(sb, "Channel", eventRecord->EventHeader.Channel);
             XmlAttrib(sb, "PointerSize", PointerSize);
             sb.AppendLine().Append(" ");
             XmlAttrib(sb, "CPU", ProcessorNumber);
             XmlAttrib(sb, "EventIndex", EventIndex);
-            XmlAttrib(sb, "TemplateType", this.GetType().Name);
+            XmlAttrib(sb, "TemplateType", GetType().Name);
             sb.Append('>').AppendLine();
 
             if (includePrettyPrint && !(this is UnhandledTraceEvent))
@@ -1322,21 +1453,25 @@ namespace Microsoft.Diagnostics.Tracing
             this.opcodeName = opcodeName;
             this.providerGuid = providerGuid;
             this.providerName = providerName;
-            this.ParentThread = -1;
+            ParentThread = -1;
             if (this.eventID == TraceEventID.Illegal)
+            {
                 lookupAsClassic = true;
-
+            }
         }
 
         /// <summary>
         /// Skip UTF8 string starting at 'offset' bytes into the payload blob.
         /// </summary>  
         /// <returns>Offset just after the string</returns>
-        internal protected int SkipUTF8String(int offset)
+        protected internal int SkipUTF8String(int offset)
         {
             IntPtr mofData = DataStart;
             while (TraceEventRawReaders.ReadByte(mofData, offset) != 0)
+            {
                 offset++;
+            }
+
             offset++;
             return offset;
         }
@@ -1344,11 +1479,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// Skip Unicode string starting at 'offset' bytes into the payload blob.
         /// </summary>  
         /// <returns>Offset just after the string</returns>
-        internal protected int SkipUnicodeString(int offset)
+        protected internal int SkipUnicodeString(int offset)
         {
             IntPtr mofData = DataStart;
             while (TraceEventRawReaders.ReadInt16(mofData, offset) != 0)
+            {
                 offset += 2;
+            }
+
             offset += 2;
             return offset;
         }
@@ -1356,7 +1494,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Skip 'stringCount' Unicode strings starting at 'offset' bytes into the payload blob.
         /// </summary>  
         /// <returns>Offset just after the last string</returns>
-        internal protected int SkipUnicodeString(int offset, int stringCount)
+        protected internal int SkipUnicodeString(int offset, int stringCount)
         {
             while (stringCount > 0)
             {
@@ -1377,7 +1515,9 @@ namespace Microsoft.Diagnostics.Tracing
             // size (sigh) depending on the 2nd byte in the SID
             int sid = TraceEventRawReaders.ReadInt32(mofData, offset);
             if (sid == 0)
+            {
                 return offset + 4;      // TODO confirm 
+            }
             else
             {
                 int tokenSize = HostOffset(8, 2);
@@ -1392,7 +1532,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <param name="offset">The Offset as it would be on a 32 bit system</param>
         /// <param name="numPointers">The number of pointer-sized fields that came before this field.
         /// </param>
-        internal protected int HostOffset(int offset, int numPointers)
+        protected internal int HostOffset(int offset, int numPointers)
         {
             return offset + (PointerSize - 4) * numPointers;
         }
@@ -1407,7 +1547,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Given an Offset to a null terminated ASCII string in an event blob, return the string that is
         /// held there.   
         /// </summary>
-        internal protected string GetUTF8StringAt(int offset)
+        protected internal string GetUTF8StringAt(int offset)
         {
             if (offset >= EventDataLength)
             {
@@ -1415,7 +1555,9 @@ namespace Microsoft.Diagnostics.Tracing
                 return "<<ERROR EOB>>";
             }
             else
+            {
                 return TraceEventRawReaders.ReadUTF8String(DataStart, offset, EventDataLength);
+            }
         }
         /// <summary>
         /// Returns the string represented by a fixed length ASCII string starting at 'offset' of length 'charCount'
@@ -1427,7 +1569,9 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 char c = (char)GetByteAt(offset + i);
                 if (c == 0)
+                {
                     break;
+                }
 #if DEBUG
                 // TODO review. 
                 if ((c < ' ' || c > '~') && !char.IsWhiteSpace(c))
@@ -1452,7 +1596,9 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 char c = (char)GetInt16At(offset + i * 2);
                 if (c == 0)
+                {
                     break;
+                }
 #if DEBUG
                 // TODO review. 
                 if ((c < ' ' || c > '~') && !char.IsWhiteSpace(c))
@@ -1472,20 +1618,23 @@ namespace Microsoft.Diagnostics.Tracing
         {
             byte[] addrBytes = new byte[16];
             for (int i = 0; i < addrBytes.Length; i++)
+            {
                 addrBytes[i] = TraceEventRawReaders.ReadByte(DataStart, offset + i);
+            }
+
             return new System.Net.IPAddress(addrBytes);
         }
         /// <summary>
         /// Returns the GUID serialized at 'offset' in the payload bytes. 
         /// </summary>
-        internal protected Guid GetGuidAt(int offset)
+        protected internal Guid GetGuidAt(int offset)
         {
             return TraceEventRawReaders.ReadGuid(DataStart, offset);
         }
         /// <summary>
         /// Get the DateTime that serialized (as a windows FILETIME) at 'offset' in the payload bytes. 
         /// </summary>
-        internal protected DateTime GetDateTimeAt(int offset)
+        protected internal DateTime GetDateTimeAt(int offset)
         {
             return DateTime.FromFileTime(GetInt64At(offset));
         }
@@ -1493,18 +1642,22 @@ namespace Microsoft.Diagnostics.Tracing
         /// Given an Offset to a null terminated Unicode string in an payload bytes, return the string that is
         /// held there.   
         /// </summary>
-        internal protected string GetUnicodeStringAt(int offset)
+        protected internal string GetUnicodeStringAt(int offset)
         {
             if (offset >= EventDataLength)
+            {
                 throw new Exception("Reading past end of event");
+            }
             else
+            {
                 return TraceEventRawReaders.ReadUnicodeString(DataStart, offset, EventDataLength);
+            }
         }
         /// <summary>
         /// Give an offset to a byte array of size 'size' in the payload bytes, return a byte[] that contains
         /// those bytes.
         /// </summary>
-        internal protected byte[] GetByteArrayAt(int offset, int size)
+        protected internal byte[] GetByteArrayAt(int offset, int size)
         {
             byte[] res = new byte[size];
             for (int i = 0; i < size; i++)
@@ -1516,28 +1669,28 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns a byte value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        internal protected int GetByteAt(int offset)
+        protected internal int GetByteAt(int offset)
         {
             return TraceEventRawReaders.ReadByte(DataStart, offset);
         }
         /// <summary>
         /// Returns a short value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        internal protected int GetInt16At(int offset)
+        protected internal int GetInt16At(int offset)
         {
             return TraceEventRawReaders.ReadInt16(DataStart, offset);
         }
         /// <summary>
         /// Returns an int value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        internal protected int GetInt32At(int offset)
+        protected internal int GetInt32At(int offset)
         {
             return TraceEventRawReaders.ReadInt32(DataStart, offset);
         }
         /// <summary>
         /// Returns a long value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        internal protected long GetInt64At(int offset)
+        protected internal long GetInt64At(int offset)
         {
             return TraceEventRawReaders.ReadInt64(DataStart, offset);
         }
@@ -1545,18 +1698,22 @@ namespace Microsoft.Diagnostics.Tracing
         /// Get something that is machine word sized for the provider that collected the data, but is an
         /// integer (and not an address)
         /// </summary>
-        internal protected long GetIntPtrAt(int offset)
+        protected internal long GetIntPtrAt(int offset)
         {
             Debug.Assert(PointerSize == 4 || PointerSize == 8);
             if (PointerSize == 4)
+            {
                 return (long)(uint)GetInt32At(offset);
+            }
             else
+            {
                 return GetInt64At(offset);
+            }
         }
         /// <summary>
         /// Gets something that is pointer sized for the provider that collected the data.  
         /// </summary>
-        internal protected Address GetAddressAt(int offset)
+        protected internal Address GetAddressAt(int offset)
         {
             return unchecked((Address)GetIntPtrAt(offset));
         }
@@ -1564,14 +1721,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns an int float (single) that was serialized at 'offset' in the payload bytes
         /// </summary>
-        internal protected float GetSingleAt(int offset)
+        protected internal float GetSingleAt(int offset)
         {
             return TraceEventRawReaders.ReadSingle(DataStart, offset);
         }
         /// <summary>
         /// Returns an int double precision floating point value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        internal protected double GetDoubleAt(int offset)
+        protected internal double GetDoubleAt(int offset)
         {
             return TraceEventRawReaders.ReadDouble(DataStart, offset);
         }
@@ -1579,28 +1736,28 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttrib(StringBuilder sb, string attribName, string value)
+        protected internal static StringBuilder XmlAttrib(StringBuilder sb, string attribName, string value)
         {
             return XmlAttribPrefix(sb, attribName).Append(XmlUtilities.XmlEscape(value, false)).Append('"');
         }
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttrib(StringBuilder sb, string attribName, int value)
+        protected internal static StringBuilder XmlAttrib(StringBuilder sb, string attribName, int value)
         {
             return XmlAttribPrefix(sb, attribName).Append(value.ToString("n0")).Append('"');
         }
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttrib(StringBuilder sb, string attribName, long value)
+        protected internal static StringBuilder XmlAttrib(StringBuilder sb, string attribName, long value)
         {
             return XmlAttribPrefix(sb, attribName).Append(value.ToString("n0")).Append('"');
         }
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, ulong value)
+        protected internal static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, ulong value)
         {
             XmlAttribPrefix(sb, attribName);
             sb.Append('0').Append('x');
@@ -1614,7 +1771,10 @@ namespace Microsoft.Diagnostics.Tracing
                         uint digit = (intValue >> j) & 0xF;
                         uint charDigit = ('0' + digit);
                         if (charDigit > '9')
+                        {
                             charDigit += ('A' - '9' - 1);
+                        }
+
                         sb.Append((char)charDigit);
                     }
                 }
@@ -1626,31 +1786,34 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, long value)
+        protected internal static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, long value)
         {
             return XmlAttribHex(sb, attribName, (ulong)value);
         }
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, uint value)
+        protected internal static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, uint value)
         {
             return XmlAttribHex(sb, attribName, (ulong)value);
         }
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, int value)
+        protected internal static StringBuilder XmlAttribHex(StringBuilder sb, string attribName, int value)
         {
             return XmlAttribHex(sb, attribName, (ulong)value);
         }
         /// <summary>
         /// Write the XML attribute 'attribName' with value 'value' to the string builder
         /// </summary>
-        internal protected static StringBuilder XmlAttrib(StringBuilder sb, string attribName, object value)
+        protected internal static StringBuilder XmlAttrib(StringBuilder sb, string attribName, object value)
         {
             if (value is Address)
+            {
                 return XmlAttribHex(sb, attribName, (Address)value);
+            }
+
             return XmlAttrib(sb, attribName, value.ToString());
         }
 
@@ -1664,14 +1827,17 @@ namespace Microsoft.Diagnostics.Tracing
         /// Prints a standard prefix for a event (includes the time of the event, the process ID and the
         /// thread ID.  
         /// </summary>
-        internal protected StringBuilder Prefix(StringBuilder sb)
+        protected internal StringBuilder Prefix(StringBuilder sb)
         {
             sb.Append("<Event MSec="); QuotePadLeft(sb, TimeStampRelativeMSec.ToString("f4"), 13);
             sb.Append(" PID="); QuotePadLeft(sb, ProcessID.ToString(), 6);
             sb.Append(" PName="); QuotePadLeft(sb, ProcessName, 10);
             sb.Append(" TID="); QuotePadLeft(sb, ThreadID.ToString(), 6);
             if (ActivityID != Guid.Empty)
+            {
                 sb.AppendFormat(" ActivityID=\"{0:n}\"", ActivityID);
+            }
+
             sb.Append(" EventName=\"").Append(EventName).Append('"');
             return sb;
         }
@@ -1706,7 +1872,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns (or sets) the delegate associated with this event.   
         /// </summary>
-        internal protected abstract Delegate Target { get; set; }
+        protected internal abstract Delegate Target { get; set; }
 
         /// <summary>
         /// If this TraceEvent belongs to a parser that needs state, then this callback will set the state.  
@@ -1719,15 +1885,21 @@ namespace Microsoft.Diagnostics.Tracing
         private static char HexDigit(int digit)
         {
             if (digit < 10)
+            {
                 return (char)('0' + digit);
+            }
             else
+            {
                 return (char)('A' - 10 + digit);
+            }
         }
         /// <summary>
         /// Returns the Timestamp for the event using Query Performance Counter (QPC) ticks.   
-        /// The start time for the QPC tick counter is unknown
+        /// The start time for the QPC tick counter is arbitrary and the units  also vary.  
         /// </summary>
-        internal long TimeStampQPC { get { return eventRecord->EventHeader.TimeStamp; } }
+        [Obsolete("Not Obsolete but Discouraged.  Please use TimeStampRelativeMSec.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public long TimeStampQPC { get { return eventRecord->EventHeader.TimeStamp; } }
 
         /// <summary>
         /// A standard way for events to are that certain addresses are addresses in code and ideally have
@@ -1761,15 +1933,28 @@ namespace Microsoft.Diagnostics.Tracing
         internal bool Matches(TraceEvent other)
         {
             if (lookupAsClassic != other.lookupAsClassic)
+            {
                 return false;
+            }
+
             if (lookupAsWPP != other.lookupAsWPP)
+            {
                 return false;
+            }
+
             if (lookupAsClassic)
+            {
                 return taskGuid == other.taskGuid && Opcode == other.Opcode;
+            }
+
             if (lookupAsWPP)
+            {
                 return taskGuid == other.taskGuid && ID == other.ID;
+            }
             else
+            {
                 return providerGuid == other.providerGuid && ID == other.ID;
+            }
         }
 
 
@@ -1781,7 +1966,9 @@ namespace Microsoft.Diagnostics.Tracing
             // Most Data does not own its data, so this is usually a no-op. 
 
             if (myBuffer != IntPtr.Zero)
+            {
                 Marshal.FreeHGlobal(myBuffer);
+            }
         }
 
         /// <summary>
@@ -1790,7 +1977,10 @@ namespace Microsoft.Diagnostics.Tracing
         internal static string DumpArray(byte[] bytes, int size = 0)
         {
             if (size == 0)
+            {
                 size = bytes.Length;
+            }
+
             StringWriter sw = new StringWriter();
             DumpBytes(bytes, size, sw, "");
 
@@ -1820,30 +2010,47 @@ namespace Microsoft.Diagnostics.Tracing
                 for (int i = 0; i < 16; i++)
                 {
                     if (i == 8)
+                    {
                         output.Write("| ");
+                    }
+
                     if (i + rowStartIdx < length)
+                    {
                         output.Write("{0,2:x} ", bytes[i + rowStartIdx]);
+                    }
                     else
+                    {
                         output.Write("   ");
+                    }
                 }
                 output.Write("  ");
                 for (int i = 0; i < 16; i++)
                 {
                     if (i == 8)
+                    {
                         output.Write(" ");
+                    }
+
                     if (i + rowStartIdx >= length)
+                    {
                         break;
+                    }
+
                     byte val = bytes[i + rowStartIdx];
                     if (32 <= val && val < 128)
+                    {
                         output.Write((Char)val);
+                    }
                     else
+                    {
                         output.Write(".");
+                    }
                 }
                 output.WriteLine();
                 rowStartIdx += 16;
             }
         }
-        unsafe internal static void CopyBlob(IntPtr source, IntPtr destination, int byteCount)
+        internal static unsafe void CopyBlob(IntPtr source, IntPtr destination, int byteCount)
         {
             // TODO: currently most uses the source aligned so
             // I don't bother trying to insure that the copy is aligned.
@@ -1864,7 +2071,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int spaces = totalSize - 2 - str.Length;
             if (spaces > 0)
+            {
                 sb.Append(' ', spaces);
+            }
+
             sb.Append('"').Append(str).Append('"');
         }
         private static string ToString(TraceEventOpcode opcode)
@@ -1892,21 +2102,29 @@ namespace Microsoft.Diagnostics.Tracing
         internal unsafe string EventDataAsString()
         {
             if (EventDataLength % 2 != 0)
+            {
                 return null;
+            }
 
             int numChars = EventDataLength / 2;
             if (numChars < 4)
+            {
                 return null;
+            }
 
             char* ptr = (char*)DataStart;
             if (ptr[numChars - 1] != '\0')          // Needs to be null terminated. 
+            {
                 return null;
+            }
 
             for (int i = 0; i < numChars - 1; i++)  // Rest need to be printable ASCII chars.  
             {
                 char c = ptr[i];
                 if (!((' ' <= c && c <= '~') || c == '\n' || c == '\r'))
+                {
                     return null;
+                }
             }
 
             return TraceEventRawReaders.ReadUnicodeString(DataStart, 0, EventDataLength);
@@ -1936,7 +2154,7 @@ namespace Microsoft.Diagnostics.Tracing
         [Conditional("DEBUG")]
         protected internal void DebugValidate()
         {
-            this.Validate();
+            Validate();
         }
 
         // Note that you can't use the ExtendedData, UserData or UserContext fields, they are not set
@@ -1970,7 +2188,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The array of names for each property in the payload (in order).  
         /// </summary>
-        internal protected string[] payloadNames;
+        protected internal string[] payloadNames;
         internal TraceEventSource source;
         internal EventIndex eventIndex;               // something that uniquely identifies this event in the stream.  
         internal IntPtr myBuffer;                     // If the raw data is owned by this instance, this points at it.  Normally null.
@@ -2256,9 +2474,13 @@ namespace Microsoft.Diagnostics.Tracing
         public void AddCallbackForEvent<T>(string eventName, Action<T> callback) where T : TraceEvent
         {
             if (eventName == null)
+            {
                 AddCallbackForEvents<T>(callback: callback);
+            }
             else
+            {
                 AddCallbackForEvents<T>(s => eventName == s, callback: callback);
+            }
         }
         // subscribe to a set of events for parsers that handle a single provider.  (These are more strongly typed to provider specific payloads)
         /// <summary>
@@ -2296,17 +2518,28 @@ namespace Microsoft.Diagnostics.Tracing
         public void AddCallbackForEvents<T>(Predicate<string> eventNameFilter, object subscriptionId, Action<T> callback) where T : TraceEvent
         {
             if (GetProviderName() == null)
+            {
                 throw new InvalidOperationException("Need to use AddCalbackForProviderEvents for Event Parsers that handle more than one provider");
+            }
 
             // Convert the eventNameFilter to the more generic filter that take a provider name as well.   
             Func<string, string, EventFilterResponse> eventsToObserve = delegate (string pName, string eName)
             {
                 if (pName != GetProviderName())
+                {
                     return EventFilterResponse.RejectProvider;
+                }
+
                 if (eventNameFilter == null)
+                {
                     return EventFilterResponse.AcceptEvent;
+                }
+
                 if (eventNameFilter(eName))
+                {
                     return EventFilterResponse.AcceptEvent;
+                }
+
                 return EventFilterResponse.RejectEvent;
             };
 
@@ -2318,7 +2551,9 @@ namespace Microsoft.Diagnostics.Tracing
             EnumerateTemplates(eventsToObserve, delegate (TraceEvent template)
             {
                 if (template is T)
+                {
                     Subscribe(newSubscription, template, templateState, false);
+                }
             });
         }
 
@@ -2337,11 +2572,20 @@ namespace Microsoft.Diagnostics.Tracing
                 delegate (string pName, string eName)
                 {
                     if (pName != providerName)
+                    {
                         return EventFilterResponse.RejectProvider;
+                    }
+
                     if (eventName == null)
+                    {
                         return EventFilterResponse.AcceptEvent;
+                    }
+
                     if (eventName == eName)
+                    {
                         return EventFilterResponse.AcceptEvent;
+                    }
+
                     return EventFilterResponse.RejectEvent;
                 }, callback);
         }
@@ -2407,9 +2651,14 @@ namespace Microsoft.Diagnostics.Tracing
                     foreach (var template in cur.m_activeSubscriptions)
                     {
                         if (template.taskGuid != Guid.Empty)
+                        {
                             source.UnregisterEventTemplate(template.Target, (int)template.Opcode, template.taskGuid);
+                        }
+
                         if (template.ID != TraceEventID.Illegal)
+                        {
                             source.UnregisterEventTemplate(template.Target, (int)template.ID, template.ProviderGuid);
+                        }
                     }
                     m_subscriptionRequests.RemoveRange(i, 1);
                 }
@@ -2430,10 +2679,12 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(source != null);
             this.source = source;
-            this.stateKey = @"parsers\" + this.GetType().FullName;
+            stateKey = @"parsers\" + GetType().FullName;
 
             if (!dontRegister)
+            {
                 this.source.RegisterParser(this);
+            }
 
 #if DEBUG
             if (GetProviderName() != null && !m_ConfirmedAllEventsAreInEnumeration)
@@ -2489,15 +2740,18 @@ namespace Microsoft.Diagnostics.Tracing
         /// Debug-only code  Confirm that some did not add an event, but forgot to add it to the enumeration that EnumerateTemplates 
         /// returns.  
         /// </summary>
-        bool m_ConfirmedAllEventsAreInEnumeration;
-        void ConfirmAllEventsAreInEnumeration()
+        private bool m_ConfirmedAllEventsAreInEnumeration;
+
+        private void ConfirmAllEventsAreInEnumeration()
         {
             var declaredSet = new SortedDictionary<string, string>();
 
             // TODO FIX NOW currently we have a hack where we know we are not correct 
             // for JScriptTraceEventParser.  
             if (GetType().Name == "JScriptTraceEventParser")
+            {
                 return;
+            }
 
             // Use reflection to see what events have declared 
             MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
@@ -2505,31 +2759,49 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var addMethod = methods[i];
                 if (!addMethod.IsSpecialName)
+                {
                     continue;
+                }
 
                 var addMethodName = addMethod.Name;
                 if (!addMethodName.StartsWith("add_"))
+                {
                     continue;
+                }
 
                 var eventName = addMethodName.Substring(4);
 
                 if (eventName.EndsWith("Group"))
+                {
                     continue;
+                }
 
                 ParameterInfo[] paramInfos = addMethod.GetParameters();
                 if (paramInfos.Length != 1)
+                {
                     continue;
+                }
 
                 if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
+                {
                     continue;
+                }
+
                 if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                {
                     continue;
+                }
+
                 if (eventName == "PerfInfoISR")                     // One event has two templates.  
+                {
                     continue;
+                }
 
                 // The IIs parser uses Cap _ instead of PascalCase, normalize
                 if (GetType().Name == "IisTraceEventParser")
+                {
                     eventName = eventName.ToLower();
+                }
 
                 declaredSet.Add(eventName, eventName);
             }
@@ -2542,33 +2814,58 @@ namespace Microsoft.Diagnostics.Tracing
                 // the CLR provider calls this callback twice. Rather then refactoring EnumerateTemplates for all parsers
                 // we'll "special case" project N templates and ignore them...
                 if (template.ProviderGuid == ClrTraceEventParser.NativeProviderGuid)
+                {
                     return;
+                }
 
                 var eventName = template.EventName.Replace("/", "");
                 if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
+                {
                     return;
+                }
+
                 if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                {
                     return;
+                }
+
                 if (eventName == "PerfInfoISR")                     // One event has two templates. 
+                {
                     return;
+                }
+
                 if (eventName == "FileIO")
+                {
                     eventName = "FileIOName";       // They use opcode 0 which gets truncated.  
+                }
+
                 if (eventName == "EventTrace")
+                {
                     eventName = "EventTraceHeader"; // They use opcode 0 which gets truncated.  
+                }
+
                 if (eventName == "Jscript_GC_IdleCollect")
+                {
                     eventName = eventName + template.OpcodeName;  // They use opcode 0 which gets truncated.
+                }
 
                 // The IIs parser uses Cap _ instead of PascalCase, normalize
                 if (template.ProviderGuid == IisTraceEventParser.ProviderGuid)
+                {
                     eventName = eventName.ToLower().Replace("_", "");
+                }
 
                 // We register the same name for old classic and manifest for some old GC events (
                 if (eventName.StartsWith("GC") && template.ID == (TraceEventID)0xFFFF &&
                     (template.ProviderGuid == ClrTraceEventParser.ProviderGuid || template.providerGuid == ClrTraceEventParser.NativeProviderGuid))
+                {
                     return;
+                }
 
                 if (declaredSet.ContainsKey(eventName))
+                {
                     declaredSet.Remove(eventName);
+                }
                 else
                 {
                     Debug.Assert(!enumSet.ContainsKey(eventName));
@@ -2580,7 +2877,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (0 < enumSet.Count)
             {
                 var provider = GetProviderName();
-                var typeName = this.GetType().FullName;
+                var typeName = GetType().FullName;
                 foreach (var methodName in enumSet.Keys)
                 {
                     Debug.Assert(false, "The template " + methodName +
@@ -2592,7 +2889,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (0 < declaredSet.Count)
             {
                 var provider = GetProviderName();
-                var typeName = this.GetType().FullName;
+                var typeName = GetType().FullName;
                 foreach (var methodName in declaredSet.Keys)
                 {
                     Debug.Assert(false, "The C# event " + methodName +
@@ -2629,14 +2926,20 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     var responce = cur.m_eventToObserve(template.ProviderName, template.EventName);
                     if (responce == EventFilterResponse.RejectProvider)
+                    {
                         continue;
+                    }
 
                     // We know that we are not rejecting the provider as a whole.   
                     if (combinedResponse == EventFilterResponse.RejectProvider)
+                    {
                         combinedResponse = EventFilterResponse.RejectEvent;
+                    }
 
                     if (responce == EventFilterResponse.RejectEvent)
+                    {
                         continue;
+                    }
                 }
 
                 combinedResponse = EventFilterResponse.AcceptEvent;         // There is at least one subscription for this template.  
@@ -2675,7 +2978,9 @@ namespace Microsoft.Diagnostics.Tracing
                         source.UnregisterEventTemplate(activeSubscription.Target, (int)activeSubscription.ID, activeSubscription.ProviderGuid);
                         // TODO support WPP.  
                         if (activeSubscription.taskGuid != Guid.Empty)
+                        {
                             source.UnregisterEventTemplate(activeSubscription.Target, (int)activeSubscription.Opcode, activeSubscription.taskGuid);
+                        }
 
                         // Update it in place the active subscription in place.  
                         cur.m_activeSubscriptions[i] = templateWithCallback;
@@ -2710,7 +3015,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Keeps track of a single 'AddCallback' request so it can be removed later.   It also handles lazy addition of events.  
         /// </summary>
-        class SubscriptionRequest
+        private class SubscriptionRequest
         {
             /// <summary>
             /// Create a subscription request.  'eventsToObserve takes a provider name (first) and a event name and returns a three valued EventFilterResponse
@@ -2733,8 +3038,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The source that this parser is connected to.  
         /// </summary>
-        internal protected ITraceParserServices source;
-        GrowableArray<SubscriptionRequest> m_subscriptionRequests;
+        protected internal ITraceParserServices source;
+        private GrowableArray<SubscriptionRequest> m_subscriptionRequests;
 
         private string stateKey;
         #endregion
@@ -2762,7 +3067,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// <summary>
     /// A TraceEventDispatcher is a TraceEventSource that supports a callback model for dispatching events.  
     /// </summary>
-    abstract unsafe public class TraceEventDispatcher : TraceEventSource
+    public abstract unsafe class TraceEventDispatcher : TraceEventSource
     {
         /// <summary>
         /// Obtains the correct TraceEventDispatcher for the given trace file name.
@@ -2773,18 +3078,26 @@ namespace Microsoft.Diagnostics.Tracing
         {
 #if !DOTNET_V35
             if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
+            {
                 return new CtfTraceEventSource(traceFileName);
+            }
             else if (traceFileName.EndsWith(".netperf", StringComparison.OrdinalIgnoreCase))
+            {
                 return new EventPipeEventSource(traceFileName);
+            }
 #if !NOT_WINDOWS
             else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+            {
                 return new ETWTraceEventSource(traceFileName);
+            }
 #endif
             else
+            {
 #endif
                 return null;
+            }
         }
 
         // Normally you subscribe to events using parsers that 'attach' themselves to the source. However
@@ -2898,7 +3211,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public void AddDispatchHook(Action<TraceEvent, Action<TraceEvent>> hook)
         {
-            if (hook == null) throw new ArgumentException("Must provide a non-null callback", nameof(hook), null);
+            if (hook == null)
+            {
+                throw new ArgumentException("Must provide a non-null callback", nameof(hook), null);
+            }
 
             // Make a new dispatcher which calls the hook with the old dispatcher.   
             Action<TraceEvent> oldUserDefinedDispatch = userDefinedDispatch ?? DoDispatch;
@@ -2915,7 +3231,9 @@ namespace Microsoft.Diagnostics.Tracing
             var completed = Completed;
             Completed = null;               // We set it to null so we only do it once.  
             if (completed != null)
+            {
                 completed();
+            }
         }
         #endregion
         #region private
@@ -2926,7 +3244,7 @@ namespace Microsoft.Diagnostics.Tracing
         [Conditional("DEBUG")]
         internal void DumpToDebugString()
         {
-            Debug.WriteLine(string.Format("Dumping TraceEventDispatcher GetHashCode=0x{0:x}", this.GetHashCode()));
+            Debug.WriteLine(string.Format("Dumping TraceEventDispatcher GetHashCode=0x{0:x}", GetHashCode()));
             for (int i = 0; i < templates.Length; i++)
             {
                 var template = templates[i];
@@ -2948,8 +3266,13 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int ret = 0;
             for (int i = 0; i < templates.Length; i++)
+            {
                 if (templates[i] != null)
+                {
                     ret++;
+                }
+            }
+
             return ret;
         }
 
@@ -3008,7 +3331,9 @@ namespace Microsoft.Diagnostics.Tracing
         internal override void RegisterUnhandledEventImpl(Func<TraceEvent, bool> callback)
         {
             if (lastChanceHandlers == null)
+            {
                 lastChanceHandlers = new Func<TraceEvent, bool>[] { callback };
+            }
             else
             {
                 // Put it on the end of the array.  
@@ -3026,10 +3351,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// that TraceEvent does NOT have a copy of the data, but rather just a pointer to it. 
         /// This data is ONLY valid during the callback. 
         /// </summary>
-        internal protected void Dispatch(TraceEvent anEvent)
+        protected internal void Dispatch(TraceEvent anEvent)
         {
             if (userDefinedDispatch == null)
+            {
                 DoDispatch(anEvent);
+            }
             else
             {
                 // Rare case, there is a dispatch hook, call it (which may call the original Dispatch logic)
@@ -3044,40 +3371,49 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-                anEvent.Dispatch();
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (; ; )
+                if (anEvent.Target != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                        break;
-                    if (nextEvent.Target != null)
+                    anEvent.Dispatch();
+                }
+
+                if (anEvent.next != null)
+                {
+                    TraceEvent nextEvent = anEvent;
+                    for (; ; )
                     {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                        {
+                            break;
+                        }
+
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;
+                        }
                     }
                 }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                    unhandledEventTemplate.PrepForCallback();
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                    {
+                        unhandledEventTemplate.PrepForCallback();
+                    }
+
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)
             {
                 Debug.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
                 Debug.WriteLine("Exception: " + e.Message);
-                Debug.Assert(false, "Thrown exception " + e.GetType().Name +  " '" + e.Message + "'");
+                Debug.Assert(false, "Thrown exception " + e.GetType().Name + " '" + e.Message + "'");
             }
 #endif
         }
@@ -3130,7 +3466,9 @@ namespace Microsoft.Diagnostics.Tracing
                         currentID = currentID + 1;      // TODO overflow. 
 
                         if ((((int)currentID) & 0xFFFF) == 0) // Every 64K events allow Thread.Interrupt.  
+                        {
                             System.Threading.Thread.Sleep(0);
+                        }
 
 #if DEBUG                   // ASSERT we found the event using the mechanism we expected to use.
                         Debug.Assert(((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER) != 0) == curTemplate.lookupAsClassic);
@@ -3138,9 +3476,13 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             Debug.Assert(curTemplate.taskGuid == eventRecord->EventHeader.ProviderId);
                             if (curTemplate.lookupAsWPP)
+                            {
                                 Debug.Assert((ushort)curTemplate.eventID == eventRecord->EventHeader.Id);
+                            }
                             else
+                            {
                                 Debug.Assert((byte)curTemplate.opcode == eventRecord->EventHeader.Opcode);
+                            }
                         }
                         else
                         {
@@ -3151,10 +3493,14 @@ namespace Microsoft.Diagnostics.Tracing
                         return curTemplate;
                     }
                     else
+                    {
                         break;      // Found an exact match but it was empty (deleted)
+                    }
                 }
                 if (!entry->inUse)
+                {
                     break;
+                }
 
                 // Trace.Write("Collision " + *asGuid + " opcode " + opcode + " and " + templatesInfo[hash].providerGuid + " opcode " + templatesInfo[hash].opcode);
                 hash = (hash + (int)eventID * 2 + 1) & templatesLengthMask;
@@ -3165,7 +3511,10 @@ namespace Microsoft.Diagnostics.Tracing
             unhandledEventTemplate.lookupAsClassic = unhandledEventTemplate.IsClassicProvider;
             currentID = currentID + 1;                  // TODO overflow.
             if ((((int)currentID) & 0xFFFF) == 0)       // Every 64K events allow Thread.Interrupt.  
+            {
                 System.Threading.Thread.Sleep(0);
+            }
+
             unhandledEventTemplate.opcode = unchecked((TraceEventOpcode)(-1));      // Marks it as unhandledEvent;
 
 #if DEBUG
@@ -3189,7 +3538,9 @@ namespace Microsoft.Diagnostics.Tracing
                     var lastChanceHandlerModifiedLookup = lastChanceHandlers[lastChanceHandlerChecked](unhandledEventTemplate);
                     lastChanceHandlerChecked++;
                     if (lastChanceHandlerModifiedLookup)
+                    {
                         goto RetryLookup;
+                    }
                 }
                 while (lastChanceHandlerChecked < lastChanceHandlers.Length);
             }
@@ -3213,7 +3564,10 @@ namespace Microsoft.Diagnostics.Tracing
                     return templates[hash];     // can be null and its OK
                 }
                 if (!entry->inUse)
+                {
                     break;
+                }
+
                 hash = (hash + (int)eventID * 2 + 1) & templatesLengthMask;
             }
             return null;
@@ -3225,7 +3579,9 @@ namespace Microsoft.Diagnostics.Tracing
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 OnCompleted();
+            }
             else
             {
                 // To avoid AVs after someone calls Dispose, only clean up this memory on finalization.  
@@ -3256,7 +3612,9 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // round up to a power of 2 because we use a mask to do modulus
                 while (newLength < minSize)
+                {
                     newLength = newLength * 2;
+                }
             }
             templatesLengthMask = newLength - 1;
 
@@ -3276,10 +3634,14 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             if (templatesInfo == null)
+            {
                 templatesInfo = (TemplateEntry*)Marshal.AllocHGlobal(sizeof(TemplateEntry) * newLength);
+            }
 
             for (int i = 0; i < newLength; i++)
+            {
                 templatesInfo[i] = default(TemplateEntry);
+            }
 
             numTemplates = 0;
             if (oldTemplates != null)
@@ -3287,7 +3649,9 @@ namespace Microsoft.Diagnostics.Tracing
                 for (int i = 0; i < oldTemplates.Length; i++)
                 {
                     if (oldTemplates[i] != null)
+                    {
                         Insert(oldTemplates[i]);
+                    }
                 }
             }
         }
@@ -3305,7 +3669,9 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
 
             if (numTemplates * 4 > templates.Length * 3)    // Are we over 3/4 full?
+            {
                 ReHash();
+            }
 
             // We need the size to be a power of two since we use a mask to do the modulus. 
             Debug.Assert(((templates.Length - 1) & templates.Length) == 0, "array length must be a power of 2");
@@ -3321,13 +3687,19 @@ namespace Microsoft.Diagnostics.Tracing
                 // EventProvider creates a taskGuid from the provider Guid and the task number. We mimic this
                 // algorithm here to match.
                 if (template.taskGuid == Guid.Empty)
+                {
                     eventGuid = GenTaskGuidFromProviderGuid(template.ProviderGuid, (ushort)template.task);
+                }
                 else
+                {
                     eventGuid = template.taskGuid;
+                }
 
                 // The eventID is the opcode for non WPP classic events, it is the eventID for WPP events (no change)
                 if (!template.lookupAsWPP)
+                {
                     eventID = (ushort)template.Opcode;
+                }
             }
             Debug.Assert(eventGuid != Guid.Empty);
 
@@ -3357,7 +3729,10 @@ namespace Microsoft.Diagnostics.Tracing
                         if (template.Target != null)
                         {
                             while (curTemplate.next != null)
+                            {
                                 curTemplate = curTemplate.next;
+                            }
+
                             curTemplate.next = template;
                         }
                         else
@@ -3375,11 +3750,17 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                     }
                     else
+                    {
                         templates[hash] = template;
+                    }
+
                     return;
                 }
                 if (!entry->inUse)
+                {
                     break;
+                }
+
                 hash = (hash + (int)eventID * 2 + 1) & templatesLengthMask;
             }
             templates[hash] = template;
@@ -3403,25 +3784,26 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         #region TemplateHashTable
-        struct TemplateEntry
+        private struct TemplateEntry
         {
             public Guid eventGuid;
             public ushort eventID;              // Event ID for Vista events, Opcode for Classic events.  
             public bool inUse;                  // This entry is in use. 
         }
 
-        TemplateEntry* templatesInfo;   // unmanaged array, this is the hash able.  
+        private TemplateEntry* templatesInfo;   // unmanaged array, this is the hash able.  
 
-        TraceEvent[] templates;         // Logically a field in TemplateEntry 
+        private TraceEvent[] templates;         // Logically a field in TemplateEntry 
         private struct NamesEntry
         {
             public NamesEntry(string taskName, string providerName) { this.taskName = taskName; this.providerName = providerName; }
             public string taskName;
             public string providerName;
         }
-        Dictionary<Guid, NamesEntry> guidToNames; // Used to find Provider and Task names from their Guids.  Only rarely used
-        int templatesLengthMask;
-        int numTemplates;
+
+        private Dictionary<Guid, NamesEntry> guidToNames; // Used to find Provider and Task names from their Guids.  Only rarely used
+        private int templatesLengthMask;
+        private int numTemplates;
         internal /*protected*/ UnhandledTraceEvent unhandledEventTemplate;
         internal /*protected*/ IEnumerable<TraceEvent> Templates
         {
@@ -3499,7 +3881,9 @@ namespace Microsoft.Diagnostics.Tracing
 
             // The dispatcher was disposed.  
             if (templatesInfo == null)
+            {
                 return;
+            }
 
             int* guidPtr = (int*)&providerGuid;
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
@@ -3519,9 +3903,13 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             // Remove the first matching entry from the list.  
                             if (prevTemplate == null)
+                            {
                                 templates[hash] = curTemplate.next;
+                            }
                             else
+                            {
                                 prevTemplate.next = curTemplate.next;
+                            }
 
                             Debug.WriteLine("Unregister Done callback count = " + CallbackCount());
                             return;
@@ -3532,7 +3920,10 @@ namespace Microsoft.Diagnostics.Tracing
                     break;
                 }
                 if (!entry->inUse)
+                {
                     break;
+                }
+
                 hash = (hash + (int)eventID * 2 + 1) & templatesLengthMask;
             }
             Debug.Assert(false, "Could not find delegate to unregister!");
@@ -3563,7 +3954,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (guidToNames == null)
             {
                 if (templates == null)
+                {
                     return;
+                }
                 // Populate the map
                 guidToNames = new Dictionary<Guid, NamesEntry>();
                 foreach (TraceEvent template in templates)
@@ -3571,9 +3964,14 @@ namespace Microsoft.Diagnostics.Tracing
                     if (template != null)
                     {
                         if (template.providerName != null && template.providerGuid != Guid.Empty && !guidToNames.ContainsKey(template.providerGuid))
+                        {
                             guidToNames[template.providerGuid] = new NamesEntry(null, template.providerName);
+                        }
+
                         if (template.taskName != null && template.taskGuid != Guid.Empty)
+                        {
                             guidToNames[template.taskGuid] = new NamesEntry(template.taskName, template.providerName);
+                        }
                     }
                 }
             }
@@ -3583,7 +3981,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal /*protected*/ bool stopProcessing;
         internal EventIndex currentID;
-        Func<TraceEvent, bool>[] lastChanceHandlers;
+        private Func<TraceEvent, bool>[] lastChanceHandlers;
 
         private Action<TraceEvent> userDefinedDispatch; // If non-null, call this when dispatching
         #endregion
@@ -3602,7 +4000,7 @@ namespace Microsoft.Diagnostics.Tracing
         public EmptyTraceData(Action<EmptyTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         #region Private
         /// <summary>
@@ -3620,7 +4018,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[0];
+                }
+
                 return payloadNames;
             }
         }
@@ -3662,14 +4063,27 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The value of the one string payload property.  
         /// </summary>
-        public string Value { get { if (isUnicode) return GetUnicodeStringAt(0); else return GetUTF8StringAt(0); } }
+        public string Value
+        {
+            get
+            {
+                if (isUnicode)
+                {
+                    return GetUnicodeStringAt(0);
+                }
+                else
+                {
+                    return GetUTF8StringAt(0);
+                }
+            }
+        }
         /// <summary>
         /// Construct a TraceEvent template which has one string payload field with the given metadata and action
         /// </summary>
         public StringTraceData(Action<StringTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, bool isUnicode)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
             this.isUnicode = isUnicode;
         }
         #region Private
@@ -3691,7 +4105,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "Value" };
+                }
+
                 return payloadNames;
             }
         }
@@ -3726,7 +4143,8 @@ namespace Microsoft.Diagnostics.Tracing
             get { return Action; }
             set { Action = (Action<StringTraceData>)value; }
         }
-        bool isUnicode;
+
+        private bool isUnicode;
         #endregion
     }
 
@@ -3741,58 +4159,73 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public override StringBuilder ToXml(StringBuilder sb)
         {
-            sb.Append("<Event MSec="); QuotePadLeft(sb, this.TimeStampRelativeMSec.ToString("f4"), 13);
-            sb.Append(" PID="); QuotePadLeft(sb, this.ProcessID.ToString(), 6);
-            sb.Append(" PName="); QuotePadLeft(sb, this.ProcessName, 10);
-            sb.Append(" TID="); QuotePadLeft(sb, this.ThreadID.ToString(), 6);
-            XmlAttrib(sb, "IsClassic", this.IsClassicProvider);
-            if (this.IsClassicProvider)
+            sb.Append("<Event MSec="); QuotePadLeft(sb, TimeStampRelativeMSec.ToString("f4"), 13);
+            sb.Append(" PID="); QuotePadLeft(sb, ProcessID.ToString(), 6);
+            sb.Append(" PName="); QuotePadLeft(sb, ProcessName, 10);
+            sb.Append(" TID="); QuotePadLeft(sb, ThreadID.ToString(), 6);
+            XmlAttrib(sb, "IsClassic", IsClassicProvider);
+            if (IsClassicProvider)
             {
-                var providerName = this.ProviderName;
+                var providerName = ProviderName;
                 if (providerName != "UnknownProvider")
+                {
                     XmlAttrib(sb, "ProviderName", providerName);
-                var taskName = this.TaskName;
+                }
+
+                var taskName = TaskName;
                 XmlAttrib(sb, "TaskName", taskName);
                 if (!taskName.StartsWith("Task"))
-                    XmlAttrib(sb, "TaskGuid", this.taskGuid);
+                {
+                    XmlAttrib(sb, "TaskGuid", taskGuid);
+                }
             }
             else
             {
-                var providerName = this.ProviderName;
+                var providerName = ProviderName;
                 XmlAttrib(sb, "ProviderName", providerName);
-                var formattedMessage = this.FormattedMessage;
+                var formattedMessage = FormattedMessage;
                 if (formattedMessage != null)
+                {
                     XmlAttrib(sb, "FormattedMessage", formattedMessage);
-                if (this.IsEventWriteString)
+                }
+
+                if (IsEventWriteString)
                 {
                     sb.Append("/>");
                     return sb;
                 }
 
                 if (!providerName.StartsWith("Provider("))
-                    XmlAttrib(sb, "ProviderGuid", this.providerGuid);
-                XmlAttrib(sb, "eventID", (int)this.ID);
+                {
+                    XmlAttrib(sb, "ProviderGuid", providerGuid);
+                }
 
-                var taskName = this.TaskName;
+                XmlAttrib(sb, "eventID", (int)ID);
+
+                var taskName = TaskName;
                 XmlAttrib(sb, "TaskName", taskName);
                 if (!taskName.StartsWith("Task"))
-                    XmlAttrib(sb, "TaskNum", (int)this.Task);
+                {
+                    XmlAttrib(sb, "TaskNum", (int)Task);
+                }
             }
-            XmlAttrib(sb, "OpcodeNum", (int)this.Opcode);
-            XmlAttrib(sb, "Version", this.Version);
-            XmlAttrib(sb, "Level", (int)this.Level);
-            XmlAttrib(sb, "PointerSize", this.PointerSize);
-            XmlAttrib(sb, "EventDataLength", this.EventDataLength);
-            if (this.EventDataLength > 0)
+            XmlAttrib(sb, "OpcodeNum", (int)Opcode);
+            XmlAttrib(sb, "Version", Version);
+            XmlAttrib(sb, "Level", (int)Level);
+            XmlAttrib(sb, "PointerSize", PointerSize);
+            XmlAttrib(sb, "EventDataLength", EventDataLength);
+            if (EventDataLength > 0)
             {
                 sb.AppendLine(">");
                 StringWriter dumpSw = new StringWriter();
-                TraceEvent.DumpBytes(this.EventData(), this.EventDataLength, dumpSw, "  ");
+                TraceEvent.DumpBytes(EventData(), EventDataLength, dumpSw, "  ");
                 sb.Append(XmlUtilities.XmlEscape(dumpSw.ToString(), false));
                 sb.AppendLine("</Event>");
             }
             else
+            {
                 sb.Append("/>");
+            }
 
             return sb;
         }
@@ -3804,7 +4237,10 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[0];
+                }
+
                 return payloadNames;
             }
         }
@@ -3845,7 +4281,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // This is only needed so that when we print when debugging we get sane results.  
             if (eventID == TraceEventID.Illegal)
+            {
                 PrepForCallback();
+            }
+
             return base.ToString();
         }
 
@@ -3884,43 +4323,43 @@ namespace Microsoft.Diagnostics.Tracing
 
     internal sealed class TraceEventRawReaders
     {
-        unsafe internal static IntPtr Add(IntPtr pointer, int offset)
+        internal static unsafe IntPtr Add(IntPtr pointer, int offset)
         {
             return (IntPtr)(((byte*)pointer) + offset);
         }
-        unsafe internal static Guid ReadGuid(IntPtr pointer, int offset)
+        internal static unsafe Guid ReadGuid(IntPtr pointer, int offset)
         {
             return *((Guid*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static double ReadDouble(IntPtr pointer, int offset)
+        internal static unsafe double ReadDouble(IntPtr pointer, int offset)
         {
             return *((double*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static float ReadSingle(IntPtr pointer, int offset)
+        internal static unsafe float ReadSingle(IntPtr pointer, int offset)
         {
             return *((float*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static long ReadInt64(IntPtr pointer, int offset)
+        internal static unsafe long ReadInt64(IntPtr pointer, int offset)
         {
             return *((long*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static int ReadInt32(IntPtr pointer, int offset)
+        internal static unsafe int ReadInt32(IntPtr pointer, int offset)
         {
             return *((int*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static short ReadInt16(IntPtr pointer, int offset)
+        internal static unsafe short ReadInt16(IntPtr pointer, int offset)
         {
             return *((short*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static IntPtr ReadIntPtr(IntPtr pointer, int offset)
+        internal static unsafe IntPtr ReadIntPtr(IntPtr pointer, int offset)
         {
             return *((IntPtr*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static byte ReadByte(IntPtr pointer, int offset)
+        internal static unsafe byte ReadByte(IntPtr pointer, int offset)
         {
             return *((byte*)((byte*)pointer.ToPointer() + offset));
         }
-        unsafe internal static string ReadUnicodeString(IntPtr pointer, int offset, int bufferLength)
+        internal static unsafe string ReadUnicodeString(IntPtr pointer, int offset, int bufferLength)
         {
             // Really we should be able to count on pointers being null terminated.  However we have had instances
             // where this is not true.   To avoid scanning the string twice we first check if the last character
@@ -3928,7 +4367,9 @@ namespace Microsoft.Diagnostics.Tracing
             byte* ptr = (byte*)pointer;
             char* charEnd = (char*)(ptr + bufferLength);
             if (charEnd[-1] == 0)       // Is the last character a null?
+            {
                 return new string((char*)(ptr + offset));       // We can count on a null, so we do an optimized path 
+            }
             // (works for last string, and other times by luck). 
             // but who cares as long as it stays in the buffer.  
 
@@ -3937,11 +4378,13 @@ namespace Microsoft.Diagnostics.Tracing
             int maxPos = (bufferLength - offset) / sizeof(char);
             int curPos = 0;
             while (curPos < maxPos && charStart[curPos] != 0)
+            {
                 curPos++;
+            }
             // CurPos now points at the end (either buffer end or null terminator, make just the right sized string.  
             return new string(charStart, 0, curPos);
         }
-        unsafe internal static string ReadUTF8String(IntPtr pointer, int offset, int bufferLength)
+        internal static unsafe string ReadUTF8String(IntPtr pointer, int offset, int bufferLength)
         {
             var buff = new byte[bufferLength];
             byte* ptr = ((byte*)pointer) + offset;
@@ -3950,7 +4393,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 byte c = ptr[i];
                 if (c == 0)
+                {
                     break;
+                }
+
                 buff[i++] = c;
             }
             return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.  
@@ -4005,11 +4451,20 @@ namespace Microsoft.Diagnostics.Tracing
             return parser.Observe(delegate (string pName, string eName)
             {
                 if (pName != providerName)
+                {
                     return EventFilterResponse.RejectProvider;
+                }
+
                 if (eventName == null)
+                {
                     return EventFilterResponse.AcceptEvent;
+                }
+
                 if (eventName == eName)
+                {
                     return EventFilterResponse.AcceptEvent;
+                }
+
                 return EventFilterResponse.RejectEvent;
             });
         }
@@ -4099,9 +4554,9 @@ namespace Microsoft.Diagnostics.Tracing
                     m_observable.m_removeHander(m_callback, this);
                 }
                 #region private
-                Action<T> m_callback;
-                Action m_completedCallback;
-                TraceEventObservable<T> m_observable;
+                private Action<T> m_callback;
+                private Action m_completedCallback;
+                private TraceEventObservable<T> m_observable;
                 #endregion
             }
 

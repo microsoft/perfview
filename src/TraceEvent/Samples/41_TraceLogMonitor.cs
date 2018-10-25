@@ -16,12 +16,12 @@ namespace TraceEventSamples
     /// <summary>
     /// This is an example of using the Real-Time (non-file) based support of TraceLog to get stack traces for events.   
     /// </summary>
-    class TraceLogMonitor
+    internal class TraceLogMonitor
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -42,15 +42,20 @@ namespace TraceEventSamples
             Out.WriteLine();
 
             if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
+            {
                 Out.WriteLine("This demo will preempt any use of the kernel provider. ");
+            }
 
-           TraceEventSession session = null;
+            TraceEventSession session = null;
 
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) =>
             {
                 if (session != null)
+                {
                     session.Dispose();
+                }
+
                 cancelArgs.Cancel = true;
             };
 
@@ -82,9 +87,9 @@ namespace TraceEventSamples
                     // KernelTraceEventParser.Keywords.Thread |             // If you want context switch events you also need thread start events.  
                     KernelTraceEventParser.Keywords.ImageLoad |
                     KernelTraceEventParser.Keywords.Process,   /****** The second parameter indicates which kernel events should have stacks *****/
-                    // KernelTraceEventParser.Keywords.ImageLoad |          // If you want Stacks image load (load library) events
-                    // KernelTraceEventParser.Keywords.Profile |            // If you want Stacks for CPU sampling events 
-                    // KernelTraceEventParser.Keywords.ContextSwitch |      // If you want Stacks for context switch events
+                                                               // KernelTraceEventParser.Keywords.ImageLoad |          // If you want Stacks image load (load library) events
+                                                               // KernelTraceEventParser.Keywords.Profile |            // If you want Stacks for CPU sampling events 
+                                                               // KernelTraceEventParser.Keywords.ContextSwitch |      // If you want Stacks for context switch events
                     KernelTraceEventParser.Keywords.None
                     );
 
@@ -130,7 +135,7 @@ namespace TraceEventSamples
                 symbolReader.SecurityCheck = (path => true);
 
                 Out.WriteLine("Open a real time TraceLog session (which understands how to decode stacks).");
-                using (TraceLogEventSource traceLogSource = TraceLog.CreateFromTraceEventSession(session)) 
+                using (TraceLogEventSource traceLogSource = TraceLog.CreateFromTraceEventSession(session))
                 {
                     // We use this action in the particular callbacks below.  Basically we pass in a symbol reader so we can decode the stack.  
                     // Often the symbol reader is a global variable instead.  
@@ -150,11 +155,14 @@ namespace TraceEventSamples
                     Out.WriteLine("Keep in mind there is a several second buffering delay");
 
                     // Set up a timer to stop processing after monitoringTimeSec 
-                    timer = new Timer(delegate(object state)
+                    timer = new Timer(delegate (object state)
                     {
                         Out.WriteLine("Stopped Monitoring after {0} sec", monitoringTimeSec);
-                        if (session != null)    
+                        if (session != null)
+                        {
                             session.Dispose();
+                        }
+
                         session = null;
                     }, null, monitoringTimeSec * 1000, Timeout.Infinite);
 
@@ -163,7 +171,9 @@ namespace TraceEventSamples
             }
             Out.WriteLine("Finished");
             if (timer != null)
+            {
                 timer.Dispose();    // Turn off the timer.  
+            }
         }
 
         /// <summary>
@@ -171,18 +181,24 @@ namespace TraceEventSamples
         /// lock any read-write data you access.   It turns out Out.Writeline is already thread safe so
         /// there is nothing I have to do in this case. 
         /// </summary>
-        static void Print(TraceEvent data, SymbolReader symbolReader)
+        private static void Print(TraceEvent data, SymbolReader symbolReader)
         {
             // There are a lot of data collection start on entry that I don't want to see (but often they are quite handy
             if (data.Opcode == TraceEventOpcode.DataCollectionStart)
+            {
                 return;
+            }
             // V3.5 runtimes don't log the stack and in fact don't event log the exception name (it shows up as an empty string)
             // Just ignore these as they are not that interesting. 
-            if (data is ExceptionTraceData && ((ExceptionTraceData) data).ExceptionType.Length == 0)
+            if (data is ExceptionTraceData && ((ExceptionTraceData)data).ExceptionType.Length == 0)
+            {
                 return;
+            }
 
             if (!data.ProcessName.Contains("Samples"))
+            {
                 return;
+            }
 
             Out.WriteLine("EVENT: {0}", data.ToString());
             var callStack = data.CallStack();
@@ -199,7 +215,7 @@ namespace TraceEventSamples
         /// Because it is expensive and often unnecessary, lookup of native symbols needs to be explicitly requested.  
         /// Here we do this for every frame in the stack.     Note that this is not needed for JIT compiled managed code. 
         /// </summary>
-        static private void ResolveNativeCode(TraceCallStack callStack, SymbolReader symbolReader)
+        private static void ResolveNativeCode(TraceCallStack callStack, SymbolReader symbolReader)
         {
             while (callStack != null)
             {
@@ -208,9 +224,13 @@ namespace TraceEventSamples
                 {
                     var moduleFile = codeAddress.ModuleFile;
                     if (moduleFile == null)
+                    {
                         Trace.WriteLine(string.Format("Could not find module for Address 0x{0:x}", codeAddress.Address));
+                    }
                     else
+                    {
                         codeAddress.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
+                    }
                 }
                 callStack = callStack.Caller;
             }

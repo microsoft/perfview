@@ -1,32 +1,24 @@
-﻿using System;
+﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Utilities;
+using PerfView;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using PerfView;
-using PerfViewModel;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using FastSerialization;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Session;
-using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Address = System.UInt64;
-using System.Threading.Tasks;
-using System.ComponentModel;
 
 #if !PERFVIEW_COLLECT
 using Graphs;
@@ -49,7 +41,10 @@ namespace PerfViewExtensibility
             var options = new TraceLogOptions();
             options.ConversionLog = LogFile;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -67,7 +62,12 @@ namespace PerfViewExtensibility
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
                 foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
+                {
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                    {
+                        processes.Add(proc);
+                    }
+                }
             }
 
             string outputFileName = traceFileName + ".gcStats.html";
@@ -82,7 +82,10 @@ namespace PerfViewExtensibility
             var options = new TraceLogOptions();
             options.ConversionLog = LogFile;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -103,12 +106,20 @@ namespace PerfViewExtensibility
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 bgJitEvents[data.ProcessID].Add(data.Clone());
             };
             source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 bgJitEvents[data.ProcessID].Add(data.Clone());
             };
 
@@ -116,7 +127,13 @@ namespace PerfViewExtensibility
             Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
             source.Process();
             foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID)) jitStats.Add(proc.ProcessID, proc);
+            {
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID))
+                {
+                    jitStats.Add(proc.ProcessID, proc);
+                }
+            }
+
             using (TextWriter output = File.CreateText(outputFileName))
             {
                 Stats.ClrStats.ToHtml(output, jitStats.Values.ToList(), outputFileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
@@ -133,7 +150,9 @@ namespace PerfViewExtensibility
         public void DumpEventsAsXml(string etlFileName, string xmlOutputFileName = null)
         {
             if (xmlOutputFileName == null)
+            {
                 xmlOutputFileName = PerfViewFile.ChangeExtension(etlFileName, ".etl.xml");
+            }
 
             var eventCount = 0;
             using (var outputFile = File.CreateText(xmlOutputFileName))
@@ -170,7 +189,9 @@ namespace PerfViewExtensibility
                 {
                     process = etlFile.Processes.LastProcessWithName(processName);
                     if (process == null)
+                    {
                         throw new ApplicationException("Could not find process named " + processName);
+                    }
                 }
                 SaveCPUStacksForProcess(etlFile, process);
             }
@@ -251,7 +272,9 @@ namespace PerfViewExtensibility
                 // Update if we've been written to since updateTime (max of file and scenario config write time).
                 var updateTime = File.GetLastWriteTimeUtc(filename);
                 if (scenarioUpdateTime > updateTime)
+                {
                     updateTime = scenarioUpdateTime;
+                }
 
                 if (File.Exists(destFile) &&
                     File.GetLastWriteTimeUtc(destFile) >= scenarioUpdateTime)
@@ -289,8 +312,9 @@ namespace PerfViewExtensibility
                 }
 
                 if (processOfInterest == null & !wildCard)
+                {
                     throw new ApplicationException("Process of interest could not be located for " + filename);
-
+                }
 
                 FilterParams filter = new FilterParams();
                 filter.StartTimeRelativeMSec = config.StartTime.ToString("R");
@@ -327,7 +351,9 @@ namespace PerfViewExtensibility
         public void DumpEventSourceManifests(string etlFileName, string outputDirectory = null, string pattern = null)
         {
             if (outputDirectory == null)
+            {
                 outputDirectory = Path.Combine(Path.GetDirectoryName(etlFileName), "ETWManifests");
+            }
 
             var etlFile = OpenETLFile(etlFileName);
             Directory.CreateDirectory(outputDirectory);
@@ -366,7 +392,9 @@ namespace PerfViewExtensibility
         public void JSGCDumpFromETLFile(string etlFileName, string gcDumpOutputFileName = null)
         {
             if (gcDumpOutputFileName == null)
+            {
                 gcDumpOutputFileName = Path.ChangeExtension(etlFileName, ".gcdump");
+            }
 
             // TODO FIX NOW retrieve the process name, ID etc.  
             var reader = new JavaScriptDumpGraphReader(LogFile);
@@ -382,7 +410,9 @@ namespace PerfViewExtensibility
         public void DotNetGCDumpFromETLFile(string etlFileName, string processNameOrId = null, string gcDumpOutputFileName = null)
         {
             if (gcDumpOutputFileName == null)
+            {
                 gcDumpOutputFileName = PerfViewFile.ChangeExtension(etlFileName, ".gcdump");
+            }
 
             CommandProcessor.UnZipIfNecessary(ref etlFileName, LogFile);
 
@@ -404,11 +434,15 @@ namespace PerfViewExtensibility
         public void DumpRawDotNetGCHeapEvents(string etlFileName, string processId = null, string outputFileName = null)
         {
             if (outputFileName == null)
+            {
                 outputFileName = Path.ChangeExtension(etlFileName, ".rawEtwGCDump.xml");
+            }
 
             int proccessIdInt = 0;
             if (processId != null)
+            {
                 proccessIdInt = int.Parse(processId);
+            }
 
             CommandProcessor.UnZipIfNecessary(ref etlFileName, LogFile);
             var typeLookup = new Dictionary<Address, string>(500);
@@ -421,9 +455,14 @@ namespace PerfViewExtensibility
                 source.Clr.TypeBulkType += delegate (GCBulkTypeTraceData data)
                 {
                     if (proccessIdInt == 0)
+                    {
                         proccessIdInt = data.ProcessID;
+                    }
+
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
 
                     output.WriteLine(" <TypeBulkType Proc=\"{0}\" TimeMSec=\"{1:f3}\" Count=\"{2}\"/>",
                         data.ProcessID, data.TimeStampRelativeMSec, data.Count);
@@ -436,7 +475,10 @@ namespace PerfViewExtensibility
                 source.Clr.GCBulkEdge += delegate (GCBulkEdgeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     output.WriteLine(" <GCBulkEdge Proc=\"{0}\" TimeMSec=\"{1:f3}\" Count=\"{2}\"/>",
                         data.ProcessID, data.TimeStampRelativeMSec, data.Count);
                     edges.Add((GCBulkEdgeTraceData)data.Clone());
@@ -444,37 +486,55 @@ namespace PerfViewExtensibility
                 source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     events.Add(data.Clone());
                 };
                 source.Clr.GCBulkRootStaticVar += delegate (GCBulkRootStaticVarTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     events.Add(data.Clone());
                 };
                 source.Clr.GCBulkRootEdge += delegate (GCBulkRootEdgeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     events.Add(data.Clone());
                 };
                 source.Clr.GCBulkRootConditionalWeakTableElementEdge += delegate (GCBulkRootConditionalWeakTableElementEdgeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     events.Add(data.Clone());
                 };
                 source.Clr.GCBulkRootCCW += delegate (GCBulkRootCCWTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     events.Add(data.Clone());
                 };
                 source.Clr.GCBulkRCW += delegate (GCBulkRCWTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
+                    {
                         return;
+                    }
+
                     events.Add(data.Clone());
                 };
                 output.WriteLine("<HeapDumpEvents>");
@@ -584,7 +644,10 @@ namespace PerfViewExtensibility
         {
             string ret;
             if (types.TryGetValue(typeId, out ret))
+            {
                 return XmlUtilities.XmlEscape(ret);
+            }
+
             return "TypeID(0x" + typeId.ToString("x") + ")";
         }
 
@@ -608,7 +671,9 @@ namespace PerfViewExtensibility
 
             var outputFileName = Path.ChangeExtension(gcDumpFileName, ".heapDump.xml");
             using (StreamWriter writer = File.CreateText(outputFileName))
+            {
                 ((MemoryGraph)graph).DumpNormalized(writer);
+            }
 
             log.WriteLine("[File {0} dumped as {1}.]", gcDumpFileName, outputFileName);
         }
@@ -630,10 +695,14 @@ namespace PerfViewExtensibility
                    graph.SizeOfGraphDescription() / 1000000.0);
 
             if (outputFileName == null)
+            {
                 outputFileName = Path.ChangeExtension(gcDumpFileName, ".gcDump.xml");
+            }
 
             using (StreamWriter writer = File.CreateText(outputFileName))
+            {
                 XmlGcHeapDump.WriteGCDumpToXml(gcDump, writer);
+            }
 
             log.WriteLine("[File {0} written as {1}.]", gcDumpFileName, outputFileName);
         }
@@ -645,7 +714,9 @@ namespace PerfViewExtensibility
         public void DumpRegisteredManifest(string providerName, string outputFileName = null)
         {
             if (outputFileName == null)
+            {
                 outputFileName = providerName + ".manifest.xml";
+            }
 
             var str = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
             LogFile.WriteLine("[Output written to {0}]", outputFileName);
@@ -692,12 +763,17 @@ namespace PerfViewExtensibility
                         {
                             var payload = data.PayloadNames[i];
                             if (i != 0)
+                            {
                                 str += ",";
+                            }
+
                             str += String.Format("{0}=\"{1}\"", payload, data.PayloadByName(payload));
                         }
 
                         if (App.CommandLineArgs.NoGui)
+                        {
                             App.CommandProcessor.LogFile.WriteLine("{0}", str);
+                        }
                         else
                         {
                             GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -722,8 +798,10 @@ namespace PerfViewExtensibility
                 {
                     string formattedMessage = data.FormattedMessage;
                     if (formattedMessage != null)
+                    {
                         listenTextEditorWriter.WriteLine("{0} {1} Message=\"{2}\"",
                             data.TimeStamp.ToString("HH:mm:ss.fff"), data.EventName, formattedMessage);
+                    }
                 };
 
                 // Enable all the providers the users asked for
@@ -774,9 +852,13 @@ namespace PerfViewExtensibility
             if (string.IsNullOrWhiteSpace(outputFileName))
             {
                 if (char.IsLetterOrDigit(directoryPath[0]))
+                {
                     outputFileName = Path.GetFileNameWithoutExtension(Path.GetFullPath(directoryPath)) + ".dirSize.PerfView.xml.zip";
+                }
                 else
+                {
                     outputFileName = "dirSize.PerfView.xml.zip";
+                }
             }
 
             LogFile.WriteLine("[Computing the file size of the directory {0}...]", directoryPath);
@@ -791,7 +873,9 @@ namespace PerfViewExtensibility
             if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
             {
                 if (outputFileName.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
+                {
                     GuiApp.MainWindow.OpenNext(outputFileName);
+                }
             }
         }
 
@@ -871,13 +955,18 @@ namespace PerfViewExtensibility
                     string symbol = m.Groups[3].Value;
 
                     if (entityKind == "Method" || entityKind == "Field")
+                    {
                         symbol = Regex.Replace(symbol, "^.*?[^,] +", "");
+                    }
+
                     ret = interner.CallStackIntern(interner.FrameIntern("REFLECTION " + reflectionType), ret);
                     ret = interner.CallStackIntern(interner.FrameIntern("KIND " + entityKind), ret);
                     ret = interner.CallStackIntern(interner.FrameIntern("SYM " + symbol), ret);
                 }
                 else
+                {
                     LogFile.WriteLine("Warning {0}: Could not parse {1}", lineNum, line);
+                }
 
                 return ret;
             };
@@ -899,12 +988,16 @@ namespace PerfViewExtensibility
         public void ImageSize(string inputExeName = null, string outputFileName = null)
         {
             if (outputFileName == null)
+            {
                 outputFileName = Path.ChangeExtension(inputExeName, ".imageSize.xml");
+            }
 
             if (string.IsNullOrWhiteSpace(inputExeName))
             {
                 if (App.CommandLineArgs.NoGui)
+                {
                     throw new ApplicationException("Must specify an input EXE name");
+                }
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
@@ -928,7 +1021,9 @@ namespace PerfViewExtensibility
 
             string pdbScopeExe = Path.Combine(ExtensionsDirectory, "PdbScope.exe");
             if (!File.Exists(pdbScopeExe))
+            {
                 throw new ApplicationException(@"The PerfViewExtensions\PdbScope.exe file does not exit.   ImageSize report not possible");
+            }
 
             // Currently we need to find the DLL again to unmangle names completely, and this DLL name is emedded in the output file.
             // Remove relative paths and try to make it universal so that you stand the best chance of finding this DLL.   
@@ -945,7 +1040,10 @@ namespace PerfViewExtensibility
                 // TODO can remove after pdbScope gets a proper outputFileName parameter
                 string pdbScopeOutputFile = Path.ChangeExtension(Path.GetFullPath(Path.GetFileName(inputExeName)), ".pdb.xml");
                 if (!File.Exists(pdbScopeOutputFile))
+                {
                     throw new ApplicationException("Error PdbScope did not create a file " + pdbScopeOutputFile);
+                }
+
                 LogFile.WriteLine("Moving {0} to {1}", pdbScopeOutputFile, outputFileName);
                 FileUtilities.ForceMove(pdbScopeOutputFile, outputFileName);
             }
@@ -954,7 +1052,9 @@ namespace PerfViewExtensibility
             if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
             {
                 if (outputFileName.EndsWith(".imageSize.xml", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
+                {
                     GuiApp.MainWindow.OpenNext(outputFileName);
+                }
             }
         }
 
@@ -979,9 +1079,13 @@ namespace PerfViewExtensibility
             var symbolReader = App.GetSymbolReader();
             string ret = symbolReader.FindSymbolFilePathForModule(dllName, (ILPdb ?? "false") == "true");
             if (ret != null)
+            {
                 LogFile.WriteLine("[Returned PDB {0}]", ret);
+            }
             else
+            {
                 LogFile.WriteLine("[Could not find PDB for {0}]", dllName);
+            }
         }
 
         public void LookupSymbols(string pdbFileName, string pdbGuid, string pdbAge)
@@ -989,9 +1093,13 @@ namespace PerfViewExtensibility
             var symbolReader = App.GetSymbolReader();
             string ret = symbolReader.FindSymbolFilePath(pdbFileName, Guid.Parse(pdbGuid), int.Parse(pdbAge));
             if (ret != null)
+            {
                 LogFile.WriteLine("[Returned PDB {0}]", ret);
+            }
             else
+            {
                 LogFile.WriteLine("[Could not find PDB for {0}/{1}/{2}]", pdbFileName, pdbGuid, pdbAge);
+            }
         }
 
         class CodeSymbolListener
@@ -1005,7 +1113,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-#region private
+        #region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -1015,7 +1123,9 @@ namespace PerfViewExtensibility
             {
                 CodeSymbolState state = Get(data.ProcessID, data.ModuleId);
                 if (state != null)
+                {
                     state.OnCodeSymbols(data);
+                }
             }
 
             class CodeSymbolState
@@ -1082,7 +1192,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-#endregion
+        #endregion
         }
 
         /// <summary>
@@ -1118,7 +1228,9 @@ namespace PerfViewExtensibility
             LogFile.WriteLine("[Wrote file " + outputFileName + "]");
 
             if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
+            {
                 GuiApp.MainWindow.OpenNext(outputFileName);
+            }
         }
 
         /// <summary>
@@ -1134,7 +1246,12 @@ namespace PerfViewExtensibility
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
                 foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
+                {
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                    {
+                        processes.Add(proc);
+                    }
+                }
             }
 
             var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
@@ -1154,7 +1271,9 @@ namespace PerfViewExtensibility
                 }
             }
             if (!App.CommandLineArgs.NoGui)
+            {
                 OpenHtmlReport(outputFileName, "GCStats report");
+            }
         }
 
         /// <summary>
@@ -1175,7 +1294,12 @@ namespace PerfViewExtensibility
                         Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc => { proc.Log = tracelog; });
                         source.Process();
                         foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                            if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
+                        {
+                            if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                            {
+                                gcStats.Add(proc);
+                            }
+                        }
                     }
                 }
 
@@ -1186,7 +1310,9 @@ namespace PerfViewExtensibility
                     Stats.ClrStats.ToHtml(output, gcStats, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC, false, true /* do server report */);
                 }
                 if (!App.CommandLineArgs.NoGui)
+                {
                     OpenHtmlReport(outputFileName, "GCStats report");
+                }
             }
         }
 
@@ -1203,7 +1329,12 @@ namespace PerfViewExtensibility
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
                 foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) jitStats.Add(proc);
+                {
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                    {
+                        jitStats.Add(proc);
+                    }
+                }
             }
 
             var outputFileName = Path.ChangeExtension(etlFile, ".jitStats.html");
@@ -1224,7 +1355,9 @@ namespace PerfViewExtensibility
                 }
             }
             if (!App.CommandLineArgs.NoGui)
+            {
                 OpenHtmlReport(outputFileName, "JITStats report");
+            }
         }
 
         ///// <summary>
@@ -1281,22 +1414,31 @@ namespace PerfViewExtensibility
             if (Regex.IsMatch(providerNameOrGuid, "........-....-....-....-............"))
             {
                 if (!Guid.TryParse(providerNameOrGuid, out providerGuid))
+                {
                     throw new ApplicationException("Could not parse Guid '" + providerNameOrGuid + "'");
+                }
             }
             else if (providerNameOrGuid.StartsWith("*"))
+            {
                 providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerNameOrGuid.Substring(1));
+            }
             else
             {
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerNameOrGuid);
                 if (providerGuid == Guid.Empty)
+                {
                     throw new ApplicationException("Could not find provider name '" + providerNameOrGuid + "'");
+                }
             }
 
             // TODO support eventSources
             LogFile.WriteLine("Keywords for the Provider {0} ({1})", providerNameOrGuid, providerGuid);
             List<ProviderDataItem> keywords = TraceEventProviders.GetProviderKeywords(providerGuid);
             foreach (ProviderDataItem keyword in keywords)
+            {
                 LogFile.WriteLine("  {0,-30} {1,16:x} {2}", keyword.Name, keyword.Value, keyword.Description);
+            }
+
             OpenLog();
         }
 
@@ -1309,7 +1451,9 @@ namespace PerfViewExtensibility
         {
             var processID = HeapDumper.GetProcessID(processNameOrId);
             if (processID < 0)
+            {
                 throw new ApplicationException("Could not find a process with a name or ID of '" + processNameOrId + "'");
+            }
 
             LogFile.WriteLine("Providers that can be enabled in process {0} ({1})", processNameOrId, processID);
             LogFile.WriteLine("EventSources are shown as GUIDs, GUIDS that are likely to be EventSources are marked with *.");
@@ -1341,7 +1485,10 @@ namespace PerfViewExtensibility
             foreach (var providerGuid in providers)
             {
                 if (markEventSources)
+                {
                     mark = TraceEventProviders.MaybeAnEventSource(providerGuid) ? "*" : " ";
+                }
+
                 LogFile.WriteLine("  {0}{1,-39} {2}", mark, TraceEventProviders.GetProviderName(providerGuid), providerGuid);
             }
             OpenLog();
@@ -1357,11 +1504,15 @@ namespace PerfViewExtensibility
             // Create a local symbols directory, and the normal logic will fill it.  
             var symbolsDir = Path.Combine(Path.GetDirectoryName(etlFileName), "symbols");
             if (!Directory.Exists(symbolsDir))
+            {
                 Directory.CreateDirectory(symbolsDir);
+            }
 
             var etlFile = PerfViewFile.Get(etlFileName) as ETLPerfViewData;
             if (etlFile == null)
+            {
                 throw new ApplicationException("FetchSymbolsForProcess only works on etl files.");
+            }
 
             TraceLog traceLog = etlFile.GetTraceLog(LogFile);
             TraceProcess focusProcess = null;
@@ -1386,16 +1537,22 @@ namespace PerfViewExtensibility
             if (focusProcess == null)
             {
                 if (processName == null)
+                {
                     throw new ApplicationException("No process started in the trace.  Nothing to focus on.");
+                }
                 else
+                {
                     throw new ApplicationException("Could not find a process named " + processName + ".");
+                }
             }
 
             // Lookup all the pdbs for all modules.  
             using (var symReader = etlFile.GetSymbolReader(LogFile))
             {
                 foreach (var module in focusProcess.LoadedModules)
+                {
                     traceLog.CodeAddresses.LookupSymbolsForModule(symReader, module.ModuleFile);
+                }
             }
         }
 
@@ -1485,7 +1642,7 @@ namespace PerfViewExtensibility
             }
         }
 #endif
-#region private
+        #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -1511,11 +1668,17 @@ namespace PerfViewExtensibility
             {
                 var process = etlFile.Processes.LastProcessWithName(CommandLineArgs.Process);
                 if (process == null)
+                {
                     throw new ApplicationException("Could not find process named " + CommandLineArgs.Process);
+                }
+
                 events = process.EventsInProcess;
             }
             else
+            {
                 events = etlFile.TraceLog.Events;           // All events in the process.
+            }
+
             return events;
         }
 
@@ -1535,7 +1698,9 @@ namespace PerfViewExtensibility
             }
 
             if (filter == null)
+            {
                 filter = new FilterParams();
+            }
 
             var stacks = etlFile.CPUStacks();
             stacks.Filter = filter;
@@ -1621,10 +1786,14 @@ namespace PerfViewExtensibility
             var config = new Dictionary<string, ScenarioConfig>();
 
             if (!reader.ReadToDescendant("ScenarioConfig"))
+            {
                 throw new ApplicationException("The file does not have a Scenario element");
+            }
 
             if (!reader.ReadToDescendant("Scenarios"))
+            {
                 throw new ApplicationException("No scenarios specified");
+            }
 
             output.WriteStartDocument();
             output.WriteStartElement("ScenarioSet");
@@ -1641,10 +1810,14 @@ namespace PerfViewExtensibility
                 string outputPattern = reader["output"];
 
                 if (filePattern == null)
+                {
                     throw new ApplicationException("File pattern is required.");
+                }
 
                 if (!filePattern.EndsWith(".etl") && !filePattern.EndsWith(".etl.zip"))
+                {
                     throw new ApplicationException("Files must be ETL files.");
+                }
 
                 string replacePattern = Regex.Escape(filePattern)
                                         .Replace(@"\*", @"([^\\]*)")
@@ -1665,7 +1838,9 @@ namespace PerfViewExtensibility
 
                 // Tack on the base directory if we're not already an absolute path.
                 if (!Path.IsPathRooted(dir))
+                {
                     dir = Path.Combine(baseDir, dir);
+                }
 
                 var replaceRegex = new Regex(replacePattern, RegexOptions.IgnoreCase);
 
@@ -1679,7 +1854,9 @@ namespace PerfViewExtensibility
 
                         // We won't have a group to match if there were no wildcards in the pattern.
                         if (match.Groups.Count < 1)
+                        {
                             match = defaultRegex.Match(PerfViewFile.GetFileNameWithoutExtension(file));
+                        }
 
                         process = match.Result(processPattern);
                     }
@@ -1690,7 +1867,9 @@ namespace PerfViewExtensibility
 
                         // We won't have a group to match if there were no wildcards in the pattern.
                         if (match.Groups.Count < 1)
+                        {
                             match = defaultRegex.Match(PerfViewFile.GetFileNameWithoutExtension(file));
+                        }
 
                         outputName = Path.Combine(Path.GetDirectoryName(file), match.Result(outputPattern));
                     }
@@ -1706,9 +1885,13 @@ namespace PerfViewExtensibility
 
                 string outputWildcard;
                 if (outputPattern != null)
+                {
                     outputWildcard = Regex.Replace(outputPattern, @"\$([0-9]+|[&`'+_$])", m => (m.Value == "$$" ? "$" : "*"));
+                }
                 else
+                {
                     outputWildcard = PerfViewFile.ChangeExtension(filePattern, "");
+                }
 
                 // Dump out scenario set data from the config input.
                 output.WriteStartElement("Scenarios");
@@ -1775,13 +1958,16 @@ namespace PerfViewExtensibility
 
         private static bool IsStoreApp(TraceProcess proc)
         {
-            if (proc.StartTimeRelativeMsec == 0.0) return false;
+            if (proc.StartTimeRelativeMsec == 0.0)
+            {
+                return false;
+            }
 
             var startEvent = proc.EventsInProcess.ByEventType<ProcessTraceData>().First();
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-#endregion
+        #endregion
 #endif
     }
 }
@@ -1793,9 +1979,13 @@ public static class TraceEventStackSourceExtensions
     {
         TraceEvents events;
         if (process == null)
+        {
             events = eventLog.Events.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);
+        }
         else
+        {
             events = process.EventsInProcess.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData);
+        }
 
         var traceStackSource = new TraceEventStackSource(events);
         traceStackSource.ShowUnknownAddresses = showUnknownAddresses;

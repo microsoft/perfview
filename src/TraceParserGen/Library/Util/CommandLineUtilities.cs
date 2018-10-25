@@ -4,13 +4,15 @@ using System.Text.RegularExpressions;
 
 public delegate int MainBody();
 
-class CommandLineUtilities
+internal class CommandLineUtilities
 {
     public static bool Debug = false;
     public static int RunConsoleMainWithExceptionProcessing(MainBody body)
     {
         if (Debug)
+        {
             return body();
+        }
 
         try
         {
@@ -54,7 +56,10 @@ class CommandLineUtilities
             string arg = arguments[startAt++];
             // WriteLine("Got Arg " + arg);
             if (!first)
+            {
                 ret.Append(' ');
+            }
+
             first = false;
             if (Regex.IsMatch(arg, @"\s"))
             {
@@ -64,7 +69,10 @@ class CommandLineUtilities
                 {
                     Match m = Regex.Match(rest, "^(.*?)(\\\\*)\"(.*)");  //  search for \"  \\" \\\"
                     if (!m.Success)
+                    {
                         break;
+                    }
+
                     ret.Append(m.Groups[1].Value);
                     ret.Append('\\', m.Groups[2].Value.Length * 2);
                     ret.Append("\\\"");
@@ -77,11 +85,16 @@ class CommandLineUtilities
                     ret.Append('\\', mLast.Groups[2].Value.Length * 2);
                 }
                 else
+                {
                     ret.Append(rest);
+                }
+
                 ret.Append('"');
             }
             else
+            {
                 ret.Append(arg);
+            }
         }
         return ret.ToString();
     }

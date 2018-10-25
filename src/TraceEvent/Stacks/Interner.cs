@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
@@ -25,7 +20,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             int index;
             if (_stringToIndex.TryGetValue(value, out index))
+            {
                 return new Key(this, _strings[index], index);
+            }
 
             index = _strings.Count;
             _stringToIndex[value] = index;

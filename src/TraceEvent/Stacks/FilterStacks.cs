@@ -1,13 +1,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved
+using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.IO;
 using System.Text;
-using Microsoft.Diagnostics.Tracing.Stacks;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -46,7 +45,9 @@ namespace Diagnostics.Tracing.StackSources
         public void Set(FilterParams filterParams)
         {
             if (this == filterParams)
+            {
                 return;
+            }
 
             Name = filterParams.Name;
             StartTimeRelativeMSec = filterParams.StartTimeRelativeMSec;
@@ -109,9 +110,13 @@ namespace Diagnostics.Tracing.StackSources
             get
             {
                 if (ScenarioList == null)
+                {
                     return "";
+                }
                 else
+                {
                     return string.Join(",", ScenarioList);
+                }
             }
             set
             {
@@ -139,7 +144,9 @@ namespace Diagnostics.Tracing.StackSources
         {
             var asFilterParams = obj as FilterParams;
             if (asFilterParams == null)
+            {
                 return false;
+            }
 
             return StartTimeRelativeMSec == asFilterParams.StartTimeRelativeMSec &&
                 EndTimeRelativeMSec == asFilterParams.EndTimeRelativeMSec &&
@@ -216,7 +223,10 @@ namespace Diagnostics.Tracing.StackSources
         {
             var sb = new StringBuilder();
             using (var writer = XmlWriter.Create(sb, new XmlWriterSettings() { Indent = true }))
+            {
                 WriteToXml(writer);
+            }
+
             return sb.ToString();
         }
     }
@@ -239,10 +249,14 @@ namespace Diagnostics.Tracing.StackSources
             m_scalingPolicy = scalingPolicy;
 
             if (!double.TryParse(filterParams.StartTimeRelativeMSec, out m_minTimeRelativeMSec))
+            {
                 m_minTimeRelativeMSec = double.NegativeInfinity;
+            }
 
             if (!double.TryParse(filterParams.EndTimeRelativeMSec, out m_maxTimeRelativeMSec))
+            {
                 m_maxTimeRelativeMSec = double.PositiveInfinity;
+            }
 
             m_minTimeRelativeMSec -= .0006;      // Be inclusive as far as rounding goes.  
             m_maxTimeRelativeMSec += .0006;
@@ -282,7 +296,9 @@ namespace Diagnostics.Tracing.StackSources
             // Intialize the StackInfo cache (and the IncPathsMatchedSoFarStorage variable)
             m_stackInfoCache = new StackInfo[StackInfoCacheSize];
             for (int i = 0; i < m_stackInfoCache.Length; i++)
+            {
                 m_stackInfoCache[i] = new StackInfo(m_includePats.Length);
+            }
         }
 
         /// <summary>
@@ -297,7 +313,9 @@ namespace Diagnostics.Tracing.StackSources
 
                 // Not in the upper bound of the range.  Discard
                 if (!(sample.TimeRelativeMSec <= m_maxTimeRelativeMSec))
+                {
                     return;
+                }
 
                 if (m_scalingPolicy == ScalingPolicyKind.TimeMetric)
                 {
@@ -306,13 +324,17 @@ namespace Diagnostics.Tracing.StackSources
                     // represent time for a DIFF (because we negated it) but I rely on the fact 
                     // that we only negate it so I can undo it 
                     if (!(m_minTimeRelativeMSec <= sample.TimeRelativeMSec + Math.Abs(sample.Metric)))
+                    {
                         return;
+                    }
                 }
                 else
                 {
                     // before the lower bound (and we don't need to prorate)
                     if (!(m_minTimeRelativeMSec <= sample.TimeRelativeMSec))
+                    {
                         return;                    // Even if we have to prorate the sample we on 
+                    }
                 }
 
                 if (sample.StackIndex != StackSourceCallStackIndex.Invalid)
@@ -321,18 +343,26 @@ namespace Diagnostics.Tracing.StackSources
 
                     // Have we been told to discard (exclude patterns)
                     if (stackInfo.FrameIndex == StackSourceFrameIndex.Discard)
+                    {
                         return;     // discard the sample 
+                    }
 
                     // Do we have include patterns that were not matched?   If so discard.  
                     if (!stackInfo.AreIncPathsBitsAllSet)
+                    {
                         return;     // discard the sample 
+                    }
                 }
                 else if (m_includePats.Length > 0)
+                {
                     return;         // discard the sample if there are any filters.  
+                }
 
                 // Not one of our included scenarios.
                 if (m_scenarioIncluded != null && !m_scenarioIncluded[sample.Scenario])
+                {
                     return;
+                }
 
                 // Check if we have to prorate the sample.  
                 if (m_scalingPolicy == ScalingPolicyKind.TimeMetric)
@@ -372,9 +402,13 @@ namespace Diagnostics.Tracing.StackSources
 
             var aggregate = m_baseStackSource as AggregateStackSource;
             if (aggregate != null)
+            {
                 aggregate.ForEach(filter, m_scenarioIncluded);
+            }
             else
+            {
                 m_baseStackSource.ForEach(filter);
+            }
         }
         /// <summary>
         /// Override
@@ -409,9 +443,13 @@ namespace Diagnostics.Tracing.StackSources
             if (frameInfo.GroupName != null)
             {
                 if (frameInfo.IsEntryGroup)
+                {
                     return frameInfo.GroupName + " <<" + m_baseStackSource.GetFrameName(frameIndex, false) + ">>";
+                }
                 else
+                {
                     return frameInfo.GroupName;
+                }
             }
             return m_baseStackSource.GetFrameName(frameIndex, fullName);
         }
@@ -493,7 +531,10 @@ namespace Diagnostics.Tracing.StackSources
             {
                 // Try to reuse the slot.  Give up an allocate if necessary (TODO we can recycle if it happens frequently)
                 if (stackInfo.InUse)
+                {
                     stackInfo = new StackInfo(m_includePats.Length);
+                }
+
                 stackInfo.InUse = true;
                 GenerateStackInfo(stackIndex, stackInfo, recursionGuard);
                 stackInfo.InUse = false;
@@ -548,10 +589,14 @@ namespace Diagnostics.Tracing.StackSources
                 {
                     if (parentStackInfo != null && parentStackInfo.FrameInfo != null &&
                         stackInfoRet.FrameInfo.GroupID == parentStackInfo.FrameInfo.GroupID)
+                    {
                         stackInfoRet.FrameIndex = parentStackInfo.FrameIndex;
+                    }
                 }
                 else
+                {
                     stackInfoRet.FrameIndex = stackInfoRet.FrameInfo.GroupID;
+                }
             }
 
             // We fold if we have been told or there is direct recursion  
@@ -565,7 +610,9 @@ namespace Diagnostics.Tracing.StackSources
                 var shouldFold = false;
 
                 if (stackInfoRet.FrameInfo.Fold || stackInfoRet.FrameIndex == parentStackInfo.FrameIndex)
+                {
                     shouldFold = true;
+                }
                 else if (stackInfoRet.FrameInfo.IsMoveNext && parentStackInfo.FrameInfo.IsMoveNext)
                 {
                     // Because MoveNext is used in tasks and we want good recursion removal for that case, check then name
@@ -580,7 +627,10 @@ namespace Diagnostics.Tracing.StackSources
                     var patFold = stackInfoRet.FrameInfo.Fold;
                     stackInfoRet.CloneValue(parentStackInfo);
                     if (patFold)
+                    {
                         stackInfoRet.NumberOfFoldedFrames++;
+                    }
+
                     return;
                 }
             }
@@ -599,7 +649,9 @@ namespace Diagnostics.Tracing.StackSources
             // See if we have cached the answer. 
             FrameInfo frameInfo = m_frameIdToFrameInfo[(int)frameIndex];
             if (frameInfo != null)
+            {
                 return frameInfo;
+            }
 
             // No cached answer.  compute the answer.   Start with the name (with the full module path)
             string fullFrameName = m_baseStackSource.GetFrameName(frameIndex, true);
@@ -609,7 +661,10 @@ namespace Diagnostics.Tracing.StackSources
             // of the regular expressions if we remember.   We probably should not keep them all... 
             string origFullFrameName = fullFrameName;
             if (m_ByFrameName == null)
+            {
                 m_ByFrameName = new Dictionary<string, FrameInfo>();
+            }
+
             if (m_ByFrameName.TryGetValue(fullFrameName, out frameInfo))
             {
                 m_frameIdToFrameInfo[(int)frameIndex] = frameInfo;
@@ -641,7 +696,9 @@ namespace Diagnostics.Tracing.StackSources
                 // normal (non-entry point) groups can all share the same FrameInfo, so see if we have one
                 fullFrameName = groupName;
                 if (isEntryGroup)
+                {
                     fullFrameName = groupName + " <<" + m_baseStackSource.GetFrameName(frameIndex, false) + ">>";
+                }
 
                 // This is a bit of a tricky optimization.   FrameInfo's job is to cache the grouping, folding, exclude and include pattern
                 // matching for a particular frame name.   We would like to create as few as them as we can.  For non-Entry point groups
@@ -656,13 +713,17 @@ namespace Diagnostics.Tracing.StackSources
                 if (frameInfo != null && isEntryGroup)                  // We may not be able to reuse this for entry point groups.  
                 {
                     if (frameInfo == Discard || frameInfo == Fold)
+                    {
                         frameInfo = null;
+                    }
                     else
                     {
                         // If the incPats are the same, then we can reuse the group, otherwise we set frameInfo to null and we will regenerate it.  
                         incPatternsMatched = MatchSet(m_includePats, fullFrameName);
                         if (!SameSet(incPatternsMatched, frameInfo.IncPatternsMatched))
+                        {
                             frameInfo = null;
+                        }
                     }
                 }
 
@@ -674,7 +735,10 @@ namespace Diagnostics.Tracing.StackSources
                     frameInfo.GroupID = groupID;
                     frameInfo.GroupName = groupName;
                     if (incPatternsMatched == null)
+                    {
                         incPatternsMatched = MatchSet(m_includePats, fullFrameName);
+                    }
+
                     frameInfo.IncPatternsMatched = incPatternsMatched;
                 }
             }
@@ -693,22 +757,30 @@ namespace Diagnostics.Tracing.StackSources
                     frameInfo.IsMoveNext = isMoveNext;
                 }
                 else    // No inc patterns, so we can reuse the static 'MatchesNothing' frame which says no include patterns match.  
+                {
                     frameInfo = MatchesNothing;
+                }
             }
             // At this point fullFrameName, and we have a candidate frameInfo
 
             // See if we should filter or fold it.  Note we clobber frameInfo, however if these are set, nothing else matters.  
             if (IsMatch(m_excludePats, fullFrameName) >= 0)
+            {
                 frameInfo = Discard;
+            }
             else if (IsMatch(m_foldPats, fullFrameName) >= 0)
+            {
                 frameInfo = Fold;
+            }
 
             // Keep the cache size under control by picking names that are likely to be used again.   Limit the cache size.  
             if (m_ByFrameName.Count < 4096)
             {
                 // Currently as an efficiency measure, we only do this for unknown modules, since there will be many code addresses with the same name
                 if (origFullFrameName.Contains("!?"))
+                {
                     m_ByFrameName[origFullFrameName] = frameInfo;
+                }
             }
 
             m_frameIdToFrameInfo[(int)frameIndex] = frameInfo;
@@ -719,7 +791,7 @@ namespace Diagnostics.Tracing.StackSources
         /// This is just the parsed form of a grouping specification Pat->GroupNameTemplate  (it has a pattern regular 
         /// expression and a group name that can have replacements)  It is a trivial class
         /// </summary>
-        class GroupPattern
+        private class GroupPattern
         {
             // PatternInfo is basically a union, and these static functions create each of the kinds of union.  
             public GroupPattern(Regex pattern, string groupNameTemplate, string op)
@@ -754,7 +826,9 @@ namespace Diagnostics.Tracing.StackSources
             // First trim off any comments (in []) or whitespace. 
             var groupsStr = Regex.Replace(groupPatternStr, @"^\s*(\[.*?\])?\s*(.*?)\s*$", "$2");
             if (groupsStr.Length == 0)
+            {
                 return new GroupPattern[0];
+            }
 
             var stringGroups = groupsStr.Split(';');
             var groups = new GroupPattern[stringGroups.Length];
@@ -762,7 +836,9 @@ namespace Diagnostics.Tracing.StackSources
             {
                 var stringGroup = stringGroups[i].Trim();
                 if (stringGroup.Length == 0)
+                {
                     continue;
+                }
 
                 var op = "=>";              // This means that you distinguish the entry points into the group
                 int arrowIdx = stringGroup.IndexOf("=>");
@@ -780,13 +856,18 @@ namespace Diagnostics.Tracing.StackSources
                     replaceStr = stringGroup.Substring(arrowIdx, stringGroup.Length - arrowIdx).Trim();
                 }
                 else
+                {
                     patStr = stringGroup;
+                }
+
                 var pat = new Regex(ToDotNetRegEx(patStr), RegexOptions.IgnoreCase);    // TODO perf bad if you compile!
                 groups[i] = new GroupPattern(pat, replaceStr, op);
 
                 // TODO IsModuleEntry is an experiemental thing.  Remove after gathering data.  
                 if (stringGroup == "{%}!=>module $1")
+                {
                     groups[i].IsModuleEntry = true;
+                }
             }
             return groups;
         }
@@ -805,7 +886,9 @@ namespace Diagnostics.Tracing.StackSources
             {
                 var candidateGroup = m_groups[i];
                 if (candidateGroup == null)
+                {
                     continue;
+                }
 
                 // TODO IsModuleEntry is an experiemental thing.  Remove after gathering data.  
                 if (candidateGroup.IsModuleEntry)
@@ -818,7 +901,10 @@ namespace Diagnostics.Tracing.StackSources
                         {
                             var c = frameName[moduleNameStartIdx];
                             if (!Char.IsLetterOrDigit(c) && c != '.' && c != '_')
+                            {
                                 break;
+                            }
+
                             --moduleNameStartIdx;
                         }
                         moduleNameStartIdx++;
@@ -836,7 +922,9 @@ namespace Diagnostics.Tracing.StackSources
                     if (candidateGroup.HasReplacements)
                     {
                         if (groupName == "$&")
+                        {
                             groupName = match.Groups[0].Value;
+                        }
                         else
                         {
                             // Replace the $1, $2, ... with the strings that were matched in the original regexp.  
@@ -848,10 +936,14 @@ namespace Diagnostics.Tracing.StackSources
                     }
                     isEntryGroup = candidateGroup.IsEntryGroup;
                     if (groupName.Length == 0)
+                    {
                         return null;
+                    }
                     // Entry groups terminate matching...
                     if (isEntryGroup)
+                    {
                         return groupName;
+                    }
 
                     // Otherwise we keep going.  
                     frameName = groupName;
@@ -867,14 +959,19 @@ namespace Diagnostics.Tracing.StackSources
         {
             patterns = patterns.Trim();
             if (patterns.Length == 0)
+            {
                 return new Regex[0];
+            }
+
             var stringGroupPats = patterns.Split(';');
             var ret = new Regex[stringGroupPats.Length];
             for (int i = 0; i < ret.Length; i++)
             {
                 var patStr = stringGroupPats[i].Trim();
                 if (patStr.Length > 0)         // Skip empty entries.  
+                {
                     ret[i] = new Regex(ToDotNetRegEx(patStr), RegexOptions.IgnoreCase);    // TODO perf bad if you compile!
+                }
             }
             return ret;
         }
@@ -887,7 +984,9 @@ namespace Diagnostics.Tracing.StackSources
             {
                 var pat = pats[i];
                 if (pat != null && pat.IsMatch(str))
+                {
                     return i;
+                }
             }
             return -1;
         }
@@ -905,7 +1004,10 @@ namespace Diagnostics.Tracing.StackSources
                     // more than once is very low, so this is OK. 
                     var newRet = new int[retCount + 1];
                     if (retCount > 0)
+                    {
                         Array.Copy(ret, newRet, retCount);
+                    }
+
                     newRet[retCount] = i;
                     ret = newRet;
                     retCount++;
@@ -920,15 +1022,28 @@ namespace Diagnostics.Tracing.StackSources
         private bool SameSet(int[] set1, int[] set2)
         {
             if (set1 == null)
+            {
                 return set2 == null;
+            }
+
             if (set2 == null)
+            {
                 return false;
+            }
+
             if (set1.Length != set2.Length)
+            {
                 return false;
+            }
             // We can assume values are sorted 
             for (int i = 0; i < set1.Length; i++)
+            {
                 if (set1[i] != set2[i])
+                {
                     return false;
+                }
+            }
+
             return true;
         }
 
@@ -940,7 +1055,9 @@ namespace Diagnostics.Tracing.StackSources
         {
             // A leading @ sign means the rest is a .NET regular expression.  (Undocumented, not really needed yet.)
             if (str.StartsWith("@"))
+            {
                 return str.Substring(1);
+            }
 
             str = Regex.Escape(str);                // Assume everything is ordinary
             str = str.Replace(@"%", @"[.\w\d?]*");  // % means any number of alpha-numeric chars. 
@@ -959,7 +1076,7 @@ namespace Diagnostics.Tracing.StackSources
         /// 
         /// Note that FrameInfo is reused by multiple stacks, which means that you should NOT update fields in it after initial creation.  
         /// </summary>
-        class FrameInfo
+        private class FrameInfo
         {
             public FrameInfo()
             {
@@ -990,7 +1107,9 @@ namespace Diagnostics.Tracing.StackSources
             {
                 StackIndex = StackSourceCallStackIndex.Invalid;
                 if (numIncPats > 0)
+                {
                     IncPathsMatchedSoFarStorage = new bool[numIncPats];
+                }
             }
 
             public StackSourceCallStackIndex StackIndex;        // This information was generated from this index. 
@@ -1033,68 +1152,88 @@ namespace Diagnostics.Tracing.StackSources
                 }
                 IncPathsMatchedSoFar = IncPathsMatchedSoFarStorage;
                 for (int i = 0; i < IncPathsMatchedSoFar.Length; i++)
+                {
                     IncPathsMatchedSoFar[i] = other.IncPathsMatchedSoFar[i];
+                }
             }
             internal void SetIncPathsBits(int[] indexesToSet)
             {
                 if (indexesToSet == null)
+                {
                     return;
+                }
+
                 if (IncPathsMatchedSoFar == null)
                 {
                     IncPathsMatchedSoFar = IncPathsMatchedSoFarStorage;
                     for (int i = 0; i < IncPathsMatchedSoFar.Length; i++)
+                    {
                         IncPathsMatchedSoFar[i] = false;
+                    }
                 }
                 for (int i = 0; i < indexesToSet.Length; i++)
+                {
                     IncPathsMatchedSoFar[indexesToSet[i]] = true;
+                }
             }
             internal bool AreIncPathsBitsAllSet
             {
                 get
                 {
                     if (IncPathsMatchedSoFar == null)
+                    {
                         return IncPathsMatchedSoFarStorage == null;
+                    }
+
                     for (int i = 0; i < IncPathsMatchedSoFar.Length; i++)
+                    {
                         if (!IncPathsMatchedSoFar[i])
+                        {
                             return false;
+                        }
+                    }
+
                     return true;
                 }
             }
             #endregion
         }
+
         // These represent particular Frame information that can be shared among many frames 
         /// <summary>
         /// Represents a frame that does not match any pattern.  Thus the default of simply returning the frame ID is appropriate
         /// </summary>
-        static FrameInfo MatchesNothing = new FrameInfo();
+        private static FrameInfo MatchesNothing = new FrameInfo();
+
         /// <summary>
         /// Represents a frame that should be discarded.  
         /// </summary>
-        static FrameInfo Discard = new FrameInfo() { Discard = true };
+        private static FrameInfo Discard = new FrameInfo() { Discard = true };
+
         /// <summary>
         /// Represents a frame that should be folded into its caller.  
         /// </summary>
-        static FrameInfo Fold = new FrameInfo() { Fold = true };
+        private static FrameInfo Fold = new FrameInfo() { Fold = true };
 
         // These are the 'raw' patterns that are just parsed form of what the user specified in the TextBox
         private double m_minTimeRelativeMSec;
         private double m_maxTimeRelativeMSec;
-        GroupPattern[] m_groups;
-        Regex[] m_includePats;               // Can have null entries
-        Regex[] m_excludePats;               // Can have null entries
-        Regex[] m_foldPats;                  // Can have null entries
+        private GroupPattern[] m_groups;
+        private Regex[] m_includePats;               // Can have null entries
+        private Regex[] m_excludePats;               // Can have null entries
+        private Regex[] m_foldPats;                  // Can have null entries
         private bool[] m_scenarioIncluded;
-        StackSource m_baseStackSource;
-        ScalingPolicyKind m_scalingPolicy;
+        private StackSource m_baseStackSource;
+        private ScalingPolicyKind m_scalingPolicy;
 
         // To avoid alot of regular expression matching, we remember for a given frame ID the pattern it matched 
         // This allows us to avoid string matching on all but the first lookup of a given frame.  
-        FrameInfo[] m_frameIdToFrameInfo;
+        private FrameInfo[] m_frameIdToFrameInfo;
+
         // Once we have applied the regular expression to a group, we have a string, we need to find the
         // 'canonical' FrameIndex associated with that name, this mapping does that.  
-        Dictionary<string, StackSourceFrameIndex> m_GroupNameToFrameInfo;
-
-        Dictionary<string, FrameInfo> m_ByFrameName;
+        private Dictionary<string, StackSourceFrameIndex> m_GroupNameToFrameInfo;
+        private Dictionary<string, FrameInfo> m_ByFrameName;
 
         /// <summary>
         /// We cache information about stacks we have previously seen so we can short-circuit work. 
@@ -1103,8 +1242,8 @@ namespace Diagnostics.Tracing.StackSources
         /// Note when this value is 4096 some memory profiles are VERY sluggish.  Don't make it too
         /// small unless it is adaptive.  
         /// </summary>
-        const int StackInfoCacheSize = 4096 * 8;             // Must be a power of 2; 
-        StackInfo[] m_stackInfoCache;
+        private const int StackInfoCacheSize = 4096 * 8;             // Must be a power of 2; 
+        private StackInfo[] m_stackInfoCache;
         #endregion
     }
 }

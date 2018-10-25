@@ -1,4 +1,11 @@
-﻿using System;
+﻿using Controls;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
+using PerfView.Dialogs;
+using PerfView.GuiUtilities;
+using PerfViewExtensibility;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -8,17 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Navigation;
-using Controls;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using PerfView.GuiUtilities;
-using PerfView;
 using Utilities;
-using PerfView.Dialogs;
-using PerfViewExtensibility;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Session;
-using System.Collections.Generic;
 
 /* Master TODO list */
 // ****** LARGER ISSUES  ******** 
@@ -201,10 +198,10 @@ using System.Collections.Generic;
 // Add the parent Process and Thread ID that created the thread to the threadStart event
 // When you open from the command line, sometimes it does not oonpe it.s  theyou n
 // Add Tool Tip that shows size for the files and timesode (X
-// Capture the Path and timestamp and file size of the ETL file an ETLa file come vefro m anhtamp int the file pane.  o rtepen d reject it if the timestamps don't match.  
+// Capture the Path and timestamp and file size of the ETL file and reject it if the timestamps don't match.  
 // Make dumping very large heaps (over 125M objects) work by either : sampling segments randomly, or, collecting multiple graphs and combining the sampled graphs. 
 // FIx ASP.NET Stats to work per-process.  
-// Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anaonymous delegate
+// Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anonymous delegate
 // Make triggering work for process starts (maybe just allow pattern matching on etw fields) 
 // Document the /StartOnPerfCouner for taking heap snapshots (also allow periodic).  
 // Add a registeredTraceEventParser example to the trace eventSamples.  
@@ -1031,7 +1028,7 @@ using System.Collections.Generic;
 // OTHER
 // Ability to sort by name in ByName view. 
 // Keeping track of checkboxes properly in CallTreeView when cells change
-// Anomolies in Find in CallTreeView
+// Anomalies in Find in CallTreeView
 // SamplesComplete main page. 
 // When Kernel mapping fails symbol lookup is painful
 // Check for version compatility of ETLX format being read
@@ -1058,12 +1055,16 @@ namespace PerfView
             // Initialize the directory history if available. 
             var directoryHistory = App.ConfigData["DirectoryHistory"];
             if (directoryHistory != null)
+            {
                 Directory.SetHistory(directoryHistory.Split(';'));
+            }
 
             // And also add the docs directory   
             var docsDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             if (!string.IsNullOrEmpty(docsDir))
+            {
                 Directory.AddToHistory(docsDir);
+            }
 
             // Make sure the location is sane so it can be displayed. 
             var top = App.ConfigData.GetDouble("MainWindowTop", Top);
@@ -1092,9 +1093,11 @@ namespace PerfView
                     }
                 }
                 if (StatusBar.IsWorking)
+                {
                     StatusBar.AbortWork();
+                }
 
-                if (this.WindowState != System.Windows.WindowState.Maximized)
+                if (WindowState != System.Windows.WindowState.Maximized)
                 {
                     App.ConfigData["MainWindowWidth"] = RenderSize.Width.ToString("f0", CultureInfo.InvariantCulture);
                     App.ConfigData["MainWindowHeight"] = RenderSize.Height.ToString("f0", CultureInfo.InvariantCulture);
@@ -1135,7 +1138,10 @@ namespace PerfView
                         foreach (string item in Directory.Items)
                         {
                             if (sb.Length != 0)
+                            {
                                 sb.Append(';');
+                            }
+
                             sb.Append(item);
                         }
                         App.ConfigData["DirectoryHistory"] = sb.ToString();
@@ -1158,7 +1164,10 @@ namespace PerfView
             {
                 Directory.RemoveFromHistory(Directory.Text);
                 if (m_CurrentDirectory != null)
+                {
                     Directory.Text = m_CurrentDirectory.FilePath;
+                }
+
                 StatusBar.LogError("Directory " + path + " does not exist");
             }
         }
@@ -1176,7 +1185,10 @@ namespace PerfView
             }
             var dir = Path.GetDirectoryName(dataFileName);
             if (string.IsNullOrEmpty(dir))
+            {
                 dir = ".";
+            }
+
             OpenPath(dir);
             PerfViewFile.Get(dataFileName).Open(this, StatusBar, doAfter);
         }
@@ -1191,10 +1203,15 @@ namespace PerfView
                 if (data.Children != null)
                 {
                     if (stackSourceName == null)
+                    {
                         stackSourceName = data.DefaultStackSourceName;
+                    }
+
                     var source = data.GetStackSource(stackSourceName);
                     if (source != null)
+                    {
                         source.Open(this, StatusBar);
+                    }
                 }
             });
         }
@@ -1213,7 +1230,9 @@ namespace PerfView
 
             // You need to be admin if you are not taking the snapshot from a dump.  
             if (App.CommandLineArgs.ProcessDumpFile == null)
+            {
                 App.CommandProcessor.LaunchPerfViewElevatedIfNeeded("GuiHeapSnapshot", App.CommandLineArgs);
+            }
 
             ChangeCurrentDirectoryIfNeeded();
             var memoryDialog = new Dialogs.MemoryDataDialog(App.CommandLineArgs, this, continuation);
@@ -1228,7 +1247,9 @@ namespace PerfView
         {
             // TODO need count of all active children
             if (StackWindow.StackWindows.Count > 0)
+            {
                 Visibility = System.Windows.Visibility.Hidden;
+            }
         }
 
         public RunCommandDialog CollectWindow { get; set; }
@@ -1244,7 +1265,9 @@ namespace PerfView
             App.CommandProcessor.ShowLog = false;
 
             if (worker == null)
+            {
                 worker = StatusBar;
+            }
 
             App.CommandProcessor.LogFile = worker.LogWriter;
             worker.StartWork(statusMessage, delegate ()
@@ -1257,12 +1280,16 @@ namespace PerfView
 
                     // TODO FIX NOW use continuation instead
                     if (App.CommandProcessor.ShowLog)
+                    {
                         worker.OpenLog();
+                    }
 
                     var openNext = GuiApp.MainWindow.m_openNextFileName;
                     GuiApp.MainWindow.m_openNextFileName = null;
                     if (openNext != null)
+                    {
                         Open(openNext);
+                    }
 
                     continuation?.Invoke();
                 });
@@ -1301,7 +1328,9 @@ namespace PerfView
                 if (file != null)
                 {
                     if (file.IsOpened)
+                    {
                         file.Close();
+                    }
 
                     OpenPath(App.CommandLineArgs.DataFile);
                 }
@@ -1325,26 +1354,35 @@ namespace PerfView
             // TODO FIX NOW, decide how I want this done.   Do I select or do I use GetDataFielName
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
 
             // TODO this has a side effect... 
             App.CommandLineArgs.DataFile = selectedFile.FilePath;
             App.CommandLineArgs.Zip = false;
             if (!App.CommandLineArgs.DataFile.EndsWith(".etl"))
+            {
                 throw new ApplicationException("File " + App.CommandLineArgs.DataFile + " not a .ETL file");
+            }
+
             ExecuteCommand("Merging " + Path.GetFullPath(App.CommandLineArgs.DataFile), App.CommandProcessor.Merge);
         }
         private void DoZip(object sender, RoutedEventArgs e)
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
 
             // TODO this has a side effect... 
             App.CommandLineArgs.DataFile = selectedFile.FilePath;
             App.CommandLineArgs.Zip = true;
             if (!App.CommandLineArgs.DataFile.EndsWith(".etl"))
+            {
                 throw new ApplicationException("File " + App.CommandLineArgs.DataFile + " not a .ETL file");
+            }
             // TODO we may be doing an unnecessary merge.  
             ExecuteCommand("Merging and Zipping " + Path.GetFullPath(App.CommandLineArgs.DataFile), App.CommandProcessor.Merge);
         }
@@ -1352,12 +1390,16 @@ namespace PerfView
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
 
             // TODO this has a side effect... 
             var inputName = selectedFile.FilePath;
             if (!inputName.EndsWith(".etl.zip"))
+            {
                 throw new ApplicationException("File " + inputName + " not a zipped .ETL file");
+            }
 
             // TODO make a command
             StatusBar.StartWork("Unzipping " + inputName, delegate ()
@@ -1386,7 +1428,7 @@ namespace PerfView
 
                     ExecuteCommand("User Command " + string.Join(" ", commandAndArgs), App.CommandProcessor.UserCommand, null,
                         delegate { commandSuccessful = true; },
-                        delegate { if (!commandSuccessful) m_UserDefineCommandDialog.RemoveHistory(commandAndArgs); });
+                        delegate { if (!commandSuccessful) { m_UserDefineCommandDialog.RemoveHistory(commandAndArgs); } });
                 });
             }
             m_UserDefineCommandDialog.Show();
@@ -1403,7 +1445,9 @@ namespace PerfView
             DirectoryUtilities.Clean(CacheFiles.CacheDir);
             System.IO.Directory.CreateDirectory(CacheFiles.CacheDir);
             foreach (var file in System.IO.Directory.EnumerateFiles(CacheFiles.CacheDir))
+            {
                 StatusBar.Log("Could not delete " + file);
+            }
         }
         private void DoClearUserConfig(object sender, RoutedEventArgs e)
         {
@@ -1426,7 +1470,9 @@ namespace PerfView
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
                 if (AppLog.s_IsUnderTest)
+                {
                     return;
+                }
 
                 bool canSendFeedback = AppLog.CanSendFeedback;
                 AppLog.LogUsage("Start", DateTime.Now.ToString(), AppLog.BuildDate);
@@ -1449,14 +1495,18 @@ namespace PerfView
                         // WikiButton.Visibility = System.Windows.Visibility.Visible;
                     }
                     if (pdbScopeExists)
+                    {
                         ImageSizeMenuItem.Visibility = System.Windows.Visibility.Visible;
+                    }
                     else
                     {
                         StatusBar.Log("Warning: PdbScope not found at " + pdbScopeFile);
                         StatusBar.Log("Disabling the Image Size Menu Item.");
                     }
                     if (ilSizeExists)
+                    {
                         ILSizeMenuItem.Visibility = System.Windows.Visibility.Visible;
+                    }
                     else
                     {
                         StatusBar.Log("Warning: ILSize not found at " + ilSizeFile);
@@ -1503,7 +1553,9 @@ namespace PerfView
                         StatusBar.Log("Feedback sent.");
                     }
                     else
+                    {
                         StatusBar.LogError("Sorry, there was a problem sending feedback.");
+                    }
                 });
                 feedbackDialog.Show();
             }
@@ -1582,13 +1634,17 @@ namespace PerfView
         private void KeyDownInTreeView(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
+            {
                 DoOpen(sender, null);
+            }
         }
         private void SelectedItemChangedInTreeView(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var asFile = TreeView.SelectedItem as PerfViewFile;
             if (asFile != null)
+            {
                 StatusBar.Status = "File : " + Path.GetFullPath(asFile.FilePath);
+            }
         }
         private void DoTextEnteredInDirectoryTextBox(object sender, RoutedEventArgs e)
         {
@@ -1599,7 +1655,9 @@ namespace PerfView
             var fileNames = e.Data.GetData(System.Windows.DataFormats.FileDrop) as string[];
             // Don't allow multiple drops as it is expensive.  
             if (fileNames != null && fileNames.Length > 0)
+            {
                 Open(fileNames[0]);
+            }
         }
 
         // Context menu in the Treeview pane
@@ -1607,18 +1665,25 @@ namespace PerfView
         {
             var selectedItem = TreeView.SelectedItem as PerfViewTreeItem;
             if (selectedItem != null && selectedItem.HelpAnchor != null)
+            {
                 e.CanExecute = true;
+            }
         }
 
         private void DoItemHelp(object sender, ExecutedRoutedEventArgs e)
         {
             var selectedItem = TreeView.SelectedItem as PerfViewTreeItem;
             if (selectedItem == null)
+            {
                 throw new ApplicationException("No item selected.");
+            }
 
             var anchor = selectedItem.HelpAnchor;
             if (anchor == null)
+            {
                 throw new ApplicationException("Item does not have help.");
+            }
+
             StatusBar.Log("Looking up topic " + anchor + " in Users Guide.");
             DisplayUsersGuide(anchor);
         }
@@ -1630,7 +1695,9 @@ namespace PerfView
         {
             var selectedItem = TreeView.SelectedItem as PerfViewTreeItem;
             if (selectedItem == null)
+            {
                 throw new ApplicationException("No item selected.");
+            }
 
             selectedItem.Open(this, StatusBar, delegate ()
             {
@@ -1648,20 +1715,28 @@ namespace PerfView
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
 
             // TODO FIX NOW Actually keep track of open windows, also does not track open event windows.  
             if (StackWindow.StackWindows.Count != 0)
+            {
                 throw new ApplicationException("Currently can only close files if all stack windows are closed.");
+            }
 
             if (selectedFile.IsOpened)
+            {
                 selectedFile.Close();
+            }
         }
         private void DoDelete(object sender, ExecutedRoutedEventArgs e)
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
 
             var response = MessageBox.Show(this,
                 "Delete " + Path.GetFileName(selectedFile.FilePath) + "?", "Delete Confirmation", MessageBoxButton.OKCancel);
@@ -1680,7 +1755,9 @@ namespace PerfView
                     {
                         Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$", RegexOptions.IgnoreCase);
                         if (m.Success)
+                        {
                             FileUtilities.ForceDelete(relatedFile);
+                        }
                     }
                 }
             }
@@ -1692,7 +1769,10 @@ namespace PerfView
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
+
             string selectedFilePath = selectedFile.FilePath;
 
             var targetPath = GetDataFileName("Rename File", false, "", null);
@@ -1705,7 +1785,9 @@ namespace PerfView
             // Add a ETL suffix if the source has one.  
             bool selectedFileIsEtl = selectedFilePath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase);
             if (selectedFileIsEtl && !Path.HasExtension(targetPath))
+            {
                 targetPath = Path.ChangeExtension(targetPath, ".etl");
+            }
 
             // Do the move.  
             FileUtilities.ForceMove(selectedFilePath, targetPath);
@@ -1717,7 +1799,9 @@ namespace PerfView
                 {
                     Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$", RegexOptions.IgnoreCase);
                     if (m.Success)
+                    {
                         FileUtilities.ForceMove(relatedFile, Path.ChangeExtension(targetPath, m.Groups[1].Value));
+                    }
                 }
             }
 
@@ -1728,14 +1812,21 @@ namespace PerfView
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
+            {
                 throw new ApplicationException("No file selected.");
+            }
 
             var dir = Path.GetDirectoryName(selectedFile.FilePath);
             if (dir.Length == 0)
+            {
                 dir = ".";
+            }
+
             var symbolDir = Path.Combine(dir, "symbols");
             if (System.IO.Directory.Exists(symbolDir))
+            {
                 StatusBar.Log("Local symbol directory " + symbolDir + " already exists.");
+            }
             else
             {
                 System.IO.Directory.CreateDirectory(symbolDir);
@@ -1748,7 +1839,9 @@ namespace PerfView
         {
             var param = e.Parameter as string;
             if (param == null)
+            {
                 param = "MainViewerQuickStart";       // This is the F1 help
+            }
 
             StatusBar.Log("Looking up topic " + param + " in Users Guide.");
             DisplayUsersGuide(param);
@@ -1779,10 +1872,14 @@ namespace PerfView
             var children = m_CurrentDirectory.Children;
             TreeView.ItemsSource = children;
             if (children.Count > 0)
+            {
                 children[0].IsSelected = true;
+            }
 
             if (children.Count <= 1 && m_CurrentDirectory.Filter != null)
+            {
                 StatusBar.LogError("WARNING: filter " + FileFilterTextBox.Text + " has excluded all items.");
+            }
         }
 
         private void FilterTextChanged(object sender, TextChangedEventArgs e)
@@ -1798,7 +1895,10 @@ namespace PerfView
                 {
                     var selected = TreeView.SelectedItem as PerfViewTreeItem;
                     if (selected == null)
+                    {
                         selected = m_CurrentDirectory.Children[0];
+                    }
+
                     selected.Open(this, StatusBar);
                     TreeView.Focus();
                 }
@@ -1808,10 +1908,14 @@ namespace PerfView
         private void Window_Closed(object sender, EventArgs e)
         {
             if (AppLog.s_IsUnderTest)
+            {
                 return;
+            }
 
             if (App.CommandProcessor.CollectingData)
+            {
                 DoAbort(null, null);
+            }
 
             Environment.Exit(0);        // TODO can we do this another way?
         }
@@ -1867,14 +1971,20 @@ namespace PerfView
             {
                 var m = regex.Match(commandAndArgs, cur);
                 if (!m.Success)
+                {
                     break;
+                }
+
                 var start = m.Groups[1].Index;
                 var len = m.Groups[1].Length;
                 cur = start + len + 1;
 
                 // Remove the quotes if necessary. 
                 if (commandAndArgs[start + len - 1] == '"')
+                {
                     --len;
+                }
+
                 if (commandAndArgs[start] == '"')
                 {
                     start++;
@@ -1928,7 +2038,10 @@ namespace PerfView
             // TODO get item under cursor, not selected item
             var selectedItem = TreeView.SelectedItem as PerfViewFile;
             if (selectedItem == null)
+            {
                 throw new ApplicationException("No data file Selected.");
+            }
+
             return selectedItem;
         }
         internal string GetDataFileName(string title, bool shouldExist, string fileName, string filter)
@@ -1948,9 +2061,14 @@ namespace PerfView
             // Show open file dialog box
             Nullable<bool> result = openDialog.ShowDialog();
             if (result == true)
+            {
                 return (openDialog.FileName);
+            }
             else
+            {
                 StatusBar.LogError("Operation canceled.");
+            }
+
             return null;
         }
         internal static bool DisplayUsersGuide(string anchor = null)
@@ -1993,10 +2111,16 @@ namespace PerfView
             string url = "file://" + usersGuideFilePath.Replace('\\', '/').Replace(" ", "%20");
 
             if (!string.IsNullOrEmpty(anchor))
+            {
                 url = url + "#" + anchor;
+            }
+
             WebBrowserWindow.Navigate(s_Browser.Browser, url);
             if (s_Browser.WindowState == WindowState.Minimized)
+            {
                 s_Browser.WindowState = WindowState.Normal;
+            }
+
             s_Browser.Show();
             s_Browser._Browser.Focus();
             return true;
@@ -2008,7 +2132,9 @@ namespace PerfView
             {
                 char c = url[i];
                 if (!(' ' <= c && c <= 'z'))
+                {
                     return false;
+                }
             }
             return true;
         }
@@ -2051,6 +2177,7 @@ namespace PerfView
         {
             m_openNextFileName = fileName;
         }
-        string m_openNextFileName;
+
+        private string m_openNextFileName;
     }
 }

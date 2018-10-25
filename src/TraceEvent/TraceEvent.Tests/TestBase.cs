@@ -42,7 +42,10 @@ namespace TraceEventTests
             {
                 string candidate = Path.Combine(dir, @"TraceEvent\TraceEvent.Tests\inputs");
                 if (Directory.Exists(candidate))
+                {
                     return Path.GetFullPath(candidate);
+                }
+
                 dir = Path.GetDirectoryName(dir);
             }
             return @"%PERFVIEW%\src\TraceEvent\TraceEvent.Tests\inputs";

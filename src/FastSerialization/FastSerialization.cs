@@ -5,11 +5,10 @@
 /* If you uncomment this line, log.serialize.xml and log.deserialize.xml are created, which allow debugging */
 // #define DEBUG_SERIALIZE
 using System;
-using System.Text;      // For StringBuilder.
-using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
-using DeferedStreamLabel = FastSerialization.StreamLabel;
+using System.Diagnostics;
+using System.IO;
+using System.Text;      // For StringBuilder.
 
 // see #Introduction and #SerializerIntroduction
 namespace FastSerialization
@@ -223,7 +222,9 @@ namespace FastSerialization
         {
             byte[] bytes = guid.ToByteArray();
             for (int i = 0; i < bytes.Length; i++)
+            {
                 writer.Write(bytes[i]);
+            }
         }
         /// <summary>
         /// Reads a Guid to stream 'reader' as sequence of 8 bytes and returns it
@@ -232,14 +233,20 @@ namespace FastSerialization
         {
             byte[] bytes = new byte[16];
             for (int i = 0; i < bytes.Length; i++)
+            {
                 bytes[i] = reader.ReadByte();
+            }
+
             return new Guid(bytes);
         }
 
         public static string ReadNullTerminatedUnicodeString(this IStreamReader reader, StringBuilder sb = null)
         {
             if (sb == null)
+            {
                 sb = new StringBuilder();
+            }
+
             short value = reader.ReadInt16();
             while (value != 0)
             {
@@ -518,7 +525,10 @@ namespace FastSerialization
                     }
                 }
                 else
+                {
                     Write(0);
+                }
+
                 Log("</ForwardRefTable>");
 
                 // Write the trailer currently it has only one item in it, however it is expandable. 
@@ -537,7 +547,9 @@ namespace FastSerialization
             finally
             {
                 if (!succeeded)
+                {
                     writer.Dispose();
+                }
             }
         }
 
@@ -589,7 +601,9 @@ namespace FastSerialization
             Log("<Write Type=\"Guid\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
             byte[] bytes = value.ToByteArray();
             for (int i = 0; i < bytes.Length; i++)
+            {
                 writer.Write(bytes[i]);
+            }
         }
         /// <summary>
         /// Write a string to a stream
@@ -598,9 +612,13 @@ namespace FastSerialization
         {
 #if DEBUG
             if (value == null)
+            {
                 Log("<Write Type=\"null string\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            }
             else
+            {
                 Log("<Write Type=\"string\" Value=" + value + " StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            }
 #endif
             writer.Write(value);
         }
@@ -682,7 +700,10 @@ namespace FastSerialization
         public ForwardReference GetForwardReference()
         {
             if (forwardReferenceDefinitions == null)
+            {
                 forwardReferenceDefinitions = new List<StreamLabel>();
+            }
+
             ForwardReference ret = (ForwardReference)forwardReferenceDefinitions.Count;
             forwardReferenceDefinitions.Add(StreamLabel.Invalid);
             return ret;
@@ -766,7 +787,7 @@ namespace FastSerialization
         }
 
         #region private
-        StreamWriter log;
+        private StreamWriter log;
 
         /// <summary>
         /// To help debug any serialization issues, you can write data to a side file called 'log.serialize.xml'
@@ -776,7 +797,10 @@ namespace FastSerialization
         public void Log(string str)
         {
             if (log == null)
+            {
                 log = File.CreateText("log.serialize.xml");
+            }
+
             log.WriteLine(str);
         }
 
@@ -812,7 +836,9 @@ namespace FastSerialization
             if (defered)
             {
                 if (ObjectsWithForwardReferences == null)
+                {
                     ObjectsWithForwardReferences = new Dictionary<IFastSerializable, ForwardReference>();
+                }
 
                 if (!ObjectsWithForwardReferences.TryGetValue(obj, out forwardReference))
                 {
@@ -886,7 +912,9 @@ namespace FastSerialization
         private void WriteDeferedObjects()
         {
             if (ObjectsWithForwardReferences == null)
+            {
                 return;
+            }
 
             Log("<WriteDeferedObjects>");
             List<IFastSerializable> objs = new List<IFastSerializable>();
@@ -910,7 +938,9 @@ namespace FastSerialization
             // Special case: the SerializationType for SerializationType itself is null.  This avoids
             // recursion.  
             if (type == typeof(SerializationType))
+            {
                 return null;
+            }
 
             SerializationType ret = new SerializationType(type);
             IFastSerializableVersion versionInstance = instance as IFastSerializableVersion;
@@ -984,9 +1014,9 @@ namespace FastSerialization
         {
             ObjectsInGraph = new Dictionary<StreamLabel, IFastSerializable>();
             this.reader = reader;
-            this.allowLazyDeserialization = true;
-            this.Name = streamName;
-            this.factories = new Dictionary<string, Func<IFastSerializable>>();
+            allowLazyDeserialization = true;
+            Name = streamName;
+            factories = new Dictionary<string, Func<IFastSerializable>>();
             RegisterFactory(typeof(SerializationType), delegate { return new SerializationType(); });
 
             Log("<Deserialize>");
@@ -995,10 +1025,18 @@ namespace FastSerialization
             var expectedSig = "!FastSerialization.1";
             int sigLen = reader.ReadInt32();
             if (sigLen != expectedSig.Length)
+            {
                 goto ThrowException;
+            }
+
             for (int i = 0; i < sigLen; i++)
+            {
                 if (reader.ReadByte() != expectedSig[i])
+                {
                     goto ThrowException;
+                }
+            }
+
             return;
             ThrowException:
             throw new SerializationException("Not a understood file format: " + streamName);
@@ -1031,12 +1069,17 @@ namespace FastSerialization
             {
                 Tags tag = ReadTag();
                 if (tag == Tags.BeginObject)
+                {
                     objType = (SerializationType)ReadObject();
+                }
             }
             catch (Exception) { }
             reader.Goto(origPosition);
             if (objType == null)
+            {
                 return null;
+            }
+
             return objType.FullName;
         }
         /// <summary>
@@ -1058,7 +1101,9 @@ namespace FastSerialization
                 // If you are going to deserialize the world, better to do it in order, which means deferring
                 // forward references (since you will get to them eventually).  
                 if (!allowLazyDeserialization)
+                {
                     deferForwardReferences = true;
+                }
 
                 Log("<GetEntryObject deferForwardReferences=\"" + deferForwardReferences + "\">");
                 entryObject = ReadObjectDefintion();
@@ -1072,7 +1117,10 @@ namespace FastSerialization
                         StreamLabel objectLabel = reader.Current;
                         Tags tag = ReadTag();
                         if (tag == Tags.EndObject)
+                        {
                             break;
+                        }
+
                         ReadObjectDefinition(tag, objectLabel);
                     }
                 }
@@ -1169,7 +1217,10 @@ namespace FastSerialization
 #endif
             byte* bytes = stackalloc byte[16];
             for (int i = 0; i < 16; i++)
+            {
                 bytes[i] = reader.ReadByte();
+            }
+
             ret = *((Guid*)bytes);
 #if DEBUG
             Log("<ReadGuid Value=\"" + ret.ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
@@ -1200,9 +1251,13 @@ namespace FastSerialization
             ret = reader.ReadString();
 #if DEBUG
             if (ret == null)
+            {
                 Log("<ReadString StreamLabel=\"0x" + label.ToString("x") + "\"/>");
+            }
             else
+            {
                 Log("<ReadString Value=" + ret + " StreamLabel=\"0x" + label.ToString("x") + "\"/>");
+            }
 #endif
         }
         /// <summary>
@@ -1240,7 +1295,9 @@ namespace FastSerialization
             {
                 StreamLabel target = reader.ReadLabel();
                 if (!ObjectsInGraph.TryGetValue(target, out ret))
+                {
                     ret = ReadObject(target);
+                }
             }
             else if (tag == Tags.NullReference)
             {
@@ -1270,7 +1327,9 @@ namespace FastSerialization
                 else
                 {
                     if (unInitializedForwardReferences == null)
+                    {
                         unInitializedForwardReferences = new Dictionary<ForwardReference, IFastSerializable>();
+                    }
 
                     if (!unInitializedForwardReferences.TryGetValue(forwardReference, out ret))
                     {
@@ -1279,7 +1338,9 @@ namespace FastSerialization
                         unInitializedForwardReferences.Add(forwardReference, ret);
                     }
                     else
+                    {
                         Log("<FoundExistingForwardRef indexRef=\"" + forwardReference + "\" objRef=\"0x" + ret.GetHashCode().ToString("x") + "\"/>");
+                    }
                 }
                 Log("</ReadForwardRef>");
             }
@@ -1442,10 +1503,14 @@ namespace FastSerialization
         {
             StreamLabel ret = StreamLabel.Invalid;
             if (forwardReferenceDefinitions == null)
+            {
                 forwardReferenceDefinitions = new List<StreamLabel>();
+            }
 
             if ((uint)reference < (uint)forwardReferenceDefinitions.Count)
+            {
                 ret = forwardReferenceDefinitions[(int)reference];
+            }
 
             if (ret == StreamLabel.Invalid && !deferForwardReferences)
             {
@@ -1464,7 +1529,9 @@ namespace FastSerialization
                 {
                     StreamLabel defintionLabel = reader.ReadLabel();
                     if (i >= forwardReferenceDefinitions.Count)
+                    {
                         forwardReferenceDefinitions.Add(defintionLabel);
+                    }
                     else
                     {
                         Debug.Assert(
@@ -1476,7 +1543,10 @@ namespace FastSerialization
                 }
                 Log("</ForwardReferenceDefinitons>");
                 if (preserveCurrent)
+                {
                     Goto(orig);
+                }
+
                 ret = forwardReferenceDefinitions[(int)reference];
                 Log("</GetFowardReferenceTable>");
             }
@@ -1651,7 +1721,10 @@ namespace FastSerialization
         {
             Tags tag = ReadTag();
             if (tag == Tags.Blob)
+            {
                 return reader.ReadInt32();
+            }
+
             reader.Goto(Current - 1);
             return 0;
         }
@@ -1729,13 +1802,16 @@ namespace FastSerialization
         }
 
         #region private 
-        StreamWriter log;
+        private StreamWriter log;
         [Conditional("DEBUG_SERIALIZE")]
         // see also Serializer.Log 
         public void Log(string str)
         {
             if (log == null)
+            {
                 log = File.CreateText("log.deserialize.xml");
+            }
+
             log.WriteLine(str);
             log.Flush();
         }
@@ -1777,13 +1853,19 @@ namespace FastSerialization
                     tag = ReadTag();
                 }
                 if (tag != Tags.BeginObject)
+                {
                     throw new SerializationException("Bad serialization tag found when starting object");
+                }
+
                 Log("<ReadType>");
                 type = (SerializationType)ReadObject();
 
                 // Special case, a null object forwardReference means 'typeof serializationType'
                 if (type == null)
+                {
                     type = new SerializationType(typeof(SerializationType).FullName, this);
+                }
+
                 Log("</ReadType>");
 
                 // Create the instance (or get it from the unInitializedForwardReferences if it was created
@@ -1797,10 +1879,14 @@ namespace FastSerialization
                         unInitializedForwardReferences.Remove(forwardReference);
                     }
                     else
+                    {
                         ret = type.CreateInstance();
+                    }
                 }
                 else
+                {
                     ret = type.CreateInstance();
+                }
 
                 Log("<AddingObjectToGraph StreamLabelRef=\"0x" + objectLabel.ToString("x") +
                     "\" obj=\"0x" + ret.GetHashCode().ToString("x") +
@@ -1808,7 +1894,9 @@ namespace FastSerialization
                     "\"/>");
 
                 if (!ObjectsInGraph.TryGetValue(objectLabel, out existingObj))
+                {
                     ObjectsInGraph.Add(objectLabel, ret);
+                }
             }
 
             // Actually initialize the object's fields.
@@ -1836,15 +1924,25 @@ namespace FastSerialization
         {
             Func<IFastSerializable> ret;
             if (factories.TryGetValue(fullName, out ret))
+            {
                 return ret;
+            }
 
             Type type;
             if (TypeResolver != null)
+            {
                 type = TypeResolver(fullName);
+            }
             else
+            {
                 type = Type.GetType(fullName);
+            }
+
             if (type == null)
+            {
                 throw new TypeLoadException("Could not find type " + fullName);
+            }
+
             return delegate
             {
                 // If we have a default factory, use it.  
@@ -1852,7 +1950,9 @@ namespace FastSerialization
                 {
                     IFastSerializable instance = defaultFactory(type);
                     if (instance != null)
+                    {
                         return instance;
+                    }
                 }
                 // Factory of last resort.  
                 try
@@ -1936,7 +2036,10 @@ namespace FastSerialization
                     case Tags.EndObject:
                         --nesting;
                         if (nesting < 0)
+                        {
                             goto done;
+                        }
+
                         break;
                     default:
                         throw new SerializationException("Could not find object end tag for object of type " + objectBeingDeserialized.GetType().Name + " at stream offset 0x" + ((int)objectLabel).ToString("x"));
@@ -1953,11 +2056,15 @@ namespace FastSerialization
             Log("<DefineForwardReference indexRef=\"" + forwardReference + "\" StreamLableRef=\"0x" + definitionLabel.ToString("x") + "\"/>");
 
             if (forwardReferenceDefinitions == null)
+            {
                 forwardReferenceDefinitions = new List<StreamLabel>();
+            }
 
             int idx = (int)forwardReference;
             while (forwardReferenceDefinitions.Count <= idx)
+            {
                 forwardReferenceDefinitions.Add(StreamLabel.Invalid);
+            }
 
             // If it is already defined, it better match! 
             Debug.Assert(forwardReferenceDefinitions[idx] == StreamLabel.Invalid ||
@@ -1995,7 +2102,7 @@ namespace FastSerialization
         /// </summary>
         internal bool deferForwardReferences;
         private Dictionary<string, Func<IFastSerializable>> factories;
-        Func<Type, IFastSerializable> defaultFactory;
+        private Func<Type, IFastSerializable> defaultFactory;
         #endregion
     };
 
@@ -2054,7 +2161,7 @@ namespace FastSerialization
             deserializer.Log("<DeferRegionRead StreamLabel=\"0x" + deserializer.Current.ToString("x") + "\">");
             ForwardReference endReference = deserializer.ReadForwardReference();
             this.deserializer = deserializer;
-            this.startPosition = deserializer.Current;
+            startPosition = deserializer.Current;
             this.fromStream = fromStream;
             deserializer.Goto(endReference);
             deserializer.Log("</DeferRegionRead>");
@@ -2068,7 +2175,9 @@ namespace FastSerialization
         public void FinishRead(bool preserveStreamPosition = false)
         {
             if (fromStream != null)
+            {
                 FinishReadHelper(preserveStreamPosition);
+            }
         }
         /// <summary>
         /// Returns true if the FinsihRead() has already been called. 
@@ -2078,11 +2187,11 @@ namespace FastSerialization
         /// <summary>
         /// Get the deserializer assoicated with this DeferredRegion
         /// </summary>
-        public Deserializer Deserializer { get { return this.deserializer; } }
+        public Deserializer Deserializer { get { return deserializer; } }
         /// <summary>
         /// Get the stream position when Read was called
         /// </summary>
-        public StreamLabel StartPosition { get { return this.startPosition; } }
+        public StreamLabel StartPosition { get { return startPosition; } }
         #region private
         /// <summary>
         /// This helper is just here to insure that FinishRead gets inlined 
@@ -2091,7 +2200,9 @@ namespace FastSerialization
         {
             StreamLabel originalPosition = 0;       // keeps the compiler happy. 
             if (preserveStreamPosition)
+            {
                 originalPosition = deserializer.Current;
+            }
 
             deserializer.Log("<DeferRegionFinish StreamLabelRef=\"0x" + startPosition.ToString("x") + "\">");
             deserializer.Goto(startPosition);
@@ -2100,7 +2211,9 @@ namespace FastSerialization
             fromStream = null;      // Indicates we ran it. 
 
             if (preserveStreamPosition)
+            {
                 deserializer.Goto(originalPosition);
+            }
         }
 
         internal Deserializer deserializer;
@@ -2298,7 +2411,7 @@ namespace FastSerialization
         internal SerializationType() { }
         internal SerializationType(Type type)
         {
-            this.fullName = type.FullName;
+            fullName = type.FullName;
         }
         internal SerializationType(string fullName, Deserializer deserializer)
         {
@@ -2326,16 +2439,22 @@ namespace FastSerialization
 
                 // File version must meet minimum version requirements. 
                 if (instance != null && !(version >= instance.MinimumVersionCanRead))
+                {
                     throw new SerializationException(string.Format("File format is version {0} App accepts formats >= {1}.",
                             version, instance.MinimumVersionCanRead));
+                }
 
                 int readerVersion = 0;
                 if (instance != null)
+                {
                     readerVersion = instance.Version;
+                }
 
                 if (!(readerVersion >= minimumReaderVersion))
+                {
                     throw new SerializationException(string.Format("App is version {0}.  File format accepts apps >= {1}.",
                              readerVersion, minimumReaderVersion));
+                }
             }
         }
 
