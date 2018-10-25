@@ -1397,17 +1397,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 39, GCTaskGuid);
             }
         }
-        public event Action<CCWRefCountChangeTraceData> GCCCWRefCountChange
+        public event Action<CCWRefCountChangeAnsiTraceData> GCCCWRefCountChangeAnsi
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new CCWRefCountChangeTraceData(value, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChange", ProviderGuid, ProviderName));
+                RegisterTemplate(new CCWRefCountChangeAnsiTraceData(value, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChangeAnsi", ProviderGuid, ProviderName));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 193, ProviderGuid);
                 source.UnregisterEventTemplate(value, 40, GCTaskGuid);
+            }
+        }
+        public event Action<CCWRefCountChangeTraceData> GCCCWRefCountChange
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new CCWRefCountChangeTraceData(value, 200, 1, "GC", GCTaskGuid, 40, "CCWRefCountChange", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 200, ProviderGuid);
             }
         }
         public event Action<SetGCHandleTraceData> GCSetGCHandle
@@ -1895,7 +1907,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[132];
+                var templates = new TraceEvent[133];
                 templates[0] = new GCDecisionTraceData(null, 1, 1, "GC", GCTaskGuid, 132, "Decision", ProviderGuid, ProviderName);
                 templates[1] = new GCSettingsTraceData(null, 2, 1, "GC", GCTaskGuid, 14, "Settings", ProviderGuid, ProviderName);
                 templates[2] = new GCOptimizedTraceData(null, 3, 1, "GC", GCTaskGuid, 16, "Optimized", ProviderGuid, ProviderName);
@@ -1999,7 +2011,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[100] = new NgenBindEventTraceData(null, 188, 13, "NgenBinder", NgenBinderTaskGuid, 69, "NgenBind", ProviderGuid, ProviderName);
                 templates[101] = new FailFastTraceData(null, 191, 2, "FailFast", FailFastTaskGuid, 52, "", ProviderGuid, ProviderName);
                 templates[102] = new FinalizeObjectTraceData(null, 192, 1, "GC", GCTaskGuid, 39, "FinalizeObject", ProviderGuid, ProviderName);
-                templates[103] = new CCWRefCountChangeTraceData(null, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChange", ProviderGuid, ProviderName);
+                templates[103] = new CCWRefCountChangeAnsiTraceData(null, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChangeAnsi", ProviderGuid, ProviderName);
                 templates[104] = new SetGCHandleTraceData(null, 194, 1, "GC", GCTaskGuid, 42, "SetGCHandle", ProviderGuid, ProviderName);
                 templates[105] = new DestroyGCHandleTraceData(null, 195, 1, "GC", GCTaskGuid, 43, "DestroyGCHandle", ProviderGuid, ProviderName);
                 templates[106] = new FusionMessageTraceData(null, 196, 10, "Binding", BindingTaskGuid, 70, "FusionMessage", ProviderGuid, ProviderName);
@@ -2028,6 +2040,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[129] = new DynamicTypeUseNoParametersPrivateTraceData(null, 411, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 22, "BeginCreateManagedReference", ProviderGuid, ProviderName);
                 templates[130] = new DynamicTypeUseNoParametersPrivateTraceData(null, 412, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 23, "EndCreateManagedReference", ProviderGuid, ProviderName);
                 templates[131] = new DynamicTypeUseStringAndIntPrivateTraceData(null, 413, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 24, "ObjectVariantMarshallingToManaged", ProviderGuid, ProviderName);
+                templates[132] = new CCWRefCountChangeTraceData(null, 200, 1, "GC", GCTaskGuid, 40, "CCWRefCountChange", ProviderGuid, ProviderName);
 
                 s_templates = templates;
             }
@@ -3874,7 +3887,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         private event Action<FinalizeObjectTraceData> Action;
         #endregion
     }
-    public sealed class CCWRefCountChangeTraceData : TraceEvent
+    public sealed class CCWRefCountChangeAnsiTraceData : TraceEvent
     {
         public Address HandleID { get { return GetAddressAt(0); } }
         public Address ObjectID { get { return GetAddressAt(HostOffset(4, 1)); } }
@@ -3885,6 +3898,95 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         public string NameSpace { get { return GetUTF8StringAt(SkipUTF8String(HostOffset(24, 3))); } }
         public string Operation { get { return GetUnicodeStringAt(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))); } }
         public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3))))); } }
+
+        #region Private
+        internal CCWRefCountChangeAnsiTraceData(Action<CCWRefCountChangeAnsiTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+        internal protected override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<CCWRefCountChangeAnsiTraceData>)value; }
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))) + 2));
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttribHex(sb, "HandleID", HandleID);
+            XmlAttribHex(sb, "ObjectID", ObjectID);
+            XmlAttribHex(sb, "COMInterfacePointer", COMInterfacePointer);
+            XmlAttrib(sb, "NewRefCount", NewRefCount);
+            XmlAttribHex(sb, "AppDomainID", AppDomainID);
+            XmlAttrib(sb, "ClassName", ClassName);
+            XmlAttrib(sb, "NameSpace", NameSpace);
+            XmlAttrib(sb, "Operation", Operation);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "HandleID", "ObjectID", "COMInterfacePointer", "NewRefCount", "AppDomainID", "ClassName", "NameSpace", "Operation", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return HandleID;
+                case 1:
+                    return ObjectID;
+                case 2:
+                    return COMInterfacePointer;
+                case 3:
+                    return NewRefCount;
+                case 4:
+                    return AppDomainID;
+                case 5:
+                    return ClassName;
+                case 6:
+                    return NameSpace;
+                case 7:
+                    return Operation;
+                case 8:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<CCWRefCountChangeAnsiTraceData> Action;
+        #endregion
+    }
+    public sealed class CCWRefCountChangeTraceData : TraceEvent
+    {
+        public Address HandleID { get { return GetAddressAt(0); } }
+        public Address ObjectID { get { return GetAddressAt(HostOffset(4, 1)); } }
+        public Address COMInterfacePointer { get { return GetAddressAt(HostOffset(8, 2)); } }
+        public int NewRefCount { get { return GetInt32At(HostOffset(12, 3)); } }
+        public long AppDomainID { get { return GetInt64At(HostOffset(16, 3)); } }
+        public string ClassName { get { return GetUnicodeStringAt(HostOffset(24, 3)); } }
+        public string NameSpace { get { return GetUnicodeStringAt(SkipUnicodeString(HostOffset(24, 3))); } }
+        public string Operation { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(HostOffset(24, 3)))); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(HostOffset(24, 3))))); } }
 
         #region Private
         internal CCWRefCountChangeTraceData(Action<CCWRefCountChangeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -3903,8 +4005,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))) + 2));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUTF8String(SkipUTF8String(HostOffset(24, 3)))) + 2));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(HostOffset(24, 3)))) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(HostOffset(24, 3)))) + 2));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {

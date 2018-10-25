@@ -53,11 +53,11 @@ EVENT 14.040: Windows Kernel/PerfInfo/Sample PID=4; TID=5064; PName=System; Proc
 EVENT 14.111: Windows Kernel/DiskIO/WriteInit PID=4; TID=5064; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8304609b80; 
 EVENT 14.744: Windows Kernel/DiskIO/Write PID=4; TID=5064; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=Nocache, Write, Defe...; Priority=Normal; TransferSize=65,536; ByteOffset=11,945,517,056; Irp=0xfffffa8304609b80; ElapsedTimeMSec=0.633; DiskServiceTimeMSec=0.633; FileKey=0xfffff8a00a039c70; FileName=C:\temp\PerfViewData...; 
 EVENT 17.743: KernelTraceControl/ImageID/None PID=1096; TID=500; PName=svchost; ProceNum=3; DataLen=12; 
-EVENT 28.709: KernelTraceControl/ImageID/Opcode37 PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=58; 
-EVENT 28.717: KernelTraceControl/ImageID/Opcode37 PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=149; 
-EVENT 28.725: KernelTraceControl/ImageID/Opcode37 PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=54; 
-EVENT 28.733: KernelTraceControl/ImageID/Opcode37 PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=50; 
-EVENT 28.741: KernelTraceControl/ImageID/Opcode37 PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=66; 
+EVENT 28.709: KernelTraceControl/ImageID/DbgID_ILRSDS PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=58; ImageBase=0x360000; GuidSig=37f1ba04-ce51-4adb-9...; Age=1; PDBFileName=System.ServiceProces...; 
+EVENT 28.717: KernelTraceControl/ImageID/DbgID_ILRSDS PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=149; ImageBase=0x810000; GuidSig=7d329456-1882-4d5a-a...; Age=1; PDBFileName=c:\Users\chulbert\So...; 
+EVENT 28.725: KernelTraceControl/ImageID/DbgID_ILRSDS PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=54; ImageBase=0xa70000; GuidSig=c8b65745-d80d-4fe5-8...; Age=1; PDBFileName=System.Management.pd...; 
+EVENT 28.733: KernelTraceControl/ImageID/DbgID_ILRSDS PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=50; ImageBase=0xae0000; GuidSig=0b42673a-4ce9-44fb-a...; Age=1; PDBFileName=SMDiagnostics.pdb; 
+EVENT 28.741: KernelTraceControl/ImageID/DbgID_ILRSDS PID=4904; TID=500; PName=Aegis.WindowsService; ProceNum=3; DataLen=66; ImageBase=0xb00000; GuidSig=7676d8fd-f131-4a10-b...; Age=1; PDBFileName=System.ServiceModel....; 
 EVENT 31.672: Windows Kernel/PerfInfo/CollectionStart PID=4228; TID=500; PName=PerfView; ProceNum=3; DataLen=12; SampleSource=0; NewInterval=10,000; OldInterval=10,000; 
 EVENT 50.348: Windows Kernel/Thread/Start PID=4; TID=924; PName=System; ProceNum=3; DataLen=72; StackBase=0xfffff8800596b000; StackLimit=0xfffff88005965000; UserStackBase=0x0; UserStackLimit=0x0; StartAddr=0xf; Win32StartAddr=0xfffff800029e0614; TebBase=0x0; SubProcessTag=0; ParentThreadID=500; ParentProcessID=4,228; 
 EVENT 58.696: Windows Kernel/Thread/Start PID=4228; TID=3032; PName=PerfView; ProceNum=3; DataLen=72; StackBase=0xfffff88005972000; StackLimit=0xfffff8800596c000; UserStackBase=0x63efd20; UserStackLimit=0x63ec000; StartAddr=0xf; Win32StartAddr=0x77165c71; TebBase=0xfffa1000; SubProcessTag=0; ParentThreadID=500; ParentProcessID=4,228; 
@@ -539,10 +539,10 @@ EVENT 4,580.282: PerfView/StartAndStopTimes PID=3012; TID=3324; PName=PerfView; 
 EVENT 4,580.283: PerfView/Rundown/Stop PID=3012; TID=3324; PName=PerfView; ProceNum=1; DataLen=0; 
 EVENT 4,580.283: Windows Kernel/SysConfig/BuildInfo PID=0; TID=0; PName=Idle; ProceNum=1; DataLen=138; InstallDate=70/01/01 00:00:00.00...; BuildLab=7601.19160.amd64fre....; ProductName=Windows 7 Enterprise; 
 COUNT KernelTraceControl/ImageID:5928
+COUNT KernelTraceControl/ImageID/DbgID_ILRSDS:104
 COUNT KernelTraceControl/ImageID/DbgID_RSDS:5820
 COUNT KernelTraceControl/ImageID/FileVersion:750
 COUNT KernelTraceControl/ImageID/None:30
-COUNT KernelTraceControl/ImageID/Opcode37:104
 COUNT KernelTraceControl/MetaData/EventInfo:6
 COUNT KernelTraceControl/MetaData/EventMapInfo:1
 COUNT MSNT_SystemTrace/Image/KernelBase:1
@@ -648,7 +648,7 @@ COUNT Windows Kernel/Image/Unload:99
 COUNT Windows Kernel/Memory/HardFault:1
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:2690
+COUNT Windows Kernel/PerfInfo/Sample:2810
 COUNT Windows Kernel/Process/DCStart:49
 COUNT Windows Kernel/Process/DCStop:49
 COUNT Windows Kernel/Process/Defunct:1

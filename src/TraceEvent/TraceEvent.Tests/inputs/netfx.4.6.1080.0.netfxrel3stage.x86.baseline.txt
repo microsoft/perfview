@@ -50,11 +50,11 @@ EVENT 25.436: Windows Kernel/DiskIO/WriteInit PID=4; TID=9104; PName=System; Pro
 EVENT 25.904: KernelTraceControl/ImageID/None PID=1820; TID=-1; PName=spoolsv; ProceNum=1; DataLen=12; 
 EVENT 26.176: Windows Kernel/DiskIO/Write PID=4; TID=9104; PName=System; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, Write, Defe...; Priority=Normal; TransferSize=65,536; ByteOffset=5,065,768,960; Irp=0xffffe000d5e94460; ElapsedTimeMSec=0.740; DiskServiceTimeMSec=0.740; FileKey=0xffffc001a8582c00; FileName=C:\temp\PerfViewData...; 
 EVENT 26.879: Windows Kernel/DiskIO/WriteInit PID=4; TID=9104; PName=System; ProceNum=2; DataLen=12; Irp=0xffffe000d7503140; 
-EVENT 27.185: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=168; 
-EVENT 27.193: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=58; 
-EVENT 27.200: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=50; 
-EVENT 27.207: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=66; 
-EVENT 27.222: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=57; 
+EVENT 27.185: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=168; ImageBase=0xc50000; GuidSig=9557c59f-ba57-4511-b...; Age=1; PDBFileName=f:\binaries\Intermed...; 
+EVENT 27.193: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=58; ImageBase=0xc60000; GuidSig=ea17b53c-1b4c-49a4-9...; Age=1; PDBFileName=System.ServiceProces...; 
+EVENT 27.200: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=50; ImageBase=0x198a0000; GuidSig=5274cf64-bdc5-4eae-a...; Age=1; PDBFileName=SMDiagnostics.pdb; 
+EVENT 27.207: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=66; ImageBase=0x19900000; GuidSig=5dda8dd7-f6d0-4d59-a...; Age=1; PDBFileName=System.ServiceModel....; 
+EVENT 27.222: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=1; DataLen=57; ImageBase=0x199d0000; GuidSig=870cb491-dac3-444a-a...; Age=1; PDBFileName=System.Configuration...; 
 EVENT 28.034: Windows Kernel/DiskIO/Write PID=4; TID=9104; PName=System; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, Write, Defe...; Priority=Normal; TransferSize=65,536; ByteOffset=5,065,834,496; Irp=0xffffe000d7503140; ElapsedTimeMSec=1.155; DiskServiceTimeMSec=1.155; FileKey=0xffffc001a8582c00; FileName=C:\temp\PerfViewData...; 
 EVENT 34.190: KernelTraceControl/ImageID/None PID=3516; TID=-1; PName=explorer; ProceNum=1; DataLen=12; 
 EVENT 34.598: KernelTraceControl/ImageID/None PID=3516; TID=-1; PName=explorer; ProceNum=1; DataLen=12; 
@@ -531,10 +531,10 @@ EVENT 4,171.739: PerfView/Rundown/Stop PID=18716; TID=23384; PName=PerfView; Pro
 EVENT 4,171.739: Windows Kernel/SysConfig/BuildInfo PID=0; TID=0; PName=Idle; ProceNum=1; DataLen=146; InstallDate=70/01/01 00:00:00.00...; BuildLab=10586.306.amd64fre.t...; ProductName=Windows 10 Enterpris...; 
 EVENT 4,171.739: Windows Kernel/SysConfig/Opcode(37) PID=0; TID=0; PName=Idle; ProceNum=1; DataLen=16; 
 COUNT KernelTraceControl/ImageID:8136
+COUNT KernelTraceControl/ImageID/DbgID_ILRSDS:78
 COUNT KernelTraceControl/ImageID/DbgID_RSDS:8044
 COUNT KernelTraceControl/ImageID/FileVersion:1153
 COUNT KernelTraceControl/ImageID/None:36
-COUNT KernelTraceControl/ImageID/Opcode37:78
 COUNT KernelTraceControl/MetaData/EventInfo:51
 COUNT KernelTraceControl/MetaData/EventMapInfo:24
 COUNT MSNT_SystemTrace/Image/KernelBase:1
@@ -637,7 +637,7 @@ COUNT Windows Kernel/Image/Unload:98
 COUNT Windows Kernel/Memory/HardFault:24
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:3002
+COUNT Windows Kernel/PerfInfo/Sample:3045
 COUNT Windows Kernel/Process/DCStart:61
 COUNT Windows Kernel/Process/DCStop:61
 COUNT Windows Kernel/Process/Defunct:62

@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 class TraceParserGen
 {
@@ -291,6 +292,7 @@ class TraceParserGen
         foreach (var keyValue in m_eventsByName)
         {
             var evntName = keyValue.Key;
+            evntName = Regex.Replace(evntName, "[^a-zA-Z0-9_]+", "", RegexOptions.Compiled);
             Debug.Assert(0 < keyValue.Value.Count);
             var evnt = keyValue.Value[0];
 
@@ -353,6 +355,13 @@ class TraceParserGen
             foreach (FieldInfo fieldInfo in allFields)
             {
                 string name = fieldInfo.Name;
+                string safeName = "";
+
+                if (!reservedKeywords.TryGetValue(fieldInfo.Name, out safeName))
+                {
+                    safeName = fieldInfo.Name;
+                }
+
                 if (SkipPadOrReservedFields(fieldInfo))
                     output.WriteLine("        // Skipping " + fieldInfo.Name);
                 else
@@ -374,7 +383,7 @@ class TraceParserGen
                                 // The getter for each struct field looks just like a
                                 // regular field getter, except the field name is
                                 // prepended with the struct name
-                                output.WriteLine("        public " + structSubfieldInfo.Type + " " + name + "_" + structSubfieldInfo.Name + "{ get { return " + structSubfieldInfo.Fetch() + "; } }");
+                                output.WriteLine("        public " + structSubfieldInfo.Type + " " + safeName + "_" + structSubfieldInfo.Name + "{ get { return " + structSubfieldInfo.Fetch() + "; } }");
 
                                 // TODO: Arrays contained inside structs not supported
                             }
@@ -388,7 +397,7 @@ class TraceParserGen
                                 int dummy;
                                 Debug.Assert(!int.TryParse(structInfo.VarSizedArrayCountPropertyName, out dummy));
 
-                                output.WriteLine("        public " + structSubfieldInfo.Type + " " + name + "_" + structSubfieldInfo.Name + "(int arrayIndex) { return " + structSubfieldInfo.Fetch() + "; }");
+                                output.WriteLine("        public " + structSubfieldInfo.Type + " " + safeName + "_" + structSubfieldInfo.Name + "(int arrayIndex) { return " + structSubfieldInfo.Fetch() + "; }");
                             }
                         }
                     }
@@ -400,12 +409,12 @@ class TraceParserGen
 
                         if (fieldInfo.VarSizedArrayCountPropertyName == null)
                         {
-                            output.WriteLine("        public " + GetType(versions) + " " + name + " { get { " + GetPropertyStmt(versions, versionsForEvent.Count) + " } }");
+                            output.WriteLine("        public " + GetType(versions) + " " + safeName + " { get { " + GetPropertyStmt(versions, versionsForEvent.Count) + " } }");
                         }
                         else if (fieldInfo.Type == "byte[]")
                         {
                             // for 'byte[]' we generate two accessors: the first allocates a new byte[], the second allows indexed access
-                            output.WriteLine("        public " + GetType(versions) + " " + name + " { get { " + GetPropertyStmt(versions, versionsForEvent.Count) + " } }");
+                            output.WriteLine("        public " + GetType(versions) + " " + safeName + " { get { " + GetPropertyStmt(versions, versionsForEvent.Count) + " } }");
                         }
                         else
                         {
@@ -413,7 +422,7 @@ class TraceParserGen
                             // methods that take an array index as parameter. 
                             // (Note:  Perhaps this should be done for fixed-sized
                             // arrays as well?)
-                            output.WriteLine("        public " + GetType(versions) + " " + name + "(int arrayIndex) { " + GetPropertyStmt(versions, versionsForEvent.Count) + " }");
+                            output.WriteLine("        public " + GetType(versions) + " " + safeName + "(int arrayIndex) { " + GetPropertyStmt(versions, versionsForEvent.Count) + " }");
                         }
                     }
                 }
@@ -463,12 +472,19 @@ class TraceParserGen
             output.WriteLine("             Prefix(sb);");
             foreach (FieldInfo fieldInfo in allFields)
             {
+                string safeName = "";
+
+                if (!reservedKeywords.TryGetValue(fieldInfo.Name, out safeName))
+                {
+                    safeName = fieldInfo.Name;
+                }
+
                 if (!SkipPadOrReservedFields(fieldInfo) && (fieldInfo.GetType() != typeof(StructInfo)) && (fieldInfo.VarSizedArrayCountPropertyName == null))
                 {
                     string printFtn = "XmlAttrib";
                     if (fieldInfo.Type == "Address" || fieldInfo.HexFormat)
                         printFtn = "XmlAttribHex";
-                    output.WriteLine("             " + printFtn + "(sb, \"" + fieldInfo.Name + "\", " + fieldInfo.Name + ");");
+                    output.WriteLine("             " + printFtn + "(sb, \"" + safeName + "\", " + safeName + ");");
                 }
             }
             output.WriteLine("             sb.Append(\"/>\");");
@@ -486,11 +502,17 @@ class TraceParserGen
             bool first = true;
             foreach (FieldInfo fieldInfo in allFields)
             {
+                string safeName = "";
+
+                if (!reservedKeywords.TryGetValue(fieldInfo.Name, out safeName))
+                {
+                    safeName = fieldInfo.Name;
+                }
                 if (!SkipPadOrReservedFields(fieldInfo) && (fieldInfo.GetType() != typeof(StructInfo)))
                 {
                     if (!first)
                         output.Write(", ");
-                    output.Write("\"" + fieldInfo.Name + "\"");
+                    output.Write("\"" + safeName + "\"");
                     first = false;
                 }
             }
@@ -508,10 +530,16 @@ class TraceParserGen
             int fieldNum = 0;
             foreach (FieldInfo fieldInfo in allFields)
             {
+                string safeName = "";
+
+                if (!reservedKeywords.TryGetValue(fieldInfo.Name, out safeName))
+                {
+                    safeName = fieldInfo.Name;
+                }
                 if (!SkipPadOrReservedFields(fieldInfo) && (fieldInfo.GetType() != typeof(StructInfo)) && (fieldInfo.VarSizedArrayCountPropertyName == null))
                 {
                     output.WriteLine("                case " + fieldNum + ":");
-                    output.WriteLine("                    return " + fieldInfo.Name + ";");
+                    output.WriteLine("                    return " + safeName + ";");
                     fieldNum++;
                 }
             }
@@ -1156,5 +1184,7 @@ class TraceParserGen
     /// We group events together by version during the processing.  
     /// </summary>
     SortedDictionary<string, List<Event>> m_eventsByName;
+
+    private static Dictionary<string, string> reservedKeywords = new Dictionary<string, string> { { "object", "Object" }, { "new", "New" }, { "protected", "Protected" } };
     #endregion
 }

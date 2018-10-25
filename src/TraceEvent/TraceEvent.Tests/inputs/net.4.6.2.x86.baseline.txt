@@ -59,11 +59,11 @@ EVENT 33.030: Windows Kernel/Memory/HardFault PID=8644; TID=8744; PName=Taskmgr;
 EVENT 33.073: Windows Kernel/DiskIO/ReadInit PID=8644; TID=8744; PName=Taskmgr; ProceNum=1; DataLen=12; Irp=0xffffe001b805cb40; 
 EVENT 33.097: Windows Kernel/DiskIO/Write PID=4; TID=6348; PName=System; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=AssociatedIrp; Priority=Normal; TransferSize=45,056; ByteOffset=35,210,272,768; Irp=0xffffe001ba038710; ElapsedTimeMSec=0.638; DiskServiceTimeMSec=0.638; FileKey=0xffffc001eab376b0; FileName=C:\temp\perfview\Per...; 
 EVENT 33.950: KernelTraceControl/ImageID/None PID=1748; TID=-1; PName=spoolsv; ProceNum=3; DataLen=12; 
-EVENT 36.616: KernelTraceControl/ImageID/Opcode37 PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=168; 
-EVENT 36.625: KernelTraceControl/ImageID/Opcode37 PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=58; 
-EVENT 36.636: KernelTraceControl/ImageID/Opcode37 PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=50; 
-EVENT 36.645: KernelTraceControl/ImageID/Opcode37 PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=135; 
-EVENT 36.657: KernelTraceControl/ImageID/Opcode37 PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=66; 
+EVENT 36.616: KernelTraceControl/ImageID/DbgID_ILRSDS PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=168; ImageBase=0x1050000; GuidSig=9557c59f-ba57-4511-b...; Age=1; PDBFileName=f:\binaries\Intermed...; 
+EVENT 36.625: KernelTraceControl/ImageID/DbgID_ILRSDS PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=58; ImageBase=0x1070000; GuidSig=b7599691-c4cf-48a3-9...; Age=1; PDBFileName=System.ServiceProces...; 
+EVENT 36.636: KernelTraceControl/ImageID/DbgID_ILRSDS PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=50; ImageBase=0x19970000; GuidSig=0d41a134-79c6-4132-9...; Age=1; PDBFileName=SMDiagnostics.pdb; 
+EVENT 36.645: KernelTraceControl/ImageID/DbgID_ILRSDS PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=135; ImageBase=0x199b0000; GuidSig=1f521253-a526-4e6b-b...; Age=1; PDBFileName=f:\binaries\Intermed...; 
+EVENT 36.657: KernelTraceControl/ImageID/DbgID_ILRSDS PID=2132; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=66; ImageBase=0x199d0000; GuidSig=57b99f6b-be08-4753-9...; Age=1; PDBFileName=System.ServiceModel....; 
 EVENT 38.347: Windows Kernel/DiskIO/Read PID=-1; TID=8744; PName=; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=16,384; ByteOffset=3,948,622,336; Irp=0xffffe001b805cb40; ElapsedTimeMSec=5.274; DiskServiceTimeMSec=5.274; FileKey=0xffffc001daa0f150; FileName=C:\Windows\System32\...; 
 EVENT 38.356: Windows Kernel/Memory/HardFault PID=8644; TID=8744; PName=Taskmgr; ProceNum=0; DataLen=40; ElapsedTimeMSec=5.299; ReadOffset=1,606,144; VirtualAddress=0x7ffda1a4e244; FileKey=0xffffc001daa0f150; ByteCount=16,384; FileName=C:\Windows\System32\...; 
 EVENT 38.413: Windows Kernel/DiskIO/ReadInit PID=8644; TID=8744; PName=Taskmgr; ProceNum=0; DataLen=12; Irp=0xffffe001b6ea9b40; 
@@ -934,11 +934,11 @@ EVENT 8,455.125: PerfView/Rundown/Stop PID=24464; TID=13020; PName=PerfView; Pro
 EVENT 8,455.125: Windows Kernel/SysConfig/BuildInfo PID=0; TID=0; PName=Idle; ProceNum=2; DataLen=146; InstallDate=70/01/01 00:00:00.00...; BuildLab=10586.306.amd64fre.t...; ProductName=Windows 10 Enterpris...; 
 EVENT 8,455.125: Windows Kernel/SysConfig/Opcode(37) PID=0; TID=0; PName=Idle; ProceNum=2; DataLen=16; 
 COUNT KernelTraceControl/ImageID:21312
+COUNT KernelTraceControl/ImageID/DbgID_ILRSDS:4394
 COUNT KernelTraceControl/ImageID/DbgID_RSDS:16750
 COUNT KernelTraceControl/ImageID/FileVersion:2285
 COUNT KernelTraceControl/ImageID/None:916
 COUNT KernelTraceControl/ImageID/Opcode(34):2
-COUNT KernelTraceControl/ImageID/Opcode37:4394
 COUNT KernelTraceControl/MetaData/EventInfo:153
 COUNT KernelTraceControl/MetaData/EventMapInfo:30
 COUNT MSNT_SystemTrace/Image/KernelBase:1
@@ -1139,7 +1139,7 @@ COUNT Windows Kernel/Image/Unload:108
 COUNT Windows Kernel/Memory/HardFault:1305
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:12531
+COUNT Windows Kernel/PerfInfo/Sample:12652
 COUNT Windows Kernel/Process/DCStart:119
 COUNT Windows Kernel/Process/DCStop:119
 COUNT Windows Kernel/Process/Defunct:34

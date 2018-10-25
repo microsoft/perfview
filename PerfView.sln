@@ -22,10 +22,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{CD74A439-1DFC-4FA7-ABB3-3BC6CA1F7B48}"
 	ProjectSection(SolutionItems) = preProject
 		documentation\CodingStandards.md = documentation\CodingStandards.md
+		documentation\Downloading.md = documentation\Downloading.md
 		documentation\MakingSupportFilesNugetPackages.md = documentation\MakingSupportFilesNugetPackages.md
 		documentation\OpenSourceGitWorkflow.md = documentation\OpenSourceGitWorkflow.md
 		documentation\SettingUpRepoInVS.md = documentation\SettingUpRepoInVS.md
-		documentation\Downloading.md = documentation\Downloading.md
 		documentation\SimpleGitWorkflow.md = documentation\SimpleGitWorkflow.md
 		documentation\TraceEvent\TraceEventLibrary.md = documentation\TraceEvent\TraceEventLibrary.md
 		documentation\TraceEvent\TraceEventProgrammersGuide.md = documentation\TraceEvent\TraceEventProgrammersGuide.md
@@ -70,6 +70,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventSamples", "src\TraceEvent\Samples\TraceEventSamples.csproj", "{2D5418E0-6513-4285-8B0D-53A30CBEF242}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastSerialization.Tests", "src\FastSerialization.Tests\FastSerialization.Tests.csproj", "{ECAD6A7A-9302-4D5B-8DC6-18A9418EEDDF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventPackageSigning", "src\TraceEventPackageSigning\TraceEventPackageSigning.csproj", "{121D62F5-0BB7-4DB5-8742-454127DF31F4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -153,6 +155,10 @@ Global
 		{ECAD6A7A-9302-4D5B-8DC6-18A9418EEDDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ECAD6A7A-9302-4D5B-8DC6-18A9418EEDDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ECAD6A7A-9302-4D5B-8DC6-18A9418EEDDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{121D62F5-0BB7-4DB5-8742-454127DF31F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{121D62F5-0BB7-4DB5-8742-454127DF31F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{121D62F5-0BB7-4DB5-8742-454127DF31F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{121D62F5-0BB7-4DB5-8742-454127DF31F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

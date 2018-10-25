@@ -1089,18 +1089,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 var moduleFile = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, isLoad, fileName);
-                // TODO FIX NOW review:  is using the timestamp the best way to make the association
+                // TODO review:  is using the timestamp the best way to make the association
                 if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC)
                 {
                     moduleFile.pdbName = lastDbgData.PdbFileName;
                     moduleFile.pdbSignature = lastDbgData.GuidSig;
                     moduleFile.pdbAge = lastDbgData.Age;
+                    // There is no guarantee that the names of the DLL and PDB match, but they do 99% of the time
+                    // We tolerate the exceptions, because it is a useful check most of the time 
+                    Debug.Assert(RoughDllPdbMatch(moduleFile.fileName, moduleFile.pdbName));
                 }
                 if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                 {
                     moduleFile.timeDateStamp = lastImageIDData.TimeDateStamp;
                 }
-
                 if (lastFileVersionData != null && data.TimeStampQPC == lastFileVersionData.TimeStampQPC)
                 {
                     moduleFile.fileVersion = lastFileVersionData.FileVersion;
@@ -1116,21 +1118,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
             var symbolParser = new SymbolTraceEventParser(rawEvents);
 
-            symbolParser.ImageIDNone += delegate (EmptyTraceData data)
-            {
-                // If I don't have this, the code ends up not attaching the stack to the image load which has the same timestamp. 
-                noStack = true;
-            };
+            // Symbol parser events never have a stack (but will have a QPC associated with the imageLoad) so we want them ignored
+            symbolParser.All += delegate (TraceEvent data) { noStack = true; };
             symbolParser.ImageIDDbgID_RSDS += delegate (DbgIDRSDSTraceData data)
             {
                 hasPdbInfo = true;
-                noStack = true;
+
                 // The ImageIDDbgID_RSDS may be after the ImageLoad
-                if (lastTraceModuleFile != null &&  lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.pdbName == null)
                 {
                     lastTraceModuleFile.pdbName = data.PdbFileName;
                     lastTraceModuleFile.pdbSignature = data.GuidSig;
                     lastTraceModuleFile.pdbAge = data.Age;
+                    // There is no guarantee that the names of the DLL and PDB match, but they do 99% of the time
+                    // We tolerate the exceptions, because it is a useful check most of the time 
+                    Debug.Assert(RoughDllPdbMatch(lastTraceModuleFile.fileName, lastTraceModuleFile.pdbName));
                     lastDbgData = null;
                 }
                 else  // Or before (it is handled in ImageGroup callback above)
@@ -1138,9 +1140,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
             symbolParser.ImageID += delegate (ImageIDTraceData data)
             {
-                noStack = true;
                 // The ImageID may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.timeDateStamp == 0)
                 {
                     lastTraceModuleFile.timeDateStamp = data.TimeDateStamp;
                     lastImageIDData = null;
@@ -1150,9 +1151,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
             symbolParser.ImageIDFileVersion += delegate (FileVersionTraceData data)
             {
-                noStack = true;
                 // The ImageIDFileVersion may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.fileVersion == null)
                 {
                     lastTraceModuleFile.fileVersion = data.FileVersion;
                     lastTraceModuleFile.productVersion = data.ProductVersion;
@@ -1161,10 +1161,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 else  // Or before (it is handled in ImageGroup callback above)
                     lastFileVersionData = (FileVersionTraceData)data.Clone();
-            };
-            symbolParser.ImageIDOpcode37 += delegate
-            {
-                noStack = true;
             };
 
             kernelParser.AddCallbackForEvents<FileIONameTraceData>(delegate (FileIONameTraceData data)
@@ -1542,7 +1538,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Attribute CPU samples to processes.
             kernelParser.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
-                if (data.ThreadID == 0 && !(options != null && options.KeepAllEvents))    // Don't count process 0 (idle)
+                if (data.ThreadID == 0 && !data.NonProcess && !(options != null && options.KeepAllEvents))    // Don't count process 0 (idle) unless they are executing DPCs or ISRs.  
                 {
                     removeFromStream = true;
                     return;
@@ -1891,7 +1887,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
 #if DEBUG
-            // Confirm that there are no infinite chains (we guarentee this for sanity).  
+            // Confirm that there are no infinite chains (we guarantee this for sanity).  
             foreach (var process in Processes)
                 Debug.Assert(process.ParentDepth() < Processes.Count);
 #endif
@@ -1931,6 +1927,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             // The eventsToStacks array is sorted.  
+            // We sort this array above, so this should only fail if we have EQUAL EventIndex.
+            // This means we tried to add two stacks to an event  (we should not do that).  
+            // See the asserts in AddStackToEvent for more.  
             for (int i = 0; i < eventsToStacks.Count - 1; i++)
                 Debug.Assert(eventsToStacks[i].EventIndex < eventsToStacks[i + 1].EventIndex);
 #endif
@@ -1948,6 +1947,33 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             options.ConversionLog.WriteLine("  {0,8:n0} CLR method event records.", codeAddresses.ManagedMethodRecordCount);
             this.options.ConversionLog.WriteLine("[Conversion complete {0:n0} events.  Conversion took {1:n0} sec.]",
                 eventCount, (DateTime.Now - startTime).TotalSeconds);
+        }
+
+        // Pdbs and DLLs often 'match'.   Use this to ensure we have hooked
+        // up the PDB to the DLL correctly.    This is heurisitc and only used
+        // in testing.  
+        static bool RoughDllPdbMatch(string dllPath, string pdbPath)
+        {
+#if DEBUG
+            string dllName = Path.GetFileNameWithoutExtension(dllPath);
+            string pdbName = Path.GetFileNameWithoutExtension(pdbPath);
+            
+            // Give up on things outside the kernel or visual Studio.  There is just too much variability out there.  
+            if (!dllName.StartsWith(@"C:\Windows", StringComparison.OrdinalIgnoreCase) || 0 <= dllName.IndexOf("Visual Studio", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Exceptions to the rule below 
+            if (0 <= dllName.IndexOf("krnl", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // People often rename things but the keep the prefix in the PDB name. 
+            if (dllName.Length > 5)
+                dllName = dllName.Substring(0, 5);
+
+            if (0 <= pdbName.IndexOf(dllName, StringComparison.OrdinalIgnoreCase))
+                return true;
+#endif 
+            return false;
         }
 
         /// <summary>
@@ -2027,14 +2053,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #if DEBUG
             double prevEventRelMSec = QPCTimeToRelMSec(eventTimeStampQPC);
 #endif
-            PastEventInfoIndex pastEventIndex = pastEventInfo.GetBestEventForQPC(eventTimeStampQPC, stackEvent.ThreadID);
+            PastEventInfoIndex pastEventIndex = pastEventInfo.GetBestEventForQPC(eventTimeStampQPC, stackEvent.ThreadID, stackEvent.ProcessorNumber);
             if (pastEventIndex == PastEventInfoIndex.Invalid)
             {
                 m_orphanedStacks++;
                 if (m_orphanedStacks < 1000)
                 {
-                    // We don't warn if the time is too close to the start of the file.  
-                    DebugWarn(stackEvent.TimeStampRelativeMSec < 100, "Stack refers to event with time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4") + " MSec that could not be found", stackEvent);
+                    // We don't warn if the time is too close to the start of the file
+                    // We also don't report ThreadID becasue we do throw those out purpposefully to safe space.  
+                    DebugWarn(stackEvent.TimeStampRelativeMSec < 100 || stackEvent.ThreadID == 0, "Stack refers to event with time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4") + " MSec that could not be found", stackEvent);
                     if (m_orphanedStacks == 999)
                         DebugWarn(true, "Last message about missing events.", stackEvent);
                 }
@@ -3376,6 +3403,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Debug.Assert(pastEventInfo[curPastEventInfo].EventIndex == 0 || pastEventInfo[curPastEventInfo].EventIndex == EventIndex.Invalid ||
                     pastEventInfo[curPastEventInfo].EventIndex < eventIndex);
                 pastEventInfo[curPastEventInfo].ThreadID = threadID;
+                pastEventInfo[curPastEventInfo].ProcessorNumber = (ushort)data.ProcessorNumber;
+                Debug.Assert(pastEventInfo[curPastEventInfo].ProcessorNumber == data.ProcessorNumber);
                 pastEventInfo[curPastEventInfo].QPCTime = data.TimeStampQPC;
                 pastEventInfo[curPastEventInfo].EventIndex = eventIndex;
                 pastEventInfo[curPastEventInfo].CountForEvent = countForEvent;
@@ -3425,53 +3454,59 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             /// <summary>
-            /// Find the event event on thread threadID to the given QPC timestamp
+            /// Find the event event on thread threadID to the given QPC timestamp.  If there is more than
+            /// one event with the same QPC, we use thread and processor number to disambiguate.  
             /// </summary>
-            public PastEventInfoIndex GetBestEventForQPC(long QPCTime, int threadID)
+            public PastEventInfoIndex GetBestEventForQPC(long QPCTime, int threadID, int processorNumber)
             {
                 // There are times when we have the same timestamp for different events, thus we need to
                 // choose the best one (thread IDs match), when we also have a 'poorer' match (when we don't
                 // have a thread ID for the event) 
                 int idx = curPastEventInfo;
                 var ret = PastEventInfoIndex.Invalid;
-                bool exactMatch = false;
+                bool threadAndProcNumMatch = false;
                 bool updateThread = false;
                 for (; ; )
                 {
-                    // We match timestamps.  This is the main criteria 
-                    if (QPCTime == pastEventInfo[idx].QPCTime)
-                    {
-                        if (threadID == pastEventInfo[idx].ThreadID)
-                        {
-                            if (exactMatch)
-                            {
-                                // We hope this does not happen, ambiguity: two events with the same timestamp and thread ID. 
-                                // This seems to happen for CSWITCH and SAMPLING on the phone (where timestamps are coarse); 
-                                log.DebugWarn(false, "Two events with the same Timestamp " + log.QPCTimeToRelMSec(QPCTime).ToString("f4"), null);
-                                return ret;
-                            }
-
-                            exactMatch = true;
-                            ret = (PastEventInfoIndex)idx;
-                            updateThread = false;
-                        }
-                        // Some events, (like VirtualAlloc, ReadyThread) don't have the thread ID set
-                        if (pastEventInfo[idx].ThreadID == -1 && !exactMatch)
-                        {
-                            ret = (PastEventInfoIndex)idx;
-                            updateThread = true;                // we match against ThreadID == -1, remember the true thread forever.  
-                        }
-                    }
-                    // Once we found a timestamp match, we stop searching when the timestamps no longer match.   
-                    else if (ret != PastEventInfoIndex.Invalid)
-                        break;
-
                     --idx;
                     if (idx < 0)
                         idx = historySize - 1;
-                    if (idx == (int)curPastEventInfo)
+
+                    // We match timestamps.  This is the main criteria 
+                    long entryQPCTime = pastEventInfo[idx].QPCTime;
+                    if (QPCTime == entryQPCTime)
+                    {
+                        // Next we we see if the ThreadIDs  match
+                        if (threadID == pastEventInfo[idx].ThreadID)
+                        {
+                            if (threadAndProcNumMatch)
+                            {
+                                // We hope this does not happen, ambiguity: two events with the same timestamp and thread ID and processor number 
+                                // This seems to happen for CSWITCH and SAMPLING on the phone (where timestamps are coarse); 
+                                log.DebugWarn(processorNumber != pastEventInfo[idx].ProcessorNumber, "Two events with the same Timestamp " + log.QPCTimeToRelMSec(QPCTime).ToString("f4"), null);
+                                return ret;
+                            }
+
+                            // Remember if we have a perfect match 
+                            if (processorNumber == pastEventInfo[idx].ProcessorNumber)
+                                threadAndProcNumMatch = true;
+                            ret = (PastEventInfoIndex)idx;
+                            updateThread = false;
+                        } // Some events, (like VirtualAlloc, ReadyThread) don't have the thread ID set, we will rely on just QPC and processor number.  
+                        else if (pastEventInfo[idx].ThreadID == -1)
+                        {
+                            // If we have no result yet, then use this one.   If we have a result, at least the processor numbers need to match.  
+                            if (ret == PastEventInfoIndex.Invalid || (!threadAndProcNumMatch && processorNumber == pastEventInfo[idx].ProcessorNumber))
+                            {
+                                ret = (PastEventInfoIndex)idx;
+                                updateThread = true;                // we match against ThreadID == -1, remember the true thread forever.  
+                            }
+                        }
+                    }
+                    else if (entryQPCTime < QPCTime)            // We can stop after we past the QPC we are looking for.  
                         break;
-                    if ((int)pastEventInfo[idx].EventIndex == 0)
+
+                    if (idx == (int)curPastEventInfo)
                         break;
                 }
                 // Remember the thread ID that we were 'attached to'.  
@@ -3482,7 +3517,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 return ret;
             }
-
             public PastEventInfoIndex CurrentIndex { get { return (PastEventInfoIndex)curPastEventInfo; } }
             public bool IsClrEvent(PastEventInfoIndex index) { return pastEventInfo[(int)index].isClrEvent; }
             public bool HasStack(PastEventInfoIndex index) { return pastEventInfo[(int)index].hasAStack; }
@@ -3491,7 +3525,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public EventIndex GetEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].EventIndex; }
             public EventIndex GetBlockingEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].BlockingEventIndex; }
             public TraceEventCounts GetEventCounts(PastEventInfoIndex index) { return pastEventInfo[(int)index].CountForEvent; }
-            public long GetQPCTime(PastEventInfoIndex index) { return pastEventInfo[(int)index].QPCTime; }
             public IncompleteStack GetEventStackInfo(PastEventInfoIndex index)
             {
                 var stackInfo = pastEventInfo[(int)index].EventStackInfo;
@@ -3516,6 +3549,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
                 public bool hasAStack;
                 public bool isClrEvent;
+                public ushort ProcessorNumber;
                 public long QPCTime;
                 public int ThreadID;
 
@@ -3636,7 +3670,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.  
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
-        // The can ONLY be accessed by the thread calling RealTimeEventSource.Process();
+        
+        // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
         #endregion
@@ -5871,7 +5906,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var suffixPos = ilModulePath.LastIndexOf(".", StringComparison.OrdinalIgnoreCase);
                 if (0 < suffixPos)
                 {
-                    nativeModulePath = ilModulePath;                    // We treat the image as the native path
+                    // We treat the image as the native path
+                    nativeModulePath = ilModulePath;                    
                     // and make up a dummy IL path.  
                     ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
                 }
@@ -6616,10 +6652,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // This is only used when converting maps.  Maps a call stack index to a list of call stack indexes that
         // were callees of it.    This is the list you need to search when interning.  There is also 'threads'
         // which is the list of call stack indexes where stack crawling stopped. 
-        private GrowableArray<List<CallStackIndex>> callees;                // For each callstack, these are all the call stacks that it calls. 
-        private GrowableArray<List<CallStackIndex>> threads;                 // callees for threads of stacks, one for each thread
-        // a field on CallStackInfo
-        private GrowableArray<CallStackInfo> callStacks;
+        private GrowableArray<List<CallStackIndex>> callees;    // For each callstack, these are all the call stacks that it calls. 
+        private GrowableArray<List<CallStackIndex>> threads;    // callees for threads of stacks, one for each thread
+        private GrowableArray<CallStackInfo> callStacks;        // a field on CallStackInfo
         private DeferedRegion lazyCallStacks;
         private TraceCodeAddresses codeAddresses;
         private TraceLog log;
@@ -7187,6 +7222,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 startIdx++;
 
             bool removeAddressAfterCallback = (process.ProcessID != 0);      // We remove entries unless it is the kernel (process 0) after calling back
+
             // since the DLL will be unloaded in that process. Kernel DLLS stay loaded. 
             // Call back for ever code address >= start than that, and then remove any code addresses we called back on.  
             Address end = start + (ulong)length;
@@ -7857,7 +7893,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal class ILToNativeMap : IFastSerializable
         {
             public ILMapIndex Next;             // We keep a link list of maps with the same start address 
-            // (can only be from different processes);
+                                                // (can only be from different processes);
             public ProcessIndex ProcessIndex;   // This is not serialized.  
             public MethodIndex MethodIndex;
             public Address MethodStart;
@@ -8821,11 +8857,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // AutoComplete codes. 
             /// <summary>
             /// An activity that allows correlation between the antecedent and continuation 
+            /// if have bit 5 set it means you auto-compete
             /// </summary>
-            TaskWait = 32,          // if have bit 5 set it means you auto-compete
-            /// <summary>Same as TaskWait, hwoever it auto-completes</summary>
+            TaskWait = 32,
+            /// <summary>
+            /// Same as TaskWait, hwoever it auto-completes
+            /// </summary>
             TaskWaitSynchronous = 64 + 33,
-            /// <summary>Managed timer workitem</summary>
+            /// <summary>
+            /// Managed timer workitem
+            /// </summary>
             FxTimer = 34, // FxTransfer + kind(1)
         }
 
