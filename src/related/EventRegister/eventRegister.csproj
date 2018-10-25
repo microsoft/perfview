@@ -97,7 +97,6 @@
     <None Include="_EventRegisterUsersGuide.docx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="_EventSourceUsersGuide.docx" />
   </ItemGroup>
   <Import Project="packages\Microsoft.Diagnostics.Tracing.EventRegister.1.1.28\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('packages\Microsoft.Diagnostics.Tracing.EventRegister.1.1.28\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

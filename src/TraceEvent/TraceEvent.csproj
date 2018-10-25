@@ -69,7 +69,7 @@
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
 
   <!-- *** SourceLink Support *** -->
-  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -126,6 +126,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Include="EventPipe\EventPipeFormat.md" />
+    <None Include="EventPipe\EventSerialization.md" />
   </ItemGroup>
 
     <!-- *********************************************************** -->
