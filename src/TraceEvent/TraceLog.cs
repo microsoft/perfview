@@ -7500,6 +7500,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             TraceCallStack cur = this;
             while (cur != null)
             {
+                sb.Append("CallStackIndex=\"").Append(cur.CallStackIndex).Append("\" "); 
                 cur.CodeAddress.ToString(sb).AppendLine();
                 cur = cur.Caller;
             }
@@ -8505,17 +8506,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (file.Header.CheckSum != (uint)moduleFile.ImageChecksum)
                 {
-                    log.WriteLine("The the local file {0} has a mismatched checksum found {1} != expected {2}", moduleFile.FilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
+                    log.WriteLine("The local file {0} has a mismatched checksum found {1} != expected {2}", moduleFile.FilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
                     return false;
                 }
                 if (moduleFile.ImageId != 0 && file.Header.TimeDateStampSec != moduleFile.ImageId)
                 {
-                    log.WriteLine("The the local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFile.FilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
+                    log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFile.FilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
                     return false;
                 }
                 if (file.Header.SizeOfImage != (uint)moduleFile.ImageSize)
                 {
-                    log.WriteLine("The the local file {0} has a mismatched size found {1} != expected {2}", moduleFile.FilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
+                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFile.FilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
                     return false;
                 }
             }
@@ -10144,7 +10145,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>The event index of the TraceEvent instance that created/scheduled this activity</summary>
         public EventIndex CreationEventIndex { get { return creationEventIndex; } }
         /// <summary>The call stack index of the TraceEvent instance that scheduled (caused the creation of) the activity</summary>
-        public CallStackIndex CreationCallStackIndex { get { return /*creationCallStackIndex*/ thread.Process.Log.GetCallStackIndexForEventIndex(creationEventIndex); } }
+        public CallStackIndex CreationCallStackIndex
+        {
+            get
+            {
+                Debug.Assert(creationCallStackIndex == thread.Process.Log.GetCallStackIndexForEventIndex(creationEventIndex));
+                return creationCallStackIndex;
+            }
+        }
         /// <summary>Time from beginning of trace (in msec) when activity was scheduled</summary>
         public double CreationTimeRelativeMSec
         {

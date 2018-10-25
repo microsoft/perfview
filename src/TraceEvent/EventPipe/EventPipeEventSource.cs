@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// Please see <see href="https://github.com/Microsoft/perfview/blob/master/src/TraceEvent/EventPipe/EventPipeFormat.md" />for details on the file format.
     /// 
     /// By conventions files of such a format are given the .netperf suffix and are logically
-    /// very much like a ETL file in that they have a header that indicete things about
+    /// very much like a ETL file in that they have a header that indicate things about
     /// the trace as a whole, and a list of events.    Like more modern ETL files the
     /// file as a whole is self-describing.    Some of the events are 'MetaData' events
     /// that indicate the provider name, event name, and payload field names and types.   
@@ -148,7 +148,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
 
-                // Read in the header (The header does not inlcude payload parameter information)
+                // Read in the header (The header does not include payload parameter information)
                 var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
                 _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
 
@@ -309,7 +309,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// 
     /// This class has two main functions
     ///    1. The constructor takes a PinnedStreamReader and decodes the serialized metadata
-    ///       so you can access the data conviniently (but it does not decode the parameter info)
+    ///       so you can access the data conveniently (but it does not decode the parameter info)
     ///    2. It remembers a EVENT_RECORD structure (from ETW) that contains this data)
     ///       and has a function GetEventRecordForEventData which converts from a 
     ///       EventPipeEventHeader (the raw serialized data) to a EVENT_RECORD (which
@@ -325,7 +325,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// whole stream (since it needs to be put into the EVENT_RECORD.
         /// 
         /// When this constructor returns the reader has read up to the serialized information about
-        /// the parameters.  We do this because this code does not know the best represenation for
+        /// the parameters.  We do this because this code does not know the best representation for
         /// this parameter information and so it just lets other code handle it.  
         /// </summary>
         public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
@@ -387,8 +387,8 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Given a EventPipeEventHeader takes a EventPipeEventHeader that is specific to an event, copies it
-        /// on top of the static information in its EVENT_RECORD which is specialized this this meta-data 
-        /// and returns a pinter to it.  Thus this makes the EventPipe look like an ETW provider from
+        /// on top of the static information in its EVENT_RECORD which is specialized meta-data 
+        /// and returns a pointer to it.  Thus this makes the EventPipe look like an ETW provider from
         /// the point of view of the upper level TraceEvent logic.  
         /// </summary>
         internal TraceEventNativeMethods.EVENT_RECORD* GetEventRecordForEventData(EventPipeEventHeader* eventData)
@@ -401,8 +401,8 @@ namespace Microsoft.Diagnostics.Tracing
             // EVENT_RECORD does not field for ReleatedActivityID (because it is rarely used).  See GetRelatedActivityID;
             _eventRecord->UserDataLength = (ushort)eventData->PayloadSize;
 
-            // TODO the extra || operator is a hack becase the runtime actually tries to emit events that
-            // exceed this for the GC/BulkSurvivingObjectRanges (event id == 21).  We supress that assert 
+            // TODO the extra || operator is a hack because the runtime actually tries to emit events that
+            // exceed this for the GC/BulkSurvivingObjectRanges (event id == 21).  We suppress that assert 
             // for now but this is a real bug in the runtime's event logging.  ETW can't handle payloads > 64K.  
             Debug.Assert(_eventRecord->UserDataLength == eventData->PayloadSize ||
                 _eventRecord->EventHeader.ProviderId == ClrTraceEventParser.ProviderGuid && _eventRecord->EventHeader.Id == 21);
@@ -410,7 +410,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int stackBytesSize = EventPipeEventHeader.StackBytesSize(eventData);
 
-            // TODO remove once .NET Core has been fixed to not emit stacks on CLR method events which are just for bookeeping.  
+            // TODO remove once .NET Core has been fixed to not emit stacks on CLR method events which are just for bookkeeping.  
             if (ProviderId == ClrRundownTraceEventParser.ProviderGuid ||
                (ProviderId == ClrTraceEventParser.ProviderGuid && (140 <= EventId && EventId <= 144 || EventId == 190)))     // These are various CLR method Events.  
             {
@@ -589,7 +589,7 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// Private utilty class.
+    /// Private utility class.
     /// 
     /// At the start of every event from an EventPipe is a header that contains
     /// common fields like its size, threadID timestamp etc.  EventPipeEventHeader
@@ -602,7 +602,7 @@ namespace Microsoft.Diagnostics.Tracing
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     internal unsafe struct EventPipeEventHeader
     {
-        private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT incode the size of the EventSize field itself. 
+        private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT encode the size of the EventSize field itself. 
         public int MetaDataId;          // a number identifying the description of this event.  
         public int ThreadId;
         public long TimeStamp;

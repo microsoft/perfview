@@ -30,10 +30,14 @@ It is likely that you only need to update a subset of all the DLLs in the packag
 need to start with an existing set.  You can do this by running editing and running the 
 PerfView.SupportFiles.Populate.bat script.  
 
-1.  First *look in packages directory to see what the latest version is and modify 
-    the PerfView.SupportFiles.Populate.bat* copy from that.   If you don't update this
-	file to take from the currnet version, you will end up making a package with old 
-	binaries in it, which is undoubtely not what you want.  
+1.  First *look in %HOMEPATH%\.nuget\packages directory to see what the latest version for 
+    the support package you are updating and modify 
+    the PerfView.SupportFiles.Populate.bat* to copy files from the directory associated
+    with this latest version.   You can also find the latest
+    version of the SupportFiles package by looking the Directory.Build.props file at the 
+    base of the repo.   *If you don't update this
+    file to take from the current version, you will end up making a package with old 
+    binaries in it, which cause fixed bugs to reappear*.  
 2.  Then you can run the batch file.   This copies that files you are currently using
     to form a baseline for the new package in a subdirectory of the src\NugetSupportFiles
 	directory.  
@@ -44,7 +48,7 @@ have the existing nuget package, you can populate the new package 'by hand' from
 ## Step 2 Update the files in the baseline Image (PerfView.SupportFiles)
 
 This is dependent on exactly what you want to do. However something you should ALWAYS do
-is to update the version number in the PerfView.SupportFiles.nuspec file  You should also
+is to *update the version number in the PerfView.SupportFiles.nuspec file*.  You should also
 update the releaseNotes element in the nuspec file.   Thus at this
 point you have updates the *.Populate*.bat file and the *.nuspec file. 
 
