@@ -179,10 +179,18 @@ namespace Microsoft.Diagnostics.Tracing
                 // is not running anymore.   
                 if (IsThreadParkedInThreadPool(m_eventLog, data.BlockingStack()))
                 {
+                    int count = 0;
                     while (activity != null)
                     {
                         OnStop(data, activity, thread);
-                        activity = activity.prevActivityOnThread;
+                        TraceActivity newActivity = activity.prevActivityOnThread;
+                        count++;
+                        if (activity == newActivity || count > 1000)
+                        {
+                            m_symbolReader.Log.WriteLine("Error: prevActivityOnThread is recursive {0}", activity.Name);
+                            break;
+                        }
+                        activity = newActivity;
                     }
 
                     // We will make a new activity from the current one then next time we wake up.  

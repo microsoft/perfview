@@ -1041,12 +1041,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
             };
+
+            kernelParser.ThreadSetName += delegate (ThreadSetNameTraceData data)
+            {
+                CategorizeThread(data, data.ThreadName);
+            };
+
             kernelParser.ThreadEndGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 if (thread.process == null)
                     thread.process = process;
+
+                if (data.ThreadName.Length > 0)
+                    CategorizeThread(data, data.ThreadName);
+
                 Debug.Assert(thread.process == process, "Different events disagree on the process object!");
                 DebugWarn(thread.endTimeQPC == long.MaxValue || thread.ThreadID == 0,
                     "Thread end on a terminated thread " + data.ThreadID + " that ended at " + QPCTimeToRelMSec(thread.endTimeQPC), data);
@@ -1125,7 +1135,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 hasPdbInfo = true;
 
                 // The ImageIDDbgID_RSDS may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.pdbName == null)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && string.IsNullOrEmpty(lastTraceModuleFile.pdbName))
                 {
                     lastTraceModuleFile.pdbName = data.PdbFileName;
                     lastTraceModuleFile.pdbSignature = data.GuidSig;
@@ -1491,7 +1501,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     process.isServerGC = true;
                     foreach (var thread in process.Threads)
                     {
-                        if (process.markThreadsInGC.ContainsKey(thread.ThreadID))
+                        if (thread.threadInfo == null && process.markThreadsInGC.ContainsKey(thread.ThreadID))
                         {
                             thread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[thread.ThreadID] + ")";
                         }
@@ -2550,6 +2560,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private void CategorizeThread(TraceEvent data, string category)
         {
+            if (string.IsNullOrWhiteSpace(category))
+                return;
+
             var thread = Threads.GetThread(data.ThreadID, data.TimeStampQPC);
             if (thread == null)
                 return;
@@ -2710,18 +2723,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             if (!condition)
             {
+                TextWriter writer = null;
+                if (options != null)
+                    writer = options.ConversionLog;
+                bool debugBuild = false;
+#if DEBUG
+                debugBuild = true;
+#endif
+                if (writer == null && !debugBuild)
+                    return;
+
                 Trace.Write("WARNING: ");
                 string prefix = "";
                 if (data != null)
                 {
                     prefix = "Time: " + data.TimeStampRelativeMSec.ToString("f4").PadLeft(12) + " PID: " + data.ProcessID.ToString().PadLeft(4) + ": ";
-                    Trace.Write(prefix);
+                    Debug.Write(prefix);
                 }
                 Trace.WriteLine(message);
-
-                TextWriter writer = null;
-                if (options != null)
-                    writer = options.ConversionLog;
 
                 if (writer == null)
                     return;
@@ -3670,7 +3689,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.  
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
-        
+
         // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
@@ -5907,7 +5926,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (0 < suffixPos)
                 {
                     // We treat the image as the native path
-                    nativeModulePath = ilModulePath;                    
+                    nativeModulePath = ilModulePath;
                     // and make up a dummy IL path.  
                     ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
                 }

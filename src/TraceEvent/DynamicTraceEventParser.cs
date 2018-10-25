@@ -570,8 +570,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
 
-                // TODO this is very inefficient for blitable types.   Optimize that.  
+                // TODO this is very inefficient for blitable types. Optimize that.
                 var elementType = arrayInfo.Element.Type;
+
+                // Byte array short-circuit.
+                if (elementType == typeof(byte))
+                {
+                    return this.GetByteArrayAt(offset, arrayCount);
+                }
+
                 var ret = Array.CreateInstance(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {

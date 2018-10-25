@@ -468,25 +468,26 @@ namespace PerfView
             if (!m_opened)
             {
                 worker.StartWork("Opening " + Name, delegate ()
+            {
+                Action<Action> continuation = OpenImpl(parentWindow, worker);
+                ExecuteOnOpenCommand(worker);
+
+                worker.EndWork(delegate ()
                 {
-                    Action<Action> continuation = OpenImpl(parentWindow, worker);
-                    ExecuteOnOpenCommand(worker);
-                    worker.EndWork(delegate ()
-                    {
-                        m_opened = true;
-                        FirePropertyChanged("Children");
+                    m_opened = true;
+                    FirePropertyChanged("Children");
 
-                        IsExpanded = true;
-                        var defaultSource = GetStackSource();
-                        if (defaultSource != null)
-                            defaultSource.IsSelected = true;
+                    IsExpanded = true;
+                    var defaultSource = GetStackSource();
+                    if (defaultSource != null)
+                        defaultSource.IsSelected = true;
 
-                        if (continuation != null)
-                            continuation(doAfter);
-                        else
-                            doAfter?.Invoke();
-                    });
+                    if (continuation != null)
+                        continuation(doAfter);
+                    else
+                        doAfter?.Invoke();
                 });
+            });
             }
             else
             {
@@ -623,6 +624,10 @@ namespace PerfView
             }
         }
 
+        public SymbolReader GetSymbolReader(TextWriter log, SymbolReaderOptions symbolFlags = SymbolReaderOptions.None)
+        {
+            return App.GetSymbolReader(FilePath, symbolFlags);
+        }
         public virtual void LookupSymbolsForModule(string simpleModuleName, TextWriter log, int processId = 0)
         {
             throw new ApplicationException("This file type does not support lazy symbol resolution.");
@@ -735,7 +740,13 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Add(@"[group classes]            {%!*}.%(->class $1;{%!*}::->class $1");
         }
 
-        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread) 
+        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread)
+        // public is consumed by external extensions
+        public void OpenWithoutWorker()
+        {
+            OpenWithoutWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
+        }
+
         internal void OpenWithoutWorker(Window parentWindow, StatusBar worker)
         {
             OpenImpl(parentWindow, worker);
@@ -4619,38 +4630,38 @@ table {
 
                     // Log a pseudo-event that indicates when the activity dies
                     activityComputer.Stop += delegate (TraceActivity activity, TraceEvent data)
-                                    {
-                                        // TODO This is a clone of the logic below, factor it.  
-                                        TraceThread thread = data.Thread();
-                                        if (thread != null)
-                                            return;
+                    {
+                        // TODO This is a clone of the logic below, factor it.  
+                        TraceThread thread = data.Thread();
+                        if (thread != null)
+                            return;
 
-                                        StackSourceCallStackIndex stackIndex;
-                                        if (isAnyTaskTree)
-                                        {
-                                            // Compute the stack where frames using an activity Name as a frame name.
-                                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
-                                        }
-                                        else if (isAnyStartStopTreeNoCallStack)
-                                        {
-                                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
-                                        }
-                                        else
-                                        {
-                                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
-                                            if (isAnyWithStartStop)
-                                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+                        StackSourceCallStackIndex stackIndex;
+                        if (isAnyTaskTree)
+                        {
+                            // Compute the stack where frames using an activity Name as a frame name.
+                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
+                        }
+                        else if (isAnyStartStopTreeNoCallStack)
+                        {
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
+                        }
+                        else
+                        {
+                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
+                            if (isAnyWithStartStop)
+                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
-                                            // Use the call stack 
-                                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
-                                        }
+                            // Use the call stack 
+                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
+                        }
 
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityStop " + activity.ToString()), stackIndex);
-                                        sample.StackIndex = stackIndex;
-                                        sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                        sample.Metric = 1;
-                                        stackSource.AddSample(sample);
-                                    };
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityStop " + activity.ToString()), stackIndex);
+                        sample.StackIndex = stackIndex;
+                        sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                        sample.Metric = 1;
+                        stackSource.AddSample(sample);
+                    };
 
                     if (isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
                         startStopComputer = new StartStopActivityComputer(eventSource, activityComputer);
@@ -4662,214 +4673,215 @@ table {
                 StackSourceFrameIndex sampledProfileFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/PerfInfo/Sample");
 
                 eventSource.AllEvents += delegate (TraceEvent data)
-                                {
-                                    // Get most of the stack (we support getting the normal call stack as well as the task stack.  
-                                    StackSourceCallStackIndex stackIndex;
-                                    if (activityComputer != null)
-                                    {
-                                        TraceThread thread = data.Thread();
-                                        if (thread == null)
-                                            return;
+                {
+                    // Get most of the stack (we support getting the normal call stack as well as the task stack.  
+                    StackSourceCallStackIndex stackIndex;
+                    if (activityComputer != null)
+                    {
+                        TraceThread thread = data.Thread();
+                        if (thread == null)
+                            return;
 
-                                        if (isAnyTaskTree)
-                                        {
-                                            // Compute the stack where frames using an activity Name as a frame name.
-                                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
-                                        }
-                                        else if (isAnyStartStopTreeNoCallStack)
-                                        {
-                                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
-                                        }
-                                        else
-                                        {
-                                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
-                                            if (isAnyWithStartStop)
-                                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+                        if (isAnyTaskTree)
+                        {
+                            // Compute the stack where frames using an activity Name as a frame name.
+                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
+                        }
+                        else if (isAnyStartStopTreeNoCallStack)
+                        {
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
+                        }
+                        else
+                        {
+                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
+                            if (isAnyWithStartStop)
+                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
-                                            // Use the call stack 
-                                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Normal case, get the calls stack of frame names.  
-                                        var callStackIdx = data.CallStackIndex();
-                                        if (callStackIdx != CallStackIndex.Invalid)
-                                            stackIndex = stackSource.GetCallStack(callStackIdx, data);
-                                        else
-                                            stackIndex = StackSourceCallStackIndex.Invalid;
-                                    }
+                            // Use the call stack 
+                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
+                        }
+                    }
+                    else
+                    {
+                        // Normal case, get the calls stack of frame names.  
+                        var callStackIdx = data.CallStackIndex();
+                        if (callStackIdx != CallStackIndex.Invalid)
+                            stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                        else
+                            stackIndex = StackSourceCallStackIndex.Invalid;
+                    }
 
-                                    var asCSwitch = data as CSwitchTraceData;
-                                    if (asCSwitch != null)
-                                    {
-                                        if (activityComputer == null)  // Just a plain old any-stacks
-                                        {
-                                            var callStackIdx = asCSwitch.BlockingStack();
-                                            if (callStackIdx != CallStackIndex.Invalid)
-                                            {
-                                                StackSourceCallStackIndex blockingStackIndex = stackSource.GetCallStack(callStackIdx, data);
-                                                // Make an entry for the blocking stacks as well.  
-                                                blockingStackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldThreadState " + asCSwitch.OldThreadState), blockingStackIndex);
-                                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, blockingStackIndex);
-                                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                                sample.Metric = 1;
-                                                stackSource.AddSample(sample);
-                                            }
-                                        }
+                    var asCSwitch = data as CSwitchTraceData;
+                    if (asCSwitch != null)
+                    {
+                        if (activityComputer == null)  // Just a plain old any-stacks
+                        {
+                            var callStackIdx = asCSwitch.BlockingStack();
+                            if (callStackIdx != CallStackIndex.Invalid)
+                            {
+                                StackSourceCallStackIndex blockingStackIndex = stackSource.GetCallStack(callStackIdx, data);
+                                // Make an entry for the blocking stacks as well.  
+                                blockingStackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldThreadState " + asCSwitch.OldThreadState), blockingStackIndex);
+                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, blockingStackIndex);
+                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                sample.Metric = 1;
+                                stackSource.AddSample(sample);
+                            }
+                        }
 
-                                        if (stackIndex != StackSourceCallStackIndex.Invalid)
-                                        {
-                                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
-                                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
+                        if (stackIndex != StackSourceCallStackIndex.Invalid)
+                        {
+                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
+                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
 
-                                            stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
-                                        }
+                            stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
+                        }
 
-                                        goto ADD_SAMPLE;
-                                    }
+                        goto ADD_SAMPLE;
+                    }
 
-                                    if (stackIndex == StackSourceCallStackIndex.Invalid)
-                                        return;
+                    if (stackIndex == StackSourceCallStackIndex.Invalid)
+                        return;
 
-                                    var asSampledProfile = data as SampledProfileTraceData;
-                                    if (asSampledProfile != null)
-                                    {
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
-                                        stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
-                                        goto ADD_SAMPLE;
-                                    }
+                    var asSampledProfile = data as SampledProfileTraceData;
+                    if (asSampledProfile != null)
+                    {
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
+                        goto ADD_SAMPLE;
+                    }
 
-                                    var asReadyThread = data as DispatcherReadyThreadTraceData;
-                                    if (asReadyThread != null)
-                                    {
-                                        var awakenedName = "EventData Readied Thread " + asReadyThread.AwakenedThreadID +
-                                            " Proc " + asReadyThread.AwakenedProcessID;
-                                        var awakenedIndex = stackSource.Interner.FrameIntern(awakenedName);
-                                        stackIndex = stackSource.Interner.CallStackIntern(awakenedIndex, stackIndex);
-                                        stackIndex = stackSource.Interner.CallStackIntern(readyThreadEventFrame, stackIndex);
-                                        goto ADD_SAMPLE;
-                                    }
+                    var asReadyThread = data as DispatcherReadyThreadTraceData;
+                    if (asReadyThread != null)
+                    {
+                        var awakenedName = "EventData Readied Thread " + asReadyThread.AwakenedThreadID +
+                            " Proc " + asReadyThread.AwakenedProcessID;
+                        var awakenedIndex = stackSource.Interner.FrameIntern(awakenedName);
+                        stackIndex = stackSource.Interner.CallStackIntern(awakenedIndex, stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(readyThreadEventFrame, stackIndex);
+                        goto ADD_SAMPLE;
+                    }
 
-                                    // TODO FIX NOW remove for debugging activity stuff.  
+                    // TODO FIX NOW remove for debugging activity stuff.  
 #if false
                     var activityId = data.ActivityID;
                     if (activityId != Guid.Empty && ActivityComputer.IsActivityPath(activityId))
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityPath " + ActivityComputer.ActivityPathString(activityId)), stackIndex);
 #endif
-                                    var asObjectAllocated = data as ObjectAllocatedArgs;
-                                    if (asObjectAllocated != null)
+                    var asObjectAllocated = data as ObjectAllocatedArgs;
+                    if (asObjectAllocated != null)
+                    {
+                        var size = "EventData Size 0x" + asObjectAllocated.Size.ToString("x");
+                        var sizeIndex = stackSource.Interner.FrameIntern(size);
+                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
+
+                    var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
+                    if (asSampleObjectAllocated != null)
+                    {
+                        var size = "EventData Size 0x" + asSampleObjectAllocated.TotalSizeForTypeSample.ToString("x");
+                        var sizeIndex = stackSource.Interner.FrameIntern(size);
+                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
+
+                    var asSetGCHandle = data as SetGCHandleTraceData;
+                    if (asSetGCHandle != null)
+                    {
+                        var handleName = "EventData GCHandleKind " + asSetGCHandle.Kind.ToString();
+                        var handleIndex = stackSource.Interner.FrameIntern(handleName);
+                        stackIndex = stackSource.Interner.CallStackIntern(handleIndex, stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
+
+                    var asPageAccess = data as MemoryPageAccessTraceData;
+                    if (asPageAccess != null)
+                    {
+                        sample.Metric = 4;      // Convenience since these are 4K pages 
+
+                        // EMit the kind, which may have a file name argument.  
+                        var pageKind = asPageAccess.PageKind;
+                        string fileName = asPageAccess.FileName;
+                        if (fileName == null)
+                            fileName = "";
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
+
+                        // If it is the range of a module, log that as well, as well as it bucket.  
+                        var address = asPageAccess.VirtualAddress;
+                        var process = data.Process();
+                        if (process != null)
+                        {
+                            var module = process.LoadedModules.GetModuleContainingAddress(address, asPageAccess.TimeStampRelativeMSec);
+                            if (module != null)
+                            {
+                                if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
+                                {
+                                    // Create a node that indicates where in the file (in buckets) the access was from 
+                                    double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
+                                    if (0 <= normalizeDistance && normalizeDistance < 1)
                                     {
-                                        var size = "EventData Size 0x" + asObjectAllocated.Size.ToString("x");
-                                        var sizeIndex = stackSource.Interner.FrameIntern(size);
-                                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
-                                        goto ADD_EVENT_FRAME;
+                                        const int numBuckets = 20;
+                                        int bucket = (int)(normalizeDistance * numBuckets);
+                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
+                                        string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
                                     }
+                                }
+                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Image  " + module.ModuleFile.FilePath), stackIndex);
+                            }
+                        }
+                        goto ADD_EVENT_FRAME;
+                    }
 
-                                    var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
-                                    if (asSampleObjectAllocated != null)
-                                    {
-                                        var size = "EventData Size 0x" + asSampleObjectAllocated.TotalSizeForTypeSample.ToString("x");
-                                        var sizeIndex = stackSource.Interner.FrameIntern(size);
-                                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
-                                        goto ADD_EVENT_FRAME;
-                                    }
+                    var asPMCCounter = data as PMCCounterProfTraceData;
+                    if (asPMCCounter != null)
+                    {
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asPMCCounter.ProcessorNumber), stackIndex);
+                        var source = "EventData ProfileSourceID " + asPMCCounter.ProfileSource;
+                        var sourceIndex = stackSource.Interner.FrameIntern(source);
+                        stackIndex = stackSource.Interner.CallStackIntern(sourceIndex, stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
 
-                                    var asSetGCHandle = data as SetGCHandleTraceData;
-                                    if (asSetGCHandle != null)
-                                    {
-                                        var handleName = "EventData GCHandleKind " + asSetGCHandle.Kind.ToString();
-                                        var handleIndex = stackSource.Interner.FrameIntern(handleName);
-                                        stackIndex = stackSource.Interner.CallStackIntern(handleIndex, stackIndex);
-                                        goto ADD_EVENT_FRAME;
-                                    }
+                    var asFileCreate = data as FileIOCreateTraceData;
+                    if (asFileCreate != null)
+                    {
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateOptions: " + asFileCreate.CreateOptions), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileAttributes: " + asFileCreate.FileAttributes), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ShareAccess: " + asFileCreate.ShareAccess), stackIndex);
+                        // stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateDispostion: " + asFileCreate.CreateDispostion), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileName: " + asFileCreate.FileName), stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
 
-                                    var asPageAccess = data as MemoryPageAccessTraceData;
-                                    if (asPageAccess != null)
-                                    {
-                                        sample.Metric = 4;      // Convenience since these are 4K pages 
+                    // Tack on additional info about the event. 
+                    var fieldNames = data.PayloadNames;
+                    for (int i = 0; i < fieldNames.Length; i++)
+                    {
+                        var fieldName = fieldNames[i];
+                        if (0 <= fieldName.IndexOf("Name", StringComparison.OrdinalIgnoreCase) ||
+                            fieldName == "OpenPath" || fieldName == "Url" || fieldName == "Uri" || fieldName == "ConnectionId" ||
+                            fieldName == "ExceptionType" || 0 <= fieldName.IndexOf("Message", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var value = data.PayloadString(i);
+                            var fieldNodeName = "EventData " + fieldName + " " + value;
+                            var fieldNodeIndex = stackSource.Interner.FrameIntern(fieldNodeName);
+                            stackIndex = stackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
+                        }
+                    }
 
-                                        // EMit the kind, which may have a file name argument.  
-                                        var pageKind = asPageAccess.PageKind;
-                                        string fileName = asPageAccess.FileName;
-                                        if (fileName == null)
-                                            fileName = "";
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
-
-                                        // If it is the range of a module, log that as well, as well as it bucket.  
-                                        var address = asPageAccess.VirtualAddress;
-                                        var process = data.Process();
-                                        if (process != null)
-                                        {
-                                            var module = process.LoadedModules.GetModuleContainingAddress(address, asPageAccess.TimeStampRelativeMSec);
-                                            if (module != null)
-                                            {
-                                                if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
-                                                {
-                                                    // Create a node that indicates where in the file (in buckets) the access was from 
-                                                    double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
-                                                    if (0 <= normalizeDistance && normalizeDistance < 1)
-                                                    {
-                                                        const int numBuckets = 20;
-                                                        int bucket = (int)(normalizeDistance * numBuckets);
-                                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
-                                                        string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
-                                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
-                                                    }
-                                                }
-                                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Image  " + module.ModuleFile.FilePath), stackIndex);
-                                            }
-                                        }
-                                        goto ADD_EVENT_FRAME;
-                                    }
-
-                                    var asPMCCounter = data as PMCCounterProfTraceData;
-                                    if (asPMCCounter != null)
-                                    {
-                                        var source = "EventData ProfileSourceID " + asPMCCounter.ProfileSource;
-                                        var sourceIndex = stackSource.Interner.FrameIntern(source);
-                                        stackIndex = stackSource.Interner.CallStackIntern(sourceIndex, stackIndex);
-                                        goto ADD_EVENT_FRAME;
-                                    }
-
-                                    var asFileCreate = data as FileIOCreateTraceData;
-                                    if (asFileCreate != null)
-                                    {
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateOptions: " + asFileCreate.CreateOptions), stackIndex);
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileAttributes: " + asFileCreate.FileAttributes), stackIndex);
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ShareAccess: " + asFileCreate.ShareAccess), stackIndex);
-                                        // stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateDispostion: " + asFileCreate.CreateDispostion), stackIndex);
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileName: " + asFileCreate.FileName), stackIndex);
-                                        goto ADD_EVENT_FRAME;
-                                    }
-
-                                    // Tack on additional info about the event. 
-                                    var fieldNames = data.PayloadNames;
-                                    for (int i = 0; i < fieldNames.Length; i++)
-                                    {
-                                        var fieldName = fieldNames[i];
-                                        if (0 <= fieldName.IndexOf("Name", StringComparison.OrdinalIgnoreCase) ||
-                                            fieldName == "OpenPath" || fieldName == "Url" || fieldName == "Uri" || fieldName == "ConnectionId" ||
-                                            fieldName == "ExceptionType" || 0 <= fieldName.IndexOf("Message", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            var value = data.PayloadString(i);
-                                            var fieldNodeName = "EventData " + fieldName + " " + value;
-                                            var fieldNodeIndex = stackSource.Interner.FrameIntern(fieldNodeName);
-                                            stackIndex = stackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
-                                        }
-                                    }
-
-                                    ADD_EVENT_FRAME:
-                                    // Tack on event name 
-                                    var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
-                                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                                    ADD_SAMPLE:
-                                    sample.StackIndex = stackIndex;
-                                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                    sample.Metric = 1;
-                                    stackSource.AddSample(sample);
-                                };
+                    ADD_EVENT_FRAME:
+                    // Tack on event name 
+                    var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
+                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
+                    ADD_SAMPLE:
+                    sample.StackIndex = stackIndex;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = 1;
+                    stackSource.AddSample(sample);
+                };
                 eventSource.Process();
             }
             else if (streamName == "Managed Load")
@@ -6086,11 +6098,6 @@ table {
             foreach (var moduleFile in moduleFiles.Values)
                 m_traceLog.CodeAddresses.LookupSymbolsForModule(symReader, moduleFile);
         }
-        public SymbolReader GetSymbolReader(TextWriter log, SymbolReaderOptions symbolFlags = SymbolReaderOptions.None)
-        {
-            return App.GetSymbolReader(FilePath, symbolFlags);
-        }
-
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
             var tracelog = GetTraceLog(worker.LogWriter, delegate (bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
@@ -7476,6 +7483,8 @@ table {
             return m_traceLog;
         }
 
+        public TraceLog TryGetTraceLog() { return m_traceLog; }
+
         #region Private
         TraceLog m_traceLog;
         bool m_noTraceLogInfo;
@@ -7575,7 +7584,17 @@ table {
                             if (callStackIdx != CallStackIndex.Invalid)
                             {
                                 StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(callStackIdx, data);
+
+                                var asClrThreadSample = data as ClrThreadSampleTraceData;
+                                if (asClrThreadSample != null)
+                                {
+                                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Type: " + asClrThreadSample.Type), stackIndex);
+                                    goto ADD_EVENT_FRAME;
+                                }
+
                                 // Tack on event name
+
+                                ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
                                 // Add sample

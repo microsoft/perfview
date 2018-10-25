@@ -2156,22 +2156,15 @@ namespace PerfView
                 return null;
             }
 
-            // TODO FIX NOW remove restrictions
-            var etlData = DataSource.DataFile as ETLPerfViewData;
-            if (etlData == null)
-            {
-                StatusBar.LogError("Lookup source only works on ETL files.");
-                return null;
-            }
-            var reader = etlData.GetSymbolReader(StatusBar.LogWriter);
-
-            // Find the most primitive TraceEventStackSource
+           // Find the most primitive TraceEventStackSource
             TraceEventStackSource asTraceEventStackSource = PerfViewExtensibility.Stacks.GetTraceEventStackSource(m_stackSource);
             if (asTraceEventStackSource == null)
             {
                 StatusBar.LogError("Source does not support symbolic lookup.");
                 return null;
             }
+
+            var reader = DataSource.DataFile.GetSymbolReader(StatusBar.LogWriter);
 
             var frameToLine = new Dictionary<StackSourceFrameIndex, int>();
 

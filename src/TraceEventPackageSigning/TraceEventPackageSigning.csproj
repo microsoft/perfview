@@ -13,26 +13,26 @@
   </PropertyGroup>
    
   <ItemGroup>
-    <None Include="..\TraceEvent\bin\$(Configuration)\*.nupkg">
+    <!-- To support Signing new SupportFile packages, look for any packages in the NugetSupportFiles directory -->
+    <None Include="..\NugetSupportFiles\*.SupportFiles.*.nupkg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
 
-  <ItemGroup>
-    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.$(TraceEventVersion).nupkg">
-       <Authenticode>Nuget</Authenticode>
-    </FilesToSign>
-    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.$(TraceEventVersion).symbols.nupkg">
-       <Authenticode>Nuget</Authenticode>
-    </FilesToSign>
+    <!-- Get the Microsoft.Diagnostics.TraceEvent.*.nuget package we just built -->
+    <None Include="..\TraceEvent\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.*.nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Message Importance="High" Text="Done with attempt to Sign '%(FilesToSign.Identity)'" /> 
-  </Target>
-
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" /> 
+    <ItemGroup>
+      <!-- Sign any nuget packages that made it to our output directory -->
+      <FilesToSign Include="$(OutDir)*.nupkg">
+	 <Authenticode>Nuget</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+    <Message Importance="High" Text="Package Sign '%(FilesToSign.Identity)'" /> 
   </Target>
 </Project>

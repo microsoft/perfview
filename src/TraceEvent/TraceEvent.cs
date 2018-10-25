@@ -12,6 +12,9 @@ using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+#if !NETSTANDARD1_6
+using System.Dynamic;
+#endif
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -523,6 +526,13 @@ namespace Microsoft.Diagnostics.Tracing
     /// </para>
     /// </summary>
     public unsafe abstract class TraceEvent
+#if !NETSTANDARD1_6
+        // To support DLR access of dynamic payload data ("((dynamic) myEvent).MyPayloadName"),
+        // we derive from DynamicObject and override a couple of methods. If for some reason in
+        // the future we wanted to derive from a different base class, we could also accomplish
+        // this by implementing the IDynamicMetaObjectProvider interface instead.
+        : DynamicObject
+#endif
     {
         /// <summary>
         /// The GUID that uniquely identifies the Provider for this event.  This can return Guid.Empty for classic (Pre-VISTA) ETW providers.  
@@ -858,6 +868,26 @@ namespace Microsoft.Diagnostics.Tracing
             get { return (eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER) != 0; }
         }
 
+#if !NETSTANDARD1_6
+        // These overloads allow integration with the DLR (Dynamic Language Runtime). That
+        // enables getting at payload data in a more convenient fashion, directly by name.
+        // In PowerShell, it "just works" (e.g. "$myEvent.MyPayload" will just work); in
+        // C# you can activate it by casting to 'dynamic' (e.g. "var myEvent = (dynamic)
+        // GetEventSomehow(); Console.WriteLine(myEvent.MyPayload);").
+
+        public override IEnumerable<string> GetDynamicMemberNames()
+        {
+            return PayloadNames;
+        }
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        {
+            result = this.PayloadByName(binder.Name);
+            return result != null;
+        }
+#endif
+
+
         // Getting at payload values.  
         /// <summary>
         /// Returns the names of all the manifest declared field names for the event.    May be empty if the manifest is not available.  
@@ -989,7 +1019,7 @@ namespace Microsoft.Diagnostics.Tracing
                         var asStruct = elem as IDictionary<string, object>;
                         if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
                             sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
-                        else 
+                        else
                             sb.Append(elem.ToString());
                     }
                     sb.Append(']');
@@ -1198,7 +1228,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (ProviderGuid != Guid.Empty && !ProviderName.Contains(ProviderGuid.ToString()))
                 XmlAttrib(sb, "ProviderGuid", ProviderGuid);
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
-            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber); 
+            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber);
             sb.AppendLine().Append(" ");
 
 #if !DOTNET_V35
@@ -1763,7 +1793,7 @@ namespace Microsoft.Diagnostics.Tracing
                 size = bytes.Length;
             StringWriter sw = new StringWriter();
             DumpBytes(bytes, size, sw, "");
-    
+
             return sw.ToString();
         }
 
@@ -2872,7 +2902,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Make a new dispatcher which calls the hook with the old dispatcher.   
             Action<TraceEvent> oldUserDefinedDispatch = userDefinedDispatch ?? DoDispatch;
-            userDefinedDispatch = delegate(TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
+            userDefinedDispatch = delegate (TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
         }
 
         #region protected
@@ -3014,33 +3044,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-                if (anEvent.Target != null)
-                    anEvent.Dispatch();
-                if (anEvent.next != null)
+            if (anEvent.Target != null)
+                anEvent.Dispatch();
+            if (anEvent.next != null)
+            {
+                TraceEvent nextEvent = anEvent;
+                for (; ; )
                 {
-                    TraceEvent nextEvent = anEvent;
-                    for (;;)
+                    nextEvent = nextEvent.next;
+                    if (nextEvent == null)
+                        break;
+                    if (nextEvent.Target != null)
                     {
-                        nextEvent = nextEvent.next;
-                        if (nextEvent == null)
-                            break;
-                        if (nextEvent.Target != null)
-                        {
-                            nextEvent.eventRecord = anEvent.eventRecord;
-                            nextEvent.userData = anEvent.userData;
-                            nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;
-                        }
+                        nextEvent.eventRecord = anEvent.eventRecord;
+                        nextEvent.userData = anEvent.userData;
+                        nextEvent.eventIndex = anEvent.eventIndex;
+                        nextEvent.Dispatch();
+                        nextEvent.eventRecord = null;
                     }
                 }
-                if (AllEvents != null)
-                {
-                    if (unhandledEventTemplate == anEvent)
-                        unhandledEventTemplate.PrepForCallback();
-                    AllEvents(anEvent);
-                }
-                anEvent.eventRecord = null;
+            }
+            if (AllEvents != null)
+            {
+                if (unhandledEventTemplate == anEvent)
+                    unhandledEventTemplate.PrepForCallback();
+                AllEvents(anEvent);
+            }
+            anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)
@@ -3081,7 +3111,7 @@ namespace Microsoft.Diagnostics.Tracing
             // inlined, and is replicated in TraceEventDispatcher.Insert
             int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.  
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (;;)
+            for (; ; )
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3172,7 +3202,7 @@ namespace Microsoft.Diagnostics.Tracing
             ushort eventID = (ushort)eventID_;
             int* guidPtr = (int*)&guid;
             int hash = (*guidPtr + ((ushort)eventID) * 9) & templatesLengthMask;
-            for (;;)
+            for (; ; )
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3306,7 +3336,7 @@ namespace Microsoft.Diagnostics.Tracing
             int* guidPtr = (int*)&eventGuid;
             int hash = (*guidPtr + (int)eventID * 9) & templatesLengthMask;
             TemplateEntry* entry;
-            for (;;)
+            for (; ; )
             {
                 entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3473,7 +3503,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int* guidPtr = (int*)&providerGuid;
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (;;)
+            for (; ; )
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;

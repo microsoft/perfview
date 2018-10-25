@@ -47,7 +47,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// This 'cleans up' a symbol path.  In particular
         /// Empty ones are replaced with good defaults (symweb or msdl)
-        /// All symbol server specs have local caches (%Temp%\symbols if nothing else is specified).  
+        /// All symbol server specs have local caches (%Temp%\SymbolCache if nothing else is specified).  
         /// 
         /// Note that this routine does NOT update _NT_SYMBOL_PATH.  
         /// </summary>
@@ -159,7 +159,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         /// <summary>
         /// If you need to cache files locally, put them here.  It is defined
-        /// to be the first local path of a SRV* qualification or %TEMP%\symbols
+        /// to be the first local path of a SRV* qualification or %TEMP%\SymbolCache
         /// if not is present.
         /// </summary>
         public string DefaultSymbolCache(bool localOnly = true)
@@ -177,7 +177,7 @@ namespace Microsoft.Diagnostics.Symbols
             string temp = Environment.GetEnvironmentVariable("TEMP");
             if (temp == null)
                 temp = ".";
-            return Path.Combine(temp, "symbols");
+            return Path.Combine(temp, "SymbolCache");
         }
         /// <summary>
         /// People can use symbol servers without a local cache.  This is bad, add one if necessary. 

@@ -156,7 +156,7 @@ public class GCHeapDumper
             }
         }
 
-        m_log.WriteLine("Process Has DotNet: {0} Has JScript: {1} Has ClrDll: {2} HasMrt {3}", hasDotNet, hasJScript, hasClrDll, hasMrt);
+        m_log.WriteLine("Process Has DotNet: {0} Has JScript: {1} Has ClrDll: {2} HasMrt {3} HasCoreClr {4}", hasDotNet, hasJScript, hasClrDll, hasMrt, hasCoreClr);
 
         if (hasClrDll && hasJScript)
         {

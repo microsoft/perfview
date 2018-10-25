@@ -221,7 +221,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <seealso cref="Attach"/>
         /// <remarks>Pump the process for debug events by calling WaitForDebugEvent.
         /// Create a process under the debugger
-        /// comandArgs are the arguments to application. Does not need to include arg[0] (the application name).</remarks>
+        /// commandArgs are the arguments to application. Does not need to include arg[0] (the application name).</remarks>
         public NativeDbgProcess CreateProcessDebug(string application, string commandArgs)
         {
             return CreateProcessDebugWorker(application, commandArgs,
@@ -242,7 +242,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <seealso cref="Attach"/>
         /// <remarks>Pump the process for debug events by calling WaitForDebugEvent.
         /// Create a process under the debugger.
-        /// This passes application and comandArgs directly to Passed directly to kernel32!CreateProcess and
+        /// This passes application and commandArgs directly to Passed directly to kernel32!CreateProcess and
         /// does not do any filtering on them.</remarks>
         public NativeDbgProcess CreateProcessDebugRaw(string application, string commandArgs, bool newConsole, bool debugChild)
         {
