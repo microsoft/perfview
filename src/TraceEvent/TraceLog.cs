@@ -4019,7 +4019,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 public TraceEventCounts CountForEvent;
             }
 
-            private const int historySize = 2048;               // Must be a power of 2
+            private const int historySize = 32768;               // Must be a power of 2
             private PastEventInfoEntry[] pastEventInfo;
             private int curPastEventInfo;                       // points at the first INVALD entry.  
             private TraceLog log;
