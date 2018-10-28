@@ -4361,7 +4361,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version >= 2 && EventDataLength >= SkipUnicodeString(8)));
+            Debug.Assert(Version >= 2 && EventDataLength >= SkipUnicodeString(8));
             Action(this);
         }
         public override StringBuilder ToXml(StringBuilder sb)
