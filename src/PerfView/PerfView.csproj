@@ -216,13 +216,13 @@
       <Link>amd64\EtwClrProfiler.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <!--<EmbeddedResource Include="$(OutDir)\PerfView.xml">
+    <EmbeddedResource Include="SupportFiles\PerfView.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\PerfView.xml</LogicalName>
-      <SubType>Designer</SubType>
+      <Link>PerfView.xml</Link>
       <Visible>False</Visible>
-    </EmbeddedResource>-->
+    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

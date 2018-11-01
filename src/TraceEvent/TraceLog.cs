@@ -1140,7 +1140,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.ThreadStartGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceThread thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
+                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
                 thread.startTimeQPC = data.TimeStampQPC;
                 thread.userStackBase = data.UserStackBase;
                 if (data.Opcode == TraceEventOpcode.DataCollectionStart)
@@ -1172,7 +1172,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.ThreadEndGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceThread thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 if (thread.process == null)
                 {
                     thread.process = process;
@@ -1474,7 +1474,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         pastEventInfo.SetHasStack(prevEventIndex);
 
                         var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                        var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                        thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
 
                         CallStackIndex callStackIndex = callStacks.GetStackIndexForStackEvent(
                             data.InstructionPointers, data.FrameCount, data.PointerSize, thread);
@@ -1512,7 +1512,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
 
                 CallStackIndex callStackIndex = callStacks.GetStackIndexForStackEvent(
                     data.InstructionPointers, data.FrameCount, data.PointerSize, thread);
@@ -1542,12 +1542,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var timeStampQPC = data.TimeStampQPC;
                 IncompleteStack stackInfo = GetIncompleteStackForStackEvent(data, data.EventTimeStampQPC);
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, timeStampQPC);
-                TraceThread thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
+                thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
                 var isKernelModeStackFragment = IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize);
                 if (isKernelModeStackFragment)
                 {
                     // If we reach here the fragment we have is totally in the kernel, and thus might have a user mode part that we have
-                    // not seen het.  Thus we have the stackInfo remember this fragment so we can put it together later.  
+                    // not seen yet.  Thus we have the stackInfo remember this fragment so we can put it together later.  
                     if (stackInfo != null)
                     {
                         if (!stackInfo.LogKernelStackFragment(data.InstructionPointers, data.FrameCount, data.PointerSize, timeStampQPC, this))
@@ -1601,7 +1601,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     var timeStampQPC = data.TimeStampQPC;
                     TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, timeStampQPC);
-                    TraceThread thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
+                    thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
 
                     if (!stackInfo.LogKernelStackFragment(data.StackKey, this))
                     {
@@ -1623,7 +1623,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     var timeStampQPC = data.TimeStampQPC;
                     TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, timeStampQPC);
-                    TraceThread thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
+                    thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
                     if (!EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, data.StackKey, stackInfo))
                     {
                         stackInfo.LogUserStackFragment(data.StackKey, this);
@@ -1672,11 +1672,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (!process.isServerGC && (process.markThreadsInGC.Count > 1))
                 {
                     process.isServerGC = true;
-                    foreach (var thread in process.Threads)
+                    foreach (var curThread in process.Threads)
                     {
-                        if (thread.threadInfo == null && process.markThreadsInGC.ContainsKey(thread.ThreadID))
+                        if (thread.threadInfo == null && process.markThreadsInGC.ContainsKey(curThread.ThreadID))
                         {
-                            thread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[thread.ThreadID] + ")";
+                            curThread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[curThread.ThreadID] + ")";
                         }
                     }
                 }
@@ -1699,7 +1699,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             rawEvents.Clr.GCFinalizersStop += delegate (GCFinalizersEndTraceData data) { CategorizeThread(data, ".NET Finalizer Thread"); };
             Action<TraceEvent> MarkAsBGCThread = delegate (TraceEvent data)
             {
-                var thread = Threads.GetThread(data.ThreadID, data.TimeStampQPC);
+                var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 bool isServerGC = (thread != null && thread.process.isServerGC);
                 CategorizeThread(data, ".NET Background GC Thread");
             };
@@ -1710,15 +1711,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             clrPrivate.GCBGC1stConStop += delegate (GCNoUserDataTraceData data) { MarkAsBGCThread(data); };
             clrPrivate.GCBGCDrainMark += delegate (BGCDrainMarkTraceData data) { MarkAsBGCThread(data); };
             clrPrivate.GCBGCRevisit += delegate (BGCRevisitTraceData data) { MarkAsBGCThread(data); };
-            rawEvents.Clr.ThreadPoolWorkerThreadStart += delegate (ThreadPoolWorkerThreadTraceData data) { CategorizeThread(data, ".NET ThreadPool"); };
             rawEvents.Clr.ThreadPoolWorkerThreadAdjustmentSample += delegate (ThreadPoolWorkerThreadAdjustmentSampleTraceData data)
             {
                 CategorizeThread(data, ".NET ThreadPool");
             };
+            rawEvents.Clr.ThreadPoolIODequeue += delegate (ThreadPoolIOWorkTraceData data) { CategorizeThread(data, ".NET IO ThreadPool Worker", true); };
 
             var fxParser = new FrameworkEventSourceTraceEventParser(rawEvents);
-            fxParser.ThreadPoolDequeueWork += delegate (ThreadPoolDequeueWorkArgs data) { CategorizeThread(data, ".NET ThreadPool"); };
-            fxParser.ThreadTransferReceive += delegate (ThreadTransferReceiveArgs data) { CategorizeThread(data, ".NET ThreadPool"); };
+            fxParser.ThreadPoolDequeueWork += delegate (ThreadPoolDequeueWorkArgs data) { CategorizeThread(data, ".NET ThreadPool Worker"); };
+            fxParser.ThreadTransferReceive += delegate (ThreadTransferReceiveArgs data) { CategorizeThread(data, ".NET ThreadPool Worker"); };
 
             // Attribute CPU samples to processes.
             kernelParser.PerfInfoSample += delegate (SampledProfileTraceData data)
@@ -1730,7 +1731,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 thread.cpuSamples++;
             };
 
@@ -1982,6 +1983,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         data.LogCodeAddresses(fnAddAddressToCodeAddressMap);
                     }
                 }
+                // We want all events to have a TraceProcess and TraceThread.  
+                // We force this to happen here.  We may have created a thread already, in which
+                // case the 'thread' instance variable will hold it.  Use that if it is accurate.
+                // Otherwise make a new one here.  
+                if (thread == null || thread.ThreadID != data.ThreadID && data.ProcessID != -1)
+                {
+                    TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                    if (data.ThreadID != -1)
+                    {
+                        // All Thread events should already be handled (since we are passing the wrong args for those here).  
+                        Debug.Assert(!(data is ThreadTraceData));
+                        thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                    }
+                }
 
                 if (numberOnPage >= eventsPerPage)
                 {
@@ -2081,23 +2096,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             // Make sure that all threads have a process 
-            foreach (var thread in Threads)
+            foreach (var curThread in Threads)
             {
                 // Finish off the processing of the ETW compressed stacks.  This means doing all the deferred Kernel stack processing
                 // and connecting all pseudo-callStack indexes into real ones. 
-                if (thread.lastEntryIntoKernel != null)
+                if (curThread.lastEntryIntoKernel != null)
                 {
-                    EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, TraceCallStacks.GetRootForThread(thread.ThreadIndex), null);
+                    EmitStackOnExitFromKernel(ref curThread.lastEntryIntoKernel, TraceCallStacks.GetRootForThread(curThread.ThreadIndex), null);
                 }
 
-                if (thread.process == null)
+                if (curThread.process == null)
                 {
-                    DebugWarn(true, "Warning: could not determine the process for thread " + thread.ThreadID, null);
+                    DebugWarn(true, "Warning: could not determine the process for thread " + curThread.ThreadID, null);
                     var unknownProcess = Processes.GetOrCreateProcess(-1, 0);
                     unknownProcess.imageFileName = "UNKNOWN_PROCESS";
-                    thread.process = unknownProcess;
+                    curThread.process = unknownProcess;
                 }
-                thread.Process.cpuSamples += thread.cpuSamples;         // Roll up CPU to the process. 
+                curThread.Process.cpuSamples += curThread.cpuSamples;         // Roll up CPU to the process. 
             }
 
             // Make sure we are not missing any ImageEnds that we have ImageStarts for.   
@@ -2182,9 +2197,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             foreach (var process in Processes)
             {
                 double cpuFromThreads = 0;
-                foreach (var thread in process.Threads)
+                foreach (var curThread in process.Threads)
                 {
-                    cpuFromThreads += thread.CPUMSec;
+                    cpuFromThreads += curThread.CPUMSec;
                 }
 
                 Debug.Assert(Math.Abs(cpuFromThreads - process.CPUMSec) < .01);     // We add up 
@@ -2337,7 +2352,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (m_orphanedStacks < 1000)
                 {
                     // We don't warn if the time is too close to the start of the file
-                    // We also don't report ThreadID becasue we do throw those out purpposefully to safe space.  
+                    // We also don't report ThreadID because we do throw those out purposefully to safe space.  
                     DebugWarn(stackEvent.TimeStampRelativeMSec < 100 || stackEvent.ThreadID == 0, "Stack refers to event with time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4") + " MSec that could not be found", stackEvent);
                     if (m_orphanedStacks == 999)
                     {
@@ -2862,7 +2877,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Put the thread that owns 'data' in to the category 'category.  
         /// </summary>
-        private void CategorizeThread(TraceEvent data, string category)
+        private void CategorizeThread(TraceEvent data, string category, bool overwrite=false)
         {
             if (string.IsNullOrWhiteSpace(category))
             {
@@ -2875,7 +2890,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return;
             }
 
-            if (thread.threadInfo == null)
+            if (thread.threadInfo == null || overwrite)
             {
                 thread.threadInfo = category;
             }
@@ -3008,12 +3023,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal override string ProcessName(int processID, long timeQPC)
         {
             TraceProcess process = Processes.GetProcess(processID, timeQPC);
-            if (process == null)
-            {
-                return base.ProcessName(processID, timeQPC);
-            }
-
-            return process.Name;
+            if (process != null)
+                return process.Name;
+            return base.ProcessName(processID, timeQPC);
         }
 
         /// <summary>
@@ -3718,7 +3730,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 70; }
+            get { return 71; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -3765,10 +3777,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private int eventCount;                             // Total number of events
         private bool processingDisabled;                    // Have we turned off processing because of a MaxCount?  
         private int numberOnPage;                           // Total number of events
-        private bool removeFromStream;                              // Don't put these in the serialized stream.  
-        private bool bookKeepingEvent;                              // BookKeeping events are removed from the stream by default
-        private bool bookeepingEventThatMayHaveStack;               // Some bookkeeping events (ThreadDCEnd) might have stacks 
-        private bool noStack;                                       // This event should never have a stack associated with it, so skip them if we every try to attach a stack. 
+        private bool removeFromStream;                      // Don't put these in the serialized stream.  
+        private bool bookKeepingEvent;                      // BookKeeping events are removed from the stream by default
+        private bool bookeepingEventThatMayHaveStack;       // Some bookkeeping events (ThreadDCEnd) might have stacks 
+        private bool noStack;                               // This event should never have a stack associated with it, so skip them if we every try to attach a stack. 
+        private TraceThread thread;                         // cache of the TraceThread for the current event.  
 
         // TODO FIX NOW remove the jittedMethods ones.  
         private List<MethodLoadUnloadVerboseTraceData> jittedMethods;
@@ -5383,6 +5396,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (name == null)
                 {
                     name = TraceLog.GetFileNameWithoutExtensionNoIllegalChars(ImageFileName);
+                    if (name.Length == 0 && ProcessID != -1 && processID != 0)  // These special cases are so I don't have to rebaseline the tests.  
+                        name = "Process(" + ProcessID + ")";
                 }
 
                 return name;
@@ -7500,7 +7515,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             TraceCallStack cur = this;
             while (cur != null)
             {
-                sb.Append("CallStackIndex=\"").Append(cur.CallStackIndex).Append("\" "); 
+                sb.Append("CallStackIndex=\"").Append(cur.CallStackIndex).Append("\" ");
                 cur.CodeAddress.ToString(sb).AppendLine();
                 cur = cur.Caller;
             }
@@ -10363,7 +10378,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     public static class TraceLogExtensions
     {
         /// <summary>
-        /// Finds the TraceProcess associated with a TraceEvent.  
+        /// Finds the TraceProcess associated with a TraceEvent.
+        /// Guaranteed to be non-null for non-real-time sessions if the process ID is != -1 
         /// </summary>
         public static TraceProcess Process(this TraceEvent anEvent)
         {
@@ -10372,10 +10388,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
-            return log.Processes.GetProcess(anEvent.ProcessID, anEvent.TimeStampQPC);
+            TraceProcess ret = log.Processes.GetProcess(anEvent.ProcessID, anEvent.TimeStampQPC);
+            // When the trace was converted, a TraceProcess should have been created for
+            // every mentioned Process ID.
+            // When we care, we should insure this is true for the RealTime case. 
+            Debug.Assert(ret != null || log.IsRealTime);
+            return ret;
         }
         /// <summary>
-        /// Finds the TraceThread associated with a TraceEvent.  
+        /// Finds the TraceThread associated with a TraceEvent. 
+        /// Guaranteed to be non-null for non-real-time sessions if the process ID is != -1 
         /// </summary>
         public static TraceThread Thread(this TraceEvent anEvent)
         {
@@ -10384,7 +10406,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
-            return log.Threads.GetThread(anEvent.ThreadID, anEvent.TimeStampQPC);
+            TraceThread ret = log.Threads.GetThread(anEvent.ThreadID, anEvent.TimeStampQPC);
+            // When the trace was converted, a TraceThread should have been created for
+            // every mentioned Thread ID.  
+            // When we care, we should insure this is true for the RealTime case. 
+            Debug.Assert(ret != null || log.IsRealTime);
+            return ret;
         }
         /// <summary>
         /// Finds the TraceLog associated with a TraceEvent.  

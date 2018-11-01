@@ -16,7 +16,7 @@ care about specific bug fixes or features go there.
 In the common case, the only file you need one file, PerfView.exe, to use the tool.  The most recent copy of
 this file can be downloaded here
 
-* [Download Version 2.23 of PerfView.exe](https://github.com/Microsoft/perfview/releases/download/P2.0.23/PerfView.exe)
+* [Download Version 2.26 of PerfView.exe](https://github.com/Microsoft/perfview/releases/download/P2.0.26/PerfView.exe)
 
 Once you click the above link in your browser it will start downloading, the details of which vary from browser to browser.
 In some cases it will prompt for more information (IE) and in others (Chrome) it may not be obvious that

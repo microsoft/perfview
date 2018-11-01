@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -196,6 +197,9 @@ namespace TraceEventTests
                 string eventStatisticsFile = Path.Combine(TestDataDir, eventPipeFileName + ".actual.txt");
                 File.WriteAllText(eventStatisticsFile, actual, Encoding.UTF8);
 
+                Output.WriteLine($"Baseline File: {baselineFile}");
+                Output.WriteLine($"Actual File: {eventStatisticsFile}");
+                Output.WriteLine($"To Diff: windiff {baselineFile} {eventStatisticsFile}");
                 Assert.True(false, $"The event statistics doesn't match {Path.GetFullPath(baselineFile)}. It's saved in {Path.GetFullPath(eventStatisticsFile)}.");
             }
         }

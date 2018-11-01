@@ -1160,7 +1160,7 @@ namespace PerfViewExtensibility
             else
             {
                 ret.FilterGuiState.GroupRegEx.Value =
-                    @"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;" +
+                    @"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.Xaml.*!=>WPF;\System.*!=>LIB;" +
                     @"Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1";
                 ret.FilterGuiState.GroupRegEx.History = new List<string> { ret.FilterGuiState.GroupRegEx.Value,
                      "[group modules]           {%}!->module $1",

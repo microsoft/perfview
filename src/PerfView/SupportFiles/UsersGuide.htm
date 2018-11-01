@@ -2171,7 +2171,9 @@
                     <strong><a id="ThreadTime(withStartStopActivities)(CPUONLY)Stacks">Thread Time (With StartStop Activities) (CPU ONLY) Stacks</a></strong>
                     - This trace is basically the <a href="#ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a> view,
                     however because the trace was not collected with the /threadTime option, the view cannot show blocked time.   The result is that
-                    you can see CPU time, grouped by the Start-stop activity, but no blocked time.
+                    you can see CPU time, grouped by the Start-stop activity, but no blocked or async time.   Thus it is useful to see where CPU time is
+                    being spent grouped by the request being serviced, but does not tell you much about wall clock time.   For that you need to collect
+                    with the /threadTime option.
                 </li>
                 <li>
                     <!-- START OF GROUPS -->
@@ -6174,6 +6176,28 @@
     <p>
         To collect data on Window nanoserver.
     </p>
+    <!--  *************** -->
+    <h5> Known issues (in Windows Version 1803 or earlier) </h5>
+    <p>
+        There is a known issue as of 10/2018 (or earlier).   Basically the issue is that DLLs that are part of the
+        operating system in the container (e.g. the kernel, ntdll, kernelbase ...) end up using the HOST paths
+        not the CONTAINER paths.   This would not be that big of a deal, except that the DLL load events do NOT
+        contain a special unique identifier that is used to find the symbol file for the DLL on the Microsoft
+        symbol server.   Normally as part of preparation (merging) of the file to be copied off system, these
+        unique IDs are added to the trace.   However because this is done IN THE CONTAINER and the events have
+        the HOST paths, the logic that does this fails so there are no unique IDs for the system.DLLs.  This
+        means PerfView can't look up the symbol names.
+    </p>
+    <p>
+        There is a work-around.   If you get the correct symbol files (PDBs) and place them in a directory
+        and use the File -> Set Symbol Path to include this directory, AND you pass the /UnsafePDBMatch option
+        to PerfView, then it should work.
+    </p>
+    <p>
+        There are a variety of ways of getting the correct symbol file, but one way is to use a debugger
+        in the container and ask the debugger to load the necessary system files.   Then go to where the debugger
+        put them.
+    </p>
 
     <!--  ************************ -->
     <hr />
@@ -8312,6 +8336,52 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 2.0.28 10/2/18
+            <ul>
+                <li>
+                    Fixed parsing of Task Parallel library parsing to include the .NET Core 2.1 event
+                    System.Threading.Tasks.TplEventSource/IncompleteAsyncMethod used to find 'orphaned' Async operations.
+                    Also added this event  to the default collection for TPL, so that it is always 'just here'.
+
+                    Basically this is a new feature of the .NET Core task library that notices when tasks are created,
+                    but then collected without ever being completed one way or the other.   This can happen if the
+                    TaskCompletionSource dies before it calls 'Complete' on the task.
+
+                    The string in the event is the name of the method where the orphaned machine (Task) will return
+                    when it continues.   The code that was supposed to trigger the 'await' to complete is at fault.
+
+                    This feature needs to be friendlier but it is a big step from knowing nothing.
+                </li>
+                <li>
+                    modified the TraceEvent library's concept of what the 'version of the manifest is to' include
+                    a term that is 100 * the largest event ID.   Thus if you add a new event (at the end), you can
+                    remove (clean up) a few dozen unused events and still be considered 'better'.   Note that this should
+                    be used with care, as it implys that the deleted events are not EVER useful (even for old code that
+                    still emits them), because TraceEvent will not parse them going forward (The TPL EventSource did just
+                    this which is why it came up here.)
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 2.0.27 9/25/18
+            <ul>
+                <li>
+                    Fixed 'PerfView Listen EVENTSOURCE' so that it works without the * prefix for EventSources.
+                </li>
+                <li>Fixed missing descriptions for user commands</li>
+                <li>
+                    Added support for the /SessionName=XXXX parameter which renames both the user and kernel
+                    session names that perfView uses (which allow you to have two PerfView's running or run
+                    with other tools that use the kernel provider)
+                </li>
+                <li>Use stack compression by default</li>
+                <li>
+                    Stop the kernel and user mode session concurrently.  This helps when the disks are very
+                    slow (VMs), to keep the two sessions overlapping maximally
+                </li>
+            </ul>
+        </li>
         <li>
             Version 2.0.22 8/15/18
             <ul>

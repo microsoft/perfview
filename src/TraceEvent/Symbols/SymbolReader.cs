@@ -149,17 +149,16 @@ namespace Microsoft.Diagnostics.Symbols
         /// It is used only to provided better error messages for the log.</param>
         public string FindSymbolFilePath(string pdbFileName, Guid pdbIndexGuid, int pdbIndexAge, string dllFilePath = null, string fileVersion = "")
         {
+            m_log.WriteLine("FindSymbolFilePath: *{{ Locating PDB {0} GUID {1} Age {2} Version {3}", pdbFileName, pdbIndexGuid, pdbIndexAge, fileVersion);
+            if (dllFilePath != null)
+                m_log.WriteLine("FindSymbolFilePath: Pdb is for DLL {0}", dllFilePath);
+
             PdbSignature pdbSig = new PdbSignature() { Name = pdbFileName, ID = pdbIndexGuid, Age = pdbIndexAge };
             string pdbPath = null;
             if (m_pdbPathCache.TryGet(pdbSig, out pdbPath))
             {
+                m_log.WriteLine("FindSymbolFilePath: }} Hit Cache, returning {0}", pdbPath != null ? pdbFileName : "NULL");
                 return pdbPath;
-            }
-
-            m_log.WriteLine("FindSymbolFilePath: *{{ Locating PDB {0} GUID {1} Age {2} Version {3}", pdbFileName, pdbIndexGuid, pdbIndexAge, fileVersion);
-            if (dllFilePath != null)
-            {
-                m_log.WriteLine("FindSymbolFilePath: Pdb is for DLL {0}", dllFilePath);
             }
 
             string pdbIndexPath = null;
@@ -449,7 +448,17 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// Is this symbol reader limited to just the local machine cache or not?
         /// </summary>
-        public SymbolReaderOptions Options { get; set; }
+        public SymbolReaderOptions Options
+        {
+            get => _Options;
+            set
+            {
+                _Options = value;
+                m_pdbPathCache.Clear();
+            }
+        }
+        private SymbolReaderOptions _Options;
+
         /// <summary>
         /// We call back on this when we find a PDB by probing in 'unsafe' locations (like next to the EXE or in the Built location)
         /// If this function returns true, we assume that it is OK to use the PDB.  

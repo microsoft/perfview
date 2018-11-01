@@ -101,16 +101,16 @@ namespace PerfView
         public string StopOnEventLogMessage;    // stop collection on event logs
         public string StopCommand;              // is executed when a stop is triggered.   
         public int StopOnAppFabricOverMsec;
-        public int DelayAfterTriggerSec = 5;   // Number of seconds to wait after a trigger  
+        public int DelayAfterTriggerSec = 5;    // Number of seconds to wait after a trigger  
         public string[] MonitorPerfCounter;     // logs perf counters to the ETL file.  
 
         // Start options.
-        public bool StackCompression;           // Used compresses stacks when collecting traces. 
+        public bool StackCompression = true;    // Use compresses stacks when collecting traces. 
         public int BufferSizeMB = 256;
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
         public KernelTraceEventParser.Keywords KernelEvents = KernelTraceEventParser.Keywords.Default;
-        public string[] CpuCounters;    // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
+        public string[] CpuCounters;        // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
         public ClrTraceEventParser.Keywords ClrEvents = ClrTraceEventParser.Keywords.Default;
         public TraceEventLevel ClrEventLevel = Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose;    // The verbosity of CLR events
         public TplEtwProviderTraceEventParser.Keywords TplEvents = TplEtwProviderTraceEventParser.Keywords.Default;
@@ -514,8 +514,15 @@ namespace PerfView
             parser.DefineOptionalQualifier("SafeMode", ref SafeMode, "Turn off parallelism and other risky features.");
             parser.DefineOptionalQualifier("RestartingToElevelate", ref RestartingToElevelate, "Internal: indicates that perfView is restarting to get Admin privileges.");
 
-            // TODO FIX NOW this is a hack, does not handle kernel mode ... 
-            parser.DefineOptionalQualifier("SessionName", ref CommandProcessor.s_UserModeSessionName, "Define the name for the user mode session, if kernel events are off.");
+            string sessionName = null;
+            parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session, if kernel events are off.");
+            if (sessionName != null)
+            {
+                if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
+                    throw new ApplicationException("SessionName qualifier only works on Windows 8 and above.");
+                CommandProcessor.s_UserModeSessionName = sessionName;
+                CommandProcessor.s_KernelessionName = sessionName + "Kernel";
+            }
 
             parser.DefineOptionalQualifier("MaxNodeCountK", ref MaxNodeCountK,
                 "The maximum number of objects (in K or thousands) that will even be examined when dumping the heap.  Avoids memory use at collection time.  " +

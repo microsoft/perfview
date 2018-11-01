@@ -430,7 +430,7 @@ namespace PerfView
                 LogFile.WriteLine("[Kernel Log: {0}]", Path.GetFullPath(kernelFileName));
             }
 
-            using (TraceEventSession kernelModeSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, kernelFileName))
+            using (TraceEventSession kernelModeSession = new TraceEventSession(s_KernelessionName, kernelFileName))
             {
                 if (parsedArgs.CpuCounters != null)
                 {
@@ -540,7 +540,7 @@ namespace PerfView
                     PerfViewLogger.Log.StartTracing();
                     PerfViewLogger.StartTime = DateTime.UtcNow;
 
-                    PerfViewLogger.Log.SessionParameters(KernelTraceEventParser.KernelSessionName, kernelFileName ?? "",
+                    PerfViewLogger.Log.SessionParameters(s_KernelessionName, kernelFileName ?? "",
                         kernelModeSession.BufferSizeMB, kernelModeSession.CircularBufferMB);
                     PerfViewLogger.Log.KernelEnableParameters(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
                     PerfViewLogger.Log.SessionParameters(s_UserModeSessionName, userFileName ?? "",
@@ -1109,7 +1109,7 @@ namespace PerfView
 
             }
 
-            LogFile.WriteLine("Stopping tracing for sessions '" + KernelTraceEventParser.KernelSessionName +
+            LogFile.WriteLine("Stopping tracing for sessions '" + s_KernelessionName +
                 "' and '" + s_UserModeSessionName + "'.");
 
             PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
@@ -1135,70 +1135,91 @@ namespace PerfView
             }
 
             // Try to stop the kernel session
-            try
+
+            Task stopKernel = Task.Factory.StartNew(delegate ()
             {
-                if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.None)
+                try
                 {
-                    using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
+                    if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.None)
+                    {
+                        using (var kernelSession = new TraceEventSession(s_KernelessionName, TraceEventSessionOptions.Attach))
+                        {
+                            if (parsedArgs.InMemoryCircularBuffer)
+                            {
+                                LogFile.WriteLine("InMemoryCircularBuffer Set, Dumping kernel log");
+                                kernelSession.SetFileName(Path.ChangeExtension(parsedArgs.DataFile, ".kernel.etl")); // Flush the file 
+
+
+                                LogFile.WriteLine("InMemoryCircularBuffer Set, Doing Kernel Rundown");
+                                // We need to manually do a kernel rundown to get the list of running processes and images loaded into memory
+                                // Ideally this is done by the SetFileName API so we can avoid merging.  
+                                var rundownFile = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
+
+                                // Note that enabling providers is async, and thus there is a concern that we would lose events if we don't wait 
+                                // until the events are logged before shutting down the session.   However we only need the DCEnd events and
+                                // those are PART of kernel session stop, which is synchronous (the session will not die until it is complete)
+                                // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
+                                // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
+                                using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "KernelRundown", rundownFile))
+                                {
+                                    kernelRundownSession.BufferSizeMB = 256;    // Try to avoid lost events.  
+                                    kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
+                                }
+                                LogFile.WriteLine("InMemoryCircularBuffer Set, Finished Kernel Rundown");
+                            }
+                            kernelSession.Stop();
+                        }
+                    }
+                }
+                catch (FileNotFoundException) { LogFile.WriteLine("No Kernel events were active for this trace."); }
+                catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping Kernel session: " + e.Message); } throw; }
+            });
+
+            string dataFile = null;
+            Task stopUser = Task.Factory.StartNew(delegate ()
+            {
+                try
+                {
+                    using (TraceEventSession clrSession = new TraceEventSession(s_UserModeSessionName, TraceEventSessionOptions.Attach))
                     {
                         if (parsedArgs.InMemoryCircularBuffer)
                         {
-                            kernelSession.SetFileName(Path.ChangeExtension(parsedArgs.DataFile, ".kernel.etl")); // Flush the file 
-
-                            // We need to manually do a kernel rundown to get the list of running processes and images loaded into memory
-                            // Ideally this is done by the SetFileName API so we can avoid merging.  
-                            var rundownFile = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
-
-                            // Note that enabling providers is async, and thus there is a concern that we would lose events if we don't wait 
-                            // until the events are logged before shutting down the session.   However we only need the DCEnd events and
-                            // those are PART of kernel session stop, which is synchronous (the session will not die until it is complete)
-                            // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
-                            // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
-                            using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", rundownFile))
-                            {
-                                kernelRundownSession.BufferSizeMB = 256;    // Try to avoid lost events.  
-                                kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
-                            }
+                            LogFile.WriteLine("InMemoryCircularBuffer Set, Dumping kernel log");                  
+                            dataFile = parsedArgs.DataFile;
+                            clrSession.SetFileName(dataFile);   // Flush the file 
                         }
-                        kernelSession.Stop();
+                        else
+                        {
+                            dataFile = clrSession.FileName;
+                        }
+
+                        clrSession.Stop();
+
+                        // Try to force the rundown of CLR method and loader events.  This routine does not fail.  
+                        DoClrRundownForSession(dataFile, clrSession.SessionName, parsedArgs);
                     }
                 }
-            }
-            catch (FileNotFoundException) { LogFile.WriteLine("No Kernel events were active for this trace."); }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping Kernel session: " + e.Message); } throw; }
+                catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping User session: " + e.Message); } throw; }
+            });
 
-            string dataFile = null;
-            try
+            Task stopHeap = Task.Factory.StartNew(delegate ()
             {
-                using (TraceEventSession clrSession = new TraceEventSession(s_UserModeSessionName, TraceEventSessionOptions.Attach))
+                try
                 {
-                    if (parsedArgs.InMemoryCircularBuffer)
+                    using (var heapSession = new TraceEventSession(s_HeapSessionName, TraceEventSessionOptions.Attach))
                     {
-                        dataFile = parsedArgs.DataFile;
-                        clrSession.SetFileName(dataFile);   // Flush the file 
+                        heapSession.Stop();
                     }
-                    else
-                    {
-                        dataFile = clrSession.FileName;
-                    }
-
-                    clrSession.Stop();
-
-                    // Try to force the rundown of CLR method and loader events.  This routine does not fail.  
-                    DoClrRundownForSession(dataFile, clrSession.SessionName, parsedArgs);
                 }
-            }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping User session: " + e.Message); } throw; }
+                catch (FileNotFoundException) { LogFile.WriteLine("No Heap events were active for this trace."); }
+                catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping Heap session: " + e.Message); } throw; }
+            });
 
-            try
-            {
-                using (var heapSession = new TraceEventSession(s_HeapSessionName, TraceEventSessionOptions.Attach))
-                {
-                    heapSession.Stop();
-                }
-            }
-            catch (FileNotFoundException) { LogFile.WriteLine("No Heap events were active for this trace."); }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping Heap session: " + e.Message); } throw; }
+            // We stop the two sessions concurrently because we have notice that sometime the kernel session 
+            // Takes a while to shutdown, and we want the user mode session to shutdown at basically the same time
+            // Doing them concurrently minimizes any skew.  
+            Task.WaitAll(stopKernel, stopUser, stopHeap);
+            LogFile.WriteLine("Done stopping sessions.");
 
             UninstallETWClrProfiler(LogFile);
 
@@ -1268,10 +1289,10 @@ namespace PerfView
 
                 s_abortInProgress = true;
                 m_logFile.WriteLine("Aborting tracing for sessions '" +
-                    KernelTraceEventParser.KernelSessionName + "' and '" + s_UserModeSessionName + "'.");
+                    s_KernelessionName + "' and '" + s_UserModeSessionName + "'.");
                 try
                 {
-                    using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
+                    using (var kernelSession = new TraceEventSession(s_KernelessionName, TraceEventSessionOptions.Attach))
                     {
                         kernelSession.Stop(true);
                     }
@@ -3362,6 +3383,7 @@ namespace PerfView
         }
 
         internal static string s_UserModeSessionName = "PerfViewSession";
+        internal static string s_KernelessionName = KernelTraceEventParser.KernelSessionName;
         private static string s_HeapSessionName { get { return s_UserModeSessionName + "Heap"; } }
 
         private static bool s_addedSupportDirToPath;
@@ -3675,9 +3697,7 @@ namespace PerfView
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
                 // Look it up by name 
                 if (providerGuid == Guid.Empty)
-                {
-                    throw new ApplicationException("Could not find provider name '" + providerSpec + "'");
-                }
+                    TraceEventProviders.GetEventSourceGuidFromName(providerSpec);
             }
 
             retList.Add(new ParsedProvider()

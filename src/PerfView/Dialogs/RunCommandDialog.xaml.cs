@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -79,7 +80,13 @@ namespace PerfView
                 CommandToRunTextBox.Text = args.CommandLine;
             }
 
-            DataFileNameTextBox.Text = args.DataFile;
+            var dataFile = args.DataFile;
+            if (Path.Combine(CurrentDirTextBox.Text, Path.GetFileName(dataFile)) == dataFile)
+            {
+                dataFile = Path.GetFileName(dataFile);
+            }
+
+            DataFileNameTextBox.Text = dataFile;
             RundownTimeoutTextBox.Text = args.RundownTimeout.ToString();
             SampleIntervalTextBox.Text = args.CpuSampleMSec.ToString();
             MaxCollectTextBox.Text = args.MaxCollectSec == 0 ? "" : args.MaxCollectSec.ToString();
@@ -359,7 +366,13 @@ namespace PerfView
             Nullable<bool> result = saveDialog.ShowDialog();
             if (result == true)
             {
-                DataFileNameTextBox.Text = saveDialog.FileName;
+                string selectedFile = saveDialog.FileName;
+                if (Path.Combine(CurrentDirTextBox.Text, Path.GetFileName(selectedFile)) == selectedFile)
+                {
+                    selectedFile = Path.GetFileName(selectedFile);
+                }
+
+                DataFileNameTextBox.Text = selectedFile;
             }
         }
         private void ProviderBrowserButtonClick(object sender, RoutedEventArgs e)

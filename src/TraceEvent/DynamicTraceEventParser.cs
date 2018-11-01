@@ -1972,8 +1972,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// The version is defined as the sum of all the version numbers of event version numbers + the number of events defined. 
         /// This has the property that if you follow correct versioning protocol (all versions for a linear sequence where a new  
-        /// versions is only modifies is predecessor by adding new events or INCREASEING the version numbers of existing events) 
+        /// versions is only modifies is predecessor by adding new events or INCREASING the version numbers of existing events) 
         /// then the version number defined below will always strictly increase.   
+        ///
+        /// It turns out that .NET Core removed some events from the TplEtwProvider.   To allow removal of truly old events
+        /// we also add 100* the largest event ID defined to the version number.  That way if you add new events, even if you
+        /// removes some (less than 100) it will consider your 'better'.   
         /// </summary>
         public int Version
         {
@@ -1984,25 +1988,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     try
                     {
                         var verReader = ManifestReader;
-                        while (
-                            verReader.Read())
+                        var maxEventId = 0;
+                        while (verReader.Read())
                         {
                             if (verReader.NodeType != XmlNodeType.Element)
-                            {
                                 continue;
-                            }
 
                             if (verReader.Name == "event")
                             {
                                 version++;
                                 string ver = verReader.GetAttribute("version");
-                                int intVer;
-                                if (ver != null && int.TryParse(ver, out intVer))
-                                {
+                                if (ver != null && int.TryParse(ver, out int intVer))
                                     version += intVer;
-                                }
+
+                                string id = verReader.GetAttribute("value");
+                                if (id != null && int.TryParse(id, out int intId) && intId > maxEventId)
+                                    maxEventId = intId;
                             }
                         }
+
+                        version += maxEventId * 100;
                     }
                     catch (Exception e)
                     {
@@ -2022,8 +2027,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Returns true if the current manifest is better to use than 'otherManifest'   A manifest is
-        /// better if it has a larger version nubmer OR, they have the same version number and it is
-        /// physically larger (we assume what happend is people added more properties but did not
+        /// better if it has a larger version number OR, they have the same version number and it is
+        /// physically larger (we assume what happened is people added more properties but did not
         /// update the version field appropriately).  
         /// </summary>
         public bool BetterThan(ProviderManifest otherManifest)
@@ -2088,7 +2093,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Init();
             try
             {
-                version = 0;
                 Dictionary<string, int> opcodes = new Dictionary<string, int>();
                 opcodes.Add("win:Info", 0);
                 opcodes.Add("win:Start", 1);
@@ -2142,14 +2146,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                                     int taskNum = 0;
                                     Guid taskGuid = Guid.Empty;
-
-                                    version++;
-                                    string ver = reader.GetAttribute("version");
-                                    int intVer;
-                                    if (ver != null && int.TryParse(ver, out intVer))
-                                    {
-                                        version += intVer;
-                                    }
 
                                     int eventID = int.Parse(reader.GetAttribute("value"));
                                     int opcode = 0;

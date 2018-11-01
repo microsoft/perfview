@@ -669,7 +669,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         TraceGC _gc = new TraceGC(stats.GC.m_stats.HeapCount);
                         Debug.Assert(0 <= data.Depth && data.Depth <= 2);
-                        // _event.GCGeneration = data.Depth;   Old style events only have this in the GCStop event.  
+                        _gc.Generation = data.Depth;
                         _gc.Reason = data.Reason;
                         _gc.Number = data.Count;
                         _gc.Type = data.Type;
@@ -692,6 +692,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         if (isEphemeralGCAtBGCStart || _gc.Reason == GCReason.PMFullGC)
                         {
                             _gc.PauseStartRelativeMSec = data.TimeStampRelativeMSec;
+
                             if (_gc.Reason == GCReason.PMFullGC)
                             {
                                 TraceGC lastGC = TraceGarbageCollector.GetCurrentGC(stats);
@@ -717,6 +718,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         if (_gc.Type == GCType.BackgroundGC)
                         {
                             stats.GC.m_stats.currentBGC = _gc;
+                            // For BGC, we need to add the suspension time so far to its pause so we don't miss including it.
+                            // If there's an ephemeral GC happening before the BGC starts, AddConcurrentPauseTime will not
+                            // add this suspension time to GC pause as that GC would be seen the ephemeral GC, not the BGC.
+                            _gc.PauseDurationMSec = _gc.SuspendDurationMSec;
                             _gc.ProcessCpuAtLastGC = stats.GC.m_stats.ProcessCpuAtLastGC;
                         }
 
@@ -1009,7 +1014,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     if (_gc != null)
                     {
                         _gc.DurationMSec = data.TimeStampRelativeMSec - _gc.StartRelativeMSec;
-                        _gc.Generation = data.Depth;
                         Debug.Assert(_gc.Number == data.Count);
                     }
                 };

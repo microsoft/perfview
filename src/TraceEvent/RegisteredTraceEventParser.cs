@@ -1045,7 +1045,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             {
                                 // This is the kernelTraceControl case,  the map information will be provided
                                 // later, so we have to set up a LAZY map which will be evaluated when we need the
-                                // enum (giving time for the enum defintion to be processed. 
+                                // enum (giving time for the enum definition to be processed. 
                                 var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
 
                                 // Set the map to be a lazyMap, which is a Func that returns a map.  

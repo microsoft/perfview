@@ -2095,11 +2095,13 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             if (retCode == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
             {
+                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE; // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
             }
 
             if (retCode != 0)
             {
+                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;  // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
             }
 
@@ -2581,7 +2583,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 return true;
             }
             // FrameworkEventSource predated the Guid selection convention that most eventSources use.  
-            // Opt it in explicity 
+            // Opt it in explicitly 
             if (providerGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
             {
                 return true;
@@ -2606,7 +2608,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         }
 
         /// <summary>
-        /// Returns the GUID of all event provider that either has has register itself in a running process (that is
+        /// Returns the GUID of all event provider that either has registered itself in a running process (that is
         /// it CAN be enabled) or that a session has enabled (even if no instances of the provider exist in any process).  
         /// <para>
         /// This is a relatively small list (less than 1000), unlike GetPublishedProviders. 
