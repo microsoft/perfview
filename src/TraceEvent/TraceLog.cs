@@ -1711,15 +1711,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             clrPrivate.GCBGC1stConStop += delegate (GCNoUserDataTraceData data) { MarkAsBGCThread(data); };
             clrPrivate.GCBGCDrainMark += delegate (BGCDrainMarkTraceData data) { MarkAsBGCThread(data); };
             clrPrivate.GCBGCRevisit += delegate (BGCRevisitTraceData data) { MarkAsBGCThread(data); };
-            rawEvents.Clr.ThreadPoolWorkerThreadStart += delegate (ThreadPoolWorkerThreadTraceData data) { CategorizeThread(data, ".NET ThreadPool"); };
             rawEvents.Clr.ThreadPoolWorkerThreadAdjustmentSample += delegate (ThreadPoolWorkerThreadAdjustmentSampleTraceData data)
             {
                 CategorizeThread(data, ".NET ThreadPool");
             };
+            rawEvents.Clr.ThreadPoolIODequeue += delegate (ThreadPoolIOWorkTraceData data) { CategorizeThread(data, ".NET IO ThreadPool Worker", true); };
 
             var fxParser = new FrameworkEventSourceTraceEventParser(rawEvents);
-            fxParser.ThreadPoolDequeueWork += delegate (ThreadPoolDequeueWorkArgs data) { CategorizeThread(data, ".NET ThreadPool"); };
-            fxParser.ThreadTransferReceive += delegate (ThreadTransferReceiveArgs data) { CategorizeThread(data, ".NET ThreadPool"); };
+            fxParser.ThreadPoolDequeueWork += delegate (ThreadPoolDequeueWorkArgs data) { CategorizeThread(data, ".NET ThreadPool Worker"); };
+            fxParser.ThreadTransferReceive += delegate (ThreadTransferReceiveArgs data) { CategorizeThread(data, ".NET ThreadPool Worker"); };
 
             // Attribute CPU samples to processes.
             kernelParser.PerfInfoSample += delegate (SampledProfileTraceData data)
@@ -1991,7 +1991,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                     if (data.ThreadID != -1)
-                        thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
+                    {
+                        // All Thread events should already be handled (since we are passing the wrong args for those here).  
+                        Debug.Assert(!(data is ThreadTraceData));
+                        thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                    }
                 }
 
                 if (numberOnPage >= eventsPerPage)
@@ -2873,7 +2877,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Put the thread that owns 'data' in to the category 'category.  
         /// </summary>
-        private void CategorizeThread(TraceEvent data, string category)
+        private void CategorizeThread(TraceEvent data, string category, bool overwrite=false)
         {
             if (string.IsNullOrWhiteSpace(category))
             {
@@ -2886,7 +2890,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return;
             }
 
-            if (thread.threadInfo == null)
+            if (thread.threadInfo == null || overwrite)
             {
                 thread.threadInfo = category;
             }
