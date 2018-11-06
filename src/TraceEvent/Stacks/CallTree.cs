@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;                        // For TextWriter.  
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -475,7 +476,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 var processedInCurrentSet = new HashSet<CallTreeNode>();
                 var nextParentWorkSet = new HashSet<CallTreeNode>();
-                foreach (var node in parentWorkSet)
+                foreach (var node in parentWorkSet.OrderByDescending(n => n.Index))
                 {
                     processedInCurrentSet.Add(node);
 
