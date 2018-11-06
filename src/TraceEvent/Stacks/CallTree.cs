@@ -283,7 +283,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         // This keeps track of stacks that I have used in the past
-        private const int StackInfoCacheSize = 128;          // Must be a power of 2
+        private const int StackInfoCacheSize = 128 * 1024;          // Must be a power of 2
         private TreeCacheEntry[] m_TreeForStack;
 
         private readonly Interner m_interner = new Interner();
