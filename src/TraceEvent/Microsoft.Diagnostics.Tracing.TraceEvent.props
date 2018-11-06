@@ -43,7 +43,7 @@
       <Visible>False</Visible>
     </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll">
-      <Link>OsExtensions.dll</Link>
+      <Link>OSExtensions.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
