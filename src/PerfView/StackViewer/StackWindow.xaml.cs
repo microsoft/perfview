@@ -3922,7 +3922,7 @@ namespace PerfView
             PresetMenu.Items.Add(new Separator());
 
             var setDefaultPresetMenuItem = new MenuItem();
-            setDefaultPresetMenuItem.Header = "S_et Startup Preset";
+            setDefaultPresetMenuItem.Header = "S_et As Startup Preset";
             setDefaultPresetMenuItem.Click += DoSetStartupPreset;
             setDefaultPresetMenuItem.ToolTip =
                 "Sets the default values of Group Patterns and Fold Patterns and % to the current values.";

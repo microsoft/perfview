@@ -515,7 +515,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("RestartingToElevelate", ref RestartingToElevelate, "Internal: indicates that perfView is restarting to get Admin privileges.");
 
             string sessionName = null;
-            parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session, if kernel events are off.");
+            parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session (kernel session will also be named analogously) Useful for collecting traces when another ETW profiler (including PerfView) is being used.");
             if (sessionName != null)
             {
                 if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)

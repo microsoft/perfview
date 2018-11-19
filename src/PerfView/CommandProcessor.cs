@@ -576,19 +576,19 @@ namespace PerfView
                                 new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
 
                             // Turn on File Create (open) logging as it is useful for investigations and lightweight. 
-                            // Don't bother if the Kernel FileIOInit evens are on because they are strictly better
+                            // Don't bother if the Kernel FileIOInit events are on because they are strictly better
                             // and you end up with annoying redundancy.  
                             if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.FileIOInit) == 0)
                             {
-                                // 0x10 =  Process  
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
-                                    new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
+                                // 0x80 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
+                                EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
+                                    new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
                             }
 
                             // Turn on the user-mode Process start events.  This allows you to get the stack of create-process calls
-                            // 0x10 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
-                                new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
+                            // 0x10 =  Process  
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
+                                new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
 
                             // Default CLR events also means ASP.NET and private events. 
                             // Turn on ASP.NET at informational by default.
@@ -705,7 +705,11 @@ namespace PerfView
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
                                 TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
 
-                            // TODO should stacks be enabled?
+                            // This is likely redundant with the diagnosticSource above, but is simpler to parse on the reader side.
+
+                            EnableUserProvider(userModeSession, "Microsoft-AspNetCore-Hosting",
+                                new Guid("9e620d2a-55d4-5ade-deb7-c26046d245a8"),TraceEventLevel.Verbose, ulong.MaxValue);
+
                             EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
                                 new Guid("74af9f20-af6a-5582-9382-f21f674fb271"),
                                 TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
@@ -762,10 +766,6 @@ namespace PerfView
 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-RPC",
                                     new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0);
-
-                                // TODO FIX NOW how verbose is this?
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
-                                    new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, 0xFFFFFFFF);
 
                                 // This is what WPA turns on in its 'GENERAL' setting  
                                 //Microsoft-Windows-Immersive-Shell: 0x0000000000100000: 0x04
