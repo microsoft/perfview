@@ -136,17 +136,14 @@ namespace PerfView
                                 var template = PerfViewFile.TryGet(filePath);
                                 if (template != null)
                                 {
-                                    // Filter out kernel, rundown files etc. 
-                                    if (Regex.IsMatch(filePath, @"\.(kernel|clr|user)[^.]*\.etl$", RegexOptions.IgnoreCase))
-                                    {
+                                    // Filter out kernel, rundown files etc, if the base file exists.  
+                                    Match m = Regex.Match(filePath, @"^(.*)\.(kernel|clr|user)[^.]*\.etl$", RegexOptions.IgnoreCase);
+                                    if (m.Success && File.Exists(m.Groups[1].Value + ".etl"))
                                         continue;
-                                    }
 
                                     // Filter out any items we were asked to filter out.  
                                     if (m_filter != null && !m_filter.IsMatch(Path.GetFileName(filePath)))
-                                    {
                                         continue;
-                                    }
 
                                     m_Children.Add(PerfViewFile.Get(filePath, template));
                                 }

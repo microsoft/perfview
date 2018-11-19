@@ -432,7 +432,7 @@ namespace Microsoft.Diagnostics.Tracing
         #region private
         private void UpdateStartStopActivityOnAwaitComplete(TraceActivity activity, TraceEvent data)
         {
-            // If we are createing 'UNKNOWN_ASYNC nodes, make sure that AWAIT_TIME does not overlap with UNKNOWN_ASYNC time
+            // If we are creating 'UNKNOWN_ASYNC nodes, make sure that AWAIT_TIME does not overlap with UNKNOWN_ASYNC time
 
             var startStopActivity = m_startStopActivities.GetStartStopActivityForActivity(activity);
             if (startStopActivity == null)
@@ -536,6 +536,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void AddUnkownAsyncDurationIfNeeded(StartStopActivity startStopActivity, double unknownStartTimeMSec, TraceEvent data)
         {
+            if (NoAwaitTime)
+                return;
+
             Debug.Assert(0 < unknownStartTimeMSec);
             Debug.Assert(unknownStartTimeMSec <= data.TimeStampRelativeMSec);
 
