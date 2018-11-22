@@ -1604,7 +1604,7 @@ public class SpanningTree
         m_childStorage = graph.AllocNodeStorage();
         m_typeStorage = graph.AllocTypeNodeStorage();
 
-        // We need to reduce the graph to a tree.   Each node is assiged a unique 'parent' which is its 
+        // We need to reduce the graph to a tree.   Each node is assigned a unique 'parent' which is its 
         // parent in a spanning tree of the graph.  
         // The +1 is for orphan node support.  
         m_parent = new NodeIndex[(int)graph.NodeIndexLimit + 1];
