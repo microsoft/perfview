@@ -7107,7 +7107,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// The Assembly ID that the .NET Runtime uses to identify the assembly associated with this managed module. 
         /// </summary>
-        public long AssmeblyID { get { return assemblyID; } }
+        public long AssemblyID { get { return assemblyID; } }
         /// <summary>
         /// Returns true if the managed module was loaded AppDOmain Neutral (its code can be shared by all appdomains in the process. 
         /// </summary>
@@ -7129,7 +7129,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             return "<TraceManagedModule " +
                    "ModuleID=" + XmlUtilities.XmlQuoteHex((ulong)ModuleID) + " " +
-                   "AssmeblyID=" + XmlUtilities.XmlQuoteHex((ulong)AssmeblyID) + ">\r\n" +
+                   "AssemblyID=" + XmlUtilities.XmlQuoteHex((ulong)AssemblyID) + ">\r\n" +
                    "  " + base.ToString() + "\r\n" +
                    nativeInfo +
                    "</TraceManagedModule>";
