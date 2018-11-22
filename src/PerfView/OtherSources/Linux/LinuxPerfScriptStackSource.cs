@@ -339,7 +339,7 @@ namespace Diagnostics.Tracing.StackSources
             }
 
             blockedTimeAnalyzer?.FinishAnalyzing();
-            // TODO: Sort things in blocked time anaylizer
+            // TODO: Sort things in blocked time analyzer
             // this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 
             TotalBlockedTime = blockedTimeAnalyzer != null ? blockedTimeAnalyzer.TotalBlockedTime : -1;
