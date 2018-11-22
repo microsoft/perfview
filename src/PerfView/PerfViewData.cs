@@ -2439,7 +2439,7 @@ table {
                 if (((timeInSlowestEvent / requestExecutionTime) * 100) < 50)
                 {
                     // So this is the scenario where the default set of events that we are tracking
-                    // do not have any delay. Lets do our best and see if we can atleast
+                    // do not have any delay. Lets do our best and see if we can at least
                     // populate the StartTime, EndTime                    
 
                     IisPipelineEvent unKnownPipeLineEvent = CheckForDelayInUnknownEvents(request, timeInSlowestEvent);
