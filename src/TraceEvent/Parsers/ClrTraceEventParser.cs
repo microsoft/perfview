@@ -214,7 +214,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Fetch the state object associedated with this parser and cast it to
+        /// Fetch the state object associated with this parser and cast it to
         /// the ClrTraceEventParserState type.   This state object contains any
         /// informtion that you need from one event to another to decode events.
         /// (typically ID->Name tables).  
