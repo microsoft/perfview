@@ -2451,7 +2451,7 @@ namespace PerfView
 
         /// <summary>
         /// Given a pointer to the .Net registry key area, 'dotnetHive' and a prefix (either COR or CORECLR)
-        /// as well as the profilerDll, profilerKeywords, and native arthcitecture, install the profiler DLL
+        /// as well as the profilerDll, profilerKeywords, and native architecture, install the profiler DLL
         /// as the EtwClr profiler.  Log status messages to 'log'.  
         /// </summary>
         private static void InsertEtwClrProfilerKeys(RegistryKey dotnetHive, string prefix, string profilerDll, int profilerKeywords, string nativeArch, TextWriter log)
