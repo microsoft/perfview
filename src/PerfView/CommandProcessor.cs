@@ -3254,7 +3254,7 @@ namespace PerfView
                                     // everything.  Thus we use an obscure keyword we hope is not to volumous (we are really
                                     // relying on the critical event level to filter things).  
                                     EnableUserProvider(clrRundownSession, parsedProvider.Name, parsedProvider.Guid,
-                                        TraceEventLevel.Critical, 0x1000000000000000);
+                                        TraceEventLevel.Critical, 0x800_0000_0000);
                                 }
                             }
                         }
