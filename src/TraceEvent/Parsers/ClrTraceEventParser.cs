@@ -10257,6 +10257,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Dynamic = 0x2,
         Native = 0x4,
         Collectible = 0x8,
+        ReadyToRun = 0x10,
     }
     [Flags]
     public enum ModuleFlags
@@ -10266,6 +10267,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Native = 0x2,
         Dynamic = 0x4,
         Manifest = 0x8,
+        IbcOptimized = 0x10,
+        ReadyToRunModule = 0x20,
     }
     [Flags]
     public enum MethodFlags
@@ -10275,6 +10278,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Generic = 0x2,
         HasSharedGenericCode = 0x4,
         Jitted = 0x8,
+        JitHelper=0x10,
+        ProfilerRejectedPrecompiledCode = 0x20,
+        ReadyToRunRejectedPrecompiledCode = 0x40,
     }
     [Flags]
     public enum StartupMode
