@@ -10543,6 +10543,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
+        /// For a SysCallEnterTraceData event, gets the CodeAddressIndex associated with the SysCallAddress address. 
+        /// </summary>
+        public static CodeAddressIndex SysCallAddress(this SysCallEnterTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+            {
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            }
+            return log.GetCodeAddressIndexAtEvent(anEvent.SysCallAddress, anEvent);
+        }
+
+
+        /// <summary>
         /// For a PMCCounterProfTraceData event, gets the TraceCodeAddress associated with the InstructionPointer address. 
         /// </summary>
         public static TraceCodeAddress IntructionPointerCodeAddress(this PMCCounterProfTraceData anEvent)
