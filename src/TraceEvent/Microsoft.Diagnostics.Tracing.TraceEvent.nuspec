@@ -14,13 +14,13 @@
       Event Tracing for Windows (ETW) is a powerful logging mechanism built into the Windows OS and is used extensively in Windows. 
       You can also log ETW events yourself code using the System.Diagnostics.Tracing.EventSource class.
 
-      The TraceEvent library conains the classes needed to control ETW providers (including .NET EventSources) 
+      The TraceEvent library contains the classes needed to control ETW providers (including .NET EventSources)
       and parse the events they emit.
 
       The library includes
       -- TraceEventSession which can enable ETW providers,
       -- EtwTraceEventSource which lets you read the stream of ETW events, and
-      -- TraceLog which is is digested form of ETW events which include decoded stack traces associated with the events.
+      -- TraceLog which is a digested form of ETW events which include decoded stack traces associated with the events.
     
       See https://github.com/Microsoft/perfview/blob/master/documentation/TraceEvent/TraceEventLibrary.md for more.
     </description>
@@ -28,6 +28,9 @@
     <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/T$version$</releaseNotes>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
+    <dependencies>
+      <dependency id="Microsoft.Win32.Registry" version="[4.4.0,)" />
+    </dependencies>
   </metadata>
 
   <files>
