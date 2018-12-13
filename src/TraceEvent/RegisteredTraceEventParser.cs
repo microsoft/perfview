@@ -1065,8 +1065,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     // is this dynamically sized with another field specifying the length?
-                    // Is it an array? 
-                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || propertyInfo->InType == TdhInputType.Binary)
+                    // Is it an array (binary and not a struct) (seems InType is not valid if property is a struct, so need to test for both.
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || (propertyInfo->InType == TdhInputType.Binary && (propertyInfo->Flags & PROPERTY_FLAGS.Struct) == 0))
                     {
                         // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.  
                         var countOrCountIndex = propertyInfo->CountOrCountIndex;
