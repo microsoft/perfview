@@ -408,6 +408,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// This property returns true if this happened.  
         /// </summary>
         public bool Truncated { get { return truncated; } }
+
+        /// <summary>
+        /// Returns the EvnetIndex (order in the file) of the first event that has a 
+        /// timestamp smaller than its predecessor.  Returns Invalid if there are no time inversions. 
+        /// </summary>
+        public EventIndex FirstTimeInversion { get { return firstTimeInversion; } }
+
         /// <summary>
         /// Returns all the TraceEventParsers associated with this log.  
         /// </summary>
@@ -512,6 +519,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             osBuild = "";
             sampleProfileInterval100ns = 10000;    // default is 1 msec
             fnAddAddressToCodeAddressMap = AddAddressToCodeAddressMap;
+            firstTimeInversion = EventIndex.Invalid;
         }
 
         /// <summary>
@@ -1927,6 +1935,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     options.ConversionLog.WriteLine("WARNING, events out of order! This breaks event search.  Jumping from {0:n3} back to {1:n3} for {2} EventID {3} Thread {4}",
                         QPCTimeToRelMSec(lastQPCEventTime), data.TimeStampRelativeMSec, data.ProviderName, data.ID, data.ThreadID);
+                    firstTimeInversion = (EventIndex) (uint) eventCount;
                 }
 
                 lastQPCEventTime = data.TimeStampQPC;
@@ -3572,6 +3581,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
+            serializer.Write((int) firstTimeInversion);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -3727,10 +3737,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 relatedActivityIDs.Add(guid);
             }
             deserializer.Read(out truncated);
+            firstTimeInversion = (EventIndex) (uint) deserializer.ReadInt();
         }
         int IFastSerializableVersion.Version
         {
-            get { return 71; }
+            get { return 72; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -3760,6 +3771,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private long bootTime100ns;     // This is a windows FILETIME object 
         private bool hasPdbInfo;
         private bool truncated;     // stopped because the file was too large.  
+        private EventIndex firstTimeInversion;
         private int sampleProfileInterval100ns;
         private string machineName;
         private TraceProcesses processes;

@@ -8322,20 +8322,40 @@
     </h2>
     <ul>
         <!--
-        <li>Version 1.4.1 - 1/XX/2013
+    <li>Version 1.4.1 - 1/XX/2013
+        <ul>
+        <li>XXX</li>
+          <li>Improved the performance of the stack-view substantially by building a simplified regular expression matcher
+                instead of using System.Text.RegularExpressions.  This should improve 'update' speeds in the stack viewer
+                in common scenarios by of 2 </li>
+            <li>Allowed the stack-view to parallelize much of the activity, improving performance by probably another factor
+                of about 2 or more in many cases.   More can be done here to take advantage of Quad procs etc </li>
+            <li>Because it would be very easy for the above two features to cause the code to break, I have added a /safeMode
+                command qualifier that turns them off.   If you get a crash when updating the stack viewer, you should retry
+                with /safemode</li>
+        </ul>
+    </li>
+    -->
+        <li>
+            Version 2.0.32 12/14/18
             <ul>
-            <li>XXX</li>
-              <li>Improved the performance of the stack-view substantially by building a simplified regular expression matcher
-                    instead of using System.Text.RegularExpressions.  This should improve 'update' speeds in the stack viewer
-                    in common scenarios by of 2 </li>
-                <li>Allowed the stack-view to parallelize much of the activity, improving performance by probably another factor
-                    of about 2 or more in many cases.   More can be done here to take advantage of Quad procs etc </li>
-                <li>Because it would be very easy for the above two features to cause the code to break, I have added a /safeMode
-                    command qualifier that turns them off.   If you get a crash when updating the stack viewer, you should retry
-                    with /safemode</li>
+                <li>
+                    Added the /focusProcess=ProcessIDOrName qualifier (e.g. focusProcess=PerfView.exe) This allows you 
+                    to only turn on non-Kernel events 
+                    for a particular process, and thus cut the overhead / size of the collection when there are many
+                    active processes on the system..   Note that it does not have an effect on kernel events (which are
+                    often the most common, but not always), so it may not help as much as you would like, but DEFINATELY 
+                    helps during rundown (if you have many managed processes, they all do rundown which can be impactful).  
+                    So it always helps when there are many managed processes (because of rundown) but can help quite a lot
+                    if many of those processes allocate a lot, or use the threadpool (which both can create many events). 
+                </li>
+                <li>
+                    Added a popup warning if the ETL file has events out of order in time (this should not happen but
+                    when it does, ti can produce GUI anomolies, so I want the warning to be obvious).    Added a
+                    FirstTimeInversion property to support this feature.   
+                </li>
             </ul>
         </li>
-        -->
         <li>
             Version 2.0.28 10/2/18
             <ul>
