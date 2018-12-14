@@ -115,6 +115,14 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   do this, the goal is to fix the problem, which means you have to put enough information into the issue to do that.
   This includes exactly what you tried, and what the error messages were.
   
+  * You can also build PerfView from the command line (but you still need VS 2017 installed).   It is a two step process.
+  First you must restore all the needed nuget packages, then you do the build itself.   To do this 
+    1. Open a developer command prompt.  You can do this by hitting the windows key (by the space bar) and type
+       'Developer command prompt'.  You should see a entry for this that you can select (if VS 2017 is installed).
+    2. Change directory to the base of your PerfView source tree (where PerfView.sln lives). 
+    3. Restore the nuget packages by typing the command 'msbuild /t:restore'
+    4. Build perfView by typing the command 'msbuild'
+  
   * If you get an error "MSB8036: The Windows SDK version 8.1 was not found", go to your Control panel -> Programs and Features, 
   and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that the Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
   
