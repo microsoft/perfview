@@ -185,6 +185,30 @@ namespace PerfViewExtensibility
             LogFile.WriteLine("[Wrote {0} events to {1}]", eventCount, xmlOutputFileName);
         }
 
+        
+        /// <summary>
+        /// Save stacks for an NetPerf file into a *.netperf.json file.
+        /// </summary>
+        /// <param name="netPerfFileName">The ETL file to convert</param>
+        public void NetperfToJson(string netPerfFileName)
+        {
+            string outputName = Path.ChangeExtension(netPerfFileName, ".netperf.json");
+
+            string etlxFileName = TraceLog.CreateFromEventPipeDataFile(netPerfFileName);
+            using (var eventLog = new TraceLog(etlxFileName))
+            {
+                var startStopSource = new MutableTraceEventStackSource(eventLog);
+                // EventPipe currently only has managed code stacks.
+                startStopSource.OnlyManagedCodeStacks = true;
+
+                var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+                computer.GenerateThreadTimeStacks(startStopSource);
+
+                JsonStackSourceWriter.WriteStackViewAsJson(startStopSource, outputName);
+                LogFile.WriteLine("[Converted {0} to {1}]", netPerfFileName, outputName);
+            }
+        }
+
         /// <summary>
         /// Save the CPU stacks from 'etlFileName'.  If the /process qualifier is present use it to narrow what
         /// is put into the file to a single process.  

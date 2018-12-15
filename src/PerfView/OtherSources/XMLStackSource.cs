@@ -113,6 +113,85 @@ namespace Diagnostics.Tracing.StackSources
         }
     }
 
+    public class JsonStackSourceWriter
+    {
+        public static void WriteStackViewAsZippedJson(StackSource source, string fileName, Action<TextWriter> additionalData = null)
+        {
+            if (File.Exists(fileName))
+                File.Delete(fileName);
+
+            using (var archive = ZipFile.Open(fileName, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(Path.GetFileNameWithoutExtension(fileName));
+                using (var entryStream = entry.Open())
+                using (var entryStreamWriter = new StreamWriter(entryStream))
+                    WriteStackViewAsJson(source, entryStreamWriter, additionalData);
+            }
+        }
+        public static void WriteStackViewAsJson(StackSource source, string fileName, Action<TextWriter> additionalData = null)
+        {
+            if (File.Exists(fileName))
+                File.Delete(fileName);
+
+            using (var writeStream = File.CreateText(fileName))
+                WriteStackViewAsJson(source, writeStream, additionalData);
+        }
+        public static void WriteStackViewAsJson(StackSource source, TextWriter writer, Action<TextWriter> additionalData = null)
+        {
+            writer.WriteLine("{");
+
+            /***********************************************/
+            writer.WriteLine(" \"Frames\":[");
+            for (int i = 0; i < source.CallFrameIndexLimit; i++)
+            {
+                var frameName = source.GetFrameName((StackSourceFrameIndex)i, false);
+                frameName = frameName.Replace("\\", "\\\\");
+                frameName = frameName.Replace("\"", "\\\"");
+                writer.WriteLine("  {{\"Name\":\"{0}\"}}{1}",
+                    frameName,
+                    ((i < source.CallFrameIndexLimit - 1) ? "," : ""));
+            }
+            writer.WriteLine(" ],");
+
+            /***********************************************/
+            writer.WriteLine(" \"Stacks\":[");
+            for (int i = 0; i < source.CallStackIndexLimit; i++)
+            {
+                int frameID = (int)source.GetFrameIndex((StackSourceCallStackIndex)i);
+                int callerID = (int)source.GetCallerIndex((StackSourceCallStackIndex)i);
+                writer.WriteLine("  {{\"FrameId\":{0},\"CallerId\":{1}}}{2}",
+                    frameID,
+                    callerID,
+                    ((i < source.CallStackIndexLimit - 1) ? "," : ""));
+            }
+            writer.WriteLine(" ],");
+
+            /***********************************************/
+            writer.WriteLine(" \"Samples\":[");
+            CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+            bool first = true;
+            source.ForEach(delegate (StackSourceSample sample)
+            {
+                if (first)
+                    first = false;
+                else
+                    writer.WriteLine(",");
+
+                writer.Write("  {{\"Time\":\"{0:f3}\",\"Metric\":{1},\"StackId\":{2}}}",
+                    sample.TimeRelativeMSec,
+                    sample.Metric,
+                    ((int)sample.StackIndex));
+            });
+            writer.WriteLine();
+            writer.WriteLine(" ]");
+
+            /***********************************************/
+            if (additionalData != null)
+                additionalData(writer);
+            writer.WriteLine("}");
+        }
+    }
+
     /// <summary>
     /// Reads a very reasonable XML encoding of a stack source. 
     /// 
