@@ -462,7 +462,7 @@ namespace PerfView
             bool shouldClose = true;
             try
             {
-                if (CommandToRunTextBox.Text.Length == 0)
+                if (!m_isCollect && CommandToRunTextBox.Text.Length == 0)
                 {
                     m_mainWindow.StatusBar.LogError("No command given.");
                     return;
