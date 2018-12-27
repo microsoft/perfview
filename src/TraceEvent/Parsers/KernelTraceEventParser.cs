@@ -4361,7 +4361,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version >= 2 && EventDataLength >= SkipUnicodeString(8)));
+            Debug.Assert(Version >= 2 && EventDataLength >= SkipUnicodeString(8));
             Action(this);
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -8561,7 +8561,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private KernelTraceEventParserState state;
 
         /// <summary>
-        /// Indicate that SystemCallAddress is a code address that needs symbolic information
+        /// Indicate that the Address is a code address that needs symbolic information
         /// </summary>
         internal override bool LogCodeAddresses(Func<TraceEvent, Address, bool> callBack)
         {
@@ -9329,7 +9329,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private KernelTraceEventParserState state;
 
         /// <summary>
-        /// Indicate that SystemCallAddress is a code address that needs symbolic information
+        /// Indicate that the Address is a code address that needs symbolic information
         /// </summary>
         internal override bool LogCodeAddresses(Func<TraceEvent, Address, bool> callBack)
         {
@@ -9444,7 +9444,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private KernelTraceEventParserState state;
 
         /// <summary>
-        /// Indicate that SystemCallAddress is a code address that needs symbolic information
+        /// Indicate that Address is a code address that needs symbolic information
         /// </summary>
         internal override bool LogCodeAddresses(Func<TraceEvent, Address, bool> callBack)
         {
@@ -9576,7 +9576,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private KernelTraceEventParserState state;
 
         /// <summary>
-        /// Indicate that SystemCallAddress is a code address that needs symbolic information
+        /// Indicate that Address is a code address that needs symbolic information
         /// </summary>
         internal override bool LogCodeAddresses(Func<TraceEvent, Address, bool> callBack)
         {
@@ -9720,7 +9720,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private KernelTraceEventParserState state;
 
         /// <summary>
-        /// Indicate that SystemCallAddress is a code address that needs symbolic information
+        /// Indicate that the Address is a code address that needs symbolic information
         /// </summary>
         internal override bool LogCodeAddresses(Func<TraceEvent, Address, bool> callBack)
         {

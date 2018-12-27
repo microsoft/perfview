@@ -1009,7 +1009,7 @@ namespace PerfView
                 stackWindow.GroupRegExTextBox.Items.Insert(0, "[Ignore PID/TID]          ^Process% {%}->$1;^Thread->Thread;");
                 stackWindow.GroupRegExTextBox.Items.Insert(0, "[Ignore Paths]               ^Process% {%}->$1;^Thread->Thread;{%}!{*}->$1!$2");
 
-                var osGroupings = @"^Process% {%}->$1;^Thread->Thread;\Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1";
+                var osGroupings = @"^Process% {%}->$1;^Thread->Thread;\Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.Xaml.*!=>WPF;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1";
                 stackWindow.GroupRegExTextBox.Items.Insert(0, "[group CLR/OS ignore paths] " + osGroupings + ";{%}!{*}->$1!$2");
 
                 var defaultGroup = "[group CLR/OS entries] " + osGroupings;
@@ -3922,7 +3922,7 @@ namespace PerfView
             PresetMenu.Items.Add(new Separator());
 
             var setDefaultPresetMenuItem = new MenuItem();
-            setDefaultPresetMenuItem.Header = "S_et Startup Preset";
+            setDefaultPresetMenuItem.Header = "S_et As Startup Preset";
             setDefaultPresetMenuItem.Click += DoSetStartupPreset;
             setDefaultPresetMenuItem.ToolTip =
                 "Sets the default values of Group Patterns and Fold Patterns and % to the current values.";

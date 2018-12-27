@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_outputStackSource = outputStackSource;
             m_sample = new StackSourceSample(outputStackSource);
             m_nodeNameInternTable = new Dictionary<double, StackSourceFrameIndex>(10);
-            m_blockedFrameIndex = outputStackSource.Interner.FrameIntern("BLOCKED_TIME");
+            m_ExternalFrameIndex = outputStackSource.Interner.FrameIntern("UNMANAGED_CODE_TIME");
             m_cpuFrameIndex = outputStackSource.Interner.FrameIntern("CPU_TIME");
 
             TraceLogEventSource eventSource = traceEvents == null ? m_eventLog.Events.GetSource() :
@@ -527,11 +527,11 @@ namespace Microsoft.Diagnostics.Tracing
                     sample.Metric = (float)(timeRelativeMSec - LastBlockStackRelativeMSec);
                     sample.TimeRelativeMSec = LastBlockStackRelativeMSec;
 
-                    var nodeIndex = computer.m_blockedFrameIndex;
+                    var nodeIndex = computer.m_ExternalFrameIndex;       // BLOCKED_TIME
                     sample.StackIndex = LastBlockCallStack;
 
                     sample.StackIndex = computer.m_outputStackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
-                    computer.m_outputStackSource.AddSample(sample); // BLOCKED_TIME
+                    computer.m_outputStackSource.AddSample(sample);
                 }
             }
 
@@ -586,7 +586,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // These are boring caches of frame names which speed things up a bit.  
         private Dictionary<double, StackSourceFrameIndex> m_nodeNameInternTable;
-        private StackSourceFrameIndex m_blockedFrameIndex;
+        private StackSourceFrameIndex m_ExternalFrameIndex;
         private StackSourceFrameIndex m_cpuFrameIndex;
         private ActivityComputer m_activityComputer;                        // Used to compute stacks for Tasks 
         #endregion

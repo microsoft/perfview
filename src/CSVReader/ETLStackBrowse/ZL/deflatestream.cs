@@ -315,7 +315,7 @@
             }
         }
 
-        // callback function for asynchrous reading on base stream
+        // callback function for asynchronous reading on base stream
         private void ReadCallback(IAsyncResult baseStreamResult)
         {
             DeflateStreamAsyncResult outerResult = (DeflateStreamAsyncResult)baseStreamResult.AsyncState;
@@ -564,7 +564,7 @@
             }
         }
 
-        // callback function for asynchrous reading on base stream
+        // callback function for asynchronous reading on base stream
         private void WriteCallback(IAsyncResult asyncResult)
         {
             DeflateStreamAsyncResult outerResult = (DeflateStreamAsyncResult)asyncResult.AsyncState;

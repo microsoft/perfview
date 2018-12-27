@@ -20,6 +20,7 @@
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.nuspec</NuspecFile>

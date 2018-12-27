@@ -346,9 +346,13 @@ namespace Diagnostics.Tracing.StackSources
 
                 // CPU
                 source.SkipWhiteSpace();
-                source.MoveNext(); // Move past the "["
-                int cpu = source.ReadInt();
-                source.MoveNext(); // Move past the "]"
+                int cpu = -1;
+                if (source.PeekString(1) == "[")
+                {
+                    source.MoveNext(); // Move past the "["
+                    cpu = source.ReadInt();
+                    source.MoveNext(); // Move past the "]"
+                }
 
                 // Time
                 source.SkipWhiteSpace();

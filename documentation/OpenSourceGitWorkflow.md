@@ -2,7 +2,7 @@
 
  * See also [Setting up a Repo in VS](SettingUpRepoInVS2015.md) for important background material.  
  * See also [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for a simpler setup without a fork, 
-   if you only need read-only access.  Note that this information is also relevent to this (more complex)
+   if you only need read-only access.  Note that this information is also relevant to this (more complex)
    workflow.   
 
  As mentioned, the first option is great if you only want read-only access or you have read-write access to the GitHub repo.
@@ -10,12 +10,12 @@
  and use that for your updates.   To do this do the following:
 
    1. Open a web browser to the GitHub project page (in our case https://github.com/Microsoft/perfview)
-   2. Make sure you have a GitHub account and that you are logged in (If you are logged into GitHub your user name 
-      in the very upper right corner of display will be an icon for your user identity).  See https://github.com
+   2. Make sure you have a GitHub account and that you are logged in (If you are logged into GitHub your username 
+      in the very upper right corner of the display will be an icon for your user identity).  See https://github.com
     for information on getting an account.   The instructions will tell you to download GIT tools.   You can
     do this if you like, however Visual Studio has all the GIT functionality you will need so you don't
     have to have them (but it does not hurt, and they are useful for more advanced scenarios).
-   3. Click on the 'Fork' button in the upper right corner.   If it asks you were to put he fork, you will wish
+   3. Click on the 'Fork' button in the upper right corner.   If it asks you where to put the fork, you will wish
       to put it in your account area (same as your user name).   Note that if the fork already exists it simply
     navigates to the existing fork, so this is also a way of finding a fork if needed. 
    4. Once that has completed (it does not take long), it will take you to a page that looks VERY similar to 
@@ -39,7 +39,7 @@ we show you how to do that in Visual Studio.
   4. One of the sub-item in Repository setting page is 'Remotes' and under that is a 'Add' hyperlink.  Click on that.
   5. This will bring up a dialog box where you are prompted for a Name and a 'Fetch' and 'Push' location.  it
      There is also a checkbox (which should be checked) that says the Fetch and Push are the same. 
-  6. Fill in the name as 'upstream' and fill the 'Fetch' textbox with the URL OF THE MAIN RESPOSITORY (in our    
+  6. Fill in the name as 'upstream' and fill the 'Fetch' textbox with the URL OF THE MAIN REPOSITORY (in our    
      example this is https://github.com/Microsoft/perfview.  It should automatically fill in the 'Push' dialog.  
   7. Click the 'save' button.   This new name should now show up in the 'remotes' list.  
 
@@ -78,7 +78,7 @@ all these changes to bring your fork up to date.   We do this in three steps
      up the synchronization page, and one of the options will be 'Fetch'  click on that.   This brings up a dialog filled
    out with 'origin' which says it will pull all changes from the 'origin' repository (which is your GitHub fork).
    However we don't want that since we are interested in the changes from the original master (which we named upstream)
-   You should be able type a down arrow and 'upstream' should be one of the choices (since we added 'upstream' as a
+   You should be able to type a down arrow and 'upstream' should be one of the choices (since we added 'upstream' as a
    known remote).    Select 'upstream' and click the 'Fetch' button.  That will fetch all the changes from 'upstream', 
    and put them in the LOCAL GitHub repository.  So far we have made or local repository bigger (more commits) but we have 
    not changed any existing branch (the transitive closure of any branch is the same as it was before). 
@@ -127,7 +127,7 @@ fork.   Lets assume we did this using the branch name 'TestPullRequest' as the b
 One key aspect to syncing is that you must make sure that the new branch name is 'published' to the GitHub fork.
 This publishing step can be done on the View -> Team Explorer -> Synchronization pane.   You should see at the
 bottom a hyperlink that indicates that you wish to publish the branch 'TestPullRequest'  You will want to click
-that hyperlink.   This insures that the name (and not just the (anonymous) commit) 'TestPullRequest' is copied into
+that hyperlink.   This ensures that the name (and not just the (anonymous) commit) 'TestPullRequest' is copied into
 the GitHub fork.  Otherwise you will not find the new branch in the steps below.   
 
 Once the branch exists in the fork, you can go to the GitHub web page for the fork (in our example this is

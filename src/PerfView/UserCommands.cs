@@ -379,7 +379,7 @@ namespace PerfViewExtensibility
             }
             LogFile.WriteLine("[Created {0} manifest files in {1}]", manifestCount, outputDirectory);
         }
-        
+
         /// <summary>
         /// Generate a GCDumpFile of a JavaScript heap from ETW data in 'etlFileName'
         /// </summary>

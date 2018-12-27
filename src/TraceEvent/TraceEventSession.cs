@@ -2095,11 +2095,13 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             if (retCode == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
             {
+                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE; // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
             }
 
             if (retCode != 0)
             {
+                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;  // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
             }
 
@@ -2318,7 +2320,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public IList<int> ProcessIDFilter { get; set; }
         /// <summary>
         /// Setting ProcessNameFilter will limit the providers that receive the EnableCommand to those that match on of
-        /// the given Process names (a process name is the name of the EXE with a path or extension).  
+        /// the given Process names (a process name is the name of the EXE without the PATH but WITH the extension).  
         /// </summary>
         public IList<string> ProcessNameFilter { get; set; }
         /// <summary>

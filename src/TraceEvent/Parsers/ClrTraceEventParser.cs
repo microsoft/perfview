@@ -214,7 +214,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Fetch the state object associedated with this parser and cast it to
+        /// Fetch the state object associated with this parser and cast it to
         /// the ClrTraceEventParserState type.   This state object contains any
         /// informtion that you need from one event to another to decode events.
         /// (typically ID->Name tables).  
@@ -9632,8 +9632,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -10257,6 +10257,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Dynamic = 0x2,
         Native = 0x4,
         Collectible = 0x8,
+        ReadyToRun = 0x10,
     }
     [Flags]
     public enum ModuleFlags
@@ -10266,6 +10267,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Native = 0x2,
         Dynamic = 0x4,
         Manifest = 0x8,
+        IbcOptimized = 0x10,
+        ReadyToRunModule = 0x20,
     }
     [Flags]
     public enum MethodFlags
@@ -10275,6 +10278,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Generic = 0x2,
         HasSharedGenericCode = 0x4,
         Jitted = 0x8,
+        JitHelper=0x10,
+        ProfilerRejectedPrecompiledCode = 0x20,
+        ReadyToRunRejectedPrecompiledCode = 0x40,
     }
     [Flags]
     public enum StartupMode
