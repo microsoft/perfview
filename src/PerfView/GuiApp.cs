@@ -60,7 +60,7 @@ namespace PerfView
 
             if (App.NeedsEulaConfirmation(App.CommandLineArgs))
             {
-                var eula = new PerfView.Dialogs.EULADialog();
+                var eula = new PerfView.Dialogs.EULADialog(MainWindow);
                 bool? accepted = eula.ShowDialog();
                 if (!(accepted ?? false))
                 {
@@ -134,7 +134,7 @@ namespace PerfView
             else
             {
                 var feedbackSent = AppLog.SendFeedback("Unhandled Exception in GUI\r\n" + e.Exception.ToString(), true);
-                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(e.Exception, feedbackSent);
+                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.Exception, feedbackSent);
                 var ret = dialog.ShowDialog();
                 // If it returns, it means that the user has opted to continue.  
                 e.Handled = true;
@@ -150,7 +150,7 @@ namespace PerfView
             var feedbackSent = AppLog.SendFeedback("Unhandled Exception\r\n" + e.ExceptionObject.ToString(), true);
             MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
-                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(e.ExceptionObject, feedbackSent);
+                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.ExceptionObject, feedbackSent);
                 var ret = dialog.ShowDialog();
             });
         }

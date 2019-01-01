@@ -8,9 +8,9 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for EULADialog.xaml
     /// </summary>
-    public partial class EULADialog : Window
+    public partial class EULADialog : WindowBase
     {
-        public EULADialog()
+        public EULADialog(Window parentWindow) : base(parentWindow)
         {
             InitializeComponent();
             var eulaFile = System.IO.Path.Combine(SupportFiles.SupportFileDir, "EULA.rtf");

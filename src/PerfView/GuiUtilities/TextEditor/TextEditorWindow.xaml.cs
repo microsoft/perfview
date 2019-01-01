@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using PerfView;
+using System.ComponentModel;
 using System.Windows;
 
 namespace Controls
@@ -6,9 +7,11 @@ namespace Controls
     /// <summary>
     /// Interaction logic for TextEditorWindow.xaml
     /// </summary>
-    public partial class TextEditorWindow : Window
+    public partial class TextEditorWindow : WindowBase
     {
-        public TextEditorWindow(string[] args = null)
+        public TextEditorWindow(string[] args = null) : this (null, args) { }
+
+        public TextEditorWindow(Window parentWindow, string[] args = null) : base(parentWindow)
         {
             InitializeComponent();
 

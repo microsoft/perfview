@@ -23,9 +23,9 @@ namespace PerfView
     /// <summary>
     /// Interaction logic for SelectProcess.xaml
     /// </summary>
-    public partial class EventWindow : Window
+    public partial class EventWindow : WindowBase
     {
-        public EventWindow(Window parent, EventSource source)
+        public EventWindow(Window parent, EventSource source) : base(parent)
         {
             throw new NotImplementedException();
         }

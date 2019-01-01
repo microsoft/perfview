@@ -1,6 +1,7 @@
-﻿<Window x:Class="PerfView.RunCommandDialog"
+﻿<src:WindowBase x:Class="PerfView.RunCommandDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
         Background="#FFA7A7A7" 
         Title="Collecting ETW Data while running a command" 
@@ -491,4 +492,4 @@
             </Grid>
         </Expander>
     </Grid>
-</Window>
+</src:WindowBase>

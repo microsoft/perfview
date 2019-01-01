@@ -6,9 +6,9 @@ namespace PerfView.Dialogs
     /// <summary>
     /// TODO FIX NOW use or remove
     /// </summary>
-    public partial class SourceNameLookup : Window
+    public partial class SourceNameLookup : WindowBase
     {
-        public SourceNameLookup()
+        public SourceNameLookup(Window parentWindow) : base(parentWindow)
         {
             InitializeComponent();
         }

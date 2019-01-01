@@ -308,7 +308,7 @@ namespace PerfViewExtensibility
         {
             GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
-                var viewer = new WebBrowserWindow();
+                var viewer = new WebBrowserWindow(GuiApp.MainWindow);
                 viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
                 {
                     if (e.Uri != null)
