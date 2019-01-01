@@ -193,6 +193,10 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     FixAndProcessWindowsASP(data, threadToLastAspNetGuids);
                 }
+                else if (data.ProviderGuid == MicrosoftDiagnosticsActivityTrackingProvider)
+                {
+                    ProcessActivityTrackingProviderEvents(data);
+                }
                 else // Normal case EventSource Start-Stop events that follow proper conventions.  
                 {
                     // We currently only handle Start-Stops that use the ActivityPath convention
@@ -801,6 +805,10 @@ namespace Microsoft.Diagnostics.Tracing
         // Reference for definition: https://raw.githubusercontent.com/Microsoft/ApplicationInsights-dotnet/e8f047f6e48abae0e88a9c77bf65df858c442940/src/Microsoft.ApplicationInsights/Extensibility/Implementation/RichPayloadEventSource.cs
         private static readonly Guid MicrosoftApplicationInsightsDataProvider = new Guid("a62adddb-6b4b-519d-7ba1-f983d81623e0");
 
+        // A generic EventSource ("Microsoft-Diagnostics-ActivityTracking") for marking the start and stop of an activity.
+        // Used by non-.NET platforms such as Java
+        private static readonly Guid MicrosoftDiagnosticsActivityTrackingProvider = new Guid("3b268b3d-903f-5835-c77e-790d518a26c4");
+
         // The main start and stop logic.  
         private unsafe StartStopActivity OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null, bool useCurrentActivityForCreatorAsFallback = true)
         {
@@ -1160,6 +1168,20 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Debug.Assert(false, $"{data.TaskName} is not recognized");
                 return;
+            }
+        }
+
+        private void ProcessActivityTrackingProviderEvents(TraceEvent data)
+        {
+            Debug.Assert(data.ProviderGuid == MicrosoftDiagnosticsActivityTrackingProvider);
+
+            if (data.Opcode == TraceEventOpcode.Start)
+            {
+                OnStart(data);
+            }
+            else if (data.Opcode == TraceEventOpcode.Stop)
+            {
+                OnStop(data);
             }
         }
 
