@@ -50,14 +50,13 @@
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
 
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
     <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
-    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
 
