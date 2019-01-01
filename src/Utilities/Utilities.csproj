@@ -1,59 +1,40 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <PerfLibRootPath>$(MSBuildThisFileDirectory)\..</PerfLibRootPath>
-  </PropertyGroup>
-  <!--Target CLR v2-->
-  <PropertyGroup>
-    <AllowCrossTargeting>true</AllowCrossTargeting>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-  </PropertyGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.settings.targets" />
-  <PropertyGroup Condition=" '$(BuildInRazzle)' == 'true' ">
-    <UseVsVersion>true</UseVsVersion>
-    <CreateMetaAssembly>true</CreateMetaAssembly>
-    <PublishMetaAssemblyVisibility>Inter</PublishMetaAssemblyVisibility>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(BuildInRazzle)' != 'true' ">
-    <IgnoreDualBuildAssemblyInfo>false</IgnoreDualBuildAssemblyInfo>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ProjectGuid>{E32C9FC3-8524-4511-8ACB-235AC136DC22}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.Utilities</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.Utilities</AssemblyName>
-    <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>UTILITIES_PUBLIC;$(DefineConstants)</DefineConstants>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <Company>Microsoft</Company>
+    <Description>Utility library</Description>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;$(DefineConstants)</DefineConstants>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
-    <Compile Include="DirectoryUtilities.cs" />
-    <Compile Include="EnvironmentUtilities.cs" />
-    <Compile Include="FileUtilities.cs" />
-    <Compile Include="NativeMethods.cs" />
-    <Compile Include="StreamUtilities.cs" />
-    <Compile Include="StringUtilities.cs" />
-    <Compile Include="XmlUtilities.cs" />
-    <Compile Include="TeeTextWriter.cs" />
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
+
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 </Project>
+
