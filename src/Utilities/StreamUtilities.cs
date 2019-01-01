@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal static class StreamUtilities
+    static class StreamUtilities
     {
         /// <summary>
         /// Open the 'fromFilePath' and write its contents to 'toStream'

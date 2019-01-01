@@ -1,66 +1,41 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <PerfLibRootPath>$(MSBuildThisFileDirectory)\..</PerfLibRootPath>
-  </PropertyGroup>
-  <!--Target CLR v2-->
-  <PropertyGroup>
-    <AllowCrossTargeting>true</AllowCrossTargeting>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-  </PropertyGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.settings.targets" />
-  <PropertyGroup Condition=" '$(BuildInRazzle)' == 'true' ">
-    <UseVsVersion>true</UseVsVersion>
-    <CreateMetaAssembly>true</CreateMetaAssembly>
-    <PublishMetaAssemblyVisibility>Inter</PublishMetaAssemblyVisibility>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(BuildInRazzle)' != 'true' ">
-    <IgnoreDualBuildAssemblyInfo>false</IgnoreDualBuildAssemblyInfo>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ProjectGuid>{F1032B5C-568A-4BAD-B253-1B4548389063}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.MemoryGraph</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.MemoryGraph</AssemblyName>
-    <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;MULTITHREAD</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="graph.cs" />
-    <Compile Include="MemoryGraph.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
-      <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
-      <Name>FastSerialization</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Utilities\Utilities.csproj">
-      <Project>{e32c9fc3-8524-4511-8acb-235ac136dc22}</Project>
-      <Name>Utilities</Name>
-    </ProjectReference>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
+    <Company>Microsoft</Company>
+    <Description>MemoryGraph library</Description>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 </Project>
+

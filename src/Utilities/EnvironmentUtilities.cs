@@ -5,7 +5,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal static class EnvironmentUtilities
+    static class EnvironmentUtilities
     {
         public static bool Is64BitProcess
         {

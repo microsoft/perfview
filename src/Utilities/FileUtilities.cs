@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal static class FileUtilities
+    static class FileUtilities
     {
         /// <summary>
         /// GetLines works much like File.ReadAllLines, however instead of returning a
@@ -221,7 +221,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal static class PathUtil
+    static class PathUtil
     {
         /// <summary>
         /// Given a path and a superdirectory path relativeToDirectory compute the relative path (the path from) relativeToDirectory
