@@ -386,7 +386,12 @@ namespace ETWManifest
                 manifestName = name;
             }
 
-            m_opcodeValues.Add(manifestName, value);
+            // Prefix the key with the taskID if the opcode is local to the task.  
+            string key = manifestName;
+            if (taskId != GlobalScope)
+                key = taskId + ":" + key;
+
+            m_opcodeValues.Add(key, value);
         }
 
         internal static ulong ParseNumber(string valueString)
@@ -557,6 +562,7 @@ namespace ETWManifest
         // These are not used after parsing.  
         internal Dictionary<string, int> m_taskValues;
         // Note that the value is task << 8 + opcode to allow for private opcode names
+        // Also the key is taskId : opcodeName again to allow private opcode names or simply opcodeName if it is global.  
         internal Dictionary<string, int> m_opcodeValues;
         internal Dictionary<string, ulong> m_keywordValues;
         internal Dictionary<string, List<Field>> m_templateValues;
@@ -728,7 +734,7 @@ namespace ETWManifest
         }
 
         /// <summary>
-        /// We need a two pass system where after all the defintions are parsed, we go back and link
+        /// We need a two pass system where after all the definitions are parsed, we go back and link
         /// up uses to their defs.   This routine does this for Events.
         /// </summary>
         internal void ResolveIdsInEvent(string fileName = null)
@@ -747,7 +753,13 @@ namespace ETWManifest
                 m_opcodeId = null;
                 if (id != null)
                 {
-                    Opcode = (byte)m_provider.m_opcodeValues[id];
+                    int opcode;
+
+                    // Try the task-specific one, then the global scope.  
+                    if (!m_provider.m_opcodeValues.TryGetValue(Task + ":" + id, out opcode))
+                        opcode = m_provider.m_opcodeValues[id];
+
+                    Opcode = (byte) opcode;
                 }
 
                 id = m_keywordsId;
@@ -814,9 +826,9 @@ namespace ETWManifest
 
         private Provider m_provider;
         private int m_lineNum;          // used for error messages
-        private string m_opcodeId;      // String name used to look up opcode needed becasue def may be later in file
-        private string m_keywordsId;    // String name used to look up keywords needed becasue def may be later in file
-        private string m_taskId;        // String name used to look up tasks needed becasue def may be later in file
+        private string m_opcodeId;      // String name used to look up opcode needed because def may be later in file
+        private string m_keywordsId;    // String name used to look up keywords needed because def may be later in file
+        private string m_taskId;        // String name used to look up tasks needed because def may be later in file
         #endregion
     }
 
