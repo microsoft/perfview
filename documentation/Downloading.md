@@ -13,7 +13,7 @@ care about specific bug fixes or features go there.
 
 ## Shortcut to Download the Latest PerfView.exe
 
-In the common case, the only file you need one file, PerfView.exe, to use the tool.  The most recent copy of
+In the common case, you only need one file, PerfView.exe, to use the tool.  The most recent copy of
 this file can be downloaded here
 
 * [Download Version 2.26 of PerfView.exe](https://github.com/Microsoft/perfview/releases/download/P2.0.26/PerfView.exe)
