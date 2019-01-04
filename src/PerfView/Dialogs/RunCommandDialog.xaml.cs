@@ -497,6 +497,15 @@ namespace PerfView
                 {
                     if (FocusProcessCheckBox.IsChecked ?? false)
                     {
+                        int processId;
+                        if (!Int32.TryParse(FocusProcessTextBox.Text, out processId))
+                        {
+                            if (!FocusProcessTextBox.Text.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                m_mainWindow.StatusBar.LogError("[ERROR: FocusProcess must be either PID or process name with .exe suffix]");
+                                return;
+                            }
+                        }
                         m_args.FocusProcess = FocusProcessTextBox.Text;
                     }
                 }

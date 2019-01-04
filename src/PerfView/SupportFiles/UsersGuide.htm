@@ -3831,8 +3831,9 @@
         </li>
         <li>
             The <strong><a id="FocusProcessTextBox">Focus Process TextBox</a></strong> - This is only
-            active for the Collect command.&nbsp; This allows you to only turn on non-Kernel events
-            for a particular process, and thus cut the overhead / size of the collection when there are many
+            active for the Collect command.&nbsp; It is either a decimal process ID or a name of an executable
+            without the directory part but WITH the suffix (e.g. MyProgram.exe). This allows you to only turn on
+            non-Kernel events for a particular process, and thus cut the overhead / size of the collection when there are many
             active processes on the system..   Note that it does not have an effect on kernel events (which are
             often the most common, but not always), so it may not help as much as you would like, but DEFINITELY
             helps during rundown (if you have many managed processes, they all do rundown which can be impactful).
