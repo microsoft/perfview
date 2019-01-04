@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -1427,7 +1428,6 @@ namespace PerfViewExtensibility
         }
 
 
-#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
         /// <summary>
         /// PrintSerializedExceptionFromProcessDump
         /// </summary>
@@ -1484,7 +1484,6 @@ namespace PerfViewExtensibility
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
             }
         }
-#endif
 
 #if false
         public void Test()
