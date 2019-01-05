@@ -9,6 +9,25 @@ using System.Text;
 
 namespace System.Collections.Generic
 {
+    public interface IMutableList<T> : IList<T>
+    {
+        /// <summary>
+        /// The number of elements in the collection
+        /// </summary>
+        new int Count { get; set; }
+
+        /// <summary>
+        /// Returns the underlying array.  Should not be used most of the time!
+        /// </summary>
+        T[] UnderlyingArray { get; }
+
+        /// <summary>
+        /// Remove the last element added and return it. Will throw if there are no elements. 
+        /// </summary>
+        /// <returns></returns>
+        T Pop();
+    }
+
     /// <summary>
     /// A cheap version of List(T). The idea is to make it as cheap as if you did it 'by hand' using an array and
     /// an int which represents the logical charCount. It is a struct to avoid an extra pointer dereference, so this
@@ -18,7 +37,7 @@ namespace System.Collections.Generic
 #if GROWABLEARRAY_PUBLIC
     public
 #endif
-    struct GrowableArray<T>
+    struct GrowableArray<T> : IMutableList<T>
     {
         /// <summary>
         /// Create a growable array with the given initial size it will grow as needed.  There is also the
@@ -47,9 +66,6 @@ namespace System.Collections.Generic
             }
         }
 
-        /// <summary>
-        /// The number of elements in the array
-        /// </summary>
         public int Count
         {
             get
@@ -198,10 +214,7 @@ namespace System.Collections.Generic
         /// Returns true if there are no elements in the array. 
         /// </summary>
         public bool Empty { get { return arrayLength == 0; } }
-        /// <summary>
-        /// Remove the last element added and return it.   Will throw if there are no elements. 
-        /// </summary>
-        /// <returns></returns>
+
         public T Pop()
         {
             T ret = array[arrayLength - 1];       // Will cause index out of range exception
@@ -381,10 +394,9 @@ namespace System.Collections.Generic
             return false;
         }
 
-        /// <summary>
-        /// Returns the underlying array.  Should not be used most of the time!
-        /// </summary>
         public T[] UnderlyingArray { get { return array; } }
+
+        public bool IsReadOnly => ((IList<T>)array).IsReadOnly;
         #region private
         private void Realloc(int minSize)
         {
@@ -486,6 +498,42 @@ namespace System.Collections.Generic
         /// </summary>
         /// <returns></returns>
         public GrowableArrayEnumerator GetEnumerator() { return new GrowableArrayEnumerator(this); }
+
+        public int IndexOf(T item)
+        {
+            return ((IList<T>)array).IndexOf(item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            ((IList<T>)array).RemoveAt(index);
+        }
+
+        public bool Contains(T item)
+        {
+            return ((IList<T>)array).Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            ((IList<T>)this.array).CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(T item)
+        {
+            return ((IList<T>)array).Remove(item);
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return ((IList<T>)array).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IList<T>)array).GetEnumerator();
+        }
+
         /// <summary>
         /// Enumerator for foreach interface
         /// </summary>

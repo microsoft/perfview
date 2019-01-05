@@ -141,6 +141,10 @@ namespace Graphs
         /// </summary>
         public int TotalNumberOfReferences { get { return m_totalRefs; } }
 
+        protected int m_segmentSize;
+
+        protected bool m_isUsingSegmentedList = false;
+
         // Creation methods.  
         /// <summary>
         /// Create a new graph from 'nothing'.  Note you are not allowed to read from the graph
@@ -160,6 +164,19 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             ClearWorker();
         }
+
+        public Graph(int expectedNodeCount, int segmentSize = 131_072)
+        {
+            m_expectedNodeCount = expectedNodeCount;
+            m_segmentSize = segmentSize;
+            m_isUsingSegmentedList = true;
+
+            m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount, 2000));
+            m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, m_expectedNodeCount);
+            RootIndex = NodeIndex.Invalid;
+            ClearWorker();
+        }
+
         /// <summary>
         /// The NodeIndex of the root node of the graph.   It must be set sometime before calling AllowReading
         /// </summary>
@@ -447,7 +464,14 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             if (m_writer == null)
             {
-                m_writer = new MemoryStreamWriter(m_expectedNodeCount * 8);
+                if (m_isUsingSegmentedList)
+                {
+                    m_writer = new SegmentedMemoryStreamWriter(m_expectedNodeCount * 8);
+                }
+                else
+                {
+                    m_writer = new MemoryStreamWriter(m_expectedNodeCount * 8);
+                }
             }
 
             m_totalSize = 0;
@@ -557,7 +581,15 @@ namespace Graphs
 
             // Read in the Nodes 
             int nodeCount = deserializer.ReadInt();
-            m_nodes = new GrowableArray<StreamLabel>(nodeCount);
+            if (m_isUsingSegmentedList)
+            {
+                m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, nodeCount);
+            }
+            else
+            {
+                m_nodes = new GrowableArray<StreamLabel>(nodeCount);
+            }
+
             for (int i = 0; i < nodeCount; i++)
             {
                 m_nodes.Add((StreamLabel)deserializer.ReadInt());
@@ -566,7 +598,17 @@ namespace Graphs
             // Read in the Blob stream.  
             // TODO be lazy about reading in the blobs.  
             int blobCount = deserializer.ReadInt();
-            MemoryStreamWriter writer = new MemoryStreamWriter(blobCount);
+            IMemoryStreamWriter writer;
+
+            if (m_isUsingSegmentedList)
+            {
+                writer = new SegmentedMemoryStreamWriter(blobCount);
+            }
+            else
+            {
+                writer = new MemoryStreamWriter(blobCount);
+            }
+
             for (int i = 0; i < blobCount; i++)
             {
                 writer.Write(deserializer.ReadByte());
@@ -624,13 +666,13 @@ namespace Graphs
         private int m_totalRefs;                        // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
         internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.  
-        internal GrowableArray<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
-        internal MemoryStreamReader m_reader;           // This is the actual data for the nodes.  Can be large 
+        internal IMutableList<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
+        internal IMemoryStreamReader m_reader;           // This is the actual data for the nodes.  Can be large 
         internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this 
         // and then can be set to another nodeId (needed when there are cycles).  
         // There should not be any of these left as long as every node referenced
         // by another node has a definition.
-        internal MemoryStreamWriter m_writer;           // Used only during construction to serialize the nodes.  
+        internal IMemoryStreamWriter m_writer;           // Used only during construction to serialize the nodes.  
         #endregion
     }
 
@@ -814,7 +856,7 @@ namespace Graphs
         }
 
         // Node information is stored in a compressed form because we have alot of them. 
-        internal static int ReadCompressedInt(MemoryStreamReader reader)
+        internal static int ReadCompressedInt(IMemoryStreamReader reader)
         {
             int ret = 0;
             byte b = reader.ReadByte();
@@ -837,7 +879,7 @@ namespace Graphs
                 ret += (b & 0x7f);
             }
         }
-        internal static void WriteCompressedInt(MemoryStreamWriter writer, int value)
+        internal static void WriteCompressedInt(IMemoryStreamWriter writer, int value)
         {
             if (value << 25 >> 25 == value)
             {
@@ -860,13 +902,13 @@ namespace Graphs
             }
 
             writer.Write((byte)((value >> 28) | 0x80));
-            fourBytes:
+        fourBytes:
             writer.Write((byte)((value >> 21) | 0x80));
-            threeBytes:
+        threeBytes:
             writer.Write((byte)((value >> 14) | 0x80));
-            twoBytes:
+        twoBytes:
             writer.Write((byte)((value >> 7) | 0x80));
-            oneByte:
+        oneByte:
             writer.Write((byte)(value & 0x7F));
         }
 

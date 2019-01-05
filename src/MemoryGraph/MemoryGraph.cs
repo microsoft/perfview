@@ -14,6 +14,13 @@ namespace Graphs
             m_nodeAddresses = new GrowableArray<Address>(expectedSize);
         }
 
+        public MemoryGraph(int expectedSize, int segmentSize)
+            : base(expectedSize, segmentSize)
+        {
+            m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
+            m_nodeAddresses = new SegmentedList<Address>(131_072, expectedSize);
+        }
+
         public void WriteAsBinaryFile(string outputFileName)
         {
             Serializer serializer = new Serializer(outputFileName, this);
@@ -133,7 +140,15 @@ namespace Graphs
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
             int addressCount = deserializer.ReadInt();
-            m_nodeAddresses = new GrowableArray<Address>(addressCount);
+            if (m_isUsingSegmentedList)
+            {
+                m_nodeAddresses = new SegmentedList<Address>(m_segmentSize, addressCount);
+            }
+            else
+            {
+                m_nodeAddresses = new GrowableArray<Address>(addressCount);
+            }
+
             for (int i = 0; i < addressCount; i++)
             {
                 m_nodeAddresses.Add((Address)deserializer.ReadInt64());
@@ -146,7 +161,7 @@ namespace Graphs
 
         // This array survives after the constructor completes
         // TODO Fold this into the existing blob. Currently this dominates the Size cost of the graph!
-        protected GrowableArray<Address> m_nodeAddresses;
+        protected IMutableList<Address> m_nodeAddresses;
         #endregion
     }
 

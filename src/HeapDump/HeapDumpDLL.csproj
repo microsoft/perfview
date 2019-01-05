@@ -2,14 +2,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
-    <RootNamespace>Microsoft.Diagnostics.Utilities</RootNamespace>
-    <AssemblyName>Microsoft.Diagnostics.Utilities</AssemblyName>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <RootNamespace>Microsoft.Diagnostics.HeapDump</RootNamespace>
+    <AssemblyName>Microsoft.Diagnostics.HeapDump</AssemblyName>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <Company>Microsoft</Company>
-    <Description>Utility library</Description>
-    <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Description>General Utility library</Description>
+    <Copyright>Copyright � Microsoft 2010</Copyright>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -20,10 +20,6 @@
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Connected Services\" />
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
-  </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
@@ -32,6 +28,12 @@
         <StrongName>StrongName</StrongName>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->
@@ -44,4 +46,3 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 </Project>
-
