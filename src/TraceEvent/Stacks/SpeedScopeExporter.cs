@@ -8,45 +8,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 {
     public static class SpeedScopeExporter
     {
-        internal struct Sample
-        {
-            internal StackSourceCallStackIndex StackIndex { get; }
-            internal double RelativeTime { get; }
-            internal double Metric { get; }
-            internal int Depth { get; }
-
-            internal Sample(StackSourceCallStackIndex stackIndex, double relativeTime, double metric, int depth)
-            {
-                StackIndex = stackIndex;
-                RelativeTime = relativeTime;
-                Metric = metric;
-                Depth = depth;
-            }
-
-            public override string ToString() => RelativeTime.ToString(CultureInfo.InvariantCulture);
-        }
-
-        internal enum ProfileEventType : byte
-        {
-            Open = 0, Close = 1 // these values MUST NOT be changed
-        }
-
-        internal struct ProfileEvent
-        {
-            internal ProfileEventType Type { get; }
-            internal int FrameId { get; }
-            internal double RelativeTime { get; }
-            internal int Depth { get; }
-
-            public ProfileEvent(ProfileEventType type, int frameId, double relativeTime, int depth)
-            {
-                Type = type;
-                FrameId = frameId;
-                RelativeTime = relativeTime;
-                Depth = depth;
-            }
-        }
-
+        /// <summary>
+        /// exports provided StackSource to a https://www.speedscope.app/ format 
+        /// </summary>
         public static void WriteStackViewAsJson(StackSource source, string filePath)
         {
             if (File.Exists(filePath))
@@ -56,6 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 Export(source, writeStream, Path.GetFileNameWithoutExtension(filePath));
         }
 
+        #region private
         internal static void Export(StackSource source, TextWriter writer, string name)
         {
             var sortedSamples = GetSortedSamples(source);
@@ -256,5 +221,51 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             writer.Write("}");
         }
+
+        internal struct Sample
+        {
+            internal Sample(StackSourceCallStackIndex stackIndex, double relativeTime, double metric, int depth)
+            {
+                StackIndex = stackIndex;
+                RelativeTime = relativeTime;
+                Metric = metric;
+                Depth = depth;
+            }
+
+            public override string ToString() => RelativeTime.ToString(CultureInfo.InvariantCulture);
+
+            #region private
+            internal StackSourceCallStackIndex StackIndex { get; }
+            internal double RelativeTime { get; }
+            internal double Metric { get; }
+            internal int Depth { get; }
+            #endregion private
+        }
+
+        internal enum ProfileEventType : byte
+        {
+            Open = 0, Close = 1 // these values MUST NOT be changed, the sorting order relies on it
+        }
+
+        internal struct ProfileEvent
+        {
+            public ProfileEvent(ProfileEventType type, int frameId, double relativeTime, int depth)
+            {
+                Type = type;
+                FrameId = frameId;
+                RelativeTime = relativeTime;
+                Depth = depth;
+            }
+
+            public override string ToString() => $"{RelativeTime.ToString(CultureInfo.InvariantCulture)} {Type} {FrameId}";
+
+            #region private
+            internal ProfileEventType Type { get; }
+            internal int FrameId { get; }
+            internal double RelativeTime { get; }
+            internal int Depth { get; }
+            #endregion private
+        }
+        #endregion private
     }
 }

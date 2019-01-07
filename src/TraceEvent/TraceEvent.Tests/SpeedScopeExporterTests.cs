@@ -8,61 +8,6 @@ namespace TraceEventTests
 {
     public class SpeedScopeExporterTests
     {
-        public class FakeStackSourceSample
-        {
-            public double RelativeTime { get; }
-            public float Metric { get; }
-            public string Name { get; }
-            public StackSourceFrameIndex FrameIndex { get; }
-            public StackSourceCallStackIndex StackIndex { get; }
-            public StackSourceCallStackIndex CallerIndex { get; }
-
-            public FakeStackSourceSample(double relativeTime) => RelativeTime = relativeTime;
-
-            public FakeStackSourceSample(double relativeTime, string name, StackSourceFrameIndex frameIndex,
-                StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerIndex)
-            {
-                RelativeTime = relativeTime;
-                Name = name;
-                FrameIndex = frameIndex;
-                StackIndex = stackIndex;
-                CallerIndex = callerIndex;
-            }
-        }
-
-        public class StackSourceStub : StackSource
-        {
-            private readonly IReadOnlyList<FakeStackSourceSample> samples;
-
-            public StackSourceStub(IReadOnlyList<FakeStackSourceSample> fakeStackSourceSamples) => this.samples = fakeStackSourceSamples;
-
-            public override int CallStackIndexLimit => samples.Count;
-
-            public override int CallFrameIndexLimit => samples.Count;
-
-            public override void ForEach(Action<StackSourceSample> callback)
-            {
-                foreach (var stackSourceSample in samples)
-                {
-                    callback(new StackSourceSample(this)
-                    {
-                        TimeRelativeMSec = stackSourceSample.RelativeTime,
-                        Metric = stackSourceSample.Metric,
-                        StackIndex = stackSourceSample.StackIndex
-                    });
-                }
-            }
-
-            public override StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex)
-                => samples.First(sample => sample.StackIndex == callStackIndex).CallerIndex;
-
-            public override StackSourceFrameIndex GetFrameIndex(StackSourceCallStackIndex callStackIndex)
-                => samples.First(sample => sample.StackIndex == callStackIndex).FrameIndex;
-
-            public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName)
-                => samples.First(sample => sample.FrameIndex == frameIndex).Name;
-        }
-
         [Fact]
         public void GetSortedSamplesReturnsSamplesSortedByRelativeTime()
         {
@@ -252,5 +197,66 @@ namespace TraceEventTests
             Assert.Equal(0.3, profileEvents[3].RelativeTime);
             Assert.Equal(0, profileEvents[3].Depth);
         }
+
+        #region private
+        internal class FakeStackSourceSample
+        {
+            public FakeStackSourceSample(double relativeTime) => RelativeTime = relativeTime;
+
+            public FakeStackSourceSample(double relativeTime, string name, StackSourceFrameIndex frameIndex,
+                StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerIndex)
+            {
+                RelativeTime = relativeTime;
+                Name = name;
+                FrameIndex = frameIndex;
+                StackIndex = stackIndex;
+                CallerIndex = callerIndex;
+            }
+
+            #region private
+            public double RelativeTime { get; }
+            public float Metric { get; }
+            public string Name { get; }
+            public StackSourceFrameIndex FrameIndex { get; }
+            public StackSourceCallStackIndex StackIndex { get; }
+            public StackSourceCallStackIndex CallerIndex { get; }
+            #endregion private
+        }
+
+        internal class StackSourceStub : StackSource
+        {
+            public StackSourceStub(IReadOnlyList<FakeStackSourceSample> fakeStackSourceSamples) => this.samples = fakeStackSourceSamples;
+
+            public override int CallStackIndexLimit => samples.Count;
+
+            public override int CallFrameIndexLimit => samples.Count;
+
+            public override void ForEach(Action<StackSourceSample> callback)
+            {
+                foreach (var stackSourceSample in samples)
+                {
+                    callback(new StackSourceSample(this)
+                    {
+                        TimeRelativeMSec = stackSourceSample.RelativeTime,
+                        Metric = stackSourceSample.Metric,
+                        StackIndex = stackSourceSample.StackIndex
+                    });
+                }
+            }
+
+            public override StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex)
+                => samples.First(sample => sample.StackIndex == callStackIndex).CallerIndex;
+
+            public override StackSourceFrameIndex GetFrameIndex(StackSourceCallStackIndex callStackIndex)
+                => samples.First(sample => sample.StackIndex == callStackIndex).FrameIndex;
+
+            public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName)
+                => samples.First(sample => sample.FrameIndex == frameIndex).Name;
+
+            #region private
+            private readonly IReadOnlyList<FakeStackSourceSample> samples;
+            #endregion private
+        }
+        #endregion private
     }
 }
