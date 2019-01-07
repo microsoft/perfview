@@ -3827,7 +3827,19 @@
         <li>
             The <strong><a id="CommandToRunTextBox">Command TextBox</a></strong> - This is only
             active for the Run command.&nbsp; It is the command line to run after collection
-            has been turned on.&nbsp;&nbsp; This textbox is inactive for the Collect command.&nbsp;
+            has been turned on.&nbsp;&nbsp; This textbox is hidden for the Collect command.&nbsp;
+        </li>
+        <li>
+            The <strong><a id="FocusProcessTextBox">Focus Process TextBox</a></strong> - This is only
+            active for the Collect command.&nbsp; It is either a decimal process ID or a name of an executable
+            without the directory part but WITH the suffix (e.g. MyProgram.exe). This allows you to only turn on
+            non-Kernel events for a particular process, and thus cut the overhead / size of the collection when there are many
+            active processes on the system..   Note that it does not have an effect on kernel events (which are
+            often the most common, but not always), so it may not help as much as you would like, but DEFINITELY
+            helps during rundown (if you have many managed processes, they all do rundown which can be impactful).
+            So it always helps when there are many managed processes (because of rundown) but can help quite a lot
+            if many of those processes allocate a lot, or use the threadpool (which both can create many events).
+            This textbox is hidden for the Collect command.&nbsp;
         </li>
         <li>
             The <strong><a id="DataFileNameTextBox">Data File TextBox</a></strong> - This is

@@ -80,6 +80,11 @@ namespace PerfView
                 CommandToRunTextBox.Text = args.CommandLine;
             }
 
+            if (args.FocusProcess != null)
+            {
+                FocusProcessTextBox.Text = args.FocusProcess;
+            }
+
             var dataFile = args.DataFile;
             if (Path.Combine(CurrentDirTextBox.Text, Path.GetFileName(dataFile)) == dataFile)
             {
@@ -298,8 +303,25 @@ namespace PerfView
             if (isCollect)
             {
                 Title = "Collecting data over a user specified interval";
-                CommandToRunTextBox.Text = "** Machine Wide **";
                 CommandToRunTextBox.IsEnabled = false;
+                CommandToRunTextBox.Visibility = Visibility.Hidden;
+                CommandToRunLabel.Visibility = Visibility.Hidden;
+                FocusProcessCheckBox.Visibility = Visibility.Visible;
+                FocusProcessTextBox.Visibility = Visibility.Visible;
+                FocusProcessLabel.Visibility = Visibility.Visible;
+                if (!string.IsNullOrEmpty(FocusProcessTextBox.Text))
+                {
+                    FocusProcessCheckBox.IsChecked = true;
+                    FocusProcessTextBox.IsEnabled = true;
+                }
+                else
+                {
+                    FocusProcessCheckBox.IsChecked = false;
+                    FocusProcessTextBox.IsEnabled = false;
+                    FocusProcessTextBox.Text = "** Machine Wide **";
+                }
+
+
                 RundownCheckBox.IsChecked = !args.NoRundown;
                 RundownTimeoutTextBox.IsEnabled = !args.NoRundown;
                 if (args.CircularMB == 0)
@@ -313,6 +335,12 @@ namespace PerfView
             }
             else
             {
+                CommandToRunTextBox.Visibility = Visibility.Visible;
+                CommandToRunLabel.Visibility = Visibility.Visible;
+                FocusProcessCheckBox.Visibility = Visibility.Hidden;
+                FocusProcessTextBox.Visibility = Visibility.Hidden;
+                FocusProcessLabel.Visibility = Visibility.Hidden;
+
                 CommandToRunTextBox.Focus();
             }
         }
@@ -389,6 +417,19 @@ namespace PerfView
         {
             RundownTimeoutTextBox.IsEnabled = RundownCheckBox.IsChecked ?? false;
         }
+        private void FocusProcessCheckBoxClicked(object sender, RoutedEventArgs e)
+        {
+            FocusProcessTextBox.IsEnabled = FocusProcessCheckBox.IsChecked ?? false;
+            if (FocusProcessTextBox.IsEnabled)
+            {
+                FocusProcessTextBox.Text = "";
+            }
+            else
+            {
+                FocusProcessTextBox.Text = "** Machine Wide **";
+            }
+        }
+
         private void ZipCheckBoxClicked(object sender, RoutedEventArgs e)
         {
             if (ZipCheckBox.IsChecked ?? false)
@@ -421,7 +462,7 @@ namespace PerfView
             bool shouldClose = true;
             try
             {
-                if (CommandToRunTextBox.Text.Length == 0)
+                if (!m_isCollect && CommandToRunTextBox.Text.Length == 0)
                 {
                     m_mainWindow.StatusBar.LogError("No command given.");
                     return;
@@ -450,6 +491,22 @@ namespace PerfView
                             }
                         }
                         App.ConfigData["CommandToRunHistory"] = sb.ToString();
+                    }
+                }
+                else
+                {
+                    if (FocusProcessCheckBox.IsChecked ?? false)
+                    {
+                        int processId;
+                        if (!Int32.TryParse(FocusProcessTextBox.Text, out processId))
+                        {
+                            if (!FocusProcessTextBox.Text.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                m_mainWindow.StatusBar.LogError("[ERROR: FocusProcess must be either PID or process name with .exe suffix]");
+                                return;
+                            }
+                        }
+                        m_args.FocusProcess = FocusProcessTextBox.Text;
                     }
                 }
 
