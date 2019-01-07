@@ -36,6 +36,17 @@
     <ProjectReference Include="..\Utilities\Utilities.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
+    <Compile Include="..\PerfView\PerfViewLogger.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
+  </ItemGroup>
+
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
     <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
