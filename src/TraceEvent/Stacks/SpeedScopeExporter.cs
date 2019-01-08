@@ -23,11 +23,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         #region private
         internal static void Export(StackSource source, TextWriter writer, string name)
         {
-            var sortedSamples = GetSortedSamples(source);
+            var samples = GetSortedSamples(source);
 
-            WalkTheStackAndExpandSamples(source, sortedSamples, out var frameNameToId, out var frameIdToSamples);
+            MakeSureSamplesDoNotOverlap(samples);
 
-            var sortedProfileEvents = GetAggregatedSortedProfileEvents(frameIdToSamples);
+            WalkTheStackAndExpandSamples(source, samples, out var frameNameToId, out var frameIdToSamples);
+
+            var sortedProfileEvents = GetAggregatedOrderedProfileEvents(frameIdToSamples);
 
             var orderedFrameNames = frameNameToId.OrderBy(pair => pair.Value).Select(pair => pair.Key).ToArray();
 
@@ -37,13 +39,40 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// this method gets all samples from StackSource and sorts them by relative time (ascending)
         /// </summary>
-        internal static IReadOnlyList<Sample> GetSortedSamples(StackSource stackSource)
+        internal static List<Sample> GetSortedSamples(StackSource stackSource)
         {
             var samples = new List<Sample>(stackSource.CallStackIndexLimit);
+
             stackSource.ForEach(sample => samples.Add(new Sample(sample.StackIndex, sample.TimeRelativeMSec, sample.Metric, -1)));
+
+            // all samples in the StackSource should be sorted, but we want to ensure it
             samples.Sort((x, y) => x.RelativeTime.CompareTo(y.RelativeTime));
 
             return samples;
+        }
+
+        /// <summary>
+        /// this method fixes the metrics of the samples to make sure they don't overlap
+        /// it's very common that following samples overlap by a very small number like 0.0000000000156
+        /// we can't allow for that to happen because the speed scope can't draw such samples
+        /// </summary>
+        internal static void MakeSureSamplesDoNotOverlap(List<Sample> samples)
+        {
+            for (int i = 0; i < samples.Count - 1; i++)
+            {
+                var current = samples[i];
+                var next = samples[i + 1];
+
+                if (current.RelativeTime + current.Metric > next.RelativeTime)
+                {
+                    // the difference between current.Metric and recalculatedMetric is typically
+                    // a very small number like 0.0000000000156
+                    double recalculatedMetric = next.RelativeTime - current.RelativeTime;
+                    samples[i] = new Sample(current.StackIndex, current.RelativeTime, recalculatedMetric, current.Depth);
+                }
+            }
+            // we don't need to worry about the last sample
+            // it can't overlap the next one because it is the last one and there is no next one
         }
 
         /// <summary>
@@ -55,10 +84,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         internal static void WalkTheStackAndExpandSamples(StackSource stackSource, IEnumerable<Sample> leafs, 
             out IReadOnlyDictionary<string, int> frameNamesToIds, out IReadOnlyDictionary<int, List<Sample>> frameIdsToSamples)
         {
-            var frameNameToId = new Dictionary<string, int>();
+            var exportedFrameNameToExportedFrameId = new Dictionary<string, int>();
             var frameIdToSamples = new Dictionary<int, List<Sample>>();
 
-            var stackOfFrames = new Stack<StackSourceCallStackIndex>();
+            // we use stack here bacause we want a certain order: from the root to the leaf
+            var stackIndexesToHandle = new Stack<StackSourceCallStackIndex>();
 
             foreach (var leafSample in leafs)
             {
@@ -66,16 +96,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 var stackIndex = leafSample.StackIndex;
                 while (stackIndex != StackSourceCallStackIndex.Invalid)
                 {
-                    stackOfFrames.Push(stackIndex);
+                    stackIndexesToHandle.Push(stackIndex);
 
                     stackIndex = stackSource.GetCallerIndex(stackIndex);
                 }
 
                 // add sample for every method on the stack
                 int depth = -1;
-                while (stackOfFrames.Count > 0)
+                while (stackIndexesToHandle.Count > 0)
                 {
-                    stackIndex = stackOfFrames.Pop();
+                    stackIndex = stackIndexesToHandle.Pop();
                     depth++;
 
                     var frameIndex = stackSource.GetFrameIndex(stackIndex);
@@ -86,8 +116,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     if (string.IsNullOrEmpty(frameName))
                         continue;
 
-                    if (!frameNameToId.TryGetValue(frameName, out int exportedFrameId))
-                        frameNameToId.Add(frameName, exportedFrameId = frameNameToId.Count);
+                    if (!exportedFrameNameToExportedFrameId.TryGetValue(frameName, out int exportedFrameId))
+                        exportedFrameNameToExportedFrameId.Add(frameName, exportedFrameId = exportedFrameNameToExportedFrameId.Count);
 
                     if (!frameIdToSamples.TryGetValue(exportedFrameId, out var samples))
                         frameIdToSamples.Add(exportedFrameId, samples = new List<Sample>());
@@ -98,7 +128,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 }
             }
 
-            frameNamesToIds = frameNameToId;
+            frameNamesToIds = exportedFrameNameToExportedFrameId;
             frameIdsToSamples = frameIdToSamples;
         }
 
@@ -107,13 +137,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// example: samples for Main taken at time 0.1 0.2 0.3 0.4 0.5
         /// are gonna be translated to Main start at 0.1 stop at 0.5
         /// </summary>
-        internal static IReadOnlyList<ProfileEvent> GetAggregatedSortedProfileEvents(IReadOnlyDictionary<int, List<Sample>> frameIdToSamples)
+        internal static IReadOnlyList<ProfileEvent> GetAggregatedOrderedProfileEvents(IReadOnlyDictionary<int, List<Sample>> frameIdToSamples)
         {
             List<ProfileEvent> profileEvents = new List<ProfileEvent>();
-
-            // [0] will be always the Main method, it is our boundry
-            var minRelativeTime = frameIdToSamples[0].First().RelativeTime;
-            var maxRelativeTime = frameIdToSamples[0].Last().RelativeTime;
 
             foreach (var samplesInfo in frameIdToSamples)
             {
@@ -126,59 +152,75 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 Sample openSample = samples[0]; // samples are never empty
                 for (int i = 1; i < samples.Count; i++)
                 {
-                    if (samples[i].RelativeTime > (samples[i - 1].RelativeTime + (samples[i - 1].Metric * 2)) || samples[i].Depth != samples[i - 1].Depth)
+                    if (AreNotContinuous(samples[i - 1], samples[i]))
                     {
-                        CenterAndAdd(profileEvents, openSample, samples[i - 1], frameId, minRelativeTime, maxRelativeTime);
+                        AddEvents(profileEvents, openSample, samples[i - 1], frameId);
 
                         openSample = samples[i];
                     }
                 }
 
-                // we need to handle the last (or entire) profile event
-                CenterAndAdd(profileEvents, openSample, samples[samples.Count - 1], frameId, minRelativeTime, maxRelativeTime);
+                // we need to handle the last (or the only one) profile event
+                AddEvents(profileEvents, openSample, samples[samples.Count - 1], frameId);
             }
 
             // MUST HAVE!!! the tool expects the profile events in certain order!!
-            profileEvents.Sort(CompareProfileEvents);
-
-            return profileEvents;
-        }
-
-        private static void CenterAndAdd(List<ProfileEvent> profileEvents, Sample openSample, Sample closeSample, int frameId, double minRelativeTime, double maxRelativeTime)
-        {
-            // we "center" the samples in order to:
-            // 1: avoid gaps (having method A on stack at 0.1 and method B at 0.2 would create a gap between 0.1 and 0.2 without it
-            // 2. avoid events that Open and Close at the same time for very short method that produced one sample (the tool ignores such events which loses data)
-            double openRelativeTime = openSample.RelativeTime != closeSample.RelativeTime ? openSample.RelativeTime : Math.Max(minRelativeTime, openSample.RelativeTime);
-            double closeRelativeTime = openSample.RelativeTime != closeSample.RelativeTime ? closeSample.RelativeTime :  Math.Min(maxRelativeTime, closeSample.RelativeTime + closeSample.Metric / 2.0);
-            
-            profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, openRelativeTime, openSample.Depth));
-            profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, closeRelativeTime, closeSample.Depth));
+            return OrderForExport(profileEvents).ToArray();
         }
 
         /// <summary>
-        /// allows for sorting of the profile events in the order that SpeedScope expects them to be written to a file
+        /// this method checks if both samples do NOT belong to the same profile event
         /// </summary>
-        internal static int CompareProfileEvents(ProfileEvent x, ProfileEvent y)
+        private static bool AreNotContinuous(Sample left, Sample right)
         {
-            // first of all, we sort ascending by relative time
-            int result = x.RelativeTime.CompareTo(y.RelativeTime);
-            if (result != 0)
-                return result;
+            if (left.Depth != right.Depth)
+                return true;
 
-            // if both events are open events, then the one with lower depth goes first (it needs to be opened first)
-            if (x.Type == ProfileEventType.Open && y.Type == ProfileEventType.Open)
-                return x.Depth - y.Depth;
-            // if both events are close events, then the one with bigger depth goes first (it needs to be closed first)
-            if (x.Type == ProfileEventType.Close && y.Type == ProfileEventType.Close)
-                return y.Depth - x.Depth;
-
-            // they are of different type so we sort them by type (Open = 0 so it goes first)
-            return x.Type.CompareTo(y.Type);
+            // 1.2 is a magic number based on some experiments ;)
+            return left.RelativeTime + (left.Metric * 1.2) < right.RelativeTime;
         }
 
         /// <summary>
-        /// writes pre-calculated data to given file in a speedscope-friendly format
+        /// this method adds a new profile event for provided samples
+        /// it also make sure that a profile event does not open and close at the same time (would be ignored by SpeedScope)
+        /// </summary>
+        private static void AddEvents(List<ProfileEvent> profileEvents, Sample openSample, Sample closeSample, int frameId)
+        {
+            if (openSample.Depth != closeSample.Depth)
+                throw new ArgumentException("Invalid arguments, both samples must be of the same depth");
+            if (closeSample.Metric == 0.0)
+                throw new ArgumentException("Invalid sample, the metric must NOT be equal zero.", nameof(closeSample));
+
+            profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, openSample.RelativeTime, openSample.Depth));
+            profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, closeSample.RelativeTime + closeSample.Metric, closeSample.Depth));
+        }
+
+        /// <summary>
+        /// this method orders the profile events in the order required by SpeedScope
+        /// it's just the order of drawing the time graph
+        /// </summary>
+        internal static IEnumerable<ProfileEvent> OrderForExport(IEnumerable<ProfileEvent> profiles)
+        {
+            return profiles
+                .GroupBy(@event => @event.RelativeTime)
+                .OrderBy(group => group.Key)
+                .SelectMany(group =>
+                {
+                    // MakeSureSamplesDoNotOverlap guarantees that samples do NOT overlap
+                    // AddEvents guarantees us that there is no event which starts and end at the same time
+                    // so we don't need to worry about this edge case here
+
+                    // first of all, we need to emit close events, descending by depth (tool format requires that)
+                    var closingDescendingByDepth = group.Where(@event => @event.Type == ProfileEventType.Close).OrderByDescending(@event => @event.Depth);
+                    // then we can open new events, ascending by depth (tool format requires that)
+                    var openingAscendingByDepth = group.Where(@event => @event.Type == ProfileEventType.Open).OrderBy(@event => @event.Depth);
+
+                    return closingDescendingByDepth.Concat(openingAscendingByDepth);
+                });
+        }
+
+        /// <summary>
+        /// writes pre-calculated data to SpeedScope format
         /// </summary>
         internal static void WriteToFile(IReadOnlyList<ProfileEvent> sortedProfileEvents, IReadOnlyList<string> orderedFrameNames, TextWriter writer, string name)
         {
@@ -244,7 +286,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         internal enum ProfileEventType : byte
         {
-            Open = 0, Close = 1 // these values MUST NOT be changed, the sorting order relies on it
+            Open = 0, Close = 1
         }
 
         internal struct ProfileEvent

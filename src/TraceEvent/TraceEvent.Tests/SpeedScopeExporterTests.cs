@@ -101,33 +101,7 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void GetAggregatedSortedProfileEventsAggregates_ContinuousSamplesToOneEvent()
-        {
-            const double metric = 0.1;
-
-            var samples = new[]
-            {
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.1),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.2),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.3),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.4),
-            };
-
-            var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
-
-            var aggregatedEvents = SpeedScopeExporter.GetAggregatedSortedProfileEvents(input);
-
-            // we should have an Open at 0.1 (first on the list) and Close at 0.4 (last on the list)
-            Assert.Equal(2, aggregatedEvents.Count);
-
-            Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
-            Assert.Equal(0.4, aggregatedEvents[1].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
-        }
-
-        [Fact]
-        public void GetAggregatedSortedProfileEventsAggregates_ContinuousSamplesWithPausesToMultipleEvents()
+        public void GetAggregatedOrderedProfileEventsConvertsContinuousSamplesWithPausesToMultipleEvents()
         {
             const double metric = 0.1;
 
@@ -145,29 +119,66 @@ namespace TraceEventTests
 
             var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
 
-            var aggregatedEvents = SpeedScopeExporter.GetAggregatedSortedProfileEvents(input);
+            var aggregatedEvents = SpeedScopeExporter.GetAggregatedOrderedProfileEvents(input);
 
-            // we should have <0.1, 0.2> and <0.7, 0.75> (the tool would ignore <0.7, 0.7>) and <1.1, 1.3>
+            // we should have <0.1, 0.3> and <0.7, 0.8> (the tool would ignore <0.7, 0.7>) and <1.1, 1.4>
             Assert.Equal(6, aggregatedEvents.Count);
 
             Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
-            Assert.Equal(0.2, aggregatedEvents[1].RelativeTime);
+            Assert.Equal(0.2 + metric, aggregatedEvents[1].RelativeTime);
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
 
             Assert.Equal(0.7, aggregatedEvents[2].RelativeTime);
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[2].Type);
-            Assert.Equal(0.7 + metric / 2, aggregatedEvents[3].RelativeTime);
+            Assert.Equal(0.7 + metric, aggregatedEvents[3].RelativeTime);
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
 
             Assert.Equal(1.1, aggregatedEvents[4].RelativeTime);
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[4].Type);
-            Assert.Equal(1.3, aggregatedEvents[5].RelativeTime);
+            Assert.Equal(1.3 + metric, aggregatedEvents[5].RelativeTime);
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[5].Type);
         }
 
         [Fact]
-        public void CompareProfileEventsAllowsForSortingInTheOrderExpectedByTheSpeedScope()
+        public void GetAggregatedOrderedProfileEventsConvertsContinuousSamplesWithDifferentDepthToMultipleEvents()
+        {
+            const double metric = 0.1;
+
+            var samples = new[]
+            {
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
+            };
+
+            var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
+
+            var aggregatedEvents = SpeedScopeExporter.GetAggregatedOrderedProfileEvents(input);
+
+            // we should have:
+            //  Open at 0.1 depth 0 and Close 0.2
+            //  Open at 0.2 depth 1 and Close 0.3
+            Assert.Equal(4, aggregatedEvents.Count);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
+            Assert.Equal(0.1 + metric, aggregatedEvents[1].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[2].Type);
+            Assert.Equal(0.2, aggregatedEvents[2].RelativeTime);
+            Assert.Equal(1, aggregatedEvents[2].Depth);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
+            Assert.Equal(0.2 + metric, aggregatedEvents[3].RelativeTime);
+            Assert.Equal(1, aggregatedEvents[3].Depth);
+        }
+
+        [Fact]
+        public void OrderForExportOrdersTheProfileEventsAsExpectedByTheSpeedScope()
         {
             var profileEvents = new List<SpeedScopeExporter.ProfileEvent>()
             {
@@ -175,27 +186,43 @@ namespace TraceEventTests
                 new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Open, frameId: 1, depth: 1, relativeTime: 0.1),
                 new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Close, frameId: 1, depth: 1, relativeTime: 0.3),
                 new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Close, frameId: 0, depth: 0, relativeTime: 0.3),
+                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Open, frameId: 2, depth: 0, relativeTime: 0.3),
+                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Close, frameId: 2, depth: 0, relativeTime: 0.4),
             };
 
             profileEvents.Reverse(); // reverse to make sure that it does sort the elements in right way
 
-            profileEvents.Sort(SpeedScopeExporter.CompareProfileEvents);
+            var ordered = SpeedScopeExporter.OrderForExport(profileEvents).ToArray();
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, profileEvents[0].Type);
-            Assert.Equal(0.1, profileEvents[0].RelativeTime);
-            Assert.Equal(0, profileEvents[0].Depth);
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, ordered[0].Type);
+            Assert.Equal(0.1, ordered[0].RelativeTime);
+            Assert.Equal(0, ordered[0].Depth);
+            Assert.Equal(0, ordered[0].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, profileEvents[1].Type);
-            Assert.Equal(0.1, profileEvents[1].RelativeTime);
-            Assert.Equal(1, profileEvents[1].Depth);
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, ordered[1].Type);
+            Assert.Equal(0.1, ordered[1].RelativeTime);
+            Assert.Equal(1, ordered[1].Depth);
+            Assert.Equal(1, ordered[1].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, profileEvents[2].Type);
-            Assert.Equal(0.3, profileEvents[2].RelativeTime);
-            Assert.Equal(1, profileEvents[2].Depth);
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, ordered[2].Type);
+            Assert.Equal(0.3, ordered[2].RelativeTime);
+            Assert.Equal(1, ordered[2].Depth);
+            Assert.Equal(1, ordered[2].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, profileEvents[3].Type);
-            Assert.Equal(0.3, profileEvents[3].RelativeTime);
-            Assert.Equal(0, profileEvents[3].Depth);
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, ordered[3].Type);
+            Assert.Equal(0.3, ordered[3].RelativeTime);
+            Assert.Equal(0, ordered[3].Depth);
+            Assert.Equal(0, ordered[3].FrameId);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, ordered[4].Type);
+            Assert.Equal(0.3, ordered[4].RelativeTime);
+            Assert.Equal(0, ordered[4].Depth);
+            Assert.Equal(2, ordered[4].FrameId);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, ordered[5].Type);
+            Assert.Equal(0.4, ordered[5].RelativeTime);
+            Assert.Equal(0, ordered[5].Depth);
+            Assert.Equal(2, ordered[5].FrameId);
         }
 
         #region private
