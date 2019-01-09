@@ -7194,7 +7194,7 @@ table {
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /InMemoryCircularBuffer or /BufferSize:256 to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer or /BufferSize:1024 to avoid this in future traces.";
             }
             else
             {
