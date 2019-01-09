@@ -7409,7 +7409,7 @@ table {
     internal class XmlPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "PerfView XML FILE"; } }
-        public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip", ".perfView.json", ".perfView.json.zip", ".netperf.json", ".netperf.json.zip", }; } }
+        public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip", ".perfView.json", ".perfView.json.zip" }; } }
 
         protected internal override StackSource OpenStackSourceImpl(TextWriter log)
         {
