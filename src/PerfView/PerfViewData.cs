@@ -7194,7 +7194,7 @@ table {
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /InMemoryCircularBuffer or /BufferSize:256 to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer or /BufferSize:1024 to avoid this in future traces.";
             }
             else
             {
@@ -7409,7 +7409,7 @@ table {
     internal class XmlPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "PerfView XML FILE"; } }
-        public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip", ".perfView.json", ".perfView.json.zip" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip", ".perfView.json", ".perfView.json.zip", ".netperf.json", ".netperf.json.zip", }; } }
 
         protected internal override StackSource OpenStackSourceImpl(TextWriter log)
         {
