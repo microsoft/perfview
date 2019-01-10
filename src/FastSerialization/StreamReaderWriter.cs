@@ -11,20 +11,13 @@ using System.Text;      // For StringBuilder.
 
 namespace FastSerialization
 {
-    public interface IMemoryStreamReader : IStreamReader
-    {
-        /// <summary>
-        /// The total length of bytes that this reader can read.  
-        /// </summary>
-        long Length { get; }
-    }
     /// <summary>
     /// A MemoryStreamReader is an implementation of the IStreamReader interface that works over a given byte[] array.  
     /// </summary>
 #if STREAMREADER_PUBLIC
     public
 #endif
-    class MemoryStreamReader : IMemoryStreamReader
+    class MemoryStreamReader
     {
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
@@ -40,6 +33,9 @@ namespace FastSerialization
             endPosition = length;
         }
 
+        /// <summary>
+        /// The total length of bytes that this reader can read.
+        /// </summary>
         public virtual long Length { get { return endPosition; } }
 
         #region implemenation of IStreamReader
@@ -198,31 +194,6 @@ namespace FastSerialization
         #endregion
     }
 
-    public interface IMemoryStreamWriter : IStreamWriter
-    {
-        /// <summary>
-        /// Returns a IStreamReader that will read the written bytes.  You cannot write additional bytes to the stream after making this call. 
-        /// </summary>
-        /// <returns></returns>
-        IMemoryStreamReader GetReader();
-
-        /// <summary>
-        /// The number of bytes written so far.  
-        /// </summary>
-        long Length { get; }
-
-        /// <summary>
-        /// The the array that holds the serialized data.   
-        /// </summary>
-        /// <returns></returns>
-        byte[] GetBytes();
-
-        /// <summary>
-        /// Clears any data that was previously written.  
-        /// </summary>
-        void Clear();
-    }
-
     // TODO is unsafe code worth it?
 #if true
     /// <summary>
@@ -231,7 +202,7 @@ namespace FastSerialization
 #if STREAMREADER_PUBLIC
     public
 #endif
-    class MemoryStreamWriter : IMemoryStreamWriter
+    class MemoryStreamWriter
     {
         /// <summary>
         /// Create IStreamWriter that writes its data to an internal byte[] buffer.  It will grow as needed. 
@@ -244,7 +215,11 @@ namespace FastSerialization
             bytes = new byte[initialSize];
         }
 
-        public virtual IMemoryStreamReader GetReader()
+        /// <summary>
+        /// Returns a IStreamReader that will read the written bytes. You cannot write additional bytes to the stream after making this call.
+        /// </summary>
+        /// <returns></returns>
+        public virtual MemoryStreamReader GetReader()
         {
             var readerBytes = bytes;
             if (bytes.Length - endPosition > 500000)
@@ -255,8 +230,15 @@ namespace FastSerialization
             return new MemoryStreamReader(readerBytes, 0, endPosition);
         }
 
+        /// <summary>
+        /// The number of bytes written so far.
+        /// </summary>
         public virtual long Length { get { return endPosition; } }
 
+        /// <summary>
+        /// The array that holds the serialized data.
+        /// </summary>
+        /// <returns></returns>
         public virtual byte[] GetBytes() { return bytes; }
 
         /// <summary>
@@ -1007,7 +989,7 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of the MemoryStreamWriter interface 
         /// </summary>
-        public override IMemoryStreamReader GetReader() { throw new InvalidOperationException(); }
+        public override MemoryStreamReader GetReader() { throw new InvalidOperationException(); }
         /// <summary>
         /// Implementation of the MemoryStreamWriter interface 
         /// </summary>
