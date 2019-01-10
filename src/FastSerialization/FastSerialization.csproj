@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.FastSerialization</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.FastSerialization</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->
@@ -36,6 +36,7 @@
     <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
 </Project>

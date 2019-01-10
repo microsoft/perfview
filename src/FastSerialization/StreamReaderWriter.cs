@@ -17,7 +17,7 @@ namespace FastSerialization
 #if STREAMREADER_PUBLIC
     public
 #endif
-    class MemoryStreamReader
+    class MemoryStreamReader : IStreamReader
     {
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
@@ -202,7 +202,7 @@ namespace FastSerialization
 #if STREAMREADER_PUBLIC
     public
 #endif
-    class MemoryStreamWriter
+    class MemoryStreamWriter : IStreamWriter
     {
         /// <summary>
         /// Create IStreamWriter that writes its data to an internal byte[] buffer.  It will grow as needed. 
