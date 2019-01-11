@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -350,6 +350,11 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportFiles\EventCounterVisualization.html">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\EventCounterVisualization.html</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\PerfViewWebVideos.htm">
       <Type>Non-Resx</Type>
