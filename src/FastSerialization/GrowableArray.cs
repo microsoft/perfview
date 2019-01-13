@@ -171,12 +171,14 @@ namespace System.Collections.Generic
         /// </summary>
         public void Set(int index, T value)
         {
-            if (index >= Count)
-            {
-                Count = index + 1;
-            }
+            GetRef(index) = value;
+        }
 
-            this[index] = value;
+        public ref T GetRef(int index)
+        {
+            if (index >= Count)
+                Count = index + 1;
+            return ref array[index];
         }
         /// <summary>
         /// Gets the value at 'index'.   Never fails, will return 'default' if out of range.  
