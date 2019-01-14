@@ -27,7 +27,7 @@ namespace System.Collections.Generic
     /// <remarks>
     /// This class implement a list which is allocated in segments, to avoid large lists to go into LOH.
     /// </remarks>
-    public class SegmentedList<T> : IMutableList<T>
+    public class SegmentedList<T> : ICollection<T>, IReadOnlyList<T>
     {
         private readonly int segmentSize;
         private readonly int segmentShift;
@@ -90,8 +90,16 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Copy to Array
+        /// </summary>
+        /// <returns>Array copy</returns>
         public T[] UnderlyingArray => ToArray();
 
+        /// <summary>
+        /// Returns the last element on the list and removes it from it.
+        /// </summary>
+        /// <returns>The last element that was on the list.</returns>
         public T Pop()
         {
             if (count == 0)
@@ -99,11 +107,10 @@ namespace System.Collections.Generic
                 throw new InvalidOperationException("Attempting to remove an element from empty collection.");
             }
 
-            int oldSegmentIndex = count >> segmentShift;
+            int oldSegmentIndex = --count >> segmentShift;
             T result = items[oldSegmentIndex][count & offsetMask];
-            --count;
 
-            int newSegmentIndex = count >> segmentShift;
+            int newSegmentIndex = (count - 1) >> segmentShift;
 
             if (newSegmentIndex != oldSegmentIndex)
             {
@@ -714,7 +721,7 @@ namespace System.Collections.Generic
         /// </summary>
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
-            private SegmentedList<T> list;
+            private readonly SegmentedList<T> list;
             private int index;
 
             /// <summary>

@@ -140,10 +140,10 @@ namespace Graphs
         /// The number of references (arcs) in the graph
         /// </summary>
         public int TotalNumberOfReferences { get { return m_totalRefs; } }
-
-        protected int m_segmentSize;
-
-        protected bool m_isUsingSegmentedList = false;
+        /// <summary>
+        /// Each segment added to the segmented list used in this class will have a size as specified by this constant.
+        /// </summary>
+        protected static readonly int m_segmentSize = 8_192;
 
         // Creation methods.  
         /// <summary>
@@ -160,23 +160,10 @@ namespace Graphs
         {
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
-            m_nodes = new GrowableArray<StreamLabel>(m_expectedNodeCount);
-            RootIndex = NodeIndex.Invalid;
-            ClearWorker();
-        }
-
-        public Graph(int expectedNodeCount, int segmentSize = 131_072)
-        {
-            m_expectedNodeCount = expectedNodeCount;
-            m_segmentSize = segmentSize;
-            m_isUsingSegmentedList = true;
-
-            m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount, 2000));
             m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, m_expectedNodeCount);
             RootIndex = NodeIndex.Invalid;
             ClearWorker();
         }
-
         /// <summary>
         /// The NodeIndex of the root node of the graph.   It must be set sometime before calling AllowReading
         /// </summary>
@@ -574,14 +561,7 @@ namespace Graphs
 
             // Read in the Nodes 
             int nodeCount = deserializer.ReadInt();
-            if (m_isUsingSegmentedList)
-            {
-                m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, nodeCount);
-            }
-            else
-            {
-                m_nodes = new GrowableArray<StreamLabel>(nodeCount);
-            }
+            m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, nodeCount);
 
             for (int i = 0; i < nodeCount; i++)
             {
@@ -645,18 +625,18 @@ namespace Graphs
             }
         }
 
-        private int m_expectedNodeCount;                // Initial guess at graph Size. 
-        private long m_totalSize;                       // Total Size of all the nodes in the graph.  
+        private int m_expectedNodeCount;                // Initial guess at graph Size.
+        private long m_totalSize;                       // Total Size of all the nodes in the graph.
         private int m_totalRefs;                        // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
-        internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.  
-        internal IMutableList<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
-        internal MemoryStreamReader m_reader;           // This is the actual data for the nodes.  Can be large 
-        internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this 
-        // and then can be set to another nodeId (needed when there are cycles).  
+        internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.
+        internal SegmentedList<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
+        internal MemoryStreamReader m_reader;           // This is the actual data for the nodes.  Can be large
+        internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this
+        // and then can be set to another nodeId (needed when there are cycles).
         // There should not be any of these left as long as every node referenced
         // by another node has a definition.
-        internal MemoryStreamWriter m_writer;           // Used only during construction to serialize the nodes.  
+        internal MemoryStreamWriter m_writer;           // Used only during construction to serialize the nodes.
         #endregion
     }
 

@@ -32,7 +32,6 @@ namespace FastSerialization
             position = start;
             endPosition = length;
         }
-
         /// <summary>
         /// The total length of bytes that this reader can read.
         /// </summary>
