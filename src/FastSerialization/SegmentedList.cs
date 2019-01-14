@@ -447,7 +447,15 @@ namespace System.Collections.Generic
         /// </summary>
         void ICollection<T>.Clear()
         {
-            throw new NotImplementedException("This method of ICollection is not implemented");
+            Clear();
+        }
+
+        public void Clear()
+        {
+            items = null;
+            count = 0;
+            capacity = 0;
+            lastSegmentRead = 0;
         }
 
         /// <summary>
