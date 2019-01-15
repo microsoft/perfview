@@ -16,6 +16,7 @@
   <Choose>
     <When Condition="'$(TargetFramework)' == 'netstandard1.3'">
       <ItemGroup>
+        <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
         <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
       </ItemGroup>
     </When>
