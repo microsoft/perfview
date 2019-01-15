@@ -825,23 +825,40 @@ namespace Graphs
             int ret = 0;
             byte b = reader.ReadByte();
             ret = b << 25 >> 25;
-#if DEBUG
-            for (int i = 0; ; i++)
+            if ((b & 0x80) == 0)
             {
-                Debug.Assert(i < 5);
-#else
-            for (; ; )
-            {
-#endif
-                if ((b & 0x80) == 0)
-                {
-                    return ret;
-                }
-
-                ret <<= 7;
-                b = reader.ReadByte();
-                ret += (b & 0x7f);
+                return ret;
             }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            Debug.Assert((b & 0x80) == 0);
+            ret += b;
+            return ret;
         }
         internal static void WriteCompressedInt(MemoryStreamWriter writer, int value)
         {
