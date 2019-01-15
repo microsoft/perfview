@@ -136,17 +136,14 @@ namespace PerfView
                                 var template = PerfViewFile.TryGet(filePath);
                                 if (template != null)
                                 {
-                                    // Filter out kernel, rundown files etc. 
-                                    if (Regex.IsMatch(filePath, @"\.(kernel|clr|user)[^.]*\.etl$", RegexOptions.IgnoreCase))
-                                    {
+                                    // Filter out kernel, rundown files etc, if the base file exists.  
+                                    Match m = Regex.Match(filePath, @"^(.*)\.(kernel|clr|user)[^.]*\.etl$", RegexOptions.IgnoreCase);
+                                    if (m.Success && File.Exists(m.Groups[1].Value + ".etl"))
                                         continue;
-                                    }
 
                                     // Filter out any items we were asked to filter out.  
                                     if (m_filter != null && !m_filter.IsMatch(Path.GetFileName(filePath)))
-                                    {
                                         continue;
-                                    }
 
                                     m_Children.Add(PerfViewFile.Get(filePath, template));
                                 }
@@ -1096,7 +1093,7 @@ table {
 
                     worker.EndWork(delegate ()
                     {
-                        Viewer = new WebBrowserWindow();
+                        Viewer = new WebBrowserWindow(parentWindow);
                         Viewer.WindowState = System.Windows.WindowState.Maximized;
                         Viewer.Closing += delegate (object sender, CancelEventArgs e)
                         {
@@ -1219,7 +1216,7 @@ table {
                 string logFile = command.Substring(command.IndexOf(':') + 1);
                 worker.Parent.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var logTextWindow = new Controls.TextEditorWindow();
+                    var logTextWindow = new Controls.TextEditorWindow(GuiApp.MainWindow);
                     logTextWindow.TextEditor.OpenText(logFile);
                     logTextWindow.TextEditor.IsReadOnly = true;
                     logTextWindow.Title = "Collection time log";
@@ -2433,7 +2430,7 @@ table {
                 if (((timeInSlowestEvent / requestExecutionTime) * 100) < 50)
                 {
                     // So this is the scenario where the default set of events that we are tracking
-                    // do not have any delay. Lets do our best and see if we can atleast
+                    // do not have any delay. Lets do our best and see if we can at least
                     // populate the StartTime, EndTime                    
 
                     IisPipelineEvent unKnownPipeLineEvent = CheckForDelayInUnknownEvents(request, timeInSlowestEvent);
@@ -3920,7 +3917,7 @@ table {
                         {
                             if (DataFile.InitiallyIncludedProcesses == null)
                             {
-                                m_SelectProcess = new SelectProcess(processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
+                                m_SelectProcess = new SelectProcess(parentWindow, processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
                                 {
                                     launchViewer(selectedProcesses);
                                 }, hasAllProc: true);
@@ -7188,7 +7185,7 @@ table {
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /InMemoryCircularBuffer or /BufferSize:256 to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer or /BufferSize:1024 to avoid this in future traces.";
             }
             else
             {

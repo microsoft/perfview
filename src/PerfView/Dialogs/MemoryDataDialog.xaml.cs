@@ -11,9 +11,9 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for HeapDumpDialog.xaml
     /// </summary>
-    public partial class MemoryDataDialog : Window
+    public partial class MemoryDataDialog : WindowBase
     {
-        public MemoryDataDialog(CommandLineArgs args, MainWindow mainWindow, Action continuation)
+        public MemoryDataDialog(CommandLineArgs args, MainWindow mainWindow, Action continuation) : base(mainWindow)
         {
             m_continuation = continuation;
             m_args = args;

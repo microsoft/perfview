@@ -1300,7 +1300,7 @@ namespace PerfView
         // The file menu callbacks
         internal void DoSetSymbolPath(object sender, RoutedEventArgs e)
         {
-            var symPathDialog = new SymbolPathDialog(App.SymbolPath, "Symbol", delegate (string newPath)
+            var symPathDialog = new SymbolPathDialog(this, App.SymbolPath, "Symbol", delegate (string newPath)
             {
                 App.SymbolPath = newPath;
             });
@@ -1421,7 +1421,7 @@ namespace PerfView
         {
             if (m_UserDefineCommandDialog == null)
             {
-                m_UserDefineCommandDialog = new UserCommandDialog(delegate (string commandAndArgs)
+                m_UserDefineCommandDialog = new UserCommandDialog(this, delegate (string commandAndArgs)
                 {
                     App.CommandLineArgs.CommandAndArgs = ParseWordsOrQuotedStrings(commandAndArgs).ToArray();
                     bool commandSuccessful = false;
@@ -1540,7 +1540,7 @@ namespace PerfView
         {
             if (AppLog.CanSendFeedback)
             {
-                var feedbackDialog = new PerfView.Dialogs.FeedbackDialog(delegate (string message)
+                var feedbackDialog = new PerfView.Dialogs.FeedbackDialog(this, delegate (string message)
                 {
                     if (string.IsNullOrWhiteSpace(message))
                     {
@@ -1597,7 +1597,7 @@ namespace PerfView
         // The Help menu callbacks
         internal void DoCommandLineHelp(object sender, RoutedEventArgs e)
         {
-            var editor = new TextEditorWindow();
+            var editor = new TextEditorWindow(this);
             editor.Width = 1000;
             editor.Height = 600;
             editor.Title = "PerfView Command Line Help";
@@ -1611,7 +1611,7 @@ namespace PerfView
             sw.WriteLine("All User Commands");
             Extensions.GenerateHelp(sw);
 
-            var editor = new TextEditorWindow();
+            var editor = new TextEditorWindow(this);
             editor.Width = 850;
             editor.Height = 600;
             editor.Title = "PerfView Command Line Help";
@@ -2083,7 +2083,7 @@ namespace PerfView
 
             if (s_Browser == null)
             {
-                s_Browser = new WebBrowserWindow();
+                s_Browser = new WebBrowserWindow(GuiApp.MainWindow);
                 s_Browser.Title = "PerfView Help";
 
                 // When you simply navigate, you don't remember your position.  In the case

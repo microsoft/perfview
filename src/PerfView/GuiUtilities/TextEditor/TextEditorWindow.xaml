@@ -1,8 +1,9 @@
-﻿<Window x:Class="Controls.TextEditorWindow"
+﻿<src:WindowBase x:Class="Controls.TextEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:src="clr-namespace:Controls"
+        xmlns:src="clr-namespace:PerfView"
+        xmlns:controls="clr-namespace:Controls"
         Closing="Window_Closing" 
         Title="TextEditorWindow" Height="900" Width="1300">
-    <src:TextEditorControl x:Name="m_TextEditor"/>
-</Window>
+    <controls:TextEditorControl x:Name="m_TextEditor"/>
+</src:WindowBase>

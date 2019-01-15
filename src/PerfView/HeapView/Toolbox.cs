@@ -826,7 +826,7 @@ namespace PerfView
             // Filter to processes with CLR loaded
             List<IProcess> clrProcesses = traceLog.GetClrProcesses(out hasClr);
 
-            SelectProcess selectProcess = new SelectProcess(clrProcesses, new TimeSpan(1, 0, 0), action, false);
+            SelectProcess selectProcess = new SelectProcess(GuiApp.MainWindow, clrProcesses, new TimeSpan(1, 0, 0), action, false);
 
             // Add a column for CLR version
             if (hasClr)

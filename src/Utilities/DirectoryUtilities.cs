@@ -19,7 +19,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal static class DirectoryUtilities
+    static class DirectoryUtilities
     {
         /// <summary>
         /// SafeCopy sourceDirectory to directoryToVersion recursively. The target directory does

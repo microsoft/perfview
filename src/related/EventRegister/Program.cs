@@ -144,7 +144,7 @@ class Program
         // If this app does not take a dependency on a specific EventSource implementation we'll need to use the EventSource 
         // type that represents the base type of the custom event source that needs to be registered. To accomplish this we 
         // need to set up a separate domain that has the app base set to the location of the assembly to be registered, and
-        // the config file set to the config file that might be associated with this assebmly, in the case the assembly is
+        // the config file set to the config file that might be associated with this assembly, in the case the assembly is
         // an EXE. Having the worker domain set up in this way allows for the regular assembly lookup rules to kick in and
         // perform the expected lookup the the EventSource-base assembly based on the passed in assembly.
         // In the worker domain we load in the "reflection-only" context the assembly passed in as an argument and allow its

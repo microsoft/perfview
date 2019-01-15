@@ -33,9 +33,9 @@ namespace PerfView
     /// <summary>
     /// Interaction logic for StackWindow.xaml
     /// </summary>
-    public partial class StackWindow : Window
+    public partial class StackWindow : WindowBase
     {
-        public StackWindow(Window parentWindow, PerfViewStackSource dataSource)
+        public StackWindow(Window parentWindow, PerfViewStackSource dataSource) : base(parentWindow)
         {
             DataSource = dataSource;
             ParentWindow = parentWindow;
@@ -47,7 +47,7 @@ namespace PerfView
             Title = DataSource.Title;
             FinishInit();
         }
-        public StackWindow(Window parentWindow, StackWindow template)
+        public StackWindow(Window parentWindow, StackWindow template) : base(parentWindow)
         {
             ParentWindow = parentWindow;
             DataSource = template.DataSource;
@@ -855,7 +855,7 @@ namespace PerfView
         }
         private void DoSetSourcePath(object sender, RoutedEventArgs e)
         {
-            var symPathDialog = new SymbolPathDialog(App.SourcePath, "Source", delegate (string newPath)
+            var symPathDialog = new SymbolPathDialog(this, App.SourcePath, "Source", delegate (string newPath)
             {
                 App.SourcePath = newPath;
             });
@@ -1250,7 +1250,7 @@ namespace PerfView
             }
 
             StatusBar.Status = "Opening object view on  " + nodeCount + " objects.";
-            var objectViewer = new ObjectViewer(asMemoryStackSource.Graph, asMemoryStackSource.RefGraph, nodeIdxs);
+            var objectViewer = new ObjectViewer(this, asMemoryStackSource.Graph, asMemoryStackSource.RefGraph, nodeIdxs);
             objectViewer.Show();
         }
 
@@ -2322,7 +2322,7 @@ namespace PerfView
                         else
                         {
                             StatusBar.Log("Opening editor on " + sourcePathToOpen);
-                            var textEditorWindow = new TextEditorWindow();
+                            var textEditorWindow = new TextEditorWindow(this);
                             dialogParentWindow = textEditorWindow;
                             textEditorWindow.TextEditor.IsReadOnly = true;
                             textEditorWindow.TextEditor.OpenText(sourcePathToOpen);
@@ -3901,7 +3901,7 @@ namespace PerfView
             PresetMenu.Items.Add(new Separator());
 
             var setDefaultPresetMenuItem = new MenuItem();
-            setDefaultPresetMenuItem.Header = "S_et Startup Preset";
+            setDefaultPresetMenuItem.Header = "S_et As Startup Preset";
             setDefaultPresetMenuItem.Click += DoSetStartupPreset;
             setDefaultPresetMenuItem.ToolTip =
                 "Sets the default values of Group Patterns and Fold Patterns and % to the current values.";
@@ -3957,7 +3957,7 @@ namespace PerfView
                 }
             }
 
-            var newPresetDialog = new NewPresetDialog(nameCandidate, m_presets.Select(x => x.Name).ToList());
+            var newPresetDialog = new NewPresetDialog(this, nameCandidate, m_presets.Select(x => x.Name).ToList());
             newPresetDialog.Owner = this;
             if (!(newPresetDialog.ShowDialog() ?? false))
             {
@@ -3982,7 +3982,7 @@ namespace PerfView
 
         private void DoManagePresets(object sender, RoutedEventArgs e)
         {
-            var managePresetsDialog = new ManagePresetsDialog(m_presets, Path.GetDirectoryName(DataSource.FilePath), StatusBar);
+            var managePresetsDialog = new ManagePresetsDialog(this, m_presets, Path.GetDirectoryName(DataSource.FilePath), StatusBar);
             managePresetsDialog.Owner = this;
             managePresetsDialog.ShowDialog();
             m_presets = managePresetsDialog.Presets;

@@ -5,7 +5,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal static class StringUtilities
+    static class StringUtilities
     {
         public static bool IsNullOrWhiteSpace(string value)
         {

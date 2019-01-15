@@ -10,9 +10,9 @@ namespace PerfView
     /// <summary>
     /// Interaction logic for SelectProcess.xaml
     /// </summary>
-    public partial class SelectProcess : Window
+    public partial class SelectProcess : WindowBase
     {
-        public SelectProcess(IEnumerable<IProcess> processes, TimeSpan maxLifetime, Action<List<IProcess>> action, bool hasAllProc = false)
+        public SelectProcess(Window parentWindow, IEnumerable<IProcess> processes, TimeSpan maxLifetime, Action<List<IProcess>> action, bool hasAllProc = false) : base(parentWindow)
         {
             m_action = action;
             m_processes = processes;

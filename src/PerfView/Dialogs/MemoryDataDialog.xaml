@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.Dialogs.MemoryDataDialog"
+﻿<src:WindowBase x:Class="PerfView.Dialogs.MemoryDataDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
@@ -159,5 +159,5 @@
             <src:StatusBar x:Name="StatusBar" Grid.Column="1" Margin="5,5,5,5"/>
         </Grid>
     </Grid>
-</Window>
+</src:WindowBase>
 

@@ -282,7 +282,7 @@ public class GCHeapDumper
             m_log.WriteLine("Continuing with less accurate GC root information.");
         }
 
-        DumpDotNetHeapData(runtime.GetHeap(), ref proc, true);
+        DumpDotNetHeapData(runtime.Heap, ref proc, true);
         WriteData(logLiveStats: false);
 
         var collectionMetadata = new CollectionMetadata()
@@ -303,9 +303,6 @@ public class GCHeapDumper
         {
             this.dataReader = dataReader;
         }
-
-        [Obsolete]
-        public bool CanReadAsync => dataReader.CanReadAsync;
 
         public bool IsMinidump => dataReader.IsMinidump;
 
@@ -377,12 +374,6 @@ public class GCHeapDumper
         public bool ReadMemory(ulong address, IntPtr buffer, int bytesRequested, out int bytesRead)
         {
             return dataReader.ReadMemory(SignExtend(address), buffer, bytesRequested, out bytesRead);
-        }
-
-        [Obsolete]
-        public AsyncMemoryReadResult ReadMemoryAsync(ulong address, int bytesRequested)
-        {
-            return dataReader.ReadMemoryAsync(address, bytesRequested);
         }
 
         public ulong ReadPointerUnsafe(ulong addr)
@@ -836,11 +827,7 @@ public class GCHeapDumper
         DataTarget target;
         ClrRuntime runtime;
         InitializeClrRuntime(inputSpec, out target, out runtime);
-#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
-        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions();
-#else 
-        IEnumerable<ClrException> serializedExceptions = null; //  runtime.EnumerateSerializedExceptions();
-#endif 
+        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions(); 
         bool flag7 = serializedExceptions == null || Enumerable.Count<ClrException>(serializedExceptions) == 0;
         if (flag7)
         {
@@ -1167,7 +1154,7 @@ public class GCHeapDumper
                                 return false;
                             }
 
-                            gcHeap = runtime.GetHeap();
+                            gcHeap = runtime.Heap;
                             if (gcHeap == null)
                             {
                                 m_log.WriteLine("Could not create GC Heap handle for the .NET Runtime.");

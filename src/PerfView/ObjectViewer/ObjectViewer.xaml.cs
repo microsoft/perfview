@@ -12,9 +12,9 @@ namespace PerfView
     /// that is wired up to get its data from the 'graph' and 'refGraph' starting with a list of 'focus nodes' as
     /// the root of the tree.  
     /// </summary>
-    public partial class ObjectViewer : Window
+    public partial class ObjectViewer : WindowBase
     {
-        public ObjectViewer(MemoryGraph graph, RefGraph refGraph, List<NodeIndex> focusNodes = null)
+        public ObjectViewer(Window parentWindow, MemoryGraph graph, RefGraph refGraph, List<NodeIndex> focusNodes = null) : base(parentWindow)
         {
             InitializeComponent();
 

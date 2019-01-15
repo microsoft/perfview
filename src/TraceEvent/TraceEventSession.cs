@@ -2320,7 +2320,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public IList<int> ProcessIDFilter { get; set; }
         /// <summary>
         /// Setting ProcessNameFilter will limit the providers that receive the EnableCommand to those that match on of
-        /// the given Process names (a process name is the name of the EXE with a path or extension).  
+        /// the given Process names (a process name is the name of the EXE without the PATH but WITH the extension).  
         /// </summary>
         public IList<string> ProcessNameFilter { get; set; }
         /// <summary>

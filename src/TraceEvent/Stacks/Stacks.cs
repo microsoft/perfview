@@ -367,7 +367,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     }
 
     /// <summary>
-    /// StackSourceSample represents a single sample that has a stack.   It has a number of predefined data items assoicate with it
+    /// StackSourceSample represents a single sample that has a stack.   It has a number of predefined data items associate with it
     /// including a stack, a metric and a time as well as other optional fields.  Note that all its properties are read-write.  
     /// It is basically a named tuple. 
     /// 

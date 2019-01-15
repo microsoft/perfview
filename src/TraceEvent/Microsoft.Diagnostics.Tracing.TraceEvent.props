@@ -42,8 +42,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll">
-      <Link>OsExtensions.dll</Link>
+
+	<!-- you have to pick the right version of this DLL because it depends on things besides System.Runtime.dll -->
+    <None Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' AND Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll">
+      <Link>OSExtensions.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND Exists('$(MSBuildThisFileDirectory)..\lib\net45\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\net45\OSExtensions.dll">
+      <Link>OSExtensions.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>

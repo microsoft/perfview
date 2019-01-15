@@ -1,5 +1,4 @@
 ﻿//     Copyright (c) Microsoft Corporation.  All rights reserved.
-#define USE_OS_DYNAMIC_EVENT_PARSING    // TODO REMOVE 
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.Extensions;
@@ -130,9 +129,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            for (byte ver = 0; ver <= 255; ver++)
+            for (int ver = 0; ver <= 255; ver++)
             {
-                eventRecord.EventHeader.Version = ver;
+                eventRecord.EventHeader.Version = (byte) ver;
                 int count;
                 int status;
                 for (; ; )
@@ -626,24 +625,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
 
-#if USE_OS_DYNAMIC_EVENT_PARSING
-                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging
-                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When
-                // that happens this path where we parse the TraceLogging data explicitly will become
-                // unreachable and can be removed.    A fair bit of code can be removed in this way.
-                if (!hasETWEventInformation)
-                {
-                    if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
-                    {
-                        ret = CheckForTraceLoggingEventDefinition(unknownEvent);
-                        if (ret != null)
-                        {
-                            ret.containsSelfDescribingMetadata = true;
-                            return ret;
-                        }
-                    }
-                }
-#endif
 
                 // TODO cache the buffer?, handle more types, handle structs...
                 int buffSize = 9000;
@@ -667,223 +648,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             return ret;
         }
-
-#if USE_OS_DYNAMIC_EVENT_PARSING
-
-        /*************************** TraceLogging format Support ********************************/
-        /// <summary>
-        /// Events that have this special special marker in their channel indicate that the 
-        /// data format is the new self-describing TraceLogging style 
-        /// </summary>
-        internal const TraceEventChannel TraceLoggingMarker = (TraceEventChannel)11;
-
-        /// <summary>
-        /// Given a TraceLogging event 'data' (which has Channel == 11), then parse it adding the
-        /// definition to lookup logic if necessary.   Returns true if a new definition was added
-        /// (which means you need to retry lookup).  
-        /// </summary>
-        private static unsafe DynamicTraceEventData CheckForTraceLoggingEventDefinition(TraceEvent data)
-        {
-            // Format for TraceLogging MetaData
-            //
-            // ProviderBlob
-            //      ushort TotalProviderBlobLength;     // includes this short, null termination, and provider traits
-            //      string UTF8NullTerminatedProviderName
-            //      provider traits (can be ignored).
-            // EventPayloadNameBlob
-            //      ushort TotalEventBlobLength         // includes this short and all type info.  
-            //      byte   Tags[N];                     // N varies, 1 or more. Top bit of each byte is ChainFlag. Stop reading when you hit a byte with ChainFlag unset.
-            //      string UTF8NullTerminatedEventName
-            //                                          // The following are repeated until you reach TotalEventBlobLength.
-            //      string UTF8NullTerminatedFieldName
-            //      byte   InType;                      // bits 0-4 = intype, bits 5-6 == CountFlags, bit 7 == ChainFlag
-            //      byte   OutType                      // Only present if InType.ChainFlag. bits 0-6 = outtype, bit 7 = ChainFlag
-            //      byte   Tags[N];                     // Only present if OutType.ChainFlag. N varies, 1 or more. Top bit of each byte is ChainFlag. Stop reading when you hit a byte with ChainFlag unset.
-            //      ushort Count                        // Only present if CountFlag & FixedCountFlag.
-            //      byte   Custom[Count];               // Only present if CountFlag == CustomCountFlag.
-
-            int offset = data.GetInt16At(0);
-            if (offset < 6 || data.EventDataLength < offset)
-            {
-                Trace.WriteLine("Error: TraceLogging header has illegal Offset " + offset + " for data len " + data.EventDataLength);
-                return null;
-            }
-            string providerName = data.GetUTF8StringAt(2);
-
-            int eventMetaDataEnd = offset + data.GetInt16At(offset); offset += 2;
-
-            // Ignore event tags (read until we find a byte with high bit unset)
-            do
-            {
-                offset++;
-            }
-            while (0 != (data.GetByteAt(offset - 1) & 0x80));
-
-            string eventName = data.GetUTF8StringAt(offset); offset = data.SkipUTF8String(offset);
-
-            var event_ = new DynamicTraceEventData(null, (int)data.ID, 0, eventName, Guid.Empty, 0, "", data.ProviderGuid, providerName);
-            Debug.WriteLine("Got TraceLogging Provider " + providerName + " Event " + eventName);
-
-            TraceLoggingFieldParser fieldParser = new TraceLoggingFieldParser(data, offset, eventMetaDataEnd);
-            fieldParser.ParseFields(out event_.payloadNames, out event_.payloadFetches, (ushort)eventMetaDataEnd);
-
-            return event_;
-        }
-
-        /// <summary>
-        /// A helper class that knows how to parse fields with nested types.  
-        /// </summary>
-        private class TraceLoggingFieldParser
-        {
-            public TraceLoggingFieldParser(TraceEvent data, int metaDataStart, int eventMetaDataEnd)
-            {
-                this.data = data;
-                offset = metaDataStart;
-                this.eventMetaDataEnd = eventMetaDataEnd;
-            }
-
-            /// <summary>
-            /// Parses at most 'maxFields' fields starting at the current position.  
-            /// Will return the parse fields in 'payloadNamesRet' and 'payloadFetchesRet'
-            /// Will return true if successful, false means an error occurred.  
-            /// </summary>
-            public bool ParseFields(out string[] payloadNamesRet, out DynamicTraceEventData.PayloadFetch[] payloadFetchesRet, ushort fieldOffset, int maxFields = int.MaxValue)
-            {
-                var payloadFetches = new List<DynamicTraceEventData.PayloadFetch>();
-                var payloadNames = new List<string>();
-
-                while (offset < eventMetaDataEnd)
-                {
-                    if (maxFields <= payloadFetches.Count)
-                    {
-                        break;
-                    }
-
-                    // Parse field name
-                    string fieldName = data.GetUTF8StringAt(offset); offset = data.SkipUTF8String(offset);
-
-                    int outType = 0;
-                    int inTypeRaw = data.GetByteAt(offset); offset++;
-                    int countFlags = inTypeRaw & InTypeCountMask;
-
-                    if ((inTypeRaw & InTypeChainFlag) != 0)
-                    {
-                        outType = data.GetByteAt(offset); offset++;
-
-                        // Skip tags, if present.
-                        if ((outType & OutTypeChainFlag) != 0)
-                        {
-                            do
-                            {
-                                offset++;
-                            }
-                            while ((data.GetByteAt(offset - 1) & 0x80) != 0);
-                        }
-
-                        outType &= OutTypeTypeMask;
-                    }
-
-                    TdhInputType inType = (TdhInputType)(inTypeRaw & InTypeTypeMask);
-                    ushort fixedCount = 0;
-                    if ((countFlags & InTypeFixedCountFlag) != 0)
-                    {
-                        fixedCount = (ushort)data.GetInt16At(offset); offset += 2;
-                        if (countFlags == InTypeCustomCountFlag)
-                        {
-                            offset += fixedCount;
-                        }
-
-                        if (inTypeRaw == 0 && countFlags == InTypeFixedCountFlag)
-                        {
-                            // Obsolete encoding for struct. Translate into new encoding.
-                            inType = TdhInputType.Struct;
-                            outType = fixedCount;
-                            countFlags = 0;
-                        }
-                    }
-
-                    DynamicTraceEventData.PayloadFetch payloadFetch;
-                    if (inType == TdhInputType.Struct)
-                    {
-                        int numStructFields = outType;
-                        Debug.WriteLine("   " + fieldName + " Is a nested type with " + numStructFields + " fields");
-                        var classInfo = new DynamicTraceEventData.PayloadFetchClassInfo();
-                        if (!ParseFields(out classInfo.FieldNames, out classInfo.FieldFetches, 0, numStructFields))
-                        {
-                            goto Fail;
-                        }
-
-                        payloadFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(fieldOffset, classInfo);
-                    }
-                    else
-                    {
-                        if (inType == TdhInputType.UInt8 && outType == 3)       // This encodes as boolean
-                        {
-                            outType = 13;          // This TDH_OUTTYPE_BOOLEAN   
-                        }
-
-                        payloadFetch = new DynamicTraceEventData.PayloadFetch(fieldOffset, inType, outType);
-                        if (payloadFetch.Size == DynamicTraceEventData.UNKNOWN_SIZE)
-                        {
-                            Trace.WriteLine("    Unknown type for  " + fieldName + " " + inType.ToString() + " fields from here will be missing.");
-                            goto Fail;
-                        }
-                    }
-
-                    // Is it an array? 
-                    if (countFlags != 0 || inType == TdhInputType.Binary)
-                    {
-                        payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(fieldOffset, payloadFetch, fixedCount);
-                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT; // 16 bit, Unicode, does not consume field. 
-                    }
-
-                    var size = payloadFetch.Size;
-                    Debug.Assert(0 < size);
-                    Debug.WriteLine("    Got TraceLogging Field " + fieldName + " " + (payloadFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x"));
-                    payloadNames.Add(fieldName);
-                    payloadFetches.Add(payloadFetch);
-                    if (fieldOffset != ushort.MaxValue)
-                    {
-                        if (size < DynamicTraceEventData.SPECIAL_SIZES)
-                        {
-                            fieldOffset += size;
-                        }
-                        else
-                        {
-                            fieldOffset = ushort.MaxValue;
-                        }
-                    }
-                }
-
-                payloadNamesRet = payloadNames.ToArray();
-                payloadFetchesRet = payloadFetches.ToArray();
-                return true;
-
-                Fail:
-                payloadNamesRet = new string[0];
-                payloadFetchesRet = new DynamicTraceEventData.PayloadFetch[0];
-                return false;
-            }
-
-            #region private
-
-            // TODO we may not need all of these.  
-            internal const byte InTypeTypeMask = 31;
-            internal const byte InTypeFixedCountFlag = 32;
-            internal const byte InTypeVariableCountFlag = 64;
-            internal const byte InTypeCustomCountFlag = 96;
-            internal const byte InTypeCountMask = 96;
-            internal const byte InTypeChainFlag = 128;
-
-            internal const byte OutTypeTypeMask = 127;
-            internal const byte OutTypeChainFlag = 128;
-            private TraceEvent data;
-            private int offset;
-            private int eventMetaDataEnd;
-            #endregion // private
-        }
-
-#endif
 
         /// <summary>
         /// TdhEventParser takes the Trace Diagnostics Helper (TDH) TRACE_EVENT_INFO structure and
@@ -1065,8 +829,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     // is this dynamically sized with another field specifying the length?
-                    // Is it an array? 
-                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || propertyInfo->InType == TdhInputType.Binary)
+                    // Is it an array (binary and not a struct) (seems InType is not valid if property is a struct, so need to test for both.
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || (propertyInfo->InType == TdhInputType.Binary && (propertyInfo->Flags & PROPERTY_FLAGS.Struct) == 0))
                     {
                         // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.  
                         var countOrCountIndex = propertyInfo->CountOrCountIndex;

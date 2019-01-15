@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -50,14 +50,13 @@
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
 
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
     <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
-    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
 
@@ -265,7 +264,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net45\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -351,6 +350,11 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportFiles\EventCounterVisualization.html">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\EventCounterVisualization.html</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\PerfViewWebVideos.htm">
       <Type>Non-Resx</Type>

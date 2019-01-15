@@ -426,9 +426,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             var thread = data.Thread();
             if (thread == null)
-            {
                 return;
-            }
 
             int threadIndex = (int)thread.ThreadIndex;
             if (m_threadNeedsToAutoStart[threadIndex])
@@ -440,6 +438,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void AutoRestart(TraceEvent data, TraceThread thread)
         {
+            if (thread == null)
+                return;
+
             // TODO: ideally we just call OnCreated, and OnStarted. 
             // Can't remember why I did not do this... 
 

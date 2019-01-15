@@ -1,6 +1,7 @@
-﻿<Window x:Class="PerfView.RunCommandDialog"
+﻿<src:WindowBase x:Class="PerfView.RunCommandDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
         Background="#FFA7A7A7" 
         Title="Collecting ETW Data while running a command" 
@@ -39,11 +40,22 @@
                 </FlowDocument>
             </RichTextBox.Document>
         </RichTextBox>
-        <TextBlock Grid.Row="1" Grid.Column="0" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The command line of the process to run while collecting data.">
+        <!-- CommandToRun section for running specific process -->
+        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="CommandToRunLabel" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The command line of the process to run while collecting data.">
                 <Hyperlink Command="Help" CommandParameter="CommandToRunTextBox">Command:</Hyperlink>
         </TextBlock>
         <controls:HistoryComboBox Grid.Row="1" Margin="0,5,0,0"  Grid.Column="1" x:Name="CommandToRunTextBox" VerticalAlignment="Center" KeyDown="CommandToRunKeyDown"  />
+        
+        <!-- FocusProcess section for Collect command-->
+        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
+            <TextBlock Name="FocusProcessLabel" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="Name or PID of the process to collect user-mode events for.">
+                <Hyperlink Command="Help" CommandParameter="FocusProcessTextBox">Focus process:</Hyperlink>
+            </TextBlock>
+            <CheckBox Name="FocusProcessCheckBox" VerticalAlignment="Center" Margin="1,2,2,0" Click="FocusProcessCheckBoxClicked" IsChecked="false" />
+        </StackPanel>
+        <TextBox Grid.Row="1" Margin="0,5,0,0"  Grid.Column="1" x:Name="FocusProcessTextBox" VerticalAlignment="Center" />
 
+        <!-- Data file name row -->
         <TextBlock Grid.Row="2" Grid.Column="0" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The name of the data file to create." >
             <Hyperlink Command="Help" CommandParameter="DataFileNameTextBox">Data File:</Hyperlink>
         </TextBlock>
@@ -491,4 +503,4 @@
             </Grid>
         </Expander>
     </Grid>
-</Window>
+</src:WindowBase>

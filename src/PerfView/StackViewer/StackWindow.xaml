@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.StackWindow"
+﻿<src:WindowBase x:Class="PerfView.StackWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -523,4 +523,4 @@
             </TextBlock>
         </Grid>
     </DockPanel>
-</Window>
+</src:WindowBase>

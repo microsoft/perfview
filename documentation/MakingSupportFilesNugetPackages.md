@@ -7,7 +7,7 @@ The build of PerfView depends on two packages of support files.
 
 
 These two Nuget packages contain binaries (DLLs and tools) that are assumed as 
-part of the underlying platform, so are not created as part of the build.  These
+part of the underlying platform, so they are not created as part of the build.  These
 include 
 
  * The native code msdia* library that allows you to decode PDB files
@@ -17,7 +17,7 @@ include
 
 These Nuget packages are available on https://www.nuget.org/ so the build should 'just work'
 but it is certainly possible that at some point we will want to update these binaries. 
-and this document indicats how to do this.  
+and this document indicates how to do this.  
 
 There are files in the 'NugetSupportFiles' directory for regenerating these two Nuget packages.
 We go through the procedure for PerfView.SupportFiles.1.0.0 but the same technique works for
@@ -38,7 +38,7 @@ PerfView.SupportFiles.Populate.bat script.
     base of the repo.   *If you don't update this
     file to take from the current version, you will end up making a package with old 
     binaries in it, which cause fixed bugs to reappear*.  
-2.  Then you can run the batch file.   This copies that files you are currently using
+2.  Then you can run the batch file. This copies the files you are currently using
     to form a baseline for the new package in a subdirectory of the src\NugetSupportFiles
 	directory.  
 
@@ -48,8 +48,8 @@ have the existing nuget package, you can populate the new package 'by hand' from
 ## Step 2 Update the files in the baseline Image (PerfView.SupportFiles)
 
 This is dependent on exactly what you want to do. However something you should ALWAYS do
-is to *update the version number in the PerfView.SupportFiles.nuspec file*.  You should also
-update the releaseNotes element in the nuspec file.   Thus at this
+is *update the version number in the PerfView.SupportFiles.nuspec file*.  You should also
+update the releaseNotes element in the nuspec file. Thus at this
 point you have updates the *.Populate*.bat file and the *.nuspec file. 
 
 ## Step 3 Generate the nuget package
@@ -66,8 +66,8 @@ THus at this point (even before uploading to Nuget.org) you can update the Direc
 point at your latest version, and build PerfView and test that the new behavior works.  
 
 Note that you can't actually check in this change to Directory.Build.props, however because 
-anyone else trying to build PerfView (include the PerfView appveyor system) does not have access
-to your new nuget packages.    This this change is only for local testing (at the moment)
+anyone else trying to build PerfView (including the PerfView appveyor system) does not have access
+to your new nuget packages. This change is only for local testing (at the moment).
 
 ## Step 5 Sign your New Nuget packages and upload them to nuget.org.
 
@@ -75,10 +75,10 @@ Nuget now requires that all Microsoft owned packages use nuget's package signing
 to be uploaded.  You also need special permission to upload them.   See 
 [Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmaster) for more on this.   
 
-It does take a few minutes after uploading for the packages to become visible.   Be patient.  
+It does take a few minutes after uploading for the packages to become visible. Be patient.  
 
 ## Step 6 Check in the use of the updated Support packages.
 
 Once the new packages are available you can actually check in the changes to Directory.Build.props to use
-the new packages officially.   It is a good practice to update the *.Populate.bat file and *.nuspec 
+the new packages officially. It is a good practice to update the *.Populate.bat file and *.nuspec 
 files to the NEXT version (that way you can only make a mistake if you forget to do this TWICE).  

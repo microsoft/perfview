@@ -108,7 +108,7 @@ namespace PerfView
             int procID = proc.ProcessID;
 
             // Create the application's main window
-            m_mainWindow = new Window();
+            m_mainWindow = new WindowBase(GuiApp.MainWindow);
             m_mainWindow.Title = String.Format(FullTitle, proc.Name, procID);
 
             // HelpBox

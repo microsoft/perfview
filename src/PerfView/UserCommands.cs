@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -43,7 +44,7 @@ namespace PerfViewExtensibility
         // This can be as simple as coping the PerfView.xml file from output directory to src\PerfView\SupportFiles.
         // HOwever you can do better than this by removing all 'method' entries that are not user commands
         // That is members of this class.   THis makes the file (and therefore PerfView.exe) smaller.  
-    
+
 #if false // TODO Ideally you don't need Linux Specific versions, and it should be based
           // on eventPipe.   You can delete after 1/2018
         public void LinuxGCStats(string traceFileName)
@@ -150,7 +151,7 @@ namespace PerfViewExtensibility
             }
         }
 
-#endif 
+#endif
 #if !PERFVIEW_COLLECT
         /// <summary>
         /// Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
@@ -743,7 +744,7 @@ namespace PerfViewExtensibility
                 {
                     GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                     {
-                        var logTextWindow = new Controls.TextEditorWindow();
+                        var logTextWindow = new Controls.TextEditorWindow(GuiApp.MainWindow);
                         // Destroy the session when the widow is closed.  
                         logTextWindow.Closed += delegate (object sender, EventArgs e) { session.Dispose(); };
 
@@ -835,7 +836,7 @@ namespace PerfViewExtensibility
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate (string dirPath, string outFileName)
+                    var dialog = new FileInputAndOutput(GuiApp.MainWindow, delegate (string dirPath, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "DirectorySize", dirPath, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -1004,7 +1005,7 @@ namespace PerfViewExtensibility
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate (string inExeName, string outFileName)
+                    var dialog = new FileInputAndOutput(GuiApp.MainWindow, delegate (string inExeName, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "ImageSize", inExeName, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -1091,7 +1092,7 @@ namespace PerfViewExtensibility
                 LogFile.WriteLine("[Could not find PDB for {0}]", dllName);
             }
         }
-#endif 
+#endif
 
         public void LookupSymbols(string pdbFileName, string pdbGuid, string pdbAge)
         {
@@ -1567,7 +1568,6 @@ namespace PerfViewExtensibility
         }
 
 
-#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
         /// <summary>
         /// PrintSerializedExceptionFromProcessDump
         /// </summary>
@@ -1624,7 +1624,6 @@ namespace PerfViewExtensibility
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
             }
         }
-#endif
 
 #if false
         public void Test()

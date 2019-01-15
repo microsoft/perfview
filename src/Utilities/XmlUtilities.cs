@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    internal class XmlUtilities
+    class XmlUtilities
     {
         /// <summary>
         /// Given an XML element, remove the closing operator for it, so you can add new child elements to it by concatination. 

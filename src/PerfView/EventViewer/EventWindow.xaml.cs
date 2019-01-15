@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -23,9 +24,9 @@ namespace PerfView
     /// <summary>
     /// Interaction logic for SelectProcess.xaml
     /// </summary>
-    public partial class EventWindow : Window
+    public partial class EventWindow : WindowBase
     {
-        public EventWindow(Window parent, EventSource source)
+        public EventWindow(Window parent, EventSource source) : base(parent)
         {
             throw new NotImplementedException();
         }
@@ -501,6 +502,110 @@ namespace PerfView
             ProcessFilterTextBox.Text = GetCellStringValue(selectedCells[0]);
             Update();
         }
+        private void DoShowEventCounterGraph(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (EventTypes.SelectedItems.Count != 1)
+            {
+                return;
+            }
+            if (!((string)EventTypes.SelectedItems[0]).EndsWith("/EventCounters"))
+            {
+                return;
+            }
+            Update();
+            
+            string templatePath = Path.Combine(SupportFiles.SupportFileDir, "EventCounterVisualization.html");
+            string template = File.ReadAllText(templatePath);
+
+            double t = 0;
+           
+            var counters = new Dictionary<string, List<Tuple<double, double>>>();
+            string pattern = @"Name:""([^""]*)"", Mean:([^,]*).*IntervalSec:([^}]*)";
+            m_source.ForEach(delegate (EventRecord event_)
+            {
+                string rest = event_.Rest;
+                if (rest == null)
+                {
+                    return false;
+                }
+                MatchCollection matches = Regex.Matches(rest, pattern);
+                if (matches.Count != 1 || matches[0].Groups.Count != 4)
+                {
+                    return false;
+                }
+
+                string namePart = matches[0].Groups[1].Captures[0].Value;
+                string meanPart = matches[0].Groups[2].Captures[0].Value;
+                string intervalSecPart = matches[0].Groups[3].Captures[0].Value;
+
+                double mean;
+                double intervalSec;
+                if (!double.TryParse(meanPart, out mean))
+                {
+                    return false;
+                }
+                if (!double.TryParse(intervalSecPart, out intervalSec))
+                {
+                    return false;
+                }
+
+                List<Tuple<Double, Double>> points;
+                if (!counters.TryGetValue(namePart, out points))
+                {
+                    points = new List<Tuple<double, double>>();
+                    counters.Add(namePart, points);
+                }
+                points.Add(Tuple.Create(t, mean));
+
+                t += intervalSec;
+
+                return true;
+            });
+
+            var firstCounter = true;
+            var sb = new StringBuilder();
+            sb.Append("var data = [");
+            foreach (var counter in counters)
+            {
+                if (firstCounter)
+                {
+                    firstCounter = false;
+                }
+                else
+                {
+                    sb.Append(",");
+                }
+                sb.Append("{");
+                sb.Append(@"name:""");
+                sb.Append(counter.Key);
+                sb.Append(@""", points:[");
+                var firstPoint = true;
+                foreach (var point in counter.Value)
+                {
+                    if (firstPoint)
+                    {
+                        firstPoint = false;
+                    }
+                    else
+                    {
+                        sb.Append(",");
+                    }
+                    sb.Append("{ X:");
+                    sb.Append(point.Item1);
+                    sb.Append(", Y:");
+                    sb.Append(point.Item2);
+                    sb.Append("}");
+                }
+                sb.Append("]}");
+            }
+            sb.Append("];");
+            string html = Path.GetTempFileName() + ".html";
+            File.WriteAllText(html, template.Replace("// REPLACE-DATA-HERE", sb.ToString()));
+
+            string uri = "file:///" + html.Replace('\\', '/').Replace(" ", "%20");
+            Process.Start(uri);
+        }
+            
         private void DoRangeFilter(object sender, ExecutedRoutedEventArgs e)
         {
             if (Histogram.IsFocused)
@@ -1265,6 +1370,10 @@ namespace PerfView
             typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.S, ModifierKeys.Alt) });
         public static RoutedUICommand OpenAnyStartStopStacksCommand = new RoutedUICommand("Open Any Start Stop Stacks", "OpenAnyStartStopStacks", typeof(EventWindow));
         public static RoutedUICommand OpenAnyTaskTreeStacksCommand = new RoutedUICommand("Open Any TaskTree Stacks", "OpenAnyTaskTreeStacks", typeof(EventWindow));
+
+        public static RoutedUICommand ShowEventCounterGraphCommand = new RoutedUICommand("Show EventCounter Graph", "ShowEventCounterGraph",
+            typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.G, ModifierKeys.Control) });
+
         public static RoutedUICommand SetProcessFilterCommand = new RoutedUICommand("Set Process Filter", "SetProcessFilter",
             typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.P, ModifierKeys.Control) });
         public static RoutedUICommand SetRangeFilterCommand = new RoutedUICommand("Set Range Filter", "SetRangeFilter",

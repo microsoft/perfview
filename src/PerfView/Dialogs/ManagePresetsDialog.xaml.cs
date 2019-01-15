@@ -11,11 +11,11 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for ManagePresetsDialog.xaml
     /// </summary>
-    public partial class ManagePresetsDialog : Window
+    public partial class ManagePresetsDialog : WindowBase
     {
         public List<Preset> Presets { get; private set; }
 
-        public ManagePresetsDialog(List<Preset> presets, string basePath, StatusBar log)
+        public ManagePresetsDialog(Window parentWindow, List<Preset> presets, string basePath, StatusBar log) : base(parentWindow)
         {
             InitializeComponent();
             Title = "Manage Presets";

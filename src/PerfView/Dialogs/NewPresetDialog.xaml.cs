@@ -7,11 +7,11 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for NewPresetDialog.xaml
     /// </summary>
-    public partial class NewPresetDialog : Window
+    public partial class NewPresetDialog : WindowBase
     {
         public string PresetName { get; private set; }
 
-        public NewPresetDialog(string defaultValue, List<string> existingPresets)
+        public NewPresetDialog(Window parentWindow, string defaultValue, List<string> existingPresets) : base(parentWindow)
         {
             m_existingPresets = existingPresets;
             InitializeComponent();
