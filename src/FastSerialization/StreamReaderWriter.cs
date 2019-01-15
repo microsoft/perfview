@@ -269,50 +269,53 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(short value)
+        public unsafe void Write(short value)
         {
             if (endPosition + sizeof(short) > bytes.Length)
             {
                 MakeSpace();
             }
 
-            int intValue = value;
-            bytes[endPosition++] = (byte)intValue; intValue = intValue >> 8;
-            bytes[endPosition++] = (byte)intValue; intValue = intValue >> 8;
+            fixed (byte* data = bytes)
+            {
+                *(short*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(short);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(int value)
+        public unsafe void Write(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
             {
                 MakeSpace();
             }
 
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
+            fixed (byte* data = bytes)
+            {
+                *(int*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(int);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(long value)
+        public unsafe void Write(long value)
         {
             if (endPosition + sizeof(long) > bytes.Length)
             {
                 MakeSpace();
             }
 
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
+            fixed (byte* data = bytes)
+            {
+                *(long*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(long);
         }
         /// <summary>
         /// Implementation of IStreamWriter
