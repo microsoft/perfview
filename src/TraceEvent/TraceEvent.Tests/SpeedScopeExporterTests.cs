@@ -9,21 +9,44 @@ namespace TraceEventTests
     public class SpeedScopeExporterTests
     {
         [Fact]
-        public void GetSortedSamplesReturnsSamplesSortedByRelativeTime()
+        public void GetSortedSamplesReturnsSamplesSortedByRelativeTimeAndGrouppedByThread()
         {
-            var sourceSamples = new[] {
-                new FakeStackSourceSample(0.3),
-                new FakeStackSourceSample(0.1),
-                new FakeStackSourceSample(0.2)
-            };
+            const string ThreadName = "Thread (123)";
+            var thread_1 = new FakeStackSourceSample(
+                relativeTime: 0.1,
+                name: ThreadName,
+                frameIndex: (StackSourceFrameIndex)5, // 5 is first non-taken enum value
+                stackIndex: (StackSourceCallStackIndex)1, // 1 is first non-taken enum value
+                callerIndex: StackSourceCallStackIndex.Invalid);
+            var a_1 = new FakeStackSourceSample(
+                relativeTime: 0.1,
+                name: "A",
+                frameIndex: (StackSourceFrameIndex)6,
+                stackIndex: (StackSourceCallStackIndex)2,
+                callerIndex: thread_1.StackIndex);
+            var thread_2 = new FakeStackSourceSample(
+                relativeTime: 0.2,
+                name: ThreadName,
+                frameIndex: (StackSourceFrameIndex)5, // 5 is first non-taken enum value
+                stackIndex: (StackSourceCallStackIndex)3, // 1 is first non-taken enum value
+                callerIndex: StackSourceCallStackIndex.Invalid);
+            var a_2 = new FakeStackSourceSample(
+                relativeTime: 0.2,
+                name: "A",
+                frameIndex: (StackSourceFrameIndex)6,
+                stackIndex: (StackSourceCallStackIndex)4,
+                callerIndex: thread_2.StackIndex);
+
+            var sourceSamples = new[] { thread_1, thread_2, a_2, a_1 };
 
             var stackSource = new StackSourceStub(sourceSamples);
 
-            var result = SpeedScopeExporter.GetSortedSamples(stackSource);
+            var result = SpeedScopeExporter.GetSortedSamplesPerThread(stackSource)[ThreadName];
 
             Assert.Equal(0.1, result[0].RelativeTime);
-            Assert.Equal(0.2, result[1].RelativeTime);
-            Assert.Equal(0.3, result[2].RelativeTime);
+            Assert.Equal(0.1, result[1].RelativeTime);
+            Assert.Equal(0.2, result[2].RelativeTime);
+            Assert.Equal(0.2, result[2].RelativeTime);
         }
 
         [Fact]
@@ -51,10 +74,11 @@ namespace TraceEventTests
                 callerIndex: a.StackIndex);
 
             var allSamples = new[] { main, a, b };
-            var leafs = new[] { new SpeedScopeExporter.Sample(b.StackIndex, b.RelativeTime, b.Metric, -1) };
+            var leafs = new[] { new SpeedScopeExporter.Sample(b.StackIndex, -1, b.RelativeTime, b.Metric, -1) };
             var stackSource = new StackSourceStub(allSamples);
-            
-            SpeedScopeExporter.WalkTheStackAndExpandSamples(stackSource, leafs, out var frameNameToId, out var frameIdToSamples);
+            var frameNameToId = new Dictionary<string, int>();
+
+            var frameIdToSamples = SpeedScopeExporter.WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
 
             Assert.Equal(0, frameNameToId[main.Name]);
             Assert.Equal(1, frameNameToId[a.Name]);
@@ -87,10 +111,11 @@ namespace TraceEventTests
                 callerIndex: main.StackIndex);
 
             var allSamples = new[] { main, wrong };
-            var leafs = new[] { new SpeedScopeExporter.Sample(wrong.StackIndex, wrong.RelativeTime, wrong.Metric, -1) };
+            var leafs = new[] { new SpeedScopeExporter.Sample(wrong.StackIndex, -1, wrong.RelativeTime, wrong.Metric, -1) };
             var stackSource = new StackSourceStub(allSamples);
+            var frameNameToId = new Dictionary<string, int>();
 
-            SpeedScopeExporter.WalkTheStackAndExpandSamples(stackSource, leafs, out var frameNameToId, out var frameIdToSamples);
+            var frameIdToSamples = SpeedScopeExporter.WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
 
             Assert.Equal(0, frameNameToId[main.Name]);
             Assert.False(frameNameToId.ContainsKey(wrong.Name));
@@ -107,14 +132,14 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.1),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.2),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.1),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.2),
 
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 0.7),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.7),
 
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 1.1),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 1.2),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, depth: 0, relativeTime: 1.3),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.1),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.2),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.3),
             };
 
             var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
@@ -147,8 +172,8 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.1, depth: 0),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
             };
 
             var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
@@ -175,6 +200,43 @@ namespace TraceEventTests
             Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
             Assert.Equal(0.2 + metric, aggregatedEvents[3].RelativeTime);
             Assert.Equal(1, aggregatedEvents[3].Depth);
+        }
+
+        [Fact]
+        public void GetAggregatedOrderedProfileEventsConvertsContinuousSamplesWithDifferentCallerIdToMultipleEvents()
+        {
+            const double metric = 0.1;
+
+            var samples = new[]
+            {
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerFrameId: 0),
+                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerFrameId: 1), // callerFrameId change!
+            };
+
+            var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
+
+            var aggregatedEvents = SpeedScopeExporter.GetAggregatedOrderedProfileEvents(input);
+
+            // we should have:
+            //  Open at 0.1 depth 0 and Close 0.2
+            //  Open at 0.2 depth 0 and Close 0.3
+            Assert.Equal(4, aggregatedEvents.Count);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
+            Assert.Equal(0.1 + metric, aggregatedEvents[1].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[2].Type);
+            Assert.Equal(0.2, aggregatedEvents[2].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[2].Depth);
+
+            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
+            Assert.Equal(0.2 + metric, aggregatedEvents[3].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[3].Depth);
         }
 
         [Fact]
@@ -228,7 +290,11 @@ namespace TraceEventTests
         #region private
         internal class FakeStackSourceSample
         {
-            public FakeStackSourceSample(double relativeTime) => RelativeTime = relativeTime;
+            public FakeStackSourceSample(double relativeTime, string name)
+            {
+                RelativeTime = relativeTime;
+                Name = name;
+            }
 
             public FakeStackSourceSample(double relativeTime, string name, StackSourceFrameIndex frameIndex,
                 StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerIndex)

@@ -23,38 +23,76 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         #region private
         internal static void Export(StackSource source, TextWriter writer, string name)
         {
-            var samples = GetSortedSamples(source);
+            var samplesPerThread = GetSortedSamplesPerThread(source);
 
-            MakeSureSamplesDoNotOverlap(samples);
+            foreach (var samples in samplesPerThread.Values)
+                MakeSureSamplesDoNotOverlap(samples);
 
-            WalkTheStackAndExpandSamples(source, samples, out var frameNameToId, out var frameIdToSamples);
+            var exportedFrameNameToExportedFrameId = new Dictionary<string, int>();
+            var profileEventsPerThread = new Dictionary<string, IReadOnlyList<ProfileEvent>>();
 
-            var sortedProfileEvents = GetAggregatedOrderedProfileEvents(frameIdToSamples);
+            foreach(var pair in samplesPerThread)
+            {
+                var frameIdToSamples = WalkTheStackAndExpandSamples(source, pair.Value, exportedFrameNameToExportedFrameId);
 
-            var orderedFrameNames = frameNameToId.OrderBy(pair => pair.Value).Select(pair => pair.Key).ToArray();
+                var sortedProfileEvents = GetAggregatedOrderedProfileEvents(frameIdToSamples);
 
-            WriteToFile(sortedProfileEvents, orderedFrameNames, writer, name);
+                profileEventsPerThread.Add(pair.Key, sortedProfileEvents);
+            };
+
+            var orderedFrameNames = exportedFrameNameToExportedFrameId.OrderBy(pair => pair.Value).Select(pair => pair.Key).ToArray();
+
+            WriteToFile(profileEventsPerThread, orderedFrameNames, writer, name);
         }
 
         /// <summary>
-        /// this method gets all samples from StackSource and sorts them by relative time (ascending)
+        /// we want to identify the thread for every sample to prevent from 
+        /// overlaping of samples for the concurrent code so we group the samples by Threads
+        /// this method also sorts the samples by relative time (ascending)
         /// </summary>
-        internal static List<Sample> GetSortedSamples(StackSource stackSource)
+        internal static IReadOnlyDictionary<string, List<Sample>> GetSortedSamplesPerThread(StackSource stackSource)
         {
-            var samples = new List<Sample>(stackSource.CallStackIndexLimit);
+            var samplesPerThread = new Dictionary<string, List<Sample>>();
 
-            stackSource.ForEach(sample => samples.Add(new Sample(sample.StackIndex, sample.TimeRelativeMSec, sample.Metric, -1)));
+            stackSource.ForEach(sample => 
+            {
+                var stackIndex = sample.StackIndex;
 
-            // all samples in the StackSource should be sorted, but we want to ensure it
-            samples.Sort((x, y) => x.RelativeTime.CompareTo(y.RelativeTime));
+                while(stackIndex != StackSourceCallStackIndex.Invalid)
+                {
+                    var frameName = stackSource.GetFrameName(stackSource.GetFrameIndex(stackIndex), false);
 
-            return samples;
+                    // we walk the stack up until we find the Thread name
+                    if (!frameName.StartsWith("Thread ("))
+                    {
+                        stackIndex = stackSource.GetCallerIndex(stackIndex);
+                        continue;
+                    }
+
+                    if (!samplesPerThread.TryGetValue(frameName, out var samples))
+                        samplesPerThread[frameName] = samples = new List<Sample>();
+
+                    samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, sample.Metric, -1));
+
+                    return;
+                }
+
+                throw new InvalidOperationException("Sample with no Thread assigned!");
+            });
+
+            foreach (var samples in samplesPerThread.Values)
+            {
+                // all samples in the StackSource should be sorted, but we want to ensure it
+                samples.Sort((x, y) => x.RelativeTime.CompareTo(y.RelativeTime));
+            }
+
+            return samplesPerThread;
         }
 
         /// <summary>
         /// this method fixes the metrics of the samples to make sure they don't overlap
         /// it's very common that following samples overlap by a very small number like 0.0000000000156
-        /// we can't allow for that to happen because the speed scope can't draw such samples
+        /// we can't allow for that to happen because the SpeedScope can't draw such samples
         /// </summary>
         internal static void MakeSureSamplesDoNotOverlap(List<Sample> samples)
         {
@@ -68,7 +106,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     // the difference between current.Metric and recalculatedMetric is typically
                     // a very small number like 0.0000000000156
                     double recalculatedMetric = next.RelativeTime - current.RelativeTime;
-                    samples[i] = new Sample(current.StackIndex, current.RelativeTime, recalculatedMetric, current.Depth);
+                    samples[i] = new Sample(current.StackIndex, -1, current.RelativeTime, recalculatedMetric, current.Depth);
                 }
             }
             // we don't need to worry about the last sample
@@ -81,10 +119,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// it walks the stack up to the begining and adds a sample for every method on the stack
         /// it's required to build full information
         /// </summary>
-        internal static void WalkTheStackAndExpandSamples(StackSource stackSource, IEnumerable<Sample> leafs, 
-            out IReadOnlyDictionary<string, int> frameNamesToIds, out IReadOnlyDictionary<int, List<Sample>> frameIdsToSamples)
+        internal static IReadOnlyDictionary<int, List<Sample>> WalkTheStackAndExpandSamples(StackSource stackSource, IEnumerable<Sample> leafs, 
+            Dictionary<string, int> exportedFrameNameToExportedFrameId)
         {
-            var exportedFrameNameToExportedFrameId = new Dictionary<string, int>();
             var frameIdToSamples = new Dictionary<int, List<Sample>>();
 
             // we use stack here bacause we want a certain order: from the root to the leaf
@@ -103,6 +140,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                 // add sample for every method on the stack
                 int depth = -1;
+                int callerFrameId = -1;
                 while (stackIndexesToHandle.Count > 0)
                 {
                     stackIndex = stackIndexesToHandle.Pop();
@@ -123,13 +161,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         frameIdToSamples.Add(exportedFrameId, samples = new List<Sample>());
 
                     // the time and metric are the same as for the leaf sample
-                    // the difference is stack index (not really used from here) and depth (used for sorting the exported data)
-                    samples.Add(new Sample(stackIndex, leafSample.RelativeTime, leafSample.Metric, depth));
+                    // the difference is stack index (not really used from here), caller frame id and depth (used for sorting the exported data)
+                    samples.Add(new Sample(stackIndex, callerFrameId, leafSample.RelativeTime, leafSample.Metric, depth));
+
+                    callerFrameId = exportedFrameId;
                 }
             }
 
-            frameNamesToIds = exportedFrameNameToExportedFrameId;
-            frameIdsToSamples = frameIdToSamples;
+            return frameIdToSamples;
         }
 
         /// <summary>
@@ -174,6 +213,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         private static bool AreNotContinuous(Sample left, Sample right)
         {
             if (left.Depth != right.Depth)
+                return true;
+            if (left.CallerFrameId != right.CallerFrameId)
                 return true;
 
             // 1.2 is a magic number based on some experiments ;)
@@ -222,7 +263,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// writes pre-calculated data to SpeedScope format
         /// </summary>
-        internal static void WriteToFile(IReadOnlyList<ProfileEvent> sortedProfileEvents, IReadOnlyList<string> orderedFrameNames, TextWriter writer, string name)
+        internal static void WriteToFile(IReadOnlyDictionary<string, IReadOnlyList<ProfileEvent>> sortedProfileEventsPerThread, 
+            IReadOnlyList<string> orderedFrameNames, TextWriter writer, string name)
         {
             writer.Write("{");
             writer.Write("\"exporter\": \"speedscope@1.3.2\", ");
@@ -240,35 +282,50 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             }
             writer.Write("] }, ");
 
-            writer.Write("\"profiles\": [ {");
-            writer.Write("\"type\": \"evented\", ");
-            writer.Write($"\"name\": \"{name}\", ");
-            writer.Write("\"unit\": \"milliseconds\", ");
-            writer.Write($"\"startValue\": \"{sortedProfileEvents.First().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}\", ");
-            writer.Write($"\"endValue\": \"{sortedProfileEvents.Last().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}\", ");
-            writer.Write("\"events\": [ ");
-            for (int i = 0; i < sortedProfileEvents.Count; i++)
+            writer.Write("\"profiles\": [ ");
+
+            bool isFirst = true;
+            foreach (var perThread in sortedProfileEventsPerThread.OrderBy(pair => pair.Value.First().RelativeTime))
             {
-                var frameEvent = sortedProfileEvents[i];
-
-                writer.Write($"{{ \"type\": \"{(frameEvent.Type == ProfileEventType.Open ? "O" : "C")}\", ");
-                writer.Write($"\"frame\": {frameEvent.FrameId}, ");
-                // "R" is crucial here!!! we can't loose precision becasue it can affect the sort order!!!!
-                writer.Write($"\"at\": {frameEvent.RelativeTime.ToString("R", CultureInfo.InvariantCulture)} }}");
-
-                if (i != sortedProfileEvents.Count - 1)
+                if (!isFirst)
                     writer.Write(", ");
-            }
-            writer.Write("] } ] ");
+                else
+                    isFirst = false;
 
-            writer.Write("}");
+                var sortedProfileEvents = perThread.Value;
+
+                writer.Write("{ ");
+                    writer.Write("\"type\": \"evented\", ");
+                    writer.Write($"\"name\": \"{perThread.Key}\", ");
+                    writer.Write("\"unit\": \"milliseconds\", ");
+                    writer.Write($"\"startValue\": \"{sortedProfileEvents.First().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}\", ");
+                    writer.Write($"\"endValue\": \"{sortedProfileEvents.Last().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}\", ");
+                    writer.Write("\"events\": [ ");
+                    for (int i = 0; i < sortedProfileEvents.Count; i++)
+                    {
+                        var frameEvent = sortedProfileEvents[i];
+
+                        writer.Write($"{{ \"type\": \"{(frameEvent.Type == ProfileEventType.Open ? "O" : "C")}\", ");
+                        writer.Write($"\"frame\": {frameEvent.FrameId}, ");
+                        // "R" is crucial here!!! we can't loose precision becasue it can affect the sort order!!!!
+                        writer.Write($"\"at\": {frameEvent.RelativeTime.ToString("R", CultureInfo.InvariantCulture)} }}");
+
+                        if (i != sortedProfileEvents.Count - 1)
+                            writer.Write(", ");
+                    }
+                    writer.Write("]");
+                writer.Write("}");
+            }
+
+            writer.Write("] }");
         }
 
         internal struct Sample
         {
-            internal Sample(StackSourceCallStackIndex stackIndex, double relativeTime, double metric, int depth)
+            internal Sample(StackSourceCallStackIndex stackIndex, int callerFrameId, double relativeTime, double metric, int depth)
             {
                 StackIndex = stackIndex;
+                CallerFrameId = callerFrameId;
                 RelativeTime = relativeTime;
                 Metric = metric;
                 Depth = depth;
@@ -278,6 +335,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             #region private
             internal StackSourceCallStackIndex StackIndex { get; }
+            internal int CallerFrameId { get; }
             internal double RelativeTime { get; }
             internal double Metric { get; }
             internal int Depth { get; }
