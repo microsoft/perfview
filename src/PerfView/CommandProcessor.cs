@@ -3748,7 +3748,7 @@ namespace PerfView
                     providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerSpec);
                     log.WriteLine("Provider named '{0}' was unknown to the operating system, assuming it is an EventSource with GUID '{1}'",
                         providerSpec, providerGuid);
-                    log.WriteLine("If the provider name  is misspelled we are simply using the wrong GUID and the provider will be ignored.");
+                    log.WriteLine("WARNING: If {0} is misspelled we are simply using the wrong GUID and the provider will be ignored.", providerSpec);
                 }
             }
 
