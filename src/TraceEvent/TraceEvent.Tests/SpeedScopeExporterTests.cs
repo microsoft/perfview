@@ -6,7 +6,7 @@ using Xunit;
 
 namespace TraceEventTests
 {
-    public class SpeedScopeExporterTests
+    public class SpeedScopeStackSourceWriterTests
     {
         [Fact]
         public void GetSortedSamplesReturnsSamplesSortedByRelativeTimeAndGrouppedByThread()
@@ -41,7 +41,7 @@ namespace TraceEventTests
 
             var stackSource = new StackSourceStub(sourceSamples);
 
-            var result = SpeedScopeExporter.GetSortedSamplesPerThread(stackSource)[ThreadName];
+            var result = SpeedScopeStackSourceWriter.GetSortedSamplesPerThread(stackSource)[ThreadName];
 
             Assert.Equal(0.1, result[0].RelativeTime);
             Assert.Equal(0.1, result[1].RelativeTime);
@@ -74,11 +74,11 @@ namespace TraceEventTests
                 callerIndex: a.StackIndex);
 
             var allSamples = new[] { main, a, b };
-            var leafs = new[] { new SpeedScopeExporter.Sample(b.StackIndex, -1, b.RelativeTime, b.Metric, -1) };
+            var leafs = new[] { new SpeedScopeStackSourceWriter.Sample(b.StackIndex, -1, b.RelativeTime, b.Metric, -1) };
             var stackSource = new StackSourceStub(allSamples);
             var frameNameToId = new Dictionary<string, int>();
 
-            var frameIdToSamples = SpeedScopeExporter.WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
+            var frameIdToSamples = SpeedScopeStackSourceWriter.WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
 
             Assert.Equal(0, frameNameToId[main.Name]);
             Assert.Equal(1, frameNameToId[a.Name]);
@@ -111,11 +111,11 @@ namespace TraceEventTests
                 callerIndex: main.StackIndex);
 
             var allSamples = new[] { main, wrong };
-            var leafs = new[] { new SpeedScopeExporter.Sample(wrong.StackIndex, -1, wrong.RelativeTime, wrong.Metric, -1) };
+            var leafs = new[] { new SpeedScopeStackSourceWriter.Sample(wrong.StackIndex, -1, wrong.RelativeTime, wrong.Metric, -1) };
             var stackSource = new StackSourceStub(allSamples);
             var frameNameToId = new Dictionary<string, int>();
 
-            var frameIdToSamples = SpeedScopeExporter.WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
+            var frameIdToSamples = SpeedScopeStackSourceWriter.WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
 
             Assert.Equal(0, frameNameToId[main.Name]);
             Assert.False(frameNameToId.ContainsKey(wrong.Name));
@@ -132,37 +132,37 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.1),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.2),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.1),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.2),
 
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.7),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.7),
 
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.1),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.2),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.3),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.1),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.2),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.3),
             };
 
-            var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
+            var input = new Dictionary<int, List<SpeedScopeStackSourceWriter.Sample>>() { { 0, samples.ToList() } };
 
-            var aggregatedEvents = SpeedScopeExporter.GetAggregatedOrderedProfileEvents(input);
+            var aggregatedEvents = SpeedScopeStackSourceWriter.GetAggregatedOrderedProfileEvents(input);
 
             // we should have <0.1, 0.3> and <0.7, 0.8> (the tool would ignore <0.7, 0.7>) and <1.1, 1.4>
             Assert.Equal(6, aggregatedEvents.Count);
 
             Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[0].Type);
             Assert.Equal(0.2 + metric, aggregatedEvents[1].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[1].Type);
 
             Assert.Equal(0.7, aggregatedEvents[2].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[2].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[2].Type);
             Assert.Equal(0.7 + metric, aggregatedEvents[3].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[3].Type);
 
             Assert.Equal(1.1, aggregatedEvents[4].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[4].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[4].Type);
             Assert.Equal(1.3 + metric, aggregatedEvents[5].RelativeTime);
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[5].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[5].Type);
         }
 
         [Fact]
@@ -172,32 +172,32 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.1, depth: 0),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.1, depth: 0),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
             };
 
-            var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
+            var input = new Dictionary<int, List<SpeedScopeStackSourceWriter.Sample>>() { { 0, samples.ToList() } };
 
-            var aggregatedEvents = SpeedScopeExporter.GetAggregatedOrderedProfileEvents(input);
+            var aggregatedEvents = SpeedScopeStackSourceWriter.GetAggregatedOrderedProfileEvents(input);
 
             // we should have:
             //  Open at 0.1 depth 0 and Close 0.2
             //  Open at 0.2 depth 1 and Close 0.3
             Assert.Equal(4, aggregatedEvents.Count);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[0].Type);
             Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
             Assert.Equal(0, aggregatedEvents[0].Depth);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[1].Type);
             Assert.Equal(0.1 + metric, aggregatedEvents[1].RelativeTime);
             Assert.Equal(0, aggregatedEvents[0].Depth);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[2].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[2].Type);
             Assert.Equal(0.2, aggregatedEvents[2].RelativeTime);
             Assert.Equal(1, aggregatedEvents[2].Depth);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[3].Type);
             Assert.Equal(0.2 + metric, aggregatedEvents[3].RelativeTime);
             Assert.Equal(1, aggregatedEvents[3].Depth);
         }
@@ -209,32 +209,32 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerFrameId: 0),
-                new SpeedScopeExporter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerFrameId: 1), // callerFrameId change!
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerFrameId: 0),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerFrameId: 1), // callerFrameId change!
             };
 
-            var input = new Dictionary<int, List<SpeedScopeExporter.Sample>>() { { 0, samples.ToList() } };
+            var input = new Dictionary<int, List<SpeedScopeStackSourceWriter.Sample>>() { { 0, samples.ToList() } };
 
-            var aggregatedEvents = SpeedScopeExporter.GetAggregatedOrderedProfileEvents(input);
+            var aggregatedEvents = SpeedScopeStackSourceWriter.GetAggregatedOrderedProfileEvents(input);
 
             // we should have:
             //  Open at 0.1 depth 0 and Close 0.2
             //  Open at 0.2 depth 0 and Close 0.3
             Assert.Equal(4, aggregatedEvents.Count);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[0].Type);
             Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
             Assert.Equal(0, aggregatedEvents[0].Depth);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[1].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[1].Type);
             Assert.Equal(0.1 + metric, aggregatedEvents[1].RelativeTime);
             Assert.Equal(0, aggregatedEvents[0].Depth);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, aggregatedEvents[2].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[2].Type);
             Assert.Equal(0.2, aggregatedEvents[2].RelativeTime);
             Assert.Equal(0, aggregatedEvents[2].Depth);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, aggregatedEvents[3].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[3].Type);
             Assert.Equal(0.2 + metric, aggregatedEvents[3].RelativeTime);
             Assert.Equal(0, aggregatedEvents[3].Depth);
         }
@@ -242,46 +242,46 @@ namespace TraceEventTests
         [Fact]
         public void OrderForExportOrdersTheProfileEventsAsExpectedByTheSpeedScope()
         {
-            var profileEvents = new List<SpeedScopeExporter.ProfileEvent>()
+            var profileEvents = new List<SpeedScopeStackSourceWriter.ProfileEvent>()
             {
-                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Open, frameId: 0, depth: 0, relativeTime: 0.1),
-                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Open, frameId: 1, depth: 1, relativeTime: 0.1),
-                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Close, frameId: 1, depth: 1, relativeTime: 0.3),
-                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Close, frameId: 0, depth: 0, relativeTime: 0.3),
-                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Open, frameId: 2, depth: 0, relativeTime: 0.3),
-                new SpeedScopeExporter.ProfileEvent(SpeedScopeExporter.ProfileEventType.Close, frameId: 2, depth: 0, relativeTime: 0.4),
+                new SpeedScopeStackSourceWriter.ProfileEvent(SpeedScopeStackSourceWriter.ProfileEventType.Open, frameId: 0, depth: 0, relativeTime: 0.1),
+                new SpeedScopeStackSourceWriter.ProfileEvent(SpeedScopeStackSourceWriter.ProfileEventType.Open, frameId: 1, depth: 1, relativeTime: 0.1),
+                new SpeedScopeStackSourceWriter.ProfileEvent(SpeedScopeStackSourceWriter.ProfileEventType.Close, frameId: 1, depth: 1, relativeTime: 0.3),
+                new SpeedScopeStackSourceWriter.ProfileEvent(SpeedScopeStackSourceWriter.ProfileEventType.Close, frameId: 0, depth: 0, relativeTime: 0.3),
+                new SpeedScopeStackSourceWriter.ProfileEvent(SpeedScopeStackSourceWriter.ProfileEventType.Open, frameId: 2, depth: 0, relativeTime: 0.3),
+                new SpeedScopeStackSourceWriter.ProfileEvent(SpeedScopeStackSourceWriter.ProfileEventType.Close, frameId: 2, depth: 0, relativeTime: 0.4),
             };
 
             profileEvents.Reverse(); // reverse to make sure that it does sort the elements in right way
 
-            var ordered = SpeedScopeExporter.OrderForExport(profileEvents).ToArray();
+            var ordered = SpeedScopeStackSourceWriter.OrderForExport(profileEvents).ToArray();
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, ordered[0].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, ordered[0].Type);
             Assert.Equal(0.1, ordered[0].RelativeTime);
             Assert.Equal(0, ordered[0].Depth);
             Assert.Equal(0, ordered[0].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, ordered[1].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, ordered[1].Type);
             Assert.Equal(0.1, ordered[1].RelativeTime);
             Assert.Equal(1, ordered[1].Depth);
             Assert.Equal(1, ordered[1].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, ordered[2].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, ordered[2].Type);
             Assert.Equal(0.3, ordered[2].RelativeTime);
             Assert.Equal(1, ordered[2].Depth);
             Assert.Equal(1, ordered[2].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, ordered[3].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, ordered[3].Type);
             Assert.Equal(0.3, ordered[3].RelativeTime);
             Assert.Equal(0, ordered[3].Depth);
             Assert.Equal(0, ordered[3].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Open, ordered[4].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, ordered[4].Type);
             Assert.Equal(0.3, ordered[4].RelativeTime);
             Assert.Equal(0, ordered[4].Depth);
             Assert.Equal(2, ordered[4].FrameId);
 
-            Assert.Equal(SpeedScopeExporter.ProfileEventType.Close, ordered[5].Type);
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, ordered[5].Type);
             Assert.Equal(0.4, ordered[5].RelativeTime);
             Assert.Equal(0, ordered[5].Depth);
             Assert.Equal(2, ordered[5].FrameId);

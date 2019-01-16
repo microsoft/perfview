@@ -6,10 +6,11 @@ using System.Linq;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
-    public static class SpeedScopeExporter
+    public static class SpeedScopeStackSourceWriter
     {
         /// <summary>
         /// exports provided StackSource to a https://www.speedscope.app/ format 
+        /// schema: https://www.speedscope.app/file-format-schema.json
         /// </summary>
         public static void WriteStackViewAsJson(StackSource source, string filePath)
         {
