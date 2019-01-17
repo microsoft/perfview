@@ -5713,6 +5713,9 @@ table {
                 var heapParser = new HeapTraceProviderTraceEventParser(eventSource);
                 Dictionary<Address, StackSourceSample> lastHeapAllocs = null;
 
+                Dictionary<TraceModuleFile, List<HeapAllocationSite>> allocationSites = null;
+                var allocationTypeNames = new Dictionary<StackSourceCallStackIndex, string>();
+
                 Address lastHeapHandle = 0;
 
                 float peakMetric = 0;
@@ -5729,10 +5732,27 @@ table {
                                         allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
                                     }
 
+                                    if (allocationSites == null)
+                                    {
+                                        var symReader = GetSymbolReader(log, SymbolReaderOptions.CacheOnly);
+                                        allocationSites = new Dictionary<TraceModuleFile, List<HeapAllocationSite>>();
+                                        foreach (var item in data.Process().LoadedModules)
+                                        {
+                                            if (symReader.FindSymbolFilePathForModule(item.FilePath) is string pdb &&
+                                                symReader.OpenNativeSymbolFile(pdb) is NativeSymbolModule symbolFile)
+                                            {
+                                                var sites = symbolFile.GetHeapAllocationSites().ToList();
+                                                if (sites.Any())
+                                                    allocationSites[item.ModuleFile] = sites;
+                                            }
+                                        }
+                                    }
+
                                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                     sample.Metric = data.AllocSize;
-                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
-                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
+                                    var callerIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocationType() ?? GetAllocName((uint)data.AllocSize));
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, callerIndex);
                                     var addedSample = stackSource.AddSample(sample);
                                     allocs[data.AllocAddress] = addedSample;
 
@@ -5744,6 +5764,27 @@ table {
                                     }
                                     sumCumMetric += cumMetric;
                                     cumCount++;
+
+                                    string GetAllocationType()
+                                    {
+                                        if (!allocationTypeNames.TryGetValue(callerIndex, out var typeName))
+                                        {
+                                            var cs = data.CallStack();
+                                            while (cs?.CodeAddress.ModuleFile is TraceModuleFile module)
+                                            {
+                                                if (allocationSites.TryGetValue(module, out var heapAllocationSites) &&
+                                                    heapAllocationSites.FirstOrDefault(x => x.Rva == cs.CodeAddress.Address - module.ImageBase)?.TypeName is string name)
+                                                {
+                                                    typeName = name;
+                                                }
+                                                cs = cs.Caller;
+                                            }
+
+                                            allocationTypeNames[callerIndex] = typeName;
+                                        }
+
+                                        return typeName;
+                                    }
                                 };
 
                 heapParser.HeapTraceFree += delegate (HeapFreeTraceData data)

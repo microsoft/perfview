@@ -27,6 +27,30 @@ namespace Microsoft.Diagnostics.Symbols
     public unsafe class NativeSymbolModule : ManagedSymbolModule
     {
         /// <summary>
+        /// Retrieves the S_HEAPALLOCSITE information from the pdb as described here:
+        /// https://docs.microsoft.com/en-us/visualstudio/profiling/custom-native-etw-heap-events?view=vs-2017 
+        /// </summary>
+        public IEnumerable<HeapAllocationSite> GetHeapAllocationSites()
+        {
+            m_session.getHeapAllocationSites(out var diaEnumSymbols);
+            for (; ; )
+            {
+                diaEnumSymbols.Next(1, out var sym, out var fetchCount);
+                if (fetchCount == 0)
+                {
+                    break;
+                }
+
+                m_session.symbolById(sym.typeId, out var typeSym);
+                yield return new HeapAllocationSite
+                {
+                    Rva = sym.relativeVirtualAddress + (uint)sym.length,
+                    TypeName = HeapAllocationSite.GetTypeName(typeSym)
+                };
+            }
+        }
+
+        /// <summary>
         /// Finds a (method) symbolic name for a given relative virtual address of some code.  
         /// Returns an empty string if a name could not be found. 
         /// </summary>
@@ -1307,6 +1331,171 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         private IDiaSymbol m_diaSymbol;
         private NativeSymbolModule m_module;
         #endregion
+    }
+
+    /// <summary>
+    /// A HeapAllocationSite contains the name of the type that was allocated at a
+    /// single relative virtual address in a module.
+    /// 
+    /// Each allocation site in a module emits a specific record into the pdb for 
+    /// the type that was allocated.
+    /// </summary>
+    public class HeapAllocationSite
+    {
+        public uint Rva { get; set; }
+        public string TypeName { get; set; }
+
+        // See https://github.com/KirillOsenkov/Dia2Dump/blob/master/PrintSymbol.cpp
+        internal static string GetTypeName(IDiaSymbol symbol)
+        {
+            var name = symbol.name ?? "<unknown>";
+
+            switch ((SymTagEnum)symbol.symTag)
+            {
+                case SymTagEnum.UDT:
+                case SymTagEnum.Enum:
+                case SymTagEnum.Typedef:
+                    return name;
+                case SymTagEnum.FunctionType:
+                    return "function";
+                case SymTagEnum.PointerType:
+                    return $"{GetTypeName(symbol.type)} {(symbol.reference != 0 ? "&" : "*") }";
+                case SymTagEnum.ArrayType:
+                    return "array";
+                case SymTagEnum.BaseType:
+                    var sb = new StringBuilder();
+                    switch ((BasicType)symbol.baseType)
+                    {
+                        case BasicType.btUInt:
+                            sb.Append("unsigned ");
+                            goto case BasicType.btInt;
+                        case BasicType.btInt:
+                            switch (symbol.length)
+                            {
+                                case 1:
+                                    sb.Append("char");
+                                    break;
+                                case 2:
+                                    sb.Append("short");
+                                    break;
+                                case 4:
+                                    sb.Append("int");
+                                    break;
+                                case 8:
+                                    sb.Append("long");
+                                    break;
+                            }
+                            return sb.ToString();
+                        case BasicType.btFloat:
+                            return symbol.length == 4 ? "float" : "double";
+                        default:
+                            return BaseTypes[symbol.baseType];
+                    }
+            }
+
+            return $"unhandled symbol tag {symbol.symTag}";
+        }
+
+        private enum SymTagEnum
+        {
+            Null,
+            Exe,
+            Compiland,
+            CompilandDetails,
+            CompilandEnv,
+            Function,
+            Block,
+            Data,
+            Annotation,
+            Label,
+            PublicSymbol,
+            UDT,
+            Enum,
+            FunctionType,
+            PointerType,
+            ArrayType,
+            BaseType,
+            Typedef,
+            BaseClass,
+            Friend,
+            FunctionArgType,
+            FuncDebugStart,
+            FuncDebugEnd,
+            UsingNamespace,
+            VTableShape,
+            VTable,
+            Custom,
+            Thunk,
+            CustomType,
+            ManagedType,
+            Dimension,
+            CallSite,
+            InlineSite,
+            BaseInterface,
+            VectorType,
+            MatrixType,
+            HLSLType
+        };
+
+        private enum BasicType
+        {
+            btNoType = 0,
+            btVoid = 1,
+            btChar = 2,
+            btWChar = 3,
+            btInt = 6,
+            btUInt = 7,
+            btFloat = 8,
+            btBCD = 9,
+            btBool = 10,
+            btLong = 13,
+            btULong = 14,
+            btCurrency = 25,
+            btDate = 26,
+            btVariant = 27,
+            btComplex = 28,
+            btBit = 29,
+            btBSTR = 30,
+            btHresult = 31,
+            btChar16 = 32,  // char16_t
+            btChar32 = 33,  // char32_t
+        };
+
+        private static readonly string[] BaseTypes = new[]
+        {
+             "<NoType>",                         // btNoType = 0,
+             "void",                             // btVoid = 1,
+             "char",                             // btChar = 2,
+             "wchar_t",                          // btWChar = 3,
+             "signed char",
+             "unsigned char",
+             "int",                              // btInt = 6,
+             "unsigned int",                     // btUInt = 7,
+             "float",                            // btFloat = 8,
+             "<BCD>",                            // btBCD = 9,
+             "bool",                             // btBool = 10,
+             "short",
+             "unsigned short",
+             "long",                             // btLong = 13,
+             "unsigned long",                    // btULong = 14,
+             "__int8",
+             "__int16",
+             "__int32",
+             "__int64",
+             "__int128",
+             "unsigned __int8",
+             "unsigned __int16",
+             "unsigned __int32",
+             "unsigned __int64",
+             "unsigned __int128",
+             "<currency>",                       // btCurrency = 25,
+             "<date>",                           // btDate = 26,
+             "VARIANT",                          // btVariant = 27,
+             "<complex>",                        // btComplex = 28,
+             "<bit>",                            // btBit = 29,
+             "BSTR",                             // btBSTR = 30,
+             "HRESULT"                           // btHresult = 31
+        };
     }
 }
 
