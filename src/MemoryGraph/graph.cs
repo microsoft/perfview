@@ -199,41 +199,13 @@ namespace Graphs
         /// </summary>
         public void SetNode(NodeIndex nodeIndex, NodeTypeIndex typeIndex, int sizeInBytes, GrowableArray<NodeIndex> children)
         {
-            Debug.Assert(m_nodes[(int)nodeIndex] == m_undefinedObjDef, "Calling SetNode twice for node index " + nodeIndex);
-            m_nodes[(int)nodeIndex] = m_writer.GetLabel();
-
-            Debug.Assert(sizeInBytes >= 0);
-            // We are going to assume that if this is negative it is because it is a large positive number.  
-            if (sizeInBytes < 0)
-            {
-                sizeInBytes = int.MaxValue;
-            }
-
-            int typeAndSize = (int)typeIndex << 1;
-            TypeInfo typeInfo = m_types[(int)typeIndex];
-            if (typeInfo.Size < 0)
-            {
-                typeInfo.Size = sizeInBytes;
-                m_types[(int)typeIndex] = typeInfo;
-            }
-            if (typeInfo.Size == sizeInBytes)
-            {
-                Node.WriteCompressedInt(m_writer, typeAndSize);
-            }
-            else
-            {
-                typeAndSize |= 1;
-                Node.WriteCompressedInt(m_writer, typeAndSize);
-                Node.WriteCompressedInt(m_writer, sizeInBytes);
-            }
+            SetNodeTypeAndSize(nodeIndex, typeIndex, sizeInBytes);
 
             Node.WriteCompressedInt(m_writer, children.Count);
             for (int i = 0; i < children.Count; i++)
             {
                 Node.WriteCompressedInt(m_writer, (int)children[i] - (int)nodeIndex);
             }
-
-            m_totalSize += sizeInBytes;
             m_totalRefs += children.Count;
         }
 
@@ -430,6 +402,40 @@ namespace Graphs
         }
 
         #region private
+
+        internal void SetNodeTypeAndSize(NodeIndex nodeIndex, NodeTypeIndex typeIndex, int sizeInBytes)
+        {
+            Debug.Assert(m_nodes[(int)nodeIndex] == m_undefinedObjDef, "Calling SetNode twice for node index " + nodeIndex);
+            m_nodes[(int)nodeIndex] = m_writer.GetLabel();
+
+            Debug.Assert(sizeInBytes >= 0);
+            // We are going to assume that if this is negative it is because it is a large positive number.  
+            if (sizeInBytes < 0)
+            {
+                sizeInBytes = int.MaxValue;
+            }
+
+            int typeAndSize = (int)typeIndex << 1;
+            TypeInfo typeInfo = m_types[(int)typeIndex];
+            if (typeInfo.Size < 0)
+            {
+                typeInfo.Size = sizeInBytes;
+                m_types[(int)typeIndex] = typeInfo;
+            }
+            if (typeInfo.Size == sizeInBytes)
+            {
+                Node.WriteCompressedInt(m_writer, typeAndSize);
+            }
+            else
+            {
+                typeAndSize |= 1;
+                Node.WriteCompressedInt(m_writer, typeAndSize);
+                Node.WriteCompressedInt(m_writer, sizeInBytes);
+            }
+
+            m_totalSize += sizeInBytes;
+        }
+
         /// <summary>
         /// Clear handles puts it back into the state that existed after the constructor returned
         /// </summary>
@@ -621,7 +627,7 @@ namespace Graphs
 
         private int m_expectedNodeCount;                // Initial guess at graph Size. 
         private long m_totalSize;                       // Total Size of all the nodes in the graph.  
-        private int m_totalRefs;                        // Total Number of references in the graph
+        internal int m_totalRefs;                       // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
         internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.  
         internal GrowableArray<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
@@ -1355,14 +1361,14 @@ public class RefGraph
     {
         // This double check is pretty expensive for large graphs (nodes that have large fan-in or fan-out).  
         var nodeStorage = graph.AllocNodeStorage();
-        var refStorage = this.AllocNodeStorage();
+        var refStorage = AllocNodeStorage();
         for (NodeIndex nodeIdx = 0; nodeIdx < graph.NodeIndexLimit; nodeIdx++)
         {
             // If Node -> Ref then the RefGraph has a pointer from Ref -> Node 
             var node = graph.GetNode(nodeIdx, nodeStorage);
             for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
             {
-                var refsForChild = this.GetNode(childIndex, refStorage);
+                var refsForChild = GetNode(childIndex, refStorage);
                 if (!refsForChild.Contains(nodeIdx))
                 {
                     var nodeStr = node.ToString();
@@ -1372,7 +1378,7 @@ public class RefGraph
             }
 
             // If the refs graph has a pointer from Ref -> Node then the original graph has a arc from Node ->Ref
-            var refNode = this.GetNode(nodeIdx, refStorage);
+            var refNode = GetNode(nodeIdx, refStorage);
             for (var childIndex = refNode.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = refNode.GetNextChildIndex())
             {
                 var nodeForChild = graph.GetNode(childIndex, nodeStorage);
@@ -2034,7 +2040,7 @@ internal class PriorityQueue
         var sb = new StringBuilder();
         sb.AppendLine("<PriorityQueue Count=\"").Append(m_count).Append("\">").AppendLine();
 
-        // Sort the items in decending order 
+        // Sort the items in descending order 
         var items = new List<DataItem>(m_count);
         for (int i = 0; i < m_count; i++)
             items.Add(m_heap[i]);
@@ -2191,7 +2197,7 @@ public class GraphSampler
         {
             // Add all sampled nodes to the new graph.  
             var newIndex = m_newIndex[(int)nodeIdx];
-            if (0 <= newIndex)
+            if (IsSampledNode(newIndex))
             {
                 var node = m_graph.GetNode(nodeIdx, m_nodeStorage);
                 // Get the children that are part of the sample (ignore ones that are filter)
@@ -2235,7 +2241,7 @@ public class GraphSampler
         });
 
         m_log.WriteLine("Stats of the top types (out of {0:n0})", m_newGraph.NodeTypeCount);
-        m_log.WriteLine("OrigSizeMeg SampleSizeMeg Ratio |   OrigCnt SampleCnt Ratio | Ave Size | Type Name");
+        m_log.WriteLine("OrigSizeMeg SampleSizeMeg   Ratio   |   OrigCnt  SampleCnt    Ratio   | Ave Size | Type Name");
         m_log.WriteLine("---------------------------------------------------------------------------------------------");
 
         for (int i = 0; i < Math.Min(m_statsByType.Length, 30); i++)
@@ -2244,7 +2250,7 @@ public class GraphSampler
             NodeType type = m_graph.GetType((NodeTypeIndex)typeIdx, m_nodeTypeStorage);
             var stats = m_statsByType[typeIdx];
 
-            m_log.WriteLine("{0,12:n6} {1,11:n6}  {2,5:f2} | {3,10:n0} {4,7:n0}  {5,5:f2} | {6,8:f0} | {7}",
+            m_log.WriteLine("{0,12:n6} {1,11:n6}  {2,9:f2} | {3,10:n0} {4,9:n0}  {5,9:f2} | {6,8:f0} | {7}",
                 stats.TotalMetric / 1000000.0, stats.SampleMetric / 1000000.0, (stats.SampleMetric == 0 ? 0.0 : (double)stats.TotalMetric / stats.SampleMetric),
                 stats.TotalCount, stats.SampleCount, (stats.SampleCount == 0 ? 0.0 : (double)stats.TotalCount / stats.SampleCount),
                 (double)stats.TotalMetric / stats.TotalCount, type.Name);
@@ -2319,7 +2325,7 @@ public class GraphSampler
     private void VisitNode(NodeIndex nodeIdx, bool mustAdd, bool dontAddAncestors)
     {
         var newNodeIdx = m_newIndex[(int)nodeIdx];
-        // If this node has been selected already, we are done.  
+        // If this node has been selected already, there is nothing to do.    
         if (IsSampledNode(newNodeIdx))
         {
             return;
@@ -2378,7 +2384,7 @@ public class GraphSampler
             for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
             {
                 var newChildIndex = m_newIndex[(int)childIndex];
-                // Already a sampled or protential node.  Nothing to do.  
+                // Already a sampled or potential node.  Nothing to do.  
                 if (IsSampledNode(newChildIndex) || newChildIndex == PotentialNode)
                 {
                     continue;
@@ -2422,7 +2428,7 @@ public class GraphSampler
                     // for long chains of objects.  
                     VisitNode(nodeIdx, true, true);
                 }
-            }
+                            }
         }
         else
         {
@@ -2586,8 +2592,8 @@ public class GraphSampler
 
     /// <summary>
     /// This value also goes in m_newIndex[].   If we can add this node without needing to add any other nodes
-    /// to the new graph (that is it is one hop from an existing accepted node, then we mark it speically as
-    /// a PotentialNode).    
+    /// to the new graph (that is it is one hop from an existing accepted node, then we mark it specially as
+    /// a PotentialNode).   We add these in a second pass over the data.  
     /// </summary>
     private const NodeIndex PotentialNode = (NodeIndex)(-3);
 

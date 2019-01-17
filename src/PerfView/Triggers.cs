@@ -1527,7 +1527,7 @@ namespace Triggers
                 intervalSec = 0.1;
             }
 
-            log.WriteLine("Starting monitoring of performance counter {0} every {1} msec.", m_spec, intervalSec);
+            log.WriteLine("Starting monitoring of performance counter {0} every {1} sec.", m_spec, intervalSec);
             m_timer = new System.Threading.Timer(TimerTick, null, 0, (int)(intervalSec * 1000));
         }
         /// <summary>
