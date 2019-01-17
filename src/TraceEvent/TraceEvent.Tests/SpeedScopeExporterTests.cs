@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using System;
 using System.Collections.Generic;
 using System.Linq;

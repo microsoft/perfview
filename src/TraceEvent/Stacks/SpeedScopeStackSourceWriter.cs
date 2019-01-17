@@ -4,7 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 
-namespace Microsoft.Diagnostics.Tracing.Stacks
+namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 {
     public static class SpeedScopeStackSourceWriter
     {

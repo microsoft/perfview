@@ -4,6 +4,7 @@ using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
 using PerfViewModel;
