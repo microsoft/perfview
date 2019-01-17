@@ -2631,6 +2631,8 @@ namespace PerfView
             {
                 return;
             }
+            LogFile.WriteLine("Need Elevation, but this process is not Elevated, Relaunching process as Elevated");
+
 #if PERFVIEW_COLLECT
             throw new ApplicationException("PerfViewCollect needs to run with elevated privileges.");
 #else
