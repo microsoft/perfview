@@ -10,11 +10,10 @@ using System.IO;
 using System.Text;      // For StringBuilder.
 using System.Threading;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using DeferedStreamLabel = FastSerialization.StreamLabel;
 
-#if NETSTANDARD1_3
-using System.Runtime.InteropServices;
-#else
+#if !NETSTANDARD1_3
 using System.Runtime.CompilerServices;
 #endif
 
@@ -48,6 +47,16 @@ namespace FastSerialization
         public virtual long Length { get { return endPosition; } }
 
         #region implemenation of IStreamReader
+        public void Read(byte[] data, int offset, int length)
+        {
+            if (length > endPosition - position)
+            {
+                Fill(length);
+            }
+
+            Buffer.BlockCopy(bytes, position, data, offset, length);
+            position += length;
+        }
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
@@ -711,6 +720,37 @@ namespace FastSerialization
         {
             Goto((DeferedStreamLabel)(Length - sizeof(DeferedStreamLabel)));
             Goto(ReadLabel());
+        }
+
+        public unsafe void Read(byte[] data, int offset, int length)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            if (length > data.Length - offset)
+            {
+                throw new ArgumentNullException(nameof(length));
+            }
+
+            if (_offset + length > _capacity)
+            {
+                Resize(length);
+            }
+
+            Marshal.Copy((IntPtr)((byte*)_viewAddress + _offset), data, 0, length);
+            _offset += length;
         }
 
         public unsafe byte ReadByte()
