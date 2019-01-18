@@ -10,7 +10,7 @@
             class is compiled into a user defined DLL.
             </summary>
         </member>
-        <member name="M:PerfViewExtensibility.Commands.NetperfToSpeedScope(System.String,System.String)">
+        <member name="M:PerfViewExtensibility.Commands.NetperfToSpeedScope(System.String)">
           <summary>
              Save Thread stacks from a NetPerf file into a *.speedscope.json file.
           </summary>
