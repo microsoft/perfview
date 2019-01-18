@@ -753,6 +753,39 @@ namespace FastSerialization
             _offset += length;
         }
 
+        public T Read<T>()
+            where T : struct
+        {
+#if NET45
+            int size = Marshal.SizeOf(typeof(T));
+#else
+            int size = Marshal.SizeOf<T>();
+#endif
+            if (_offset + size > _capacity)
+            {
+                Resize(size);
+            }
+
+            T result;
+
+#if NETSTANDARD1_3
+            byte[] rawData = new byte[size];
+            Read(rawData, 0, size);
+            unsafe
+            {
+                fixed (byte* rawDataPtr = rawData)
+                {
+                    result = Marshal.PtrToStructure<T>((IntPtr)rawDataPtr);
+                }
+            }
+#else
+            _view.Read(_offset, out result);
+#endif
+
+            _offset += size;
+            return result;
+        }
+
         public unsafe byte ReadByte()
         {
             if (_offset + sizeof(byte) > _capacity)
@@ -1428,7 +1461,10 @@ namespace FastSerialization
             }
 #if DEBUG
             fixed (byte* bytesAsPtr = &bytes[0])
+            {
                 Debug.Assert(bytesAsPtr == bufferStart, "Error, buffer not pinnned");
+            }
+
             Debug.Assert(position < bytes.Length);
 #endif
             return (byte*)(&bufferStart[position]);

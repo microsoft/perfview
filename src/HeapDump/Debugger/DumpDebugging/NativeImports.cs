@@ -1195,9 +1195,6 @@ namespace Microsoft.Samples.Debugging.Native
         // These should be sharable with other pinvokes
         //
 
-        [DllImportAttribute(Kernel32LibraryName)]
-        internal static extern void RtlMoveMemory(IntPtr destination, IntPtr source, IntPtr numberBytes);
-
         [DllImport(Kernel32LibraryName, SetLastError = true, PreserveSig = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool CloseHandle(IntPtr handle);
@@ -1245,43 +1242,9 @@ namespace Microsoft.Samples.Debugging.Native
             WriteCombine = 0x400,
         }
 
-        // Call CloseHandle to clean up.
-        [DllImport(Kernel32LibraryName, SetLastError = true)]
-        public static extern SafeWin32Handle CreateFileMapping(SafeFileHandle hFile,
-           IntPtr lpFileMappingAttributes, PageProtection flProtect, uint dwMaximumSizeHigh,
-           uint dwMaximumSizeLow, string lpName);
-
-        [DllImport(Kernel32LibraryName, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool UnmapViewOfFile(IntPtr baseAddress);
-
-        // SafeHandle to call UnmapViewOfFile
-        [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
-        public sealed class SafeMapViewHandle : SafeHandleZeroOrMinusOneIsInvalid
-        {
-            private SafeMapViewHandle() : base(true) { }
-
-            protected override bool ReleaseHandle()
-            {
-                return UnmapViewOfFile(handle);
-            }
-
-            // This is technically equivalent to DangerousGetHandle, but it's safer for file
-            // mappings. In file mappings, the "handle" is actually a base address that needs
-            // to be used in computations and RVAs.
-            // So provide a safer accessor method.
-            public IntPtr BaseAddress
-            {
-                get
-                {
-                    return handle;
-                }
-            }
-        }
-
         // Call BOOL UnmapViewOfFile(void*) to clean up. 
         [DllImport(Kernel32LibraryName, SetLastError = true)]
-        public static extern SafeMapViewHandle MapViewOfFile(SafeWin32Handle hFileMappingObject, uint
+        public static extern SafeMemoryMappedViewHandle MapViewOfFile(SafeMemoryMappedFileHandle hFileMappingObject, uint
            dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow,
            IntPtr dwNumberOfBytesToMap);
 
