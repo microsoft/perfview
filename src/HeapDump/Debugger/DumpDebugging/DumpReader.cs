@@ -181,12 +181,10 @@ namespace Microsoft.Samples.Debugging.Native
         // Provide a friendly wrapper over a raw pinvoke to RtlMoveMemory.
         // Note that we actually want a copy, but RtlCopyMemory is a macro and compiler intrinisic 
         // that we can't pinvoke to.
-        private static void RawCopy(MemoryMappedFileStreamReader reader, long offset, IntPtr dest, uint numBytes)
+        private static unsafe void RawCopy(MemoryMappedFileStreamReader reader, long offset, IntPtr dest, uint numBytes)
         {
-            byte[] buffer = new byte[numBytes];
             reader.Seek(offset);
-            reader.Read(buffer, 0, (int)numBytes);
-            Marshal.Copy(buffer, 0, dest, (int)numBytes);
+            reader.Read(new Span<byte>((byte*)dest, (int)numBytes));
         }
 
         /// <summary>
@@ -255,7 +253,7 @@ namespace Microsoft.Samples.Debugging.Native
 
             byte[] result = new byte[lengthBytes];
             m_reader.Seek(m_offset);
-            m_reader.Read(result, 0, result.Length);
+            m_reader.Read(result.AsSpan());
             fixed (byte* rawData = result)
             {
                 return new string((char*)rawData, 0, lengthChars);

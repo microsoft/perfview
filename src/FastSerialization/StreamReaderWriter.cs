@@ -47,16 +47,6 @@ namespace FastSerialization
         public virtual long Length { get { return endPosition; } }
 
         #region implemenation of IStreamReader
-        public void Read(byte[] data, int offset, int length)
-        {
-            if (length > endPosition - position)
-            {
-                Fill(length);
-            }
-
-            Buffer.BlockCopy(bytes, position, data, offset, length);
-            position += length;
-        }
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
@@ -152,6 +142,16 @@ namespace FastSerialization
                 --len;
             }
             return sb.ToString();
+        }
+        public void Read(Span<byte> span)
+        {
+            if (span.Length > endPosition - position)
+            {
+                Fill(span.Length);
+            }
+
+            bytes.AsSpan(position, span.Length).CopyTo(span);
+            position += span.Length;
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -722,35 +722,15 @@ namespace FastSerialization
             Goto(ReadLabel());
         }
 
-        public unsafe void Read(byte[] data, int offset, int length)
+        public unsafe void Read(Span<byte> span)
         {
-            if (data == null)
+            if (_offset + span.Length > _capacity)
             {
-                throw new ArgumentNullException(nameof(data));
+                Resize(span.Length);
             }
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-
-            if (length > data.Length - offset)
-            {
-                throw new ArgumentNullException(nameof(length));
-            }
-
-            if (_offset + length > _capacity)
-            {
-                Resize(length);
-            }
-
-            Marshal.Copy((IntPtr)((byte*)_viewAddress + _offset), data, 0, length);
-            _offset += length;
+            var source = new Span<byte>((byte*)_viewAddress + _offset, span.Length);
+            source.CopyTo(span);
         }
 
         public T Read<T>()
@@ -769,8 +749,8 @@ namespace FastSerialization
             T result;
 
 #if NETSTANDARD1_3
-            byte[] rawData = new byte[size];
-            Read(rawData, 0, size);
+            Span<byte> rawData = stackalloc byte[size];
+            Read(rawData);
             unsafe
             {
                 fixed (byte* rawDataPtr = rawData)
@@ -1014,42 +994,19 @@ namespace FastSerialization
             return checked((DeferedStreamLabel)Length);
         }
 
-        public void Write(byte[] data, int offset, int length)
+        public void Write(ReadOnlySpan<byte> span)
         {
-            if (data == null)
+            if (_offset + span.Length > _capacity)
             {
-                throw new ArgumentNullException(nameof(data));
+                Resize(span.Length);
             }
 
-            if (offset < 0)
+            for (int i = 0; i < span.Length; i++)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset));
+                _view.Write(_offset + i, span[i]);
             }
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-
-            if (length > data.Length - offset)
-            {
-                throw new ArgumentNullException(nameof(length));
-            }
-
-            if (_offset + length > _capacity)
-            {
-                Resize(length);
-            }
-
-#if NETSTANDARD1_3
-            for (int i = 0; i < length; i++)
-            {
-                _view.Write(_offset + i, data[offset + i]);
-            }
-#else
-            _view.WriteArray(_offset, data, offset, length);
-#endif
-            _offset += length;
+            _offset += span.Length;
         }
 
         public void Write(byte value)
