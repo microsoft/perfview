@@ -4,6 +4,7 @@ using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
 using PerfViewModel;
@@ -897,7 +898,7 @@ namespace PerfView
                 saveDialog.InitialDirectory = Path.GetDirectoryName(DataSource.FilePath);
                 saveDialog.Title = "File to save view";
                 saveDialog.DefaultExt = ".perfView.xml.zip";
-                saveDialog.Filter = "PerfView view file|*.perfView.xml.zip|Comma Separated Value|*.csv|All Files|*.*";
+                saveDialog.Filter = "PerfView view file|*.perfView.xml.zip|Comma Separated Value|*.csv|Speed Scope Format|*.speedscope.json|All Files|*.*";
                 saveDialog.AddExtension = true;
                 saveDialog.OverwritePrompt = true;
 
@@ -942,6 +943,10 @@ namespace PerfView
                             item.ExclusiveMetricPercent, item.ExclusiveMetric, item.ExclusiveCount, whichValue);
                     }
                 }
+            }
+            else if(m_fileName.EndsWith(".speedscope.json", StringComparison.OrdinalIgnoreCase))
+            {
+                SpeedScopeStackSourceWriter.WriteStackViewAsJson(CallTree.StackSource, m_fileName);
             }
             else
             {

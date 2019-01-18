@@ -10,6 +10,11 @@
             class is compiled into a user defined DLL.
             </summary>
         </member>
+        <member name="M:PerfViewExtensibility.Commands.NetperfToSpeedScope(System.String)">
+          <summary>
+             Save Thread stacks from a NetPerf file into a *.speedscope.json file.
+          </summary>
+        </member>
         <member name="M:PerfViewExtensibility.Commands.DumpEventsAsXml(System.String,System.String)">
             <summary>
             Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
