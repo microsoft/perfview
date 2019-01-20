@@ -385,8 +385,6 @@ namespace System.Collections.Generic
         /// Returns the underlying array.  Should not be used most of the time!
         /// </summary>
         public T[] UnderlyingArray { get { return array; } }
-
-        public bool IsReadOnly => ((IList<T>)array).IsReadOnly;
         #region private
         private void Realloc(int minSize)
         {

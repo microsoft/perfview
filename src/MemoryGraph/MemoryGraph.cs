@@ -11,7 +11,7 @@ namespace Graphs
             : base(expectedSize)
         {
             m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
-            m_nodeAddresses = new SegmentedList<Address>(m_segmentSize, expectedSize);
+            m_nodeAddresses = new SegmentedList<Address>(SegmentSize, expectedSize);
         }
 
         public void WriteAsBinaryFile(string outputFileName)
@@ -133,7 +133,7 @@ namespace Graphs
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
             int addressCount = deserializer.ReadInt();
-            m_nodeAddresses = new SegmentedList<Address>(m_segmentSize, addressCount);
+            m_nodeAddresses = new SegmentedList<Address>(SegmentSize, addressCount);
 
             for (int i = 0; i < addressCount; i++)
             {

@@ -141,9 +141,14 @@ namespace Graphs
         /// </summary>
         public int TotalNumberOfReferences { get { return m_totalRefs; } }
         /// <summary>
-        /// Each segment added to the segmented list used in this class will have a size as specified by this constant.
+        /// Specifies the size of each segment in the segmented list.
+        /// However, this value must be a power of two or the list will throw an exception.
+        /// Considering this requirement and the size of each element as 8 bytes,
+        /// the current value will keep its size at approximately 64K.
+        /// Having a lesser size than 85K will keep the segments out of the Large Object Heap,
+        /// permitting the GC to free up memory by compacting the segments within the heap.
         /// </summary>
-        protected static readonly int m_segmentSize = 8_192;
+        protected const int SegmentSize = 8_192;
 
         // Creation methods.  
         /// <summary>
@@ -160,7 +165,7 @@ namespace Graphs
         {
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
-            m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, m_expectedNodeCount);
+            m_nodes = new SegmentedList<StreamLabel>(SegmentSize, m_expectedNodeCount);
             RootIndex = NodeIndex.Invalid;
             ClearWorker();
         }
@@ -567,7 +572,7 @@ namespace Graphs
 
             // Read in the Nodes 
             int nodeCount = deserializer.ReadInt();
-            m_nodes = new SegmentedList<StreamLabel>(m_segmentSize, nodeCount);
+            m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
 
             for (int i = 0; i < nodeCount; i++)
             {

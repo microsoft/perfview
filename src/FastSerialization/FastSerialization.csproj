@@ -36,7 +36,6 @@
     <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
 </Project>
