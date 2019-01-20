@@ -28,6 +28,7 @@
         <StrongName>StrongName</StrongName>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
