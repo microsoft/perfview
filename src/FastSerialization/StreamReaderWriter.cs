@@ -32,9 +32,8 @@ namespace FastSerialization
             position = start;
             endPosition = length;
         }
-
         /// <summary>
-        /// The total length of bytes that this reader can read.  
+        /// The total length of bytes that this reader can read.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
 
@@ -216,7 +215,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Returns a IStreamReader that will read the written bytes.  You cannot write additional bytes to the stream after making this call. 
+        /// Returns a IStreamReader that will read the written bytes. You cannot write additional bytes to the stream after making this call.
         /// </summary>
         /// <returns></returns>
         public virtual MemoryStreamReader GetReader()
@@ -229,12 +228,14 @@ namespace FastSerialization
             }
             return new MemoryStreamReader(readerBytes, 0, endPosition);
         }
+
         /// <summary>
-        /// The number of bytes written so far.  
+        /// The number of bytes written so far.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
+
         /// <summary>
-        /// The the array that holds the serialized data.   
+        /// The array that holds the serialized data.
         /// </summary>
         /// <returns></returns>
         public virtual byte[] GetBytes() { return bytes; }
