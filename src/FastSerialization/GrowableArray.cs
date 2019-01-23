@@ -46,7 +46,6 @@ namespace System.Collections.Generic
                 array[index] = value;
             }
         }
-
         /// <summary>
         /// The number of elements in the array
         /// </summary>
@@ -201,7 +200,7 @@ namespace System.Collections.Generic
         /// </summary>
         public bool Empty { get { return arrayLength == 0; } }
         /// <summary>
-        /// Remove the last element added and return it.   Will throw if there are no elements. 
+        /// Remove the last element added and return it. Will throw if there are no elements.
         /// </summary>
         /// <returns></returns>
         public T Pop()
@@ -382,7 +381,6 @@ namespace System.Collections.Generic
             }
             return false;
         }
-
         /// <summary>
         /// Returns the underlying array.  Should not be used most of the time!
         /// </summary>

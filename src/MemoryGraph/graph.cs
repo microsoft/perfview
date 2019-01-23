@@ -1,4 +1,4 @@
-using FastSerialization;    // Fore IStreamReader
+using FastSerialization;    // For IStreamReader
 using Graphs;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -140,6 +140,15 @@ namespace Graphs
         /// The number of references (arcs) in the graph
         /// </summary>
         public int TotalNumberOfReferences { get { return m_totalRefs; } }
+        /// <summary>
+        /// Specifies the size of each segment in the segmented list.
+        /// However, this value must be a power of two or the list will throw an exception.
+        /// Considering this requirement and the size of each element as 8 bytes,
+        /// the current value will keep its size at approximately 64K.
+        /// Having a lesser size than 85K will keep the segments out of the Large Object Heap,
+        /// permitting the GC to free up memory by compacting the segments within the heap.
+        /// </summary>
+        protected const int SegmentSize = 8_192;
 
         // Creation methods.  
         /// <summary>
@@ -156,7 +165,7 @@ namespace Graphs
         {
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
-            m_nodes = new GrowableArray<StreamLabel>(m_expectedNodeCount);
+            m_nodes = new SegmentedList<StreamLabel>(SegmentSize, m_expectedNodeCount);
             RootIndex = NodeIndex.Invalid;
             ClearWorker();
         }
@@ -563,7 +572,8 @@ namespace Graphs
 
             // Read in the Nodes 
             int nodeCount = deserializer.ReadInt();
-            m_nodes = new GrowableArray<StreamLabel>(nodeCount);
+            m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
+
             for (int i = 0; i < nodeCount; i++)
             {
                 m_nodes.Add((StreamLabel)deserializer.ReadInt());
@@ -635,14 +645,14 @@ namespace Graphs
         private long m_totalSize;                       // Total Size of all the nodes in the graph.  
         internal int m_totalRefs;                       // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
-        internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.  
-        internal GrowableArray<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
-        internal MemoryMappedFileStreamReader m_reader; // This is the actual data for the nodes.  Can be large 
-        internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this 
-        // and then can be set to another nodeId (needed when there are cycles).  
+        internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.
+        internal SegmentedList<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
+        internal MemoryMappedFileStreamReader m_reader; // This is the actual data for the nodes.  Can be large
+        internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this
+        // and then can be set to another nodeId (needed when there are cycles).
         // There should not be any of these left as long as every node referenced
         // by another node has a definition.
-        internal MemoryMappedFileStreamWriter m_writer; // Used only during construction to serialize the nodes.  
+        internal MemoryMappedFileStreamWriter m_writer; // Used only during construction to serialize the nodes.
         #endregion
     }
 
