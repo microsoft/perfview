@@ -174,6 +174,10 @@ namespace FastSerialization
         /// </summary>
         string ReadString();
         /// <summary>
+        /// Read a span of bytes from the stream.
+        /// </summary>
+        void Read(Span<byte> span);
+        /// <summary>
         /// Read a StreamLabel (pointer to some other part of the stream) from the stream
         /// </summary>
         StreamLabel ReadLabel();
@@ -1126,6 +1130,17 @@ namespace FastSerialization
         }
 
         // For FromStream method bodies.  
+        public void Read(Span<byte> span)
+        {
+#if DEBUG
+            StreamLabel label = reader.Current;
+#endif
+            reader.Read(span);
+#if DEBUG
+            Log("<Read Value=\"" + "[...]" + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
+#endif
+        }
+
         /// <summary>
         /// Read a bool from the stream
         /// </summary>
