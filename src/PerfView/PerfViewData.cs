@@ -5713,8 +5713,9 @@ table {
                 var heapParser = new HeapTraceProviderTraceEventParser(eventSource);
                 Dictionary<Address, StackSourceSample> lastHeapAllocs = null;
 
-                Dictionary<TraceModuleFile, List<HeapAllocationSite>> allocationSites = null;
-                var allocationTypeNames = new Dictionary<StackSourceCallStackIndex, string>();
+                Dictionary<TraceModuleFile, NativeSymbolModule> loadedModules = new Dictionary<TraceModuleFile, NativeSymbolModule>();
+                var allocationTypeNames = new Dictionary<CallStackIndex, string>();
+                var symReader = GetSymbolReader(log);
 
                 Address lastHeapHandle = 0;
 
@@ -5732,27 +5733,11 @@ table {
                                         allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
                                     }
 
-                                    if (allocationSites == null)
-                                    {
-                                        var symReader = GetSymbolReader(log, SymbolReaderOptions.CacheOnly);
-                                        allocationSites = new Dictionary<TraceModuleFile, List<HeapAllocationSite>>();
-                                        foreach (var item in data.Process().LoadedModules)
-                                        {
-                                            if (symReader.FindSymbolFilePathForModule(item.FilePath) is string pdb &&
-                                                symReader.OpenNativeSymbolFile(pdb) is NativeSymbolModule symbolFile)
-                                            {
-                                                var sites = symbolFile.GetHeapAllocationSites().ToList();
-                                                if (sites.Any())
-                                                    allocationSites[item.ModuleFile] = sites;
-                                            }
-                                        }
-                                    }
-
                                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                     sample.Metric = data.AllocSize;
-                                    var callerIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
-                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocationType() ?? GetAllocName((uint)data.AllocSize));
-                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, callerIndex);
+                                    var callStackIndex = data.CallStackIndex();
+                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocationType(callStackIndex) ?? GetAllocName((uint)data.AllocSize));
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(callStackIndex, data));
                                     var addedSample = stackSource.AddSample(sample);
                                     allocs[data.AllocAddress] = addedSample;
 
@@ -5765,22 +5750,34 @@ table {
                                     sumCumMetric += cumMetric;
                                     cumCount++;
 
-                                    string GetAllocationType()
+                                    string GetAllocationType(CallStackIndex csi)
                                     {
-                                        if (!allocationTypeNames.TryGetValue(callerIndex, out var typeName))
+                                        if (!allocationTypeNames.TryGetValue(csi, out var typeName))
                                         {
-                                            var cs = data.CallStack();
-                                            while (cs?.CodeAddress.ModuleFile is TraceModuleFile module)
+                                            for (var current = csi; current != CallStackIndex.Invalid; current = eventLog.CallStacks.Caller(current))
                                             {
-                                                if (allocationSites.TryGetValue(module, out var heapAllocationSites) &&
-                                                    heapAllocationSites.FirstOrDefault(x => x.Rva == cs.CodeAddress.Address - module.ImageBase)?.TypeName is string name)
+                                                var module = eventLog.CodeAddresses.ModuleFile(eventLog.CallStacks.CodeAddressIndex(current));
+                                                if (module == null)
                                                 {
-                                                    typeName = name;
+                                                    continue;
                                                 }
-                                                cs = cs.Caller;
+
+                                                if (!loadedModules.TryGetValue(module, out var symbolModule))
+                                                {
+                                                    loadedModules[module] = symbolModule =
+                                                        (module.PdbSignature != Guid.Empty
+                                                            ? symReader.FindSymbolFilePath(module.PdbName, module.PdbSignature, module.PdbAge, module.FilePath) 
+                                                            : symReader.FindSymbolFilePathForModule(module.FilePath)) is string pdb
+                                                        ? symReader.OpenNativeSymbolFile(pdb)
+                                                        : null;
+                                                }
+
+                                                typeName = symbolModule?.GetTypeForHeapAllocationSite(
+                                                        (uint)(eventLog.CodeAddresses.Address(eventLog.CallStacks.CodeAddressIndex(current)) - module.ImageBase)
+                                                    ) ?? typeName;
                                             }
 
-                                            allocationTypeNames[callerIndex] = typeName;
+                                            allocationTypeNames[csi] = typeName;
                                         }
 
                                         return typeName;
