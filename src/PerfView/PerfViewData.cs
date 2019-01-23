@@ -5713,7 +5713,7 @@ table {
                 var heapParser = new HeapTraceProviderTraceEventParser(eventSource);
                 Dictionary<Address, StackSourceSample> lastHeapAllocs = null;
 
-                Dictionary<TraceModuleFile, NativeSymbolModule> loadedModules = new Dictionary<TraceModuleFile, NativeSymbolModule>();
+                var loadedModules = new Dictionary<TraceModuleFile, NativeSymbolModule>();
                 var allocationTypeNames = new Dictionary<CallStackIndex, string>();
                 var symReader = GetSymbolReader(log);
 
@@ -5750,11 +5750,17 @@ table {
                                     sumCumMetric += cumMetric;
                                     cumCount++;
 
+                                    // Performs a stack crawl to match the best typename to this allocation. 
+                                    // Returns null if no typename was found.
+                                    // This updates loadedModules and allocationTypeNames. It reads symReader/eventLog.
                                     string GetAllocationType(CallStackIndex csi)
                                     {
                                         if (!allocationTypeNames.TryGetValue(csi, out var typeName))
                                         {
-                                            for (var current = csi; current != CallStackIndex.Invalid; current = eventLog.CallStacks.Caller(current))
+                                            const int frameLimit = 25; // we'll search the first 25 frames for the best match
+
+                                            int frameCount = 0;
+                                            for (var current = csi; current != CallStackIndex.Invalid && frameCount < frameLimit; current = eventLog.CallStacks.Caller(current), frameCount++)
                                             {
                                                 var module = eventLog.CodeAddresses.ModuleFile(eventLog.CallStacks.CodeAddressIndex(current));
                                                 if (module == null)

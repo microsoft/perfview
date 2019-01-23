@@ -1194,23 +1194,6 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return buf;
         }
 
-        private bool m_checkedForMergedAssemblies;
-        private Dictionary<int, string> m_mergedAssemblies;
-
-        private string m_managedPdbName;
-        private Guid m_managedPdbGuid;
-        private int m_managedPdbAge;
-        private ManagedSymbolModule m_managedPdb;
-        private bool m_managedPdbAttempted;
-
-        internal readonly IDiaSession m_session;
-        private readonly SymbolReader m_reader;
-        private readonly IDiaDataSource3 m_source;
-        private readonly IDiaEnumSymbolsByAddr m_symbolsByAddr;
-        private readonly Lazy<IReadOnlyDictionary<uint, string>> m_heapAllocationSites; // rva => typename
-
-        #endregion
-
         /// <summary>
         /// This static class contains the GetTypeName method for retrieving the type name of 
         /// a heap allocation site. 
@@ -1336,40 +1319,57 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
 
             private static readonly string[] BaseTypes = new[]
             {
-             "<NoType>",                         // btNoType = 0,
-             "void",                             // btVoid = 1,
-             "char",                             // btChar = 2,
-             "wchar_t",                          // btWChar = 3,
-             "signed char",
-             "unsigned char",
-             "int",                              // btInt = 6,
-             "unsigned int",                     // btUInt = 7,
-             "float",                            // btFloat = 8,
-             "<BCD>",                            // btBCD = 9,
-             "bool",                             // btBool = 10,
-             "short",
-             "unsigned short",
-             "long",                             // btLong = 13,
-             "unsigned long",                    // btULong = 14,
-             "__int8",
-             "__int16",
-             "__int32",
-             "__int64",
-             "__int128",
-             "unsigned __int8",
-             "unsigned __int16",
-             "unsigned __int32",
-             "unsigned __int64",
-             "unsigned __int128",
-             "<currency>",                       // btCurrency = 25,
-             "<date>",                           // btDate = 26,
-             "VARIANT",                          // btVariant = 27,
-             "<complex>",                        // btComplex = 28,
-             "<bit>",                            // btBit = 29,
-             "BSTR",                             // btBSTR = 30,
-             "HRESULT"                           // btHresult = 31
-        };
+                 "<NoType>",                         // btNoType = 0,
+                 "void",                             // btVoid = 1,
+                 "char",                             // btChar = 2,
+                 "wchar_t",                          // btWChar = 3,
+                 "signed char",
+                 "unsigned char",
+                 "int",                              // btInt = 6,
+                 "unsigned int",                     // btUInt = 7,
+                 "float",                            // btFloat = 8,
+                 "<BCD>",                            // btBCD = 9,
+                 "bool",                             // btBool = 10,
+                 "short",
+                 "unsigned short",
+                 "long",                             // btLong = 13,
+                 "unsigned long",                    // btULong = 14,
+                 "__int8",
+                 "__int16",
+                 "__int32",
+                 "__int64",
+                 "__int128",
+                 "unsigned __int8",
+                 "unsigned __int16",
+                 "unsigned __int32",
+                 "unsigned __int64",
+                 "unsigned __int128",
+                 "<currency>",                       // btCurrency = 25,
+                 "<date>",                           // btDate = 26,
+                 "VARIANT",                          // btVariant = 27,
+                 "<complex>",                        // btComplex = 28,
+                 "<bit>",                            // btBit = 29,
+                 "BSTR",                             // btBSTR = 30,
+                 "HRESULT"                           // btHresult = 31
+            };
         }
+
+        private bool m_checkedForMergedAssemblies;
+        private Dictionary<int, string> m_mergedAssemblies;
+
+        private string m_managedPdbName;
+        private Guid m_managedPdbGuid;
+        private int m_managedPdbAge;
+        private ManagedSymbolModule m_managedPdb;
+        private bool m_managedPdbAttempted;
+
+        internal readonly IDiaSession m_session;
+        private readonly SymbolReader m_reader;
+        private readonly IDiaDataSource3 m_source;
+        private readonly IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        private readonly Lazy<IReadOnlyDictionary<uint, string>> m_heapAllocationSites; // rva => typename
+
+        #endregion
     }
 
     /// <summary>
