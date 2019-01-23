@@ -1,4 +1,4 @@
-using FastSerialization;    // Fore IStreamReader
+using FastSerialization;    // For IStreamReader
 using Graphs;
 using Microsoft.Diagnostics.Utilities;
 using System;
