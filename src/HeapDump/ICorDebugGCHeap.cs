@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
+using System.Threading;
 
 namespace ClrMemory
 {
@@ -378,6 +379,7 @@ namespace ClrMemory
             get { return m_segments; }
         }
 
+        #region Unimplemented
         public override ClrRuntime Runtime
         {
             get
@@ -386,16 +388,6 @@ namespace ClrMemory
             }
         }
 
-#if !ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO remove when CLRMD has been updated. 
-        [Obsolete]
-        public override int TypeIndexLimit
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-#endif
         public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();
@@ -425,6 +417,62 @@ namespace ClrMemory
         {
             throw new NotImplementedException();
         }
+
+        public override bool AreRootsCached
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override void CacheRoots(CancellationToken cancelToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ClearRootCache()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override IEnumerable<ClrObject> EnumerateObjectReferences(ulong obj, ClrType type, bool carefully)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void EnumerateObjectReferences(ulong obj, ClrType type, bool carefully, Action<ulong, int> callback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<ClrObject> EnumerateObjects()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ClrType Free
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+
+        public override ClrRootStackwalkPolicy StackwalkPolicy
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        #endregion
     }
 
     /// <summary>
@@ -441,6 +489,30 @@ namespace ClrMemory
         {
             throw new NotImplementedException();
         }
+
+        public override ulong FirstObject
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override ulong GetFirstObject(out ClrType type)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ulong NextObject(ulong objRef)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ulong NextObject(ulong objRef, out ClrType type)
+        {
+            throw new NotImplementedException();
+        }
+
         #region private
         internal ICorDebugGCHeapSegment(ICorDebugGCHeap heap, ref COR_SEGMENT corSegment)
         {
@@ -1208,12 +1280,21 @@ namespace ClrMemory
             throw new NotImplementedException();
         }
 
-        public override ulong MethodTable { get { throw new NotImplementedException(); } }
+        public override ulong MethodTable
+        {
+            get { throw new NotImplementedException(); }
+        }
 
         public override uint MetadataToken
         {
             get { throw new NotImplementedException(); }
         }
+
+        protected override GCDesc GCDesc
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         #endregion
     }
 
@@ -1309,6 +1390,12 @@ namespace ClrMemory
         {
             get { throw new NotImplementedException(); }
         }
+
+        public override uint Token
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         #endregion
     }
 }

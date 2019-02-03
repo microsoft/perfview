@@ -118,7 +118,7 @@ are different
 * NullReference Tag (represents the type of type, which is by convention null)
 * 4 byte integer Version field for type
 * 4 byte integer MinimumReaderVersion field for type
-* SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
+* SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes little endian)
 * EndObject Tag (ends Type Object)
 * DATA FIELDS FOR EVENTBLOCK OBJECT (size of blob + event bytes blob)
 * End Object Tag (for EventBlock object)  

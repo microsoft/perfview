@@ -32,9 +32,8 @@ namespace FastSerialization
             position = start;
             endPosition = length;
         }
-
         /// <summary>
-        /// The total length of bytes that this reader can read.  
+        /// The total length of bytes that this reader can read.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
 
@@ -63,7 +62,7 @@ namespace FastSerialization
 
             int ret = bytes[position] + (bytes[position + 1] << 8);
             position += sizeof(short);
-            return (short)ret;
+            return unchecked((short)ret);
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -84,9 +83,9 @@ namespace FastSerialization
         /// </summary>
         public long ReadInt64()
         {
-            uint low = (uint)ReadInt32();
-            uint high = (uint)ReadInt32();
-            return (long)((((ulong)high) << 32) + low);        // TODO find the most efficient way of doing this. 
+            uint low = unchecked((uint)ReadInt32());
+            uint high = unchecked((uint)ReadInt32());
+            return unchecked(((long)high << 32) + low);        // TODO find the most efficient way of doing this. 
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -134,6 +133,16 @@ namespace FastSerialization
                 --len;
             }
             return sb.ToString();
+        }
+        public void Read(Span<byte> span)
+        {
+            if (span.Length > endPosition - position)
+            {
+                Fill(span.Length);
+            }
+
+            bytes.AsSpan(position, span.Length).CopyTo(span);
+            position += span.Length;
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -216,7 +225,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Returns a IStreamReader that will read the written bytes.  You cannot write additional bytes to the stream after making this call. 
+        /// Returns a IStreamReader that will read the written bytes. You cannot write additional bytes to the stream after making this call.
         /// </summary>
         /// <returns></returns>
         public virtual MemoryStreamReader GetReader()
@@ -229,12 +238,14 @@ namespace FastSerialization
             }
             return new MemoryStreamReader(readerBytes, 0, endPosition);
         }
+
         /// <summary>
-        /// The number of bytes written so far.  
+        /// The number of bytes written so far.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
+
         /// <summary>
-        /// The the array that holds the serialized data.   
+        /// The array that holds the serialized data.
         /// </summary>
         /// <returns></returns>
         public virtual byte[] GetBytes() { return bytes; }
@@ -260,50 +271,53 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(short value)
+        public unsafe void Write(short value)
         {
             if (endPosition + sizeof(short) > bytes.Length)
             {
                 MakeSpace();
             }
 
-            int intValue = value;
-            bytes[endPosition++] = (byte)intValue; intValue = intValue >> 8;
-            bytes[endPosition++] = (byte)intValue; intValue = intValue >> 8;
+            fixed (byte* data = bytes)
+            {
+                *(short*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(short);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(int value)
+        public unsafe void Write(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
             {
                 MakeSpace();
             }
 
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
+            fixed (byte* data = bytes)
+            {
+                *(int*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(int);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(long value)
+        public unsafe void Write(long value)
         {
             if (endPosition + sizeof(long) > bytes.Length)
             {
                 MakeSpace();
             }
 
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
+            fixed (byte* data = bytes)
+            {
+                *(long*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(long);
         }
         /// <summary>
         /// Implementation of IStreamWriter
@@ -618,7 +632,7 @@ namespace FastSerialization
         /// </summary>
         public override void Goto(StreamLabel label)
         {
-            uint offset = (uint)label - positionInStream;
+            uint offset = unchecked((uint)label - positionInStream);
             if (offset > (uint)endPosition)
             {
                 positionInStream = (uint)label;
@@ -699,9 +713,7 @@ namespace FastSerialization
                 inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
                 for (; ; )
                 {
-#if !NETSTANDARD1_3
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
-#endif
                     int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
                     if (count == 0)
                     {
@@ -795,7 +807,10 @@ namespace FastSerialization
             }
 #if DEBUG
             fixed (byte* bytesAsPtr = &bytes[0])
+            {
                 Debug.Assert(bytesAsPtr == bufferStart, "Error, buffer not pinnned");
+            }
+
             Debug.Assert(position < bytes.Length);
 #endif
             return (byte*)(&bufferStart[position]);

@@ -248,7 +248,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Can only enable kernel events on a kernel session.");
                 }
 
-                InsureStarted();
+                EnsureStarted();
 
                 // If we have provider data we add some predefined key-value pairs for infrastructure purposes. 
                 ulong matchAllKeywords = 0;
@@ -676,7 +676,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if (systemTraceProvider)
                 {
                     properties->LogFileMode |= TraceEventNativeMethods.EVENT_TRACE_SYSTEM_LOGGER_MODE;
-                    InsureStarted(properties);
+                    EnsureStarted(properties);
 
                     dwErr = TraceEventNativeMethods.TraceSetInformation(m_SessionHandle,
                                                                         TraceEventNativeMethods.TRACE_INFO_CLASS.TraceStackTracingInfo,
@@ -1012,7 +1012,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Can only capture state on user mode sessions.");
                 }
 
-                InsureStarted();
+                EnsureStarted();
                 var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
                 var filter = new TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR();
                 parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
@@ -1262,7 +1262,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             throw new NotSupportedException("Kernel sessions must be started (EnableKernelProvider called) before accessing the source.");
                         }
 
-                        InsureStarted();
+                        EnsureStarted();
                     }
                     m_source = new ETWTraceEventSource(SessionName, TraceEventSourceType.Session);
                 }
@@ -2065,7 +2065,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             Debug.Assert(curID <= stackTracingIdsMax);
             return curID;
         }
-        private void InsureStarted(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = null)
+        private void EnsureStarted(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = null)
         {
             if (!m_Create)
             {
