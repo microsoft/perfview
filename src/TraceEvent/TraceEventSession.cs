@@ -1469,7 +1469,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
                     if (hr != 0)
                     {
-                        throw new InvalidOperationException("TdhEnumerateProviders failed.");       // TODO better error message
+                        Trace.WriteLine("TdhEnumerateProviders failed HR = " + hr);
+                        providersDesc->NumberOfProviders = 0;
                     }
 
                     var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
