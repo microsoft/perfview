@@ -183,8 +183,10 @@ namespace Microsoft.Samples.Debugging.Native
         // that we can't pinvoke to.
         private static unsafe void RawCopy(MemoryMappedFileStreamReader reader, long offset, IntPtr dest, uint numBytes)
         {
+            byte[] buffer = new byte[numBytes];
             reader.Seek(offset);
-            reader.Read(new Span<byte>((byte*)dest, (int)numBytes));
+            reader.Read(buffer, 0, (int)numBytes);
+            Marshal.Copy(buffer, 0, dest, (int)numBytes);
         }
 
         /// <summary>
@@ -253,7 +255,7 @@ namespace Microsoft.Samples.Debugging.Native
 
             byte[] result = new byte[lengthBytes];
             m_reader.Seek(m_offset);
-            m_reader.Read(result.AsSpan());
+            m_reader.Read(result, 0, result.Length);
             fixed (byte* rawData = result)
             {
                 return new string((char*)rawData, 0, lengthChars);

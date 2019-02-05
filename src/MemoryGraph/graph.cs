@@ -589,9 +589,8 @@ namespace Graphs
             for (int i = 0; i < blobCount; i += BlockCopyCapacity)
             {
                 int chunkSize = Math.Min(blobCount - i, BlockCopyCapacity);
-                var chunk = data.AsSpan(0, chunkSize);
-                deserializer.Read(chunk);
-                writer.Write(chunk);
+                deserializer.Read(data, 0, chunkSize);
+                writer.Write(data, 0, chunkSize);
             }
 
             m_reader = writer.GetReader();

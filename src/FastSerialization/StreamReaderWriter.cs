@@ -38,6 +38,16 @@ namespace FastSerialization
         public virtual long Length { get { return endPosition; } }
 
         #region implemenation of IStreamReader
+        public void Read(byte[] data, int offset, int length)
+        {
+            if (length > endPosition - position)
+            {
+                Fill(length);
+            }
+
+            Buffer.BlockCopy(bytes, position, data, offset, length);
+            position += length;
+        }
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
@@ -133,16 +143,6 @@ namespace FastSerialization
                 --len;
             }
             return sb.ToString();
-        }
-        public void Read(Span<byte> span)
-        {
-            if (span.Length > endPosition - position)
-            {
-                Fill(span.Length);
-            }
-
-            bytes.AsSpan(position, span.Length).CopyTo(span);
-            position += span.Length;
         }
         /// <summary>
         /// Implementation of IStreamReader

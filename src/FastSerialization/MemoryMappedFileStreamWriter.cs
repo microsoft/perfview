@@ -97,19 +97,43 @@ namespace FastSerialization
             return checked((DeferedStreamLabel)Length);
         }
 
-        public void Write(ReadOnlySpan<byte> span)
+        public void Write(byte[] data, int offset, int length)
         {
-            if (_offset + span.Length > _capacity)
+            if (data == null)
             {
-                Resize(span.Length);
+                throw new ArgumentNullException(nameof(data));
             }
 
-            for (int i = 0; i < span.Length; i++)
+            if (offset < 0)
             {
-                _view.Write(_offset + i, span[i]);
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            _offset += span.Length;
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            if (length > data.Length - offset)
+            {
+                throw new ArgumentNullException(nameof(length));
+            }
+
+            if (_offset + length > _capacity)
+            {
+                Resize(length);
+            }
+
+#if NETSTANDARD1_3
+
+            for (int i = 0; i < length; i++)
+            {
+                _view.Write(_offset + i, data[offset + i]);
+            }
+#else
+            _view.WriteArray(_offset, data, offset, length);
+#endif
+            _offset += length;
         }
 
         public void Write(byte value)
