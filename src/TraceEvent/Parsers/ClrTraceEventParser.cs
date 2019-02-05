@@ -4737,11 +4737,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 }
                 else if (Version >= 3)
                 {
-                    Debug.Assert(ret < Count);
-                }
-                else
-                {
-                    Debug.Assert(ret < 6 /* spot check even if we dont have the right version number */);
+                    Debug.Assert(ret < Environment.ProcessorCount); // This is really GCGlobalHeapHistoryTraceData.NumHeaps, but we don't have access to that here
+                                                                    // It is VERY unlikely that we make more heaps than there are processors.   
                 }
 
                 if (ret < 0)
