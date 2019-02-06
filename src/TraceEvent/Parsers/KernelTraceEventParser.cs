@@ -383,6 +383,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Defines how kernel paths are converted to user paths. Setting it overrides the default path conversion mechanism.
+        /// </summary>
+        public Func<string, string> KernelPathToUserPathMapper { set { State.driveMapping.MapKernelToUser = value; } }
+
         public string FileIDToFileName(Address fileKey)
         {
             return State.KernelToUser(State.FileIDToName(fileKey, long.MaxValue));
@@ -3444,6 +3449,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public KernelToUserDriveMapping()
         {
             kernelToDriveMap = new List<KeyValuePair<string, string>>();
+            MapKernelToUser = MapKernelToUserDefault;
         }
 
         /// <summary>
@@ -3453,8 +3459,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <returns></returns>
         public string this[string kernelName]
         {
-            get
-            {
+            get { return MapKernelToUser(kernelName); }
+        }
+
+        #region private
+        internal string MapKernelToUserDefault(string kernelName)
+        {
                 // TODO confirm that you are on the local machine before initializing in this way.  
                 if (kernelToDriveMap.Count == 0)
                 {
@@ -3503,10 +3513,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 // TODO this is still not complete, compare to XPERF and align.  
                 return kernelName;
-            }
         }
 
-        #region private
         internal void PopulateFromLocalMachine()
         {
             kernelToDriveMap.Add(new KeyValuePair<string, string>(@"\??\", ""));
@@ -3555,6 +3563,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         internal List<KeyValuePair<string, string>> kernelToDriveMap;
         internal string systemDrive;
+        internal Func<string, string> MapKernelToUser;
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
