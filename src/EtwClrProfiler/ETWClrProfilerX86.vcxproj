@@ -112,9 +112,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-
   <!-- ******************* Signing Support *********************** -->
   <!-- See EtwClrProfilerSigning\EtwClrProfilerSigning.csproj 
        Trying to do it directoy led to a Nuget error               -->
-
 </Project>

@@ -236,27 +236,6 @@
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Buffers.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\System.Buffers.dll</LogicalName>
-      <Link>System.Buffers.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Memory.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\System.Memory.dll</LogicalName>
-      <Link>System.Memory.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.CompilerServices.Unsafe.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
-      <Link>System.Runtime.CompilerServices.Unsafe.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.InteropServices.RuntimeInformation.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
