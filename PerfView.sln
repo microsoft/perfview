@@ -77,6 +77,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeapDumpDLL", "src\HeapDump
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryGraph", "src\MemoryGraph\MemoryGraph.csproj", "{7DEBBF5E-1C12-4350-889A-27A48C23FEF0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EtwHeapDump", "src\EtwHeapDump\EtwHeapDump.csproj", "{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -347,6 +349,18 @@ Global
 		{7DEBBF5E-1C12-4350-889A-27A48C23FEF0}.Release|x64.Build.0 = Release|Any CPU
 		{7DEBBF5E-1C12-4350-889A-27A48C23FEF0}.Release|x86.ActiveCfg = Release|Any CPU
 		{7DEBBF5E-1C12-4350-889A-27A48C23FEF0}.Release|x86.Build.0 = Release|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Debug|x64.Build.0 = Debug|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Debug|x86.Build.0 = Debug|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x64.ActiveCfg = Release|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x64.Build.0 = Release|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x86.ActiveCfg = Release|Any CPU
+		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
