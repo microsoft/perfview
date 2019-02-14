@@ -219,7 +219,7 @@ namespace Graphs
         }
 
         /// <summary>
-        /// When a graph is construted with the default constructor, it is in 'write Mode'  You can't read from it until 
+        /// When a graph is constructed with the default constructor, it is in 'write Mode'  You can't read from it until 
         /// you call 'AllowReading' which puts it in 'read mode'.  
         /// </summary>
         public virtual void AllowReading()
@@ -462,7 +462,7 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             if (m_writer == null)
             {
-                m_writer = new MemoryMappedFileStreamWriter(m_expectedNodeCount * 8);
+                m_writer = new SegmentedMemoryStreamWriter(m_expectedNodeCount * 8);
             }
 
             m_totalSize = 0;
@@ -582,15 +582,16 @@ namespace Graphs
             // Read in the Blob stream.  
             // TODO be lazy about reading in the blobs.  
             int blobCount = deserializer.ReadInt();
-            const int BlockCopyCapacity = 0x4000;
-            byte[] data = new byte[BlockCopyCapacity];
-
-            MemoryMappedFileStreamWriter writer = new MemoryMappedFileStreamWriter(blobCount);
-            for (int i = 0; i < blobCount; i += BlockCopyCapacity)
+            SegmentedMemoryStreamWriter writer = new SegmentedMemoryStreamWriter(blobCount);
+            while (8 <= blobCount)
             {
-                int chunkSize = Math.Min(blobCount - i, BlockCopyCapacity);
-                deserializer.Read(data, 0, chunkSize);
-                writer.Write(data, 0, chunkSize);
+                writer.Write(deserializer.ReadInt64());
+                blobCount -= 8;
+            }
+            while(0 < blobCount)
+            {
+                writer.Write(deserializer.ReadByte());
+                --blobCount;
             }
 
             m_reader = writer.GetReader();
@@ -646,19 +647,19 @@ namespace Graphs
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
         internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.
         internal SegmentedList<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
-        internal MemoryMappedFileStreamReader m_reader; // This is the actual data for the nodes.  Can be large
+        internal SegmentedMemoryStreamReader m_reader; // This is the actual data for the nodes.  Can be large
         internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this
         // and then can be set to another nodeId (needed when there are cycles).
         // There should not be any of these left as long as every node referenced
         // by another node has a definition.
-        internal MemoryMappedFileStreamWriter m_writer; // Used only during construction to serialize the nodes.
+        internal SegmentedMemoryStreamWriter m_writer; // Used only during construction to serialize the nodes.
         #endregion
     }
 
     /// <summary>
     /// Node represents a single node in the code:Graph.  These are created lazily and follow a pattern were the 
     /// CALLER provides the storage for any code:Node or code:NodeType value that are returned.   Thus the caller
-    /// is responsible for determine when nodes can be reused to minimuze GC cost.  
+    /// is responsible for determine when nodes can be reused to minimize GC cost.  
     /// 
     /// A node implicitly knows where the 'next' child is (that is it is an iterator).  
     /// </summary>
@@ -835,7 +836,7 @@ namespace Graphs
         }
 
         // Node information is stored in a compressed form because we have alot of them. 
-        internal static int ReadCompressedInt(MemoryMappedFileStreamReader reader)
+        internal static int ReadCompressedInt(SegmentedMemoryStreamReader reader)
         {
             int ret = 0;
             byte b = reader.ReadByte();
@@ -876,7 +877,7 @@ namespace Graphs
             return ret;
         }
 
-        internal static void WriteCompressedInt(MemoryMappedFileStreamWriter writer, int value)
+        internal static void WriteCompressedInt(SegmentedMemoryStreamWriter writer, int value)
         {
             if (value << 25 >> 25 == value)
             {

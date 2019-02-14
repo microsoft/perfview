@@ -16,6 +16,8 @@ namespace FastSerialization
 {
     public class MemoryMappedFileStreamReader : IStreamReader
     {
+        const int BlockCopyCapacity = 10 * 1024 * 1024;
+
         private MemoryMappedFile _file;
         private long _fileLength;
         private bool _leaveOpen;
@@ -39,7 +41,7 @@ namespace FastSerialization
 
             if (IntPtr.Size == 4)
             {
-                _capacity = Math.Min(_fileLength, MemoryMappedFileStreamWriter.BlockCopyCapacity);
+                _capacity = Math.Min(_fileLength, BlockCopyCapacity);
             }
             else
             {
@@ -106,7 +108,7 @@ namespace FastSerialization
             long availableInFile = _fileLength - offset;
             long viewOffset = offset & ~0xFFFF;
             long offsetInView = offset - viewOffset;
-            long viewLength = Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offsetInView);
+            long viewLength = Math.Min(BlockCopyCapacity, availableInFile + offsetInView);
             _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
             _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
             _viewOffset = viewOffset;
@@ -134,7 +136,7 @@ namespace FastSerialization
             long availableInFile = _fileLength - absoluteOffset;
             long viewOffset = absoluteOffset & ~0xFFFF;
             long offset = absoluteOffset - viewOffset;
-            long viewLength = Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offset);
+            long viewLength = Math.Min(BlockCopyCapacity, availableInFile + offset);
             _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
             _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
             _viewOffset = viewOffset;
@@ -335,7 +337,7 @@ namespace FastSerialization
 
             long viewOffset = (_viewOffset + _offset) & ~0xFFFF;
             long offset = (_viewOffset + _offset) - viewOffset;
-            long viewLength = Math.Max(Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offset), capacity + offset);
+            long viewLength = Math.Max(Math.Min(BlockCopyCapacity, availableInFile + offset), capacity + offset);
             _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
             _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
             _viewOffset = viewOffset;

@@ -4,6 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
+#if false  // This code is currently unused, commented out.  
 using System;
 using System.Text;      // For StringBuilder.
 using System.Threading;
@@ -319,3 +320,4 @@ namespace FastSerialization
         }
     }
 }
+#endif
