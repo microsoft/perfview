@@ -21,8 +21,7 @@ namespace PerfView
                 // give up setting the owner in that case (it is not critical to have an owner)  
                 try
                 {
-                    Owner = parentWindow;
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 }
                 catch (System.Exception) { }
             }
