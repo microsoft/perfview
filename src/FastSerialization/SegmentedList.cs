@@ -36,7 +36,6 @@ namespace System.Collections.Generic
         private int capacity;
         private int count;
         private T[][] items;
-        private int lastSegmentRead = 0;
 
         /// <summary>
         /// Constructs SegmentedList.
@@ -437,12 +436,6 @@ namespace System.Collections.Generic
                 remain -= len;
                 arrayIndex += (int)len;
                 segmentStartIndex = 0;
-
-                if (i != lastSegmentRead)
-                {
-                    this.items[lastSegmentRead] = null;
-                    lastSegmentRead = i;
-                }
             }
         }
 
@@ -475,7 +468,6 @@ namespace System.Collections.Generic
             items = null;
             count = 0;
             capacity = 0;
-            lastSegmentRead = 0;
         }
 
         /// <summary>
@@ -541,12 +533,6 @@ namespace System.Collections.Generic
                 Array.Copy(this.items[lastSegment], 0, this.items[lastSegment], 1, lastOffset);
                 this.items[lastSegment][0] = save;
             }
-        }
-
-        public void ClearSegment()
-        {
-            this.items[lastSegmentRead] = null;
-            lastSegmentRead++;
         }
 
         /// <summary>
