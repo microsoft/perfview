@@ -238,12 +238,32 @@ namespace System.Collections.Generic
         /// <remarks>The implementation was copied from CLR BinarySearch implementation.</remarks>
         public int BinarySearch(T item, IComparer<T> comparer)
         {
-            int lo = 0;
-            int hi = this.count - 1;
+            return BinarySearch(item, 0, this.count - 1, comparer);
+        }
 
-            while (lo <= hi)
+        /// <summary>
+        /// Performs a binary search in a sorted list.
+        /// </summary>
+        /// <param name="item">Element to search for.</param>
+        /// <param name="low">The lowest index in which to search.</param>
+        /// <param name="high">The highest index in which to search.</param>
+        /// <param name="comparer">Comparer to use.</param>
+        /// <returns>The index </returns>
+        public int BinarySearch(T item, int low, int high, IComparer<T> comparer)
+        {
+            if (low < 0 || low > high)
             {
-                int i = lo + ((hi - lo) >> 1);
+                throw new ArgumentOutOfRangeException($"Low index, with value {low}, must not be negative and cannot be greater than the high index, whose value is {high}.");
+            }
+
+            if (high < 0 || high >= count)
+            {
+                throw new ArgumentOutOfRangeException($"High index, with value {high}, must not be negative and cannot be greater than the number of elements contained in the list, which is {count}.");
+            }
+
+            while (low <= high)
+            {
+                int i = low + ((high - low) >> 1);
                 int order = comparer.Compare(this.items[i >> this.segmentShift][i & this.offsetMask], item);
 
                 if (order == 0)
@@ -253,15 +273,15 @@ namespace System.Collections.Generic
 
                 if (order < 0)
                 {
-                    lo = i + 1;
+                    low = i + 1;
                 }
                 else
                 {
-                    hi = i - 1;
+                    high = i - 1;
                 }
             }
 
-            return ~lo;
+            return ~low;
         }
 
         /// <summary>
