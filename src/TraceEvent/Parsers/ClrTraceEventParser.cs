@@ -10266,6 +10266,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Manifest = 0x8,
         IbcOptimized = 0x10,
         ReadyToRunModule = 0x20,
+        PartialReadyToRunModule = 0x40,
     }
     [Flags]
     public enum MethodFlags

@@ -471,7 +471,7 @@ namespace Graphs
             m_writer.Clear();
             m_nodes.Count = 0;
 
-            // Create an undefined node, kind of gross because because SetNode expects to have an entry
+            // Create an undefined node, kind of gross because SetNode expects to have an entry
             // in the m_nodes table, so we make a fake one and then remove it.  
             m_undefinedObjDef = m_writer.GetLabel();
             m_nodes.Add(m_undefinedObjDef);
