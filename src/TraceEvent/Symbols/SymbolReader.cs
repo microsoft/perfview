@@ -385,6 +385,7 @@ namespace Microsoft.Diagnostics.Symbols
                 m_symbolModuleCache.Clear();
                 m_pdbPathCache.Clear();
                 m_log.WriteLine("Symbol Path Updated to {0}", m_symbolPath);
+                m_log.WriteLine("Symbol Path update forces clearing Pdb lookup cache");
             }
         }
         /// <summary>
@@ -455,6 +456,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 _Options = value;
                 m_pdbPathCache.Clear();
+                m_log.WriteLine("Setting SYmbolReaderOptions forces clearing Pdb lookup cache");
             }
         }
         private SymbolReaderOptions _Options;
