@@ -28,6 +28,12 @@
     <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/T$version$</releaseNotes>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
+    <dependencies>
+      <group targetFramework="net45">
+        <dependency id="System.Memory" version="4.5" />
+        <dependency id="System.Runtime.InteropServices.RuntimeInformation" version="4.3" />
+      </group>
+    </dependencies>
   </metadata>
 
   <files>
