@@ -83,12 +83,10 @@ declare -a DotNETRuntime_GCKeyword_GCCollectOnly=(
 	DotNETRuntime:GCMarkHandles
 	DotNETRuntime:GCMarkOlderGenerationRoots
 	DotNETRuntime:FinalizeObject
-	DotNETRuntime:PinObjectAtGCTime
 	DotNETRuntime:GCTriggered
 	DotNETRuntime:IncreaseMemoryPressure
 	DotNETRuntime:DecreaseMemoryPressure
 	DotNETRuntime:GCMarkWithType
-	DotNETRuntime:GCJoin_V2
 	DotNETRuntime:GCPerHeapHistory_V3
 	DotNETRuntime:GCGlobalHeapHistory_V2
 	DotNETRuntime:GCCreateConcurrentThread_V1
@@ -1110,6 +1108,7 @@ perfOpt=''
 viewer='perf'
 gcCollectOnly=''
 gcOnly=''
+gcWithHeap=''
 events=''
 
 ProcessArguments()
@@ -1211,6 +1210,9 @@ ProcessArguments()
 		elif [ "-gconly" == "$arg" ]
 		then
 			gcOnly=1
+		elif [ "-gcwithheap" == "$arg" ]
+		then
+			gcWithHeap=1
 		elif [ "-events" == "$arg" ]
 		then
 			events=$value
@@ -1267,10 +1269,11 @@ SetupLTTngSession()
 		usePerf=0
 		EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword[@]}
+	elseif [ "$gcWithHeap" == "1" ]
+	then
+		usePerf=0
+		EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntime_GCHeapSurvivalAndMovementKeyword[@]}
-		EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
-		EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
-		EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
 	else
 		if [ "$events" == "" ]
 		then
