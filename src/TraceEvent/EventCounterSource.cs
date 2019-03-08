@@ -38,7 +38,7 @@ namespace Microsoft.Diagnostics.Tracing
     {
         public string Name { get; private set; }
         public int ProcessID { get; private set; }
-        public double CurrnetValue { get; private set; } 
+        public double CurrentValue { get; private set; } 
 
         public event Action<EventCounter> CountersUpdated;
     }
