@@ -1272,7 +1272,7 @@ SetupLTTngSession()
 		EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
-	elseif [ "$gcWithHeap" == "1" ]
+	elif [ "$gcWithHeap" == "1" ]
 	then
 		usePerf=0
 		EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
