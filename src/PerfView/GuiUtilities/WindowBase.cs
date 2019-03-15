@@ -15,8 +15,16 @@ namespace PerfView
 
         public WindowBase(Window parentWindow)
         {
-            Owner = parentWindow;
-            WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            if (parentWindow != null)
+            {
+                // Try to set the owner, but it might fail (e.g. if parentWindow has never been displayed)
+                // give up setting the owner in that case (it is not critical to have an owner)  
+                try
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                }
+                catch (System.Exception) { }
+            }
         }
     }
 }

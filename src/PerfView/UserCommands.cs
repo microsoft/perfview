@@ -7,6 +7,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using Microsoft.Diagnostics.Utilities;
 using PerfView;
 using System;
@@ -45,6 +46,29 @@ namespace PerfViewExtensibility
         // HOwever you can do better than this by removing all 'method' entries that are not user commands
         // That is members of this class.   THis makes the file (and therefore PerfView.exe) smaller.  
 
+        /// <summary>
+        /// Save Thread stacks from a NetPerf file into a *.speedscope.json file.
+        /// </summary>
+        /// <param name="netPerfFileName">The ETL file to convert</param>
+        public void NetperfToSpeedScope(string netPerfFileName)
+        {
+            string outputName = Path.ChangeExtension(netPerfFileName, ".speedscope.json");
+
+            string etlxFileName = TraceLog.CreateFromEventPipeDataFile(netPerfFileName);
+            using (var eventLog = new TraceLog(etlxFileName))
+            {
+                var startStopSource = new MutableTraceEventStackSource(eventLog);
+                // EventPipe currently only has managed code stacks.
+                startStopSource.OnlyManagedCodeStacks = true;
+
+                var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+                computer.GenerateThreadTimeStacks(startStopSource);
+
+                SpeedScopeStackSourceWriter.WriteStackViewAsJson(startStopSource, outputName);
+
+                LogFile.WriteLine("[Converted {0} to {1}  Use https://www.speedscope.app/ to view.]", netPerfFileName, outputName);
+            }
+        }
 #if false // TODO Ideally you don't need Linux Specific versions, and it should be based
           // on eventPipe.   You can delete after 1/2018
         public void LinuxGCStats(string traceFileName)

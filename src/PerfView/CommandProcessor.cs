@@ -2631,6 +2631,8 @@ namespace PerfView
             {
                 return;
             }
+            LogFile.WriteLine("Need Elevation, but this process is not Elevated, Relaunching process as Elevated");
+
 #if PERFVIEW_COLLECT
             throw new ApplicationException("PerfViewCollect needs to run with elevated privileges.");
 #else
@@ -3742,9 +3744,14 @@ namespace PerfView
             else
             {
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
-                // Look it up by name 
+                // Look it up as an EventSource 
                 if (providerGuid == Guid.Empty)
-                    TraceEventProviders.GetEventSourceGuidFromName(providerSpec);
+                {
+                    providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerSpec);
+                    log.WriteLine("Provider named '{0}' was unknown to the operating system, assuming it is an EventSource with GUID '{1}'",
+                        providerSpec, providerGuid);
+                    log.WriteLine("WARNING: If {0} is misspelled we are simply using the wrong GUID and the provider will be ignored.", providerSpec);
+                }
             }
 
             retList.Add(new ParsedProvider()

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="MSBuild.Sdk.Extras">
 
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
@@ -8,6 +8,7 @@
     <Prefer32Bit>False</Prefer32Bit>
     <StartupObject>PerfView.App</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
@@ -98,10 +99,6 @@
   <ItemGroup>
     <!-- The tutorial only gets included as an embedded resource -->
     <Compile Remove="SupportFiles\tutorial.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Page Include="**\*.xaml" SubType="Designer" Generator="MSBuild:Compile" />
   </ItemGroup>
 
   <ItemGroup>
@@ -451,31 +448,6 @@
   <ItemGroup>
     <SplashScreen Include="SplashScreen.png" />
   </ItemGroup>
-
-  <!-- CPS doesn't show these items by default, but we want to show them. -->
-  <ItemGroup>
-    <!-- XAML pages and resources -->
-    <None Include="@(Page)" />
-    <None Include="@(Resource)" />
-
-    <!-- Fix nesting of generated source files in the project tree -->
-    <Compile Update="**\*.xaml.cs" SubType="Designer" DependentUpon="%(Filename)" />
-  </ItemGroup>
-
-  <!-- Work around CoreCompile doesn't exist error -->
-  <PropertyGroup>
-    <LanguageTargets>$(MSBuildExtensionsPath)\$(VisualStudioVersion)\Bin\Microsoft.CSharp.targets</LanguageTargets>
-  </PropertyGroup>
-
-  <!--
-     Work around to fix Intellisense file generation for XAML projects
-     https://github.com/dotnet/project-system/issues/2488
-  -->
-  <Target Name="WorkaroundForXAMLIntellisenseBuildIssue" AfterTargets="_CheckCompileDesignTimePrerequisite">
-    <PropertyGroup>
-      <BuildingProject>false</BuildingProject>
-    </PropertyGroup>
-  </Target>
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>

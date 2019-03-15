@@ -13,6 +13,7 @@ using FastSerialization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 // This provides a managed wrapper over the numanaged dump-reading APIs in DbgHelp.dll.
 // 
@@ -1656,7 +1657,7 @@ namespace Microsoft.Samples.Debugging.Native
         private FileStream m_file;
         private MemoryMappedFile m_fileMapping;
         private MemoryMappedFileStreamReader m_mappedFileReader;
-        private NativeMethodsBase.SafeMapViewHandle m_View;
+        private SafeMemoryMappedViewHandle m_View;
 
         // DumpPointer (raw pointer that's aware of remaining buffer size) for start of minidump. 
         // This is useful for computing RVAs.
@@ -1680,7 +1681,7 @@ namespace Microsoft.Samples.Debugging.Native
             IntPtr pStream;
             uint cbStreamSize;
 
-            bool fOk = NativeMethods.MiniDumpReadDumpStream(m_View.BaseAddress, type,
+            bool fOk = NativeMethods.MiniDumpReadDumpStream(m_View.DangerousGetHandle(), type,
                 out dir, out pStream, out cbStreamSize);
 
             if ((!fOk) || (IntPtr.Zero == pStream) || (cbStreamSize < 1))
@@ -1688,7 +1689,7 @@ namespace Microsoft.Samples.Debugging.Native
                 throw new DumpMissingDataException("Dump does not contain a " + type + " stream.");
             }
 
-            return DumpPointer.DangerousMakeDumpPointer(m_mappedFileReader, (long)pStream - (long)m_View.BaseAddress);
+            return DumpPointer.DangerousMakeDumpPointer(m_mappedFileReader, (long)pStream - (long)m_View.DangerousGetHandle());
         }
 
 
@@ -2092,7 +2093,7 @@ namespace Microsoft.Samples.Debugging.Native
                 return false;
             }
 
-            return (other.m_owner == m_owner) && (other.m_raw.ThreadId == m_raw.ThreadId);            
+            return (other.m_owner == m_owner) && (other.m_raw.ThreadId == m_raw.ThreadId);
         }
 
         // Returns a hash code.

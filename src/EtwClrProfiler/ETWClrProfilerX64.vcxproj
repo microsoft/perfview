@@ -116,9 +116,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
-
   <!-- ******************* Signing Support *********************** -->
   <!-- See EtwClrProfilerSigning\EtwClrProfilerSigning.csproj 
        Trying to do it directoy led to a Nuget error               -->
-
 </Project>

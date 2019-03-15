@@ -295,7 +295,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 Guid activityId = data.ContextId;
-                OnStart(data, data.Path, &activityId, null, creator);
+                OnStart(data, data.Path, &activityId, null, creator, null, false);
             };
             aspNetParser.AspNetReqStop += delegate (AspNetStopTraceData data)
             {
@@ -643,7 +643,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns true if 'guid' follow the EventSouce style activity ID for the process with ID processID.  
         /// You can pass a process ID of 0 to this routine and it will do the best it can, but the possibility
-        /// of error is signficiantly higher (but still under .1%)
+        /// of error is significantly higher (but still under .1%)
         /// </summary>
         public static unsafe bool IsActivityPath(Guid guid, int processID)
         {
