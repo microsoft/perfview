@@ -653,7 +653,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (processID == 0)
             {
                 // We guess that the process ID is < 20 bits and because it was xored
-                // with the lower bits, the upper 20 bits should be independent of the
+                // with the lower bits, the upper 12 bits should be independent of the
                 // particular process, so we can at least confirm that the upper bits
                 // match. 
                 return ((sum & 0xFFF00000) == (uintPtr[3] & 0xFFF00000));
