@@ -3594,7 +3594,7 @@ table {
                     {
                         traceLog = ((ETLPerfViewData)DataFile).GetTraceLog(worker.LogWriter);
                     }
-                    else if(DataFile is EventPipePerfViewData)
+                    else if (DataFile is EventPipePerfViewData)
                     {
                         traceLog = ((EventPipePerfViewData)DataFile).GetTraceLog(worker.LogWriter);
                     }
@@ -3814,6 +3814,12 @@ table {
         public override string FilePath { get { return DataFile.FilePath; } }
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
+            // The OS Heap Alloc stack source has logic to look up type names from PDBs, we only do this
+            // lookup when we initially create the stack source.  To allow the user to fetch more PDBs and 
+            // try again, we remove the caching of the StackSource so re-opening recomputes the stack source.   
+            if (Name.StartsWith("Net OS Heap Alloc"))
+                m_StackSource = null;
+
             if (Viewer == null || !DataFile.IsUpToDate)
             {
                 worker.StartWork("Opening " + Name, delegate ()
@@ -5297,11 +5303,11 @@ table {
                         }
                     }
 
-                    ADD_EVENT_FRAME:
+                ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                    ADD_SAMPLE:
+                ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -5627,78 +5633,78 @@ table {
                 var memStates = new MemState[eventLog.Processes.Count];
                 var virtualReserverFrame = stackSource.Interner.FrameIntern("VirtualReserve");
                 eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
-                                {
-                                    bool isAlloc = false;
-                                    if ((data.Flags & (
-                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT |
-                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE |
-                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
-                                    {
-                                        // Can't use data.Process() because some of the virtual allocs occur in the process that started the
-                                        // process and occur before the process start event, which is what Process() uses to find it. 
-                                        // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
-                                        var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
-                                        if (processWhereMemoryAllocated == null)
-                                        {
-                                            droppedEvents++;
-                                            return;
-                                        }
+                {
+                    bool isAlloc = false;
+                    if ((data.Flags & (
+                        VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT |
+                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE |
+                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
+                    {
+                        // Can't use data.Process() because some of the virtual allocs occur in the process that started the
+                        // process and occur before the process start event, which is what Process() uses to find it. 
+                        // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
+                        var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
+                        if (processWhereMemoryAllocated == null)
+                        {
+                            droppedEvents++;
+                            return;
+                        }
 
-                                        var processIndex = processWhereMemoryAllocated.ProcessIndex;
-                                        var memState = memStates[(int)processIndex];
-                                        if (memState == null)
-                                        {
-                                            memState = memStates[(int)processIndex] = new MemState();
-                                        }
+                        var processIndex = processWhereMemoryAllocated.ProcessIndex;
+                        var memState = memStates[(int)processIndex];
+                        if (memState == null)
+                        {
+                            memState = memStates[(int)processIndex] = new MemState();
+                        }
 
-                                        // Commit and decommit not both on together.  
-                                        Debug.Assert((data.Flags &
-                                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
-                                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
-                                        // Reserve and release not both on together.
-                                        Debug.Assert((data.Flags &
-                                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) !=
-                                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE));
+                        // Commit and decommit not both on together.  
+                        Debug.Assert((data.Flags &
+                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
+                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
+                        // Reserve and release not both on together.
+                        Debug.Assert((data.Flags &
+                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) !=
+                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE));
 
-                                        // You allocate by committing or reserving.  We have already filtered out decommits which have no effect on reservation.  
-                                        // Thus the only memRelease is the only one that frees.  
-                                        var stackIndex = StackSourceCallStackIndex.Invalid;
-                                        if ((data.Flags & (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE)) != 0)
-                                        {
-                                            isAlloc = true;
-                                            // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
-                                            // But do count them.  
-                                            var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
-                                            var thread = data.Thread();
-                                            if (thread != null)
-                                            {
-                                                processIDAllocatingMemory = thread.Process.ProcessID;
-                                            }
+                        // You allocate by committing or reserving.  We have already filtered out decommits which have no effect on reservation.  
+                        // Thus the only memRelease is the only one that frees.  
+                        var stackIndex = StackSourceCallStackIndex.Invalid;
+                        if ((data.Flags & (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE)) != 0)
+                        {
+                            isAlloc = true;
+                            // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
+                            // But do count them.  
+                            var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
+                            var thread = data.Thread();
+                            if (thread != null)
+                            {
+                                processIDAllocatingMemory = thread.Process.ProcessID;
+                            }
 
-                                            if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
-                                            {
-                                                stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
-                                            }
-                                            else
-                                            {
-                                                stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
-                                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocated In Parent Process"), stackIndex);
-                                            }
-                                            stackIndex = stackSource.Interner.CallStackIntern(virtualReserverFrame, stackIndex);
-                                        }
-                                        memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
-                                            delegate (long metric, StackSourceCallStackIndex allocStack)
-                                            {
-                                                Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
-                                                Debug.Assert(metric != 0);                                                  // They should trim this already.  
-                                                sample.Metric = metric;
-                                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                                sample.StackIndex = allocStack;
-                                                stackSource.AddSample(sample);
-                                                // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
-                                            });
-                                    }
-                                });
+                            if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
+                            {
+                                stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                            }
+                            else
+                            {
+                                stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
+                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocated In Parent Process"), stackIndex);
+                            }
+                            stackIndex = stackSource.Interner.CallStackIntern(virtualReserverFrame, stackIndex);
+                        }
+                        memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
+                            delegate (long metric, StackSourceCallStackIndex allocStack)
+                            {
+                                Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
+                                Debug.Assert(metric != 0);                                                  // They should trim this already.  
+                                sample.Metric = metric;
+                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                sample.StackIndex = allocStack;
+                                stackSource.AddSample(sample);
+                                // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
+                            });
+                    }
+                });
                 eventSource.Process();
                 if (droppedEvents != 0)
                 {
@@ -5713,9 +5719,11 @@ table {
                 var heapParser = new HeapTraceProviderTraceEventParser(eventSource);
                 Dictionary<Address, StackSourceSample> lastHeapAllocs = null;
 
+                // These three variables are used in the local function GetAllocationType defined below.
+                // and are used to look up type names associated with the native allocations.   
                 var loadedModules = new Dictionary<TraceModuleFile, NativeSymbolModule>();
                 var allocationTypeNames = new Dictionary<CallStackIndex, string>();
-                var symReader = GetSymbolReader(log);
+                var symReader = GetSymbolReader(log, SymbolReaderOptions.CacheOnly);
 
                 Address lastHeapHandle = 0;
 
@@ -5726,69 +5734,78 @@ table {
                 int cumCount = 0;
 
                 heapParser.HeapTraceAlloc += delegate (HeapAllocTraceData data)
+                {
+                    var allocs = lastHeapAllocs;
+                    if (data.HeapHandle != lastHeapHandle)
+                        allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
+
+                    var callStackIndex = data.CallStackIndex();
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = data.AllocSize;
+                    sample.StackIndex = stackSource.GetCallStack(callStackIndex, data);
+
+                    // Add the 'Alloc < XXX' psuedo node. 
+                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
+
+                    // Add the 'Type ALLOCATION_TYPE' if available.  
+                    string allocationType = GetAllocationType(callStackIndex);
+                    if (allocationType != null)
+                    {
+                        nodeIndex = stackSource.Interner.FrameIntern("Type " + allocationType);
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
+                    }
+
+                    var addedSample = stackSource.AddSample(sample);
+                    allocs[data.AllocAddress] = addedSample;
+
+                    cumMetric += sample.Metric;
+                    if (cumMetric > peakMetric)
+                    {
+                        peakMetric = cumMetric;
+                        peakSample = addedSample;
+                    }
+                    sumCumMetric += cumMetric;
+                    cumCount++;
+
+                    /*****************************************************************************/
+                    // Performs a stack crawl to match the best typename to this allocation. 
+                    // Returns null if no typename was found.
+                    // This updates loadedModules and allocationTypeNames. It reads symReader/eventLog.
+                    string GetAllocationType(CallStackIndex csi)
+                    {
+                        if (!allocationTypeNames.TryGetValue(csi, out var typeName))
+                        {
+                            const int frameLimit = 25; // typically you need about 10 frames to get out of the OS functions 
+                                                       // to get to a frame that has type information.   We'll search up this many frames
+                                                       // before giving up on getting type information for the allocation.  
+
+                            int frameCount = 0;
+                            for (var current = csi; current != CallStackIndex.Invalid && frameCount < frameLimit; current = eventLog.CallStacks.Caller(current), frameCount++)
+                            {
+                                var module = eventLog.CodeAddresses.ModuleFile(eventLog.CallStacks.CodeAddressIndex(current));
+                                if (module == null)
+                                    continue;
+
+                                if (!loadedModules.TryGetValue(module, out var symbolModule))
                                 {
-                                    var allocs = lastHeapAllocs;
-                                    if (data.HeapHandle != lastHeapHandle)
-                                    {
-                                        allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
-                                    }
+                                    loadedModules[module] = symbolModule =
+                                        (module.PdbSignature != Guid.Empty
+                                            ? symReader.FindSymbolFilePath(module.PdbName, module.PdbSignature, module.PdbAge, module.FilePath)
+                                            : symReader.FindSymbolFilePathForModule(module.FilePath)) is string pdb
+                                        ? symReader.OpenNativeSymbolFile(pdb)
+                                        : null;
+                                }
 
-                                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                    sample.Metric = data.AllocSize;
-                                    var callStackIndex = data.CallStackIndex();
-                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocationType(callStackIndex) ?? GetAllocName((uint)data.AllocSize));
-                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(callStackIndex, data));
-                                    var addedSample = stackSource.AddSample(sample);
-                                    allocs[data.AllocAddress] = addedSample;
-
-                                    cumMetric += sample.Metric;
-                                    if (cumMetric > peakMetric)
-                                    {
-                                        peakMetric = cumMetric;
-                                        peakSample = addedSample;
-                                    }
-                                    sumCumMetric += cumMetric;
-                                    cumCount++;
-
-                                    // Performs a stack crawl to match the best typename to this allocation. 
-                                    // Returns null if no typename was found.
-                                    // This updates loadedModules and allocationTypeNames. It reads symReader/eventLog.
-                                    string GetAllocationType(CallStackIndex csi)
-                                    {
-                                        if (!allocationTypeNames.TryGetValue(csi, out var typeName))
-                                        {
-                                            const int frameLimit = 25; // we'll search the first 25 frames for the best match
-
-                                            int frameCount = 0;
-                                            for (var current = csi; current != CallStackIndex.Invalid && frameCount < frameLimit; current = eventLog.CallStacks.Caller(current), frameCount++)
-                                            {
-                                                var module = eventLog.CodeAddresses.ModuleFile(eventLog.CallStacks.CodeAddressIndex(current));
-                                                if (module == null)
-                                                {
-                                                    continue;
-                                                }
-
-                                                if (!loadedModules.TryGetValue(module, out var symbolModule))
-                                                {
-                                                    loadedModules[module] = symbolModule =
-                                                        (module.PdbSignature != Guid.Empty
-                                                            ? symReader.FindSymbolFilePath(module.PdbName, module.PdbSignature, module.PdbAge, module.FilePath) 
-                                                            : symReader.FindSymbolFilePathForModule(module.FilePath)) is string pdb
-                                                        ? symReader.OpenNativeSymbolFile(pdb)
-                                                        : null;
-                                                }
-
-                                                typeName = symbolModule?.GetTypeForHeapAllocationSite(
-                                                        (uint)(eventLog.CodeAddresses.Address(eventLog.CallStacks.CodeAddressIndex(current)) - module.ImageBase)
-                                                    ) ?? typeName;
-                                            }
-
-                                            allocationTypeNames[csi] = typeName;
-                                        }
-
-                                        return typeName;
-                                    }
-                                };
+                                typeName = symbolModule?.GetTypeForHeapAllocationSite(
+                                        (uint)(eventLog.CodeAddresses.Address(eventLog.CallStacks.CodeAddressIndex(current)) - module.ImageBase)
+                                    ) ?? typeName;
+                            }
+                            allocationTypeNames[csi] = typeName;
+                        }
+                        return typeName;
+                    }
+                };
 
                 heapParser.HeapTraceFree += delegate (HeapFreeTraceData data)
                 {
@@ -6636,6 +6653,23 @@ table {
             if (m_extraTopStats != null)
             {
                 stackWindow.ExtraTopStats = m_extraTopStats;
+            }
+
+            // Warn the user about the behavior of type name lookup, but only once per user.  
+            if (stackSourceName == "Net OS Heap Alloc")
+            {
+                if (App.ConfigData["WarnedAboutOsHeapAllocTypes"] == null)
+                {
+                    MessageBox.Show(stackWindow, 
+                        "Warning: Allocation type resolution only happens on window launch.\r\n" +
+                        "Thus if you manually lookup symbols in this view you will get method\r\n" +
+                        "names of allocations sites, but to get the type name associated the \r\n" +
+                        "allocation site.\r\n" +
+                        "\r\n" +
+                        "You must close and reopen this window to get the allocation types.\r\n"
+                        , "May need to resolve PDBs and reopen.");
+                    App.ConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
+                }
             }
         }
         public override bool SupportsProcesses { get { return true; } }
@@ -8534,8 +8568,8 @@ table {
                                     goto ADD_EVENT_FRAME;
                                 }
 
-                                // Tack on event nam
-                                ADD_EVENT_FRAME:
+                            // Tack on event nam
+                            ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
                                 // Add sample
