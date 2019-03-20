@@ -5713,6 +5713,10 @@ table {
                 var heapParser = new HeapTraceProviderTraceEventParser(eventSource);
                 Dictionary<Address, StackSourceSample> lastHeapAllocs = null;
 
+                var loadedModules = new Dictionary<TraceModuleFile, NativeSymbolModule>();
+                var allocationTypeNames = new Dictionary<CallStackIndex, string>();
+                var symReader = GetSymbolReader(log);
+
                 Address lastHeapHandle = 0;
 
                 float peakMetric = 0;
@@ -5731,8 +5735,9 @@ table {
 
                                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                     sample.Metric = data.AllocSize;
-                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
-                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
+                                    var callStackIndex = data.CallStackIndex();
+                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocationType(callStackIndex) ?? GetAllocName((uint)data.AllocSize));
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(callStackIndex, data));
                                     var addedSample = stackSource.AddSample(sample);
                                     allocs[data.AllocAddress] = addedSample;
 
@@ -5744,6 +5749,45 @@ table {
                                     }
                                     sumCumMetric += cumMetric;
                                     cumCount++;
+
+                                    // Performs a stack crawl to match the best typename to this allocation. 
+                                    // Returns null if no typename was found.
+                                    // This updates loadedModules and allocationTypeNames. It reads symReader/eventLog.
+                                    string GetAllocationType(CallStackIndex csi)
+                                    {
+                                        if (!allocationTypeNames.TryGetValue(csi, out var typeName))
+                                        {
+                                            const int frameLimit = 25; // we'll search the first 25 frames for the best match
+
+                                            int frameCount = 0;
+                                            for (var current = csi; current != CallStackIndex.Invalid && frameCount < frameLimit; current = eventLog.CallStacks.Caller(current), frameCount++)
+                                            {
+                                                var module = eventLog.CodeAddresses.ModuleFile(eventLog.CallStacks.CodeAddressIndex(current));
+                                                if (module == null)
+                                                {
+                                                    continue;
+                                                }
+
+                                                if (!loadedModules.TryGetValue(module, out var symbolModule))
+                                                {
+                                                    loadedModules[module] = symbolModule =
+                                                        (module.PdbSignature != Guid.Empty
+                                                            ? symReader.FindSymbolFilePath(module.PdbName, module.PdbSignature, module.PdbAge, module.FilePath) 
+                                                            : symReader.FindSymbolFilePathForModule(module.FilePath)) is string pdb
+                                                        ? symReader.OpenNativeSymbolFile(pdb)
+                                                        : null;
+                                                }
+
+                                                typeName = symbolModule?.GetTypeForHeapAllocationSite(
+                                                        (uint)(eventLog.CodeAddresses.Address(eventLog.CallStacks.CodeAddressIndex(current)) - module.ImageBase)
+                                                    ) ?? typeName;
+                                            }
+
+                                            allocationTypeNames[csi] = typeName;
+                                        }
+
+                                        return typeName;
+                                    }
                                 };
 
                 heapParser.HeapTraceFree += delegate (HeapFreeTraceData data)
