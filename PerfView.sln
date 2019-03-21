@@ -73,7 +73,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventPackageSigning", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "src\Utilities\Utilities.csproj", "{BBF0A803-0B1C-47F2-B60F-09A5C4DB2136}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeapDumpDLL", "src\HeapDump\HeapDumpDLL.csproj", "{191D9437-3869-46DC-8689-6104F486A7E2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeapDumpDLL", "src\HeapDumpDLL\HeapDumpDLL.csproj", "{191D9437-3869-46DC-8689-6104F486A7E2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryGraph", "src\MemoryGraph\MemoryGraph.csproj", "{7DEBBF5E-1C12-4350-889A-27A48C23FEF0}"
 EndProject
