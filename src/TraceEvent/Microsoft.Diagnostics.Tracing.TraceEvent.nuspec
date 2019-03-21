@@ -7,7 +7,7 @@
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
     <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
-    <licenseUrl>https://github.com/Microsoft/perfview/blob/master/LICENSE.TXT</licenseUrl>
+    <license type="expression">MIT</license>
     <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>

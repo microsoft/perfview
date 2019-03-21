@@ -6,7 +6,7 @@
     <title>Non-Source files needed to Build PerfView</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
-    <licenseUrl>https://github.com/Microsoft/perfview/blob/master/LICENSE.TXT</licenseUrl>
+    <license type="expression">MIT</license>
     <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
