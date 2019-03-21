@@ -34,6 +34,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\HeapDump\*.cs" />
+    <Compile Include="..\HeapDump\Utilities\*.cs" />
+    <Compile Include="..\HeapDump\Debugger\**\*.cs" />
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
