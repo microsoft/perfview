@@ -414,7 +414,7 @@ namespace PerfView
             {
                 // Just creating this directory is enough for the rest to 'just work' 
                 var ngenPdbs = parsedArgs.DataFile + ".ngenpdb";
-                LogFile.WriteLine("Putting NGEN pdbs into {0}");
+                LogFile.WriteLine("Putting NGEN pdbs into {0}", ngenPdbs);
                 Directory.CreateDirectory(ngenPdbs);
             }
 
