@@ -55,15 +55,15 @@ to download Visual Studio 2017 Community Edition if you don't already have Visua
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
 (The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
-If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
-but VS should detect that the solution needs C++ and ask you to install those tools when you open the solution. Allow it
-to do this and everything should 'just work'.    
+If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default and
+it also does not include the Windows 8.1 SDK by default (we build PerfView so it can run on Win8 as well as Win10).  Thus
+when you install Visual Studio 2017 check the 'Desktop Development with C++' option and then look the right pane to see
+the optional sub-components, and make sure the Windws 8.1 SDK is also checked (it typically is not).   If you have
+already installed VS 2017, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2017, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 8.1 SDK. 
+If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 8.1 SDK.  See 
+the troubleshooting sections below for more if you need it.  
 
-You may need to install some VS optional components, such as the Windows 8.1 SDK and the "Windows Universal CRT SDK"
-(*not* the "Windows Universal C Runtime").
-
-The .NET Core SDK is unfortunately not currently an optional component of the Visual Studio Installer, but can be
-installed easily from [here](https://www.microsoft.com/net/download/windows).
+The .NET Core SDK should be part of the default VS 2017 installation now, but if not it can be installed easily from [here](https://www.microsoft.com/net/download/windows).
 
 ### Cloning the PerfView GitHub Repository. 
 
@@ -123,8 +123,11 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
     3. Restore the nuget packages by typing the command 'msbuild /t:restore'
     4. Build perfView by typing the command 'msbuild'
   
-  * If you get an error "MSB8036: The Windows SDK version 8.1 was not found", go to your Control panel -> Programs and Features, 
-  and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1     option is selected.  If not, select it and have the setup install this.  
+  * If you get an error "MSB8036: The Windows SDK version 8.1 was not found",  Or you get a 'assert.h' not found error, or 
+  frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 8.1 
+  SDK installed (We like to build PerfView so it works event on Windows 8).    Unfortunately this library tends not to be 
+  installed with Visual Studio anymore unless you ask for it explicitly.   To fix it 
+     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1 option is selected.  If not, select it and have the setup install this.  THen try building PerfView again.   
   
 ### Running Tests
 

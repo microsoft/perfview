@@ -8355,22 +8355,32 @@
     </li>
     -->
         <li>
+            Version 2.0.39 3/20/19
+            <ul>
+                <li> Merged kayle's update to display the type of the alloction for C++ code (in the Net OS Heap Alloc View).
+                     It is now the case that if you have PDBS for the call site of a C++ 'new' expression and that compiler
+                     supports it (I believe anything after VS2017 CPP compiler will work), then PerfView will create a 'Type XXX'
+                     pseduo-node for allocation sites.   Having this type information can definately be useful.   
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 2.0.32 12/14/18
             <ul>
                 <li>
-                    Added the /focusProcess=ProcessIDOrName qualifier (e.g. focusProcess=PerfView.exe) This allows you 
-                    to only turn on non-Kernel events 
+                    Added the /focusProcess=ProcessIDOrName qualifier (e.g. focusProcess=PerfView.exe) This allows you
+                    to only turn on non-Kernel events
                     for a particular process, and thus cut the overhead / size of the collection when there are many
                     active processes on the system..   Note that it does not have an effect on kernel events (which are
-                    often the most common, but not always), so it may not help as much as you would like, but DEFINITELY 
-                    helps during rundown (if you have many managed processes, they all do rundown which can be impactful).  
+                    often the most common, but not always), so it may not help as much as you would like, but DEFINITELY
+                    helps during rundown (if you have many managed processes, they all do rundown which can be impactful).
                     So it always helps when there are many managed processes (because of rundown) but can help quite a lot
-                    if many of those processes allocate a lot, or use the threadpool (which both can create many events). 
+                    if many of those processes allocate a lot, or use the threadpool (which both can create many events).
                 </li>
                 <li>
                     Added a popup warning if the ETL file has events out of order in time (this should not happen but
                     when it does, it can produce GUI anomalies, so I want the warning to be obvious).    Added a
-                    FirstTimeInversion property to support this feature.   
+                    FirstTimeInversion property to support this feature.
                 </li>
             </ul>
         </li>
