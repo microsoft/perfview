@@ -76,7 +76,7 @@ internal class PerfViewLogger : System.Diagnostics.Tracing.EventSource
         StartAndStopTimes(startTimeRelativeMSec, stopTimeRelativeMSec);
     }
     [Event(17)]
-    public void CpuCountersConfigured(string profileSourceName, int profileSourceCount, int profileSourceID) { WriteEvent(17, profileSourceName, profileSourceCount, profileSourceID); }
+    public void CpuCounterIntervalSetting(string profileSourceName, int profileSourceCount, int profileSourceID) { WriteEvent(17, profileSourceName, profileSourceCount, profileSourceID); }
     /// <summary>
     /// Logged at consistent intervals so we can see where circular buffering starts.  
     /// </summary>
