@@ -530,7 +530,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
 #endif
 
-        private void ClearMemory(void* buffer, int length)
+        // this is a memset implementation.  Note that we often use the trick of assigning a pointer to a struct to *ptr = default(Type);
+        // Span.Clear also now does this.  
+        private static void ClearMemory(void* buffer, int length)
         {
             byte* ptr = (byte*)buffer;
             while (length > 0)

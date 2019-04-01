@@ -1151,7 +1151,7 @@ namespace PerfView
                         continue;
                     }
 
-                    PerfViewLogger.Log.CpuCountersConfigured(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                    PerfViewLogger.Log.CpuCounterIntervalSetting(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                     // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                 }
             }
