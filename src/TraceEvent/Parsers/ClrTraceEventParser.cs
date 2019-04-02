@@ -1408,7 +1408,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<R2RGetEntryPointTraceData> R2RGetEntryPoint
+        public event Action<R2RGetEntryPointTraceData> MethodR2RGetEntryPoint
         {
             add
             {
