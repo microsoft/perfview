@@ -4004,7 +4004,7 @@
                 This option tends to have a VERY noticeable impact on performance (2X or more).   Also,
                 if the application allocates aggressively, so many events will be fired so quickly that
                 events will be lost even when the
-                /BufferSize qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
+                /BufferSizeMB qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
                 is usually a better idea to use the <a href="DotNetAllocSampledCheckBox">.NET SampAlloc</a>
                 option instead if at all possible.
             </p>
@@ -4069,7 +4069,7 @@
             <p>
                 This option tends to have a VERY noticeable impact on performance (5X or more).
                 If the application runs a lot of code (common), it may be necessary to make
-                /BufferSize qualifier very large (e.g. 1000Meg).  and even that may not be enough
+                /BufferSizeMB qualifier very large (e.g. 1000Meg).  and even that may not be enough
                 This option is really only meant for small isolated tests.
             </p>
             <p>
