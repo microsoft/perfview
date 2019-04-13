@@ -51,6 +51,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             registeredParser.NewEventDefinition = OnNewEventDefintion;
             // make an eventPipeTraceEventParser to resolve EventPipe events
             eventPipeTraceEventParser = new EventPipeTraceEventParser(source, dontRegister: true);
+            eventPipeTraceEventParser.NewEventDefinition = OnNewEventDefintion;
         }
 
         /// <summary>

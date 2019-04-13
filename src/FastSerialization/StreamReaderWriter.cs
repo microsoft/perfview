@@ -36,6 +36,7 @@ namespace FastSerialization
         /// The total length of bytes that this reader can read.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
+        public virtual bool HasLength { get { return true; } }
 
         #region implemenation of IStreamReader
         public void Read(byte[] data, int offset, int length)
@@ -116,7 +117,7 @@ namespace FastSerialization
 
             sb.Length = 0;
 
-            Debug.Assert(len < Length);
+            Debug.Assert(!HasLength || len < Length);
             while (len > 0)
             {
                 int b = ReadByte();
@@ -635,6 +636,19 @@ namespace FastSerialization
             uint offset = unchecked((uint)label - positionInStream);
             if (offset > (uint)endPosition)
             {
+                if(!inputStream.CanSeek)
+                {
+                    if((uint)label < positionInStream)
+                    {
+                        throw new Exception("Stream can not go backwards");
+                    }
+                    uint bytesToRead = offset - (uint)endPosition;
+                    for(int i = 0; i < bytesToRead; i++)
+                    {
+                        // a non-seekable stream should always be positioned at positionInStream + endPosition
+                        inputStream.ReadByte(); 
+                    }
+                }
                 positionInStream = (uint)label;
                 position = endPosition = 0;
             }
@@ -647,6 +661,7 @@ namespace FastSerialization
         /// Implementation of MemoryStreamReader
         /// </summary>
         public override long Length { get { return inputStream.Length; } }
+        public override bool HasLength { get { return inputStream.CanSeek; } }
         #endregion 
 
         #region private
@@ -693,24 +708,33 @@ namespace FastSerialization
                 positionInStream += (uint)position;
                 endPosition = 0;
                 position = 0;
-                // if you are within one read of the end of file, go backward to read the whole block.  
-                uint lastBlock = (uint)(((int)inputStream.Length - bytes.Length + align) & ~(align - 1));
-                if (positionInStream >= lastBlock)
+                if (inputStream.CanSeek)
                 {
-                    position = (int)(positionInStream - lastBlock);
-                }
-                else
-                {
-                    position = (int)positionInStream & (align - 1);
-                }
+                    // if you are within one read of the end of file, go backward to read the whole block.  
+                    uint lastBlock = (uint)(((int)inputStream.Length - bytes.Length + align) & ~(align - 1));
+                    if (positionInStream >= lastBlock)
+                    {
+                        position = (int)(positionInStream - lastBlock);
+                    }
+                    else
+                    {
+                        position = (int)positionInStream & (align - 1);
+                    }
 
-                positionInStream -= (uint)position;
+                    positionInStream -= (uint)position;
+                }
             }
 
             Debug.Assert(positionInStream % align == 0);
             lock (inputStream)
             {
-                inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
+                if(inputStream.CanSeek)
+                {
+                    // for non-seekable streams we always keep the stream positioned at this point
+                    // See Goto()
+                    inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
+                }
+                
                 for (; ; )
                 {
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
