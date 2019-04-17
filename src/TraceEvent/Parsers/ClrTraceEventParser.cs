@@ -20,6 +20,7 @@ using Address = System.UInt64;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+    using System.Collections.Generic;
 
     /* Parsers defined in this file */
     // ClrTraceEventParser, ClrRundownTraceEventParser, ClrStressTraceEventParser 
@@ -1862,10 +1863,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 s_templates = templates;
             }
+
+            List<TraceEvent> enumeratedTemplates = new List<TraceEvent>();
             foreach (var template in s_templates)
             {
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
                 {
+                    // The CLR parser has duplicate template definitions that differ only by name
+                    // The eventsToObserve delegate could filter to select only one of them, but if
+                    // it doesn't then select one on a first-come-first-served basis
+                    bool match = false;
+                    foreach(var prevTemplate in enumeratedTemplates)
+                    {
+                        if(prevTemplate.Matches(template))
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (match)
+                        continue;
+                    enumeratedTemplates.Add(template);
+
                     callback(template);
 
                     // Project N support.   If this is not a classic event, then also register with project N

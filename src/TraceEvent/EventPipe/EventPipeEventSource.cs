@@ -125,7 +125,7 @@ namespace Microsoft.Diagnostics.Tracing
             return true;
         }
 
-        internal override string ProcessName(int processID, long timeQPC) => _processName;
+        internal override string ProcessName(int processID, long timeQPC) => string.Format("Process({0})", processID);
 
         internal TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader)
         {
@@ -755,6 +755,10 @@ namespace Microsoft.Diagnostics.Tracing
             else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
             {
                 _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Stop;
+            }
+            if(EventName == "")
+            {
+                EventName = null; //TraceEvent expects empty name to be canonicalized as null rather than ""
             }
 
             _eventRecord->EventHeader.Keyword = (ulong)reader.ReadInt64();

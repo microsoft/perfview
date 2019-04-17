@@ -25,6 +25,11 @@ namespace TraceEventTests
         public static IEnumerable<object[]> TestEventPipeFiles
             => TestEventPipeZipFiles.Select(file => new[] { Path.GetFileNameWithoutExtension(file) });
 
+        // Only the subset of data files starting in 2.1 were in a format capable of streaming
+        public static IEnumerable<object[]> StreamableTestEventPipeFiles
+            => TestEventPipeZipFiles.Where(file => file.Contains("dotnetcore2.1"))
+                                    .Select(file => new[] { Path.GetFileNameWithoutExtension(file) });
+
         private static bool s_fileUnzipped;
 
         [MethodImpl(MethodImplOptions.Synchronized)]

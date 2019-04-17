@@ -638,15 +638,9 @@ namespace FastSerialization
             {
                 if(!inputStream.CanSeek)
                 {
-                    if((uint)label < positionInStream)
+                    if((uint)label < positionInStream + endPosition)
                     {
-                        throw new Exception("Stream can not go backwards");
-                    }
-                    uint bytesToRead = offset - (uint)endPosition;
-                    for(int i = 0; i < bytesToRead; i++)
-                    {
-                        // a non-seekable stream should always be positioned at positionInStream + endPosition
-                        inputStream.ReadByte(); 
+                        throw new Exception("Stream does not support seeking backwards");
                     }
                 }
                 positionInStream = (uint)label;
@@ -728,17 +722,30 @@ namespace FastSerialization
             Debug.Assert(positionInStream % align == 0);
             lock (inputStream)
             {
+                // We need to get the stream positioned at (positionInStream + endPosition)
+                // Seekable streams: Easy we can seek
+                // Non-seekable streams: We need to read forward. We already did error checking
+                //                       in Goto() to ensure that the stream movement is going
+                //                       forward, not backwards.
                 if(inputStream.CanSeek)
                 {
-                    // for non-seekable streams we always keep the stream positioned at this point
-                    // See Goto()
                     inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
+                }
+                else
+                {
+                    uint seekForwardDistance = (uint)((positionInStream + endPosition) - inputStreamBytesRead);
+                    for (uint i = 0; i < seekForwardDistance; i++)
+                    {
+                        inputStream.ReadByte();
+                    }
+                    inputStreamBytesRead += seekForwardDistance;
                 }
                 
                 for (; ; )
                 {
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
                     int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
+                    inputStreamBytesRead += (uint)count;
                     if (count == 0)
                     {
                         break;
@@ -757,6 +764,7 @@ namespace FastSerialization
             }
         }
         internal /*protected*/  Stream inputStream;
+        internal /* protected*/ uint inputStreamBytesRead; // only required for non-seekable streams
         private bool leaveOpen;
         internal /*protected*/  uint positionInStream;
         #endregion
