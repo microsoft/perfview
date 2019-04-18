@@ -740,11 +740,23 @@ namespace FastSerialization
                     }
                     inputStreamBytesRead += seekForwardDistance;
                 }
+
+                // PERF policy
+                // In the streaming (non-seekable) case we don't want to buffer any more data than was
+                // requested and needed for alignment because this might cause the thread to block waiting 
+                // for the unneeded data to arrive. There is probably a better way to do this that can
+                // oportunistically buffer if the data is available but this code isn't that sophisticated
+                // yet.
+                //
+                // In the non-streaming (seekable) case we do want to buffer because that lets the
+                // reader achieve higher throughput.
+                int fillSize = inputStream.CanSeek ? bytes.Length : (position + minimum + (align-1)) & ~(align-1);
                 
-                for (; ; )
+
+                for (; endPosition < fillSize; )
                 {
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
-                    int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
+                    int count = inputStream.Read(bytes, endPosition, fillSize - endPosition);
                     inputStreamBytesRead += (uint)count;
                     if (count == 0)
                     {
@@ -752,10 +764,6 @@ namespace FastSerialization
                     }
 
                     endPosition += count;
-                    if (endPosition == bytes.Length)
-                    {
-                        break;
-                    }
                 }
             }
             if (endPosition - position < minimum)
