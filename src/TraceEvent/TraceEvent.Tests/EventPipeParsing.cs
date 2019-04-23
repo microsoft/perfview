@@ -1,6 +1,8 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -62,6 +64,84 @@ namespace TraceEventTests
 
                 // Process
                 traceSource.Process();
+            }
+            // Validate
+            ValidateEventStatistics(eventStatistics, eventPipeFileName);
+        }
+
+        [Theory()]
+        [MemberData(nameof(StreamableTestEventPipeFiles))]
+        public void Streaming(string eventPipeFileName)
+        {
+            // Initialize
+            PrepareTestData();
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+            Output.WriteLine(string.Format("Processing the file {0}", Path.GetFullPath(eventPipeFilePath)));
+            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+
+            long curStreamPosition = 0;
+            using (MockStreamingOnlyStream s = new MockStreamingOnlyStream(new FileStream(eventPipeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            {
+                using (var traceSource = new EventPipeEventSource(s))
+                {
+                    Action<TraceEvent> handler = delegate (TraceEvent data)
+                    {
+                        long newStreamPosition = s.TestOnlyPosition;
+                        // Empirically these files have event blocks of no more than 103K bytes each
+                        // The streaming code should never need to read ahead beyond the end of the current
+                        // block to read the events
+                        Assert.InRange(newStreamPosition, curStreamPosition, curStreamPosition + 103_000);
+                        curStreamPosition = newStreamPosition;
+
+
+                        string eventName = data.ProviderName + "/" + data.EventName;
+
+                        // For whatever reason the parse filtering below produces a couple extra events
+                        // that TraceLog managed to filter out:
+                        //    Microsoft-Windows-DotNETRuntime/Method, 2,
+                        //    Microsoft-Windows-DotNETRuntimeRundown/Method, 26103, ...
+                        // I haven't had an oportunity to investigate and its probably not a big
+                        // deal so just hacking around it for the moment
+                        if (eventName == "Microsoft-Windows-DotNETRuntimeRundown/Method" ||
+                            eventName == "Microsoft-Windows-DotNETRuntime/Method")
+                            return;
+
+                        if (eventStatistics.ContainsKey(eventName))
+                        {
+                            eventStatistics[eventName].TotalCount++;
+                        }
+                        else
+                        {
+                            eventStatistics[eventName] = new EventRecord()
+                            {
+                                TotalCount = 1,
+                                FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
+                            };
+                        }
+                    };
+
+                    // this is somewhat arbitrary looking set of parser event callbacks empirically
+                    // produces the same set of events as TraceLog.Events.GetSource().AllEvents so
+                    // that the baseline files can be reused from the Basic test
+                    var rundown = new ClrRundownTraceEventParser(traceSource);
+                    rundown.LoaderAppDomainDCStop += handler;
+                    rundown.LoaderAssemblyDCStop += handler;
+                    rundown.LoaderDomainModuleDCStop += handler;
+                    rundown.LoaderModuleDCStop += handler;
+                    rundown.MethodDCStopComplete += handler;
+                    rundown.MethodDCStopInit += handler;
+                    var sampleProfiler = new SampleProfilerTraceEventParser(traceSource);
+                    sampleProfiler.All += handler;
+                    var privateClr = new ClrPrivateTraceEventParser(traceSource);
+                    privateClr.All += handler;
+                    traceSource.Clr.All += handler;
+                    traceSource.Clr.MethodILToNativeMap -= handler;
+                    traceSource.Dynamic.All += handler;
+
+                    // Process
+                    traceSource.Process();
+                }
             }
             // Validate
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
@@ -202,6 +282,43 @@ namespace TraceEventTests
                 Output.WriteLine($"To Diff: windiff {baselineFile} {eventStatisticsFile}");
                 Assert.True(false, $"The event statistics doesn't match {Path.GetFullPath(baselineFile)}. It's saved in {Path.GetFullPath(eventStatisticsFile)}.");
             }
+        }
+    }
+
+
+    class MockStreamingOnlyStream : Stream
+    {
+        Stream _innerStream;
+        public MockStreamingOnlyStream(Stream innerStream)
+        {
+            _innerStream = innerStream;
+        }
+        public long TestOnlyPosition {  get { return _innerStream.Position; } }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotImplementedException();
+        public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public override void Flush()
+        {
+            throw new NotImplementedException();
+        }
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _innerStream.Read(buffer, offset, count);
+        }
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotImplementedException();
+        }
+        public override void SetLength(long value)
+        {
+            throw new NotImplementedException();
+        }
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotImplementedException();
         }
     }
 }
