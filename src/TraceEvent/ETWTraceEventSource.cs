@@ -50,8 +50,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// If type == Session this is the name of real time session to open.</param>
         /// <param name="type"></param>
         // [SecuritySafeCritical]
-        public ETWTraceEventSource(string fileOrSessionName, TraceEventSourceType type)
+        public ETWTraceEventSource(string fileOrSessionName, TraceEventSourceType type, string etwModulePath = default(string), IntPtr startTime = default(IntPtr), IntPtr endTime = default(IntPtr))
         {
+            this.etwModulePath = etwModulePath;
+            this.startTime = startTime;
+            this.endTime = endTime;
             Initialize(fileOrSessionName, type);
         }
 
@@ -383,6 +386,23 @@ namespace Microsoft.Diagnostics.Tracing
             public int Size;
         }
 
+        private IntPtr GetFunctionPointerForEtwLibrary(string procName)
+        {
+            IntPtr loadLibraryHandle = TraceEventNativeMethods.LoadLibrary(this.etwModulePath);
+            if (loadLibraryHandle == IntPtr.Zero)
+            {
+                throw new DllNotFoundException($"LoadLibrary failed. Please check if the file ({this.etwModulePath}) exists, and is of the correct bitness.");
+            }
+
+            IntPtr procAddress = TraceEventNativeMethods.GetProcAddress(loadLibraryHandle, procName);
+            if (procAddress == IntPtr.Zero)
+            {
+                throw new Exception($"GetProcAddress failed. Please check if the function name {procName} is exported from the dll.");
+            }
+
+            return procAddress;
+        }
+
         private void Initialize(string fileOrSessionName, TraceEventSourceType type)
         {
 
@@ -444,12 +464,22 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             DateTime minSessionStartTimeUTC = DateTime.MaxValue;
-            DateTime maxSessionEndTimeUTC = DateTime.MinValue + new TimeSpan(1 * 365, 0, 0, 0); // TO avoid roundoff error when converting to QPC add a year.  
+            DateTime maxSessionEndTimeUTC = DateTime.MinValue + new TimeSpan(1 * 365, 0, 0, 0); // TO avoid roundoff error when converting to QPC add a year. 
+
+            TraceEventNativeMethods.OpenTraceDelegate openTrace = null;
+            bool useOpenTraceDelegate = false;
+            if (!string.IsNullOrEmpty(this.etwModulePath))
+            {
+                var procAddress = this.GetFunctionPointerForEtwLibrary("OpenTraceW");
+                openTrace = (TraceEventNativeMethods.OpenTraceDelegate)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(TraceEventNativeMethods.OpenTraceDelegate));
+                useOpenTraceDelegate = true;
+            } 
 
             // Open all the traces
             for (int i = 0; i < handles.Length; i++)
             {
-                handles[i] = TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
+                handles[i] = useOpenTraceDelegate ? openTrace(ref logFiles[i]) : TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
+
                 if (handles[i] == TraceEventNativeMethods.INVALID_HANDLE_VALUE)
                 {
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
@@ -680,7 +710,19 @@ namespace Microsoft.Diagnostics.Tracing
 
         private bool ProcessOneFile()
         {
-            int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (uint)handles.Length, (IntPtr)0, (IntPtr)0);
+            int dwErr;
+
+            if (string.IsNullOrEmpty(this.etwModulePath))
+            {
+                 dwErr = TraceEventNativeMethods.ProcessTrace(handles, (uint)handles.Length, this.startTime, this.endTime);
+            }
+            else
+            {
+                var procAddress = this.GetFunctionPointerForEtwLibrary("ProcessTrace");
+                var processTrace = (TraceEventNativeMethods.ProcessTraceDelegate)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(TraceEventNativeMethods.ProcessTraceDelegate));
+                dwErr = processTrace(handles, (uint)handles.Length, this.startTime, this.endTime);
+            }
+
             if (dwErr == 6)
             {
                 throw new ApplicationException("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
@@ -808,7 +850,16 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         if (handle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
                         {
-                            TraceEventNativeMethods.CloseTrace(handle);
+                            if (string.IsNullOrEmpty(this.etwModulePath))
+                            {
+                                TraceEventNativeMethods.CloseTrace(handle);
+                            }
+                            else
+                            {
+                                var procAddress = this.GetFunctionPointerForEtwLibrary("CloseTrace");
+                                var closeTrace = (TraceEventNativeMethods.CloseTraceDelegate)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(TraceEventNativeMethods.CloseTraceDelegate));
+                                closeTrace(handle);
+                            }
                         }
                     }
 
@@ -883,6 +934,12 @@ namespace Microsoft.Diagnostics.Tracing
         // Returned from OpenTrace
         private TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[] logFiles;
         private UInt64[] handles;
+
+        private readonly string etwModulePath;
+
+        private readonly IntPtr startTime;
+
+        private readonly IntPtr endTime;
 
         private IEnumerable<string> fileNames;        // Used if more than one file being processed.  (Null otherwise)
 

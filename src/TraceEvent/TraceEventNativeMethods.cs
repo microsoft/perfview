@@ -57,6 +57,10 @@ namespace Microsoft.Diagnostics.Tracing
         internal delegate void EventTraceEventCallback(
             [In] EVENT_RECORD* rawData);
 
+        internal delegate UInt64 OpenTraceDelegate([In][Out] ref EVENT_TRACE_LOGFILEW logfile);
+        internal delegate int ProcessTraceDelegate([In] UInt64[] handleArray, [In] uint handleCount, [In] IntPtr StartTime, [In] IntPtr EndTime);
+        internal delegate int CloseTraceDelegate([In] UInt64 traceHandle);
+
         internal const ulong INVALID_HANDLE_VALUE = unchecked((ulong)(-1));
 
         internal const uint EVENT_TRACE_REAL_TIME_MODE = 0x00000100;
@@ -461,6 +465,16 @@ namespace Microsoft.Diagnostics.Tracing
             public ushort Count;
             public fixed ushort Events[1];  // Actually of Variable size 
         };
+
+        #endregion
+
+        #region Library functions
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        internal static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPWStr)]string lpFileName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        internal static extern IntPtr GetProcAddress(IntPtr hModule, [MarshalAs(UnmanagedType.LPWStr)] string procName);
 
         #endregion
 
