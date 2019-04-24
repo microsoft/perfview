@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Windows;
 
 namespace PerfView64
 {
@@ -15,7 +17,17 @@ namespace PerfView64
         [DebuggerNonUserCode]
         public static int Main(string[] args)
         {
-            return PerfView.App.Main(args);
+            try
+            {
+                return Run(args);
+            }
+            catch (FileNotFoundException ex) when (ex.Message.StartsWith("Could not load file or assembly 'PerfView"))
+            {
+                MessageBox.Show("Failed to run application. Is PerfView.exe present?", "PerfView.exe not found", MessageBoxButton.OK, MessageBoxImage.Error);
+                return 1;
+            }
         }
+
+        private static int Run(string[] args) => PerfView.App.Main(args);
     }
 }
