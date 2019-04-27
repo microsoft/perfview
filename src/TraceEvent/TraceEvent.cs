@@ -3097,6 +3097,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 return new ETWTraceEventSource(traceFileName);
             }
+            else if (traceFileName.EndsWith(".btl", StringComparison.OrdinalIgnoreCase))
+            {
+                return new BPerfEventSource(traceFileName);
+            }
 #endif
             else
             {
