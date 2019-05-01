@@ -521,6 +521,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             mang.GC.m_stats.suspendThreadIDBGC = data.ThreadID;
                             break;
                         default:
+                            mang.GC.m_stats.suspendThreadIDOther = data.ThreadID;
                             // There are several other reasons for a suspend but we
                             // don't care about them
                             return;
@@ -595,6 +596,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     var process = data.Process();
                     var stats = currentManagedProcess(data);
 
+                    if(data.ThreadID == stats.GC.m_stats.suspendThreadIDOther)
+                    {
+                        stats.GC.m_stats.suspendThreadIDOther = -1;
+                    }
+
                     if (!(data.ThreadID == stats.GC.m_stats.suspendThreadIDBGC || data.ThreadID == stats.GC.m_stats.suspendThreadIDGC))
                     {
                         // We only care about RestartEE events that correspond to GC or PrepForGC suspensions
@@ -650,7 +656,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     //Debug.Assert(stats.allocTickAtLastGC == stats.allocTickCurrentMB);
                     // Mark that we are not in suspension anymore.  
                     stats.GC.m_stats.suspendTimeRelativeMSec = -1;
-                    stats.GC.m_stats.suspendThreadIDOther = -1;
                     stats.GC.m_stats.suspendThreadIDBGC = -1;
                     stats.GC.m_stats.suspendThreadIDGC = -1;
                 };
