@@ -5,7 +5,7 @@
 As long as there have been programs, developers have used logging system to diagnosis functional and performance problems. Logging systems break down into two broad categories:
 
 1. Weakly typed: The logging system only knows how to log strings and thus all data is converted into strings before it is logged. Printf logging is an example of this. These are the simplest logging systems and are a fine choice for ad hoc investigations by humans, however they suffer if the volume of data increases or if there is a desire to manipulate the data being logged programmatically.
-2. Strongly typed (also known as [Sematic Logging](http://blogs.msdn.com/b/agile/archive/2013/02/07/embracing-semantic-logging.aspx)): In these logging systems each event is assigned schema which defines
+2. Strongly typed (also known as [Semantic Logging](http://blogs.msdn.com/b/agile/archive/2013/02/07/embracing-semantic-logging.aspx)): In these logging systems each event is assigned schema which defines
     1. The name of the event
     2. The names and types of all the data items that are logged along with the event
     3. Optional meta-data about the event (groups it belongs to, its verbosity etc.).
