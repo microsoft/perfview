@@ -4126,7 +4126,7 @@ table {
     public partial class ETLPerfViewData : PerfViewFile
     {
         public override string FormatName { get { return "ETW"; } }
-        public override string[] FileExtensions { get { return new string[] { ".etl", ".etlx", ".etl.zip", ".vspx" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".btl", ".etl", ".etlx", ".etl.zip", ".vspx" }; } }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
@@ -7202,7 +7202,7 @@ table {
 
             var etlxFile = dataFileName;
             var cachedEtlxFile = false;
-            if (dataFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
+            if (dataFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) || dataFileName.EndsWith(".btl", StringComparison.OrdinalIgnoreCase))
             {
                 etlxFile = CacheFiles.FindFile(dataFileName, ".etlx");
                 if (!File.Exists(etlxFile))
