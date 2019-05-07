@@ -92,7 +92,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool Process()
         {
-            this.utcOffsetMinutes = 480;
             this.ProcessInner();
             return true;
         }
