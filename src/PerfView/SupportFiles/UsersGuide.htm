@@ -3486,15 +3486,15 @@
         those are of great interest.
     </p>
     <p>
-        Suppose main calls f and g and does nothing else. Each takes 50ms for a total of 100ms. Now suppose f gets slower, to 60ms. The total is now 110, or 10% worse. How is this algorithm going to help? Well let?s look at the overweights. Of course main is 100
-        going to 110, or 10%, it?s all of it so the expected growth is 10 and the actual is 10. Overweight 100%. Nothing to see there. Now let?s look at g, it was 50, stayed at 50. But it was ?supposed? to go to 55. Overweight 0/5 or 0%. And finally, our big winner,
-        f, it went from 50 to 60, gain of 10. At 10% growth it should have gained 5. Overweight 10/5 or 200%. It?s very clear where the problem is! But actually it gets even better.
+        Suppose main calls f and g and does nothing else. Each takes 50ms for a total of 100ms. Now suppose f gets slower, to 60ms. The total is now 110, or 10% worse. How is this algorithm going to help? Well let's look at the overweights. Of course main is 100
+        going to 110, or 10%, it's all of it so the expected growth is 10 and the actual is 10. Overweight 100%. Nothing to see there. Now let's look at g, it was 50, stayed at 50. But it was 'supposed' to go to 55. Overweight 0/5 or 0%. And finally, our big winner,
+        f, it went from 50 to 60, gain of 10. At 10% growth it should have gained 5. Overweight 10/5 or 200%. It's very clear where the problem is! But actually it gets even better.
     </p>
     <p>
         Suppose that f actually had two children x and y. Each used to take 25ms but now x slowed down to 35ms. With no gain attributable to y, the overweight for y will be 0%, just like g was. But if we look at x we will find that it went from 25 to 35, a gain
         of 10 and it was supposed to grow by merely 2.5 so its overweight is 10/2.5 or 400%. At this point the pattern should be clear:<br>
         <br>
-        The overweight number keeps going up as you get closer to the root of the subtree which is the source of the problem. Everything below that will tend to have the same overweight. For instance if the problem is that x is being called one more time by f you?d
+        The overweight number keeps going up as you get closer to the root of the subtree which is the source of the problem. Everything below that will tend to have the same overweight. For instance if the problem is that x is being called one more time by f you'd
         find that x and all its children have the same overweight number.
     </p>
     <p>
