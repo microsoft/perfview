@@ -2668,7 +2668,7 @@ table {
                 }
             };
 
-            dispatcher.Clr.ContentionStart += delegate (ContentionTraceData data)
+            dispatcher.Clr.ContentionStart += delegate (ContentionStartTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
@@ -4179,13 +4179,14 @@ table {
             var eventLog = GetTraceLog(log);
             if (streamName == "CPU")
             {
-                return eventLog.CPUStacks(null, App.CommandLineArgs.ShowUnknownAddresses, predicate);
+                return eventLog.CPUStacks(null, App.CommandLineArgs, predicate);
             }
 
             // var stackSource = new InternTraceEventStackSource(eventLog);
             var stackSource = new MutableTraceEventStackSource(eventLog);
 
             stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+            stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
             TraceEvents events = eventLog.Events;
             if (!streamName.Contains("TaskTree") && !streamName.Contains("Tasks)"))
@@ -8621,6 +8622,7 @@ table {
                         stackSource.OnlyManagedCodeStacks = true;
 
                         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
                         TraceEvents events = eventLog.Events;
 

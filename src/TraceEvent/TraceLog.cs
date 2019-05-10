@@ -1338,9 +1338,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             var ClrRundownParser = new ClrRundownTraceEventParser(rawEvents);
             Action<ModuleLoadUnloadTraceData> onLoaderRundown = delegate (ModuleLoadUnloadTraceData data)
-           {
-               processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ManagedModuleLoadOrUnload(data, false, true);
-           };
+            {
+                processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ManagedModuleLoadOrUnload(data, false, true);
+            };
 
             ClrRundownParser.LoaderModuleDCStop += onLoaderRundown;
             ClrRundownParser.LoaderModuleDCStart += onLoaderRundown;
@@ -6695,6 +6695,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     module.NativeModule.ModuleFile.pdbAge = data.NativePdbAge;
                     module.NativeModule.ModuleFile.pdbName = data.NativePdbBuildPath;
                 }
+
+                module.InitializeNativeModuleIsReadyToRun();
             }
 
             // TODO factor this with the unmanaged case.  
@@ -7151,6 +7153,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             : base(process, moduleFile, moduleID)
         { }
 
+        internal void InitializeNativeModuleIsReadyToRun()
+        {
+            if (NativeModule != null && (flags & ModuleFlags.ReadyToRunModule) != ModuleFlags.None)
+            {
+                NativeModule.ModuleFile.isReadyToRun = true;
+            }
+        }
+
         // TODO use or remove
         internal TraceLoadedModule nativeModule;        // non-null for IL managed modules
         internal long assemblyID;
@@ -7170,6 +7180,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out assemblyID);
             deserializer.Read(out nativeModule);
             deserializer.Read(out flags); this.flags = (ModuleFlags)flags;
+            InitializeNativeModuleIsReadyToRun();
         }
         #endregion
     }
@@ -7569,7 +7580,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// methods that take a CodeAddressIndex and return properties of the code address (like its method, address, and module file)
     /// </para>
     /// </summary>
-    public sealed class TraceCodeAddresses : IFastSerializable, IEnumerable<TraceCodeAddress>
+    public sealed class TraceCodeAddresses : IFastSerializable, IFastSerializableVersion, IEnumerable<TraceCodeAddress>
     {
         /// <summary>
         /// Chunk size for <see cref="codeAddressObjects"/>
@@ -7661,6 +7672,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             return ilMap.GetILOffsetForNativeAddress(Address(codeAddressIndex));
+        }
+
+        public OptimizationTier OptimizationTier(CodeAddressIndex codeAddressIndex)
+        {
+            Debug.Assert((int)codeAddressIndex < codeAddresses.Count);
+            return codeAddresses[(int)codeAddressIndex].optimizationTier;
         }
 
         /// <summary>
@@ -8056,6 +8073,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         info.SetILMapIndex(this, ilMap);
                     }
+                    info.SetOptimizationTier(data.OptimizationTier);
                 }
             });
         }
@@ -8427,10 +8445,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                     if (currentMethodIndex != Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
                     {
+                        Debug.Assert(moduleFile.ModuleFileIndex != Etlx.ModuleFileIndex.Invalid);
                         CodeAddressInfo codeAddressInfo = codeAddresses[(int)codeAddressIndexCursor.Current];
+                        Debug.Assert(codeAddressInfo.Address == address);
                         Debug.Assert(codeAddressInfo.GetModuleFileIndex(this) == moduleFile.ModuleFileIndex);
+                        Debug.Assert(moduleFile.ImageBase <= address);
+                        Debug.Assert(address < moduleFile.ImageEnd);
                         codeAddressInfo.SetMethodIndex(this, currentMethodIndex);
-                        Debug.Assert(moduleFile.ModuleFileIndex != Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid);
+                        if (moduleFile.IsReadyToRun)
+                        {
+                            codeAddressInfo.SetOptimizationTier(Parsers.Clr.OptimizationTier.ReadyToRun);
+                        }
                         codeAddresses[(int)codeAddressIndexCursor.Current] = codeAddressInfo;
                     }
                 }
@@ -8592,6 +8617,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     serializer.Write((int)codeAddresses[i].moduleFileIndex);
                     serializer.Write((int)codeAddresses[i].methodOrProcessOrIlMapIndex);
                     serializer.Write(codeAddresses[i].InclusiveCount);
+
+                    // Version 1
+                    serializer.Write((byte)codeAddresses[i].optimizationTier);
                 }
                 serializer.Write(totalCodeAddresses);
                 serializer.Log("</WriteCollection>\r\n");
@@ -8622,6 +8650,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     codeAddressInfo.moduleFileIndex = (ModuleFileIndex)deserializer.ReadInt();
                     codeAddressInfo.methodOrProcessOrIlMapIndex = deserializer.ReadInt();
                     deserializer.Read(out codeAddressInfo.InclusiveCount);
+
+                    // Version 1
+                    codeAddressInfo.optimizationTier = (OptimizationTier)deserializer.ReadByte();
+
                     codeAddresses.Add(codeAddressInfo);
                 }
                 deserializer.Read(out totalCodeAddresses);
@@ -8634,6 +8666,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
             lazyCodeAddresses.FinishRead();        // TODO REMOVE 
         }
+
+        int IFastSerializableVersion.Version => 1;
+        int IFastSerializableVersion.MinimumVersionCanRead => ((IFastSerializableVersion)this).Version;
+        int IFastSerializableVersion.MinimumReaderVersion => ((IFastSerializableVersion)this).Version;
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
@@ -8669,6 +8705,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
                 methodOrProcessOrIlMapIndex = -2 - ((int)processIndex);      // Encode process index to make it unambiguous with a method index.
                 InclusiveCount = 0;
+                optimizationTier = Parsers.Clr.OptimizationTier.Unknown;
                 Debug.Assert(GetProcessIndex(null) == processIndex);
             }
 
@@ -8792,6 +8829,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return moduleFileIndex;
             }
 
+            internal void SetOptimizationTier(OptimizationTier value)
+            {
+                if (optimizationTier == Parsers.Clr.OptimizationTier.Unknown)
+                {
+                    optimizationTier = value;
+                }
+            }
+
             // keep track of how popular each code stack is.  
             internal void UpdateStats()
             {
@@ -8810,6 +8855,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             internal int methodOrProcessOrIlMapIndex;
 
             internal ModuleFileIndex moduleFileIndex;
+
+            internal OptimizationTier optimizationTier;
         }
 
         private ILMapIndex UnloadILMapForMethod(MethodIndex methodIndex, MethodLoadUnloadVerboseTraceData data)
@@ -9482,6 +9529,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public TraceModuleFile MethodModuleFile { get { return methods.codeAddresses.ModuleFiles[MethodModuleFileIndex]; } }
 
         /// <summary>
+        /// Returns a new string prefixed with the optimization tier if it would be useful. Typically used to adorn a method's
+        /// name with the optimization tier of the specific code version of the method.
+        /// </summary>
+        public static string PrefixOptimizationTier(string str, OptimizationTier optimizationTier)
+        {
+            if (optimizationTier == OptimizationTier.Unknown || string.IsNullOrWhiteSpace(str))
+            {
+                return str;
+            }
+            return $"[{optimizationTier}]{str}";
+        }
+
+        /// <summary>
         /// A XML representation of the TraceMethod. (Used for debugging)
         /// </summary>
         /// <returns></returns>
@@ -9822,6 +9882,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public int ImageId { get { return timeDateStamp; } }
 
         /// <summary>
+        /// Tells if the module file is ReadyToRun (the has precompiled code for some managed methods)
+        /// </summary>
+        public bool IsReadyToRun { get { return isReadyToRun; } }
+
+        /// <summary>
         /// If the Product Version fields has a GIT Commit Hash component, this returns it,  Otherwise it is empty.   
         /// </summary>
         public string GitCommitHash
@@ -9901,6 +9966,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     "PdbSignature=" + XmlUtilities.XmlQuote(PdbSignature) + " " +
                     "PdbAge=" + XmlUtilities.XmlQuote(PdbAge) + " " +
                     "FileVersion=" + XmlUtilities.XmlQuote(FileVersion) + " " +
+                    "IsReadyToRun=" + XmlUtilities.XmlQuote(IsReadyToRun) + " " +
                    "/>";
         }
         #region Private
@@ -9923,6 +9989,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal Address imageBase;
         internal string name;
         private ModuleFileIndex moduleFileIndex;
+        internal bool isReadyToRun;
         internal TraceModuleFile next;          // Chain of modules that have the same path (But different image bases)
 
         internal string pdbName;
