@@ -20,6 +20,7 @@
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.nuspec</NuspecFile>
@@ -131,7 +132,7 @@
   </ItemGroup>
 
     <!-- *********************************************************** -->
-    <!-- Copying thee managed binaries explicitly should not be needed because the 
+    <!-- Copying three managed binaries explicitly should not be needed because the 
          dependency logic should just do it for us, but for some reason ths only
          works for the net45 target framework and not the netstandard1.6.  and netstanard2.0 
          We work around it here by copying the files explicitly. 

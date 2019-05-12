@@ -7,9 +7,9 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for FeebackDialog.xaml
     /// </summary>
-    public partial class FeedbackDialog : Window
+    public partial class FeedbackDialog : WindowBase
     {
-        public FeedbackDialog(Action<string> action)
+        public FeedbackDialog(Window parentWindow, Action<string> action) : base(parentWindow)
         {
             m_action = action;
             InitializeComponent();

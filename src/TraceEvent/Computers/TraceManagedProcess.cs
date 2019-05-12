@@ -1402,7 +1402,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
                         Inliner = data.InlinerNamespace + "." + data.InlinerName,
-                        Inlinee = data.InlinerNamespace + "." + data.InlineeName
+                        Inlinee = data.InlineeNamespace + "." + data.InlineeName
                     });
                 };
                 source.Clr.MethodInliningFailedAnsi += delegate (MethodJitInliningFailedAnsiTraceData data)
@@ -3652,7 +3652,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double BackgroundJitAbortedAtMSec;
         /// <summary>
-        /// Background JIT: Assembly name of last assemlby loaded before JIT aborted
+        /// Background JIT: Assembly name of last assembly loaded before JIT aborted
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public string LastAssemblyLoadNameBeforeAbort;

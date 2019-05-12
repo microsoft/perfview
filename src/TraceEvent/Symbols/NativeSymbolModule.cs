@@ -21,11 +21,20 @@ namespace Microsoft.Diagnostics.Symbols
     /// support other formats (e.g. Dwarf).
     /// 
     /// To implmente support for Windows PDBs we use the Debug Interface Access (DIA).  See 
-    /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx for more.   I have only exposed what
+    /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
     public unsafe class NativeSymbolModule : ManagedSymbolModule
     {
+        /// <summary>
+        /// Returns the name of the type allocated for a given relative virtual address.
+        /// Returns null if the given rva does not match a known heap allocation site.
+        /// </summary>
+        public string GetTypeForHeapAllocationSite(uint rva)
+        {
+            return m_heapAllocationSites.Value.TryGetValue(rva, out var name) ? name : null;
+        }
+
         /// <summary>
         /// Finds a (method) symbolic name for a given relative virtual address of some code.  
         /// Returns an empty string if a name could not be found. 
@@ -922,27 +931,46 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             #endregion
         }
 
-        private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
+        private NativeSymbolModule(SymbolReader reader, string pdbFilePath, Action<IDiaDataSource3> loadData) : base(reader, pdbFilePath)
         {
             m_reader = reader;
 
             m_source = DiaLoader.GetDiaSourceObject();
-            loadData();
+            loadData(m_source);
             m_source.openSession(out m_session);
             m_session.getSymbolsByAddr(out m_symbolsByAddr);
+
+            m_heapAllocationSites = new Lazy<IReadOnlyDictionary<uint, string>>(() =>
+            {
+                // Retrieves the S_HEAPALLOCSITE information from the pdb as described here:
+                // https://docs.microsoft.com/visualstudio/profiling/custom-native-etw-heap-events
+                Dictionary<uint, string> result = null;
+                m_session.getHeapAllocationSites(out var diaEnumSymbols);
+                for (; ; )
+                {
+                    diaEnumSymbols.Next(1, out var sym, out var fetchCount);
+                    if (fetchCount == 0)
+                    {
+                        return (IReadOnlyDictionary<uint, string>)result ?? System.Collections.Immutable.ImmutableDictionary<uint, string>.Empty;
+                    }
+
+                    result = result ?? new Dictionary<uint, string>();
+                    m_session.symbolById(sym.typeId, out var typeSym);
+                    result[sym.relativeVirtualAddress + (uint)sym.length] = HeapAllocationTypeInfo.GetTypeName(typeSym);
+                }
+            });
 
             m_reader.m_log.WriteLine("Opening PDB {0} with signature GUID {1} Age {2}", pdbFilePath, PdbGuid, PdbAge);
         }
 
-        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath) : base(reader, pdbFilePath)
+        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath)
+            : this(reader, pdbFilePath, s => s.loadDataFromPdb(pdbFilePath))
         {
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromPdb(pdbFilePath));
         }
 
-        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream) : base(reader, pdbFilePath)
+        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream)
+            : this(reader, pdbFilePath, s => s.loadDataFromIStream(new ComStreamWrapper(pdbStream)))
         {
-            IStream comStream = new ComStreamWrapper(pdbStream);
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromIStream(comStream));
         }
 
         internal void LogManagedInfo(string pdbName, Guid pdbGuid, int pdbAge)
@@ -1166,6 +1194,166 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return buf;
         }
 
+        /// <summary>
+        /// This static class contains the GetTypeName method for retrieving the type name of 
+        /// a heap allocation site. 
+        /// 
+        /// See https://github.com/KirillOsenkov/Dia2Dump/blob/master/PrintSymbol.cpp for more details
+        /// </summary>
+        private static class HeapAllocationTypeInfo
+        {
+            internal static string GetTypeName(IDiaSymbol symbol)
+            {
+                var name = symbol.name ?? "<unknown>";
+
+                switch ((SymTagEnum)symbol.symTag)
+                {
+                    case SymTagEnum.UDT:
+                    case SymTagEnum.Enum:
+                    case SymTagEnum.Typedef:
+                        return name;
+                    case SymTagEnum.FunctionType:
+                        return "function";
+                    case SymTagEnum.PointerType:
+                        return $"{GetTypeName(symbol.type)} {(symbol.reference != 0 ? "&" : "*") }";
+                    case SymTagEnum.ArrayType:
+                        return "array";
+                    case SymTagEnum.BaseType:
+                        var sb = new StringBuilder();
+                        switch ((BasicType)symbol.baseType)
+                        {
+                            case BasicType.btUInt:
+                                sb.Append("unsigned ");
+                                goto case BasicType.btInt;
+                            case BasicType.btInt:
+                                switch (symbol.length)
+                                {
+                                    case 1:
+                                        sb.Append("char");
+                                        break;
+                                    case 2:
+                                        sb.Append("short");
+                                        break;
+                                    case 4:
+                                        sb.Append("int");
+                                        break;
+                                    case 8:
+                                        sb.Append("long");
+                                        break;
+                                }
+                                return sb.ToString();
+                            case BasicType.btFloat:
+                                return symbol.length == 4 ? "float" : "double";
+                            default:
+                                return BaseTypes[symbol.baseType];
+                        }
+                }
+
+                return $"unhandled symbol tag {symbol.symTag}";
+            }
+
+            private enum SymTagEnum
+            {
+                Null,
+                Exe,
+                Compiland,
+                CompilandDetails,
+                CompilandEnv,
+                Function,
+                Block,
+                Data,
+                Annotation,
+                Label,
+                PublicSymbol,
+                UDT,
+                Enum,
+                FunctionType,
+                PointerType,
+                ArrayType,
+                BaseType,
+                Typedef,
+                BaseClass,
+                Friend,
+                FunctionArgType,
+                FuncDebugStart,
+                FuncDebugEnd,
+                UsingNamespace,
+                VTableShape,
+                VTable,
+                Custom,
+                Thunk,
+                CustomType,
+                ManagedType,
+                Dimension,
+                CallSite,
+                InlineSite,
+                BaseInterface,
+                VectorType,
+                MatrixType,
+                HLSLType
+            };
+
+            private enum BasicType
+            {
+                btNoType = 0,
+                btVoid = 1,
+                btChar = 2,
+                btWChar = 3,
+                btInt = 6,
+                btUInt = 7,
+                btFloat = 8,
+                btBCD = 9,
+                btBool = 10,
+                btLong = 13,
+                btULong = 14,
+                btCurrency = 25,
+                btDate = 26,
+                btVariant = 27,
+                btComplex = 28,
+                btBit = 29,
+                btBSTR = 30,
+                btHresult = 31,
+                btChar16 = 32,  // char16_t
+                btChar32 = 33,  // char32_t
+            };
+
+            private static readonly string[] BaseTypes = new[]
+            {
+                 "<NoType>",                         // btNoType = 0,
+                 "void",                             // btVoid = 1,
+                 "char",                             // btChar = 2,
+                 "wchar_t",                          // btWChar = 3,
+                 "signed char",
+                 "unsigned char",
+                 "int",                              // btInt = 6,
+                 "unsigned int",                     // btUInt = 7,
+                 "float",                            // btFloat = 8,
+                 "<BCD>",                            // btBCD = 9,
+                 "bool",                             // btBool = 10,
+                 "short",
+                 "unsigned short",
+                 "long",                             // btLong = 13,
+                 "unsigned long",                    // btULong = 14,
+                 "__int8",
+                 "__int16",
+                 "__int32",
+                 "__int64",
+                 "__int128",
+                 "unsigned __int8",
+                 "unsigned __int16",
+                 "unsigned __int32",
+                 "unsigned __int64",
+                 "unsigned __int128",
+                 "<currency>",                       // btCurrency = 25,
+                 "<date>",                           // btDate = 26,
+                 "VARIANT",                          // btVariant = 27,
+                 "<complex>",                        // btComplex = 28,
+                 "<bit>",                            // btBit = 29,
+                 "BSTR",                             // btBSTR = 30,
+                 "HRESULT"                           // btHresult = 31
+            };
+        }
+
         private bool m_checkedForMergedAssemblies;
         private Dictionary<int, string> m_mergedAssemblies;
 
@@ -1175,10 +1363,11 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         private ManagedSymbolModule m_managedPdb;
         private bool m_managedPdbAttempted;
 
-        internal SymbolReader m_reader;
-        internal IDiaSession m_session;
-        private IDiaDataSource3 m_source;
-        private IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        internal readonly IDiaSession m_session;
+        private readonly SymbolReader m_reader;
+        private readonly IDiaDataSource3 m_source;
+        private readonly IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        private readonly Lazy<IReadOnlyDictionary<uint, string>> m_heapAllocationSites; // rva => typename
 
         #endregion
     }

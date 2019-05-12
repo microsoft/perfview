@@ -21,7 +21,7 @@ flags:
       - src/HeapDump/
       - src/HeapDumpCommon/
       - src/HeapDumpInterface/
-      - src/HtmlJs/
+      - src/PerfViewJS/
       - src/MemoryGraph/
       - src/PerfView/
       - src/PerfView64/

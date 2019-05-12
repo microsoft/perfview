@@ -6,7 +6,11 @@
     <title>Non-Source files needed to Build PerfView</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
-    <licenseUrl>https://www.microsoft.com/net/dotnet_library_license.htm</licenseUrl>
+    <!--  *************************************** 
+     4/2/2019 When the official builds support the 'license' element we should upgrade to use the that (shown below)  
+
+    <license type="expression">MIT</license>
+     *************************************** -->
     <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>

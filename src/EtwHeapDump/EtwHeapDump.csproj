@@ -1,71 +1,58 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PerfLibRootPath>$(MSBuildThisFileDirectory)\..</PerfLibRootPath>
-  </PropertyGroup>
-  <!--Target CLR v4.0-->
-  <PropertyGroup>
-    <AllowCrossTargeting>true</AllowCrossTargeting>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.0</TargetFrameworkVersion>
-  </PropertyGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.settings.targets" />
-  <PropertyGroup Condition=" '$(BuildInRazzle)' == 'true' ">
-    <UseVsVersion>true</UseVsVersion>
-    <CreateMetaAssembly>true</CreateMetaAssembly>
-    <PublishMetaAssemblyVisibility>Inter</PublishMetaAssemblyVisibility>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ProjectGuid>{1F2635F5-FD7E-4C06-B23C-A93E97389FDF}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworks>net45</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.EtwHeapDump</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.EtwHeapDump</AssemblyName>
-    <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
-    <AssemblyAttributeComVisible>false</AssemblyAttributeComVisible>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>0649;0169</NoWarn>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Company>Microsoft</Company>
+    <Description>General Utility library</Description>
+    <Copyright>Copyright Microsoft 2010</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>0649;0169</NoWarn>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
-    <Compile Include="DotNetHeapDumper.cs" />
-    <Compile Include="DotNetHeapDumpGraphReader.cs" />
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
-      <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
-      <Name>FastSerialization</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj">
-      <Project>{f1032b5c-568a-4bad-b253-1b4548389063}</Project>
-      <Name>MemoryGraph</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
-      <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
-      <Name>TraceEvent</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Utilities\Utilities.csproj">
-      <Project>{e32c9fc3-8524-4511-8acb-235ac136dc22}</Project>
-      <Name>Utilities</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
+
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
 </Project>

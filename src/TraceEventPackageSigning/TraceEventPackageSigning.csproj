@@ -19,7 +19,7 @@
     </None>
 
     <!-- Get the Microsoft.Diagnostics.TraceEvent.*.nuget package we just built -->
-    <None Include="..\TraceEvent\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.*.nupkg">
+    <None Include="..\TraceEvent\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.*nupkg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 

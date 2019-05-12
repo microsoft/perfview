@@ -248,7 +248,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Can only enable kernel events on a kernel session.");
                 }
 
-                InsureStarted();
+                EnsureStarted();
 
                 // If we have provider data we add some predefined key-value pairs for infrastructure purposes. 
                 ulong matchAllKeywords = 0;
@@ -676,7 +676,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if (systemTraceProvider)
                 {
                     properties->LogFileMode |= TraceEventNativeMethods.EVENT_TRACE_SYSTEM_LOGGER_MODE;
-                    InsureStarted(properties);
+                    EnsureStarted(properties);
 
                     dwErr = TraceEventNativeMethods.TraceSetInformation(m_SessionHandle,
                                                                         TraceEventNativeMethods.TRACE_INFO_CLASS.TraceStackTracingInfo,
@@ -867,7 +867,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if (m_StopOnDispose)
                 {
                     m_StopOnDispose = false;
-                    Stop(true);
+
+                    // Only stop the session when we were the original creator of it and not for cases where we attach.
+                    // For session just attached to check if it's active, we must not call stop method.
+                    // Otherwise, it will caused unexpected stop of trace sessions.
+                    if (m_Create)
+                    {
+                        Stop(true);
+                    }
                 }
 
                 // TODO need safe handles
@@ -1012,7 +1019,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Can only capture state on user mode sessions.");
                 }
 
-                InsureStarted();
+                EnsureStarted();
                 var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
                 var filter = new TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR();
                 parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
@@ -1262,7 +1269,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             throw new NotSupportedException("Kernel sessions must be started (EnableKernelProvider called) before accessing the source.");
                         }
 
-                        InsureStarted();
+                        EnsureStarted();
                     }
                     m_source = new ETWTraceEventSource(SessionName, TraceEventSourceType.Session);
                 }
@@ -1469,7 +1476,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
                     if (hr != 0)
                     {
-                        throw new InvalidOperationException("TdhEnumerateProviders failed.");       // TODO better error message
+                        Trace.WriteLine("TdhEnumerateProviders failed HR = " + hr);
+                        providersDesc->NumberOfProviders = 0;
                     }
 
                     var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
@@ -2065,7 +2073,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             Debug.Assert(curID <= stackTracingIdsMax);
             return curID;
         }
-        private void InsureStarted(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = null)
+        private void EnsureStarted(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = null)
         {
             if (!m_Create)
             {
@@ -2095,11 +2103,13 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             if (retCode == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
             {
+                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE; // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
             }
 
             if (retCode != 0)
             {
+                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;  // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
             }
 
@@ -2318,7 +2328,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public IList<int> ProcessIDFilter { get; set; }
         /// <summary>
         /// Setting ProcessNameFilter will limit the providers that receive the EnableCommand to those that match on of
-        /// the given Process names (a process name is the name of the EXE with a path or extension).  
+        /// the given Process names (a process name is the name of the EXE without the PATH but WITH the extension).  
         /// </summary>
         public IList<string> ProcessNameFilter { get; set; }
         /// <summary>

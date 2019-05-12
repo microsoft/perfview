@@ -1045,7 +1045,7 @@ namespace Stats
             new string[] {"Ephemeral<BR/>Low", "We are running low on the ephemeral segment, GC needs to do at least a gen1 GC"},
             new string[] {"Expand<BR/>Heap", "We are running low in an ephemeral GC, GC needs to do a full GC"},
             new string[] {"Fragmented<BR/>Ephemeral", "Ephemeral generations are fragmented"},
-            new string[] {"Very<BR/>Fragmented<BR/>Ephemeral", "Ephemeral generations are VERY fragmented, doing a full GC"},
+            new string[] {"Low Ephemeral<BR/>Fragmented Gen2", "We are running low on the ephemeral segment but gen2 is fragmented enough so a full GC would avoid expanding the heap"},
             new string[] {"Fragmented<BR/>Gen2", "Gen2 is too fragmented, doing a full blocking GC"},
             new string[] {"High<BR/>Memory", "We are in high memory load situation and doing a full blocking GC"},
             new string[] {"Compacting<BR/>Full<BR/>GC", "Last GC we trigger before we throw OOM"},

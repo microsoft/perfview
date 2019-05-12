@@ -10,12 +10,12 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for SymbolPathDialog.xaml
     /// </summary>
-    public partial class SymbolPathDialog : Window
+    public partial class SymbolPathDialog : WindowBase
     {
         /// <summary>
         /// Kind should be either 'symbol' or 'source' depending on which path variable to set.  
         /// </summary>
-        public SymbolPathDialog(string defaultValue, string kind, Action<string> action)
+        public SymbolPathDialog(Window parentWindow, string defaultValue, string kind, Action<string> action) : base(parentWindow)
         {
             InitializeComponent();
             m_kind = kind;

@@ -135,6 +135,7 @@ namespace PerfView
         public string[] Providers;          // Additional providers to turn on.   
 
         // Stop options.  
+        public string FocusProcess;       // The target process for CLR Rundown.  
         public bool NoRundown;
         public bool NoNGenPdbs;
         public bool NoNGenRundown;
@@ -349,6 +350,9 @@ namespace PerfView
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
             parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
+            parser.DefineOptionalQualifier("FocusProcess", ref FocusProcess, "Either a decimal process ID or a process name (exe name without path but WITH extension) to focus ETW commands." + 
+                "All NON-KERNEL providers are only send to this process (and rundown is only done on this process) which can cut overhead significantly in some cases.");
+
             parser.DefineOptionalQualifier("NoNGenPdbs", ref NoNGenPdbs, "Don't generate NGEN Pdbs");
             parser.DefineOptionalQualifier("NoNGenRundown", ref NoNGenRundown,
                 "Don't do rundown of symbolic information in NGEN images (only needed pre V4.5).");
@@ -515,7 +519,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("RestartingToElevelate", ref RestartingToElevelate, "Internal: indicates that perfView is restarting to get Admin privileges.");
 
             string sessionName = null;
-            parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session, if kernel events are off.");
+            parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session (kernel session will also be named analogously) Useful for collecting traces when another ETW profiler (including PerfView) is being used.");
             if (sessionName != null)
             {
                 if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)

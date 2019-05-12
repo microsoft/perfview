@@ -414,7 +414,7 @@ namespace PerfView
             {
                 // Just creating this directory is enough for the rest to 'just work' 
                 var ngenPdbs = parsedArgs.DataFile + ".ngenpdb";
-                LogFile.WriteLine("Putting NGEN pdbs into {0}");
+                LogFile.WriteLine("Putting NGEN pdbs into {0}", ngenPdbs);
                 Directory.CreateDirectory(ngenPdbs);
             }
 
@@ -506,7 +506,6 @@ namespace PerfView
                     }
                 }
 
-                var stacksEnabled = new TraceEventProviderOptions() { StacksEnabled = true };
                 if (parsedArgs.InMemoryCircularBuffer)
                 {
                     userFileName = null;                    // In memory buffers don't have a file name 
@@ -518,6 +517,28 @@ namespace PerfView
 
                 using (TraceEventSession userModeSession = new TraceEventSession(s_UserModeSessionName, userFileName))
                 {
+                    TraceEventProviderOptions options = new TraceEventProviderOptions();
+                    if (parsedArgs.FocusProcess != null)
+                    {
+                        int processId;
+                        if (Int32.TryParse(parsedArgs.FocusProcess, out processId))
+                        {
+                            options.ProcessIDFilter = new List<int>() { processId };
+                            LogFile.WriteLine("**** /FocusProcess specified LIMITING user mode events to process with ID {0}", processId);
+                        }
+                        else
+                        {
+                            if (!parsedArgs.FocusProcess.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                                LogFile.WriteLine("**** WARNING: process name does not end in .exe, likely you will exclude processes of interest");
+
+                            LogFile.WriteLine("**** /FocusProcess specified LIMITING user mode events to process with name {0}", parsedArgs.FocusProcess);
+                            options.ProcessNameFilter = new List<string>() { parsedArgs.FocusProcess };
+                        }
+                    }
+
+                    var stacksEnabled = options.Clone();
+                    stacksEnabled.StacksEnabled = true;
+
                     userModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
                     // DotNetAlloc needs a large buffer size too.  
                     if (parsedArgs.DotNetAlloc || parsedArgs.DotNetCalls)
@@ -533,7 +554,7 @@ namespace PerfView
 
                     // Turn on PerfViewLogger
                     EnableUserProvider(userModeSession, "PerfViewLogger", PerfViewLogger.Log.Guid,
-                        TraceEventLevel.Verbose, ulong.MaxValue);
+                        TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                     Thread.Sleep(100);  // Give it at least some time to start, it is not synchronous. 
 
@@ -554,7 +575,7 @@ namespace PerfView
 
                     if (parsedArgs.Wpr)
                     {
-                        SetWPRProviders(userModeSession);
+                        SetWPRProviders(userModeSession, options);
                     }
                     else if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.None)
                     {
@@ -576,24 +597,24 @@ namespace PerfView
                                 new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
 
                             // Turn on File Create (open) logging as it is useful for investigations and lightweight. 
-                            // Don't bother if the Kernel FileIOInit evens are on because they are strictly better
+                            // Don't bother if the Kernel FileIOInit events are on because they are strictly better
                             // and you end up with annoying redundancy.  
                             if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.FileIOInit) == 0)
                             {
-                                // 0x10 =  Process  
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
-                                    new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
+                                // 0x80 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
+                                EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
+                                    new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
                             }
 
                             // Turn on the user-mode Process start events.  This allows you to get the stack of create-process calls
-                            // 0x10 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
-                                new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
+                            // 0x10 =  Process  
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
+                                new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
 
                             // Default CLR events also means ASP.NET and private events. 
                             // Turn on ASP.NET at informational by default.
                             EnableUserProvider(userModeSession, "ASP.NET", AspNetTraceEventParser.ProviderGuid,
-                                parsedArgs.ClrEventLevel, ulong.MaxValue - 0x2); // the - 0x2 will turn off Module level logging, which is very verbose
+                                parsedArgs.ClrEventLevel, ulong.MaxValue - 0x2, options); // the - 0x2 will turn off Module level logging, which is very verbose
                             CheckAndWarnAboutAspNet(AspNetTraceEventParser.ProviderGuid);
 
                             // Turn on the new V4.5.1 ASP.Net  EventSource (TODO Not clear we should do this, and how much to turn on).  
@@ -603,41 +624,41 @@ namespace PerfView
 
                             // Turn on just minimum (start and stop) for IIS)
                             EnableUserProvider(userModeSession, "Microsoft-Windows-IIS",
-                                new Guid("DE4649C9-15E8-4FEA-9D85-1CDDA520C334"), TraceEventLevel.Critical, 0);
+                                new Guid("DE4649C9-15E8-4FEA-9D85-1CDDA520C334"), TraceEventLevel.Critical, 0, options);
 
                             // These let you see IE in and have few events. 
                             EnableUserProvider(userModeSession, "Microsoft-PerfTrack-IEFRAME",
-                                new Guid("B2A40F1F-A05A-4DFD-886A-4C4F18C4334C"), TraceEventLevel.Verbose, ulong.MaxValue);
+                                new Guid("B2A40F1F-A05A-4DFD-886A-4C4F18C4334C"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                             EnableUserProvider(userModeSession, "Microsoft-PerfTrack-MSHTML",
-                                new Guid("FFDB9886-80F3-4540-AA8B-B85192217DDF"), TraceEventLevel.Verbose, ulong.MaxValue);
+                                new Guid("FFDB9886-80F3-4540-AA8B-B85192217DDF"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                             // Set you see the URLs that IE is processing. 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
-                                new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, 2);
+                                new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, 2, options);
 
                             // Turn on WCF.  This can be very verbose.  We need to figure out a balance  
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Application Server-Applications",
-                                ApplicationServerTraceEventParser.ProviderGuid, TraceEventLevel.Informational, ulong.MaxValue);
+                                ApplicationServerTraceEventParser.ProviderGuid, TraceEventLevel.Informational, ulong.MaxValue, options);
 
                             EnableUserProvider(userModeSession, "Microsoft-IE",
-                                new Guid("9E3B3947-CA5D-4614-91A2-7B624E0E7244"), TraceEventLevel.Informational, 0x1300);
+                                new Guid("9E3B3947-CA5D-4614-91A2-7B624E0E7244"), TraceEventLevel.Informational, 0x1300, options);
 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-DNS-Client",
-                                new Guid("1C95126E-7EEA-49A9-A3FE-A378B03DDB4D"), TraceEventLevel.Informational, ulong.MaxValue);
+                                new Guid("1C95126E-7EEA-49A9-A3FE-A378B03DDB4D"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-DirectComposition",
-                                new Guid("C44219D0-F344-11DF-A5E2-B307DFD72085"), TraceEventLevel.Verbose, 0x4);
+                                new Guid("C44219D0-F344-11DF-A5E2-B307DFD72085"), TraceEventLevel.Verbose, 0x4, options);
 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Immersive-Shell",
-                                new Guid("315A8872-923E-4EA2-9889-33CD4754BF64"), TraceEventLevel.Informational, ulong.MaxValue);
+                                new Guid("315A8872-923E-4EA2-9889-33CD4754BF64"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-XAML",
-                                new Guid("531A35AB-63CE-4BCF-AA98-F88C7A89E455"), TraceEventLevel.Informational, ulong.MaxValue);
+                                new Guid("531A35AB-63CE-4BCF-AA98-F88C7A89E455"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
                             // Turn on JScript events too
                             EnableUserProvider(userModeSession, "Microsoft-JScript", JScriptTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Verbose, ulong.MaxValue);
+                                TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                             EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
                                 TraceEventLevel.Informational,
@@ -649,7 +670,7 @@ namespace PerfView
                                                                                          // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
                                                                                          //  ClrPrivateTraceEventParser.Keywords.Startup 
                                     ClrPrivateTraceEventParser.Keywords.Stack
-                                ));
+                                ), options);
 
                             if (parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
                             {
@@ -658,7 +679,8 @@ namespace PerfView
                                 if (TraceEventProviderOptions.FilteringSupported)
                                 {
                                     // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
-                                    netTaskStacks = new TraceEventProviderOptions() { EventIDStacksToEnable = new List<int>() { 7, 10, 12 } };
+                                    netTaskStacks = options.Clone();
+                                    netTaskStacks.EventIDStacksToEnable = new List<int>() { 7, 10, 12 };
                                 }
                                 EnableUserProvider(userModeSession, ".NETTasks",
                                     TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
@@ -676,7 +698,7 @@ namespace PerfView
                                 stacksEnabled);
 
                             // Turn on the Nuget package provider that tracks activity IDs. 
-                            EnableUserProvider(userModeSession, "Microsoft.Tasks.Nuget", TraceEventProviders.GetEventSourceGuidFromName("Microsoft.Tasks.Nuget"), TraceEventLevel.Informational, 0x80);
+                            EnableUserProvider(userModeSession, "Microsoft.Tasks.Nuget", TraceEventProviders.GetEventSourceGuidFromName("Microsoft.Tasks.Nuget"), TraceEventLevel.Informational, 0x80, options);
 
                             // Turn on new SQL client logging 
                             EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
@@ -687,11 +709,11 @@ namespace PerfView
 
                             EnableUserProvider(userModeSession, "ETWCLrProfiler Diagnostics",
                                 new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x79),
-                                TraceEventLevel.Verbose, ulong.MaxValue);
+                                TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                             // TODO should we have stacks on for everything?
-                            var diagSourceOptions = new TraceEventProviderOptions() { StacksEnabled = true };
-                            // The removal of IgnoreShortCutKeywords turns on HTTP incomming and SQL events
+                            var diagSourceOptions = stacksEnabled.Clone();
+                            // The removal of IgnoreShortCutKeywords turns on HTTP incoming and SQL events
                             // The spec below turns on outgoing Http requests.  
                             string filterSpec =
                                 "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
@@ -705,20 +727,24 @@ namespace PerfView
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
                                 TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
 
-                            // TODO should stacks be enabled?
+                            // This is likely redundant with the diagnosticSource above, but is simpler to parse on the reader side.
+
+                            EnableUserProvider(userModeSession, "Microsoft-AspNetCore-Hosting",
+                                new Guid("9e620d2a-55d4-5ade-deb7-c26046d245a8"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+
                             EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
                                 new Guid("74af9f20-af6a-5582-9382-f21f674fb271"),
                                 TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
 
                             // Turn on Power stuff
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Power",
-                                new Guid("331C3B3A-2005-44C2-AC5E-77220C37D6B4"), TraceEventLevel.Informational, 0xFFB);
+                                new Guid("331C3B3A-2005-44C2-AC5E-77220C37D6B4"), TraceEventLevel.Informational, 0xFFB, options);
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power",
-                                new Guid("0F67E49F-FE51-4E9F-B490-6F2948CC6027"), TraceEventLevel.Informational, 0xE5D);
+                                new Guid("0F67E49F-FE51-4E9F-B490-6F2948CC6027"), TraceEventLevel.Informational, 0xE5D, options);
                             EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCpl",
-                                new Guid("B1F90B27-4551-49D6-B2BD-DFC6453762A6"), TraceEventLevel.Informational, ulong.MaxValue);
+                                new Guid("B1F90B27-4551-49D6-B2BD-DFC6453762A6"), TraceEventLevel.Informational, ulong.MaxValue, options);
                             EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCfg",
-                                 new Guid("9F0C4EA8-EC01-4200-A00D-B9701CBEA5D8"), TraceEventLevel.Informational, ulong.MaxValue);
+                                 new Guid("9F0C4EA8-EC01-4200-A00D-B9701CBEA5D8"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
                             // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
                             // It does not increase the volume in a significant way and they can be pretty useful.     
@@ -738,10 +764,10 @@ namespace PerfView
                                 // netsh trace start scenario=InternetClient capture=yes correlation=no report=disabled maxSize=250 traceFile=NetMonTrace.net.etl
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-NDIS-PacketCapture",
                                     new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"),
-                                    TraceEventLevel.Informational, ulong.MaxValue);
+                                    TraceEventLevel.Informational, ulong.MaxValue, options);
 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
-                                    new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue);
+                                    new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
                                 // This provider is verbose in high volume networking scnearios and its value is dubious.  
                                 //EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
@@ -750,22 +776,18 @@ namespace PerfView
 
                                 // This is probably too verbose, but we will see 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
-                                    new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, ulong.MaxValue);
+                                    new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                                 // This is probably too verbose, but we will see 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinHttp",
-                                    new Guid("7D44233D-3055-4B9C-BA64-0D47CA40A232"), TraceEventLevel.Verbose, ulong.MaxValue);
+                                    new Guid("7D44233D-3055-4B9C-BA64-0D47CA40A232"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                                 // This has proven to be too expensive.  Wait until we need it.  
                                 // EnableUserProvider(userModeSession, "Microsoft-Windows-Networking-Correlation",
                                 //     new Guid("83ED54F0-4D48-4E45-B16E-726FFD1FA4AF"), (TraceEventLevel)255, 0);
 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-RPC",
-                                    new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0);
-
-                                // TODO FIX NOW how verbose is this?
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
-                                    new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, 0xFFFFFFFF);
+                                    new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0, options);
 
                                 // This is what WPA turns on in its 'GENERAL' setting  
                                 //Microsoft-Windows-Immersive-Shell: 0x0000000000100000: 0x04
@@ -807,14 +829,14 @@ namespace PerfView
                         {
                             LogFile.WriteLine("Turned on additional CLR GC events");
                             EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Informational, (ulong)ClrPrivateTraceEventParser.Keywords.GC);
+                                TraceEventLevel.Informational, (ulong)ClrPrivateTraceEventParser.Keywords.GC, options);
                         }
 
                         if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.ReferenceSet) != 0)
                         {
                             // ALso get heap ranges if ReferenceSet is on.  
                             EnableUserProvider(userModeSession, "Win32HeapRanges", HeapTraceProviderTraceEventParser.HeapRangeProviderGuid,
-                                TraceEventLevel.Verbose, 0);
+                                TraceEventLevel.Verbose, 0, options);
                         }
 
                         if (profilerKeywords != 0)
@@ -828,9 +850,9 @@ namespace PerfView
 
                         LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
                         EnableUserProvider(userModeSession, "MeasurementBlock",
-                            new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue);
+                            new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue, options);
                         EnableUserProvider(userModeSession, "CodeMarkers",
-                            new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue);
+                            new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
                         // Turn off NGEN if they asked for it.  
                         if (parsedArgs.NoNGenRundown)
@@ -846,7 +868,7 @@ namespace PerfView
 
                         LogFile.WriteLine("Enabling CLR Events: {0}", parsedArgs.ClrEvents);
                         EnableUserProvider(userModeSession, "CLR", ClrTraceEventParser.ProviderGuid,
-                            parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents);
+                            parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents, options);
                     }
 
                     // Start network monitoring capture if needed
@@ -876,7 +898,7 @@ namespace PerfView
                         FileUtilities.ForceDelete(traceFile);
 
                         EnableUserProvider(userModeSession, "Microsoft-Windows-NDIS-PacketCapture",
-                            new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"), TraceEventLevel.Informational, ulong.MaxValue);
+                            new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"), TraceEventLevel.Informational, ulong.MaxValue, options);
                         EnableUserProvider(userModeSession, "Microsoft-Windows-TCPIP",
                             new Guid("2F07E2EE-15DB-40F1-90EF-9D7BA282188A"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
 
@@ -916,7 +938,7 @@ namespace PerfView
                     LogFile.WriteLine("Enabling Providers specified by the user.");
                     if (parsedArgs.Providers != null)
                     {
-                        EnableAdditionalProviders(userModeSession, parsedArgs.Providers, parsedArgs.CommandLine);
+                        EnableAdditionalProviders(userModeSession, parsedArgs.Providers, parsedArgs.CommandLine, options);
                     }
 
                     // OK at this point, we want to leave both sessions for an indefinite period of time (even past process exit)
@@ -935,153 +957,153 @@ namespace PerfView
         /// <summary>
         /// Mimics the WPR user mode providers 
         /// </summary>
-        private void SetWPRProviders(TraceEventSession userModeSession)
+        private void SetWPRProviders(TraceEventSession userModeSession, TraceEventProviderOptions options)
         {
-            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PowerCpl", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
 
             LogFile.WriteLine("Adding the user mode providers that WPR would.");
-            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Memory", 0x60);   // WPR uses kernel for this but this makes up for it. 
-            EnableProvider(userModeSession, "Microsoft-Windows-WLAN-AutoConfig", 0x1000000000200L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-Tethering-Station", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-SleepStudy", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WinINet", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-SettingSync", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-UIAutomationCore", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-ntshrui", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-PnP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-NlaSvc", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Antimalware-Engine", 0xffffffffffffffffL, TraceEventLevel.Verbose);
-            EnableProvider(userModeSession, "Microsoft-Windows-Diagnosis-MSDE", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-MobilityCenter", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Diagnosis-WDC", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-AppHost", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-PushNotifications-Platform", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-ErrorReportingConsole", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-IME-KRTIP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-FileHistory-UI", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-RPCSS", 0xffffffffffffffff);
-            EnableProvider(userModeSession, "Microsoft-Windows-COMRuntime", 0x3L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-Network-and-Sharing-Center", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WPDClassInstaller", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Search-Core", 0x1000000000000L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "e7ef96be-969f-414f-97d7-3ddb7b558ccc", 0x2000L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-PerfTrack-MSHTML", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DiagCpl", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-stobject", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DeviceSetupManager", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-BootDiagnostics", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Diagnostics-Networking", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WWAN-CFE", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Immersive-Shell", 0x1000000100000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-AppReadiness", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-PerfTrack-IEFRAME", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WindowsUpdateClient", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-PortableWorkspaces-Creator-Tool", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-VAN", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Wcmsvc", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Tethering-Manager", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-NetworkGCW", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Netshell", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-ThemeUI", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DxgKrnl", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Diagnosis-AdvancedTaskManager", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-User-ControlPanel", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Documents", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-PDC", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Shell-AuthUI", 0x1000000000000L);
-            EnableProvider(userModeSession, "36b6f488-aad7-48c2-afe3-d4ec2c8b46fa", 0x10000L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-Dwm-Core", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-ProcessStateManager", 0x1000000000000L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-DXP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WlanConn", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-UserPnp", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-AppXDeployment-Server", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-MediaEngine", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-HealthCenter", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Ncasvc", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-HomeGroup-ProviderService", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-JScript", 0x1, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-VolumeControl", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-NWiFi", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-PrimaryNetworkIcon", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-NetworkProfile", 0x1000000000000L);
-            EnableProvider(userModeSession, ".NET Common Language Runtime", 0x98, TraceEventLevel.Verbose);
-            EnableProvider(userModeSession, "Microsoft-Windows-IME-TIP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-IME-TCTIP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-MediaFoundation-MFCaptureEngine", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DisplaySwitch", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Shell-LockScreenContent", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-LUA", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DateTimeControlPanel", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-TabletPC-InputPanel", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-TaskScheduler", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Help", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Audio", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-MediaFoundation-Performance", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WlanPref", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-UserAccountControl", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Antimalware-Service", 0xffffffffffffffffL, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-IME-JPTIP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WMP", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Antimalware-AMFilter", 0xffffffffffffffffL, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-WCNWiz", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Graphics-Printing", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WlanDlg", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Dwm-Udwm", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-ComDlg32", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DesktopActivityModerator", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-HotspotAuth", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-FileManagerApp", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Dhcp-Client", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Sensors", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Display", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-UxTheme", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-NetworkProvisioning", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WWAN-SVC-EVENTS", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WiFiDisplay", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Proximity-Common", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DxpTaskSyncProvider", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-NCSI", 0x1000000000000L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Antimalware-RTP", 0xffffffffffffffff, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-SrumTelemetry", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DeviceUx", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Antimalware-Protection", 0xffffffffffffffffL, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-HealthCenterCPL", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Speech-UserExperience", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-User Profiles Service", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Networking-Correlation", 0xffffffffffffffffL, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-Store-Client-UI", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-XAML", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Immersive-Shell-API", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WindowsUIImmersive", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Winlogon", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-UI-Search", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-PrintDialogs", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-BootUX", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-PowerShell", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-SkyDrive-SyncEngine", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-WMPNSS-Service", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Services", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-AltTab", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-ThemeCPL", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Diagnostics-PerfTrack", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-RPC", 0xffffffffffffffffL);
-            EnableProvider(userModeSession, "Microsoft-Windows-Win32k", 0x1000000402000L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-Shell-Core", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-BrokerInfrastructure", 0x1000000000001L, (TraceEventLevel)0xff);
-            EnableProvider(userModeSession, "Microsoft-Windows-Superfetch", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DriverFrameworks-UserMode", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-SystemSettings", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-DHCPv6-Client", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Kernel-Memory", 0x60);   // WPR uses kernel for this but this makes up for it. 
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WLAN-AutoConfig", 0x1000000000200L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Tethering-Station", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-SleepStudy", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WinINet", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-SettingSync", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-UIAutomationCore", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-ntshrui", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Kernel-PnP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-NlaSvc", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Antimalware-Engine", 0xffffffffffffffffL, TraceEventLevel.Verbose);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Diagnosis-MSDE", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-MobilityCenter", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Diagnosis-WDC", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-AppHost", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PushNotifications-Platform", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-ErrorReportingConsole", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-IME-KRTIP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-FileHistory-UI", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-RPCSS", 0xffffffffffffffff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-COMRuntime", 0x3L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Network-and-Sharing-Center", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WPDClassInstaller", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Search-Core", 0x1000000000000L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "e7ef96be-969f-414f-97d7-3ddb7b558ccc", 0x2000L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-PerfTrack-MSHTML", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DiagCpl", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-stobject", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DeviceSetupManager", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Kernel-BootDiagnostics", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Diagnostics-Networking", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WWAN-CFE", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Immersive-Shell", 0x1000000100000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-AppReadiness", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-PerfTrack-IEFRAME", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WindowsUpdateClient", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PortableWorkspaces-Creator-Tool", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-VAN", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Wcmsvc", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Tethering-Manager", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-NetworkGCW", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Netshell", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-ThemeUI", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DxgKrnl", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Diagnosis-AdvancedTaskManager", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-User-ControlPanel", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Documents", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PDC", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Shell-AuthUI", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "36b6f488-aad7-48c2-afe3-d4ec2c8b46fa", 0x10000L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Dwm-Core", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-ProcessStateManager", 0x1000000000000L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DXP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WlanConn", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-UserPnp", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-AppXDeployment-Server", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-MediaEngine", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-HealthCenter", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Ncasvc", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-HomeGroup-ProviderService", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-JScript", 0x1, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-VolumeControl", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-NWiFi", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PrimaryNetworkIcon", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-NetworkProfile", 0x1000000000000L);
+            EnableProvider(userModeSession, options, ".NET Common Language Runtime", 0x98, TraceEventLevel.Verbose);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-IME-TIP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-IME-TCTIP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-MediaFoundation-MFCaptureEngine", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DisplaySwitch", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Shell-LockScreenContent", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-LUA", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DateTimeControlPanel", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-TabletPC-InputPanel", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-TaskScheduler", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Help", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Audio", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-MediaFoundation-Performance", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WlanPref", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-UserAccountControl", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Antimalware-Service", 0xffffffffffffffffL, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-IME-JPTIP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WMP", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Antimalware-AMFilter", 0xffffffffffffffffL, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WCNWiz", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Graphics-Printing", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WlanDlg", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Dwm-Udwm", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-ComDlg32", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DesktopActivityModerator", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-HotspotAuth", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-FileManagerApp", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Dhcp-Client", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Sensors", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Display", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-UxTheme", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-NetworkProvisioning", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WWAN-SVC-EVENTS", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WiFiDisplay", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Proximity-Common", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DxpTaskSyncProvider", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-NCSI", 0x1000000000000L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Antimalware-RTP", 0xffffffffffffffff, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-SrumTelemetry", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DeviceUx", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Antimalware-Protection", 0xffffffffffffffffL, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-HealthCenterCPL", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Speech-UserExperience", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-User Profiles Service", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Networking-Correlation", 0xffffffffffffffffL, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Store-Client-UI", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-XAML", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Immersive-Shell-API", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WindowsUIImmersive", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Winlogon", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-UI-Search", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PrintDialogs", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-BootUX", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-PowerShell", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-SkyDrive-SyncEngine", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-WMPNSS-Service", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Services", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-AltTab", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-ThemeCPL", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Diagnostics-PerfTrack", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-RPC", 0xffffffffffffffffL);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Win32k", 0x1000000402000L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Shell-Core", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-BrokerInfrastructure", 0x1000000000001L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-Superfetch", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DriverFrameworks-UserMode", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-SystemSettings", 0x1000000000000L);
+            EnableProvider(userModeSession, options, "Microsoft-Windows-DHCPv6-Client", 0x1000000000000L);
         }
 
-        private void EnableProvider(TraceEventSession userModeSession, string providerNameOrGuid, ulong keywords, TraceEventLevel level = TraceEventLevel.Informational)
+        private void EnableProvider(TraceEventSession userModeSession, TraceEventProviderOptions options, string providerNameOrGuid, ulong keywords, TraceEventLevel level = TraceEventLevel.Informational)
         {
             Guid providerGuid = TraceEventProviders.GetProviderGuidByName(providerNameOrGuid);
             Debug.Assert(providerGuid != Guid.Empty);
-            EnableUserProvider(userModeSession, providerNameOrGuid, providerGuid, level, keywords);
+            EnableUserProvider(userModeSession, providerNameOrGuid, providerGuid, level, keywords, options);
         }
 
         public void Stop(CommandLineArgs parsedArgs)
@@ -1129,7 +1151,7 @@ namespace PerfView
                         continue;
                     }
 
-                    PerfViewLogger.Log.CpuCountersConfigured(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                    PerfViewLogger.Log.CpuCounterIntervalSetting(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                     // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                 }
             }
@@ -1184,7 +1206,7 @@ namespace PerfView
                     {
                         if (parsedArgs.InMemoryCircularBuffer)
                         {
-                            LogFile.WriteLine("InMemoryCircularBuffer Set, Dumping kernel log");                  
+                            LogFile.WriteLine("InMemoryCircularBuffer Set, Dumping kernel log");
                             dataFile = parsedArgs.DataFile;
                             clrSession.SetFileName(dataFile);   // Flush the file 
                         }
@@ -2451,7 +2473,7 @@ namespace PerfView
 
         /// <summary>
         /// Given a pointer to the .Net registry key area, 'dotnetHive' and a prefix (either COR or CORECLR)
-        /// as well as the profilerDll, profilerKeywords, and native arthcitecture, install the profiler DLL
+        /// as well as the profilerDll, profilerKeywords, and native architecture, install the profiler DLL
         /// as the EtwClr profiler.  Log status messages to 'log'.  
         /// </summary>
         private static void InsertEtwClrProfilerKeys(RegistryKey dotnetHive, string prefix, string profilerDll, int profilerKeywords, string nativeArch, TextWriter log)
@@ -2609,6 +2631,8 @@ namespace PerfView
             {
                 return;
             }
+            LogFile.WriteLine("Need Elevation, but this process is not Elevated, Relaunching process as Elevated");
+
 #if PERFVIEW_COLLECT
             throw new ApplicationException("PerfViewCollect needs to run with elevated privileges.");
 #else
@@ -2824,6 +2848,11 @@ namespace PerfView
                 cmdLineArgs += " /NoRundown";
             }
 
+            if (parsedArgs.FocusProcess != null)
+            {
+                cmdLineArgs += " /FocusProcess:" + Command.Quote(parsedArgs.FocusProcess);
+            }
+
             if (parsedArgs.NoNGenPdbs)
             {
                 cmdLineArgs += " /NoNGenPdbs";
@@ -3023,7 +3052,7 @@ namespace PerfView
         /// <summary>
         /// Enable any additional providers specified by 'providerSpecs'.  
         /// </summary>
-        private void EnableAdditionalProviders(TraceEventSession userModeSession, string[] providerSpecs, string commandLine = null)
+        private void EnableAdditionalProviders(TraceEventSession userModeSession, string[] providerSpecs, string commandLine, TraceEventProviderOptions options)
         {
             string wildCardFileName = null;
             if (commandLine != null)
@@ -3043,7 +3072,7 @@ namespace PerfView
                 {
                     CheckAndWarnAboutAspNet(parsedProvider.Guid);
                     EnableUserProvider(userModeSession, parsedProvider.Name, parsedProvider.Guid, parsedProvider.Level,
-                        (ulong)parsedProvider.MatchAnyKeywords, parsedProvider.Options);
+                        (ulong)parsedProvider.MatchAnyKeywords, parsedProvider.Options ?? options);
                 }
             }
         }
@@ -3109,7 +3138,7 @@ namespace PerfView
         }
 
         private void EnableUserProvider(TraceEventSession userModeSession, string providerName, Guid providerGuid,
-            TraceEventLevel providerLevel, ulong matchAnyKeywords, TraceEventProviderOptions options = null)
+            TraceEventLevel providerLevel, ulong matchAnyKeywords, TraceEventProviderOptions options)
         {
             var valuesStr = "";
             int stacksEnabled = 0;
@@ -3171,22 +3200,22 @@ namespace PerfView
             // If we turn on verbose for the Microsoft-Windows-IIS provider, go ahead an turn on a bunch of others ones as well.  
             if (providerLevel == TraceEventLevel.Verbose && providerGuid.ToString() == "de4649c9-15e8-4fea-9d85-1cdda520c334")
             {
-                EnableUserProvider(userModeSession, "ASP.NET", new Guid("AFF081FE-0247-4275-9C4E-021F3DC1DA35"), TraceEventLevel.Verbose, 0xFFFFFFFF);
-                EnableUserProvider(userModeSession, "IIS: Active Server Pages (ASP)", new Guid("06B94D9A-B15E-456E-A4EF-37C984A2CB4B"), TraceEventLevel.Verbose, 0xFFFFFFFF);
-                EnableUserProvider(userModeSession, "IIS: WWW Global", new Guid("D55D3BC9-CBA9-44DF-827E-132D3A4596C2"), TraceEventLevel.Verbose, 0xFFFFFFFF);
-                EnableUserProvider(userModeSession, "IIS: WWW Isapi Extension", new Guid("A1C2040E-8840-4C31-BA11-9871031A19EA"), TraceEventLevel.Verbose, 0xFFFFFFFF);
-                EnableUserProvider(userModeSession, "IIS: WWW Server", new Guid("3A2A4E84-4C21-4981-AE10-3FDA0D9B0F83"), TraceEventLevel.Verbose, 0xFFFFFFFE);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-WMSVC", new Guid("23108B68-1B7E-43FA-94FB-EC3066805744"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-HttpEvent", new Guid("7B6BC78C-898B-4170-BBF8-1A469EA43FC5"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService", new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-APPHOSTSVC", new Guid("CAC10856-9223-48FE-96BA-2A772274FB53"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-FTP", new Guid("AB29F35C-8531-42FF-810D-B8552D23BC92"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-IisMetabaseAudit", new Guid("BBB924B8-F415-4F57-AA45-1007F704C9B1"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-IISReset", new Guid("DA9A85BB-563D-40FB-A164-8E982EA6844B"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-W3SVC", new Guid("05448E22-93DE-4A7A-BBA5-92E27486A8BE"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-W3SVC-PerfCounters", new Guid("90303B54-419D-4081-A683-6DBCB532F261"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-WMSVC", new Guid("23108B68-1B7E-43FA-94FB-EC3066805744"), TraceEventLevel.Verbose, ulong.MaxValue);
-                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-W3SVC-WP", new Guid("670080D9-742A-4187-8D16-41143D1290BD"), TraceEventLevel.Verbose, ulong.MaxValue);
+                EnableUserProvider(userModeSession, "ASP.NET", new Guid("AFF081FE-0247-4275-9C4E-021F3DC1DA35"), TraceEventLevel.Verbose, 0xFFFFFFFF, options);
+                EnableUserProvider(userModeSession, "IIS: Active Server Pages (ASP)", new Guid("06B94D9A-B15E-456E-A4EF-37C984A2CB4B"), TraceEventLevel.Verbose, 0xFFFFFFFF, options);
+                EnableUserProvider(userModeSession, "IIS: WWW Global", new Guid("D55D3BC9-CBA9-44DF-827E-132D3A4596C2"), TraceEventLevel.Verbose, 0xFFFFFFFF, options);
+                EnableUserProvider(userModeSession, "IIS: WWW Isapi Extension", new Guid("A1C2040E-8840-4C31-BA11-9871031A19EA"), TraceEventLevel.Verbose, 0xFFFFFFFF, options);
+                EnableUserProvider(userModeSession, "IIS: WWW Server", new Guid("3A2A4E84-4C21-4981-AE10-3FDA0D9B0F83"), TraceEventLevel.Verbose, 0xFFFFFFFE, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-WMSVC", new Guid("23108B68-1B7E-43FA-94FB-EC3066805744"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-HttpEvent", new Guid("7B6BC78C-898B-4170-BBF8-1A469EA43FC5"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService", new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-APPHOSTSVC", new Guid("CAC10856-9223-48FE-96BA-2A772274FB53"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-FTP", new Guid("AB29F35C-8531-42FF-810D-B8552D23BC92"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-IisMetabaseAudit", new Guid("BBB924B8-F415-4F57-AA45-1007F704C9B1"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-IISReset", new Guid("DA9A85BB-563D-40FB-A164-8E982EA6844B"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-W3SVC", new Guid("05448E22-93DE-4A7A-BBA5-92E27486A8BE"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-W3SVC-PerfCounters", new Guid("90303B54-419D-4081-A683-6DBCB532F261"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-WMSVC", new Guid("23108B68-1B7E-43FA-94FB-EC3066805744"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                EnableUserProvider(userModeSession, "Microsoft-Windows-IIS-W3SVC-WP", new Guid("670080D9-742A-4187-8D16-41143D1290BD"), TraceEventLevel.Verbose, ulong.MaxValue, options);
             }
 
             LogFile.WriteLine("Enabling Provider:{0} Level:{1} Keywords:0x{2:x} Stacks:{3} Values:{4} Guid:{5}",
@@ -3233,8 +3262,28 @@ namespace PerfView
 
                     clrRundownSession.BufferSizeMB = Math.Max(parsedArgs.BufferSizeMB, 256);
 
+                    TraceEventProviderOptions options = null;
+                    if (parsedArgs.FocusProcess != null && TraceEventProviderOptions.FilteringSupported)
+                    {
+                        options = new TraceEventProviderOptions();
+                        int processId;
+                        if (Int32.TryParse(parsedArgs.FocusProcess, out processId))
+                        {
+                            options.ProcessIDFilter = new List<int>() { processId };
+                            LogFile.WriteLine("**** /FocusProcess specified LIMITING RUNDOWN to process with ID {0}", processId);
+                        }
+                        else
+                        {
+                            if (!parsedArgs.FocusProcess.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                                LogFile.WriteLine("**** WARNING: process name does not end in .exe, likely you will exclude processes of interest");
+
+                            LogFile.WriteLine("**** /FocusProcess specified LIMITING RUNDOWN to process with name {0}", parsedArgs.FocusProcess);
+                            options.ProcessNameFilter = new List<string>() { parsedArgs.FocusProcess };
+                        }
+                    }
+
                     EnableUserProvider(clrRundownSession, "PerfViewLogger", PerfViewLogger.Log.Guid,
-                        TraceEventLevel.Verbose, ulong.MaxValue);
+                        TraceEventLevel.Verbose, ulong.MaxValue, options);
                     Thread.Sleep(20);       // Give it time to startup 
                     PerfViewLogger.Log.StartRundown();
 
@@ -3254,7 +3303,7 @@ namespace PerfView
                                     // everything.  Thus we use an obscure keyword we hope is not to volumous (we are really
                                     // relying on the critical event level to filter things).  
                                     EnableUserProvider(clrRundownSession, parsedProvider.Name, parsedProvider.Guid,
-                                        TraceEventLevel.Critical, 0x1000000000000000);
+                                        TraceEventLevel.Critical, 0x800_0000_0000, options);
                                 }
                             }
                         }
@@ -3295,7 +3344,7 @@ namespace PerfView
                         if ((rundownKeywords & ClrRundownTraceEventParser.Keywords.Loader) != 0)
                         {
                             EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
-                                (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown));
+                                (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown), options);
                         }
 
                         Thread.Sleep(500);                  // Give it some time to complete, so we don't have so many events firing simultaneously.  
@@ -3303,13 +3352,13 @@ namespace PerfView
 
                         // Enable rundown provider. (we don't do the loader events since we have done them above
                         EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
-                            (ulong)(rundownKeywords & ~ClrRundownTraceEventParser.Keywords.Loader));
+                            (ulong)(rundownKeywords & ~ClrRundownTraceEventParser.Keywords.Loader), options);
 
                         // For V2.0 runtimes you activate the main provider so we do that too.  
                         if (!parsedArgs.NoV2Rundown)
                         {
                             EnableUserProvider(clrRundownSession, "Clr", ClrTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Verbose, (ulong)rundownKeywords);
+                                TraceEventLevel.Verbose, (ulong)rundownKeywords, options);
                         }
                     }
 
@@ -3695,9 +3744,14 @@ namespace PerfView
             else
             {
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
-                // Look it up by name 
+                // Look it up as an EventSource 
                 if (providerGuid == Guid.Empty)
-                    TraceEventProviders.GetEventSourceGuidFromName(providerSpec);
+                {
+                    providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerSpec);
+                    log.WriteLine("Provider named '{0}' was unknown to the operating system, assuming it is an EventSource with GUID '{1}'",
+                        providerSpec, providerGuid);
+                    log.WriteLine("WARNING: If {0} is misspelled we are simply using the wrong GUID and the provider will be ignored.", providerSpec);
+                }
             }
 
             retList.Add(new ParsedProvider()

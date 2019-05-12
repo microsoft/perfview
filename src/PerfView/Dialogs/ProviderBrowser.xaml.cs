@@ -12,12 +12,12 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Interaction logic for ProviderBrowser.xaml
     /// </summary>
-    public partial class ProviderBrowser : Window
+    public partial class ProviderBrowser : WindowBase
     {
         //Level 4 is default -- after keywords
-        public ProviderBrowser(Window parent, Action<string, string, string> update)
+        public ProviderBrowser(Window parentWindow, Action<string, string, string> update) : base(parentWindow)
         {
-            Owner = parent;
+            //Owner = parentWindow;
             m_keyStrings = new List<String>();
             m_selectedKeys = new List<string>();
             m_keys = new Dictionary<string, ProviderDataItem>();
@@ -256,7 +256,7 @@ namespace PerfView.Dialogs
             log.Log("[Looking up manifest for " + selectedProvider + " ]");
             string manifestString = RegisteredTraceEventParser.GetManifestForRegisteredProvider(selectedProvider);
 
-            var textEditorWindow = new TextEditorWindow();
+            var textEditorWindow = new TextEditorWindow(this);
             textEditorWindow.Width = 1200;
             textEditorWindow.Height = 800;
             textEditorWindow.TextEditor.IsReadOnly = true;

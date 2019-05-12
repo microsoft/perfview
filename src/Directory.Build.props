@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <LangVersion>7</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <Features>strict</Features>
   </PropertyGroup>
 
@@ -22,15 +22,15 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <PerfViewVersion>2.0.28</PerfViewVersion>
-    <TraceEventVersion>2.0.28</TraceEventVersion>
+    <PerfViewVersion>2.0.42</PerfViewVersion>
+    <TraceEventVersion>2.0.42</TraceEventVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.16</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>0.8.31-beta</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.17</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>1.0.2</MicrosoftDiagnosticsRuntimeVersion>
     <XunitVersion>2.3.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.3.0</XunitRunnerVisualstudioVersion>
   </PropertyGroup>

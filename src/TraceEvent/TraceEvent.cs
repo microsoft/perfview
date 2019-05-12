@@ -2797,6 +2797,11 @@ namespace Microsoft.Diagnostics.Tracing
                     continue;
                 }
 
+                if (eventName == "MethodTailCallFailedAnsi")        // One event has two templates.  
+                {
+                    continue;
+                }
+
                 // The IIs parser uses Cap _ instead of PascalCase, normalize
                 if (GetType().Name == "IisTraceEventParser")
                 {
@@ -3092,6 +3097,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 return new ETWTraceEventSource(traceFileName);
             }
+            else if (traceFileName.EndsWith(".btl", StringComparison.OrdinalIgnoreCase))
+            {
+                return new BPerfEventSource(traceFileName);
+            }
 #endif
             else
             {
@@ -3371,42 +3380,42 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-                if (anEvent.Target != null)
-                {
-                    anEvent.Dispatch();
-                }
+            if (anEvent.Target != null)
+            {
+                anEvent.Dispatch();
+            }
 
-                if (anEvent.next != null)
+            if (anEvent.next != null)
+            {
+                TraceEvent nextEvent = anEvent;
+                for (; ; )
                 {
-                    TraceEvent nextEvent = anEvent;
-                    for (; ; )
+                    nextEvent = nextEvent.next;
+                    if (nextEvent == null)
                     {
-                        nextEvent = nextEvent.next;
-                        if (nextEvent == null)
-                        {
-                            break;
-                        }
-
-                        if (nextEvent.Target != null)
-                        {
-                            nextEvent.eventRecord = anEvent.eventRecord;
-                            nextEvent.userData = anEvent.userData;
-                            nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;
-                        }
-                    }
-                }
-                if (AllEvents != null)
-                {
-                    if (unhandledEventTemplate == anEvent)
-                    {
-                        unhandledEventTemplate.PrepForCallback();
+                        break;
                     }
 
-                    AllEvents(anEvent);
+                    if (nextEvent.Target != null)
+                    {
+                        nextEvent.eventRecord = anEvent.eventRecord;
+                        nextEvent.userData = anEvent.userData;
+                        nextEvent.eventIndex = anEvent.eventIndex;
+                        nextEvent.Dispatch();
+                        nextEvent.eventRecord = null;
+                    }
                 }
-                anEvent.eventRecord = null;
+            }
+            if (AllEvents != null)
+            {
+                if (unhandledEventTemplate == anEvent)
+                {
+                    unhandledEventTemplate.PrepForCallback();
+                }
+
+                AllEvents(anEvent);
+            }
+            anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)

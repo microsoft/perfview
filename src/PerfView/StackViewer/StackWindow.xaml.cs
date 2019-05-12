@@ -4,6 +4,7 @@ using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
 using PerfViewModel;
@@ -33,9 +34,9 @@ namespace PerfView
     /// <summary>
     /// Interaction logic for StackWindow.xaml
     /// </summary>
-    public partial class StackWindow : Window
+    public partial class StackWindow : WindowBase
     {
-        public StackWindow(Window parentWindow, PerfViewStackSource dataSource)
+        public StackWindow(Window parentWindow, PerfViewStackSource dataSource) : base(parentWindow)
         {
             DataSource = dataSource;
             ParentWindow = parentWindow;
@@ -47,7 +48,7 @@ namespace PerfView
             Title = DataSource.Title;
             FinishInit();
         }
-        public StackWindow(Window parentWindow, StackWindow template)
+        public StackWindow(Window parentWindow, StackWindow template) : base(parentWindow)
         {
             ParentWindow = parentWindow;
             DataSource = template.DataSource;
@@ -855,7 +856,7 @@ namespace PerfView
         }
         private void DoSetSourcePath(object sender, RoutedEventArgs e)
         {
-            var symPathDialog = new SymbolPathDialog(App.SourcePath, "Source", delegate (string newPath)
+            var symPathDialog = new SymbolPathDialog(this, App.SourcePath, "Source", delegate (string newPath)
             {
                 App.SourcePath = newPath;
             });
@@ -897,7 +898,7 @@ namespace PerfView
                 saveDialog.InitialDirectory = Path.GetDirectoryName(DataSource.FilePath);
                 saveDialog.Title = "File to save view";
                 saveDialog.DefaultExt = ".perfView.xml.zip";
-                saveDialog.Filter = "PerfView view file|*.perfView.xml.zip|Comma Separated Value|*.csv|All Files|*.*";
+                saveDialog.Filter = "PerfView view file|*.perfView.xml.zip|Comma Separated Value|*.csv|Speed Scope Format|*.speedscope.json|All Files|*.*";
                 saveDialog.AddExtension = true;
                 saveDialog.OverwritePrompt = true;
 
@@ -942,6 +943,10 @@ namespace PerfView
                             item.ExclusiveMetricPercent, item.ExclusiveMetric, item.ExclusiveCount, whichValue);
                     }
                 }
+            }
+            else if(m_fileName.EndsWith(".speedscope.json", StringComparison.OrdinalIgnoreCase))
+            {
+                SpeedScopeStackSourceWriter.WriteStackViewAsJson(CallTree.StackSource, m_fileName);
             }
             else
             {
@@ -1009,7 +1014,7 @@ namespace PerfView
                 stackWindow.GroupRegExTextBox.Items.Insert(0, "[Ignore PID/TID]          ^Process% {%}->$1;^Thread->Thread;");
                 stackWindow.GroupRegExTextBox.Items.Insert(0, "[Ignore Paths]               ^Process% {%}->$1;^Thread->Thread;{%}!{*}->$1!$2");
 
-                var osGroupings = @"^Process% {%}->$1;^Thread->Thread;\Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1";
+                var osGroupings = @"^Process% {%}->$1;^Thread->Thread;\Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.Xaml.*!=>WPF;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1";
                 stackWindow.GroupRegExTextBox.Items.Insert(0, "[group CLR/OS ignore paths] " + osGroupings + ";{%}!{*}->$1!$2");
 
                 var defaultGroup = "[group CLR/OS entries] " + osGroupings;
@@ -1250,7 +1255,7 @@ namespace PerfView
             }
 
             StatusBar.Status = "Opening object view on  " + nodeCount + " objects.";
-            var objectViewer = new ObjectViewer(asMemoryStackSource.Graph, asMemoryStackSource.RefGraph, nodeIdxs);
+            var objectViewer = new ObjectViewer(this, asMemoryStackSource.Graph, asMemoryStackSource.RefGraph, nodeIdxs);
             objectViewer.Show();
         }
 
@@ -2322,7 +2327,7 @@ namespace PerfView
                         else
                         {
                             StatusBar.Log("Opening editor on " + sourcePathToOpen);
-                            var textEditorWindow = new TextEditorWindow();
+                            var textEditorWindow = new TextEditorWindow(this);
                             dialogParentWindow = textEditorWindow;
                             textEditorWindow.TextEditor.IsReadOnly = true;
                             textEditorWindow.TextEditor.OpenText(sourcePathToOpen);
@@ -3922,7 +3927,7 @@ namespace PerfView
             PresetMenu.Items.Add(new Separator());
 
             var setDefaultPresetMenuItem = new MenuItem();
-            setDefaultPresetMenuItem.Header = "S_et Startup Preset";
+            setDefaultPresetMenuItem.Header = "S_et As Startup Preset";
             setDefaultPresetMenuItem.Click += DoSetStartupPreset;
             setDefaultPresetMenuItem.ToolTip =
                 "Sets the default values of Group Patterns and Fold Patterns and % to the current values.";
@@ -3978,7 +3983,7 @@ namespace PerfView
                 }
             }
 
-            var newPresetDialog = new NewPresetDialog(nameCandidate, m_presets.Select(x => x.Name).ToList());
+            var newPresetDialog = new NewPresetDialog(this, nameCandidate, m_presets.Select(x => x.Name).ToList());
             newPresetDialog.Owner = this;
             if (!(newPresetDialog.ShowDialog() ?? false))
             {
@@ -4003,7 +4008,7 @@ namespace PerfView
 
         private void DoManagePresets(object sender, RoutedEventArgs e)
         {
-            var managePresetsDialog = new ManagePresetsDialog(m_presets, Path.GetDirectoryName(DataSource.FilePath), StatusBar);
+            var managePresetsDialog = new ManagePresetsDialog(this, m_presets, Path.GetDirectoryName(DataSource.FilePath), StatusBar);
             managePresetsDialog.Owner = this;
             managePresetsDialog.ShowDialog();
             m_presets = managePresetsDialog.Presets;

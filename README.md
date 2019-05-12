@@ -11,7 +11,7 @@ current version of PerfView.
 
 ### Are you here about the TraceEvent Library?
 
-PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
+PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programmatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
 
 ### Learning about PerfView 
 
@@ -26,10 +26,10 @@ When you have question about PerfView, your first reaction should be to search t
 see if you can find the answer already.   If that does not work you can ask a question by creating a [new PerfView Issue](https://github.com/Microsoft/perfview/issues/new).
 State your question succinctly in the title, and if necessary give details in the body of the issue, there is a issue tag
 called 'question' that you should use as well that marks your issue as a question rather than some bug report.
-If the question is is specific to a particular trace (*.ETL.ZIP file) you can drag that file onto the issue and it will be downloaded.
-This allows those watching for issues to reproduce your environment and give much more detailed and useful answer.
+If the question is specific to a particular trace (*.ETL.ZIP file) you can drag that file onto the issue and it will be downloaded.
+This allows those watching for issues to reproduce your environment and give much more detailed and useful answers.
 
-Note that once you have your question answered, if the issue is likley to be common, you should strongly consider updating the
+Note that once you have your question answered, if the issue is likely to be common, you should strongly consider updating the
 documentation to include the information.  The documentation is pretty much just
 one file https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm.
 You will need to clone the repository and create a pull request (see [OpenSourceGitWorkflow](https://github.com/Microsoft/perfview/blob/master/documentation/OpenSourceGitWorkflow.md)
@@ -55,37 +55,37 @@ to download Visual Studio 2017 Community Edition if you don't already have Visua
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
 (The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
-If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
-but VS should detect that the solution needs C++ and ask you to install those tools when you open the solution. Allow it
-to do this and everything should 'just work'.    
+If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default and
+it also does not include the Windows 8.1 SDK by default (we build PerfView so it can run on Win8 as well as Win10).  Thus
+when you install Visual Studio 2017 check the 'Desktop Development with C++' option and then look the right pane to see
+the optional sub-components, and make sure the Windws 8.1 SDK is also checked (it typically is not).   If you have
+already installed VS 2017, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2017, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 8.1 SDK. 
+If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 8.1 SDK.  See 
+the troubleshooting sections below for more if you need it.  
 
-You may need to install some VS optional components, such as the Windows 8.1 SDK and the "Windows Universal CRT SDK"
-(*not* the "Windows Universal C Runtime").
-
-The .NET Core SDK is unfortunately not currently an optional component of the Visual Studio Installer, but can be
-installed easily from [here](https://www.microsoft.com/net/download/windows).
+The .NET Core SDK should be part of the default VS 2017 installation now, but if not it can be installed easily from [here](https://www.microsoft.com/net/download/windows).
 
 ### Cloning the PerfView GitHub Repository. 
 
-The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.
-If you are already familiar with how GIT, GitHub, and Visual Studio 2017 GIT support works, than you can skip this section.
+The first step in getting started with the PerfView source code is to clone the PerfView GitHub repository.
+If you are already familiar with how GIT, GitHub, and Visual Studio 2017 GIT support works, then you can skip this section.
 However, if not, the [Setting up a Local GitHub repository with Visual Studio 2017](documentation/SettingUpRepoInVS.md) document
-will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2017 installed.
+will lead you through the basics of doing this. All it assumes is that you have Visual Studio 2017 installed.
 
 ### How to Build and Debug PerfView 
 
 PerfView is developed in Visual Studio 2017 using features through C# 6.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
-  the Windows Explorer) and selecting Build -> Build Solution, will build it.    You can also build the 
+  the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build the 
   non-debug version from the command line using msbuild or the build.cmd file at the base of the repository.
   The build follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
-  src/PerfView/bin/*BuildType*/PerfView.exe.   You need only deploy this one EXE to use it.  
+  src/PerfView/bin/*BuildType*/PerfView.exe. You need only deploy this one EXE to use it.  
 
-  * The solution consists of 11 projects, representing support DLLs and the main EXE.   To run PerfView in the 
+  * The solution consists of 11 projects, representing support DLLs and the main EXE. To run PerfView in the 
   debugger **you need to make sure that the 'Startup Project' is set to the 'PerfView' project** so that it launches 
   the main EXE.   If the PerfView project in the Solution Explorer (on the right) is not bold, right click on the PerfView project 
-  and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.
+  and select 'Set as Startup Project'. After doing this 'Start Debugging' (F5) should work.
   (It is annoying that this is not part of the .sln file...).  
 
 ### Deploying your new version of Perfview
@@ -102,7 +102,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   see errors that certain DLLs can't be found if there were build problems earlier in the build.   Typically you can fix 
   this simply by doing a normal (non-clean) build, since the missing file will be present from the last compilation.
   If this does not fix things, see if the DLL being looked for actually exists (if it does, then rebuilding should fix it).
-  It can make sense to go down the project one by one and build them individually to see which one fails 'first'.
+  It can make sense to go down the projects one by one and build them individually to see which one fails 'first'.
   
   * Another unusual thing about PerfView is that it includes an extension mechanism complete with samples.
   This extensions mechanism is the 'Global' project (called that because it is the Global Extension whose commands don't have an
@@ -111,12 +111,23 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
 
   * One of the invariants of the repo is that if you are running Visual Studio 2017 and you simply sync and build the
   PerfView.sln file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then
-  we need to either fix the repo or update the advice above.   Thus it is reasonable to open an GitHub issue.   If you
+  we need to either fix the repo or update the advice above. Thus it is reasonable to open a GitHub issue. If you
   do this, the goal is to fix the problem, which means you have to put enough information into the issue to do that.
   This includes exactly what you tried, and what the error messages were.
   
-  * If you get an error "MSB8036: The Windows SDK version 8.1 was not found", go to your Control panel -> Programs and Features, 
-  and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that the Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
+  * You can also build PerfView from the command line (but you still need VS 2017 installed).   It is a two step process.
+  First you must restore all the needed nuget packages, then you do the build itself. To do this:
+    1. Open a developer command prompt.  You can do this by hitting the windows key (by the space bar) and type
+       'Developer command prompt'.  You should see a entry for this that you can select (if VS 2017 is installed).
+    2. Change directory to the base of your PerfView source tree (where PerfView.sln lives). 
+    3. Restore the nuget packages by typing the command 'msbuild /t:restore'
+    4. Build perfView by typing the command 'msbuild'
+  
+  * If you get an error "MSB8036: The Windows SDK version 8.1 was not found",  Or you get a 'assert.h' not found error, or 
+  frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 8.1 
+  SDK installed (We like to build PerfView so it works event on Windows 8).    Unfortunately this library tends not to be 
+  installed with Visual Studio anymore unless you ask for it explicitly.   To fix it 
+     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1 option is selected.  If not, select it and have the setup install this.  THen try building PerfView again.   
   
 ### Running Tests
 
@@ -144,7 +155,7 @@ coverage status reflected here is the AppVeyor build status of the **master** br
 ### Contributing to PerfView 
 
 You can get a lot of value out of the source code base simply by being able to build the code yourself, debug
-through it or make a local, specialized feature.    But the real power of open source software happens when
+through it or make a local, specialized feature, but the real power of open source software happens when
 you contribute back to the shared code base and thus help the community as a whole.   **While we encourage this it 
 requires significantly more effort on your part**.   If you are interested in stepping up, see the 
 [PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](documentation/CodingStandards.md) before you start.
@@ -163,22 +174,22 @@ The code is broken into several main sections:
   collect the data for many investigations
   * MainWindow - GUI code for the window that is initially launched (lets you select files or collect new data)
   * ETWClrProfiler* - There are two projects that build the same source either 32 or 64 bit.   This is (the only) native code
-  project in PerfView, and implements the CLR Profiler API and emits ETW events.   It is used to trace object allocation
+  project in PerfView, and implements the CLR Profiler API and emits ETW events. It is used to trace object allocation
   stacks and .NET method calls.  
   * HeapDump* There are 32 and 64 bit versions of this project.  These make standalone executables that can dump the GC
   heap using Microsoft.Diagnostics.Runtime APIs.  This allows getting heap dumps from debugger process dumps.  
   * Global - An example of using PerfView's extensibility mechanism
   * CSVReader - old code that lets PerfView read .ETL.CSV files generated by XPERF (probably will delete)
   * Zip - a clone of System.IO.Compression.dll so that PerfView can run on pre V4.5 runtimes (probably will delete)
-  * [HtmlJs](src/HtmlJs/Readme.md) - contains a version of the GUI based on HTML and JavaScript (for Linux support). (experimental)
+  * [PerfViewJS](src/PerfViewJS/Readme.md) - contains a version of the GUI based on HTML and JavaScript (for Linux support). (experimental)
 
 ### Other Documentation
 
 These docs are for specialized scenarios 
 
   * [Updating SupportFiles](documentation/MakingSupportFilesNugetPackages.md) PerfView uses some binary files that it
-does not build itself.   We created two nuget packages to hold these.  This document tells you how to update this
-nuget package when these files need to be updated.  Very few people should care about these instructions.  
+does not build itself. We created two nuget packages to hold these.  This document tells you how to update this
+nuget package when these files need to be updated. Very few people should care about these instructions.  
 
   * [Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmaster) This is documentation that is only 
-  useful for internal Microsoft users.  By design the link will not work for most people.
+  useful for internal Microsoft users. By design the link will not work for most people.

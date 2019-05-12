@@ -9,9 +9,9 @@ namespace PerfView.Dialogs
     /// <summary>
     /// Display a dialog box for executing user commands. 
     /// </summary>
-    public partial class UserCommandDialog : Window
+    public partial class UserCommandDialog : WindowBase
     {
-        public UserCommandDialog(Action<string> doDommand)
+        public UserCommandDialog(Window parentWindow, Action<string> doDommand) : base(parentWindow)
         {
             m_DoCommand = doDommand;
             InitializeComponent();

@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <RootNamespace>Microsoft.Diagnostics.HeapDump</RootNamespace>
+    <AssemblyName>Microsoft.Diagnostics.HeapDump</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <Company>Microsoft</Company>
+    <Description>General Utility library</Description>
+    <Copyright>Copyright � Microsoft 2010</Copyright>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\HeapDump\*.cs" />
+    <Compile Include="..\HeapDump\Utilities\*.cs" />
+    <Compile Include="..\HeapDump\Debugger\**\*.cs" />
+    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
+    <Compile Include="..\PerfView\PerfViewLogger.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
+  </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

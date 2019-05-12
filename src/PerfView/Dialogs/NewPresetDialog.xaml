@@ -1,9 +1,9 @@
-﻿<Window x:Class="PerfView.Dialogs.NewPresetDialog"
+﻿<src:WindowBase x:Class="PerfView.Dialogs.NewPresetDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:PerfView"
         Background="#FFA7A7A7" 
-        Title="New Preset" Height="93.611" Width="400"
-        WindowStartupLocation="CenterOwner">
+        Title="New Preset" Height="93.611" Width="400">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
@@ -27,4 +27,4 @@
                 <Button Margin="10,2,10,5" Width="80" Content="OK" Click="OKClicked"/>
         </StackPanel>
     </Grid>
-</Window>
+</src:WindowBase>

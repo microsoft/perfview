@@ -43,7 +43,7 @@
     </p>
     <p>
         PerfView is a V4.0 .NET application.&nbsp;&nbsp; Thus you need to have installed
-        a V4.0 .NET Runtime on the machine which you actually run perfView.&nbsp;&nbsp;
+        a V4.0 .NET Runtime on the machine which you actually run PerfView.&nbsp;&nbsp;
         On Windows Vista, Windows 7 and Win2k8 windows update will install.NET V4.0, so
         if windows update is turned on then PerfView will just work. PerfView is not supported
         on Win2K3 or WinXP.&nbsp;&nbsp;&nbsp; While PerfView itself needs a V4.0 runtime,
@@ -81,7 +81,7 @@
             sample if the heap is too big to capture in its entirety. It then converts the graph
             of objects in the heap into a tree, and displays this in the same <a href="#StackViewer">stack viewer</a>
             that was used for CPU investigations. See <a href="#InvestigatingMemoryData">Investigating Memory</a> and
-            <a href="#StartingAnAnalysisGCHeap">Starting a GC Heap Analysis</a> for moreWik
+            <a href="#StartingAnAnalysisGCHeap">Starting a GC Heap Analysis</a> for more
         </li>
         <li>
             <strong>Response Time Investigations: </strong>  By collecting with the 'ThreadTime' option
@@ -133,7 +133,7 @@
     <p>
         Inevitably however, there will be questions that the docs don't answer, or features
         you would like to have that don't yet exist, or bugs you want to report.  PerfView
-        is an <a href="https://github.com/Microsoft/perfview">Github open source project</a>
+        is an <a href="https://github.com/Microsoft/perfview">GitHub open source project</a>
         and you should log questions, bugs or other feedback at
     </p>
     <center>
@@ -281,7 +281,7 @@
         Try out each of these techniques.&nbsp;&nbsp;&nbsp; For example to &#39;zoom into&#39;
         just the main method, simply drag the mouse over the &#39;First&#39; and &#39;Last&#39;
         times to select both, right click, and Select Time Range.&nbsp;&nbsp; You can hit
-        the &#39;Back&#39; button to undo any changes you&nbsp; made so you can reselect.&nbsp;&nbsp;
+        the &#39;Back&#39; button to undo any changes you&nbsp; made so you can re-select.&nbsp;&nbsp;
         Also notice that each text box remembers the last several values of that box, so
         you can also &#39;go back&#39; particular past values by selecting drop down (small
         down array to the right of the box), and selecting the desired value.
@@ -293,7 +293,7 @@
         This will show you CPU starting from the process itself.&nbsp; The first line of
         is the View is &#39;Process32 tutorial.exe&#39; and is a summary of the CPU time
         for the entire process.&nbsp; The &#39;<a href="#WhenColumn">when</a>&#39; column
-        shows you CPU for the process over time (32 time buckets).&nbsp;&nbsp; In a Gui
+        shows you CPU for the process over time (32 time buckets).&nbsp;&nbsp; In a GUI
         application there will be lulls where no CPU was used, followed by bursts of higher
         CPU use corresponding to user actions. These show up in the numbers in the &#39;when&#39;
         column. By clicking on a cell in the &#39;when&#39; column, selecting a range, right
@@ -486,7 +486,7 @@
         are worth looking at closely.&nbsp;&nbsp;&nbsp;&nbsp; This corresponds beautify
         to our expectations given the source code in <a href="Tutorial.cs.txt">Tutorial.cs</a>.&nbsp;&nbsp;&nbsp;
         However it can also be useful to understand where CPU time was consumed from the
-        top down.&nbsp; This is what the <a href="#CallTreeView">callTree view</a> is for.&nbsp;&nbsp;
+        top down.&nbsp; This is what the <a href="#CallTreeView">CallTree view</a> is for.&nbsp;&nbsp;
         Simply by clicking the &#39;CallTree&#39; tab of the stack viewer will bring&nbsp;
         you to that view.&nbsp;&nbsp; Initially the display only shows the root node, but
         you can open the node by clicking on the check box (or hitting the space bar). This
@@ -514,11 +514,11 @@
     <h4>Getting a &#39;coarser&#39; view</h4>
     <p>
         All of the filtering and grouping parameters at the top of the view affect any of
-        the view (byname, caller-callee or calltree), equally.&nbsp;&nbsp;&nbsp; We can
+        the view (byname, caller-callee or CallTree), equally.&nbsp;&nbsp;&nbsp; We can
         use this fact and the &#39;Fold %&#39; functionality to get an even coarser view
         of the &#39;top&#39; of the call tree.&nbsp;&nbsp; With all nodes expanded, simply
         right click on the window and select &#39;Increase Fold %&#39; (or easier hit the
-        F7 key).&nbsp; This increases the number it the Fold % textBox by 1.6X.&nbsp;&nbsp;
+        F7 key).&nbsp; This increases the number it the Fold % textbox by 1.6X.&nbsp;&nbsp;
         By hitting the F7 key repeatedly you keep trimming down the &#39;bottoms&#39; of
         the stacks until you only see only the methods that use a large amount of CPU time.&nbsp;&nbsp;&nbsp;
         The following image shows the CallTreeView&nbsp; after hitting F7 seven times.&nbsp;&nbsp;
@@ -539,7 +539,7 @@
         under &#39;BROKEN&#39; stacks to get an idea what samples are &#39;missing&#39;
         from their proper position in the call tree.&nbsp;&nbsp; you can do this easily
         by viewing the BROKEN node in the Caller-callee view.&nbsp;&nbsp; To do this right
-        click on the BROKEN node, and select goto -> Caller-callee (or type Alt-C). Because
+        click on the BROKEN node, and select Goto -> Caller-callee (or type Alt-C). Because
         so few samples are in our trace are BROKEN this node is not very interesting. By
         setting Fold % to 0 (blank) you get the following view
     </p>
@@ -592,7 +592,7 @@
         At this point we can see that most of the &#39;get_Now&#39; time is spend in a function
         called &#39;GetUtcOffsetFromUniversalTime&#39; and &#39;GetDatePart&#39;&nbsp;&nbsp;
         We have the full power of the stack viewer at our disposal, folding, grouping, using
-        calltree or caller-callee views to further refine our analysis.&nbsp;&nbsp; Because
+        CallTree or caller-callee views to further refine our analysis.&nbsp;&nbsp; Because
         the &#39;Drill Into&#39; window is separate from its parent, you can treat is as
         &#39;disposable&#39; and simply discard it when you are finished looking at this
         aspect of your program&#39;s performance.&nbsp;
@@ -738,7 +738,7 @@
         <strong>If you intend to do a <a href="#BlockedTimeInvestigation">wall clock time investigation</a></strong>
     </p>
     <p>
-        By default perfview chooses a set of events that does not generate too much data
+        By default PerfView chooses a set of events that does not generate too much data
         but it useful for a variety of investigations.   However
         <a href="#BlockedTimeInvestigation">wall clock investigations</a>
         require events that are too voluminous to collect by default.  Thus if you wish to
@@ -1064,20 +1064,20 @@
             include
         </li>
         <li>
-            If the node was an entry point group (eg OTHER&lt;&lt;mscorlib!get_Now()&gt;&gt;),
+            If the node was an entry point group (e.g., OTHER&lt;&lt;mscorlib!get_Now()&gt;&gt;),
             you can indicate that you want just the that entry point to be ungrouped.&nbsp;&nbsp;
             This is what right clicking and selecting &#39;Ungroup&#39; does.&nbsp;&nbsp; Note
             that any methods that the original entry point calls now become entry points to
             the group so this only ungroups to &#39;one level&#39;.&nbsp;
         </li>
         <li>
-            If the node was an entry point group (eg OTHER&lt;&lt;mscorlib!get_Now()&gt;&gt;),&nbsp;
+            If the node was an entry point group (e.g., OTHER&lt;&lt;mscorlib!get_Now()&gt;&gt;),&nbsp;
             you can indicate that you want ALL methods in that MODULE to be ungrouped selecting
             the node and using the &#39;Ungroup Module&#39; command.&nbsp;&nbsp; This tends
             to show most of the interesting internal structure of that group in one shot.&nbsp;
         </li>
         <li>
-            If the node is a normal groups (e.g. module mscorlib), you can indicate you want
+            If the node is a normal groups (e.g., module mscorlib), you can indicate you want
             just that group ungrouped.&nbsp; The &#39;Ungroup&#39; does this.
         </li>
         <li>
@@ -1315,7 +1315,7 @@
         to digest).&nbsp; In this way large objects (which are ALWAYS taken) will not have
         their counts scaled, but but the most common types (e.g. string), will be heavily
         scaled.&nbsp;&nbsp;&nbsp;&nbsp; You can see the original statistics and the ratios
-        that perfView uses to scale by looking at the log when a .gcdump file has been opened.
+        that PerfView uses to scale by looking at the log when a .gcdump file has been opened.
     </p>
     <p>
         When PerfView displays a .gcdump file that has been sampled (and thus needs to be
@@ -1342,16 +1342,16 @@
         in some sub-tree, the likelihood is very high.
     </p>
     <p>
-        Generally speaking, these anomalies do not tend to affect the analysis much.  THis is because you
+        Generally speaking, these anomalies do not tend to affect the analysis much.  This is because you
         usually care about LARGE parts of your heap, and this is exactly where sampling is most accurate.
         Thus typically the correct response to these anomalies is to simply ignore them.   If however they
         are interfering with your analysis, you can reduce or eliminate them by simply doing less sampling.
         The Sampling is controlled by the 'Max Dump K Objs' field.  By default 250K objects are collected.
         If you set this number to be larger you will sample less.  If you set it to some VERY large number
-        (say 1Billion), then the graph will not be sampled at all.    Note that there is a reason why
-        perfView samples.   When the number of objects being manipulated gets above 1 million, perfView's
+        (say 1 Billion), then the graph will not be sampled at all.    Note that there is a reason why
+        PerfView samples.   When the number of objects being manipulated gets above 1 million, PerfView's
         viewer will noticeably lag.  Above 10 million and it will be a VERY frustrating experience.   There
-        is also a good chance that perfView will run out of memory when manipulating such large graphs.   It
+        is also a good chance that PerfView will run out of memory when manipulating such large graphs.   It
         will also make the GCDump files proportionally bigger, and unwieldy to copy.   Thus
         changing the default should be considered carefully.   Using the sampled dump is usually the better option.
     </p>
@@ -1471,7 +1471,7 @@
     <p>
         Having assigned a priority to all 'about to be traversed' nodes, the choice of the
         next node is simple. PerfView chooses the highest priority node to traverse next.
-        Thus nodes with high priority are likely to be part of the spanning tree that perfView
+        Thus nodes with high priority are likely to be part of the spanning tree that PerfView
         forms. This is important because all the rest of the analysis depends on this spanning
         tree.
     </p>
@@ -1495,7 +1495,7 @@
     <p>
         Thus the algorithm tends to traverse user defined types first and find the shortest
         path that has the most user defined types in the path. Only when it runs out of
-        such links does it follow framework types (like collection types, Gui infrastructure,
+        such links does it follow framework types (like collection types, GUI infrastructure,
         etc), and only when those are exhausted, will anonymous runtime handles be traversed.
         This tends to assign the cost (size) of objects in the heap to more semantically
         relevant objects when there is a choice.
@@ -1638,7 +1638,7 @@
         if you are not familiar with these techniques.
     </p>
     <p>
-        The goto <a href="#CallersView">callers view</a> (F10) is particularly useful for
+        The Goto <a href="#CallersView">callers view</a> (F10) is particularly useful for
         a heap investigation because it quickly summarizes paths to the GC roots, which
         indicate why the object is still alive.&nbsp;&nbsp; When you find object that have
         outlived their usefulness, one of these links must be broken for the GC to collect
@@ -1730,7 +1730,7 @@
         time the baseline has been captured and thus will not show up in the diff.
     </p>
     <p>
-        When you find a likely leak use the 'goto <a href="#CallersView">callers view</a>
+        When you find a likely leak use the 'Goto <a href="#CallersView">callers view</a>
         (F10)' on the node to find a path from the root to that particular node. This shows
         you the objects that are keeping this object alive. To fix the problem you must
         break one of these links (typically by nulling out on of the object fields).
@@ -2093,7 +2093,7 @@
     <h4>Data Collection</h4>
     <p>
         Typically when you first use PerfView, you use it to collect data.&nbsp; PerfView
-        can current collect data for the following kinds of investigations
+        can currently collect data for the following kinds of investigations
     </p>
     <ol>
         <li>
@@ -2135,7 +2135,7 @@
                 <li>
                     <strong><a id="PerfViewTraceInfo">TraceInfo View</a></strong> - The TraceInfo view
                     displays &#39;top level&#39; data that does not vary with time.&nbsp; This includes
-                    things like when the dat was collected, the machine on which it was collected, how
+                    things like when the data was collected, the machine on which it was collected, how
                     many processors and how much memory the machine&nbsp; had etc.
                 </li>
                 <li>
@@ -2144,11 +2144,9 @@
                     gives the command line, the start and stop time, the amount of CPU, and other &#39;coarse&#39;
                     information about the processes.
                 </li>
-
-                ""
                 <li>
                     <strong><a id="Processes/Files/RegistryStacks">Processes / Files / Registry Stacks</a></strong> -
-                    This is a high level view howing the processes in the system.  In this view if on process
+                    This is a high level view showing the processes in the system.  In this view if one process
                     spawns another it will be a child of the parent process.   All DLL load and file opens
                     are also shown.   If the Registry events are turned on, you will see those as well.
                 </li>
@@ -2174,7 +2172,7 @@
                     however because the trace was not collected with the /threadTime option, the view cannot show blocked time.   The result is that
                     you can see CPU time, grouped by the Start-stop activity, but no blocked or async time.   Thus it is useful to see where CPU time is
                     being spent grouped by the request being serviced, but does not tell you much about wall clock time.   For that you need to collect
-                    with the /threadTime option.  
+                    with the /threadTime option.
                 </li>
                 <li>
                     <!-- START OF GROUPS -->
@@ -2203,7 +2201,6 @@
                         </li>
 
                         <li>
-                            <a id="Gen2ObjectDeaths(CoarseSampling)Stacks" />
                             <strong><a id="Gen2ObjectDeathsStacks">Gen 2 Object Deaths</a></strong> - When the
                             DotNetAlloc or DotNetAllocSamp events are turned on the runtime will log the
                             stack of allocations as well as when GCs happen and what objects are collected.
@@ -2256,7 +2253,7 @@
                         </li>
                         <li>
                             <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
-                            is present if PerFView detects any GC heap snapshots in the ETL file.   These
+                            is present if PerfView detects any GC heap snapshots in the ETL file.   These
                             may be either JavaScript or .NET heap snapshots.
                         </li>
                         <li>
@@ -2503,7 +2500,7 @@
                             of what is going on with ASP.NET requests over time.   The ASP.NET Thread Time Stacks view
                             lets you drill into more detail.   In particular this view works like the
                             <a href="#ThreadTimeStacks">Thread Time Stacks</a> view in that it shows you what every thread
-                            is doing with is REAL (clock) time, however unlike the Thread Time Stacks view it groups the parts
+                            is doing with its REAL (clock) time, however unlike the Thread Time Stacks view it groups the parts
                             of threads that are actually doing work on behalf of an particular request together.  Thus when
                             a request takes a long time (whether it be because of CPU or blocking on a database), that time
                             will show up in this view attributed to that request.  This makes it very straightforward to
@@ -2519,7 +2516,7 @@
                             <strong><a id="ASP.NETThreadTime(withTasks)Stacks">ASP.NET Thread Time (with Tasks) Stacks</a></strong> -
                             This view is basically a fusion of the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a> view
                             and the <a href="#ThreadTime(withTasks)Stacks">Thread Time (With Tasks) Stacks</a> view.
-                            Like the ASP.NET THread time view it shows you time grouped by request.  But like the Thread Time with
+                            Like the ASP.NET Thread time view it shows you time grouped by request.  But like the Thread Time with
                             Tasks view if that request causes other tasks to be spawned as part of its operation those are
                             considered 'children' of that request and show up in the call stack that way.   This is
                             the most useful view if you are investigating a ASP.NET server that uses async as part of its implementation.
@@ -2603,7 +2600,7 @@
             of data analyses.&nbsp;&nbsp; This is often the best way to &#39;hand off&#39; an
             investigation to another programmer.&nbsp;&nbsp;&nbsp;&nbsp;  It is also possible to
             generate this XML file using another program and thus view external data using PerfView's
-            powerful stack viewer.   PerfView supports both perfView.xml as well as a perfView.json
+            powerful stack viewer.   PerfView supports both PerfView.xml as well as a PerfView.json
             variation.
         </li>
         <li>
@@ -2723,7 +2720,7 @@
     </p>
     <ul>
         <li>
-            The first view displayed is the &#39;byName&#39; view suitable for a <a href="#TutorialBottomUp">
+            The first view displayed is the &#39;ByName&#39; view suitable for a <a href="#TutorialBottomUp">
                 bottom
                 up investigation
             </a>.&nbsp; The items on this are sorted by the time that
@@ -2782,7 +2779,7 @@
             </a> and in particular <a href="#WhenToCareAboutTheGCHeap">
                 When
                 to care about the GC Heap
-            </a>, and take a GC heap snapshot (Memory -&gt; Take Heap SnapShot)
+            </a>, and take a GC heap snapshot (Memory -&gt; Take Heap Snapshot)
         </li>
         <li>
             Understand what the GC stack viewer is showing you, and in particular <a href="#PrimaryAndSecondaryNodes">
@@ -2864,12 +2861,12 @@
         <li>
             <strong>Cutting and pasting time ranges</strong>- If you type Alt-T (right click
             -&gt; Copy Time Range) it will copy the start and end times to the cut/paste buffer
-            These can then be pasted into the &#39;start&#39; textBox to clone a type range
+            These can then be pasted into the &#39;start&#39; textBox to clone a time range
             from one view to another.&nbsp; &nbsp;&nbsp;
         </li>
         <li>
             <strong>Viewing event data</strong> If you wish to see all the events (and their
-            assoicated information), you can select one or two times in the stack viewer and
+            associated information), you can select one or two times in the stack viewer and
             hit Alt-V to view that time range int the event viewer.
         </li>
     </ul>
@@ -2904,7 +2901,7 @@
         in detail in the<a href="#FilteringGroupingStackData"> section on grouping and filtering</a>.&nbsp;
     </p>
     <p>
-        At the very top of the StackViewer is the summary statistics line.&nbsp; This gives
+        At the very top of the stack viewer is the summary statistics line.&nbsp; This gives
         you statistics about all the samples, including count, and total duration.&nbsp;&nbsp;&nbsp;
         It computes&nbsp; the &#39;TimeBucket&#39; size which is defined as 1/32 of the
         total time interval of the trace.&nbsp;&nbsp; This is the amount of time that is
@@ -2936,7 +2933,7 @@
             <a id="NameColumn"><strong>Name</strong></a> - Each frame on the stack is given
             a name, it starts out as a name of the form module!fullMethodName but may be morphed
             by grouping.&nbsp;&nbsp; There might also be a suffix of the form [N-M frames].&nbsp;&nbsp;
-            This is used in the <a href="#CallTreeView">callTree view</a> whenever a node has
+            This is used in the <a href="#CallTreeView">CallTree view</a> whenever a node has
             only one child, which is itself.&nbsp;&nbsp;&nbsp; In this case there is no interesting
             information in chain of calls and so they are combined into a single node however
             the nodes is annotated with the minimum and maximum number of frames that were combined
@@ -3087,7 +3084,7 @@
     <p>
         The call tree view is also well suited for &#39;zooming in&#39; to a region of interest.&nbsp;&nbsp;
         Often you are only interested in the performance of a particular part of the program
-        (eg the time between a mouse click and the display update associated with that click)&nbsp;&nbsp;
+        (e.g., the time between a mouse click and the display update associated with that click)&nbsp;&nbsp;
         These regions of time can typically be easily discovered by either looking for regions
         of high CPU utilization using the When column on the Main program node, or by finding
         the name of a function known to be associated with the activity an using the &#39;SetTimeRange&#39;
@@ -3140,7 +3137,7 @@
         calls of the current node.&nbsp;&nbsp;&nbsp; For example in the CallTree view the
         node representing &#39;SpinForASecond&#39; represent all instances of that function
         that have the SAME PATH TO THE ROOT.&nbsp;&nbsp; Thus you will see several instances
-        of &#39;SpinForASecond&#39; in the CallTree view.&nbsp;&nbsp; However is I was trying
+        of &#39;SpinForASecond&#39; in the CallTree view.&nbsp;&nbsp; However if I was trying
         to understand the impact of &#39;SpinForASecond&#39; on the whole program, it would
         be hard to do so in the CallTree view because it would look at all those nodes.&nbsp;&nbsp;
         The Caller-Callee view aggregates all the different paths to &#39;SpinForASecond&#39;
@@ -3161,7 +3158,7 @@
         Sometimes you wish to view all the ways you can get to the root from a particular
         node.&nbsp;&nbsp; You can&#39;t do this using the caller-callee view directly because
         of the issue of changing sample sets.&nbsp;&nbsp; You can simply search for the
-        node in the callTree view, however it will not sort the paths by weight, which makes
+        node in the CallTree view, however it will not sort the paths by weight, which makes
         finding the &#39;most important&#39; path more difficult.&nbsp;&nbsp; You can however
         select the current node, right click and select &#39;Include Item&#39;.&nbsp; This
         will cause all samples that do NOT include the current node to be filtered away.&nbsp;&nbsp;
@@ -3347,7 +3344,7 @@
         </li>
     </ul>
     <p>
-        Perfview will then open up a stack view which contains the different between the
+        PerfView will then open up a stack view which contains the different between the
         &#39;test&#39; view and the &#39;baseline&#39; you selected.&nbsp;&nbsp; The algorithm
         it uses to do this is VERY simple.&nbsp; It simply negates the metric for the baseline,
         and then combines these samples with the samples of the test (which are unmodified).&nbsp;
@@ -3457,7 +3454,7 @@
         <strong>Fixing Renamed functions</strong>
     </p>
     <p>
-        Grouping lets you literal rename any node name to any other node name.&nbsp; Thus
+        Grouping lets you literally rename any node name to any other node name.&nbsp; Thus
         you can &#39;fix&#39; any &#39;expected&#39; differences in a trace.&nbsp;&nbsp;
         For example if MyDll!MethodA was renamed to MyDll!MethodB, you could add the grouping
         pattern
@@ -3473,7 +3470,10 @@
         the folding pattern
     </p>
     <p style="margin-left: 40px">
-        MethodA;MethodBWhich makes both of them disappear (and thus can&#39;t cause a difference).&nbsp;&nbsp;&nbsp;
+        MethodA;MethodB
+    </p>
+    <p>
+      which makes both of them disappear (and thus can&#39;t cause a difference).&nbsp;&nbsp;&nbsp;
     </p>
     <hr />
     <!--  ****************** -->
@@ -3487,15 +3487,15 @@
         those are of great interest.
     </p>
     <p>
-        Suppose main calls f and g and does nothing else. Each takes 50ms for a total of 100ms. Now suppose f gets slower, to 60ms. The total is now 110, or 10% worse. How is this algorithm going to help? Well let?s look at the overweights. Of course main is 100
-        going to 110, or 10%, it?s all of it so the expected growth is 10 and the actual is 10. Overweight 100%. Nothing to see there. Now let?s look at g, it was 50, stayed at 50. But it was ?supposed? to go to 55. Overweight 0/5 or 0%. And finally, our big winner,
-        f, it went from 50 to 60, gain of 10. At 10% growth it should have gained 5. Overweight 10/5 or 200%. It?s very clear where the problem is! But actually it gets even better.
+        Suppose main calls f and g and does nothing else. Each takes 50ms for a total of 100ms. Now suppose f gets slower, to 60ms. The total is now 110, or 10% worse. How is this algorithm going to help? Well let's look at the overweights. Of course main is 100
+        going to 110, or 10%, it's all of it so the expected growth is 10 and the actual is 10. Overweight 100%. Nothing to see there. Now let's look at g, it was 50, stayed at 50. But it was 'supposed' to go to 55. Overweight 0/5 or 0%. And finally, our big winner,
+        f, it went from 50 to 60, gain of 10. At 10% growth it should have gained 5. Overweight 10/5 or 200%. It's very clear where the problem is! But actually it gets even better.
     </p>
     <p>
         Suppose that f actually had two children x and y. Each used to take 25ms but now x slowed down to 35ms. With no gain attributable to y, the overweight for y will be 0%, just like g was. But if we look at x we will find that it went from 25 to 35, a gain
         of 10 and it was supposed to grow by merely 2.5 so its overweight is 10/2.5 or 400%. At this point the pattern should be clear:<br>
         <br>
-        The overweight number keeps going up as you get closer to the root of the subtree which is the source of the problem. Everything below that will tend to have the same overweight. For instance if the problem is that x is being called one more time by f you?d
+        The overweight number keeps going up as you get closer to the root of the subtree which is the source of the problem. Everything below that will tend to have the same overweight. For instance if the problem is that x is being called one more time by f you'd
         find that x and all its children have the same overweight number.
     </p>
     <p>
@@ -3629,6 +3629,12 @@
         <li>
             <strong>Tab instead of Enter </strong>- If you wish to change several filter textboxes
             use Tab instead of return to complete the entry so that you don&#39;t cause a refresh.&nbsp;
+        </li>
+        <li>
+            <strong>Visualize Event Counters</strong>- Right click the event name, you can choose 
+            the option to Show EventCounter graph, and it will popup a HTML based line graph for 
+            the data. The visualization will respect the text filter so you can choose to display
+            a particular subset of the counters.
         </li>
     </ul>
     <hr />
@@ -3768,34 +3774,34 @@
     </p>
     <ul>
         <li>
-            <strong>Windows Kernel/SystemConfigCPU </strong>- Tells the name of the machine,
+            <strong>Windows Kernel/SystemConfig/CPU </strong>- Tells the name of the machine,
             CPU speed, amount of memory the machine has
         </li>
         <li>
-            <strong>Windows Kernel\ProcessStart</strong> - Tells every process that started
+            <strong>Windows Kernel/Process/Start</strong> - Tells every process that started
             during the trace, including its command line.
         </li>
         <li>
-            <strong>Windows Kernel\ProcessEnd</strong> - Tells every process that ended during
+            <strong>Windows Kernel/Process/End</strong> - Tells every process that ended during
             the trace, including its exit code.
         </li>
         <li>
-            <strong>Windows Kernel\ImageLoad</strong> - This tells when every DLL that was loaded
+            <strong>Windows Kernel/Image/Load</strong> - This tells when every DLL that was loaded
             in the process
         </li>
         <li>
-            <strong>Windows Kernel/TcpIpRecv </strong>- Shows when network packets arrive, including
+            <strong>Windows Kernel/TcpIp/Recv </strong>- Shows when network packets arrive, including
             the source and target IP address and port.
         </li>
         <li>
-            <strong>Windows Kernel/PerfInfoSampleProf</strong> - These are the samples taken
+            <strong>Windows Kernel/PerfInfo/Sample</strong> - These are the samples taken
             every 1msec per CPU that are used in the stack CPU stack viewer.
         </li>
         <li>
             <table>
                 <tr>
                     <td>
-                        <strong>Windows Kernel/ThreadCSwitch</strong> - Shows whenever a thread either gains
+                        <strong>Windows Kernel/Thread/CSwitch</strong> - Shows whenever a thread either gains
                         or loses the use of a physical CPU.
                         <br />
                     </td>
@@ -3803,7 +3809,7 @@
             </table>
         </li>
         <li>
-            <strong>Microsoft-Windows-DotNETRuntime/RuntimeStart </strong>- Indicates the version
+            <strong>Microsoft-Windows-DotNETRuntime/Runtime/Start</strong>- Indicates the version
             of the .NET runtime used as well as the startup flags (which say if you are using
             the SERVER or CONCURRENT GC).&nbsp;&nbsp;
         </li>
@@ -3828,7 +3834,19 @@
         <li>
             The <strong><a id="CommandToRunTextBox">Command TextBox</a></strong> - This is only
             active for the Run command.&nbsp; It is the command line to run after collection
-            has been turned on.&nbsp;&nbsp; This textbox is inactive for the Collect command.&nbsp;
+            has been turned on.&nbsp;&nbsp; This textbox is hidden for the Collect command.&nbsp;
+        </li>
+        <li>
+            The <strong><a id="FocusProcessTextBox">Focus Process TextBox</a></strong> - This is only
+            active for the Collect command.&nbsp; It is either a decimal process ID or a name of an executable
+            without the directory part but WITH the suffix (e.g. MyProgram.exe). This allows you to only turn on
+            non-Kernel events for a particular process, and thus cut the overhead / size of the collection when there are many
+            active processes on the system..   Note that it does not have an effect on kernel events (which are
+            often the most common, but not always), so it may not help as much as you would like, but DEFINITELY
+            helps during rundown (if you have many managed processes, they all do rundown which can be impactful).
+            So it always helps when there are many managed processes (because of rundown) but can help quite a lot
+            if many of those processes allocate a lot, or use the threadpool (which both can create many events).
+            This textbox is hidden for the Collect command.&nbsp;
         </li>
         <li>
             The <strong><a id="DataFileNameTextBox">Data File TextBox</a></strong> - This is
@@ -3875,7 +3893,7 @@
             that because the ETW system collects up to etl files (one for kernel events one
             for non-kernel, and one for &#39;rundown&#39; events), the file sizes can be bigger
             than this number but it should not be bigger than a factor of 2.   This text box
-            cooresponds to the /CircularMB=XXX command line parameter.
+            corresponds to the /CircularMB=XXX command line parameter.
         </li>
         <li>
             The <strong><a id="ThreadTimeCheckbox">Thread Time Checkbox</a></strong> -
@@ -3884,7 +3902,7 @@
             It also turns on 'ReadyThread' events that are logged when one thread 'awakens'
             another thread (e.g. sets an event that another thread is waiting for). This option
             also includes all the 'default' events. This is a relatively expensive option (without
-            threadTime overhead is typically about 3% with thread time it is more typically 10%),
+            ThreadTime overhead is typically about 3% with thread time it is more typically 10%),
             but still low enough to use any production scenario.   If you care about non-CPU time
             you will want to turn this on.  This can be turned on in the command line by using
             the /threadTime option (which is a shortcut for /kernelEvents=ThreadTime).
@@ -3957,7 +3975,7 @@
         <li>
             The <strong><a id="IISCheckbox">IIS CheckBox</a></strong> - Causes detailed logging for
             the Internet Information Service IIS to be logged.  You can do this from the command line
-            by using /providers:Microsoft-Windows-IIS.   Note that perfView has special logic that
+            by using /providers:Microsoft-Windows-IIS.   Note that PerfView has special logic that
             notices when this provider is set to a verbose level and turns on a number of other
             IIS related providers in that case.  Thus 17 providers are actually turned on in this case.
             These events can be viewed in the 'events' view.
@@ -3987,7 +4005,7 @@
                 This option tends to have a VERY noticeable impact on performance (2X or more).   Also,
                 if the application allocates aggressively, so many events will be fired so quickly that
                 events will be lost even when the
-                /BufferSize qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
+                /BufferSizeMB qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
                 is usually a better idea to use the <a href="DotNetAllocSampledCheckBox">.NET SampAlloc</a>
                 option instead if at all possible.
             </p>
@@ -3999,7 +4017,7 @@
             for each individual type is adjusted so the number of allocations per sec stays under 100.
             The window for measuring the rate is roughly 16-80 msec long  (it is an exponentially
             decaying window).   This means that it is for any type that allocates less than 20
-            instances in any 100 msec window is unlikly to be trimmed at all.  Also all objects
+            instances in any 100 msec window is unlikely to be trimmed at all.  Also all objects
             larger than 10K are never trimmed.  However commonly allocated things (e.g. strings
             byte[] and object[] will be trimmed, typically by 10 to 1, 100 to one or even 1000 to one
             until the allocation rate is roughly 100 / sec.  When an object is trimmed, its size
@@ -4011,7 +4029,7 @@
             <p>
                 The overhead of turning on .NET SampAlloc CheckBox is much less than the
                 <a href="DotNetAllocCheckBox">.NET Alloc CheckBox</a>.   Typically the overhead is
-                10-20% (unlikes 2X or  more), and produces 200 Meg per minute of trace.   This is
+                10-20% (unlike 2X or  more), and produces 200 Meg per minute of trace.   This is
                 a bit more expensive than turning on /threadTime however low enough that you can
                 leave it on in production (especially if the application does not allocate heavily).
             </p>
@@ -4023,12 +4041,12 @@
         </li>
         <li>
             The <strong><a id="ETWDotNetAllocSampledCheckBox">ETW .NET Alloc CheckBox</a></strong>
-            CURRENLY ONLY RECOMMENDED for .NET NATIVE and PROJECT K SCENARIOS.
+            CURRENTLY ONLY RECOMMENDED for .NET NATIVE and PROJECT K SCENARIOS.
             This checkbox collects 'Smart sampled' object allocation information which is essentially the same data as
             the <a href="#DotNetAllocSampledCheckBox">.NET SampAlloc CheckBox</a>.
             It does this, however in a different way.   The <a href="#DotNetAllocSampledCheckBox">.NET SampAlloc CheckBox</a> works by
             injecting a .NET Profiler DLL (ETWClrProfiler) into any process that starts after data collection begins.
-            THe ETW .NET Alloc Checkbox accomplishes the same thing by turning on ETW events built into the runtime
+            The ETW .NET Alloc Checkbox accomplishes the same thing by turning on ETW events built into the runtime
             since Version V4.5.2.     Thus there are times when each of them will work but the alternative will not.
             In particular the ETW version does not work on older runtimes, but the Profiler based solution does not work
             on runtimes that do not support the .NET profiler API (e.g. .NET Native or Project K).    Eventually older
@@ -4043,7 +4061,7 @@
             This can be also activated by the /DotNetCalls command line option.
             Note that this only affect processes that start AFTER data collection has started.
             You can however start tracing, start the program then start and stop collection
-            (mulitple times) afterward to capture different scenenarios.
+            (multiple times) afterward to capture different scenarios.
             <p>
                 The events from this option are called 'CallEnter' and show up in the 'AnyStacks'
                 view in the 'Advanced Group' view.  Most likely you will want to filter out all other
@@ -4051,8 +4069,8 @@
             </p>
             <p>
                 This option tends to have a VERY noticeable impact on performance (5X or more).
-                If the application runs alot of code (common), it may be necessary to make
-                /BufferSize qualifier very large (e.g. 1000Meg).  and even that may not be enough
+                If the application runs a lot of code (common), it may be necessary to make
+                /BufferSizeMB qualifier very large (e.g. 1000Meg).  and even that may not be enough
                 This option is really only meant for small isolated tests.
             </p>
             <p>
@@ -4133,16 +4151,16 @@
             analysis. In this mode relatively few events are logged, so you can collect data
             about a large period of time (say an hour), in a reasonable size (say 200Meg). This
             option shows you stacks for a SAMPLING of GC allocations.   In addition to the GC
-            events it also turns on hte <a href="#MemInfoCheckBox">MemInfo</a> and <a href="#VirtualAllocCheckBox">VirtualAlloc</a> events, which are useful
+            events it also turns on the <a href="#MemInfoCheckBox">MemInfo</a> and <a href="#VirtualAllocCheckBox">VirtualAlloc</a> events, which are useful
             for tracking down memory issues.
-            The /GCOnly command line option achieves the same efffect.
+            The /GCOnly command line option achieves the same effect.
         </li>
         <li>
             The <strong><a id="GCCollectOnlyCheckBox">GC Collect Only Checkbox</a></strong>
             - Turns off all providers except those that describe garbage collections. Thus even
             the GC allocation sampling is turned off. This mode logs even less data than GC
             Only, and thus can collect data over an every longer period of time (say a day)
-            in reasonable size (say 200 meg).  The /GCCollectOnly command line option achieves the same efffect.
+            in reasonable size (say 200 meg).  The /GCCollectOnly command line option achieves the same effect.
         </li>
         <li>
             The <strong><a id="StressCheckBox">.NET Stress Checkbox</a></strong> - Turns on
@@ -4150,7 +4168,7 @@
             be useful tracking down non-deterministic &#39;stress&#39; bugs.&nbsp;&nbsp; You
             can also turn these events on by specifying the &#39;ClrStress&#39; provider in
             the Additional Providers textbox.&nbsp;&nbsp;&nbsp;
-            The option /Providers=ClrStress can achive this at the command line.
+            The option /Providers=ClrStress can achieve this at the command line.
         </li>
 
         <li>
@@ -4163,7 +4181,7 @@
         </li>
         <li>
             The <strong><a id="AdditionalProvidersTextBox">Additional Providers TextBox</a></strong>
-            - A comma separated list of specifications for providers cooresponding to the /providers command line qualifier.
+            - A comma separated list of specifications for providers corresponding to the /providers command line qualifier.
             This can be specified by using the ... button or by the following textual specification.  Each provider
             specification has the general form of <em>provider</em>:<em>keywords</em>:<em>level:values</em>.
             The keyword and levels specification parts are optional and can be omitted (For example <em>provider:keywords:values</em> or <em>provider:values </em>is legal).&nbsp;&nbsp;
@@ -4319,7 +4337,7 @@
             and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
             do your collection and the turn it back on without losing your virtual machines (although it is a pain).
             Hopefully this will be fixed in Win 10.  In addition to the GUI you can access this feature
-            using the command line /CpuCounters:XXX qualifer.   (See PerfView -> Command Line Help for more)
+            using the command line /CpuCounters:XXX qualifier.   (See PerfView -> Command Line Help for more)
             <p>
                 If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
                 suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because
@@ -4335,7 +4353,7 @@
             The <strong><a id="OSHeapExeTextBox">OS Heap Executable TextBox</a></strong> -&nbsp;
             Windows has the ability to log every time an memory allocation is made from the
             OS memory heap (GlobalAlloc or LocalAlloc APIs). Most unmanaged languages allocate
-            their memory from this heap. However unlike other ETW events, this one is so volumous
+            their memory from this heap. However unlike other ETW events, this one is so voluminous
             that it is not turned on machine wide. Instead you specify the name of the process
             EXE (no directory name, with or without the EXE extension) and only process that
             start after collection starts and and have this name will log OS Heap events. If
@@ -4347,7 +4365,7 @@
             The <strong><a id="OSHeapProcessTextBox">OS Heap Process ID TextBox</a></strong>
             -&nbsp; Windows has the ability to log every time an memory allocation is made from
             the OS memory heap (GlobalAlloc or LocalAlloc APIs). Most unmanaged languages allocate
-            their memory from this heap. However unlike other ETW events, this one is so volumous
+            their memory from this heap. However unlike other ETW events, this one is so voluminous
             that it is not turned on machine wide. Instead you specify the process ID of the
             process you wish to log events. If you wish to log events of a process that has
             not yet started, use the <a href="#OSHeapExeTextBox">OS Heap Executable Textbox</a>.
@@ -4358,7 +4376,7 @@
     <h3><a id="ProviderBrowser">Provider Browser</a></h3>
     <p>
         The Provider Browser is a dialog box generated from the ... button on the right of
-        the <a href="#AdditionalProvidersTextBox">additional providers</a> texbox.
+        the <a href="#AdditionalProvidersTextBox">additional providers</a> textbox.
         The Provider Browser allows the user to inspect the providers that are available
         as well as the keywords available any particular provider.
     </p>
@@ -4450,7 +4468,7 @@
             <a id="ProcessFilterTextBox"><strong>Process Filter TextBox</strong> </a>Any .NET
             Regular expression in the Filter textbox&nbsp; is used as a filter for the Process
             List View.&nbsp; Only processes whose name or process ID match the given regular
-            expression will be shown in the listView.&nbsp; This textbox is only present when
+            expression will be shown in the listview.&nbsp; This textbox is only present when
             dumping a GC heap from a live process.&nbsp; see <a href="#FilteringByProcess">
                 filtering
                 by process
@@ -4841,7 +4859,7 @@
     </p>
     <h4>
         <a id="StartTextBox"></a><a id="EndTextBox">
-            Filtering by Time (The Start and EndFiltering
+            Filtering by Time (The Start and End Filtering
             by Time (The Start and End TextBox)
         </a>
     </h4>
@@ -5005,7 +5023,7 @@
         that the stacks associated with CPU is only a sampling.&nbsp;
     </p>
     <p>
-        This transformation of context switch and CPU samples is the foundation fo the &#39;Thread Time Stacks&#39; view
+        This transformation of context switch and CPU samples is the foundation of the &#39;Thread Time Stacks&#39; view
         in PerfView and is the view of choice to understand wall clock time (or blocked time).&nbsp;&nbsp; Like the CPU
         stacks view, the Thread Time Stacks view shows inclusive &#39;tree&#39; which aggregates all these stacks of where
         threads spend their time.&nbsp;&nbsp; At the bottom (away from thread start) end of each stack a pseudo-frame is
@@ -5090,7 +5108,7 @@
     </p>
     <p>
         When you you turn on the /ThreadTime events, not only do you turn on the context switch
-        events, you also turn on the ReadyThread events.&nbsp;&nbsp; A readyThread event fires
+        events, you also turn on the ReadyThread events.&nbsp;&nbsp; A ReadyThread event fires
         when one thread causes another thread to change from being BLOCKED to being runnable
         (that is it make a thread READY to run).&nbsp;&nbsp; Thus if thread A is waiting on a
         lock&nbsp; that thread B owns, when thread B releases the lock it make thread A ready to
@@ -5099,7 +5117,7 @@
         the fact that thread B CAUSED thread A to wake up.&nbsp;
     </p>
     <p>
-        PerfVPerfView has a special view for displaying READYTHREAD information called the &#39;Thread Time
+        PerfView has a special view for displaying READYTHREAD information called the &#39;Thread Time
         (with ReadyThread)&#39; view.&nbsp;&nbsp; This view works just like the &#39;Thread Time&#39;
         view but in addition, every stack where a thread blocks is &#39;extended&#39; with additional
         frames that tell you the thread and stack that woke it up.&nbsp;&nbsp; These extra frames
@@ -5176,7 +5194,7 @@
         <li>Task Scheduled</li>
         <li>Task Executing on Thread 848</li>
         <li>mscorlib.ni!IThreadPoolWorkItem.ExecuteWorkItem</li>
-        <li>BlockedTime!BlockedTime.Program+&lt;&gt;c__DisplayClass5.&ltDoWork&gt;b__3</li>
+        <li>BlockedTime!BlockedTime.Program+&lt;&gt;c__DisplayClass5.&lt;DoWork&gt;b__3</li>
 
     </ul>
     <p>
@@ -5209,12 +5227,12 @@
     <p>
         At its heart, a server investigation is typically about <strong>response time</strong>.   Thus to do
         an server investigation you would like all costs that contribute to making this
-        resonse time longer rolled up together in the display.   This is exactly what the
+        response time longer rolled up together in the display.   This is exactly what the
         <strong>Thread Time with Start-Stop Tasks View</strong> does.
         <ul>
             <li>
                 Like all <a href="#BlockedTimeInvestigation">thread time</a> views, it keeps track of where every thread is (what
-                its current stack is) regardless of wehther it is blocked or using CPU.   Like all thread time
+                its current stack is) regardless of whether it is blocked or using CPU.   Like all thread time
                 views <strong>it needs the 'ThreadTime' checkbox</strong> (or /threadTime command line parameter) to be used when
                 collecting the data so the necessary events are present.
             </li>
@@ -5247,13 +5265,13 @@
     </center>
     <p>
         At the top of the tree, we see the process node, but then immediately all costs are segregated
-        into two parts, things that are associtedd with some start-stop activity, and everything else.
+        into two parts, things that are associated with some start-stop activity, and everything else.
         Thus this lets you quickly focus on the thread time that is likely to be of interest.
     </p>
     <p>
         Under the 'Activities' node you see all 'top level' start-stop activities, sorted by
         cost (that is thread time attributed to that activity).  In the view above we opened
-        the 'IISRequest' activity (which has a particular ID nunber and URL) that happens to have
+        the 'IISRequest' activity (which has a particular ID number and URL) that happens to have
         730.7 msec of thread time.  This IISRequest Activity happens to cause another nested
         Start-stop pair for an AspNetReq activity, so that is shown, from there all stacks
         associated with the AspNetReq activity are shown.  In this example we can see the call
@@ -5270,30 +5288,30 @@
     <p>
         A typical strategy is to immediately select the '(Activities)' node, right click -> Include Item,
         which will exclude all the non-activity thread time.   This works well most of the time
-        however keep in mind that some importnat costs may be in this (Non-Activies) node, in partciular
+        however keep in mind that some important costs may be in this (Non-Activities) node, in particular
         things like the GC (in server or background GC), or any non-threadpool threads did work but
-        never logged a start and stop event.   This is why perfView does not hide this, but typically
-        you start by looking at the activities, only look outside that if you are lead there.  Typicall
-        if you will filter to just look at the non-activies and only the CPU_TIME, to see what
+        never logged a start and stop event.   This is why PerfView does not hide this, but typically
+        you start by looking at the activities, only look outside that if you are lead there.  Typically
+        if you will filter to just look at the non-activities and only the CPU_TIME, to see what
         is 'interesting' in that group.
     </p>
     <h4>Thread Time is not Elapsed Wall Clock Time</h4>
     <p>
         It is important to note that what is being shown is STILL thread time, NOT wall clock
-        time.   Thus if there is concurrency going on, the total metric is very likley to
+        time.   Thus if there is concurrency going on, the total metric is very likely to
         add up to more than elapsed wall clock time.  This is easy to determine this is the case (because you will
-        see more than one thread as childen of the activity), and you can even see the overlap
+        see more than one thread as children of the activity), and you can even see the overlap
         (by looking at the 'when' column of each of the children).   Still it is something to
         be aware of.  See <a href="UnderstandingPerfDataThreadTime">Understanding Thread Time</a> and for more.
     </p>
     <p>
-        It is also possible that the thread time will be LESS than elapesed wall clock time.
-        This should be a much rarer case.   It happens when the code casues work to happen but
+        It is also possible that the thread time will be LESS than elapsed wall clock time.
+        This should be a much rarer case.   It happens when the code causes work to happen but
         does not use the mechanisms that have been instrumented to detect that work on another
-        thread was caused by the currnet thread.   Because of this the current thread may return
+        thread was caused by the current thread.   Because of this the current thread may return
         to the threadpool (at which point its time is NOT attributed to the activity anymore), but because
-        the work on the other thread is unknown to PerfView, it can't propertly attribute that
-        time to the activity (it ends up under the non-activies node).  Thus there can be 'gaps' in the thread time
+        the work on the other thread is unknown to PerfView, it can't properly attribute that
+        time to the activity (it ends up under the non-activities node).  Thus there can be 'gaps' in the thread time
         for a request.   PerfView tries to fill these gaps
         with a pseudo-node called 'UNKNOWN_ASYNC', so that at the cost in the view is never less
         than the wall clock time for sorting purposes, but sometimes PerfView's algorithm is not
@@ -5306,13 +5324,13 @@
         activities to work with (as the IISRequest and AspNetReq did above).   However if those
         are not sufficient, you can define start-stop activities of your own.
         If your code is running on V4.6 of the .NET Framework or beyond, then it is trivial
-        to add new start-stop activties that will show up in this view.
+        to add new start-stop activities that will show up in this view.
         See
         <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
             EventSource Activities
         </a> for details of doing this.   You will want to turn your events on using the
         /Provider=*YOUR_EVENT_SOURCE_NAME when collecting data, and this view will simply
-        incorperate them automatically.
+        incorporate them automatically.
     </p>
     <hr />
     <!--  ********************************** -->
@@ -5337,7 +5355,7 @@
     <p>
         Depending on which of these is big (and thus interesting, you attack it differently.&nbsp;&nbsp;
         If mapped DLLs or EXEs are the issue, you need to load fewer of them.&nbsp;
-        Perfview&#39;s &#39;Image Load Stacks&#39; will show you where you are loading DLLs.&nbsp;&nbsp;
+        PerfView&#39;s &#39;Image Load Stacks&#39; will show you where you are loading DLLs.&nbsp;&nbsp;
         If the problem is GC Heap, you need to do a GC Heap investigation as described
         in &#39;<a href="#WhenToCareAboutTheGCHeap">When to care about the GC heap</a>&#39;.&nbsp;&nbsp;&nbsp;
         If the problem is either of the last two, then this section tells you how to drill into that problem.&nbsp;
@@ -5358,7 +5376,7 @@
         display is large, and thus you want to drill into the OS heap.&nbsp; To do this we
         need to collect data every time an OS heap allocation or free happens.&nbsp; This is
         MUCH more common.&nbsp; In fact it is so common that the operating system does not provide
-        a way to turn it on system wide (that would be too much data) instead there are are two
+        a way to turn it on system wide (that would be too much data) instead there are two
         dialog boxes in the advanced section of the collection dialog box.&nbsp;
     </p>
     <ol>
@@ -5386,7 +5404,7 @@
         Every free is given a negative weight and and the CALL STACK OF THE ALLOCATION
         (this way they perfectly &#39;cancel out&#39;).&nbsp; Frees that can&#39;t be
         matched up with allocations in the trace as a whole are ignored.&nbsp;&nbsp;
-        After this perfview treats the stacks just like any other stack-based data it
+        After this PerfView treats the stacks just like any other stack-based data it
         processes.&nbsp;&nbsp; It only considered samples that match its filters and
         displays the result.&nbsp;&nbsp; Note that this means that VALUES CAN BE
         NEGATIVE.&nbsp; If you select a time rage where only frees happen then you
@@ -5470,11 +5488,11 @@
     </p>
     <h4>Flattening the Trace</h4>
     <p>
-        As mentioned, by default PerfView tries to creata a 'GC heap' of the items in the DLL if one
+        As mentioned, by default PerfView tries to create a 'GC heap' of the items in the DLL if one
         item refers to another it will have a link from the referencer to the object being referenced.   <strong>
-            However this behavior can interfer with some analysis.
+            However this behavior can interfere with some analysis.
         </strong>.   In particular if you use the 'include pats or
-        'exclude pats' texboxes, it will include or exclude ON THE ENTIRE PATH.   When this is not what you
+        'exclude pats' textboxes, it will include or exclude ON THE ENTIRE PATH.   When this is not what you
         want, one easy way to fix the problem is to 'flatten' the graph.
     <p>
         Flattening a set of nodes takes one set of nodes, and returns a new 'GC Heap' where
@@ -5530,7 +5548,7 @@
     <ul>
         <li>
             <b>ReadOnlyBlobSection</b> - This is a set of bytes that were emitted as a blob and no more
-            is known about them.  Currently .NET MetaData needed for reflection is emitted in this way
+            is known about them.  Currently .NET Metadata needed for reflection is emitted in this way
             and typically is the reason this section is large.   Using an
             <a href="http://blogs.msdn.com/b/dotnet/archive/2014/05/20/net-native-deep-dive-dynamic-features-in-static-code.aspx">runtime directive file</a> to limit the amount of
             reflection used by the app can make this smaller.
@@ -5567,8 +5585,8 @@
         Selecting the Size -> IL Size menu entry allows you to do a analysis of what is in a .NET
         Intermediate File (IL), which is what .NET Compilers like C# and VB create.   It will generate
         a .gcdump file that makes graph of types, methods, fields and other structures in the IL file
-        where each node of the graph idicates how big it is in the file, and the arcs between the nodes
-        are are references from one item to another.   Thus you can do dependency analyssis (what things
+        where each node of the graph indicates how big it is in the file, and the arcs between the nodes
+        are references from one item to another.   Thus you can do dependency analysis (what things
         refer to what other things), in the same way as objects in a GC heap.
     </p><p>
         The Size -> IL Size menu entry will bring up a dialog box you use to specify
@@ -5581,14 +5599,14 @@
     <p>
         The image size menu entry will generated a .gcdump file the describes the breakdown of types
         methods fields and other items in the IL file.   It works in much the same way as the GC heap
-        analsysis or the native <a href="#ImageSize">Image Size Analysis</a>.
+        analysis or the native <a href="#ImageSize">Image Size Analysis</a>.
     </p>
     <h4>Multi-File heap</h4>
     <p>
         The Menu entry only allows you to specify one IL file when creating the node-arc graph for
-        the IL code.   Any refernces outside this file are not traversed, but simply marked as a
-        special 'external refernece' node.    It is sometimes useful to select a group of IL files
-        (e.g. represneting a complete application) which are traversed and only when you leave this
+        the IL code.   Any references outside this file are not traversed, but simply marked as a
+        special 'external reference' node.    It is sometimes useful to select a group of IL files
+        (e.g. representing a complete application) which are traversed and only when you leave this
         group would you use 'external reference' nodes.   You can do this with the 'ILSize.ILSize'
         user command.    Thus the command
     </p>
@@ -5712,7 +5730,7 @@
         <li>
             The <code>process</code> attribute allows you to override the process-of-interest
             detection logic for a trace. The value of this attribute should be the name of the
-            process you wish to include (without any <code>.exe</code> file extension).&nbsp; If you use &#39;*&#39; as the process name then all processes from the trace are processed into the perfView.xml.zip file.&nbsp; Like the &#39;name&#39; attribute you can use $1 in this attribute which will br repleaced with the cooresponding capture group.&nbsp;
+            process you wish to include (without any <code>.exe</code> file extension).&nbsp; If you use &#39;*&#39; as the process name then all processes from the trace are processed into the perfView.xml.zip file.&nbsp; Like the &#39;name&#39; attribute you can use $1 in this attribute which will be replaced with the corresponding capture group.&nbsp;
         </li>
         <li>
             The <code>start</code> and <code>end</code> attributes allow you to set the time
@@ -5760,7 +5778,7 @@
     <p>
         For the most part, this is the familiar Stack viewer you use on a single ETL file,
         the main difference is that each stack from a particular data file (scenario) has a
-        new pseduo-frame at the very top that identifies the scenario that the sample comes
+        new pseudo-frame at the very top that identifies the scenario that the sample comes
         from.&nbsp;&nbsp; Thus stacks belong to threads belong to processes belong to
         scenarios.&nbsp;&nbsp; Everything else about the stack viewer works as it did in
         the single-scenario case.&nbsp; The stack view appears as if every scenario simultaneously
@@ -5912,7 +5930,7 @@
         </li>
         <li>
             The user wants to make a simple script to automate data collection but still needs
-            to be present during collection (eg hand testing a GUI app), but does not wish to
+            to be present during collection (e.g., hand testing a GUI app), but does not wish to
             immediately analyze the data (someone else will do that).
         </li>
         <li>
@@ -6005,7 +6023,7 @@
         <li>PerfView /logFile=perfViewRun.log /AcceptEula run tutorial.exe</li>
     </ul>
     <p>
-        which runs the &#39;tutorial.exe&#39; from a script (no gui).&nbsp;&nbsp; If you need
+        which runs the &#39;tutorial.exe&#39; from a script (no GUI).&nbsp;&nbsp; If you need
         to collect system wide, (you want to use &#39;collect&#39; not &#39;run&#39;) there
         is a problem because PerfView does not know when to stop.&nbsp; There are two ways
         to solve this problem.&nbsp; The first is to use the &#39;/MaxCollectSec&#39; qualifier..&nbsp;
@@ -6042,7 +6060,7 @@
         Minimizing Impact of Collection on the System&nbsp; (/LowPriority)
     </h4>
     <p>
-        The normal Event Tracing for Windows (ETW) logging is generally very efficient (often < 3%)
+        The normal Event Tracing for Windows (ETW) logging is generally very efficient (often &lt; 3%)
         however after a trace has completed, PerfView normally does relatively expensive things
         to package up the data (including merging, NGEN symbol creation and ZIP compression).  These
         operations obviously can use resources that may slow down whatever else is running on the
@@ -6069,7 +6087,7 @@
         run applications in the virtualized environment.
     </p>
     <p>
-        Ideally containers should be irrelevant to using perfView, since containers are a kind of windows
+        Ideally containers should be irrelevant to using PerfView, since containers are a kind of windows
         operating system and PerfView is just a windows application running there.   This is
         mostly true, but there are some differences that need to be considered.
     </p>
@@ -6078,7 +6096,7 @@
             Because containers share the kernel, and the ETW events that PerfView relies on
             are generated by the kernel, it requires special support in the operating system
             to 'virtualize' the events and forward them to the ETW session in the appropriate
-            container.    This support was added in version ResStone (RS) 3 (also called version 1709 released 10/2017)
+            container.    This support was added in version RedStone (RS) 3 (also called version 1709 released 10/2017)
             of the operating system.
             The command 'cmd -c ver' will tell you the BUILD version of the OS you are currently running
             on and the <a href="https://en.wikipedia.org/wiki/Windows_10_version_history">Windows 10 version history</a>
@@ -6117,11 +6135,11 @@
         important part is that it is RS-3 or later.  The result is a C> command prompt.
     </p>
     <p>
-        At this point you can copy perfView into your container (e.g. 'net use \\SomeShare\SomeSpot).  Once you
+        At this point you can copy PerfView into your container (e.g. 'net use \\SomeShare\SomeSpot).  Once you
         have PerfView copied you can do
     </p>
     <ol>
-        <li>perfView /logFile=log.txt /maxCollectSec=30 collect</li>
+        <li>PerfView /logFile=log.txt /maxCollectSec=30 collect</li>
     </ol>
     <p>
         Which will cause PerfView to disconnect from the console, logging any diagnostics to out.txt.   Ultimately
@@ -6172,10 +6190,32 @@
         Thus you can do the command
     </p>
     <ul>
-        <li>perfViewCollect.exe /logFile=log.txt /maxCollectSec=30 collect</li>
+        <li>PerfViewCollect.exe /logFile=log.txt /maxCollectSec=30 collect</li>
     </ul>
     <p>
         To collect data on Window nanoserver.
+    </p>
+    <!--  *************** -->
+    <h5> Known issues (in Windows Version 1803 or earlier) </h5>
+    <p>
+        There is a known issue as of 10/2018 (or earlier).   Basically the issue is that DLLs that are part of the
+        operating system in the container (e.g. the kernel, ntdll, kernelbase ...) end up using the HOST paths
+        not the CONTAINER paths.   This would not be that big of a deal, except that the DLL load events do NOT
+        contain a special unique identifier that is used to find the symbol file for the DLL on the Microsoft
+        symbol server.   Normally as part of preparation (merging) of the file to be copied off system, these
+        unique IDs are added to the trace.   However because this is done IN THE CONTAINER and the events have
+        the HOST paths, the logic that does this fails so there are no unique IDs for the system.DLLs.  This
+        means PerfView can't look up the symbol names.
+    </p>
+    <p>
+        There is a work-around.   If you get the correct symbol files (PDBs) and place them in a directory
+        and use the File -> Set Symbol Path to include this directory, AND you pass the /UnsafePDBMatch option
+        to PerfView, then it should work.
+    </p>
+    <p>
+        There are a variety of ways of getting the correct symbol file, but one way is to use a debugger
+        in the container and ask the debugger to load the necessary system files.   Then go to where the debugger
+        put them.
     </p>
 
     <!--  ************************ -->
@@ -6191,7 +6231,7 @@
         &nbsp;PerfView has a few features that are designed specifically to collect data on production
         workloads to diagnose performance problems that only occur under real-world loads.
         We have already seen the /noView option that indicates that after data collection
-        is completes perfView should simply exit (rather than try to display the data).
+        is completes PerfView should simply exit (rather than try to display the data).
         There are a couple other useful <a href="#CommandLineReference">command line options</a> that can be used for production
         monitoring. First is the /MaxCollectSec:N qualifier. The command
     </p>
@@ -6238,7 +6278,7 @@
     <p>
         Some counters (like the system global counters 'Memory:Committed Bytes' do not have
         an instance because there is only one for the whole machine.  For these specify
-        an emtpy string.   For example
+        an empty string.   For example
     </p>
     <ul>
         <li>PerfView collect "/StopOnPerfCounter:Memory:Committed Bytes: > 50000000000"</li>
@@ -6257,8 +6297,8 @@
     </p>
     <p>
         To find the exact names of performance counters to use in the /StopOnPerfCounter' qualifier
-        you can use the perfMon utility built into windows. To start it simply type 'start
-        perfMon' at a command line. Then click on the 'Performance Monitor' icon in the
+        you can use the PerfMon utility built into windows. To start it simply type 'start
+        PerfMon' at a command line. Then click on the 'Performance Monitor' icon in the
         left hand pane. This brings up the performance counter graph in the right hand pain.
         You can click on the + icon at the top to add new performance counters. This will
         bring up and 'Add Counters' dialog box with the performance counters categories
@@ -6291,7 +6331,7 @@
         for these in the 'instances' listbox in PerfMon. These can be handy.  If don't have a
         aggregate instance, you can /StopOnPerfCounter for each process instance that MIGHT exist.
         This is not hard to do because Perf Counters are given names like EXE, EXE#1, EXE#2 etc.
-        THus you can specify /StopOnPerfCounter for each of the N from 1 up to the maximum
+        Thus you can specify /StopOnPerfCounter for each of the N from 1 up to the maximum
         number of instance you expect.   PerfView is robust to instances that don't exist (it waits
         for them to exist), so you get the behavior you want.
     </p>
@@ -6402,7 +6442,7 @@
         <li>PerfView collect "/StopOnRequestOverMSec:5000" /CollectMultiple:3</li>
     </ul>
     <p>
-        Will only trigger for ASP.NET requests over 5000, Howveer once triggered, it will go back and resume monitoring
+        Will only trigger for ASP.NET requests over 5000, However once triggered, it will go back and resume monitoring
         until 3 such examples are created.   Thus a maximum of 3 files will be generated by the command above.  The
         resulting .ETL.ZIP files have a number just before the .ETL.ZIP suffix that makes the file names unique.
     </p>
@@ -6461,7 +6501,7 @@
         see no only the period just before the trigger, but also 5 seconds afterward.   This is sufficient for most scenarios
         but if you need more you can use the /DelayAfterTriggerSec=N to specify a longer period.    Keep in mind, however that typically
         the default 500Meg circular buffer will only hold 2-3 min of trace so specifying a number larger than 100-200 seconds is likely
-        to allow the period of time before trigging to get overwritten with new data.
+        to allow the period of time before triggering to get overwritten with new data.
     </p>
     <h5><a id="StopCommand">Executing an external command when the stop Trigger fires.</a></h5>
     <p>
@@ -6485,7 +6525,7 @@
         <li>The name of an ETW provider that is registered with the operating system (returned by 'logman query Providers'</li>
         <li>
             A string of the form '*EventSourceName', which specifies the name of a dynamically registered ETW provider (e.g. an
-            eventSource.  The '*' indicates that the name should be hashed to a GUID and that GUID be used as the provider ID.
+            EventSource.  The '*' indicates that the name should be hashed to a GUID and that GUID be used as the provider ID.
         </li>
         <li>A explicit GUID</li>
     </ul>
@@ -6525,12 +6565,12 @@
         </li>
         <li>
             <strong>BufferSizeMB=NNN</strong> Specify the buffer size used by the trigger session.   This is only needed if
-            the provider generates a LARGE volume of events rapidly.  The default value is 64 MB.
+            the provider generates a LARGE volume of events rapidly.  The default value is 256 MB.
         </li>
     </ul>
     <ul>
         <li>
-            <strong>TriggerMSec=NNN</strong> Specifies that perfView will listen not for a single event but for a start stop
+            <strong>TriggerMSec=NNN</strong> Specifies that PerfView will listen not for a single event but for a start stop
             pair and that only duration large than NNN MSec will trigger a stop.   If this key-value is present then the following
             key-values have meaning.
         </li>
@@ -6594,14 +6634,14 @@
     </ul>
     <p>
         Here is a slightly more complex example where we only stop of the GCTest.exe executable fails with a non-zero exit code.   Here
-        we use the ImageName field to find a particular Exe and well as the ExitCode field to determine if the process failes.
+        we use the ImageName field to find a particular Exe and well as the ExitCode field to determine if the process fails.
         You can use this to stop PerfView when a particular process in a large script fails (which is a reasonably common scenario).
     </p>
     <ul>
         <li>PerfView /StopOnEtwEvent:Microsoft-Windows-Kernel-Process/ProcessStop/Stop;FieldFilter=ImageName~GCTest.exe;FieldFilter=ExitCode!=0 collect</li>
     </ul>
     <p>
-        Here is an example where we want to stop when a particular URL is serviced by a ASP.NET server.  Bascially we stop wan a ASP.NET
+        Here is an example where we want to stop when a particular URL is serviced by a ASP.NET server.  Basically we stop wan a ASP.NET
         Request event fires with a 'FullUrl' field that matches the pattern (ends in /stop.aspx).
     </p>
     <ul>
@@ -6627,8 +6667,8 @@
         designated by the 0x10 bitfield.   The only issue is how do you know what 0x10 means?    You can determine this by looking at the manifest for
         the Microsoft-Windows-Kernel-Process provider.    You can do this by opening the advanced section of the 'collection' dialog box, and clicking on the
         <a href="#ProviderBrowser">Provider Browser</a> button.   Select the provider of interest in the 'Providers' listbox and then click the 'View Manifest'
-        button.  This will bring up the complete XML manifest for the provider.  You will find a 'keywords' section and in that you will find the defintions
-        of each keyword.  THus we find that the WINEVENT_KEYWORD_PROCESS keyword has the value 0x10, and we can see that the event of interest (ProcessStop/Stop)
+        button.  This will bring up the complete XML manifest for the provider.  You will find a 'keywords' section and in that you will find the definitions
+        of each keyword.  Thus we find that the WINEVENT_KEYWORD_PROCESS keyword has the value 0x10, and we can see that the event of interest (ProcessStop/Stop)
         is tied to this keyword, we know that this is the only keyword we actually need.   Thus we know the 'magic' number to give to the 'Keywords' option
         above.   Note you don't have to do this, but it does make debugging easier (since there are fewer events to have to filter out).
     </p>
@@ -6636,7 +6676,7 @@
     <h5>Debugging Triggering Issues</h5>
     <p>
         It is not uncommon for you to try out a /StopOnEtwEvent qualifier and find that it does not do what you want (typically because it did not
-        trigger). Sometimes what is in the log will help, however perfView can't place too much in the log becasue it might flood the log. Instead
+        trigger). Sometimes what is in the log will help, however PerfView can't place too much in the log because it might flood the log. Instead
         it emits special PerfView StopTriggerDebugMessage events into the ETW stream so that you can look at data in the 'events' view and figure out why it is
         not working properly. If you have issues with Triggering you will definitely want to look at these events.
     </p>
@@ -6667,7 +6707,7 @@
         The .NET V4.5 Runtime comes with a class called
         <a href="http://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource.aspx">System.Diagnostics.Tracing.EventSource</a>
         which can be used to log ETW events
-        in a very convenient way. For example here is a trivial eventSource called MyCompanyEventSource
+        in a very convenient way. For example here is a trivial EventSource called MyCompanyEventSource
         which has a 'Load' and 'Unload' event. Each event logs whatever interesting information
         makes sense for that event, in this case the 'imageBase' of the load as well as
         the name.
@@ -6692,34 +6732,34 @@
         it. Normally GUIDs are not convenient to use, and you would prefer to use a name.
         If an ETW provider registers itself with the operating system PerfView can ask the
         OS to look up a name and get the GUID. However typically EventSources do not do
-        this because it complicates the deployment of the application. Instead Eventsources
+        this because it complicates the deployment of the application. Instead EventSources
         typically use an internet standard way of generating a GUID from a name. Thus given
-        a name you can find the GUID without the eventSource ever needing to register itself.
+        a name you can find the GUID without the EventSource ever needing to register itself.
         PerfView supports using this convention with the *<i>NAME</i> syntax. If a provider
         names starts with a * it is assumed to be the provider GUID which results by hashing
         NAME in the standard way. (The hash is case insensitive). EventSource names are
         either the name supplied by the Name parameter of the EventSourceAttribute applied
-        to the eventSource class or it is the simple name of the class (no namespace) if
-        there is no name given explicitly. Once you know the name of the eventSource you
-        can use the /providers qualifier to turn on the eventSource. For example
+        to the EventSource class or it is the simple name of the class (no namespace) if
+        there is no name given explicitly. Once you know the name of the EventSource you
+        can use the /providers qualifier to turn on the EventSource. For example
     </p>
     <ul>
-        <li>Perfview /Providers=*MyCompanyEventSource collect</li>
+        <li>PerfView /Providers=*MyCompanyEventSource collect</li>
     </ul>
     <p>
-        Will turn on all keywords (eventGroups) eventSource called 'MyCompanyEventSource'
+        Will turn on all keywords (eventGroups) EventSource called 'MyCompanyEventSource'
         at the verbose level. Notice that all of this is just 'standard' ETW. The only special
-        part is the * to refer to the eventSource without it being registered.
+        part is the * to refer to the EventSource without it being registered.
     </p>
     <p>
-        In the previous example the MyCompanyEventSource was activated IN ADDTION TO the
+        In the previous example the MyCompanyEventSource was activated IN ADDITION TO the
         standard kernel and CLR providers. This is great for monitoring fine-grained performance,
         however it is too verbose for simple monitoring. While you can use the /kernelEvents=none
         /clrEvents=none /NoRundown qualifiers to turn off the default logging there is a
         '/onlyProviders' qualifier that makes this even easier. Thus
     </p>
     <ul>
-        <li>Perfview /OnlyProviders=*MyCompanyEventSource collect</li>
+        <li>PerfView /OnlyProviders=*MyCompanyEventSource collect</li>
     </ul>
     <p>
         Will collect ONLY from the providers mentioned (in this case the MyCompanyEventSource),
@@ -6755,7 +6795,7 @@
         you want to simply parse the data with other tools that you would like to remain
         very loosely coupled to PerfView/ETW.&nbsp; For these applications all you want
         is something that takes a ETL file and converts it to and XML file, which you can
-        then process using other tools.&nbsp;&nbsp; There is a perfView command that does
+        then process using other tools.&nbsp;&nbsp; There is a PerfView command that does
         this.&nbsp;&nbsp;
     </p>
     <ul>
@@ -6785,16 +6825,16 @@
         <a id="PerfViewExtensions">PerfView Extensions (Automating PerfView)</a>
     </h2>
     <p>
-        Perfview has the ability to <a href="#CollectingFromCommandLine">
+        PerfView has the ability to <a href="#CollectingFromCommandLine">
             collect data with command
             line commands
         </a>, which can be used to automate simple collection tasks, however
         it is also useful to automate analysis as well as collection. For this simple command
         line options are not sufficient, you need the full power of a programming language
         to support an unbounded variety of useful data manipulations. This is what PerfView
-        extensions are for. Perfview allows you to <a href="#CreatingExtensions">create an extension</a>,
+        extensions are for. PerfView allows you to <a href="#CreatingExtensions">create an extension</a>,
         which is a .NET DLL that lives alongside PerfView.exe that defined user defined
-        commands. These commands can control Perfview's collection or analysis capabilities.
+        commands. These commands can control PerfView's collection or analysis capabilities.
         It is very powerful and opens up a broad range of automation scenarios including
     </p>
     <ol>
@@ -6818,7 +6858,7 @@
     <p>
         Along with the built in command line commands like 'run', 'collect' and 'view' there
         is also a 'userCommand'. A user command is one way to activate user-defined functionality
-        in perfView. For example when you run the command
+        in PerfView. For example when you run the command
     </p>
     <ul>
         <li>PerfView UserCommand Global.DemoCommandWithDefaults arg1 arg2 arg3</li>
@@ -6960,7 +7000,7 @@
     <p>
         What this means is that if you were to upgrade PerfView.exe to a newer version there
         is a good chance you will have to update your extension to match any changes that
-        where made to perfView since the last version. The reason for this is simple. The
+        where made to PerfView since the last version. The reason for this is simple. The
         PerfView object model is really best thought of as being a 'Beta' release, because
         there simply has not been enough time to find the best API surface. Thus changes
         are inevitable, and the cost of keeping compatibility is simply not worth it. Thus
@@ -7000,10 +7040,10 @@
         <li>
             OnFileOpen <b>Extension</b> <b>UserCommandName</b> - This causes the user command
             <b>UserCommandName</b> to be called whenever a file with the extension (e.g. .etl).
-            <b>Extension</b> is opened (double clicked) in the main view pane.   Note PerFVIew
+            <b>Extension</b> is opened (double clicked) in the main view pane.   Note PerfView
             automatically understands etl.zip files are .etl files so specifying .etl will also
             cover .etl.zip.   This allows you to add new children to existing file format as
-            well as make perfView recognize completely new file extensions.   The user command
+            well as make PerfView recognize completely new file extensions.   The user command
             is called with path name of the file being opened as an argument.
             If you only  need to add a new view to an existing format (e.g. adding new views to .etl files)
             it is better to use the DeclareFileView option.
@@ -7066,7 +7106,7 @@
     </ul>
     <p>
         Note that you need to be super-user to do this so if you are not already, which is why the command above uses
-        the sudo command to elevate to super-user before exectuting the install script.
+        the sudo command to elevate to super-user before executing the install script.
     </p>
     <h4>Collecting Data</h4>
     <p>
@@ -7080,7 +7120,7 @@
         </li>
     </ul>
     <p>
-        At this point you can start colllection.   To do so open another command window and run the following command.
+        At this point you can start collection.   To do so open another command window and run the following command.
     </p>
     <ul>
         <li>
@@ -7088,7 +7128,7 @@
         </li>
     </ul>
     <p>
-        At which point you can go to the first window (were COMPlus_PerfMapEnabled was set) and start your application.
+        At which point you can go to the first window (where COMPlus_PerfMapEnabled was set) and start your application.
         After the application completes you can use Ctrl-C to stop the collection.   The result is a FILENAME.trace.zip file.
         This contains the trace as well as all other files to resolve symbolic information.
     </p>
@@ -7100,31 +7140,31 @@
     </p>
     <p>
         What is going on under the hood is that PerfView is opening the FILENAME.trace.zip file to locate a file within
-        the archive with the suffix *.data.txt and reads that.  This file is expectec to be the output of running
+        the archive with the suffix *.data.txt and reads that.  This file is expected to be the output of running
         <a href="http://linux.die.net/man/1/perf-script">'Perf script'</a> command.  PerfView also knows how to read files
-        with the *.data.txt suffix directly, so if you don't wish to use the 'perfCollect' script when collecting your Linux
+        with the *.data.txt suffix directly, so if you don't wish to use the 'perfcollect' script when collecting your Linux
         data, you can still easily feed the data to PerfView.  (You can also zip up your *.data.txt file into a file with the
-        suffix *.trace.zip and perfView will happily open it)
+        suffix *.trace.zip and PerfView will happily open it)
     </p>
     <hr />
     <!--  ********************************** -->
     <h2><a id="ViewingExternalData">Viewing External Data</a></h2>
     <p>
-        One of the most powerful aspects of PerfView is its stack viewer.   Perhaps one of the most intersting things about
+        One of the most powerful aspects of PerfView is its stack viewer.   Perhaps one of the most interesting things about
         this viewer is that it is VERY generic.     The data that is shown in this viewer is simply a set of samples where
         each sample contains
     </p>
     <ol>
         <li>An (optional) floating point value representing the time.</li>
-        <li>A value (defaults to 1) representing the metrice or cost fo the sample.</li>
-        <li>A list of names representing the stack or path in a hierarchitcal tree.</li>
+        <li>A value (defaults to 1) representing the metric or cost of the sample.</li>
+        <li>A list of names representing the stack or path in a hierarchical tree.</li>
     </ol>
     <p>
         All the rest of magic of the stack viewer, the inclusive and exclusive cost, the timeline, filtering, the callers,
         and callees views, are all just different aggregations of this data.
     </p>
     <p>
-        What this means is that prety much any hierarchical data can be usefully displayed in the stack viewer.   For example
+        What this means is that pretty much any hierarchical data can be usefully displayed in the stack viewer.   For example
         the size on disk view is simply taking the path of a file name to form the 'stack' and the size of the file as the
         metric to form the model of the total size on disk view.     This means that data from other profilers or any other
         place where the data forms a hierarchy can be viewed with the stack viewer.
@@ -7135,7 +7175,7 @@
         stacks that PerfView's viewer views.   There is also a class called a 'InternStackSource' that is designed to make
         it easy to read other formats and turn that data into a StackSource.    However PerfView also has two formats that make
         it very easy allow other tools to output the stacks that perfview can simply read.   One of these formats is XML based
-        and the other is JSON based, and neither of them will be suprising, they are simply the 'obvious' encoding of the
+        and the other is JSON based, and neither of them will be surprising, they are simply the 'obvious' encoding of the
         data that the stack viewer needs in those formats.   For example here is a sample of the .perfView.xml format
     </p>
     <dl>
@@ -7168,11 +7208,11 @@
            &lt;/Sample&gt;
           &lt;/Samples&gt;
          &lt;/StackSource&gt;
-</pre>
+            </pre>
         </dd>
     </dl>
     <p>
-        You can see that the format can be very straightfoward.   There is a 'StackSource' element that has a member 'Samples'
+        You can see that the format can be very straightforward.   There is a 'StackSource' element that has a member 'Samples'
         which in turn contains a list of Samples, each of which has a time and a metric (both of these are optional, time defaults
         to 0 and metric defaults to 1) Inside each sample is a list of stack frames, one per line.   These are ordered from the
         most specific (or deepest call tree nesting) to the least specific (main program).    That is all you need to generate
@@ -7180,7 +7220,7 @@
         file and the opening the file in perfview.   PerfView will open that data in the stack viewer (Try it!)
     </p>
     <p>
-        There is a cooresponding *.perfView.json format which is completely analogous to the XML format.   The basic structure
+        There is a corresponding *.perfView.json format which is completely analogous to the XML format.   The basic structure
         is the same: A StackSource which has a list of Samples each same has a time, metric and list of names that represent
         the stack.   Here is an example.   Like the previous example you can cut and paste into a *.perfView.json file and
         open it in PerfView, to see the data in the stack viewer.
@@ -7230,17 +7270,17 @@
     <h3>Advanced .perfView.xml Format</h3>
     <p>
         The simple format is nice because it is so easy to explain, but it is very inefficient.  You can see the each stack
-        has to be repeated in its entirety for each sample, and most of the time the stacks are very simmilar to one another.
-        Morever when you read the samples into the viewer, you don't get any defaults for PerfView's grouping, folding and
+        has to be repeated in its entirety for each sample, and most of the time the stacks are very similar to one another.
+        Moreover when you read the samples into the viewer, you don't get any defaults for PerfView's grouping, folding and
         filtering options, which makes the experience less than ideal.
     </p>
     <p>
         Well, the .perfView.xml format is actually more complex than what has been shown so far.   In fact you can assign
-        IDs to each unique Frame of the stack and use the ID instead of the name (saving alot of space).  Simmilarly you
+        IDs to each unique Frame of the stack and use the ID instead of the name (saving a lot of space).  Similarly you
         can assign IDs to each unique Stack (built from Frame IDs) that can be used in the samples (saving more space).
         This compression dramatically reduces the time to load the data.  Finally it is possible to specify all the defaults
-        and all the options for each of the stack viewers texboxes (eg. the Group Pats, Fold Pats Include Pats ... textboxes).
-        In short with a little more work when you generate your .perfView.xml file you can make the experience significnatly
+        and all the options for each of the stack viewers textboxes (e.g., the Group Pats, Fold Pats Include Pats ... textboxes).
+        In short with a little more work when you generate your .perfView.xml file you can make the experience significantly
         nicer.
     </p>
     <p>
@@ -7248,7 +7288,7 @@
         stack viewer has a File -> Save command and this saves the current stack view as a .perfView.xml.zip file.
         If you unzip this file, then you will see the representation of the data data in this more complete, efficient
         format.   Thus you can take one of the examples above, open it, add some data to the text boxes (which remember
-        the history), and the save the view.   Then you an unzip it and look at the format.   The format is completely straightfoward.
+        the history), and the save the view.   Then you an unzip it and look at the format.   The format is completely straightforward.
     </p>
     <hr />
     <!--  ********************************** -->
@@ -7258,7 +7298,7 @@
         is a tool build by the Windows and is available for no charge as part of the Windows Assessment and Deployment Kit.   Along
         with the Windows Performance Recorder (WPR) It can be used to collect and view ETW data.    Because they both use the same
         data format (ETW trace log (ETL) files), it is easy to collect using one tool and view using another.   This is useful because
-        WPA has has very powerful ways of graphing and viewing data that PerfView does not have, and PerFView has powerful ways of
+        WPA has has very powerful ways of graphing and viewing data that PerfView does not have, and PerfView has powerful ways of
         collecting data and other view that are not present in WPA.
     </p>
     <h3>Using PerfView to collect data and WPA to view data. </h3>
@@ -7281,7 +7321,7 @@
 
     <p>
         In the scenario above PerfView will set the ETW providers as it would normally.   However PerfView also has the ability to
-        mimic the providers that WPR would turn on by default.   Thus if you wish to use perfView to collect data and try to mimic
+        mimic the providers that WPR would turn on by default.   Thus if you wish to use PerfView to collect data and try to mimic
         WPR as much as possible, collect the data with the following command.
     </p>
     <ul>
@@ -7335,7 +7375,7 @@
     <p>
         By default PerfView will always bring up a GUI window when performing any operation,
         including data collection.&nbsp; It does this to allow errors to be reported back.
-        For unattended aut`omation this can be undesirable.&nbsp;&nbsp; This is /LogFile:<strong>FileName</strong>
+        For unattended automation this can be undesirable.&nbsp;&nbsp; This is /LogFile:<strong>FileName</strong>
         qualifier is for.&nbsp; When this qualifier is specified instead of launching the
         GUI the command will send all output to the specified file.&nbsp;&nbsp; The intent
         is that scripts would use this qualifier to avoid the GUI.&nbsp;&nbsp; The exit
@@ -7363,7 +7403,7 @@
     <ol>
         <li>The time (to 100ns resolution) when the event happened </li>
         <li>
-            The provider that logged the event (eg the Kernel, CLR or some user provider).
+            The provider that logged the event (e.g., the Kernel, CLR or some user provider).
         </li>
         <li>The event number (which indicates how to decode the payload) </li>
         <li>
@@ -7770,7 +7810,7 @@
     </p>
     <p>
         Source code support is a relatively fragile mechanism because in addition to having
-        all the information to symbolically look up method names (PDBs) perfView also needs
+        all the information to symbolically look up method names (PDBs) PerfView also needs
         line level information as well as access to the source code itself. It is easy for
         these extra conditions to break which will break the feature. However source code
         support is typically so useful that it is worth the trouble to get things working.
@@ -7837,7 +7877,7 @@
         cases you must set the _NT_SOURCE_PATH. Just like the case of _NT_SYMBOL_PATH, you
         can set this variable in the GUI by going to the File -> 'Set Source Path' menu
         entry of the stack viewer. This value is persisted across different invocations
-        of the perfView program.
+        of the PerfView program.
     </p>
     <p>
         See also <a href="#SourceCodeLookup">Source Code Lookup.</a>
@@ -8316,28 +8356,59 @@
     </li>
     -->
         <li>
+            Version 2.0.39 3/20/19
+            <ul>
+                <li> Merged kayle's update to display the type of the alloction for C++ code (in the Net OS Heap Alloc View).
+                     It is now the case that if you have PDBS for the call site of a C++ 'new' expression and that compiler
+                     supports it (I believe anything after VS2017 CPP compiler will work), then PerfView will create a 'Type XXX'
+                     pseduo-node for allocation sites.   Having this type information can definately be useful.   
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 2.0.32 12/14/18
+            <ul>
+                <li>
+                    Added the /focusProcess=ProcessIDOrName qualifier (e.g. focusProcess=PerfView.exe) This allows you
+                    to only turn on non-Kernel events
+                    for a particular process, and thus cut the overhead / size of the collection when there are many
+                    active processes on the system..   Note that it does not have an effect on kernel events (which are
+                    often the most common, but not always), so it may not help as much as you would like, but DEFINITELY
+                    helps during rundown (if you have many managed processes, they all do rundown which can be impactful).
+                    So it always helps when there are many managed processes (because of rundown) but can help quite a lot
+                    if many of those processes allocate a lot, or use the threadpool (which both can create many events).
+                </li>
+                <li>
+                    Added a popup warning if the ETL file has events out of order in time (this should not happen but
+                    when it does, it can produce GUI anomalies, so I want the warning to be obvious).    Added a
+                    FirstTimeInversion property to support this feature.
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 2.0.28 10/2/18
             <ul>
                 <li>
                     Fixed parsing of Task Parallel library parsing to include the .NET Core 2.1 event
-                    System.Threading.Tasks.TplEventSource/IncompleteAsyncMethod used to find 'orphaned' Async operations.  
+                    System.Threading.Tasks.TplEventSource/IncompleteAsyncMethod used to find 'orphaned' Async operations.
                     Also added this event  to the default collection for TPL, so that it is always 'just here'.
 
                     Basically this is a new feature of the .NET Core task library that notices when tasks are created,
                     but then collected without ever being completed one way or the other.   This can happen if the
-                    TaskCompletionSource dies before it calls 'Complete' on the task.  
+                    TaskCompletionSource dies before it calls 'Complete' on the task.
 
                     The string in the event is the name of the method where the orphaned machine (Task) will return
-                    when it continues.   The code that was supposed to trigger the 'await' to complete is at fault.  
-                    
-                    This feature needs to be friendlier but it is a big step from knowing nothing.  
+                    when it continues.   The code that was supposed to trigger the 'await' to complete is at fault.
+
+                    This feature needs to be friendlier but it is a big step from knowing nothing.
                 </li>
-                <li> modified the TraceEvent library's concept of what the 'version of the manifest is to' include
-                a term that is 100 * the largest event ID.   Thus if you add a new event (at the end), you can 
-                remove (clean up) a few dozen unused events and still be considered 'better'.   Note that this should
-                be used with care, as it implys that the deleted events are not EVER useful (even for old code that
-                still emits them), because TraceEvent will not parse them going forward (The TPL EventSource did just
-                this which is why it came up here.)
+                <li>
+                    modified the TraceEvent library's concept of what the 'version of the manifest is to' include
+                    a term that is 100 * the largest event ID.   Thus if you add a new event (at the end), you can
+                    remove (clean up) a few dozen unused events and still be considered 'better'.   Note that this should
+                    be used with care, as it implys that the deleted events are not EVER useful (even for old code that
+                    still emits them), because TraceEvent will not parse them going forward (The TPL EventSource did just
+                    this which is why it came up here.)
                 </li>
             </ul>
         </li>
@@ -8350,7 +8421,7 @@
                 <li>Fixed missing descriptions for user commands</li>
                 <li>
                     Added support for the /SessionName=XXXX parameter which renames both the user and kernel
-                    session names that perfView uses (which allow you to have two PerfView's running or run
+                    session names that PerfView uses (which allow you to have two PerfView's running or run
                     with other tools that use the kernel provider)
                 </li>
                 <li>Use stack compression by default</li>
@@ -8418,7 +8489,7 @@
                 <li>
                     Added support for SourceLink for 'Goto Source' functionality.
                     Symlink is a technique of finding source files by placing a mapping from built time file name to URL into the
-                    symbol file so that the source code can be fetched by url at debug/profiling time.
+                    symbol file so that the source code can be fetched by URL at debug/profiling time.
                     .NET Core annotates all its symbol files this way.   The result is that 'Goto Source' on .NET Core assemblies
                     (that is the framework and ASP.NET) just work in PerfView (it will bring up the relevant source).
                 </li>
@@ -8494,14 +8565,14 @@
             <ul>
                 <li>
                     Added the Gen2 Object Death view that use the 100KB allocation events (coarse sampling).  Thus most traces
-                    will now have this view (inncluding the /GCOnly view).   This view shows you were you allocated objects that then die in Gen 2 (These are the
-                    most important for reducing the number of Gen2 GCs (and Gen 2 GC fragmentation)).   You coudl do this before
-                    when you truned on /DotNetAlloc or /DotNetAllocSampled collection but those are more expensive and can have
+                    will now have this view (including the /GCOnly view).   This view shows you were you allocated objects that then die in Gen 2 (These are the
+                    most important for reducing the number of Gen2 GCs (and Gen 2 GC fragmentation)).   You could do this before
+                    when you turned on /DotNetAlloc or /DotNetAllocSampled collection but those are more expensive and can have
                     logistic issues (you can't attach to a existing process).    The view will only show you a coarse sampling
                     but that often has useful information.
                 </li>
                 <li>
-                    Added the 'GC Occured Gen(X)' frame to the GC Heap Net Alloc and GC 2 Object Death views.   These are
+                    Added the 'GC Occurred Gen(X)' frame to the GC Heap Net Alloc and GC 2 Object Death views.   These are
                     useful for seeing where the GCs in time without having to go to the GCStats or Events views.
                 </li>
             </ul>
@@ -8522,9 +8593,9 @@
                     will eventually be removed, but this makes PerfView work with Argon containers in the RS3 version of the OS
                     (the version currently available).   Note that there seems to still be issues with looking up symbols for SOME
                     OS DLLs, but all managed code should work.    Also PerfView is a GUI app and Argon containers don't use
-                    gui, so you need to use the techniques in 'Automating data collection' to use perfView in the container.
+                    GUI, so you need to use the techniques in 'Automating data collection' to use PerfView in the container.
                     (for example 'Perfview.exe /logfile:logfile.txt /accepteula /maxcollectsec:30 collect').  PerfView (like
-                    all gui apps) will run in the background if run from the command line directly, but will block until exit
+                    all GUI apps) will run in the background if run from the command line directly, but will block until exit
                     when run from a batch script).
                 </li>
             </ul>
@@ -8551,8 +8622,8 @@
             Version 1.9.51 1/31/17
             <ul>
                 <li>
-                    Added suport for reading files from the YourKit java profiler.  This works for both their CPU trees
-                    as well as their object allcoation trees.  These XML files need to be named '*.tree.xml' for perfview
+                    Added support for reading files from the YourKit java profiler.  This works for both their CPU trees
+                    as well as their object allocation trees.  These XML files need to be named '*.tree.xml' for perfview
                     to recognize the file as something it understands.   See XmlTreeStackSource for more details.
                 </li>
             </ul>
@@ -8569,9 +8640,9 @@
             Version 1.9.49 1/6/17
             <ul>
                 <li>
-                    Better names for start-stop coming from Diagnsotics Sources.
+                    Better names for start-stop coming from Diagnostics Sources.
                     This helps for doing ASP.NET Core uses DiagnosticSource for both
-                    incomming and outgoing HTTP requests.
+                    incoming and outgoing HTTP requests.
                     use
                 </li>
             </ul>
@@ -8620,13 +8691,13 @@
         <li>
             Version 1.9.40 10/14/16
             <ul>
-                <li> Update version number to 1.9.40 for github release. </li>
+                <li> Update version number to 1.9.40 for GitHub release. </li>
             </ul>
         </li>
         <li>
             Version 1.9.33 9/16/16
             <ul>
-                <li> Merged in code to fix .NET Core ReadyToRun images by running crossGen with .ni.dll file names </li>
+                <li> Merged in code to fix .NET Core ReadyToRun images by running crossgen with .ni.dll file names </li>
             </ul>
         </li>
         <li>
@@ -8664,7 +8735,7 @@
             <ul>
                 <li>
                     Fix the parsing of Events generated by Windows 10 TraceLogging APIs.
-                    While they generally worked in the native case, in javaScript they were
+                    While they generally worked in the native case, in JavaScript they were
                     liked to be broken.   The issue is that TraceLogging events no longer give
                     an small integer Event ID that was guaranteed to be unique for that
                     layout of event.   Instead you simply have a blob of meta-data.   Fixed this
@@ -8686,7 +8757,7 @@
             Version 1.9.24 8/31/16
             <ul>
                 <li>
-                    Added ability to property create PDBS for NGEN and read-to-ru images
+                    Added ability to property create PDBS for NGEN and read-to-run images
                     for .NET Core scenarios.  Note that this support is likely to be ripped out
                     when these PDBS are up on a symbol server properly.
                 </li>
@@ -8697,7 +8768,7 @@
             <ul>
                 <li> Fixed issues with Activity views in .NET Core. </li>
                 <li> Added the command line arguments to the process node in the stack viewers </li>
-                <li> Hack to make ready-to-run PDB lookup work (really needs crossGen to be fixed, but this makes things work in the mean time)</li>
+                <li> Hack to make ready-to-run PDB lookup work (really needs crossgen to be fixed, but this makes things work in the mean time)</li>
             </ul>
         </li>
         <li>
@@ -8739,7 +8810,7 @@
             Version 1.9.18 6/15/16
             <ul>
                 <li>
-                    Fixed issue where .Trace.ZIP files without Lttng information would fail when viewing the CPU stacks with a file in use error.
+                    Fixed issue where .Trace.ZIP files without LTTng information would fail when viewing the CPU stacks with a file in use error.
                 </li>
             </ul>
         </li>
@@ -8780,7 +8851,7 @@
         <li>
             Version 1.9.12 5/16/16
             <ul>
-                <li> Updated default symbol paths to include Nuget locations. </li>
+                <li> Updated default symbol paths to include NuGet locations. </li>
             </ul>
         </li>
         <li>
@@ -8825,7 +8896,7 @@
             Version 1.9.5 3/28/16
             <ul>
                 <li>Make the heap dumper retry with a smaller maxObjectCount if it runs out of memory</li>
-                <li>Tuned the CLR rundown to avoid unnecessary events (in high volume scnearios)</li>
+                <li>Tuned the CLR rundown to avoid unnecessary events (in high volume scenarios)</li>
             </ul>
         </li>
         <li>
@@ -8856,7 +8927,7 @@
             Version 1.9.0 2/12/16
             <ul>
                 <li>
-                    Updated documetation.  Preped for release to web.
+                    Updated documentation.  Preped for release to web.
                 </li>
             </ul>
         </li>
@@ -9008,7 +9079,7 @@
             Version 1.8.19 1/7/16
             <ul>
                 <li>
-                    Significantly improved the Thread Time with Start-Stop Activities.  THe goal here is
+                    Significantly improved the Thread Time with Start-Stop Activities.  The goal here is
                     that this view replaces the ASP.NET and Service Request view, and we are probably most of
                     the way there now.   I need to validate this more and then probably obsolete the other views.
                 </li>
@@ -9109,7 +9180,7 @@
             Version 1.8.6 10/12/15
             <ul>
                 <li>
-                    Integrated Lee's update of CLRMD that should make PerFView able to extract heap dumps from debugger dumps of
+                    Integrated Lee's update of CLRMD that should make PerfView able to extract heap dumps from debugger dumps of
                     .NET Native processes.
                 </li>
                 <li>Added the DotNet (Telemetry) event ETW provider by default. </li>
@@ -9162,7 +9233,7 @@
                 <li>
                     Update code that does merging so it works properly on Win10.  It does not have an effect if you look
                     at the events with PerfView, but on Win10 until this change, data collected with PerfView would not
-                    parse eventSource events properly in WPA.
+                    parse EventSource events properly in WPA.
                 </li>
             </ul>
         </li>

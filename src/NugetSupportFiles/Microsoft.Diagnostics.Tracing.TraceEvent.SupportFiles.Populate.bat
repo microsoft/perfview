@@ -8,6 +8,7 @@ REM *** PLEASE MODIFY THE VERSION NUMBER TO BE CURRENT!    ****
 	exit /b 1
 )
 xcopy /s /Y %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\1.0.%1\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
+xcopy /s /Y %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\1.0.%1\*.pdb Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
 @if NOT "%ERRORLEVEL%" == "0" (
     echo *****  Bad Version Number %1.  ******
 	exit /b 1
@@ -26,7 +27,9 @@ REM Overwrite OSExtensions.dll with the latest built versions.  However you want
 @REM lib\native\x86\msdia140.dll
 @REM lib\net45\Dia2Lib.dll
 @REM lib\net45\OSExtensions.dll
+@REM lib\net45\OSExtensions.pdb
 @REM lib\net45\TraceReloggerLib.dll
 @REM lib\netstandard1.6\Dia2Lib.dll
 @REM lib\netstandard1.6\OSExtensions.dll
+@REM lib\netstandard1.6\OSExtensions.pdb
 @REM lib\netstandard1.6\TraceReloggerLib.dll

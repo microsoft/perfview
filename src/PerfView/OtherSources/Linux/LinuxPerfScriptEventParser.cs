@@ -1,6 +1,7 @@
 ﻿using PerfView.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
@@ -317,16 +318,14 @@ namespace Diagnostics.Tracing.StackSources
                 source.SkipWhiteSpace();
 
                 if (source.EndOfStream)
-                {
                     break;
-                }
 
                 EventKind eventKind = EventKind.Cpu;
 
                 StringBuilder sb = new StringBuilder();
 
                 // Fetch Command (processName) - Stops when it sees the pattern \s+\d+/\d
-                int idx = FindSpaceNumSlash(source);
+                int idx = FindEndOfProcessCommand(source);
                 if (idx < 0)
                 {
                     break;
@@ -334,7 +333,7 @@ namespace Diagnostics.Tracing.StackSources
 
                 source.ReadFixedString(idx, sb);
                 source.SkipWhiteSpace();
-                string comm = sb.ToString();
+                string processCommand = sb.ToString();
                 sb.Clear();
 
                 // Process ID
@@ -346,9 +345,13 @@ namespace Diagnostics.Tracing.StackSources
 
                 // CPU
                 source.SkipWhiteSpace();
-                source.MoveNext(); // Move past the "["
-                int cpu = source.ReadInt();
-                source.MoveNext(); // Move past the "]"
+                int cpu = -1;
+                if (source.Peek(0) == '[')
+                {
+                    source.MoveNext(); // Move past the "["
+                    cpu = source.ReadInt();
+                    source.MoveNext(); // Move past the "]"
+                }
 
                 // Time
                 source.SkipWhiteSpace();
@@ -415,15 +418,15 @@ namespace Diagnostics.Tracing.StackSources
                         source.SkipUpTo('\n');
                     }
 
-                    IEnumerable<Frame> frames = ReadFramesForSample(comm, pid, tid, threadTimeFrame, source);
+                    IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
 
                     if (eventKind == EventKind.Scheduler)
                     {
-                        linuxEvent = new SchedulerEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
+                        linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
                     }
                     else
                     {
-                        linuxEvent = new CpuEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
+                        linuxEvent = new CpuEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
                     }
 
                     yield return linuxEvent;
@@ -433,19 +436,38 @@ namespace Diagnostics.Tracing.StackSources
 
 
         /// <summary>
-        /// Peeks ahead on source until we see \s+\d+/\d (that is space num/num) and returns the index to first (space)
-        /// character in the pattern.  Returns -1 if not found.  
+        /// This routine should be called at the start of a line after you have skipped whitespace.
         /// 
-        /// We need this complex regular expression because process names in linux can have spaces and numbers and slashes
-        /// in them For example here is a real process name (rs:action 13 qu) or  (kworker/1:3)
+        /// Logically a line starts with PROCESS_COMMAND PID/TID [CPU] TIME: 
+        /// 
+        /// However PROCESS_COMMAND is unfortunately free form, including the fact hat it can have / or numbers in it.   
+        /// For example here is a real PROCESS_COMMAND examples (rs:action 13 qu) or  (kworker/1:3)
+        /// Thus it gets tricky to know when the command stops and the PID/TID starts.
+        /// 
+        /// We use the following regular expression to determine the end of the command
+        /// 
+        ///       \s*\d+/\d        OR
+        ///       ^\d+/\d          THIS PATTERN IS NEEDED BECAUSE THE PROCESS_COMMAND MAY BE EMPTY.  
+        ///
+        /// This routine peeks forward looking for this pattern, and returns either the index to the start of it or -1 if not found.  
         /// </summary>
-        private static int FindSpaceNumSlash(FastStream source)
+        private static int FindEndOfProcessCommand(FastStream source)
         {
             uint idx = 0;
 
             startOver:
             int firstSpaceIdx = -1;
             bool seenDigit = false;
+
+            // Deal with the case where the COMMAND is empty.
+            // Thus we have ANY spaces before the proceed ID Thread ID Num/Num. 
+            // We can deal with this case by 'jump starting the state machine state if it starts with a digit.   
+            if (char.IsDigit((char) source.Peek(0)))
+            {
+                firstSpaceIdx = 0;
+                seenDigit = true;
+            }
+
             for (; ; )
             {
                 idx++;
@@ -455,6 +477,12 @@ namespace Diagnostics.Tracing.StackSources
                 }
 
                 byte val = source.Peek(idx);
+
+                if (val == '\n')
+                {
+                    Debug.Assert(false, "Could not parse process command");
+                    return -1;
+                }
                 if (firstSpaceIdx < 0)
                 {
                     if (char.IsWhiteSpace((char)val))

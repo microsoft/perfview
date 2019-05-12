@@ -51,6 +51,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             registeredParser.NewEventDefinition = OnNewEventDefintion;
             // make an eventPipeTraceEventParser to resolve EventPipe events
             eventPipeTraceEventParser = new EventPipeTraceEventParser(source, dontRegister: true);
+            eventPipeTraceEventParser.NewEventDefinition = OnNewEventDefintion;
         }
 
         /// <summary>
@@ -554,7 +555,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
 #if DEBUG
                 // Confirm that the serialization 'adds up'
-                var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
+                var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength, false);
                 Debug.Assert(computedSize <= this.EventDataLength);
                 if ((int)ID != 0xFFFE) // If it is not a manifest event
                 {
@@ -565,7 +566,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 int offset = payloadFetches[index].Offset;
                 if (offset == ushort.MaxValue)
                 {
-                    offset = SkipToField(payloadFetches, index, 0, EventDataLength);
+                    offset = SkipToField(payloadFetches, index, 0, EventDataLength, true);
                 }
 
                 // Fields that are simply not present, (perfectly) we simply return null for.  
@@ -574,7 +575,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return null;
                 }
 
-                // If we 
                 return GetPayloadValueAt(ref payloadFetches[index], offset, EventDataLength);
             }
             catch (Exception e)
@@ -1073,13 +1073,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         #endregion
 
         #region private
-        private int SkipToField(PayloadFetch[] payloadFetches, int targetFieldIdx, int startOffset, int payloadLength)
+        private int SkipToField(PayloadFetch[] payloadFetches, int targetFieldIdx, int startOffset, int payloadLength, bool useCache)
         {
             int fieldOffset;
             int fieldIdx;
 
             // First find a valid fieldIdx, fieldOffset pair
-            if (cachedEventId == EventIndex && cachedFieldIdx <= targetFieldIdx && startOffset == 0)
+            if (useCache && cachedEventId == EventIndex && cachedFieldIdx <= targetFieldIdx && startOffset == 0)
             {
                 // We fetched a previous field, great, start from there.  
                 fieldOffset = cachedFieldOffset;
@@ -1087,7 +1087,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             else
             {
-                // no cached value, search backwards for the the first field that has a fixed offset. 
+                // no cached value, search backwards for the first field that has a fixed offset. 
                 fieldOffset = 0;
                 fieldIdx = targetFieldIdx;
                 while (0 < fieldIdx)
@@ -1120,7 +1120,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return payloadLength;
                 }
 
-                // however if we truely go past the end of the buffer, somethign went wrong and we wnat to signal that. 
+                // however if we truly go past the end of the buffer, something went wrong and we want to signal that. 
                 if (payloadLength < fieldOffset)
                 {
                     throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
@@ -1130,14 +1130,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // Remember our answer since can start there for the next field efficiently.  
-            if (startOffset == 0)
+            if (useCache && startOffset == 0)
             {
 #if DEBUG
                 // If we computed the result using the cache,  compute it again without the cache and we should get the same answer.  
                 if (cachedEventId == this.EventIndex)
                 {
                     cachedEventId = EventIndex.Invalid;
-                    Debug.Assert(fieldOffset == SkipToField(payloadFetches, targetFieldIdx, startOffset, payloadLength));
+                    Debug.Assert(fieldOffset == SkipToField(payloadFetches, targetFieldIdx, startOffset, payloadLength, true));
                 }
 #endif
                 cachedFieldOffset = fieldOffset;
@@ -1194,7 +1194,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset, payloadLength);
+                return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset, payloadLength, false);
             }
 
             // TODO cache this when you parse the value so that you don't need to do it twice.  Right now it is pretty inefficient. 

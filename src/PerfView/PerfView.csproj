@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="MSBuild.Sdk.Extras">
 
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
@@ -8,6 +8,7 @@
     <Prefer32Bit>True</Prefer32Bit>
     <StartupObject>PerfView.App</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
@@ -50,14 +51,13 @@
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
 
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
     <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
-    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
 
@@ -99,10 +99,6 @@
   <ItemGroup>
     <!-- The tutorial only gets included as an embedded resource -->
     <Compile Remove="SupportFiles\tutorial.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Page Include="**\*.xaml" SubType="Designer" Generator="MSBuild:Compile" />
   </ItemGroup>
 
   <ItemGroup>
@@ -265,7 +261,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net45\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -351,6 +347,11 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportFiles\EventCounterVisualization.html">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\EventCounterVisualization.html</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\PerfViewWebVideos.htm">
       <Type>Non-Resx</Type>
@@ -447,31 +448,6 @@
   <ItemGroup>
     <SplashScreen Include="SplashScreen.png" />
   </ItemGroup>
-
-  <!-- CPS doesn't show these items by default, but we want to show them. -->
-  <ItemGroup>
-    <!-- XAML pages and resources -->
-    <None Include="@(Page)" />
-    <None Include="@(Resource)" />
-
-    <!-- Fix nesting of generated source files in the project tree -->
-    <Compile Update="**\*.xaml.cs" SubType="Designer" DependentUpon="%(Filename)" />
-  </ItemGroup>
-
-  <!-- Work around CoreCompile doesn't exist error -->
-  <PropertyGroup>
-    <LanguageTargets>$(MSBuildExtensionsPath)\$(VisualStudioVersion)\Bin\Microsoft.CSharp.targets</LanguageTargets>
-  </PropertyGroup>
-
-  <!--
-     Work around to fix Intellisense file generation for XAML projects
-     https://github.com/dotnet/project-system/issues/2488
-  -->
-  <Target Name="WorkaroundForXAMLIntellisenseBuildIssue" AfterTargets="_CheckCompileDesignTimePrerequisite">
-    <PropertyGroup>
-      <BuildingProject>false</BuildingProject>
-    </PropertyGroup>
-  </Target>
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>

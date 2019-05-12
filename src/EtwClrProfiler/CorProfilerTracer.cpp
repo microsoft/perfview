@@ -187,8 +187,8 @@ HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach(
 		// See if we asked for call sampling or not.  
 		DWORD keywords = 0;
 		DWORD keywordsSize = sizeof(keywords);
-		int hr = RegGetValue(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\.NETFramework", L"PerfView_Keywords", RRF_RT_DWORD, NULL, &keywords, &keywordsSize);
-		if (hr == ERROR_SUCCESS)
+		int hrRegGetValue = RegGetValue(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\.NETFramework", L"PerfView_Keywords", RRF_RT_DWORD, NULL, &keywords, &keywordsSize);
+		if (hrRegGetValue == ERROR_SUCCESS)
 		{
 			if ((keywords & DisableInliningKeyword) != 0)
 			{
