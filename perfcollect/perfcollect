@@ -233,6 +233,7 @@ declare -a DotNETRuntime_ExceptionKeyword=(
 declare -a DotNETRuntime_ContentionKeyword=(
     DotNETRuntime:ContentionStart_V1
     DotNETRuntime:ContentionStop
+    DotNETRuntime:ContentionStop_V1
 )
 
 declare -a DotNETRuntime_StackKeyword=(
@@ -336,6 +337,15 @@ declare -a DotNETRuntime_DebuggerKeyword=(
 
 declare -a DotNETRuntime_CodeSymbolsKeyword=(
     DotNETRuntime:CodeSymbols
+)
+
+declare -a DotNETRuntime_TieredCompilationKeyword=(
+    DotNETRuntime:TieredCompilationSettings
+    DotNETRuntime:TieredCompilationPause
+    DotNETRuntime:TieredCompilationResume
+    DotNETRuntime:TieredCompilationBackgroundJitStart
+    DotNETRuntime:TieredCompilationBackgroundJitStop
+    DotNETRuntimeRundown:TieredCompilationSettingsDCStart
 )
 
 # Separate GCCollectOnly list because our LTTng implementation doesn't set tracepoint verbosity.
@@ -1313,6 +1323,7 @@ SetupLTTngSession()
             EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
             EnableLTTngEvents ${DotNETRuntimePrivate_BindingKeyword[@]}
             EnableLTTngEvents ${DotNETRuntimePrivate_MulticoreJitPrivateKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_TieredCompilationKeyword[@]}
         elif [ "$events" == "threading" ]
         then
             EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
