@@ -1812,11 +1812,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         static private TieredCompilationBackgroundJitStartTraceData TieredCompilationBackgroundJitStartTemplate(Action<TieredCompilationBackgroundJitStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TieredCompilationBackgroundJitStartTraceData(action, 283, 31, "TieredCompilation", TieredCompilationTaskGuid, 14, "BackgroundJitStart", ProviderGuid, ProviderName);
+            return new TieredCompilationBackgroundJitStartTraceData(action, 283, 31, "TieredCompilation", TieredCompilationTaskGuid, 1, "BackgroundJitStart", ProviderGuid, ProviderName);
         }
         static private TieredCompilationBackgroundJitStopTraceData TieredCompilationBackgroundJitStopTemplate(Action<TieredCompilationBackgroundJitStopTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 15, "BackgroundJitStop", ProviderGuid, ProviderName);
+            return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -9213,17 +9213,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return OptimizationTier.Unknown;
                 }
 
-                var optimizationTier =
-                    (OptimizationTier)(((uint)methodFlags >> OptimizationTierShift) & OptimizationTierLowMask);
-                if (optimizationTier == OptimizationTier.Unknown)
-                {
-                    // A runtime that supports the optimization tier would not report an unknown optimization tier. To support
-                    // older runtimes, keep the optimization tier as unknown.
-                    return optimizationTier;
-                }
-
-                // Map the jitted method optimization tier from the runtime
-                return optimizationTier + (byte)(OptimizationTier.MinOptJitted - 1);
+                // A runtime that supports the optimization tier would not report an unknown optimization tier. An Unknown value
+                // indicates an older runtime.
+                return (OptimizationTier)(((uint)methodFlags >> OptimizationTierShift) & OptimizationTierLowMask);
             }
         }
 
@@ -10904,12 +10896,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     public enum OptimizationTier : byte
     {
         Unknown, // to identify older runtimes that would send this value
-        ReadyToRun,
 
-        // Jitted method optimization tiers begin here
+        // Jitted, sent by the runtime
         MinOptJitted,
+        Optimized,
         QuickJitted,
-        Optimized
+        OptimizedTier1,
+
+        // Pregenerated code, not sent by the runtime
+        ReadyToRun,
     }
     [Flags]
     public enum StartupMode

@@ -346,14 +346,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (methodIndex != MethodIndex.Invalid)
                 {
                     methodName = m_log.CodeAddresses.Methods.FullMethodName(methodIndex);
-
-                    if (ShowOptimizationTiers)
-                    {
-                        methodName =
-                            TraceMethod.PrefixOptimizationTier(
-                                methodName,
-                                m_log.CodeAddresses.OptimizationTier(codeAddressIndex));
-                    }
                 }
                 else
                 {
@@ -362,6 +354,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         methodName = "0x" + m_log.CallStacks.CodeAddresses.Address(codeAddressIndex).ToString("x");
                     }
                 }
+
+                if (ShowOptimizationTiers)
+                {
+                    methodName =
+                        TraceMethod.PrefixOptimizationTier(
+                            methodName,
+                            m_log.CodeAddresses.OptimizationTier(codeAddressIndex));
+                }
+
                 moduleFileIdx = m_log.CodeAddresses.ModuleFileIndex(codeAddressIndex);
             }
             else

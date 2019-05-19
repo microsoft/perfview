@@ -2135,10 +2135,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         // simulate a module unload, and resolve all code addresses in the module's range.   
                         CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, module.ImageBase, module.ModuleFile.ImageSize, false, delegate (ref TraceCodeAddresses.CodeAddressInfo info)
                         {
-                            if (info.moduleFileIndex == Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid)
-                            {
-                                info.moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                            }
+                            info.SetModuleFileIndex(module.ModuleFile);
                         });
                     }
                     if (module.unloadTimeQPC > sessionEndTimeQPC)
@@ -6606,14 +6603,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 // Look for all code addresses those that don't have modules that are in my range are assumed to be mine.  
-                var moduleFileIndex = module.ModuleFile.ModuleFileIndex;
                 Process.Log.CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, data.ImageBase, data.ImageSize, false,
                     delegate (ref Microsoft.Diagnostics.Tracing.Etlx.TraceCodeAddresses.CodeAddressInfo info)
                     {
-                        if (info.moduleFileIndex == Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid)
-                        {
-                            info.moduleFileIndex = moduleFileIndex;
-                        }
+                        info.SetModuleFileIndex(moduleFile);
                     });
             }
             CheckClassInvarients();
@@ -8421,17 +8414,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                     if (currentMethodIndex != Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
                     {
-                        Debug.Assert(moduleFile.ModuleFileIndex != Etlx.ModuleFileIndex.Invalid);
                         CodeAddressInfo codeAddressInfo = codeAddresses[(int)codeAddressIndexCursor.Current];
-                        Debug.Assert(codeAddressInfo.Address == address);
                         Debug.Assert(codeAddressInfo.GetModuleFileIndex(this) == moduleFile.ModuleFileIndex);
-                        Debug.Assert(moduleFile.ImageBase <= address);
-                        Debug.Assert(address < moduleFile.ImageEnd);
                         codeAddressInfo.SetMethodIndex(this, currentMethodIndex);
-                        if (moduleFile.IsReadyToRun)
-                        {
-                            codeAddressInfo.SetOptimizationTier(Parsers.Clr.OptimizationTier.ReadyToRun);
-                        }
+                        Debug.Assert(moduleFile.ModuleFileIndex != Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid);
                         codeAddresses[(int)codeAddressIndexCursor.Current] = codeAddressInfo;
                     }
                 }
@@ -8757,7 +8743,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(Address, long.MaxValue - 1, out index);
                 if (loadedModule != null)
                 {
-                    moduleFileIndex = loadedModule.ModuleFile.ModuleFileIndex;
+                    SetModuleFileIndex(loadedModule.ModuleFile);
                     methodOrProcessOrIlMapIndex = -1;           //  set it as the invalid method, destroys memory of process we are in.  
                     return Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
                 }
@@ -8803,6 +8789,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 return moduleFileIndex;
+            }
+
+            internal void SetModuleFileIndex(TraceModuleFile moduleFile)
+            {
+                if (moduleFileIndex != Etlx.ModuleFileIndex.Invalid)
+                {
+                    return;
+                }
+
+                moduleFileIndex = moduleFile.ModuleFileIndex;
+
+                if (optimizationTier == Parsers.Clr.OptimizationTier.Unknown &&
+                    moduleFile.IsReadyToRun &&
+                    moduleFile.ImageBase <= Address &&
+                    Address < moduleFile.ImageEnd)
+                {
+                    optimizationTier = Parsers.Clr.OptimizationTier.ReadyToRun;
+                }
             }
 
             internal void SetOptimizationTier(OptimizationTier value)
@@ -9505,19 +9509,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public TraceModuleFile MethodModuleFile { get { return methods.codeAddresses.ModuleFiles[MethodModuleFileIndex]; } }
 
         /// <summary>
-        /// Returns a new string prefixed with the optimization tier if it would be useful. Typically used to adorn a method's
-        /// name with the optimization tier of the specific code version of the method.
-        /// </summary>
-        public static string PrefixOptimizationTier(string str, OptimizationTier optimizationTier)
-        {
-            if (optimizationTier == OptimizationTier.Unknown || string.IsNullOrWhiteSpace(str))
-            {
-                return str;
-            }
-            return $"[{optimizationTier}]{str}";
-        }
-
-        /// <summary>
         /// A XML representation of the TraceMethod. (Used for debugging)
         /// </summary>
         /// <returns></returns>
@@ -9556,6 +9547,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             this.methods = methods;
             this.methodIndex = methodIndex;
+        }
+
+        /// <summary>
+        /// Returns a new string prefixed with the optimization tier if it would be useful. Typically used to adorn a method's
+        /// name with the optimization tier of the specific code version of the method.
+        /// </summary>
+        internal static string PrefixOptimizationTier(string str, OptimizationTier optimizationTier)
+        {
+            if (optimizationTier == OptimizationTier.Unknown || string.IsNullOrWhiteSpace(str))
+            {
+                return str;
+            }
+            return $"[{optimizationTier}]{str}";
         }
 
         private TraceMethods methods;
