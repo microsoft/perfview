@@ -171,9 +171,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Codesymbols = 0x400000000,
             /// <summary>
-            /// Events that provide information about tiered compilation.
+            /// Events that provide information about compilation.
             /// </summary>
-            TieredCompilation = 0x1000000000,
+            Compilation = 0x1000000000,
             /// <summary>
             /// Diagnostic events for diagnosing compilation and pre-compilation features.
             /// </summary>
@@ -184,7 +184,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
-                         | ThreadTransfer | GCHeapAndTypeNames | Codesymbols | TieredCompilation,
+                         | ThreadTransfer | GCHeapAndTypeNames | Codesymbols | Compilation,
 
             /// <summary>
             /// What is needed to get symbols for JIT compiled code.  
@@ -11962,12 +11962,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             CodeSymbolsRundown = 0x80000000,
             /// <summary>
-            /// Events that provide information about tiered compilation.
+            /// Events that provide information about compilation.
             /// </summary>
-            TieredCompilation = 0x1000000000,
+            Compilation = 0x1000000000,
 
             Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Loader + CodeSymbolsRundown +
-                      TieredCompilation,
+                      Compilation,
         };
 
         public ClrRundownTraceEventParser(TraceEventSource source) : base(source) { }
