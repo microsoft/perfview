@@ -1,17 +1,27 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing.Utilities
 {
+    [Obsolete]
+    public interface IReadOnlyHistoryDictionary<T>
+    {
+        bool TryGetValue(Address id, long time, out T value);
+        IEnumerable<Address> Keys { get; }
+        int Count { get; }
+    }
+
     // Utilities for TraceEventParsers
     /// <summary>
     /// A HistoryDictionary is designed to look up 'handles' (pointer sized quantities), that might get reused
     /// over time (eg Process IDs, thread IDs).  Thus it takes a handle AND A TIME, and finds the value
     /// associated with that handle at that time.   
     /// </summary>
-    internal class HistoryDictionary<T>
+    internal class HistoryDictionary<T> : IReadOnlyHistoryDictionary<T>
     {
         public HistoryDictionary(int initialSize)
         {
@@ -150,6 +160,9 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
 #endif
             }
         }
+        public IEnumerable<Address> Keys =>
+            (from e in Entries select e.Key);
+
         public int Count { get { return count; } }
         /// <summary>
         /// Remove all entries associated with a given key (over all time).  
@@ -193,7 +206,8 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             internal Address key;
             internal long startTime;
             internal T value;
-            internal HistoryValue next;
+            //TODO:INTERNAL
+            public HistoryValue next;
             // To improve getting to the end quickly, we allow nodes to store values that 'skip ahead'.
             // Today we only use this field for the first node to skip to the end (for fast append) 
             // The only strong invarient for this field is that it point further up the same list.  

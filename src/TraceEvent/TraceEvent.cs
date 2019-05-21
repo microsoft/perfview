@@ -505,7 +505,8 @@ namespace Microsoft.Diagnostics.Tracing
             return ret;
         }
 
-        internal virtual string ProcessName(int processID, long timeQPC)
+        [Obsolete] // Experimental
+        public virtual string ProcessName(int processID, long timeQPC)
         {
             return "Process(" + processID.ToString() + ")";
         }
@@ -3396,6 +3397,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void DoDispatch(TraceEvent anEvent)
         {
+            Debug.Assert(anEvent != null, "Can't dispatch null event");
 #if DEBUG
             try
             {
