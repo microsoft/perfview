@@ -339,7 +339,7 @@ declare -a DotNETRuntime_CodeSymbolsKeyword=(
     DotNETRuntime:CodeSymbols
 )
 
-declare -a DotNETRuntime_TieredCompilationKeyword=(
+declare -a DotNETRuntime_CompilationKeyword=(
     DotNETRuntime:TieredCompilationSettings
     DotNETRuntime:TieredCompilationPause
     DotNETRuntime:TieredCompilationResume
@@ -1323,7 +1323,7 @@ SetupLTTngSession()
             EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
             EnableLTTngEvents ${DotNETRuntimePrivate_BindingKeyword[@]}
             EnableLTTngEvents ${DotNETRuntimePrivate_MulticoreJitPrivateKeyword[@]}
-            EnableLTTngEvents ${DotNETRuntime_TieredCompilationKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_CompilationKeyword[@]}
         elif [ "$events" == "threading" ]
         then
             EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
