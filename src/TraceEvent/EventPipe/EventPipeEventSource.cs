@@ -48,6 +48,7 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
             _deserializer.RegisterFactory("Trace", delegate { return this; });
             _deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
+            _deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(this); });
 
             var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
 
@@ -524,14 +525,16 @@ namespace Microsoft.Diagnostics.Tracing
     #region private classes
 
     /// <summary>
-    /// An EVentPipeEventBlock represents a block of events.   It basicaly only has
-    /// one field, which is the size in bytes of the block.  But when its FromStream
-    /// is called, it will perform the callbacks for the events (thus deserializing
-    /// it performs dispatch).  
+    /// The Nettrace format is divided up into various blocks - this is a base class that handles the common
+    /// aspects for all of them. 
     /// </summary>
-    internal class EventPipeEventBlock : IFastSerializable, IFastSerializableVersion
+    internal abstract class EventPipeBlock : IFastSerializable, IFastSerializableVersion
     {
-        public EventPipeEventBlock(EventPipeEventSource source) => _source = source;
+        public EventPipeBlock(EventPipeEventSource source) => _source = source;
+
+        // _startEventData and _endEventData have already been initialized before this is invoked
+        // to help identify the bounds. The reader is positioned at _startEventData
+        protected abstract void ReadBlockContents(PinnedStreamReader reader);
 
         public unsafe void FromStream(Deserializer deserializer)
         {
@@ -549,12 +552,39 @@ namespace Microsoft.Diagnostics.Tracing
             _endEventData = _startEventData.Add(blockSizeInBytes);
             Debug.Assert((int)_startEventData % 4 == 0 && (int)_endEventData % 4 == 0); // make sure that the data is aligned
 
-            // Dispatch through all the events.  
             PinnedStreamReader deserializerReader = (PinnedStreamReader)deserializer.Reader;
+            ReadBlockContents(deserializerReader);
+            deserializerReader.Goto(_endEventData); // go to the end of block, in case some padding was not skipped yet
+        }
 
-            while (deserializerReader.Current < _endEventData)
+        public void ToStream(Serializer serializer) => throw new InvalidOperationException();
+
+        protected StreamLabel _startEventData;
+        protected StreamLabel _endEventData;
+        protected EventPipeEventSource _source;
+
+        public int Version => 2;
+
+        public int MinimumVersionCanRead => Version;
+
+        public int MinimumReaderVersion => 0;
+    }
+
+    /// <summary>
+    /// An EVentPipeEventBlock represents a block of events.   It basicaly only has
+    /// one field, which is the size in bytes of the block.  But when its FromStream
+    /// is called, it will perform the callbacks for the events (thus deserializing
+    /// it performs dispatch).  
+    /// </summary>
+    internal class EventPipeEventBlock : EventPipeBlock
+    {
+        public EventPipeEventBlock(EventPipeEventSource source) : base(source) { }
+
+        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+        {
+            while (reader.Current < _endEventData)
             {
-                TraceEventNativeMethods.EVENT_RECORD* eventRecord = _source.ReadEvent(deserializerReader);
+                TraceEventNativeMethods.EVENT_RECORD* eventRecord = _source.ReadEvent(reader);
                 if (eventRecord != null)
                 {
                     // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.  
@@ -567,21 +597,35 @@ namespace Microsoft.Diagnostics.Tracing
                     _source.sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
                 }
             }
-
-            deserializerReader.Goto(_endEventData); // go to the end of block, in case some padding was not skipped yet
         }
+    }
 
-        public void ToStream(Serializer serializer) => throw new InvalidOperationException();
+    /// <summary>
+    /// A block of metadata carrying events. These 'events' aren't dispatched by EventPipeEventSource - they carry
+    /// the metadata that allows the payloads of non-metadata events to be decoded.
+    /// </summary>
+    internal class EventPipeMetadataBlock : EventPipeBlock
+    {
+        public EventPipeMetadataBlock(EventPipeEventSource source) : base(source) { }
 
-        private StreamLabel _startEventData;
-        private StreamLabel _endEventData;
-        private EventPipeEventSource _source;
+        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+        {
+            while (reader.Current < _endEventData)
+            {
+                TraceEventNativeMethods.EVENT_RECORD* eventRecord = _source.ReadEvent(reader);
+                if (eventRecord != null)
+                {
+                    // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.  
+                    // Thus the new timestamp should be later, and not more than 1 day later.  
+                    Debug.Assert(_source.sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
+                    Debug.Assert(_source.sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - _source.sessionEndTimeQPC < _source._QPCFreq * 24 * 3600);
 
-        public int Version => 2;
-
-        public int MinimumVersionCanRead => Version;
-
-        public int MinimumReaderVersion => 0;
+                    var traceEvent = _source.Lookup(eventRecord);
+                    _source.Dispatch(traceEvent);
+                    _source.sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
+                }
+            }
+        }
     }
 
     /// <summary>
