@@ -955,8 +955,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new IisTraceEventParser(this);
 
             new SampleProfilerTraceEventParser(this);
+            new WpfTraceEventParser(this);
 #if false 
-            new WpfTraceEventParser(newLog);
             new AppHostTraceEventParser(newLog);
             new ImmersiveShellTraceEventParser(newLog);
             new XamlTraceEventParser(newLog);
