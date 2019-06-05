@@ -7,7 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -26,21 +28,33 @@ namespace Microsoft.Diagnostics.Tracing
     /// </summary>
     public unsafe class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
     {
-        public EventPipeEventSource(string fileName) : this(new Deserializer(new PinnedStreamReader(fileName, 0x20000), fileName))
+        public EventPipeEventSource(string fileName) : this(new PinnedStreamReader(fileName, 0x20000), fileName)
         {
         }
 
-        public EventPipeEventSource(Stream stream) : this(new Deserializer(new PinnedStreamReader(stream), "stream"))
+        public EventPipeEventSource(Stream stream) : this(new PinnedStreamReader(stream), "stream")
         {
         }
 
-        private EventPipeEventSource(Deserializer deserializer)
-        { 
+        private EventPipeEventSource(PinnedStreamReader streamReader, string name)
+        {
+            StreamLabel start = streamReader.Current;
+            byte[] netTraceMagic = new byte[8];
+            streamReader.Read(netTraceMagic, 0, netTraceMagic.Length);
+            byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
+            bool isNetTrace = true;
+            if (!netTraceMagic.SequenceEqual(expectedMagic))
+            {
+                // The older netperf format didn't have this 'Nettrace' magic on it.
+                streamReader.Goto(start);
+                isNetTrace = false;
+            }
+
             _processName = "ProcessBeingTraced";
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
 
-            _deserializer = deserializer;
+            _deserializer = new Deserializer(streamReader, name);
 
 #if SUPPORT_V1_V2
             // This is only here for V2 and V1.  V3+ should use the name EventTrace, it can be removed when we drop support.
@@ -49,9 +63,17 @@ namespace Microsoft.Diagnostics.Tracing
             _deserializer.RegisterFactory("Trace", delegate { return this; });
             _deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
             _deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(this); });
+            _deserializer.RegisterFactory("SPBlock", delegate { return new EventPipeSequencePointBlock(this); });
+            _deserializer.RegisterFactory("StackBlock", delegate { return new EventPipeStackBlock(this); });
 
             var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
 
+            if((FileFormatVersionNumber >= 4) != isNetTrace)
+            {
+                //NetTrace header should be present iff the version is >= 4
+                throw new SerializationException("Invalid NetTrace file format version");
+            }
+            
             // Because we told the deserialize to use 'this' when creating a EventPipeFile, we 
             // expect the entry object to be 'this'.
             Debug.Assert(entryObj == this);
@@ -59,6 +81,7 @@ namespace Microsoft.Diagnostics.Tracing
             EventCache = new EventCache();
             EventCache.OnEvent += EventCache_OnEvent;
             EventCache.OnEventsDropped += EventCache_OnEventsDropped;
+            StackCache = new StackCache();
         }
 
         #region private
@@ -118,7 +141,7 @@ namespace Microsoft.Diagnostics.Tracing
                 PinnedStreamReader deserializerReader = (PinnedStreamReader)_deserializer.Reader;
                 while (deserializerReader.Current < _endOfEventStream)
                 {
-                    TraceEventNativeMethods.EVENT_RECORD* eventRecord = ReadEvent(deserializerReader);
+                    TraceEventNativeMethods.EVENT_RECORD* eventRecord = ReadEvent(deserializerReader, false);
                     if (eventRecord != null)
                     {
                         // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.  
@@ -138,12 +161,13 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal int FileFormatVersionNumber { get; private set; }
         internal EventCache EventCache { get; private set; }
+        internal StackCache StackCache { get; private set; }
 
         internal override string ProcessName(int processID, long timeQPC) => string.Format("Process({0})", processID);
 
-        internal void ReadAndDispatchEvent(PinnedStreamReader reader)
+        internal void ReadAndDispatchEvent(PinnedStreamReader reader, bool useHeaderCompression)
         {
-            DispatchEventRecord(ReadEvent(reader));
+            DispatchEventRecord(ReadEvent(reader, useHeaderCompression));
         }
 
         internal void DispatchEventRecord(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
@@ -161,24 +185,35 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        internal TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader)
+        internal void ResetCompressedHeader()
         {
-            byte* headerPtr = reader.GetPointer(EventPipeEventHeader.GetHeaderSize(FileFormatVersionNumber));
-            int totalSize = EventPipeEventHeader.GetTotalEventSize(headerPtr, FileFormatVersionNumber);
-            headerPtr = reader.GetPointer(totalSize); // now we now the real size and get read entire event
-            EventPipeEventHeader eventData = new EventPipeEventHeader();
-            ReadEventHeader(headerPtr, ref eventData);
-            return ReadEvent(eventData, reader);
+            _compressedHeader = new EventPipeEventHeader();
         }
 
-        internal TraceEventNativeMethods.EVENT_RECORD* ReadNonMetadataEvent(byte* headerPtr)
+        internal TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader, bool useHeaderCompression)
         {
-            EventPipeEventHeader eventData = new EventPipeEventHeader();
-            ReadEventHeader(headerPtr, ref eventData);
-            return ConvertEventHeaderToRecord(eventData);
+            byte* headerPtr = null;
+            
+            if (useHeaderCompression)
+            {
+                // The header uses a variable size encoding, but it is certainly smaller than 100 bytes
+                const int maxHeaderSize = 100;
+                headerPtr = reader.GetPointer(maxHeaderSize);
+                ReadEventHeader(headerPtr, useHeaderCompression, ref _compressedHeader);
+                return ReadEvent(_compressedHeader, reader);
+            }
+            else
+            {
+                headerPtr = reader.GetPointer(EventPipeEventHeader.GetHeaderSize(FileFormatVersionNumber));
+                int totalSize = EventPipeEventHeader.GetTotalEventSize(headerPtr, FileFormatVersionNumber);
+                headerPtr = reader.GetPointer(totalSize); // now we now the real size and get read entire event
+                EventPipeEventHeader eventData = new EventPipeEventHeader();
+                ReadEventHeader(headerPtr, useHeaderCompression, ref eventData);
+                return ReadEvent(eventData, reader);
+            }
         }
 
-        void ReadEventHeader(byte* headerPtr, ref EventPipeEventHeader eventData)
+        void ReadEventHeader(byte* headerPtr, bool useHeaderCompression, ref EventPipeEventHeader eventData)
         {
             if (FileFormatVersionNumber <= 3)
             {
@@ -186,33 +221,36 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else // if (FileFormatVersionNumber == 4)
             {
-                EventPipeEventHeader.ReadFromFormatV4(headerPtr, ref eventData);
+                EventPipeEventHeader.ReadFromFormatV4(headerPtr, useHeaderCompression, ref eventData);
+                if(eventData.MetaDataId != 0 && StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes))
+                {
+                    eventData.StackBytesSize = stackBytesSize;
+                    eventData.StackBytes = stackBytes;
+                }
             }
 
             // Basic sanity checks.  Are the timestamps and sizes sane.  
             Debug.Assert(sessionEndTimeQPC <= eventData.TimeStamp);
             Debug.Assert(sessionEndTimeQPC == 0 || eventData.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
-            Debug.Assert(0 <= eventData.PayloadSize && eventData.PayloadSize <= eventData.TotalEventSize);
-            Debug.Assert(0 < eventData.TotalEventSize && eventData.TotalEventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
-            Debug.Assert(FileFormatVersionNumber < 3 ||
-                ((int)EventPipeEventHeader.PayloadBytes(headerPtr, FileFormatVersionNumber) % 4 == 0 && eventData.TotalEventSize % 4 == 0)); // ensure 4 byte alignment
-            Debug.Assert(0 <= eventData.StackBytesSize && eventData.StackBytesSize <= eventData.TotalEventSize);
+            Debug.Assert(0 <= eventData.PayloadSize && eventData.PayloadSize <= eventData.TotalNonHeaderSize);
+            Debug.Assert(0 <= eventData.TotalNonHeaderSize && eventData.TotalNonHeaderSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
+            Debug.Assert(FileFormatVersionNumber != 3 ||
+                ((long)eventData.Payload % 4 == 0 && eventData.TotalNonHeaderSize % 4 == 0)); // ensure 4 byte alignment
+            Debug.Assert(0 <= eventData.StackBytesSize && eventData.StackBytesSize <= 800);
         }
 
+        
         private TraceEventNativeMethods.EVENT_RECORD* ReadEvent(EventPipeEventHeader eventData, PinnedStreamReader reader)
         {
             StreamLabel headerStart = reader.Current;
-            StreamLabel eventDataEnd = headerStart.Add(eventData.TotalEventSize);
+            StreamLabel eventDataEnd = headerStart.Add(eventData.HeaderSize + eventData.TotalNonHeaderSize);
 
             TraceEventNativeMethods.EVENT_RECORD* ret = null;
             if (eventData.IsMetadata())
             {
-                int totalEventSize = eventData.TotalEventSize;
                 int payloadSize = eventData.PayloadSize;
-                int headerSize = EventPipeEventHeader.GetHeaderSize(FileFormatVersionNumber);
-                
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.  
-                reader.Skip(headerSize);
+                reader.Skip(eventData.HeaderSize);
 
                 StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
 
@@ -228,7 +266,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                ret = ConvertEventHeaderToRecord(eventData);
+                ret = ConvertEventHeaderToRecord(ref eventData);
             }
 
             reader.Goto(eventDataEnd);
@@ -236,7 +274,7 @@ namespace Microsoft.Diagnostics.Tracing
             return ret;
         }
 
-        private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(EventPipeEventHeader eventData)
+        private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
         {
             if (_eventMetadataDictionary.TryGetValue(eventData.MetaDataId, out var metaData))
             {
@@ -251,8 +289,15 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            // Recover the EventPipeEventHeader from the payload pointer and then fetch from the header.  
-            return EventPipeEventHeader.GetRelatedActivityID((byte*)eventRecord->UserData, FileFormatVersionNumber);
+            if(FileFormatVersionNumber >= 4)
+            {
+                return _relatedActivityId;
+            }
+            else
+            {
+                // Recover the EventPipeEventHeader from the payload pointer and then fetch from the header.  
+                return EventPipeEventHeader.GetRelatedActivityID((byte*)eventRecord->UserData);
+            }
         }
 
         public void ToStream(Serializer serializer) => throw new InvalidOperationException("We dont ever serialize one of these in managed code so we don't need to implement ToSTream");
@@ -300,9 +345,15 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
         }
 
-        private void EventCache_OnEvent(byte* bufferPtr)
+        private void EventCache_OnEvent(ref EventPipeEventHeader header)
         {
-            DispatchEventRecord(ReadNonMetadataEvent(bufferPtr));
+            if (header.MetaDataId != 0 && StackCache.TryGetStack(header.StackId, out int stackBytesSize, out IntPtr stackBytes))
+            {
+                header.StackBytesSize = stackBytesSize;
+                header.StackBytes = stackBytes;
+            }
+            _relatedActivityId = header.RelatedActivityID;
+            DispatchEventRecord(ConvertEventHeaderToRecord(ref header));
         }
 
         private void EventCache_OnEventsDropped(int droppedEventCount)
@@ -581,7 +632,9 @@ namespace Microsoft.Diagnostics.Tracing
         private string _processName;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates = 
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
+        private EventPipeEventHeader _compressedHeader;
         private int _eventsLost;
+        private Guid _relatedActivityId;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
         #endregion
@@ -634,6 +687,12 @@ namespace Microsoft.Diagnostics.Tracing
         public int MinimumReaderVersion => 0;
     }
 
+    internal enum EventBlockFlags : short
+    {
+        Uncompressed = 0,
+        HeaderCompression = 1
+    }
+
     /// <summary>
     /// An EVentPipeEventBlock represents a block of events.   It basicaly only has
     /// one field, which is the size in bytes of the block.  But when its FromStream
@@ -648,6 +707,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if(_source.FileFormatVersionNumber >= 4)
             {
+                _source.ResetCompressedHeader();
                 byte[] eventBlockBytes = new byte[_endEventData.Sub(_startEventData)];
                 reader.Read(eventBlockBytes, 0, eventBlockBytes.Length);
                 _source.EventCache.ProcessEventBlock(eventBlockBytes);
@@ -657,7 +717,7 @@ namespace Microsoft.Diagnostics.Tracing
                 //NetPerf file had the events fully sorted so we can dispatch directly
                 while (reader.Current < _endEventData)
                 {
-                    _source.ReadAndDispatchEvent(reader);
+                    _source.ReadAndDispatchEvent(reader, false);
                 }
             }
         }
@@ -673,10 +733,52 @@ namespace Microsoft.Diagnostics.Tracing
 
         protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
         {
+            _source.ResetCompressedHeader();
+            short headerSize = reader.ReadInt16();
+            Debug.Assert(headerSize >= 20);
+            short flags = reader.ReadInt16();
+            long minTimeStamp = reader.ReadInt64();
+            long maxTimeStamp = reader.ReadInt64();
+            reader.Goto(_startEventData.Add(headerSize));
             while (reader.Current < _endEventData)
             {
-                _source.ReadAndDispatchEvent(reader);
+                _source.ReadAndDispatchEvent(reader, (flags & (short)EventBlockFlags.HeaderCompression) != 0);
             }
+        }
+    }
+
+    /// <summary>
+    /// An EventPipeSequencePointBlock represents a stream divider that contains
+    /// updates for all thread event sequence numbers, indicates that all queued
+    /// events can be sorted and dispatched, and that all cached events/stacks can
+    /// be flushed.
+    /// </summary>
+    internal class EventPipeSequencePointBlock : EventPipeBlock
+    {
+        public EventPipeSequencePointBlock(EventPipeEventSource source) : base(source) { }
+
+        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+        {
+            byte[] blockBytes = new byte[_endEventData.Sub(_startEventData)];
+            reader.Read(blockBytes, 0, blockBytes.Length);
+            _source.EventCache.ProcessSequencePointBlock(blockBytes);
+            _source.StackCache.Flush();
+        }
+    }
+
+    /// <summary>
+    /// An EventPipeStackBlock represents a block of interned stacks. Events refer
+    /// to stacks by an id.
+    /// </summary>
+    internal class EventPipeStackBlock : EventPipeBlock
+    {
+        public EventPipeStackBlock(EventPipeEventSource source) : base(source) { }
+
+        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+        {
+            byte[] stackBlockBytes = new byte[_endEventData.Sub(_startEventData)];
+            reader.Read(stackBlockBytes, 0, stackBlockBytes.Length);
+            _source.StackCache.ProcessStackBlock(stackBlockBytes);
         }
     }
 
@@ -1019,6 +1121,9 @@ namespace Microsoft.Diagnostics.Tracing
             header.Payload = (IntPtr)pLayout->Payload;
             header.StackBytesSize = *((int*)(&pLayout->Payload[pLayout->PayloadSize]));
             header.StackBytes = (IntPtr)(&pLayout->Payload[pLayout->PayloadSize + 4]);
+            header.HeaderSize = (sizeof(LayoutV3) - 4);
+            int totalSize = header.EventSize + 4;
+            header.TotalNonHeaderSize = totalSize - header.HeaderSize;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1026,9 +1131,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             public int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT encode the size of the EventSize field itself. 
             public int MetaDataId;          // a number identifying the description of this event.  
-            public long SequenceNumber;
+            public int SequenceNumber;
             public long ThreadId;
             public long CaptureThreadId;
+            public int StackId;
             public long TimeStamp;
             public Guid ActivityID;
             public Guid RelatedActivityID;
@@ -1036,33 +1142,146 @@ namespace Microsoft.Diagnostics.Tracing
             public fixed byte Payload[4];   // Actually of variable size.  4 is used to avoid potential alignment issues.   This 4 also appears in HeaderSize below. 
         }
 
-        public static void ReadFromFormatV4(byte* headerPtr, ref EventPipeEventHeader header)
+        enum CompressedHeaderFlags
         {
-            LayoutV4* pLayout = (LayoutV4*)headerPtr;
-            header.EventSize = pLayout->EventSize;
-            header.MetaDataId = pLayout->MetaDataId & 0x7FFF_FFFF;
-            header.ThreadId = pLayout->ThreadId;
-            header.TimeStamp = pLayout->TimeStamp;
-            header.ActivityID = pLayout->ActivityID;
-            header.RelatedActivityID = pLayout->RelatedActivityID;
-            header.PayloadSize = pLayout->PayloadSize;
-            header.Payload = (IntPtr)pLayout->Payload;
-            header.StackBytesSize = *((int*)(&pLayout->Payload[pLayout->PayloadSize]));
-            header.StackBytes = (IntPtr) (&pLayout->Payload[pLayout->PayloadSize + 4]);
+            MetadataId = 1 << 0,
+            CaptureThreadAndSequence = 1 << 1,
+            ThreadId = 1 << 2,
+            StackId = 1 << 3,
+            ActivityId = 1 << 4,
+            RelatedActivityId = 1 << 5,
+            Sorted = 1 << 6,
+            DataLength = 1 << 7
+        }
+
+        static uint ReadVarUInt32(ref byte* pCursor)
+        {
+            uint val = 0;
+            int shift = 0;
+            byte b;
+            do
+            {
+                if (shift == 5 * 7)
+                {
+                    Debug.Assert(false, "VarUInt32 is too long");
+                    return val;
+                }
+                b = *pCursor;
+                pCursor++;
+                val |= (uint)(b & 0x7f) << shift;
+                shift += 7;
+            } while ((b & 0x80) != 0);
+            return val;
+        }
+
+        static ulong ReadVarUInt64(ref byte* pCursor)
+        {
+            ulong val = 0;
+            int shift = 0;
+            byte b;
+            do
+            {
+                if (shift == 10 * 7)
+                {
+                    Debug.Assert(false, "VarUInt64 is too long");
+                    return val;
+                }
+                b = *pCursor;
+                pCursor++;
+                val |= (ulong)(b & 0x7f) << shift;
+                shift += 7;
+            } while ((b & 0x80) != 0);
+            return val;
+        }
+
+        public static void ReadFromFormatV4(byte* headerPtr, bool useHeaderCompresion, ref EventPipeEventHeader header)
+        {
+            if (!useHeaderCompresion)
+            {
+                LayoutV4* pLayout = (LayoutV4*)headerPtr;
+                header.EventSize = pLayout->EventSize;
+                header.MetaDataId = pLayout->MetaDataId & 0x7FFF_FFFF;
+                header.ThreadId = pLayout->ThreadId;
+                header.StackId = pLayout->StackId;
+                header.TimeStamp = pLayout->TimeStamp;
+                header.ActivityID = pLayout->ActivityID;
+                header.RelatedActivityID = pLayout->RelatedActivityID;
+                header.PayloadSize = pLayout->PayloadSize;
+                header.Payload = (IntPtr)pLayout->Payload;
+                header.HeaderSize = (sizeof(LayoutV4) - 4);
+                int totalSize = header.EventSize + 4;
+                header.TotalNonHeaderSize = totalSize - header.HeaderSize;
+            }
+            else
+            {
+                byte* headerStart = headerPtr;
+                byte flags = *headerPtr;
+                headerPtr++;
+                if((flags & (byte)CompressedHeaderFlags.MetadataId) != 0)
+                {
+                    header.MetaDataId = (int)ReadVarUInt32(ref headerPtr);
+                }
+                if ((flags & (byte)CompressedHeaderFlags.CaptureThreadAndSequence) != 0)
+                {
+                    header.SequenceNumber += (int)ReadVarUInt32(ref headerPtr) + 1;
+                    header.CaptureThreadId = (long)ReadVarUInt64(ref headerPtr);
+                }
+                else
+                {
+                    if(header.MetaDataId != 0)
+                    {
+                        header.SequenceNumber++;
+                    }
+                }
+                if ((flags & (byte)CompressedHeaderFlags.ThreadId) != 0)
+                {
+                    header.ThreadId = (int)ReadVarUInt64(ref headerPtr);
+                }
+                if ((flags & (byte)CompressedHeaderFlags.StackId) != 0)
+                {
+                    header.StackId = (int)ReadVarUInt32(ref headerPtr);
+                }
+                ulong timestampDelta = ReadVarUInt64(ref headerPtr);
+                header.TimeStamp += (long)timestampDelta;
+                if ((flags & (byte)CompressedHeaderFlags.ActivityId) != 0)
+                {
+                    header.ActivityID = *(Guid*)headerPtr;
+                    headerPtr += sizeof(Guid);
+                }
+                if ((flags & (byte)CompressedHeaderFlags.RelatedActivityId) != 0)
+                {
+                    header.RelatedActivityID = *(Guid*)headerPtr;
+                    headerPtr += sizeof(Guid);
+                }
+                header.IsSorted = (flags & (byte)CompressedHeaderFlags.Sorted) != 0;
+                if ((flags & (byte)CompressedHeaderFlags.DataLength) != 0)
+                {
+                    header.PayloadSize = (int)ReadVarUInt32(ref headerPtr);
+                }
+                header.Payload = (IntPtr)headerPtr;
+
+                header.HeaderSize = (int)(headerPtr - headerStart);
+                header.TotalNonHeaderSize = header.PayloadSize;
+            }
         }
 
         private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT encode the size of the EventSize field itself. 
         public int MetaDataId;          // a number identifying the description of this event.  
+        public int SequenceNumber;
+        public long CaptureThreadId;
         public long ThreadId;
         public long TimeStamp;
         public Guid ActivityID;
         public Guid RelatedActivityID;
+        public bool IsSorted;
         public int PayloadSize;         // size in bytes of the user defined payload data. 
         public IntPtr Payload;
+        public int StackId;
         public int StackBytesSize;
         public IntPtr StackBytes;
-
-        public int TotalEventSize => EventSize + sizeof(int);  // Includes the size of the EventSize field itself 
+        public int HeaderSize;         // The size of the event up to the payload
+        public int TotalNonHeaderSize; // The size of the payload, stack, and alignment padding
+        
 
         public bool IsMetadata() => MetaDataId == 0; // 0 means that it's a metadata Id
 
@@ -1083,38 +1302,6 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        public static bool GetIsSortedEvent(byte* headerPtr)
-        {
-            LayoutV4* header = (LayoutV4*)headerPtr;
-            return (header->MetaDataId & 0x8000_0000) == 0;
-        }
-
-        public static long GetCaptureThreadId(byte* headerPtr)
-        {
-            LayoutV4* header = (LayoutV4*)headerPtr;
-            return header->CaptureThreadId;
-        }
-
-        public static long GetSequenceNumber(byte* headerPtr)
-        {
-            LayoutV4* header = (LayoutV4*)headerPtr;
-            return header->SequenceNumber;
-        }
-
-        public static long GetTimestamp(byte* headerPtr, int formatVersion)
-        {
-            if (formatVersion <= 3)
-            {
-                LayoutV3* header = (LayoutV3*)headerPtr;
-                return header->TimeStamp;
-            }
-            else //if(formatVersion == 4)
-            {
-                LayoutV4* header = (LayoutV4*)headerPtr;
-                return header->TimeStamp;
-            }
-        }
-
         /// <summary>
         /// Header Size is defined to be the number of bytes before the Payload bytes.  
         /// </summary>
@@ -1130,32 +1317,10 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        public static Guid GetRelatedActivityID(byte* headerPtr, int formatVersion)
+        public static Guid GetRelatedActivityID(byte* headerPtr)
         {
-            if (formatVersion <= 3)
-            {
-                LayoutV3* header = (LayoutV3*)headerPtr;
-                return header->RelatedActivityID;
-            }
-            else //if(formatVersion == 4)
-            {
-                LayoutV4* header = (LayoutV4*)headerPtr;
-                return header->RelatedActivityID;
-            }
-        }
-
-        public static byte* PayloadBytes(byte* headerPtr, int formatVersion)
-        {
-            if (formatVersion <= 3)
-            {
-                LayoutV3* header = (LayoutV3*)headerPtr;
-                return &header->Payload[0];
-            }
-            else //if(formatVersion == 4)
-            {
-                LayoutV4* header = (LayoutV4*)headerPtr;
-                return &header->Payload[0];
-            }
+            LayoutV3* header = (LayoutV3*)headerPtr;
+            return header->RelatedActivityID;
         }
     }
     #endregion

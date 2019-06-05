@@ -195,6 +195,30 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void CanParseHeaderOfV4EventPipeFile()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore3.0-win-x64-objver4.nettrace";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            using (var eventPipeSource = new EventPipeEventSource(eventPipeFilePath))
+            {
+                Assert.Equal(8, eventPipeSource.PointerSize);
+                Assert.Equal(4656, eventPipeSource._processId);
+                Assert.Equal(4, eventPipeSource.NumberOfProcessors);
+                Assert.Equal(1000000, eventPipeSource._expectedCPUSamplingRate);
+
+                Assert.Equal(636953182957890000, eventPipeSource._syncTimeUTC.Ticks);
+                Assert.Equal(597991822717, eventPipeSource._syncTimeQPC);
+                Assert.Equal(3124099, eventPipeSource._QPCFreq);
+
+                Assert.Equal(10, eventPipeSource.CpuSpeedMHz);
+            }
+        }
+
+        [Fact]
         public void AllEventsLeavesNoUnhandledEvents()
         {
             PrepareTestData();

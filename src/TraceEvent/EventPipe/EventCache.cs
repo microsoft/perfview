@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
-    unsafe delegate void ParseBufferItemFunction(byte* bufferPtr);
+    unsafe delegate void ParseBufferItemFunction(ref EventPipeEventHeader header);
 
     internal class EventCache
     {
@@ -17,30 +17,48 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         public unsafe void ProcessEventBlock(byte[] eventBlockData)
         {
+            // parse the header
+            if(eventBlockData.Length < 20)
+            {
+                Debug.Assert(false, "Expected EventBlock of at least 20 bytes");
+                return;
+            }
+            ushort headerSize = BitConverter.ToUInt16(eventBlockData, 0);
+            if(headerSize < 20 || headerSize > eventBlockData.Length)
+            {
+                Debug.Assert(false, "Invalid EventBlock header size");
+                return;
+            }
+            ushort flags = BitConverter.ToUInt16(eventBlockData, 2);
+            bool useHeaderCompression = (flags & (ushort)EventBlockFlags.HeaderCompression) != 0;
+
+            // parse the events
             PinnedBuffer buffer = new PinnedBuffer(eventBlockData);
-            byte* cursor = (byte*) buffer.PinningHandle.AddrOfPinnedObject();
+            byte* cursor = (byte*)buffer.PinningHandle.AddrOfPinnedObject();
             byte* end = cursor + eventBlockData.Length;
-            long captureThreadId = EventPipeEventHeader.GetCaptureThreadId(cursor);
-            long sequenceNumber = EventPipeEventHeader.GetSequenceNumber(cursor);
+            cursor += headerSize;
+            EventMarker eventMarker = new EventMarker(buffer);
             long timestamp = 0;
-            if (!_threads.TryGetValue(captureThreadId, out EventCacheThread thread))
+            EventPipeEventHeader.ReadFromFormatV4(cursor, useHeaderCompression, ref eventMarker.Header);
+            if (!_threads.TryGetValue(eventMarker.Header.CaptureThreadId, out EventCacheThread thread))
             {
                 thread = new EventCacheThread();
-                thread.SequenceNumber = sequenceNumber - 1;
-                AddThread(captureThreadId, thread);
+                thread.SequenceNumber = eventMarker.Header.SequenceNumber - 1;
+                AddThread(eventMarker.Header.CaptureThreadId, thread);
             }
+            eventMarker = new EventMarker(buffer);
             while (cursor < end)
             {
-                int totalSize = EventPipeEventHeader.GetTotalEventSize(cursor, 4);
-                bool isSortedEvent = EventPipeEventHeader.GetIsSortedEvent(cursor);
-                timestamp = EventPipeEventHeader.GetTimestamp(cursor, 4);
-                sequenceNumber = EventPipeEventHeader.GetSequenceNumber(cursor);
+                EventPipeEventHeader.ReadFromFormatV4(cursor, useHeaderCompression, ref eventMarker.Header);
+                bool isSortedEvent = eventMarker.Header.IsSorted;
+                timestamp = eventMarker.Header.TimeStamp;
+                int sequenceNumber = eventMarker.Header.SequenceNumber;
                 if (isSortedEvent)
                 {
                     thread.LastCachedEventTimestamp = timestamp;
 
                     // sorted events are the only time the captureThreadId should change
-                    captureThreadId = EventPipeEventHeader.GetCaptureThreadId(cursor);
+                    long captureThreadId = eventMarker.Header.CaptureThreadId;
                     if (!_threads.TryGetValue(captureThreadId, out thread))
                     {
                         thread = new EventCacheThread();
@@ -65,16 +83,75 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 if(isSortedEvent)
                 {
                     SortAndDispatch(timestamp);
-                    OnEvent?.Invoke(cursor);
+                    OnEvent?.Invoke(ref eventMarker.Header);
                 }
                 else
                 {
-                    thread.Events.Enqueue(new EventMarker(cursor, buffer, timestamp));
+                    thread.Events.Enqueue(eventMarker);
+
                 }
 
-                cursor += totalSize;
+                cursor += eventMarker.Header.TotalNonHeaderSize + eventMarker.Header.HeaderSize;
+                EventMarker lastEvent = eventMarker;
+                eventMarker = new EventMarker(buffer);
+                eventMarker.Header = lastEvent.Header;
             }
             thread.LastCachedEventTimestamp = timestamp;
+        }
+
+        public unsafe void ProcessSequencePointBlock(byte[] sequencePointBytes)
+        {
+            if(sequencePointBytes.Length < 12)
+            {
+                Debug.Assert(false, "Bad sequence point block length");
+                return;
+            }
+            long timestamp = BitConverter.ToInt64(sequencePointBytes, 0);
+            int threadCount = BitConverter.ToInt32(sequencePointBytes, 8);
+            if(sequencePointBytes.Length < 12 + threadCount*12)
+            {
+                Debug.Assert(false, "Bad sequence point block length");
+                return;
+            }
+            SortAndDispatch(timestamp);
+            foreach(EventCacheThread thread in _threads.Values)
+            {
+                Debug.Assert(thread.Events.Count == 0, "There shouldn't be any pending events after a sequence point");
+                thread.Events.Clear();
+                thread.Events.TrimExcess();
+            }
+
+            int cursor = 12;
+            for(int i = 0; i < threadCount; i++)
+            {
+                long captureThreadId = BitConverter.ToInt64(sequencePointBytes, cursor);
+                int sequenceNumber = BitConverter.ToInt32(sequencePointBytes, cursor + 8);
+                if (!_threads.TryGetValue(captureThreadId, out EventCacheThread thread))
+                {
+                    if(sequenceNumber != 0)
+                    {
+                        OnEventsDropped?.Invoke(sequenceNumber);
+                    }
+                    thread = new EventCacheThread();
+                    thread.SequenceNumber = sequenceNumber;
+                    AddThread(captureThreadId, thread);
+                }
+                else
+                {
+                    int droppedEvents = unchecked(sequenceNumber - thread.SequenceNumber);
+                    if (droppedEvents > 0)
+                    {
+                        OnEventsDropped?.Invoke(droppedEvents);
+                    }
+                    else
+                    {
+                        // When a thread id is recycled the sequenceNumber can abruptly reset to 1 which
+                        // makes droppedEvents go negative
+                        Debug.Assert(droppedEvents == 0 || sequenceNumber == 1);
+                    }
+                    thread.SequenceNumber = sequenceNumber;
+                }
+            }
         }
 
         /// <summary>
@@ -100,7 +177,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     {
                         continue;
                     }
-                    long eventTimestamp = threadQueue.Peek().Timestamp;
+                    long eventTimestamp = threadQueue.Peek().Header.TimeStamp;
                     if (eventTimestamp < lowestTimestamp)
                     {
                         oldestEventQueue = threadQueue;
@@ -114,7 +191,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 else
                 {
                     EventMarker eventMarker = oldestEventQueue.Dequeue();
-                    OnEvent?.Invoke(eventMarker.BufferPosition);
+                    OnEvent?.Invoke(ref eventMarker.Header);
                 }
             }
 
@@ -171,21 +248,18 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
     internal class EventCacheThread
     {
         public Queue<EventMarker> Events = new Queue<EventMarker>();
-        public long SequenceNumber;
+        public int SequenceNumber;
         public long LastCachedEventTimestamp;
     }
 
-    internal unsafe struct EventMarker
+    internal class EventMarker
     {
-        public EventMarker(byte* bufferPosition, PinnedBuffer buffer, long timestamp)
+        public EventMarker(PinnedBuffer buffer)
         {
-            BufferPosition = bufferPosition;
-            Timestamp = timestamp;
             Buffer = buffer;
         }
-        public byte* BufferPosition;
+        public EventPipeEventHeader Header;
         public PinnedBuffer Buffer;
-        public long Timestamp;
     }
 
     internal class PinnedBuffer
