@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using OptimizationTier = Microsoft.Diagnostics.Tracing.Parsers.Clr.OptimizationTier;
+
 namespace Diagnostics.Tracing.StackSources
 {
     public class LinuxPerfScriptEventParser
@@ -1092,6 +1094,28 @@ namespace Diagnostics.Tracing.StackSources
         {
             Address = address;
             Module = module;
+
+            // Check for the optimization tier. The symbol would contain the optimization tier in the form:
+            //   Symbol[OptimizationTier]
+            // Convert it to this form, which is used elsewhere:
+            //   [OptimizationTier]Symbol
+            if (symbol != null && symbol.Length >= 3 && symbol[symbol.Length - 1] == ']')
+            {
+                int openBracketIndex = symbol.LastIndexOf('[', symbol.Length - 2);
+                if (openBracketIndex >= 0 && symbol.Length - openBracketIndex > 2)
+                {
+                    var optimizationTierStr = symbol.Substring(openBracketIndex + 1, symbol.Length - openBracketIndex - 2);
+                    if (Enum.TryParse<OptimizationTier>(optimizationTierStr, out var optimizationTier))
+                    {
+                        symbol = symbol.Substring(0, openBracketIndex);
+                        if (optimizationTier != OptimizationTier.Unknown)
+                        {
+                            symbol = $"[{optimizationTierStr}]{symbol}";
+                        }
+                    }
+                }
+            }
+
             Symbol = symbol;
         }
     }
