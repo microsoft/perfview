@@ -8427,7 +8427,7 @@ table {
     {
         public override string FormatName => "EventPipe";
 
-        public override string[] FileExtensions => new string[] { ".netperf", ".netperf.zip" };
+        public override string[] FileExtensions => new string[] { ".netperf", ".netperf.zip", ".nettrace" };
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {

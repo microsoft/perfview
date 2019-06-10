@@ -128,7 +128,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 int sequenceNumber = BitConverter.ToInt32(sequencePointBytes, cursor + 8);
                 if (!_threads.TryGetValue(captureThreadId, out EventCacheThread thread))
                 {
-                    if(sequenceNumber != 0)
+                    if(sequenceNumber > 0)
                     {
                         OnEventsDropped?.Invoke(sequenceNumber);
                     }
@@ -151,6 +151,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     }
                     thread.SequenceNumber = sequenceNumber;
                 }
+                cursor += 12;
             }
         }
 
