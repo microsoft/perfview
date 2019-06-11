@@ -679,6 +679,7 @@ namespace FastSerialization
                 }
 
                 // Update our internal state to match the read above
+                Debug.Assert(bytesRead == length);
                 Goto(Current.Add(length));
                 return;
             }

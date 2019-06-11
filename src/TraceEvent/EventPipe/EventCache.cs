@@ -101,14 +101,16 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         public unsafe void ProcessSequencePointBlock(byte[] sequencePointBytes)
         {
-            if(sequencePointBytes.Length < 12)
+            const int SizeOfTimestampAndThreadCount = 12;
+            const int SizeOfThreadIdAndSequenceNumber = 12;
+            if(sequencePointBytes.Length < SizeOfTimestampAndThreadCount)
             {
                 Debug.Assert(false, "Bad sequence point block length");
                 return;
             }
             long timestamp = BitConverter.ToInt64(sequencePointBytes, 0);
             int threadCount = BitConverter.ToInt32(sequencePointBytes, 8);
-            if(sequencePointBytes.Length < 12 + threadCount*12)
+            if(sequencePointBytes.Length < SizeOfTimestampAndThreadCount + threadCount*SizeOfThreadIdAndSequenceNumber)
             {
                 Debug.Assert(false, "Bad sequence point block length");
                 return;
@@ -121,7 +123,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 thread.Events.TrimExcess();
             }
 
-            int cursor = 12;
+            int cursor = SizeOfTimestampAndThreadCount;
             for(int i = 0; i < threadCount; i++)
             {
                 long captureThreadId = BitConverter.ToInt64(sequencePointBytes, cursor);
@@ -151,7 +153,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     }
                     thread.SequenceNumber = sequenceNumber;
                 }
-                cursor += 12;
+                cursor += SizeOfThreadIdAndSequenceNumber;
             }
         }
 

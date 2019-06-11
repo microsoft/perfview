@@ -7868,7 +7868,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 3));
+            // Not sure if hand editing is appropriate but the start event is size 3 whereas the stop event is size 11
+            // and both of them come here
+            Debug.Assert(!(Version == 1 && EventDataLength != 3 && EventDataLength != 11));
             Debug.Assert(!(Version > 1 && EventDataLength < 3));
         }
         public override StringBuilder ToXml(StringBuilder sb)
