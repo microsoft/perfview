@@ -1830,6 +1830,11 @@ namespace FastSerialization
             if (tag == Tags.BeginPrivateObject)
             {
                 type = (SerializationType)ReadObject();
+                // Special case, a null object means 'typeof serializationType'
+                if (type == null)
+                {
+                    type = new SerializationType(typeof(SerializationType).FullName, this);
+                }
                 ret = type.CreateInstance();
             }
             else

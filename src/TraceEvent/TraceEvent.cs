@@ -3090,6 +3090,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 return new EventPipeEventSource(traceFileName);
             }
+            else if (traceFileName.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
+            {
+                return new EventPipeEventSource(traceFileName);
+            }
 #if !NOT_WINDOWS
             else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||

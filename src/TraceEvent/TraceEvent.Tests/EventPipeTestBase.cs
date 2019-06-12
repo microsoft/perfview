@@ -18,7 +18,8 @@ namespace TraceEventTests
         }
 
         private static IEnumerable<string> TestEventPipeZipFiles
-            => Directory.EnumerateFiles(TestDataDir, "*.netperf.zip");
+            => Directory.EnumerateFiles(TestDataDir, "*.netperf.zip")
+            .Union(Directory.EnumerateFiles(TestDataDir, "*.nettrace.zip"));
 
         // The test data is contained in files of the same name, but with a .zip extension.
         // Only the names are returned since the extracted files will be in a different directory.

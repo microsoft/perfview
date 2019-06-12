@@ -39,7 +39,7 @@ namespace FastSerialization
         public virtual bool HasLength { get { return true; } }
 
         #region implemenation of IStreamReader
-        public void Read(byte[] data, int offset, int length)
+        public virtual void Read(byte[] data, int offset, int length)
         {
             if (length > endPosition - position)
             {
@@ -656,6 +656,42 @@ namespace FastSerialization
         /// </summary>
         public override long Length { get { return inputStream.Length; } }
         public override bool HasLength { get { return inputStream.CanSeek; } }
+
+        public override void Read(byte[] data, int offset, int length)
+        {
+            // The base class is constrained to only handle reads that are <= size of the cache
+            // For larger reads we can take what is available in the cache and satisfy the
+            // remainder from the stream
+            if (length > bytes.Length)
+            {
+                int cacheBytes = endPosition - position;
+                Buffer.BlockCopy(bytes, position, data, offset, cacheBytes);
+                int bytesRead = cacheBytes;
+                while (bytesRead < length)
+                {
+                    int count = inputStream.Read(data, offset + bytesRead, length - bytesRead);
+                    inputStreamBytesRead += (uint)count;
+                    if (count == 0)
+                    {
+                        throw new Exception("Read past end of stream.");
+                    }
+                    bytesRead += count;
+                }
+
+                // Update our internal state to match the read above
+                Debug.Assert(bytesRead == length);
+                Goto(Current.Add(length));
+                return;
+            }
+
+            if (length > endPosition - position)
+            {
+                Fill(length);
+            }
+
+            Buffer.BlockCopy(bytes, position, data, offset, length);
+            position += length;
+        }
         #endregion 
 
         #region private
