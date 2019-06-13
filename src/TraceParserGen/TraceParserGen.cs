@@ -296,7 +296,15 @@ internal class TraceParserGen
         output.WriteLine("                var templates = new TraceEvent[{0}];", m_provider.Events.Count);
         for (int i = 0; i < m_provider.Events.Count; i++)
         {
-            output.WriteLine("                templates[{0}] = {1}Template(null);", i, TraceParserGen.ToCSharpName(m_provider.Events[i].EventName));
+            var evnt = m_provider.Events[i];
+
+            // check if the same event template has not been already defined (different versions of the same event)
+            output.WriteLine("                templates[{0}] = new {1}TraceData(null, {2}, {3}, \"{4}\", {4}TaskGuid, {5}, \"{6}\", ProviderGuid, ProviderName);",
+                                              i, TraceParserGen.ToCSharpName(evnt.EventName),
+                                              evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
+                                              );
+            // as of today, the generated code won't compile because the task GUID is not defined
+            // TODO: define the xxxTaskGuid based on eventGUID attribute of <task> elements of the .man file
         }
 
         output.WriteLine("                s_templates = templates;");
@@ -321,6 +329,12 @@ internal class TraceParserGen
             var evnt = keyValue.Value[0];
 
             string templateClassName = GetTemplateNameForEvent(evnt, evntName);
+            // need to handle empty event names because there is no task property in the .man file
+            // --> this is the case for event 270 | EventSource
+            if (string.IsNullOrEmpty(evntName))
+            {
+                evntName = evnt.Symbol + "Event";
+            }
 
             output.WriteLine("        public event Action<" + templateClassName + "> " + evntName);
             output.WriteLine("        {");
@@ -331,12 +345,20 @@ internal class TraceParserGen
             {
                 extraArg = ", State";
             }
+            var taskGuid = (string.IsNullOrEmpty(evnt.TaskName))
+                ? "Guid.Empty"
+                : evnt.TaskName + "TaskGuid";
+            var taskName = TraceParserGen.ToCSharpName(evnt.TaskName);
+            if (string.IsNullOrEmpty(taskName)) taskName = evntName;
             // Call the *Template() function that does the work
-            output.WriteLine("                source.RegisterEventTemplate(" + TraceParserGen.ToCSharpName(evntName) + "Template(value" + extraArg + "));");
+            output.WriteLine("                RegisterTemplate(new {0}(value, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName));",
+                                              templateClassName, evnt.Id, evnt.Task, taskName, taskGuid,
+                                              evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
+                                              );
             output.WriteLine("            }");
             output.WriteLine("            remove");
             output.WriteLine("            {");
-            output.WriteLine("                source.UnregisterEventTemplate(value, " + evnt.Id + ", ProviderGuid);");
+            output.WriteLine("                source.UnregisterEventTemplate(value, " + evnt.Id + ", " + taskGuid + ");");
             output.WriteLine("            }");
             output.WriteLine("        }");
         }
@@ -465,7 +487,7 @@ internal class TraceParserGen
             output.WriteLine("        #region Private");
 
             // Write out the constructor
-            output.Write("        internal " + templateClassName + "(Action<" + templateClassName + "> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName");
+            output.Write("        internal " + templateClassName + "(Action<" + templateClassName + "> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName");
             if (NeedsParserState)
             {
                 output.Write(", " + ClassNamePrefix + "State state");
@@ -474,7 +496,7 @@ internal class TraceParserGen
             output.WriteLine(")");
             output.WriteLine("            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)");
             output.WriteLine("        {");
-            output.WriteLine("            this.m_target = target;");
+            output.WriteLine("            Action = action;");
             if (NeedsParserState)
             {
                 output.WriteLine("            this.m_state = state;");
@@ -491,7 +513,7 @@ internal class TraceParserGen
             // Write out the dispatch method
             output.WriteLine("        protected internal {0}override void Dispatch()", internalOpt);
             output.WriteLine("        {");
-            output.WriteLine("            m_target(this);");
+            output.WriteLine("            Action(this);");
             output.WriteLine("        }");
 
             // And the debugging logic
@@ -503,8 +525,8 @@ internal class TraceParserGen
             // And for setting and inspecting the callback delegate
             output.WriteLine("        protected internal {0}override Delegate Target", internalOpt);
             output.WriteLine("        {");
-            output.WriteLine("            get { return m_target; }");
-            output.WriteLine("            set { m_target = (Action<" + templateClassName + ">) value; }");
+            output.WriteLine("            get { return Action; }");
+            output.WriteLine("            set { Action = (Action<" + templateClassName + ">) value; }");
             output.WriteLine("        }");
 
             // Write out a 'ToXml' that has all the fields
@@ -603,7 +625,7 @@ internal class TraceParserGen
             output.WriteLine("        public static Guid GetProviderGuid() { return new Guid(\"" + versionsForEvent[0].Provider.Id + "\"); }");
 
             // Write out the fields specific to this TraceEvent (that are not payload)
-            output.WriteLine("        private event Action<" + templateClassName + "> m_target;");
+            output.WriteLine("        private event Action<" + templateClassName + "> Action;");
             if (NeedsParserState)
             {
                 output.WriteLine("        protected internal override void SetState(object newState) { m_state = (" + ClassNamePrefix + "State)newState; }");
@@ -805,6 +827,10 @@ internal class TraceParserGen
             {
                 ret = TraceParserGen.ToCSharpName(eventName) + "Args";
             }
+            else
+            {
+                ret = ret + "TraceData";
+            }
         }
         return ret;
     }
@@ -950,15 +976,21 @@ internal class TraceParserGen
             return null;
         }
 
+        // Note: the previous implementation did not seem right 
+        // by removing characters while iterating based on the string length
+        var validName = new StringBuilder(input.Length);
         for (int i = 0; i < input.Length; i++)
         {
             char c = input[i];
             if (!Char.IsLetter(c) && !Char.IsDigit(c) && c != '_')
             {
-                return Regex.Replace(input, @"[^\w\d_]", "");          //Simply remove them.    
+                // skip this character
+                continue;
             }
+
+            validName.Append(c);
         }
-        return input;
+        return validName.ToString();
     }
 
     private string MergeType(string type1, string type2, bool triedSwap)

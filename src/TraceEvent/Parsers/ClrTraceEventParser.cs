@@ -9,14 +9,10 @@ using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
-/* This file was generated with the command */
-// traceParserGen /merge CLREtwAll.man CLRTraceEventParser.cs
-/* And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...) */
-// The version before any hand modifications is kept as KernelTraceEventParser.base.cs, and a 3
-// way diff is done when traceParserGen is rerun.  This allows the 'by-hand' modifications to be
-// applied again if the mof or the traceParserGen transformation changes. 
-// 
-// See traceParserGen /usersGuide for more on the /merge option 
+// This file was generated with the following command:
+//    traceParserGen CLREtwAll.man CLRTraceEventParser.cs
+// And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...)
+// Note: /merge option is no more available (does not even compile)
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Clr;

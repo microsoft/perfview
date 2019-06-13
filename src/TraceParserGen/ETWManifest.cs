@@ -605,9 +605,10 @@ namespace ETWManifest
                     return Capitalize(OpcodeName);
                 }
 
-                if (TaskName.EndsWith(OpcodeName, StringComparison.OrdinalIgnoreCase))
+                // could be that the task name is the prefix of the Opcode name
+                if (OpcodeName.StartsWith(TaskName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return TaskName;
+                    return Capitalize(OpcodeName);
                 }
 
                 return TaskName + Capitalize(OpcodeName);
@@ -793,7 +794,7 @@ namespace ETWManifest
                     }
                 }
             }
-            catch
+            catch(Exception e)
             {
                 if (fileName == null)
                 {
