@@ -188,8 +188,10 @@ In the uncompressed format an event blob is:
 - Header
   - EventSize - int - The size of event blob not counting this field
   - MetadataId - int - In the context of an EventBlock the low 31 bits are a foreign key to the event's metadata. In the context of a metadata block the low 31 bits are always zero'ed. The high bit is the IsSorted flag.
+  - Sequence Number - int - An incrementing counter that is used to detect dropped events
   - ThreadId - long - This the thread the event is logically describing. It is usually the same thread that physically recorded the event, but in some cases thread A will record some state that represents some other thread B.
   - CaptureThreadId - long - This is the thread which physically captured the event. Sequence Numbers are tracked relative to the CaptureThreadId
+  - ProcessorNumber - int - Identifies which processor CaptureThreadId was running on
   - StackId - int - A foreign key to a stack that should be associated with this event. See StackBlock for more details.
   - TimeStamp - long - The QPC time the event occured
   - ActivityID - GUID
@@ -222,6 +224,9 @@ Compressed events are encoded with a header:
 - CaptureThreadId optional varint64
   - if Flags & 2 the value is read from the stream
   - otherwise previous CaptureThreadId
+- Processor Number optional varint32
+  - if Flags & 2 the value is read from the stream
+  - otherwise previous Processor Number
 - ThreadId optional varint64
   - if Flags & 4 the value is read from the stream
   - otherwise previous ThreadId

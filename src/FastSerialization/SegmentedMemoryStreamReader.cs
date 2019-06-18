@@ -140,6 +140,7 @@ namespace FastSerialization
         public virtual void Goto(StreamLabel label)
         {
             Debug.Assert(label != StreamLabel.Invalid);
+            Debug.Assert((long)label <= int.MaxValue);
             position = (int)label;
         }
         /// <summary>
@@ -157,7 +158,8 @@ namespace FastSerialization
         /// </summary>
         public virtual void GotoSuffixLabel()
         {
-            Goto((StreamLabel)(Length - sizeof(StreamLabel)));
+            const int serializedStreamLabelSize = 4;
+            Goto((StreamLabel)(Length - serializedStreamLabelSize));
             Goto(ReadLabel());
         }
         /// <summary>
