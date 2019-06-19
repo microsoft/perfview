@@ -11,6 +11,7 @@ using System.Threading;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using DeferedStreamLabel = FastSerialization.StreamLabel;
+using System.Diagnostics;
 
 namespace FastSerialization
 {
@@ -124,6 +125,7 @@ namespace FastSerialization
             }
 
             // see if we can just change the offset
+            Debug.Assert((long)label <= int.MaxValue);
             int absoluteOffset = (int)label;
             if (absoluteOffset >= _viewOffset && absoluteOffset < _viewOffset + _capacity)
             {
@@ -146,7 +148,8 @@ namespace FastSerialization
 
         public void GotoSuffixLabel()
         {
-            Goto((DeferedStreamLabel)(Length - sizeof(DeferedStreamLabel)));
+            const int sizeOfSerializedStreamLabel = 4;
+            Goto((DeferedStreamLabel)(Length - sizeOfSerializedStreamLabel));
             Goto(ReadLabel());
         }
 

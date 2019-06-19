@@ -201,10 +201,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             // If the app creates and destroys threads over time we need to flush old threads
             // from the cache or memory usage will grow unbounded. AddThread handles the
             // the thread objects but the storage for the queue elements also does not shrink
-            // below the high water mark unless we free it explicitly. Although not unbounded
-            // growth our current runtime policy reads ahead up to 10,000 events ahead per-thread
-            // * 5000 threads * 24 bytes = ~1GB. It would be nice not to leave that much memory
-            // laying around probably mostly unused.
+            // below the high water mark unless we free it explicitly.
             foreach(Queue<EventMarker> q in threadQueues)
             {
                 if(q.Count == 0)

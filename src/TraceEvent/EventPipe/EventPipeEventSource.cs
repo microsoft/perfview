@@ -660,9 +660,9 @@ namespace Microsoft.Diagnostics.Tracing
             var blockSizeInBytes = deserializer.ReadInt();
 
             // after the block size comes eventual padding, we just need to skip it by jumping to the nearest aligned address
-            if ((int)deserializer.Current % 4 != 0)
+            if ((long)deserializer.Current % 4 != 0)
             {
-                var nearestAlignedAddress = deserializer.Current.Add(4 - ((int)deserializer.Current % 4));
+                var nearestAlignedAddress = deserializer.Current.Add((int)(4 - ((long)deserializer.Current % 4)));
                 deserializer.Goto(nearestAlignedAddress);
             }
 
@@ -883,6 +883,15 @@ namespace Microsoft.Diagnostics.Tracing
             // Note: ThreadId isn't 32 bit on all of our platforms but ETW EVENT_RECORD* only has room for a 32 bit
             // ID. We'll need to refactor up the stack if we want to expose a bigger ID.
             _eventRecord->EventHeader.ThreadId = unchecked((int)eventData.ThreadId);
+            if (eventData.ThreadId == eventData.CaptureThreadId && eventData.CaptureProcNumber != -1)
+            {
+                // Its not clear how the caller is supposed to distinguish between events that we know were on
+                // processor 0 vs. lacking information about what processor number the thread is on and
+                // reporting 0. We could certainly change the API to make this more apparent, but for now I
+                // am only focused on ensuring the data is in the file format and we could improve access in the
+                // future.
+                _eventRecord->BufferContext.ProcessorNumber = (byte)eventData.CaptureProcNumber;
+            }
             _eventRecord->EventHeader.TimeStamp = eventData.TimeStamp;
             _eventRecord->EventHeader.ActivityId = eventData.ActivityID;
             // EVENT_RECORD does not field for ReleatedActivityID (because it is rarely used).  See GetRelatedActivityID;
@@ -1114,6 +1123,8 @@ namespace Microsoft.Diagnostics.Tracing
             header.EventSize = pLayout->EventSize;
             header.MetaDataId = pLayout->MetaDataId;
             header.ThreadId = pLayout->ThreadId;
+            header.CaptureThreadId = -1;
+            header.CaptureProcNumber = -1;
             header.TimeStamp = pLayout->TimeStamp;
             header.ActivityID = pLayout->ActivityID;
             header.RelatedActivityID = pLayout->RelatedActivityID;
@@ -1134,6 +1145,7 @@ namespace Microsoft.Diagnostics.Tracing
             public int SequenceNumber;
             public long ThreadId;
             public long CaptureThreadId;
+            public int CaptureProcNumber;
             public int StackId;
             public long TimeStamp;
             public Guid ActivityID;
@@ -1201,7 +1213,11 @@ namespace Microsoft.Diagnostics.Tracing
                 LayoutV4* pLayout = (LayoutV4*)headerPtr;
                 header.EventSize = pLayout->EventSize;
                 header.MetaDataId = pLayout->MetaDataId & 0x7FFF_FFFF;
+                header.IsSorted = ((uint)pLayout->MetaDataId & 0x8000_0000) == 0;
+                header.SequenceNumber = pLayout->SequenceNumber;
                 header.ThreadId = pLayout->ThreadId;
+                header.CaptureThreadId = pLayout->CaptureThreadId;
+                header.CaptureProcNumber = pLayout->CaptureProcNumber;
                 header.StackId = pLayout->StackId;
                 header.TimeStamp = pLayout->TimeStamp;
                 header.ActivityID = pLayout->ActivityID;
@@ -1225,6 +1241,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     header.SequenceNumber += (int)ReadVarUInt32(ref headerPtr) + 1;
                     header.CaptureThreadId = (long)ReadVarUInt64(ref headerPtr);
+                    header.CaptureProcNumber = (int)ReadVarUInt32(ref headerPtr);
                 }
                 else
                 {
@@ -1269,6 +1286,7 @@ namespace Microsoft.Diagnostics.Tracing
         public int MetaDataId;          // a number identifying the description of this event.  
         public int SequenceNumber;
         public long CaptureThreadId;
+        public int CaptureProcNumber;
         public long ThreadId;
         public long TimeStamp;
         public Guid ActivityID;
