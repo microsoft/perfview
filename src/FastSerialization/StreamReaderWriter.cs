@@ -150,7 +150,7 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)ReadInt32();
+            return (StreamLabel)(uint)ReadInt32();
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -168,7 +168,7 @@ namespace FastSerialization
         {
             get
             {
-                return (StreamLabel)position;
+                return (StreamLabel)(uint)position;
             }
         }
         /// <summary>
@@ -950,7 +950,7 @@ namespace FastSerialization
                             int position = r.Next(0, origData.Length);
                             int size = r.Next(0, bufferSize) + 1;
 
-                            reader.Goto((StreamLabel)position);
+                            reader.Goto((StreamLabel)(uint)position);
                             Compare(reader, origData, position, size);
                         }
                         reader.Close();

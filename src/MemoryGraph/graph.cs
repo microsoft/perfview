@@ -576,7 +576,7 @@ namespace Graphs
 
             for (int i = 0; i < nodeCount; i++)
             {
-                m_nodes.Add((StreamLabel)deserializer.ReadInt());
+                m_nodes.Add((StreamLabel)(uint)deserializer.ReadInt());
             }
 
             // Read in the Blob stream.  
