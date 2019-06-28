@@ -132,7 +132,7 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)ReadInt32();
+            return (StreamLabel)(uint)ReadInt32();
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -150,7 +150,7 @@ namespace FastSerialization
         {
             get
             {
-                return (StreamLabel)position;
+                return (StreamLabel)(uint)position;
             }
         }
         /// <summary>
