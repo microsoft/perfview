@@ -176,6 +176,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// Events that will dump PDBs of dynamically generated assemblies to the ETW stream.  
             /// </summary>
             Codesymbols = 0x400000000,
+            /// <summary>
+            /// Verbose events for diagnosing compilation and pre-compilation features.
+            /// </summary>
+            CompilationVerbose = 0x2000000000,
 
             /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
