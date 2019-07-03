@@ -177,9 +177,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Codesymbols = 0x400000000,
             /// <summary>
-            /// Verbose events for diagnosing compilation and pre-compilation features.
+            /// Diagnostic events for diagnosing compilation and pre-compilation features.
             /// </summary>
-            CompilationVerbose = 0x2000000000,
+            CompilationDiagnostic = 0x2000000000,
 
             /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
