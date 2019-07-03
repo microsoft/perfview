@@ -8429,6 +8429,8 @@ table {
 
         public override string[] FileExtensions => new string[] { ".netperf", ".netperf.zip", ".nettrace" };
 
+        private string m_extraTopStats;
+
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
             var traceLog = GetTraceLog(log);
@@ -8444,6 +8446,9 @@ table {
             bool hasJIT = false;
             bool hasAnyStacks = false;
             bool hasDotNetHeapDumps = false;
+            bool hasGCAllocationTicks = false;
+            bool hasObjectUpdate = false;
+            bool hasMemAllocStacks = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8464,6 +8469,18 @@ table {
                     else if (eventStats.EventName.StartsWith("GC/BulkNode"))
                     {
                         hasDotNetHeapDumps = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("GC/AllocationTick"))
+                    {
+                        hasGCAllocationTicks = true;
+                    }
+                    if (eventStats.EventName.StartsWith("GC/BulkSurvivingObjectRanges") || eventStats.EventName.StartsWith("GC/BulkMovedObjectRanges"))
+                    {
+                        hasObjectUpdate = true;
+                    }
+                    if (eventStats.EventName.StartsWith("GC/SampledObjectAllocation"))
+                    {
+                        hasMemAllocStacks = true;
                     }
                 }
             }
@@ -8486,6 +8503,22 @@ table {
                 if (hasGC)
                 {
                     memory.AddChild(new PerfViewGCStats(this));
+                }
+
+                if (hasGCAllocationTicks)
+                {
+                    if (hasObjectUpdate)
+                    {
+                        memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem (Coarse Sampling)"));
+                        memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths (Coarse Sampling)"));
+                    }
+                    memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free (Coarse Sampling)"));
+                }
+                if (hasMemAllocStacks)
+                {
+                    memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem"));
+                    memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free"));
+                    memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths"));
                 }
 
                 if (hasDotNetHeapDumps)
@@ -8597,14 +8630,178 @@ table {
 
                         return startStopSource;
                     }
+                case "GC Heap Alloc Ignore Free":
+                    {
+                        var eventLog = GetTraceLog(log);
+                        var eventSource = eventLog.Events.GetSource();
+                        var stackSource = new MutableTraceEventStackSource(eventLog);
+                        var sample = new StackSourceSample(stackSource);
+
+                        var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
+                        gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
+                        {
+                            newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
+                            {
+                                sample.Metric = objInfo.RepresentativeSize;
+                                sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                               // We guess a count from the size.  
+                                sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
+                                stackSource.AddSample(sample);
+                                return true;
+                            };
+                        };
+                        eventSource.Process();
+                        stackSource.DoneAddingSamples();
+
+                        return stackSource;
+                    }
                 default:
-                    return null;
+                    {
+                        var eventLog = GetTraceLog(log);
+                        var eventSource = eventLog.Events.GetSource();
+                        var stackSource = new MutableTraceEventStackSource(eventLog);
+                        var sample = new StackSourceSample(stackSource);
+
+                        if (streamName.StartsWith("GC Heap Net Mem"))
+                        {
+                            var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
+                            if (streamName == "GC Heap Net Mem (Coarse Sampling)")
+                            {
+                                gcHeapSimulators.UseOnlyAllocTicks = true;
+                                m_extraTopStats = "Sampled only 100K bytes";
+                            }
+
+                            gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
+                            {
+                                newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
+                                {
+                                    sample.Metric = objInfo.RepresentativeSize;
+                                    sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
+                                sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
+                                stackSource.AddSample(sample);
+                                    return true;
+                                };
+                                newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
+                                {
+                                    sample.Metric = -objInfo.RepresentativeSize;
+                                    sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
+                                sample.TimeRelativeMSec = time;
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
+                                stackSource.AddSample(sample);
+                                };
+
+                                newHeap.OnGC += delegate (double time, int gen)
+                                {
+                                    sample.Metric = float.Epsilon;
+                                    sample.Count = 1;
+                                    sample.TimeRelativeMSec = time;
+                                    StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
+                                    StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
+                                    stackSource.AddSample(sample);
+                                };
+                            };
+                            eventSource.Process();
+                            stackSource.DoneAddingSamples();
+                        }
+                        else if (streamName.StartsWith("Gen 2 Object Deaths"))
+                        {
+                            var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
+
+                            if (streamName == "Gen 2 Object Deaths (Coarse Sampling)")
+                            {
+                                gcHeapSimulators.UseOnlyAllocTicks = true;
+                                m_extraTopStats = "Sampled only 100K bytes";
+                            }
+
+                            gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
+                            {
+                                newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
+                                {
+                                    if (2 <= gen)
+                                    {
+                                        sample.Metric = objInfo.RepresentativeSize;
+                                        sample.Count = (objInfo.RepresentativeSize / objInfo.Size);                                         // We guess a count from the size.  
+                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                        sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);
+                                        stackSource.AddSample(sample);
+                                    }
+                                };
+
+                                newHeap.OnGC += delegate (double time, int gen)
+                                {
+                                    sample.Metric = float.Epsilon;
+                                    sample.Count = 1;
+                                    sample.TimeRelativeMSec = time;
+                                    StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
+                                    StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
+                                    stackSource.AddSample(sample);
+                                };
+                            };
+
+                            eventSource.Process();
+                            stackSource.DoneAddingSamples();
+                        }
+                        else if (streamName == "GC Heap Alloc Ignore Free (Coarse Sampling)")
+                        {
+                            TypeNameSymbolResolver typeNameSymbolResolver = new TypeNameSymbolResolver(FilePath, log);
+
+                            bool seenBadAllocTick = false;
+
+                            eventSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
+                            {
+                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                                var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+
+                                var typeName = data.TypeName;
+                                if (string.IsNullOrEmpty(typeName))
+                                {
+                                // Attempt to resolve the type name.
+                                TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                                    if (module != null)
+                                    {
+                                    // Resolve the type name.
+                                    typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                                    }
+                                }
+
+                                if (typeName != null && typeName.Length > 0)
+                                {
+                                    var nodeIndex = stackSource.Interner.FrameIntern("Type " + typeName);
+                                    stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
+                                }
+
+                                sample.Metric = data.GetAllocAmount(ref seenBadAllocTick);
+
+                                if (data.AllocationKind == GCAllocationKind.Large)
+                                {
+
+                                    var nodeIndex = stackSource.Interner.FrameIntern("LargeObject");
+                                    stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
+                                }
+
+                                sample.StackIndex = stackIndex;
+                                stackSource.AddSample(sample);
+                            };
+                            eventSource.Process();
+                            m_extraTopStats = "Sampled only 100K bytes";
+                        }
+                        else
+                        {
+                            return null;
+                        }
+
+                        return stackSource;
+                    }
             }
         }
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
-            ConfigureAsEtwStackWindow(stackWindow, true, true, true, false);
+            ConfigureAsEtwStackWindow(stackWindow, false, true, true, false);
             if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
             {
                 var taskFoldPat = "^STARTING TASK";
@@ -8619,6 +8816,16 @@ table {
             if (stackSourceName.Contains("Thread Time"))
             {
                 stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+            }
+
+            if (stackSourceName.StartsWith("GC Heap Net Mem") || stackSourceName.StartsWith("GC Heap Alloc Ignore Free"))
+            {
+                stackWindow.ComputeMaxInTopStats = true;
+            }
+
+            if(m_extraTopStats != null)
+            {
+                stackWindow.ExtraTopStats += " " + m_extraTopStats;
             }
         }
 
