@@ -73,11 +73,11 @@ namespace Triggers
             DecayToZeroHours = decayToZeroHours;
             MinSecForTrigger = 3;
 
-            var m = Regex.Match(spec, @"^\s*(.*):(.*?):(.*?)\s*([<>])\s*(\d+\.?\d*)\s*$");
+            var m = Regex.Match(spec, @"^\s*(.*?):(.*?):(.*?)\s*([<>])\s*(\d+\.?\d*)\s*$");
             if (!m.Success)
             {
                 throw new ApplicationException(
-                    "Performance monitor specification '" + spec + "' does not match syntax CATEGORY:COUNTER:INSTANCE [<>] NUM");
+                    "Performance monitor specification '" + spec + "' does not match syntax CATEGORY:COUNTER:INSTANCE [<>] NUM (i.e. 0.12 or 12)");
             }
 
             var categoryName = m.Groups[1].Value;
