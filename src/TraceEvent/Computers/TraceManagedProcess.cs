@@ -508,8 +508,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
+                bool isEESuspended = false;
+
                 source.Clr.GCSuspendEEStart += delegate (GCSuspendEETraceData data)
                 {
+                    isEESuspended = true;
+
                     var process = data.Process();
                     var mang = currentManagedProcess(data);
                     switch (data.Reason)
@@ -570,28 +574,34 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                     if (data.Reason == GCSuspendEEReason.SuspendForGC)
                     {
-                        TraceGC gc = new TraceGC(mang.GC.m_stats.HeapCount);
-                        gc.Index = mang.GC.GCs.Count;
-                        mang.GC.GCs.Add(gc);
-
-                        // Ideally we would do this only for non-background GCs, but we don't have that information at this point
-                        // and we want SetUpServerGcHistory called immediately
-                        if (mang.GC.m_stats.IsServerGCUsed == 1)
-                        {
-                            mang.GC.m_stats.SetUpServerGcHistory(process.ProcessID, gc);
-                            bool isBGCThread(ThreadWorkSpan s) => mang.GC.m_stats.IsBGCThread(s.ThreadId);
-                            foreach (var s in RecentCpuSamples)
-                            {
-                                gc.AddServerGcSample(s, isBGCThread: isBGCThread(s));
-                            }
-
-                            foreach (var s in RecentThreadSwitches)
-                            {
-                                gc.AddServerGcThreadSwitch(s, isBGCThread: isBGCThread(s));
-                            }
-                        }
+                        AddNewGC(process, mang, isKnownToBeBackground: false);
                     }
                 };
+
+                TraceGC AddNewGC(TraceProcess process, TraceLoadedDotNetRuntime mang, bool isKnownToBeBackground)
+                {
+                    TraceGC gc = new TraceGC(mang.GC.m_stats.HeapCount) { Index = mang.GC.GCs.Count };
+                    mang.GC.GCs.Add(gc);
+
+                    // Ideally we would do this only for non-background GCs, but we might not have that information at this point
+                    // and we want SetUpServerGcHistory called immediately
+                    if (!isKnownToBeBackground && mang.GC.m_stats.IsServerGCUsed == 1)
+                    {
+                        mang.GC.m_stats.SetUpServerGcHistory(process.ProcessID, gc);
+                        bool isBGCThread(ThreadWorkSpan s) => mang.GC.m_stats.IsBGCThread(s.ThreadId);
+                        foreach (var s in RecentCpuSamples)
+                        {
+                            gc.AddServerGcSample(s, isBGCThread: isBGCThread(s));
+                        }
+
+                        foreach (var s in RecentThreadSwitches)
+                        {
+                            gc.AddServerGcThreadSwitch(s, isBGCThread: isBGCThread(s));
+                        }
+                    }
+
+                    return gc;
+                }
 
                 // In 2.0 we didn't have this event.
                 source.Clr.GCSuspendEEStop += delegate (GCNoUserDataTraceData data)
@@ -617,6 +627,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                 source.Clr.GCRestartEEStop += delegate (GCNoUserDataTraceData data)
                 {
+                    isEESuspended = false;
+
                     var process = data.Process();
                     var stats = currentManagedProcess(data);
 
@@ -722,7 +734,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         Debug.Assert(0 <= data.Depth && data.Depth <= 2);
                         TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats, data.TimeStampRelativeMSec);
-                        Debug.Assert(!_gc.SeenStartEvent);
+                        if (_gc.SeenStartEvent)
+                        {
+                            // After starting a BGC, we may proceed with an ephemeral GC.
+                            // This ephemeral GC won't have an associated SuspendEEStart, so we have to create it here instead
+                            Debug.Assert(stats.GC.m_stats.currentBGC == _gc);
+                            _gc = AddNewGC(process, stats, isKnownToBeBackground: _gc.Type == GCType.BackgroundGC);
+                        }
                         _gc.Generation = data.Depth;
                         _gc.Reason = data.Reason;
                         _gc.Number = data.Count;
@@ -771,6 +789,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         if (_gc.Type == GCType.BackgroundGC)
                         {
                             stats.GC.m_stats.currentBGC = _gc;
+                            stats.GC.m_stats.currentOrFinishedBGC = _gc;
                             // For BGC, we need to add the suspension time so far to its pause so we don't miss including it.
                             // If there's an ephemeral GC happening before the BGC starts, AddConcurrentPauseTime will not
                             // add this suspension time to GC pause as that GC would be seen the ephemeral GC, not the BGC.
@@ -885,7 +904,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats, data.TimeStampRelativeMSec);
                     if (_gc != null)
                     {
-                        _gc.AddGcJoin(data, isBGCThread: stats.GC.m_stats.IsBGCThread(data.ThreadID));
+                        _gc.AddGcJoin(data, isEESuspended: isEESuspended, isBGCThread: stats.GC.m_stats.IsBGCThread(data.ThreadID));
                     }
                     else
                     {
@@ -1058,7 +1077,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         _gc.DurationMSec = data.TimeStampRelativeMSec - _gc.StartRelativeMSec;
                         _gc.PauseEndRelativeMSec = data.TimeStampRelativeMSec; // Will likely be overwritten by a RestartEEStop
+                        Console.WriteLine($"GCStop: setting gc {_gc.Number} stop to {data.TimeStampRelativeMSec}");
                         Debug.Assert(_gc.Number == data.Count);
+                    }
+                    else
+                    {
+                        Debug.Fail("GCStop: no gc to stop");
                     }
                 };
 
@@ -1196,7 +1220,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats, data.TimeStampRelativeMSec);
                     if (_gc != null)
                     {
-                        _gc.AddGcJoin(data, isBGCThread: stats.GC.m_stats.IsBGCThread(data.ThreadID));
+                        _gc.AddGcJoin(data, isEESuspended: isEESuspended, isBGCThread: stats.GC.m_stats.IsBGCThread(data.ThreadID));
                     }
                 };
 
@@ -1513,15 +1537,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     return last;
                 }
 
-                if (proc.GC.m_stats.currentBGC != null)
+                bool bgsIsFinished = proc.GC.m_stats.currentBGC == null;
+                TraceGC bgc = proc.GC.m_stats.currentBGC ?? proc.GC.m_stats.currentOrFinishedBGC;
+                if (bgc != null && (!bgsIsFinished || timeStampRelativeMSec < bgc.PauseEndRelativeMSec + 1))
                 {
-                    TraceGC gc = proc.GC.m_stats.currentBGC;
-                    Debug.Assert(gc.SeenStartEvent);
-                    Debug.Assert(gc.Type == GCType.BackgroundGC, "bgc should be a bgc");
-                    return gc;
+                    Debug.Assert(bgc.SeenStartEvent);
+                    Debug.Assert(bgc.Type == GCType.BackgroundGC);
+                    return bgc;
                 }
             }
-
             return null;
         }
 
@@ -2942,20 +2966,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal void AddGcJoin(GCJoinTraceData data, bool isBGCThread)
+        internal void AddGcJoin(GCJoinTraceData data, bool isEESuspended, bool isBGCThread)
         {
             bool isRestart = data.JoinType == GcJoinType.Restart;
             Debug.Assert(isRestart == (data.Heap == 100 || data.Heap == 200));
             if (data.Heap >= 0 && data.Heap < ServerGcHeapHistories.Count)
             {
-                ServerGcHeapHistories[data.Heap].AddJoin(data, PauseStartRelativeMSec, isBGCThread: isBGCThread);
+                ServerGcHeapHistories[data.Heap].AddJoin(data, PauseStartRelativeMSec, isEESuspended: isEESuspended, isBGCThread: isBGCThread);
             }
             else if (isRestart)
             {
                 // restart
                 foreach (var heap in ServerGcHeapHistories)
                 {
-                    heap.AddJoin(data, PauseStartRelativeMSec, isBGCThread: isBGCThread);
+                    heap.AddJoin(data, PauseStartRelativeMSec, isEESuspended: isEESuspended, isBGCThread: isBGCThread);
                 }
             }
             else
@@ -3519,6 +3543,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     public class GcJoin
     {
         public int ThreadId;
+        public bool IsEESuspended;
         public bool IsBGCThread;
         public int Heap;
         public double RelativeTimestampMsc;
@@ -3629,11 +3654,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // we add them to every heap with the ProcessorNumber so we know which heap/processor it was 
         // fired on.
         // Also for these restart events, the id field is always -1.
-        internal void AddJoin(GCJoinTraceData data, double pauseStartRelativeMSec, bool isBGCThread)
+        internal void AddJoin(GCJoinTraceData data, double pauseStartRelativeMSec, bool isEESuspended, bool isBGCThread)
         {
             GcJoins.Add(new GcJoin
             {
                 ThreadId = data.ThreadID,
+                IsEESuspended = isEESuspended,
                 IsBGCThread = isBGCThread,
                 Heap = data.ProcessorNumber,
                 AbsoluteTimestampMsc = data.TimeStampRelativeMSec,
@@ -4298,6 +4324,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // This is the BGC that's in progress as we are parsing. We need to remember this 
         // so we can correctly attribute the suspension time.
         internal TraceGC currentBGC = null;
+        internal TraceGC currentOrFinishedBGC = null;
 
         internal static TraceGC GetLastBGC(TraceLoadedDotNetRuntime proc)
         {

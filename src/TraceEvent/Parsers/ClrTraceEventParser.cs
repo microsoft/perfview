@@ -5419,7 +5419,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 long ret = SizeAfter - Fragmentation;
 
-                Debug.Assert(ret >= 0);
+                // Debug.Assert(ret >= 0);
                 return ret;
             }
         }
