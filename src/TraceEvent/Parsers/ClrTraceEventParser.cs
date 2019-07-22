@@ -1691,11 +1691,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new MethodJitTailCallFailedTraceData(value, 192, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
+                RegisterTemplate(new MethodJitTailCallFailedTraceData(value, 191, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 192, ProviderGuid);
+                source.UnregisterEventTemplate(value, 191, ProviderGuid);
             }
         }
 
