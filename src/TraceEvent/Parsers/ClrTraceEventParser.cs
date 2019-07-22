@@ -1695,7 +1695,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 192, ProviderGuid);
+                source.UnregisterEventTemplate(value, 191, ProviderGuid);
             }
         }
 
