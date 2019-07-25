@@ -446,6 +446,11 @@ namespace ClrMemory
             throw new NotImplementedException();
         }
 
+        protected override IEnumerable<ClrObjectReference> EnumerateObjectReferencesWithFields(ulong obj, ClrType type, bool carefully)
+        {
+            throw new NotImplementedException();
+        }
+
         public override IEnumerable<ClrObject> EnumerateObjects()
         {
             throw new NotImplementedException();
