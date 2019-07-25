@@ -324,8 +324,6 @@ public class GCHeapDumper
             symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
         }
 
-        target.SymbolProvider = new SymbolProvider(symbolReader);
-
         foreach (ClrInfo currRuntime in EnumerateRuntimes(target))
         {
             m_log.WriteLine("Creating Runtime access object for runtime {0}.", currRuntime.Version);
@@ -381,7 +379,7 @@ public class GCHeapDumper
             }
             catch (ClrDiagnosticsException clrDiagEx)
             {
-                if (clrDiagEx.HResult == (int)ClrDiagnosticsException.HR.RuntimeUninitialized)
+                if (clrDiagEx.Kind == ClrDiagnosticsExceptionKind.RuntimeUninitialized)
                 {
                     // Continue to next runtime.
                     m_log.WriteLine("Runtime uninitialized");
@@ -1059,7 +1057,7 @@ public class GCHeapDumper
                         }
                         catch (ClrDiagnosticsException clrDiagEx)
                         {
-                            if (clrDiagEx.HResult == (int)ClrDiagnosticsException.HR.RuntimeUninitialized)
+                            if (clrDiagEx.Kind == ClrDiagnosticsExceptionKind.RuntimeUninitialized)
                             {
                                 // Continue to next runtime.
                                 m_log.WriteLine("Runtime uninitialized");
@@ -2644,41 +2642,6 @@ public class GCHeapDumper
 #endif
     }
 
-    private class SymbolProvider : ISymbolProvider
-    {
-        private SymbolReader m_symbolReader;
-
-        public SymbolProvider(SymbolReader symbolReader)
-        {
-            m_symbolReader = symbolReader;
-        }
-
-        public ISymbolResolver GetSymbolResolver(string pdbName, Guid guid, int age)
-        {
-            string pdb = m_symbolReader.FindSymbolFilePath(pdbName, guid, age);
-            if (pdb == null)
-            {
-                return null;
-            }
-
-            return new SymbolResolver(m_symbolReader.OpenNativeSymbolFile(pdb));
-        }
-    }
-
-    private class SymbolResolver : ISymbolResolver
-    {
-        private NativeSymbolModule m_symbolModule;
-
-        public SymbolResolver(NativeSymbolModule symbolModule)
-        {
-            m_symbolModule = symbolModule;
-        }
-
-        public string GetSymbolNameByRVA(uint rva)
-        {
-            return m_symbolModule.FindNameForRva(rva);
-        }
-    }
 #if false
     private static TextWriter m_debugLog;
 #endif
