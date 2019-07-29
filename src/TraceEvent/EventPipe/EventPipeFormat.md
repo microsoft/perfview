@@ -220,7 +220,7 @@ Compressed events are encoded with a header:
 - SequenceNumber optional varint32 
  - if Flags & 2 the value is read from the stream + previous SequenceNumber
  - otherwise previous sequence number
- - in either case, if MetadataId != 0 increment by 1
+ - in either case, if MetadataId != 0 increment SequenceNumber by 1
 - CaptureThreadId optional varint64
   - if Flags & 2 the value is read from the stream
   - otherwise previous CaptureThreadId
