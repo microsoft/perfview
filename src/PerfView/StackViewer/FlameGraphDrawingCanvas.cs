@@ -98,11 +98,7 @@ namespace PerfView
         /// </summary>
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
-            if (IsEmpty)
-            {
-                HideTooltip();
-            }
-            else if (e.LeftButton == MouseButtonState.Released)
+            if (!IsEmpty && e.LeftButton == MouseButtonState.Released)
             {
                 var position = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
                 var tooltipText = flameBoxesMap.Find(position);
@@ -110,17 +106,16 @@ namespace PerfView
                 {
                     ShowTooltip(tooltipText);
                     CurrentFlameBoxChanged(this, tooltipText);
-                }
-                else
-                {
-                    HideTooltip();
+                    return;
                 }
             }
-            else if (e.LeftButton == MouseButtonState.Pressed && IsZoomed)
+            else if (!IsEmpty && e.LeftButton == MouseButtonState.Pressed && IsZoomed)
             {
                 var relativeMousePosition = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
                 MoveZoomingCenterPoint(relativeMousePosition.X, relativeMousePosition.Y);
             }
+
+            HideTooltip();
         }
 
         private void OnMouseLeave(object sender, MouseEventArgs e)
