@@ -241,6 +241,52 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void CloseMetricCanBeZeroIfItDoesNotCreateAProfileEventThatStartsAndEndsAtTheSameMoment()
+        {
+            const double metric = 0.1;
+
+            var samples = new[]
+            {
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerFrameId: 0),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerFrameId: 0),
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: 0.0, relativeTime: 0.3, depth: 0, callerFrameId: 0), // 0.0 metric
+            };
+
+            var input = new Dictionary<int, List<SpeedScopeStackSourceWriter.Sample>>() { { 0, samples.ToList() } };
+
+            var aggregatedEvents = SpeedScopeStackSourceWriter.GetAggregatedOrderedProfileEvents(input);
+
+            // we should have:
+            //  Open at 0.1 depth 0 and Close 0.3
+            Assert.Equal(2, aggregatedEvents.Count);
+
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(0.1, aggregatedEvents[0].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+
+            Assert.Equal(SpeedScopeStackSourceWriter.ProfileEventType.Close, aggregatedEvents[1].Type);
+            Assert.Equal(0.3, aggregatedEvents[1].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+        }
+
+        [Fact]
+        public void TwoSamplesCanNotHappenAtTheSameTime()
+        {
+            const double zeroMetric = 0.0;
+            const double relativeTime = 0.1;
+
+            var samples = new[]
+            {
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: zeroMetric, relativeTime: relativeTime, depth: 0, callerFrameId: 0), // 0.0 metric
+                new SpeedScopeStackSourceWriter.Sample((StackSourceCallStackIndex)1, metric: zeroMetric, relativeTime: relativeTime, depth: 0, callerFrameId: 0), // 0.0 metric and same relative time
+            };
+
+            var input = new Dictionary<int, List<SpeedScopeStackSourceWriter.Sample>>() { { 0, samples.ToList() } };
+
+            Assert.Throws<ArgumentException>(() => SpeedScopeStackSourceWriter.GetAggregatedOrderedProfileEvents(input));
+        }
+
+        [Fact]
         public void OrderForExportOrdersTheProfileEventsAsExpectedByTheSpeedScope()
         {
             var profileEvents = new List<SpeedScopeStackSourceWriter.ProfileEvent>()
