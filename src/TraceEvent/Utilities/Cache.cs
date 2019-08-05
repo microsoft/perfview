@@ -122,6 +122,10 @@ namespace Utilities
             for (int i = 0; i < m_entries.Length; i++)
             {
                 m_entries[i].Key = default(K);
+                if (m_entries[i].Value != null && m_entries[i].Value is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
                 m_entries[i].Value = null;
             }
             // indicate the free entries. 
