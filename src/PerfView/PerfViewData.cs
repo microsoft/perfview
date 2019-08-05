@@ -820,6 +820,7 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Add(@"[group full path module entries]  {*}!=>module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group class entries]     {%!*}.%(=>class $1;{%!*}::=>class $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group classes]            {%!*}.%(->class $1;{%!*}::->class $1");
+            stackWindow.GroupRegExTextBox.Items.Add(@"[join all threads]            Thread -> AllThreads");
         }
 
         // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread)

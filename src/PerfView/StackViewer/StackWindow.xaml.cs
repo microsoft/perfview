@@ -516,6 +516,7 @@ namespace PerfView
                 }
 
                 GroupRegExTextBox.Text = justMyApp;
+                GroupRegExTextBox.Items.Add(@"[join all threads]            Thread -> AllThreads");
             }
 
 
