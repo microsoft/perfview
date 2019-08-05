@@ -351,7 +351,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (firstBytes[0] == 'B' && firstBytes[1] == 'S' && firstBytes[2] == 'J' && firstBytes[3] == 'B')
                 {
                     stream.Seek(0, SeekOrigin.Begin);   // Start over
-                    ret = new PortableSymbolModule(this, pdbFilePath);
+                    ret = new PortableSymbolModule(this, stream, pdbFilePath);
                 }
                 else
                 {
