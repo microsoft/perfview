@@ -912,9 +912,13 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        ///  Called when you are done with the symbol reader.  Currently does nothing.  
+        ///  Called when you are done with the symbol reader.
+        ///  Closes all opened symbol files.
         /// </summary>
-        public void Dispose() { }
+        public void Dispose()
+        {
+            m_symbolModuleCache.Clear();
+        }
 
         #region private
         /// <summary>
