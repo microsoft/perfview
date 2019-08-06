@@ -807,6 +807,11 @@ namespace PerfView
                 stackWindow.FoldRegExTextBox.Items.Add("ntoskrnl!%ServiceCopyEnd");
             }
 
+            ConfigureGroupRegExTextBox(stackWindow, windows);
+        }
+
+        internal static void ConfigureGroupRegExTextBox(StackWindow stackWindow, bool windows)
+        {
             stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
             stackWindow.GroupRegExTextBox.Items.Clear();
             stackWindow.GroupRegExTextBox.Items.Add(@"[no grouping]");
@@ -888,23 +893,9 @@ namespace PerfView
             if (caller == StackSourceCallStackIndex.Invalid)
             {
                 string topCallStackStr = stackSource.GetFrameName(stackSource.GetFrameIndex(callStack), true);
-                Match m = Regex.Match(topCallStackStr, @"^Process\d*\s+([^()]*?)\s*(\(\s*(\d+)\s*\))?\s*$");
-                if (m.Success)
+                
+                if (GetProcessForStackSourceFromTopCallStackFrame(topCallStackStr, out ret))
                 {
-                    var processIDStr = m.Groups[3].Value;
-                    var processName = m.Groups[1].Value;
-                    if (processName.Length == 0)
-                    {
-                        processName = "(" + processIDStr + ")";
-                    }
-
-                    ret = new IProcessForStackSource(processName);
-                    int processID;
-                    if (int.TryParse(processIDStr, out processID))
-                    {
-                        ret.ProcessID = processID;
-                    }
-
                     processes.Add(ret);
                 }
             }
@@ -915,6 +906,51 @@ namespace PerfView
 
             rootMostFrameCache.Add(callStack, ret);
             return ret;
+        }
+
+        internal virtual string GetProcessIncPat(IProcess process) => $"Process% {process.Name} ({process.ProcessID})";
+
+        /// <summary>
+        /// This is and ugly routine that scrapes the data to find the full path (without the .exe extension) of the
+        /// exe in the program.   It may fail (return nulls).   
+        /// </summary>
+        internal virtual string FindExeName(string incPat)
+        {
+            string procName = null;
+            if (!string.IsNullOrWhiteSpace(incPat))
+            {
+                Match m = Regex.Match(incPat, @"^Process%\s+([^();]+[^(); ])", RegexOptions.IgnoreCase);
+                if (m.Success)
+                {
+                    procName = m.Groups[1].Value;
+                }
+            }
+            return procName;
+        }
+
+        internal virtual bool GetProcessForStackSourceFromTopCallStackFrame(string topCallStackStr, out IProcessForStackSource result)
+        {
+            Match m = Regex.Match(topCallStackStr, @"^Process\d*\s+([^()]*?)\s*(\(\s*(\d+)\s*\))?\s*$");
+            if (m.Success)
+            {
+                var processIDStr = m.Groups[3].Value;
+                var processName = m.Groups[1].Value;
+                if (processName.Length == 0)
+                {
+                    processName = "(" + processIDStr + ")";
+                }
+
+                result = new IProcessForStackSource(processName);
+                if (int.TryParse(processIDStr, out int processID))
+                {
+                    result.ProcessID = processID;
+                }
+
+                return true;
+            }
+
+            result = null;
+            return false;
         }
 
         protected bool IsMyFormat(string fileName)
@@ -3870,8 +3906,12 @@ table {
                                         incPat += "|";
                                     }
 
-                                    incPat += "Process% " + process.Name + " (" + process.ProcessID + ")";
-                                    processIDs.Add(process.ProcessID);
+                                    incPat += DataFile.GetProcessIncPat(process);
+
+                                    if (process.ProcessID != default) // LTTng trace file lacks process IDs
+                                    {
+                                        processIDs.Add(process.ProcessID);
+                                    }
                                 }
                                 SetProcessFilter(incPat);
                             }
@@ -8217,6 +8257,24 @@ table {
 
         public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
 
+        public override bool SupportsProcesses => true;
+
+        internal override string GetProcessIncPat(IProcess process) => process.Name;
+
+        internal override string FindExeName(string incPat) => string.IsNullOrEmpty(incPat) ? incPat : incPat.Split('|').FirstOrDefault();
+
+        internal override bool GetProcessForStackSourceFromTopCallStackFrame(string topCallStackStr, out IProcessForStackSource result)
+        {
+            if (!string.IsNullOrEmpty(topCallStackStr))
+            {
+                // for the LTTng trace file the top call stack is always process name, the process ID is missing as of today
+                result = new IProcessForStackSource(topCallStackStr);
+                return true;
+            }
+            result = null;
+            return false;
+        }
+
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
             var traceLog = GetTraceLog(log);
@@ -8328,6 +8386,8 @@ table {
         {
             stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
             stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+
+            ConfigureGroupRegExTextBox(stackWindow, windows: false);
         }
 
         public TraceLog GetTraceLog(TextWriter log)
