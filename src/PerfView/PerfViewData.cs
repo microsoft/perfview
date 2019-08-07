@@ -3908,7 +3908,7 @@ table {
 
                                     incPat += DataFile.GetProcessIncPat(process);
 
-                                    if (process.ProcessID != default) // LTTng trace file lacks process IDs
+                                    if (process.ProcessID != default) // process ID is not always available
                                     {
                                         processIDs.Add(process.ProcessID);
                                     }
@@ -8267,7 +8267,7 @@ table {
         {
             if (!string.IsNullOrEmpty(topCallStackStr))
             {
-                // for the LTTng trace file the top call stack is always process name, the process ID is missing as of today
+                // the top call stack is always process name, the process ID is missing as of today (a perf_events limitation)
                 result = new IProcessForStackSource(topCallStackStr);
                 return true;
             }
