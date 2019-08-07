@@ -478,7 +478,7 @@ namespace PerfView
 
             // Get tbe name and create the 'justMyApp pattern. 
             string justMyApp = null;
-            string exeName = FindExeName(IncludeRegExTextBox.Text);
+            string exeName = DataSource.DataFile.FindExeName(IncludeRegExTextBox.Text);
             if (exeName != null)
             {
                 if (string.Compare(exeName, "w3wp", StringComparison.OrdinalIgnoreCase) == 0)
@@ -3568,25 +3568,6 @@ namespace PerfView
                 return false;
             }
             return true;
-        }
-
-        /// <summary>
-        /// This is and ugly routine that scrapes the data to find the full path (without the .exe extension) of the
-        /// exe in the program.   It may fail (return nulls).   
-        /// </summary>
-
-        private static string FindExeName(string incPat)
-        {
-            string procName = null;
-            if (!string.IsNullOrWhiteSpace(incPat))
-            {
-                Match m = Regex.Match(incPat, @"^Process%\s+([^();]+[^(); ])", RegexOptions.IgnoreCase);
-                if (m.Success)
-                {
-                    procName = m.Groups[1].Value;
-                }
-            }
-            return procName;
         }
 
         private static string FindExePath(StackSource stackSource, string procName)
