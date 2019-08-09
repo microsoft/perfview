@@ -48,7 +48,7 @@
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <Reference Include="PresentationFramework" />
