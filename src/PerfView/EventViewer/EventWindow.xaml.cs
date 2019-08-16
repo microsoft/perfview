@@ -547,9 +547,9 @@ namespace PerfView
                         sb.Append(",");
                     }
                     sb.Append("{ X:");
-                    sb.Append(point.Item1);
+                    sb.Append(point.Item1.ToString(CultureInfo.InvariantCulture));
                     sb.Append(", Y:");
-                    sb.Append(point.Item2);
+                    sb.Append(point.Item2.ToString(CultureInfo.InvariantCulture));
                     sb.Append("}");
                 }
                 sb.Append("]}");
