@@ -812,6 +812,11 @@ namespace Diagnostics.Tracing.StackSources
             symbol = "";
             startLocation = 0;
 
+            if(maps.Count <= 0)
+            {
+                return false;
+            }
+
             int start = 0;
             int end = maps.Count;
             int mid = (end - start) / 2;
