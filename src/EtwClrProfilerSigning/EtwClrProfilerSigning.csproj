@@ -23,10 +23,10 @@
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(OutDir)\x86\EtwClrProfiler.dll">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
     <FilesToSign Include="$(OutDir)\amd64\EtwClrProfiler.dll">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>

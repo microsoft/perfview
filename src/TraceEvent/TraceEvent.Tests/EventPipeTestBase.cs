@@ -18,12 +18,18 @@ namespace TraceEventTests
         }
 
         private static IEnumerable<string> TestEventPipeZipFiles
-            => Directory.EnumerateFiles(TestDataDir, "*.netperf.zip");
+            => Directory.EnumerateFiles(TestDataDir, "*.netperf.zip")
+            .Union(Directory.EnumerateFiles(TestDataDir, "*.nettrace.zip"));
 
         // The test data is contained in files of the same name, but with a .zip extension.
         // Only the names are returned since the extracted files will be in a different directory.
         public static IEnumerable<object[]> TestEventPipeFiles
             => TestEventPipeZipFiles.Select(file => new[] { Path.GetFileNameWithoutExtension(file) });
+
+        // Only the subset of data files starting in 2.1 were in a format capable of streaming
+        public static IEnumerable<object[]> StreamableTestEventPipeFiles
+            => TestEventPipeZipFiles.Where(file => file.Contains("dotnetcore2.1"))
+                                    .Select(file => new[] { Path.GetFileNameWithoutExtension(file) });
 
         private static bool s_fileUnzipped;
 

@@ -132,7 +132,7 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)ReadInt32();
+            return (StreamLabel)(uint)ReadInt32();
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -140,6 +140,7 @@ namespace FastSerialization
         public virtual void Goto(StreamLabel label)
         {
             Debug.Assert(label != StreamLabel.Invalid);
+            Debug.Assert((long)label <= int.MaxValue);
             position = (int)label;
         }
         /// <summary>
@@ -149,7 +150,7 @@ namespace FastSerialization
         {
             get
             {
-                return (StreamLabel)position;
+                return (StreamLabel)(uint)position;
             }
         }
         /// <summary>
@@ -157,7 +158,8 @@ namespace FastSerialization
         /// </summary>
         public virtual void GotoSuffixLabel()
         {
-            Goto((StreamLabel)(Length - sizeof(StreamLabel)));
+            const int serializedStreamLabelSize = 4;
+            Goto((StreamLabel)(Length - serializedStreamLabelSize));
             Goto(ReadLabel());
         }
         /// <summary>

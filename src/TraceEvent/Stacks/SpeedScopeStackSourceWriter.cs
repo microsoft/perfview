@@ -230,8 +230,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         {
             if (openSample.Depth != closeSample.Depth)
                 throw new ArgumentException("Invalid arguments, both samples must be of the same depth");
-            if (closeSample.Metric == 0.0)
-                throw new ArgumentException("Invalid sample, the metric must NOT be equal zero.", nameof(closeSample));
+            if (openSample.RelativeTime == closeSample.RelativeTime + closeSample.Metric)
+                throw new ArgumentException("Invalid samples, two samples can not happen at the same time.");
 
             profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, openSample.RelativeTime, openSample.Depth));
             profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, closeSample.RelativeTime + closeSample.Metric, closeSample.Depth));

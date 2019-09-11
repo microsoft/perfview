@@ -3465,54 +3465,54 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         #region private
         internal string MapKernelToUserDefault(string kernelName)
         {
-                // TODO confirm that you are on the local machine before initializing in this way.  
-                if (kernelToDriveMap.Count == 0)
-                {
-                    PopulateFromLocalMachine();
-                }
+            // TODO confirm that you are on the local machine before initializing in this way.  
+            if (kernelToDriveMap.Count == 0)
+            {
+                PopulateFromLocalMachine();
+            }
 
 #if !CONTAINER_WORKAROUND_NOT_NEEDED
-                // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognize them 
-                // because they have the form of a GUID path \OS or \File and then the client path.   It is enough
-                // to fix this for files in the \windows directory so we use \OS\Windows\ or \Files\Windows as the key 
-                // to tell if we have a HOST file path and we morph the name to fix it.
-                // We can pull this out when the OS fixes ETW to show client names.  
-                var filesIdx = kernelName.IndexOf(@"\OS\Windows\", StringComparison.OrdinalIgnoreCase);
-                if (0 <= filesIdx && filesIdx + 3 < kernelName.Length)
-                {
-                    return systemDrive + kernelName.Substring(filesIdx + 3);
-                }
+            // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognize them 
+            // because they have the form of a GUID path \OS or \File and then the client path.   It is enough
+            // to fix this for files in the \windows directory so we use \OS\Windows\ or \Files\Windows as the key 
+            // to tell if we have a HOST file path and we morph the name to fix it.
+            // We can pull this out when the OS fixes ETW to show client names.  
+            var filesIdx = kernelName.IndexOf(@"\OS\Windows\", StringComparison.OrdinalIgnoreCase);
+            if (0 <= filesIdx && filesIdx + 3 < kernelName.Length)
+            {
+                return systemDrive + kernelName.Substring(filesIdx + 3);
+            }
 
-                filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
-                if (0 <= filesIdx && filesIdx + 6 < kernelName.Length)
-                {
-                    return systemDrive + kernelName.Substring(filesIdx + 6);
-                }
+            filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
+            if (0 <= filesIdx && filesIdx + 6 < kernelName.Length)
+            {
+                return systemDrive + kernelName.Substring(filesIdx + 6);
+            }
 #endif
-                for (int i = 0; i < kernelToDriveMap.Count; i++)
+            for (int i = 0; i < kernelToDriveMap.Count; i++)
+            {
+                Debug.Assert(kernelToDriveMap[i].Key.EndsWith(@"\"));
+                Debug.Assert(kernelToDriveMap[i].Value.Length == 0 || kernelToDriveMap[i].Value.EndsWith(@"\"));
+
+                // For every string in the map, does the kernel name match a prefix in the table?
+                // If so we have found a match. 
+                string kernelPrefix = kernelToDriveMap[i].Key;
+                if (string.Compare(kernelName, 0, kernelPrefix, 0, kernelPrefix.Length, StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    Debug.Assert(kernelToDriveMap[i].Key.EndsWith(@"\"));
-                    Debug.Assert(kernelToDriveMap[i].Value.Length == 0 || kernelToDriveMap[i].Value.EndsWith(@"\"));
-
-                    // For every string in the map, does the kernel name match a prefix in the table?
-                    // If so we have found a match. 
-                    string kernelPrefix = kernelToDriveMap[i].Key;
-                    if (string.Compare(kernelName, 0, kernelPrefix, 0, kernelPrefix.Length, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        var ret = kernelToDriveMap[i].Value + kernelName.Substring(kernelPrefix.Length);
-                        return ret;
-                    }
+                    var ret = kernelToDriveMap[i].Value + kernelName.Substring(kernelPrefix.Length);
+                    return ret;
                 }
+            }
 
-                // Heuristic.  If we have not found it yet, tack on the system drive letter if it is not 
-                // This is similar to what XPERF does too, but it is clear it is not perfect. 
-                if (kernelName.Length > 2 && kernelName[0] == '\\' && Char.IsLetterOrDigit(kernelName[1]))
-                {
-                    return systemDrive + kernelName;
-                }
+            // Heuristic.  If we have not found it yet, tack on the system drive letter if it is not 
+            // This is similar to what XPERF does too, but it is clear it is not perfect. 
+            if (kernelName.Length > 2 && kernelName[0] == '\\' && Char.IsLetterOrDigit(kernelName[1]))
+            {
+                return systemDrive + kernelName;
+            }
 
-                // TODO this is still not complete, compare to XPERF and align.  
-                return kernelName;
+            // TODO this is still not complete, compare to XPERF and align.  
+            return kernelName;
         }
 
         internal void PopulateFromLocalMachine()
@@ -4192,7 +4192,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             get
             {
-                if (Version < 2)
+                if (Version < 2 || Source is ETWReloggerTraceEventSource)
                 {
                     return -1;
                 }
@@ -4205,7 +4205,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             get
             {
-                if (Version < 2)
+                if (Version < 2 || Source is ETWReloggerTraceEventSource)
                 {
                     return -1;
                 }
@@ -4333,8 +4333,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 eventRecord->EventHeader.ThreadId = GetInt32At(4);          // Thread being started.  
                 eventRecord->EventHeader.ProcessId = GetInt32At(0);
             }
-            ((int*)DataStart)[0] = parentProcess;                           // Use offset 0 to now hold the ParentProcessID.  
-            ((int*)DataStart)[1] = ParentThread;                            // Use offset 4 to now hold the ParentThreadID.  
+
+            // We are doing something questionable here.   We are repurposing fields (the ThreadId and ProcessId fields)
+            // to be new things (the ParentProcessID and ParentThreadId.   This works fine except for the case of
+            // the relogger, because in that case we don't want to change the fields (since they will be written via
+            // the relogger).   Thus we give up providing the ParentProcessID and ParentThreadID fields in the
+            // case of ETWReloggerTraceEventSource (they always return -1). 
+            if (!(Source is ETWReloggerTraceEventSource))
+            {
+                ((int*)DataStart)[0] = parentProcess;                           // Use offset 0 to now hold the ParentProcessID.  
+                ((int*)DataStart)[1] = ParentThread;                            // Use offset 4 to now hold the ParentThreadID.  
+            }
         }
 
         /// <summary>

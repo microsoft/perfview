@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "bootstrap": "^4.2.1",
+    "base64url": "^3.0.1",
+    "bootstrap": "^4.3.1",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
-    "react-scripts": "^2.1.2",
     "react-router-bootstrap": "^0.24.4",
     "react-router-dom": "^4.3.1",
+    "react-scripts": "^2.1.2",
     "reactstrap": "^6.5.0",
-    "rimraf": "^2.6.2",
-    "base64url": "^3.0.1"
+    "rimraf": "^2.6.2"
   },
   "devDependencies": {
     "ajv": "^6.6.2",

@@ -40,9 +40,10 @@ namespace FastSerialization
         /// The total length of bytes that this reader can read.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
+        public virtual bool HasLength { get { return true; } }
 
         #region implemenation of IStreamReader
-        public void Read(byte[] data, int offset, int length)
+        public virtual void Read(byte[] data, int offset, int length)
         {
             if (length > endPosition - position)
             {
@@ -120,7 +121,7 @@ namespace FastSerialization
 
             sb.Length = 0;
 
-            Debug.Assert(len < Length);
+            Debug.Assert(!HasLength || len < Length);
             while (len > 0)
             {
                 int b = ReadByte();
@@ -153,7 +154,7 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)ReadInt32();
+            return (StreamLabel)(uint)ReadInt32();
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -161,6 +162,7 @@ namespace FastSerialization
         public virtual void Goto(StreamLabel label)
         {
             Debug.Assert(label != StreamLabel.Invalid);
+            Debug.Assert((long)label <= int.MaxValue);
             position = (int)label;
         }
         /// <summary>
@@ -170,7 +172,7 @@ namespace FastSerialization
         {
             get
             {
-                return (StreamLabel)position;
+                return (StreamLabel)(uint)position;
             }
         }
         /// <summary>
@@ -178,7 +180,8 @@ namespace FastSerialization
         /// </summary>
         public virtual void GotoSuffixLabel()
         {
-            Goto((StreamLabel)(Length - sizeof(StreamLabel)));
+            const int sizeOfSerializedStreamLabel = 4;
+            Goto((StreamLabel)(Length - sizeOfSerializedStreamLabel));
             Goto(ReadLabel());
         }
         /// <summary>
@@ -328,6 +331,7 @@ namespace FastSerialization
         /// </summary>
         public void Write(StreamLabel value)
         {
+            Debug.Assert((long)value <= int.MaxValue);
             Write((int)value);
         }
         /// <summary>
@@ -636,11 +640,19 @@ namespace FastSerialization
         /// </summary>
         public override void Goto(StreamLabel label)
         {
-            uint offset = unchecked((uint)label - positionInStream);
-            if (offset > (uint)endPosition)
+            long offset = (long)label - positionInStream;
+            if (offset > endPosition || offset < 0)
             {
-                positionInStream = (uint)label;
-                position = endPosition = 0;
+                if(!inputStream.CanSeek)
+                {
+                    if((long)label < positionInStream + endPosition)
+                    {
+                        throw new Exception("Stream does not support seeking backwards");
+                    }
+                }
+                positionInStream = (long)label & ~(align - 1);
+                position = (int)((long)label & (align - 1));
+                endPosition = 0;
             }
             else
             {
@@ -651,6 +663,52 @@ namespace FastSerialization
         /// Implementation of MemoryStreamReader
         /// </summary>
         public override long Length { get { return inputStream.Length; } }
+        public override bool HasLength { get { return inputStream.CanSeek; } }
+
+        public override void Read(byte[] data, int offset, int length)
+        {
+            // The base class is constrained to only handle reads that are <= size of the cache
+            // For larger reads we can take what is available in the cache and satisfy the
+            // remainder from the stream
+            if (length > bytes.Length)
+            {
+                int positionAlignmentOffset = position % align;
+                int alignedLength = (length & ~(align - 1)) - positionAlignmentOffset;
+                int cacheBytes = Math.Max(0, endPosition - position);
+                Buffer.BlockCopy(bytes, position, data, offset, cacheBytes);
+                int bytesRead = cacheBytes;
+                while (bytesRead < alignedLength)
+                {
+                    int count = inputStream.Read(data, offset + bytesRead, alignedLength - bytesRead);
+                    inputStreamBytesRead += count;
+                    if (count == 0)
+                    {
+                        throw new Exception("Read past end of stream.");
+                    }
+                    bytesRead += count;
+                }
+
+                // Update our internal state to match the read above
+                Debug.Assert(bytesRead == alignedLength);
+                Goto(Current.Add(alignedLength));
+
+                if (alignedLength == length)
+                {
+                    return;
+                }
+                // fall through to read the unaligned portion
+                length -= alignedLength;
+                offset += bytesRead;
+            }
+
+            if (length > endPosition - position)
+            {
+                Fill(length);
+            }
+
+            Buffer.BlockCopy(bytes, position, data, offset, length);
+            position += length;
+        }
         #endregion 
 
         #region private
@@ -680,7 +738,7 @@ namespace FastSerialization
         /// <param name="minimum"></param>
         internal /*protected*/  override void Fill(int minimum)
         {
-            if (endPosition != position)
+            if (endPosition > position)
             {
                 int slideAmount = position & ~(align - 1);             // round down to stay aligned.  
                 for (int i = slideAmount; i < endPosition; i++)        // Slide everything down.  
@@ -690,45 +748,72 @@ namespace FastSerialization
 
                 endPosition -= slideAmount;
                 position -= slideAmount;
-                positionInStream += (uint)slideAmount;
+                positionInStream += slideAmount;
             }
             else
             {
-                positionInStream += (uint)position;
+                int slideAmount = position & ~(align - 1);
                 endPosition = 0;
-                position = 0;
-                // if you are within one read of the end of file, go backward to read the whole block.  
-                uint lastBlock = (uint)(((int)inputStream.Length - bytes.Length + align) & ~(align - 1));
-                if (positionInStream >= lastBlock)
+                position -= slideAmount;
+                positionInStream += slideAmount;
+                if (inputStream.CanSeek)
                 {
-                    position = (int)(positionInStream - lastBlock);
+                    // if you are within one read of the end of file, go backward to read the whole block.  
+                    long lastBlock = Math.Max(0, (inputStream.Length - bytes.Length + align) & ~(align - 1));
+                    if (positionInStream >= lastBlock)
+                    {
+                        int adjustBack = (int)(positionInStream - lastBlock);
+                        positionInStream -= adjustBack;
+                        position += adjustBack;
+                    }
                 }
-                else
-                {
-                    position = (int)positionInStream & (align - 1);
-                }
-
-                positionInStream -= (uint)position;
             }
 
             Debug.Assert(positionInStream % align == 0);
             lock (inputStream)
             {
-                inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
-                for (; ; )
+                // We need to get the stream positioned at (positionInStream + endPosition)
+                // Seekable streams: Easy we can seek
+                // Non-seekable streams: We need to read forward. We already did error checking
+                //                       in Goto() to ensure that the stream movement is going
+                //                       forward, not backwards.
+                if(inputStream.CanSeek)
+                {
+                    inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
+                }
+                else
+                {
+                    long seekForwardDistance = (positionInStream + endPosition) - inputStreamBytesRead;
+                    for (long i = 0; i < seekForwardDistance; i++)
+                    {
+                        inputStream.ReadByte();
+                    }
+                    inputStreamBytesRead += seekForwardDistance;
+                }
+
+                // PERF policy
+                // In the streaming (non-seekable) case we don't want to buffer any more data than was
+                // requested and needed for alignment because this might cause the thread to block waiting 
+                // for the unneeded data to arrive. There is probably a better way to do this that can
+                // oportunistically buffer if the data is available but this code isn't that sophisticated
+                // yet.
+                //
+                // In the non-streaming (seekable) case we do want to buffer because that lets the
+                // reader achieve higher throughput.
+                int fillSize = inputStream.CanSeek ? bytes.Length : (position + minimum + (align-1)) & ~(align-1);
+                
+
+                for (; endPosition < fillSize; )
                 {
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
-                    int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
+                    int count = inputStream.Read(bytes, endPosition, fillSize - endPosition);
+                    inputStreamBytesRead += count;
                     if (count == 0)
                     {
                         break;
                     }
 
                     endPosition += count;
-                    if (endPosition == bytes.Length)
-                    {
-                        break;
-                    }
                 }
             }
             if (endPosition - position < minimum)
@@ -737,8 +822,9 @@ namespace FastSerialization
             }
         }
         internal /*protected*/  Stream inputStream;
+        internal /* protected*/ long inputStreamBytesRead; // only required for non-seekable streams
         private bool leaveOpen;
-        internal /*protected*/  uint positionInStream;
+        internal /*protected*/  long positionInStream;
         #endregion
     }
 
@@ -868,7 +954,7 @@ namespace FastSerialization
                             int position = r.Next(0, origData.Length);
                             int size = r.Next(0, bufferSize) + 1;
 
-                            reader.Goto((StreamLabel)position);
+                            reader.Goto((StreamLabel)(uint)position);
                             Compare(reader, origData, position, size);
                         }
                         reader.Close();

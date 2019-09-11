@@ -29,7 +29,7 @@
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />

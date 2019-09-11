@@ -20,12 +20,19 @@ namespace PerfView
 
         private List<Visual> visuals = new List<Visual>();
         private FlameBoxesMap flameBoxesMap = new FlameBoxesMap();
-        private ToolTip tooltip = new ToolTip();
+        private ToolTip tooltip = new ToolTip() { FontSize = 20.0 };
+        private ScaleTransform scaleTransform = new ScaleTransform(1.0f, 1.0f, 0.0f, 0.0f);
+        private Cursor cursor;
 
         public FlameGraphDrawingCanvas()
         {
             MouseMove += OnMouseMove;
-            MouseLeave += (s, e) => HideTooltip();
+            MouseLeave += OnMouseLeave;
+            PreviewMouseWheel += OnPreviewMouseWheel;
+            MouseLeftButtonDown += OnMouseLeftButtonDown;
+            MouseLeftButtonUp += OnMouseLeftButtonUp;
+            PreviewKeyDown += OnPreviewKeyDown;
+            Focusable = true;
         }
 
         public bool IsEmpty => visuals.Count == 0;
@@ -34,11 +41,13 @@ namespace PerfView
 
         protected override Visual GetVisualChild(int index) => visuals[index];
 
+        private bool IsZoomed => scaleTransform.ScaleX != 1.0;
+
         public void Draw(IEnumerable<FlameBox> boxes)
         {
             Clear();
 
-            var visual = new DrawingVisual(); // we have only one visual to provide best possible perf
+            var visual = new DrawingVisual { Transform = scaleTransform }; // we have only one visual to provide best possible perf
 
             using (DrawingContext drawingContext = visual.RenderOpen())
             {
@@ -54,7 +63,7 @@ namespace PerfView
                         null,  // no Pen is crucial for performance
                         new Rect(box.X, box.Y, box.Width, box.Height));
 
-                    if (box.Width > 50 && box.Height >= 6) // we draw the text only if humans can see something
+                    if (box.Width * scaleTransform.ScaleX > 50 && box.Height * scaleTransform.ScaleY >= 6) // we draw the text only if humans can see something
                     {
                         if (forSize == null)
                         {
@@ -89,9 +98,9 @@ namespace PerfView
         /// </summary>
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
-            if (!IsEmpty)
+            if (!IsEmpty && e.LeftButton == MouseButtonState.Released)
             {
-                var position = Mouse.GetPosition(this);
+                var position = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
                 var tooltipText = flameBoxesMap.Find(position);
                 if (tooltipText != null)
                 {
@@ -100,8 +109,80 @@ namespace PerfView
                     return;
                 }
             }
+            else if (!IsEmpty && e.LeftButton == MouseButtonState.Pressed && IsZoomed)
+            {
+                var relativeMousePosition = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
+                MoveZoomingCenterPoint(relativeMousePosition.X, relativeMousePosition.Y);
+            }
 
             HideTooltip();
+        }
+
+        private void OnMouseLeave(object sender, MouseEventArgs e)
+        {
+            HideTooltip();
+            ResetCursor(); // leaving the control while still zooming and OnMouseLeftButtonUp won't fire
+        }
+
+        private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            float modifier = e.Delta > 0 ? 1.1f : 0.9f;
+
+            var relativeMousePosition = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
+
+            scaleTransform.ScaleX = Math.Max(1.0, scaleTransform.ScaleX * modifier);
+            scaleTransform.ScaleY = Math.Max(1.0, scaleTransform.ScaleY * modifier);
+            scaleTransform.CenterX = relativeMousePosition.X;
+            scaleTransform.CenterY = relativeMousePosition.Y;
+
+            Keyboard.Focus(this); // make it possible to handle Arrow keys and move CenterX & Y scaling points
+        }
+
+        private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (IsZoomed)
+            {
+                cursor = Mouse.OverrideCursor;
+                Mouse.OverrideCursor = Cursors.Hand; // emulate drag&drop cursor style
+            }
+        }
+
+        private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (IsZoomed)
+            {
+                ResetCursor();
+            }
+        }
+
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!IsZoomed)
+            {
+                return;
+            }
+
+            switch(e.Key)
+            {
+                case Key.Left:
+                    MoveZoomingCenterPoint(scaleTransform.CenterX * 0.9, scaleTransform.CenterY);
+                    e.Handled = true;
+                    break;
+                case Key.Right:
+                    MoveZoomingCenterPoint(scaleTransform.CenterX * 1.1, scaleTransform.CenterY);
+                    e.Handled = true;
+                    break;
+                case Key.Up:
+                    MoveZoomingCenterPoint(scaleTransform.CenterX, scaleTransform.CenterY * 0.9);
+                    e.Handled = true;
+                    break;
+                case Key.Down:
+                    MoveZoomingCenterPoint(scaleTransform.CenterX, scaleTransform.CenterY * 1.1);
+                    e.Handled = true;
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void ShowTooltip(string text)
@@ -144,6 +225,17 @@ namespace PerfView
             base.RemoveVisualChild(visual);
             base.RemoveLogicalChild(visual);
         }
+
+        private void MoveZoomingCenterPoint(double x, double y)
+        {
+            if (IsZoomed)
+            {
+                scaleTransform.CenterX = Math.Min(x, ActualWidth);
+                scaleTransform.CenterY = Math.Min(y, ActualHeight);
+            }
+        }
+
+        private void ResetCursor() => Mouse.OverrideCursor = cursor;
 
         private static Brush[] GenerateBrushes(Random random)
         {

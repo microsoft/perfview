@@ -867,7 +867,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if (m_StopOnDispose)
                 {
                     m_StopOnDispose = false;
-                    Stop(true);
+
+                    // Only stop the session when we were the original creator of it and not for cases where we attach.
+                    // For session just attached to check if it's active, we must not call stop method.
+                    // Otherwise, it will caused unexpected stop of trace sessions.
+                    if (m_Create)
+                    {
+                        Stop(true);
+                    }
                 }
 
                 // TODO need safe handles

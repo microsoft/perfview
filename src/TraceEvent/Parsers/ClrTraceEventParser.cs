@@ -20,6 +20,7 @@ using Address = System.UInt64;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+    using System.Collections.Generic;
 
     /* Parsers defined in this file */
     // ClrTraceEventParser, ClrRundownTraceEventParser, ClrStressTraceEventParser 
@@ -175,6 +176,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// Events that will dump PDBs of dynamically generated assemblies to the ETW stream.  
             /// </summary>
             Codesymbols = 0x400000000,
+            /// <summary>
+            /// Diagnostic events for diagnosing compilation and pre-compilation features.
+            /// </summary>
+            CompilationDiagnostic = 0x2000000000,
 
             /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
@@ -1407,6 +1412,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 38, MethodTaskGuid);
             }
         }
+
+        public event Action<R2RGetEntryPointTraceData> MethodR2RGetEntryPoint
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new R2RGetEntryPointTraceData(value, 159, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPoint", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 159, ProviderGuid);
+                source.UnregisterEventTemplate(value, 33, MethodTaskGuid);
+            }
+        }
+
         public event Action<MethodJittingStartedTraceData> MethodJittingStarted
         {
             add
@@ -1671,11 +1691,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new MethodJitTailCallFailedTraceData(value, 192, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
+                RegisterTemplate(new MethodJitTailCallFailedTraceData(value, 191, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 192, ProviderGuid);
+                source.UnregisterEventTemplate(value, 191, ProviderGuid);
             }
         }
 
@@ -1720,7 +1740,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[117];
+                var templates = new TraceEvent[118];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1842,14 +1862,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[114] = new MethodJitInliningFailedAnsiTraceData(null, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailedAnsi", ProviderGuid, ProviderName);
                 templates[115] = new MethodJitTailCallFailedAnsiTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailedAnsi", ProviderGuid, ProviderName);
                 templates[116] = new EventSourceTraceData(null, 270, 0, "EventSourceEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName);
+                templates[117] = new R2RGetEntryPointTraceData(null, 159, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPoint", ProviderGuid, ProviderName);
 
 
                 s_templates = templates;
             }
+
+            List<TraceEvent> enumeratedTemplates = new List<TraceEvent>();
             foreach (var template in s_templates)
             {
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
                 {
+                    // The CLR parser has duplicate template definitions that differ only by name
+                    // The eventsToObserve delegate could filter to select only one of them, but if
+                    // it doesn't then select one on a first-come-first-served basis
+                    bool match = false;
+                    foreach(var prevTemplate in enumeratedTemplates)
+                    {
+                        if(prevTemplate.Matches(template))
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (match)
+                        continue;
+                    enumeratedTemplates.Add(template);
+
                     callback(template);
 
                     // Project N support.   If this is not a classic event, then also register with project N
@@ -7833,7 +7872,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 3));
+            // Not sure if hand editing is appropriate but the start event is size 3 whereas the stop event is size 11
+            // and both of them come here
+            Debug.Assert(!(Version == 1 && EventDataLength != 3 && EventDataLength != 11));
             Debug.Assert(!(Version > 1 && EventDataLength < 3));
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -7875,7 +7916,83 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<ContentionTraceData> Action;
         #endregion
     }
+    public sealed class R2RGetEntryPointTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public string MethodNamespace { get { return GetUnicodeStringAt(8); } }
+        public string MethodName { get { return GetUnicodeStringAt(SkipUnicodeString(8)); } }
+        public string MethodSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(8))); } }
+        public long EntryPoint { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8)))); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8))) + 8); } }
 
+        #region Private
+        internal R2RGetEntryPointTraceData(Action<R2RGetEntryPointTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8))) + 10));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8))) + 10));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<R2RGetEntryPointTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodNamespace", MethodNamespace);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttrib(sb, "MethodSignature", MethodSignature);
+            XmlAttrib(sb, "EntryPoint", EntryPoint);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "MethodNamespace", "MethodName", "MethodSignature", "EntryPoint", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return MethodNamespace;
+                case 2:
+                    return MethodName;
+                case 3:
+                    return MethodSignature;
+                case 4:
+                    return EntryPoint;
+                case 5:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<R2RGetEntryPointTraceData> m_target;
+        #endregion
+    }
     public sealed class MethodILToNativeMapTraceData : TraceEvent
     {
         private const int ILProlog = -2;    // Returned by ILOffset to represent the prologue of the method

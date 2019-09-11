@@ -2797,6 +2797,11 @@ namespace Microsoft.Diagnostics.Tracing
                     continue;
                 }
 
+                if (eventName == "MethodTailCallFailedAnsi")        // One event has two templates.  
+                {
+                    continue;
+                }
+
                 // The IIs parser uses Cap _ instead of PascalCase, normalize
                 if (GetType().Name == "IisTraceEventParser")
                 {
@@ -3085,12 +3090,20 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 return new EventPipeEventSource(traceFileName);
             }
+            else if (traceFileName.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
+            {
+                return new EventPipeEventSource(traceFileName);
+            }
 #if !NOT_WINDOWS
             else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
             {
                 return new ETWTraceEventSource(traceFileName);
+            }
+            else if (traceFileName.EndsWith(".btl", StringComparison.OrdinalIgnoreCase))
+            {
+                return new BPerfEventSource(traceFileName);
             }
 #endif
             else

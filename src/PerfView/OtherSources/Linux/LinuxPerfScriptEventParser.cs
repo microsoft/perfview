@@ -211,7 +211,7 @@ namespace Diagnostics.Tracing.StackSources
         /// Given a stream that contains PerfInfo commands, parses the stream and stores data in the given dictionary.
         /// Key: somedll.ni.dll		Value: {some guid}
         /// </summary>
-        public void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids)
+        public void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids, Dictionary<string, ulong> baseAddresses)
         {
             FastStream source = new FastStream(stream);
             source.MoveNext();
@@ -236,8 +236,22 @@ namespace Diagnostics.Tracing.StackSources
                     source.ReadAsciiStringUpTo(';', sb);
                     string guid = sb.ToString().TrimEnd();
                     sb.Clear();
+                    source.MoveNext();
 
                     guids[GetFileName(path)] = guid;
+
+                    // Check to see if the base address has been appended to the line.
+                    if(source.Current != '\n')
+                    {
+                        sb.Clear();
+                        source.ReadAsciiStringUpTo(';', sb);
+                        string strBaseAddr = sb.ToString().TrimEnd();
+                        if (!string.IsNullOrEmpty(strBaseAddr))
+                        {
+                            ulong baseAddr = ulong.Parse(strBaseAddr, System.Globalization.NumberStyles.HexNumber);
+                            baseAddresses[GetFileName(path)] = baseAddr;
+                        }
+                    }
                 }
 
                 source.SkipUpTo('\n');
@@ -710,6 +724,7 @@ namespace Diagnostics.Tracing.StackSources
         {
             fileSymbolMappers = new Dictionary<string, Mapper>();
             processDllGuids = new Dictionary<string, Dictionary<string, string>>();
+            processDllBaseAddresses = new Dictionary<string, Dictionary<string, ulong>>();
             this.parser = parser;
 
             if (archive != null)
@@ -722,8 +737,9 @@ namespace Diagnostics.Tracing.StackSources
         {
             Dictionary<string, string> guids;
 
+            string perfInfoFileName = string.Format("perfinfo-{0}.map", processID.ToString());
             if (processDllGuids.TryGetValue(
-                string.Format("perfinfo-{0}.map", processID.ToString()), out guids))
+                perfInfoFileName, out guids))
             {
                 string dllName = modulePath;
 
@@ -737,10 +753,32 @@ namespace Diagnostics.Tracing.StackSources
                     {
                         string symbol;
                         ulong address;
-                        if (mapper.TryFindSymbol(ulong.Parse(stackFrame.Address, System.Globalization.NumberStyles.HexNumber),
+                        ulong ip = ulong.Parse(stackFrame.Address, System.Globalization.NumberStyles.HexNumber);
+                        if (mapper.TryFindSymbol(ip,
                             out symbol, out address))
                         {
                             return parser.GetSymbolFromMicrosoftMap(symbol);
+                        }
+                        else
+                        {
+                            Dictionary<string, ulong> baseAddresses;
+
+                            if(processDllBaseAddresses.TryGetValue(
+                                perfInfoFileName, out baseAddresses))
+                            {
+                                if(baseAddresses.TryGetValue(dllName, out ulong baseAddress))
+                                {
+                                    if(baseAddress <= ip)
+                                    {
+                                        ulong offset = ip - baseAddress;
+                                        if(mapper.TryFindSymbol(offset,
+                                            out symbol, out address))
+                                        {
+                                            return parser.GetSymbolFromMicrosoftMap(symbol);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -775,9 +813,11 @@ namespace Diagnostics.Tracing.StackSources
                 {
                     Dictionary<string, string> guids = new Dictionary<string, string>();
                     processDllGuids[LinuxPerfScriptEventParser.GetFileName(entry.FullName)] = guids;
+                    Dictionary<string, ulong> baseAddresses = new Dictionary<string, ulong>();
+                    processDllBaseAddresses[LinuxPerfScriptEventParser.GetFileName(entry.FullName)] = baseAddresses;
                     using (Stream stream = entry.Open())
                     {
-                        parser.ParsePerfInfoFile(stream, guids);
+                        parser.ParsePerfInfoFile(stream, guids, baseAddresses);
                     }
                 }
             }
@@ -785,6 +825,7 @@ namespace Diagnostics.Tracing.StackSources
 
         private readonly Dictionary<string, Mapper> fileSymbolMappers;
         private readonly Dictionary<string, Dictionary<string, string>> processDllGuids;
+        private readonly Dictionary<string, Dictionary<string, ulong>> processDllBaseAddresses;
         private readonly LinuxPerfScriptEventParser parser;
         #endregion
     }
@@ -811,6 +852,11 @@ namespace Diagnostics.Tracing.StackSources
         {
             symbol = "";
             startLocation = 0;
+
+            if(maps.Count <= 0)
+            {
+                return false;
+            }
 
             int start = 0;
             int end = maps.Count;

@@ -108,11 +108,11 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Remvoves all entries in the cache.  
+        /// Removes all entries in the cache.  
         /// </summary>
         public void Clear()
         {
-            // Intialize the has table to be emtpy (pointers pointing to 'End')
+            // Initialize the has table to be empty (pointers pointing to 'End')
             for (int i = 0; i < m_hashTable.Length; i++)
             {
                 m_hashTable[i] = End;

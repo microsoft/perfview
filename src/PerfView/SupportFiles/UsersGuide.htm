@@ -2071,7 +2071,8 @@
         </li>
         <li>
             <a id="DirectoryTextBox"><strong>Directory TextBox</strong></a> - At the top of
-            left pane is the directory textbox.&nbsp; This is set to the directory to inspect.&nbsp;
+            left pane is the directory textbox. File -> 'Go To Directory''
+            menu option (CTRL-L) on the Main Viewer&nbsp; This is set to the directory to inspect.&nbsp;
             You can also enter file names into this and it will cause them to be opened.&nbsp;&nbsp;
             When you open directory items in the view this textbox is updated to stay in sync.
         </li>
@@ -2499,7 +2500,7 @@
                             of what is going on with ASP.NET requests over time.   The ASP.NET Thread Time Stacks view
                             lets you drill into more detail.   In particular this view works like the
                             <a href="#ThreadTimeStacks">Thread Time Stacks</a> view in that it shows you what every thread
-                            is doing with is REAL (clock) time, however unlike the Thread Time Stacks view it groups the parts
+                            is doing with its REAL (clock) time, however unlike the Thread Time Stacks view it groups the parts
                             of threads that are actually doing work on behalf of an particular request together.  Thus when
                             a request takes a long time (whether it be because of CPU or blocking on a database), that time
                             will show up in this view attributed to that request.  This makes it very straightforward to
@@ -3136,7 +3137,7 @@
         calls of the current node.&nbsp;&nbsp;&nbsp; For example in the CallTree view the
         node representing &#39;SpinForASecond&#39; represent all instances of that function
         that have the SAME PATH TO THE ROOT.&nbsp;&nbsp; Thus you will see several instances
-        of &#39;SpinForASecond&#39; in the CallTree view.&nbsp;&nbsp; However is I was trying
+        of &#39;SpinForASecond&#39; in the CallTree view.&nbsp;&nbsp; However if I was trying
         to understand the impact of &#39;SpinForASecond&#39; on the whole program, it would
         be hard to do so in the CallTree view because it would look at all those nodes.&nbsp;&nbsp;
         The Caller-Callee view aggregates all the different paths to &#39;SpinForASecond&#39;
@@ -3453,7 +3454,7 @@
         <strong>Fixing Renamed functions</strong>
     </p>
     <p>
-        Grouping lets you literal rename any node name to any other node name.&nbsp; Thus
+        Grouping lets you literally rename any node name to any other node name.&nbsp; Thus
         you can &#39;fix&#39; any &#39;expected&#39; differences in a trace.&nbsp;&nbsp;
         For example if MyDll!MethodA was renamed to MyDll!MethodB, you could add the grouping
         pattern
@@ -3486,15 +3487,15 @@
         those are of great interest.
     </p>
     <p>
-        Suppose main calls f and g and does nothing else. Each takes 50ms for a total of 100ms. Now suppose f gets slower, to 60ms. The total is now 110, or 10% worse. How is this algorithm going to help? Well let?s look at the overweights. Of course main is 100
-        going to 110, or 10%, it?s all of it so the expected growth is 10 and the actual is 10. Overweight 100%. Nothing to see there. Now let?s look at g, it was 50, stayed at 50. But it was ?supposed? to go to 55. Overweight 0/5 or 0%. And finally, our big winner,
-        f, it went from 50 to 60, gain of 10. At 10% growth it should have gained 5. Overweight 10/5 or 200%. It?s very clear where the problem is! But actually it gets even better.
+        Suppose main calls f and g and does nothing else. Each takes 50ms for a total of 100ms. Now suppose f gets slower, to 60ms. The total is now 110, or 10% worse. How is this algorithm going to help? Well let's look at the overweights. Of course main is 100
+        going to 110, or 10%, it's all of it so the expected growth is 10 and the actual is 10. Overweight 100%. Nothing to see there. Now let's look at g, it was 50, stayed at 50. But it was 'supposed' to go to 55. Overweight 0/5 or 0%. And finally, our big winner,
+        f, it went from 50 to 60, gain of 10. At 10% growth it should have gained 5. Overweight 10/5 or 200%. It's very clear where the problem is! But actually it gets even better.
     </p>
     <p>
         Suppose that f actually had two children x and y. Each used to take 25ms but now x slowed down to 35ms. With no gain attributable to y, the overweight for y will be 0%, just like g was. But if we look at x we will find that it went from 25 to 35, a gain
         of 10 and it was supposed to grow by merely 2.5 so its overweight is 10/2.5 or 400%. At this point the pattern should be clear:<br>
         <br>
-        The overweight number keeps going up as you get closer to the root of the subtree which is the source of the problem. Everything below that will tend to have the same overweight. For instance if the problem is that x is being called one more time by f you?d
+        The overweight number keeps going up as you get closer to the root of the subtree which is the source of the problem. Everything below that will tend to have the same overweight. For instance if the problem is that x is being called one more time by f you'd
         find that x and all its children have the same overweight number.
     </p>
     <p>
@@ -4004,7 +4005,7 @@
                 This option tends to have a VERY noticeable impact on performance (2X or more).   Also,
                 if the application allocates aggressively, so many events will be fired so quickly that
                 events will be lost even when the
-                /BufferSize qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
+                /BufferSizeMB qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
                 is usually a better idea to use the <a href="DotNetAllocSampledCheckBox">.NET SampAlloc</a>
                 option instead if at all possible.
             </p>
@@ -4069,7 +4070,7 @@
             <p>
                 This option tends to have a VERY noticeable impact on performance (5X or more).
                 If the application runs a lot of code (common), it may be necessary to make
-                /BufferSize qualifier very large (e.g. 1000Meg).  and even that may not be enough
+                /BufferSizeMB qualifier very large (e.g. 1000Meg).  and even that may not be enough
                 This option is really only meant for small isolated tests.
             </p>
             <p>
@@ -6564,7 +6565,7 @@
         </li>
         <li>
             <strong>BufferSizeMB=NNN</strong> Specify the buffer size used by the trigger session.   This is only needed if
-            the provider generates a LARGE volume of events rapidly.  The default value is 64 MB.
+            the provider generates a LARGE volume of events rapidly.  The default value is 256 MB.
         </li>
     </ul>
     <ul>

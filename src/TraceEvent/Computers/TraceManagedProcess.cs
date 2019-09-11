@@ -512,7 +512,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var process = data.Process();
                     var mang = currentManagedProcess(data);
-                    mang.GC.m_stats.lastSuspendReason = data.Reason;
                     switch (data.Reason)
                     {
                         case GCSuspendEEReason.SuspendForGC:
@@ -523,8 +522,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             break;
                         default:
                             mang.GC.m_stats.suspendThreadIDOther = data.ThreadID;
-                            break;
+                            // There are several other reasons for a suspend but we
+                            // don't care about them
+                            return;
                     }
+                    mang.GC.m_stats.lastSuspendReason = data.Reason;
 
                     mang.GC.m_stats.suspendTimeRelativeMSec = data.TimeStampRelativeMSec;
 
@@ -572,6 +574,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var mang = currentManagedProcess(data);
 
+                    if(!(data.ThreadID == mang.GC.m_stats.suspendThreadIDBGC || data.ThreadID == mang.GC.m_stats.suspendThreadIDGC))
+                    {
+                        // We only care about SuspendStop events that correspond to GC or PrepForGC reasons
+                        // If we had initiated one of those then we set the corresponding threadid field in
+                        // SuspendStart and we are guaranteed that the matching stop will occur on the same
+                        // thread. Any other SuspendStop must be part of a suspension we aren't tracking.
+                        return;
+                    }
+
                     if ((mang.GC.m_stats.suspendThreadIDBGC > 0) && (mang.GC.m_stats.currentBGC != null))
                     {
                         mang.GC.m_stats.currentBGC.SuspendDurationMSec += data.TimeStampRelativeMSec - mang.GC.m_stats.suspendTimeRelativeMSec;
@@ -584,6 +595,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var process = data.Process();
                     var stats = currentManagedProcess(data);
+
+                    if(data.ThreadID == stats.GC.m_stats.suspendThreadIDOther)
+                    {
+                        stats.GC.m_stats.suspendThreadIDOther = -1;
+                    }
+
+                    if (!(data.ThreadID == stats.GC.m_stats.suspendThreadIDBGC || data.ThreadID == stats.GC.m_stats.suspendThreadIDGC))
+                    {
+                        // We only care about RestartEE events that correspond to GC or PrepForGC suspensions
+                        // If we had initiated one of those then we set the corresponding threadid field in
+                        // SuspendStart and we are guaranteed that the matching RestartEE will occur on the 
+                        // same thread. Any other RestartEE must be part of a suspension we aren't tracking.
+                        return;
+                    }
+
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
@@ -630,7 +656,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     //Debug.Assert(stats.allocTickAtLastGC == stats.allocTickCurrentMB);
                     // Mark that we are not in suspension anymore.  
                     stats.GC.m_stats.suspendTimeRelativeMSec = -1;
-                    stats.GC.m_stats.suspendThreadIDOther = -1;
                     stats.GC.m_stats.suspendThreadIDBGC = -1;
                     stats.GC.m_stats.suspendThreadIDGC = -1;
                 };

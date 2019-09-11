@@ -9,7 +9,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -517,50 +516,7 @@ namespace PerfView
             string templatePath = Path.Combine(SupportFiles.SupportFileDir, "EventCounterVisualization.html");
             string template = File.ReadAllText(templatePath);
 
-            double t = 0;
-           
-            var counters = new Dictionary<string, List<Tuple<double, double>>>();
-            string pattern = @"Name:""([^""]*)"", Mean:([^,]*).*IntervalSec:([^}]*)";
-            m_source.ForEach(delegate (EventRecord event_)
-            {
-                string rest = event_.Rest;
-                if (rest == null)
-                {
-                    return false;
-                }
-                MatchCollection matches = Regex.Matches(rest, pattern);
-                if (matches.Count != 1 || matches[0].Groups.Count != 4)
-                {
-                    return false;
-                }
-
-                string namePart = matches[0].Groups[1].Captures[0].Value;
-                string meanPart = matches[0].Groups[2].Captures[0].Value;
-                string intervalSecPart = matches[0].Groups[3].Captures[0].Value;
-
-                double mean;
-                double intervalSec;
-                if (!double.TryParse(meanPart, out mean))
-                {
-                    return false;
-                }
-                if (!double.TryParse(intervalSecPart, out intervalSec))
-                {
-                    return false;
-                }
-
-                List<Tuple<Double, Double>> points;
-                if (!counters.TryGetValue(namePart, out points))
-                {
-                    points = new List<Tuple<double, double>>();
-                    counters.Add(namePart, points);
-                }
-                points.Add(Tuple.Create(t, mean));
-
-                t += intervalSec;
-
-                return true;
-            });
+            var counters = BuildCounters(m_source);
 
             var firstCounter = true;
             var sb = new StringBuilder();
@@ -605,7 +561,149 @@ namespace PerfView
             string uri = "file:///" + html.Replace('\\', '/').Replace(" ", "%20");
             Process.Start(uri);
         }
-            
+
+        private const string PayloadToken = "Payload=\"{";
+        private const string NameToken = "Name:";
+        private const string DisplayNameToken = "DisplayName:";
+        private const string MeanToken = "Mean:";
+        private const string IncrementToken = "Increment:";
+        private const string IntervalToken = "IntervalSec:";
+
+        private Dictionary<string, List<Tuple<double, double>>> BuildCounters(EventSource source)
+        {
+            // look for events from "EventCounters"
+            // i.e. within Payload={...}, need to find Name, DisplayName and IntervalSec fields
+            // however, two counter types exist:
+            //  - Mean: Min, Max, Mean fields
+            //  - Sum: Increment field with the delta of the values between the last fetch and the current one
+            //
+            double t = 0;
+            var counters = new Dictionary<string, List<Tuple<double, double>>>();
+            source.ForEach(delegate (EventRecord event_)
+            {
+                string rest = event_.Rest;
+                if (rest == null)
+                {
+                    return false;
+                }
+
+                // ensure that a payload is available
+                var pos = rest.IndexOf(PayloadToken);
+                if (pos == -1)
+                    return false;
+                pos += PayloadToken.Length;
+
+                // get Name and DisplayName fields value
+                // i.e. use display name if available (.NET Core) or name otherwise
+                string name = GetStringField(rest, NameToken, ref pos);
+                if (name == null)
+                    return false;
+
+                string displayName = GetStringField(rest, DisplayNameToken, ref pos);
+                if (displayName == null)
+                    displayName = name;
+
+                // check for Mean or Sum type of counter value
+                var value = GetNumericField(rest, IncrementToken, ref pos);
+                if (value == null)
+                {
+                    value = GetNumericField(rest, MeanToken, ref pos);
+                    if (value == null)
+                        return false;
+                }
+
+                var interval = GetNumericField(rest, IntervalToken, ref pos);
+                if (interval == null)
+                    return false;
+
+                string namePart = displayName;
+                string meanPart = value;
+                string intervalSecPart = interval;
+
+                double mean;
+                double intervalSec;
+                if (!double.TryParse(meanPart, out mean))
+                {
+                    return false;
+                }
+                if (!double.TryParse(intervalSecPart, out intervalSec))
+                {
+                    return false;
+                }
+
+                if (!counters.TryGetValue(namePart, out var points))
+                {
+                    points = new List<Tuple<double, double>>();
+                    counters.Add(namePart, points);
+                }
+                points.Add(Tuple.Create(t, mean));
+
+                t += intervalSec;
+
+                return true;
+            });
+
+            return counters;
+        }
+
+        private string GetStringField(string payload, string token, ref int pos)
+        {
+            var next = pos;
+
+            // a string field is stored in the payload as:
+            //    <token>"<value>"
+            // note that <token> has the following format: <field>=
+            //
+            next = payload.IndexOf(token, next);
+            if (next == -1)
+                return null;
+
+            next += token.Length;
+            if (payload[next] != '"')
+                return null;
+            // skip the " at the beginning of the field value
+            next++;
+
+            var end = payload.IndexOf('"', next);
+            if (end == -1)
+                return null;
+
+            var length = end - next;
+            pos = end;
+            return payload.Substring(next, length);
+
+        }
+
+        private string GetNumericField(string payload, string field, ref int pos)
+        {
+            var next = pos;
+
+            // a numeric field is stored in the payload as:
+            //    <token><value>
+            // note that <token> has the following format: <field>:
+            //
+            next = payload.IndexOf(field, next);
+            if (next == -1)
+                return null;
+
+            next += field.Length;
+
+            var end = payload.IndexOf(',', next);
+            // handle the case of the last numeric value of the payload
+            // i.e. look for " }" instead of ","
+            if (end == -1)
+            {
+                end = payload.IndexOf(" }", next);
+                if (end == -1)
+                    return null;
+            }
+
+            var length = end - next;
+            pos = next;
+            return payload.Substring(next, length);
+        }
+
+
         private void DoRangeFilter(object sender, ExecutedRoutedEventArgs e)
         {
             if (Histogram.IsFocused)
