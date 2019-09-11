@@ -2689,10 +2689,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public void LogUserStackFragment(CallStackIndex userModeStackIndex, TraceLog eventLog)
             {
                 Debug.Assert(!IsDead);
-                Debug.Assert(UserModeStackIndex == CallStackIndex.Invalid);
-                UserModeStackIndex = userModeStackIndex;
+                if (UserModeStackIndex == CallStackIndex.Invalid)
+                {
+                    UserModeStackIndex = userModeStackIndex;
+                }
+                else
+                {
+                    Debug.Assert(UserModeStackIndex >= 0 && userModeStackIndex < 0);
+                }
+
                 bool emitted = EmitStackForEventIfReady(eventLog);
-                Debug.Assert((emitted && IsDead) || KernelModeStackKey != 0);   // Only not having the kernel stack def can be left
+                Debug.Assert((emitted && IsDead) || KernelModeStackKey != 0 || WaitingToLeaveKernel);   // Only not having the kernel stack def can be left
             }
             public void LogUserStackFragment(Address userModeStackKey, TraceLog eventLog)
             {
@@ -2740,7 +2747,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                     // We know that user stacks come after kernel stacks, and we have a user stack.  Thus
                     // if we have a kernel stack or there is no kernel stack, then we can emit it
-                    if (hasKernelStack || KernelModeStackKey == 0)
+                    if ((hasKernelStack || KernelModeStackKey == 0) && !WaitingToLeaveKernel)
                     {
 
                         // If the userModeStack is negative, that means it represents a thread (since we know it can't be
