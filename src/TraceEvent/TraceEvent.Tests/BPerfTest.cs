@@ -15,12 +15,6 @@ namespace TraceEventTests
     [UseCulture("en-US")]
     public sealed class BPerfTest : TestBase
     {
-        private class EventRecord
-        {
-            public int TotalCount;
-            public string FirstSeriazliedSample;
-        }
-
         public BPerfTest(ITestOutputHelper output)
             : base(output)
         {
@@ -29,7 +23,7 @@ namespace TraceEventTests
         public static IEnumerable<object[]> TestBPerfFiles => Directory.EnumerateFiles(TestDataDir, "*.btl").Select(file => new[] { file });
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        protected void PrepareTestData()
+        private void PrepareTestData()
         {
             Assert.True(Directory.Exists(TestDataDir));
             TestDataDir = Path.GetFullPath(TestDataDir);
