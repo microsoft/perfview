@@ -326,7 +326,7 @@ namespace PerfView
                 RundownTimeoutTextBox.IsEnabled = !args.NoRundown;
                 if (args.CircularMB == 0)
                 {
-                    CircularTextBox.Text = "500";
+                    CircularTextBox.Text = "4000";
                 }
 
                 OKButton.Content = "Start Collection";
