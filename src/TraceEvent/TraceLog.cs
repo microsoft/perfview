@@ -56,14 +56,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
         /// <returns>The name of the ETLX file that was generated.</returns>
         /// </summary>
-        public static string CreateFromEventTraceLogFile(string filePath, string etlxFilePath = null, TraceLogOptions options = null)
+        public static string CreateFromEventTraceLogFile(string filePath, string etlxFilePath = null, TraceLogOptions options = null, TraceEventDispatcherOptions traceEventDispatcherOptions = null)
         {
             if (etlxFilePath == null)
             {
                 etlxFilePath = Path.ChangeExtension(filePath, ".etlx");
             }
 
-            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath))
+            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath, traceEventDispatcherOptions))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                 {
@@ -10379,6 +10379,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// If errors occur during conversion, just assume the traced ended at that point and continue. 
         /// </summary>
         public bool ContinueOnError;
+
         #region private
         private TextWriter m_ConversionLog;
         #endregion

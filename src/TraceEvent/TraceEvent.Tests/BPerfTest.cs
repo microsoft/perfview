@@ -63,8 +63,9 @@ namespace TraceEventTests
 
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(bperfFileName)));
             var sb = new StringBuilder(1024 * 1024);
+            var traceEventDispatcherOptions = new TraceEventDispatcherOptions();
 
-            using (var traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(Path.GetFullPath(bperfFileName))))
+            using (var traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(Path.GetFullPath(bperfFileName), traceEventDispatcherOptions: traceEventDispatcherOptions)))
             {
                 var traceSource = traceLog.Events.GetSource();
 
