@@ -69,9 +69,13 @@ namespace System.Collections.Generic
 
             if (initialCapacity > 0)
             {
-                this.items = new T[(initialCapacity + this.segmentSize - 1) >> this.segmentShift][];
-                initialCapacity = Math.Min(this.segmentSize, initialCapacity);
-                this.items[0] = new T[initialCapacity];
+                initialCapacity = this.segmentSize * ((initialCapacity + this.segmentSize - 1) / this.segmentSize);
+                this.items = new T[initialCapacity >> this.segmentShift][];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    items[i] = new T[this.segmentSize];
+                }
+
                 this.capacity = initialCapacity;
             }
         }
