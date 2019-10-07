@@ -2653,6 +2653,11 @@ public class GCHeapDumper
         string result = type.Name;
         if (result != "<UNKNOWN>")
         {
+            if (result is null)
+            {
+                return type.MethodTable.ToString("X");
+            }
+
             return result;
         }
 
