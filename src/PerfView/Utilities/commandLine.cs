@@ -1472,6 +1472,10 @@ class CommandLine
 
                     return ParseValue(valueString, type.GetGenericArguments()[0], parameterName);
                 }
+                else if (type == typeof(DateTime))
+                {
+                    return DateTime.Parse(valueString);
+                }
                 else
                 {
                     System.Reflection.MethodInfo parseMethod = type.GetMethod("Parse", new Type[] { typeof(string) });
