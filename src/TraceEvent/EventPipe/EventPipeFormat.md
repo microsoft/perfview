@@ -193,7 +193,7 @@ In the uncompressed format an event blob is:
   - CaptureThreadId - long - This is the thread which physically captured the event. Sequence Numbers are tracked relative to the CaptureThreadId
   - ProcessorNumber - int - Identifies which processor CaptureThreadId was running on
   - StackId - int - A foreign key to a stack that should be associated with this event. See StackBlock for more details.
-  - TimeStamp - long - The QPC time the event occured
+  - TimeStamp - long - The QPC time the event occurred
   - ActivityID - GUID
   - RelatedActivityID - GUID
   - PayloadSize - int
