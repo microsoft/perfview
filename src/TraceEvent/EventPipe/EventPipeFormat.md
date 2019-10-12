@@ -301,7 +301,7 @@ The payload of a stack block is:
   - StackSize in bytes - int
   - StackSize number of bytes
 
-On 32 bit traces the stack bytes can be interpreted as an array of 4 byte integer IPs. On 64 bit traces it is an array of 8 byte interger IPs. Each stack can be given an ID by starting with First Id and incrementing by 1 for each additional stack in the block in stream order. 
+On 32 bit traces the stack bytes can be interpreted as an array of 4 byte integer IPs. On 64 bit traces it is an array of 8 byte integer IPs. Each stack can be given an ID by starting with First Id and incrementing by 1 for each additional stack in the block in stream order. 
 
 ## SequencePointBlock Object
 
