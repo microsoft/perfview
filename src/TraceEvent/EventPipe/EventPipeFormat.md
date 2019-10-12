@@ -232,7 +232,7 @@ Compressed events are encoded with a header:
   - otherwise previous ThreadId
 - StackId optional varint32
   - if Flags & 8 the value is read from the stream
-  - otehrwise previous StackId
+  - otherwise previous StackId
 - TimeStamp varint64 - read value from stream + previous value
 - ActivityId optional GUID
   - if Flags & 16, read from stream
