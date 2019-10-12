@@ -78,4 +78,4 @@ on it in Solution Explorer -> Set as Startup Project) and run it (F5)  By defaul
 * Release Notes - the [Releases](https://github.com/Microsoft/perfview/releases) page 
 for PerfView also shows the releases for the TraceEvent library.   Note that PerfView's 
 version numbers and TraceEvent Version numbers are not kept in lock step. 
-The version numbers that begin with T are for TraceEvent, the ones with V coorespond to PerfView.  
+The version numbers that begin with T are for TraceEvent, the ones with V correspond to PerfView.  
