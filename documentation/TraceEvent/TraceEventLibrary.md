@@ -24,7 +24,7 @@ Is your guide for this.    Fundamentally however, the traceEvent library simply 
 a set of .NET class definitions as a Nuget Package.   Thus you only need to create a .NET
 project (it can be .NET Core or .Net Desktop), add a reference to the Microsoft.Diagnostics.Tracing.TraceEvent nuget library
 (right click on the project -> Manage Nuget Packages) and start using the APIs.  Here 
-is a trivial example that logs all the kernel, clr and dyanmic events in an ETL (ETW Trace File). 
+is a trivial example that logs all the kernel, clr and dynamic events in an ETL (ETW Trace File). 
 ```
     using Microsoft.Diagnostics.Tracing;
     using System;
