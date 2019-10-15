@@ -351,7 +351,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (firstBytes[0] == 'B' && firstBytes[1] == 'S' && firstBytes[2] == 'J' && firstBytes[3] == 'B')
                 {
                     stream.Seek(0, SeekOrigin.Begin);   // Start over
-                    ret = new PortableSymbolModule(this, pdbFilePath);
+                    ret = new PortableSymbolModule(this, stream, pdbFilePath);
                 }
                 else
                 {
@@ -912,9 +912,13 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        ///  Called when you are done with the symbol reader.  Currently does nothing.  
+        ///  Called when you are done with the symbol reader.
+        ///  Closes all opened symbol files.
         /// </summary>
-        public void Dispose() { }
+        public void Dispose()
+        {
+            m_symbolModuleCache.Clear();
+        }
 
         #region private
         /// <summary>

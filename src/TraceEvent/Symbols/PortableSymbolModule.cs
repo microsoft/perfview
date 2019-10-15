@@ -6,16 +6,17 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.Symbols
 {
-    internal class PortableSymbolModule : ManagedSymbolModule
+    internal class PortableSymbolModule : ManagedSymbolModule, IDisposable
     {
         public PortableSymbolModule(SymbolReader reader, string pdbFileName) : this(reader, File.Open(pdbFileName, FileMode.Open, FileAccess.Read, FileShare.Read), pdbFileName) { }
 
         public PortableSymbolModule(SymbolReader reader, Stream stream, string pdbFileName = "") : base(reader, pdbFileName)
         {
-            _stream = stream;
-            _provider = MetadataReaderProvider.FromPortablePdbStream(_stream);
+            _provider = MetadataReaderProvider.FromPortablePdbStream(stream);
             _metaData = _provider.GetMetadataReader();
         }
+
+        public void Dispose() => _provider.Dispose();
 
         public override Guid PdbGuid
         {
@@ -125,7 +126,6 @@ namespace Microsoft.Diagnostics.Symbols
         // Needed by other things to look up data
         internal MetadataReader _metaData;
         private MetadataReaderProvider _provider;
-        private Stream _stream;
         #endregion
     }
 }
