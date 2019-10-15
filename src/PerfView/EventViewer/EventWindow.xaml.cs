@@ -563,6 +563,7 @@ namespace PerfView
         }
 
         private const string PayloadToken = "Payload=\"{";
+        private const string PayloadTokenNetCore = "Payload:{";
         private const string NameToken = "Name:";
         private const string DisplayNameToken = "DisplayName:";
         private const string MeanToken = "Mean:";
@@ -590,8 +591,21 @@ namespace PerfView
                 // ensure that a payload is available
                 var pos = rest.IndexOf(PayloadToken);
                 if (pos == -1)
-                    return false;
-                pos += PayloadToken.Length;
+                {
+                    pos = rest.IndexOf(PayloadTokenNetCore);
+                    if (pos == -1)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        pos += PayloadTokenNetCore.Length;
+                    }
+                }
+                else
+                {
+                    pos += PayloadToken.Length;
+                }
 
                 // get Name and DisplayName fields value
                 // i.e. use display name if available (.NET Core) or name otherwise
