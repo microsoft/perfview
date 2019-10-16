@@ -4978,8 +4978,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         private int IndexOfSetBit(int pow2)
         {
+            if (pow2 == 0)
+                return -1;
             int index = 0;
-            while ((pow2 & 1) != 1 && pow2 > 0)
+            while ((pow2 & 1) != 1)
             {
                 pow2 >>= 1;
                 index++;
