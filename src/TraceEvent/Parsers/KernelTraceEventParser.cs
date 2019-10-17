@@ -139,7 +139,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary> 
             VirtualAlloc = 0x004000,
             /// <summary>
-            /// Log mapping of files into memmory (Win8 and above Only)
+            /// Log mapping of files into memory (Win8 and above Only)
             /// Generally low volume.  
             /// </summary>
             VAMap = 0x8000,

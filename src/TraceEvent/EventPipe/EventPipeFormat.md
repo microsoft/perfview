@@ -193,7 +193,7 @@ In the uncompressed format an event blob is:
   - CaptureThreadId - long - This is the thread which physically captured the event. Sequence Numbers are tracked relative to the CaptureThreadId
   - ProcessorNumber - int - Identifies which processor CaptureThreadId was running on
   - StackId - int - A foreign key to a stack that should be associated with this event. See StackBlock for more details.
-  - TimeStamp - long - The QPC time the event occured
+  - TimeStamp - long - The QPC time the event occurred
   - ActivityID - GUID
   - RelatedActivityID - GUID
   - PayloadSize - int
@@ -232,7 +232,7 @@ Compressed events are encoded with a header:
   - otherwise previous ThreadId
 - StackId optional varint32
   - if Flags & 8 the value is read from the stream
-  - otehrwise previous StackId
+  - otherwise previous StackId
 - TimeStamp varint64 - read value from stream + previous value
 - ActivityId optional GUID
   - if Flags & 16, read from stream
@@ -301,7 +301,7 @@ The payload of a stack block is:
   - StackSize in bytes - int
   - StackSize number of bytes
 
-On 32 bit traces the stack bytes can be interpreted as an array of 4 byte integer IPs. On 64 bit traces it is an array of 8 byte interger IPs. Each stack can be given an ID by starting with First Id and incrementing by 1 for each additional stack in the block in stream order. 
+On 32 bit traces the stack bytes can be interpreted as an array of 4 byte integer IPs. On 64 bit traces it is an array of 8 byte integer IPs. Each stack can be given an ID by starting with First Id and incrementing by 1 for each additional stack in the block in stream order. 
 
 ## SequencePointBlock Object
 
@@ -335,7 +335,7 @@ more objects in the stream to read.
 
 ## Event Sequence Numbers
 
-Every thread that can log events assigns each event a sequence number. Each thread has an independent counter per-session which starts at 1 for the first event, increments by 1 for each successive event, and if necessary rolls over back to zero after event 2^32-1. Sequence numbers are assigned at the time events enter the EventPipe API, regardless of whether the events are commited into the file stream or dropped for whatever reason. This allows the eventual reader of the file format to locate gaps in the sequence number sequence to infer that events have been lost. Spotting these gaps can occur two ways:
+Every thread that can log events assigns each event a sequence number. Each thread has an independent counter per-session which starts at 1 for the first event, increments by 1 for each successive event, and if necessary rolls over back to zero after event 2^32-1. Sequence numbers are assigned at the time events enter the EventPipe API, regardless of whether the events are committed into the file stream or dropped for whatever reason. This allows the eventual reader of the file format to locate gaps in the sequence number sequence to infer that events have been lost. Spotting these gaps can occur two ways:
 
 1. For a given CaptureThreadId the sequence number should always increase by 1. If events on the same CaptureThreadId skip sequence numbers then events have been dropped. There is one special exception - if the sequence number suddenly resets to 1 then it is possible that the previous thread with this ID died, the OS created a new thread with the same ID, and the new thread began as normal at 1. This ambiguity is unfortunate and might be resolved in a future revision of the file format.
 2. Every sequence point contains a lower bound for the sequence number on each thread. If the sequence point records a higher sequence number for a given thread then the last observed event on that thread, events have been dropped. This allows detecting cases where a thread is dropping all of its events, likely because all buffers are remaining persistently full.
@@ -450,7 +450,7 @@ now it is enough to know that this capability exists if we need it.
 **Not Forward Compatible**
 
 In general the file format became a little less simplistic in this revision to improve size on disk, speed up any IO bound read/write scenario, detect dropped events, and efficiently support a broader variety of access patterns. In exchange implementing a parser became a bit more complex and any read scenario that was previously memory or CPU bound likely degraded.
-Although not intending to abandon the original goals of simplicity, this definately takes a few steps away from it in the name of performance. One of the original premises was that the format should make no effort to at conserving size because generic compression algorithms could always recover it. This still feels true in the case where you have a file on disk and there is no tight constraint on CPU or latency to compress it. This doesn't appear to hold up as well when you assume that you want to do streaming with low latency guarantees and constrained writer CPU resources. General purpose compression algorithms need both CPU cycles and sufficient blocks of data to recognize and exploit compressible patterns. On the other hand we have a priori knowledge about potentially large parts of the format that are highly compressible (often better than 10:1). At the cost of some complexity we can write targetted algorithms that recover considerable low hanging fruit at very low CPU/latency cost.
+Although not intending to abandon the original goals of simplicity, this definitely takes a few steps away from it in the name of performance. One of the original premises was that the format should make no effort to at conserving size because generic compression algorithms could always recover it. This still feels true in the case where you have a file on disk and there is no tight constraint on CPU or latency to compress it. This doesn't appear to hold up as well when you assume that you want to do streaming with low latency guarantees and constrained writer CPU resources. General purpose compression algorithms need both CPU cycles and sufficient blocks of data to recognize and exploit compressible patterns. On the other hand we have a priori knowledge about potentially large parts of the format that are highly compressible (often better than 10:1). At the cost of some complexity we can write targetted algorithms that recover considerable low hanging fruit at very low CPU/latency cost.
 
 Changes:
 

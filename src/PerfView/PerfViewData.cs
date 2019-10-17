@@ -7216,6 +7216,10 @@ table {
                 options.KeepAllEvents = true;
             }
 
+            var traceEventDispatcherOptions = new TraceEventDispatcherOptions();
+            traceEventDispatcherOptions.StartTime = App.CommandLineArgs.StartTime;
+            traceEventDispatcherOptions.EndTime = App.CommandLineArgs.EndTime;
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -7240,7 +7244,7 @@ table {
                 if (!File.Exists(etlxFile))
                 {
                     log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
-                    TraceLog.CreateFromEventTraceLogFile(dataFileName, etlxFile, options);
+                    TraceLog.CreateFromEventTraceLogFile(dataFileName, etlxFile, options, traceEventDispatcherOptions);
 
                     var dataFileSize = "Unknown";
                     if (File.Exists(dataFileName))

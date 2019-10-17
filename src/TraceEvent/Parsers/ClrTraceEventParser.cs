@@ -9,14 +9,10 @@ using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
-/* This file was generated with the command */
-// traceParserGen /merge CLREtwAll.man CLRTraceEventParser.cs
-/* And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...) */
-// The version before any hand modifications is kept as KernelTraceEventParser.base.cs, and a 3
-// way diff is done when traceParserGen is rerun.  This allows the 'by-hand' modifications to be
-// applied again if the mof or the traceParserGen transformation changes. 
-// 
-// See traceParserGen /usersGuide for more on the /merge option 
+// This file was generated with the following command:
+//    traceParserGen CLREtwAll.man CLRTraceEventParser.cs
+// And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...)
+// Note: /merge option is no more available (does not even compile)
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -4654,19 +4650,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
                 Debug.Assert(ret <= 0);
 
-                if (ret == 0)
-                {
-                    return gc_heap_compact_reason.not_specified;
-                }
-
-                int index = IndexOfSetBit(ret);
-                if (index >= 0 && index < (int)gc_heap_compact_reason.max_compact_reasons_count)
-                {
-                    return (gc_heap_compact_reason)index;
-                }
-
-                Debug.Assert(false, index + " >= 0 && " + index + " < " + (int)gc_heap_compact_reason.max_compact_reasons_count);
-                return gc_heap_compact_reason.not_specified;
+                return (gc_heap_compact_reason)IndexOfSetBit(ret, (int)gc_heap_compact_reason.max_compact_reasons_count,
+                                                                  (int)gc_heap_compact_reason.not_specified);
             }
         }
         public gc_heap_expand_mechanism ExpandMechanisms
@@ -4694,19 +4679,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
                 Debug.Assert(ret <= 0);
 
-                if (ret == 0)
-                {
-                    return gc_heap_expand_mechanism.not_specified;
-                }
-
-                int index = IndexOfSetBit(ret);
-                if (index >= 0 && index < (int)gc_heap_expand_mechanism.max_expand_mechanisms_count)
-                {
-                    return (gc_heap_expand_mechanism)index;
-                }
-
-                Debug.Assert(false, index + " >= 0 && " + index + " < " + (int)gc_heap_expand_mechanism.max_expand_mechanisms_count);
-                return gc_heap_expand_mechanism.not_specified;
+                return (gc_heap_expand_mechanism)IndexOfSetBit(ret, (int)gc_heap_expand_mechanism.max_expand_mechanisms_count,
+                                                                    (int)gc_heap_expand_mechanism.not_specified);
             }
         }
         public gc_concurrent_compact_reason ConcurrentCompactMechanisms
@@ -4726,19 +4700,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
                 Debug.Assert(ret <= 0);
 
-                if (ret == 0)
-                {
-                    return gc_concurrent_compact_reason.not_specified;
-                }
-
-                int index = IndexOfSetBit(ret);
-                if (index >= 0 && index < (int)gc_concurrent_compact_reason.max_concurrent_compat_reason)
-                {
-                    return (gc_concurrent_compact_reason)index;
-                }
-
-                Debug.Assert(false, index + " >= 0 && " + index + " < " + (int)gc_concurrent_compact_reason.max_concurrent_compat_reason);
-                return gc_concurrent_compact_reason.not_specified;
+                return (gc_concurrent_compact_reason)IndexOfSetBit(ret, (int)gc_concurrent_compact_reason.max_concurrent_compat_reason,
+                                                                        (int)gc_concurrent_compact_reason.not_specified);
             }
         }
         public bool HasConcurrentCompactMechanisms { get { return Version == 0 && MinorVersion == 2; } }
@@ -4980,16 +4943,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return exactMatch;
         }
 
-        private int IndexOfSetBit(int pow2)
+        private int IndexOfSetBit(int pow2, int count, int notSpecifiedValue)
         {
+            if (pow2 == 0)
+                return notSpecifiedValue;
             int index = 0;
-            while ((pow2 & 1) != 1 && pow2 > 0)
+            while ((pow2 & 1) != 1)
             {
                 pow2 >>= 1;
                 index++;
             }
 
-            return index;
+            if (index >= 0 && index < count)
+                return index;
+            Debug.Assert(false, index + " >= 0 && " + index + " < " + count);
+            return notSpecifiedValue;
         }
 
         private long[] GetIntPtrArray(int offset, int count)

@@ -320,7 +320,7 @@ class Program
 }
 ```
 
-Clearly this experience is a step down from what you get with a compile time solution. Certainly it is clunkier to write, and also error prone (if you misspell *MyName* above the compiler will not catch it like it would if we misspelled `CommanLine` when accessing process data). It is also MUCH less efficient to use `PayloadByName` than to use compile time trace parser properties. What we would have LIKED to write is something like the following
+Clearly this experience is a step down from what you get with a compile time solution. Certainly it is clunkier to write, and also error prone (if you misspell *MyName* above the compiler will not catch it like it would if we misspelled `CommandLine` when accessing process data). It is also MUCH less efficient to use `PayloadByName` than to use compile time trace parser properties. What we would have LIKED to write is something like the following
 
 ```csharp
 source.Dynamic.AddCallbackForEvent("MyFirstEvent", delegate(MyFirstEventTraceData data) {

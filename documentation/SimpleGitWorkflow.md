@@ -58,7 +58,7 @@ By convention, you should begin this comment with ONE LINE SUMMARIZES THE CHANGE
 descriptions of the commit.  After that line, you can write a longer explanation if desired. 
 
 At the top of the pane is the active branch.  It is likely to say 'master', but whatever it is, this is the branch that
-you are commiting to.  
+you are committing to.  
 
 After you have filled out the description, you can simply hit the 'Commit All' button to commit your changes.  
 

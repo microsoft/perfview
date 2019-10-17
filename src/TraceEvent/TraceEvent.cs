@@ -3070,6 +3070,22 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
+    /// An options class for the TraceEventDispatcher
+    /// </summary>
+    public sealed class TraceEventDispatcherOptions
+    {
+        /// <summary>
+        /// StartTime from which you want to start analyzing the events for file formats that support this.
+        /// </summary>
+        public DateTime StartTime { get; set; }
+
+        /// <summary>
+        /// EndTime till when you want to analyze events for file formats that support this.
+        /// </summary>
+        public DateTime EndTime { get; set; }
+    }
+
+    /// <summary>
     /// A TraceEventDispatcher is a TraceEventSource that supports a callback model for dispatching events.  
     /// </summary>
     public abstract unsafe class TraceEventDispatcher : TraceEventSource
@@ -3079,7 +3095,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         /// <param name="traceFileName">A path to a trace file.</param>
         /// <returns>A TraceEventDispatcher for the given trace file.</returns>
-        public static TraceEventDispatcher GetDispatcherFromFileName(string traceFileName)
+        public static TraceEventDispatcher GetDispatcherFromFileName(string traceFileName, TraceEventDispatcherOptions options = null)
         {
 #if !DOTNET_V35
             if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
@@ -3103,7 +3119,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else if (traceFileName.EndsWith(".btl", StringComparison.OrdinalIgnoreCase))
             {
-                return new BPerfEventSource(traceFileName);
+                return new BPerfEventSource(traceFileName, options);
             }
 #endif
             else

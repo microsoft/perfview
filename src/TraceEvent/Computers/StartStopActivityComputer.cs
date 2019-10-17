@@ -652,11 +652,11 @@ namespace Microsoft.Diagnostics.Tracing
             uint sum = uintPtr[0] + uintPtr[1] + uintPtr[2] + 0x599D99AD;
             if (processID == 0)
             {
-                // We guess that the process ID is < 16 bits and because it was xored
-                // with the lower bits, the upper 16 bits should be independent of the
+                // We guess that the process ID is < 20 bits and because it was xored
+                // with the lower bits, the upper 12 bits should be independent of the
                 // particular process, so we can at least confirm that the upper bits
                 // match. 
-                return ((sum & 0xFFFF0000) == (uintPtr[3] & 0xFFFF0000));
+                return ((sum & 0xFFF00000) == (uintPtr[3] & 0xFFF00000));
             }
 
             if ((sum ^ (uint)processID) == uintPtr[3])  // This is the new style 
@@ -1401,7 +1401,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 sb.Append(TaskName);
                 sb.Append('(');
-                AppendActivityPath(sb, ActivityID);
+                AppendActivityPath(sb, ActivityID, ProcessID);
 
                 if (ExtraInfo != null)
                 {
@@ -1414,9 +1414,9 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        private static unsafe StringBuilder AppendActivityPath(StringBuilder sb, Guid guid)
+        private static unsafe StringBuilder AppendActivityPath(StringBuilder sb, Guid guid, int processId)
         {
-            if (StartStopActivityComputer.IsActivityPath(guid, processID: 0))
+            if (StartStopActivityComputer.IsActivityPath(guid, processId))
             {
                 return sb.Append(StartStopActivityComputer.CreateActivityPathString(guid));
             }

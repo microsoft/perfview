@@ -76,7 +76,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         static private volatile TraceEvent[] s_templates;
-        protected override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
+        protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
@@ -536,16 +536,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             m_target = target;
             m_state = state;
         }
-        protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             m_target(this);
         }
-        protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != FragmentSize + 12));
             Debug.Assert(!(Version > 0 && EventDataLength < FragmentSize + 12));
         }
-        protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<PacketFragmentArgs>)value; }
@@ -675,7 +675,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
 
         private event Action<PacketFragmentArgs> m_target;
 
-        protected override void SetState(object newState) { m_state = (MicrosoftWindowsNDISPacketCaptureTraceEventParserState)newState; }
+        protected override internal void SetState(object newState) { m_state = (MicrosoftWindowsNDISPacketCaptureTraceEventParserState)newState; }
         private MicrosoftWindowsNDISPacketCaptureTraceEventParserState m_state;
         #endregion
     }
@@ -694,16 +694,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             m_target = target;
             m_state = state;
         }
-        protected override void Dispatch()
+        protected override internal void Dispatch()
         {
             m_target(this);
         }
-        protected override void Validate()
+        protected override internal void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != MetadataSize + 12));
             Debug.Assert(!(Version > 0 && EventDataLength < MetadataSize + 12));
         }
-        protected override Delegate Target
+        protected override internal Delegate Target
         {
             get { return m_target; }
             set { m_target = (Action<PacketMetaDataArgs>)value; }
@@ -749,7 +749,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
 
         private event Action<PacketMetaDataArgs> m_target;
 
-        protected override void SetState(object newState) { m_state = (MicrosoftWindowsNDISPacketCaptureTraceEventParserState)newState; }
+        protected override internal void SetState(object newState) { m_state = (MicrosoftWindowsNDISPacketCaptureTraceEventParserState)newState; }
         private MicrosoftWindowsNDISPacketCaptureTraceEventParserState m_state;
         #endregion
     }
