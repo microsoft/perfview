@@ -514,8 +514,11 @@ namespace Diagnostics.Tracing.StackSources
         {
             if (recursionGuard.RequiresNewThread)
             {
+                var capturedThis = this;
+                var capturedStackIndex = stackIndex;
+                var capturedRecursionGuard = recursionGuard;
                 Task<StackInfo> operation = Task.Factory.StartNew(
-                    () => GetStackInfo(stackIndex, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.GetStackInfo(capturedStackIndex, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return operation.GetAwaiter().GetResult();

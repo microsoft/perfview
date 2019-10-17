@@ -314,8 +314,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                var capturedThis = this;
+                var capturedStack = stack;
+                var capturedRecursionGuard = recursionGuard;
                 Task<CallTreeNode> result = Task.Factory.StartNew(
-                    () => FindTreeNode(stack, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.FindTreeNode(capturedStack, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
@@ -568,8 +571,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                var capturedThis = this;
+                var capturedTreeNode = treeNode;
+                var capturedCallersOnStack = callersOnStack;
+                var capturedRecursionGuard = recursionGuard;
                 Task result = Task.Factory.StartNew(
-                    () => AccumulateSumByID(treeNode, callersOnStack, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.AccumulateSumByID(capturedTreeNode, capturedCallersOnStack, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 result.GetAwaiter().GetResult();
@@ -1331,8 +1338,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                var capturedThis = this;
+                var capturedComparer = comparer;
+                var capturedRecursionGuard = recursionGuard;
                 Task result = Task.Factory.StartNew(
-                    () => SortAll(comparer, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.SortAll(capturedComparer, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 result.GetAwaiter().GetResult();
@@ -1907,8 +1917,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                var capturedThis = this;
+                var capturedTreeNode = treeNode;
+                var capturedRecursionCount = recursionCount;
+                var capturedRecursionGuard = recursionGuard;
                 Task<AccumulateSamplesResult> result = Task.Factory.StartNew(
-                    () => AccumulateSamplesForNode(treeNode, recursionCount, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.AccumulateSamplesForNode(capturedTreeNode, capturedRecursionCount, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
