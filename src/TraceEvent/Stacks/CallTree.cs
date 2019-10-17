@@ -168,7 +168,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Cause the children of each CallTreeNode in the CallTree to be sorted (accending) based on comparer
         /// </summary>
-        public void Sort(Comparison<CallTreeNode> comparer)
+        public void Sort(IComparer<CallTreeNode> comparer)
         {
             m_root.SortAll(comparer);
         }
@@ -177,7 +177,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void SortInclusiveMetricDecending()
         {
-            Sort(delegate (CallTreeNode x, CallTreeNode y)
+            var comparer = new FunctorComparer<CallTreeNode>(delegate (CallTreeNode x, CallTreeNode y)
             {
                 int ret = Math.Abs(y.InclusiveMetric).CompareTo(Math.Abs(x.InclusiveMetric));
                 if (ret != 0)
@@ -187,7 +187,17 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // Sort by first sample time (assending) if the counts are the same.  
                 return x.FirstTimeRelativeMSec.CompareTo(y.FirstTimeRelativeMSec);
             });
+
+            Sort(comparer);
         }
+
+        private class FunctorComparer<T> : IComparer<T>
+        {
+            public FunctorComparer(Comparison<T> comparison) { this.comparison = comparison; }
+            public int Compare(T x, T y) { return comparison(x, y); }
+
+            private Comparison<T> comparison;
+        };
 
         /// <summary>
         /// When converting the InclusiveMetricByTime to a InclusiveMetricByTimeString you have to decide 
@@ -1317,7 +1327,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Sort the childre of every node in the te
         /// </summary>
         /// <param name="comparer"></param>
-        internal void SortAll(Comparison<CallTreeNode> comparer, RecursionGuard recursionGuard = default(RecursionGuard))
+        internal void SortAll(IComparer<CallTreeNode> comparer, RecursionGuard recursionGuard = default(RecursionGuard))
         {
             if (recursionGuard.RequiresNewThread)
             {
