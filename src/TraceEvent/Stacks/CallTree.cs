@@ -489,7 +489,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 var processedInCurrentSet = new HashSet<CallTreeNode>();
                 var nextParentWorkSet = new HashSet<CallTreeNode>();
-                foreach (var node in parentWorkSet.OrderByDescending(n => n.Index))
+                foreach (var node in parentWorkSet.OrderByDescending(n => (int)n.Index))
                 {
                     processedInCurrentSet.Add(node);
 
