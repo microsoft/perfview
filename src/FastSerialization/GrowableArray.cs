@@ -521,13 +521,4 @@ namespace System.Collections.Generic
             #endregion
         }
     }
-    #region private classes 
-    internal class FunctorComparer<T> : IComparer<T>
-    {
-        public FunctorComparer(Comparison<T> comparison) { this.comparison = comparison; }
-        public int Compare(T x, T y) { return comparison(x, y); }
-
-        private Comparison<T> comparison;
-    };
-    #endregion
 }

@@ -78,6 +78,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\FastSerialization\FunctorComparer`1.cs" Link="Utilities\FunctorComparer`1.cs" />
     <Compile Include="..\Utilities\OperatingSystemVersion.cs">
       <Link>Utilities\OperatingSystemVersion.cs</Link>
     </Compile>
