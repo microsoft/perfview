@@ -56,7 +56,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
-    <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
@@ -198,6 +197,7 @@
       <Visible>False</Visible>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
+    <!--
     <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net45\x86\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -211,7 +211,7 @@
       <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
       <Link>amd64\EtwClrProfiler.dll</Link>
       <Visible>False</Visible>
-    </EmbeddedResource>
+    </EmbeddedResource>-->
     <EmbeddedResource Include="SupportFiles\PerfView.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

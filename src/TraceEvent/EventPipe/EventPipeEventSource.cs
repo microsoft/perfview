@@ -169,6 +169,24 @@ namespace Microsoft.Diagnostics.Tracing
             DispatchEventRecord(ReadEvent(reader, useHeaderCompression));
         }
 
+        internal void ReadAndDispatchMetadataV2Blob(PinnedStreamReader reader, StreamLabel metadataRegionEnd)
+        {
+            StreamLabel metadataBlobStart = reader.Current;
+            int length = reader.ReadInt32();
+            Debug.Assert(4 <= length && metadataBlobStart.Add(length) <= metadataRegionEnd);
+
+            var metaDataHeader = new EventPipeEventMetaDataHeader(reader, length-4,
+            EventPipeMetaDataVersion.NetTraceV2, PointerSize, _processId);
+            _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
+
+            // Record the metadata for this new event
+            OnNewEventPipeEventDefinition(metaDataHeader, reader, metadataBlobStart.Add(length));
+
+            StreamLabel metadataBlobEnd = metadataBlobStart.Add(length);
+            Debug.Assert(metadataBlobEnd <= metadataRegionEnd);
+            reader.Goto(metadataBlobEnd);
+        }
+
         internal void DispatchEventRecord(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             if (eventRecord != null)
@@ -254,11 +272,20 @@ namespace Microsoft.Diagnostics.Tracing
                 StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
 
                 // Read in the header (The header does not include payload parameter information)
-                var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize, FileFormatVersionNumber, PointerSize, _processId);
-                _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
-
-                // Record the metadata for this new event
-                OnNewEventPipeEventDefinition(metaDataHeader, reader);
+                var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize, 
+                    GetMetaDataVersion(FileFormatVersionNumber), PointerSize, _processId);
+                if (_eventMetadataDictionary.ContainsKey(metaDataHeader.MetaDataId))
+                {
+                    // A V2 metadata blob was already found so skip the lower fidelity V1 metadata
+                    Debug.Assert(_eventMetadataDictionary[metaDataHeader.MetaDataId].EncodingVersion >= EventPipeMetaDataVersion.NetTraceV2);
+                    reader.Goto(metaDataEnd);
+                }
+                else
+                {
+                    _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
+                    // Record the metadata for this new event
+                    OnNewEventPipeEventDefinition(metaDataHeader, reader, metaDataEnd);
+                }
                 Debug.Assert(reader.Current == metaDataEnd);    // We should have read all the meta-data.  
 
                 Debug.Assert(eventData.StackBytesSize == 0, "Meta-data events should always have a empty stack");
@@ -271,6 +298,19 @@ namespace Microsoft.Diagnostics.Tracing
             reader.Goto(eventDataEnd);
 
             return ret;
+        }
+
+        private static EventPipeMetaDataVersion GetMetaDataVersion(int fileFormatVersion)
+        {
+            switch(fileFormatVersion)
+            {
+                case 1:
+                    return EventPipeMetaDataVersion.LegacyV1;
+                case 2:
+                    return EventPipeMetaDataVersion.LegacyV2;
+                default:
+                    return EventPipeMetaDataVersion.NetTraceV1;
+            }
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
@@ -367,10 +407,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// and record a template associated with this source. The readerForParameters is advanced beyond
         /// the event parameters information.  
         /// </summary>
-        internal void OnNewEventPipeEventDefinition(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters)
+        internal void OnNewEventPipeEventDefinition(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters,
+            StreamLabel metadataBlobEnd)
         {
             // Convert the EventPipe data into a DynamicTraceEventData, which is how TraceEvent does dynamic event parsing.  
-            DynamicTraceEventData template = ReadEventParametersAndBuildTemplate(eventMetaDataHeader, readerForParameters);
+            DynamicTraceEventData template = ReadEventParametersAndBuildTemplate(eventMetaDataHeader, readerForParameters, metadataBlobEnd);
             _metadataTemplates[template] = template;
         }
 
@@ -384,7 +425,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// event, create a new  DynamicTraceEventData that knows how to parse that event.  
         /// ReaderForParameters.Current is advanced past the parameter information.  
         /// </summary>
-        private DynamicTraceEventData ReadEventParametersAndBuildTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters)
+        private DynamicTraceEventData ReadEventParametersAndBuildTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters,
+            StreamLabel metadataBlobEnd)
         {
             int opcode;
             string opcodeName;
@@ -408,10 +450,20 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (fieldCount > 0)
             {
-                // Recursively parse the metadata, building up a list of payload names and payload field fetch objects.
-                classInfo = ParseFields(readerForParameters, fieldCount);
+                try
+                {
+                    // Recursively parse the metadata, building up a list of payload names and payload field fetch objects.
+                    classInfo = ParseFields(readerForParameters, fieldCount, eventMetaDataHeader.EncodingVersion, metadataBlobEnd);
+                }
+                catch (FormatException)
+                {
+                    // If we encounter unparsable metadata, ignore the payloads of this event type but don't fail to parse the entire
+                    // trace. This gives us more flexibility in the future to introduce new descriptive information.
+                    classInfo = null;
+                }
             }
-            else
+            
+            if(classInfo == null)
             {
                 classInfo = CheckForWellKnownEventFields(eventMetaDataHeader);
                 if (classInfo == null)
@@ -430,67 +482,8 @@ namespace Microsoft.Diagnostics.Tracing
             return template;
         }
 
-        // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
-        // This works around that issue without requiring a runtime or format update for well-known EventSources that used the indescribable types.
-        // Going forward the goal is to update the runtime and file format so these special cases aren't needed, but for backwards compat this is
-        // all we can do.
-        private DynamicTraceEventData.PayloadFetchClassInfo CheckForWellKnownEventFields(EventPipeEventMetaDataHeader eventMetaDataHeader)
-        {
-            if(eventMetaDataHeader.ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
-            {
-                string eventName = eventMetaDataHeader.EventName;
-                if(eventName == "Event" ||
-                   eventName == "Activity1Start" ||
-                   eventName == "Activity1Stop" ||
-                   eventName == "Activity2Start" ||
-                   eventName == "Activity2Stop" ||
-                   eventName == "RecursiveActivity1Start" ||
-                   eventName == "RecursiveActivity1Stop")
-                {
-                    DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[3];
-                    string[] fieldNames = new string[3];
-                    fieldFetches[0].Type = typeof(string);
-                    fieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    fieldFetches[0].Offset = 0;
-                    fieldNames[0] = "SourceName";
-
-                    fieldFetches[1].Type = typeof(string);
-                    fieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    fieldFetches[1].Offset = ushort.MaxValue;
-                    fieldNames[1] = "EventName";
-
-                    DynamicTraceEventData.PayloadFetch[] keyValuePairFieldFetches = new DynamicTraceEventData.PayloadFetch[2];
-                    string[] keyValuePairFieldNames = new string[2];
-                    keyValuePairFieldFetches[0].Type = typeof(string);
-                    keyValuePairFieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    keyValuePairFieldFetches[0].Offset = 0;
-                    keyValuePairFieldNames[0] = "Key";
-                    keyValuePairFieldFetches[1].Type = typeof(string);
-                    keyValuePairFieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    keyValuePairFieldFetches[1].Offset = ushort.MaxValue;
-                    keyValuePairFieldNames[1] = "Value";
-                    DynamicTraceEventData.PayloadFetchClassInfo keyValuePairClassInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
-                    {
-                        FieldFetches = keyValuePairFieldFetches,
-                        FieldNames = keyValuePairFieldNames
-                    };
-                    DynamicTraceEventData.PayloadFetch argumentElementFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(0, keyValuePairClassInfo);
-                    ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
-                    fieldFetches[2] = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(ushort.MaxValue, argumentElementFetch, fetchSize);
-                    fieldNames[2] = "Arguments";
-
-                    return new DynamicTraceEventData.PayloadFetchClassInfo()
-                    {
-                        FieldFetches = fieldFetches,
-                        FieldNames = fieldNames
-                    };
-                }
-            }
-
-            return null;
-        }
-
-        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields)
+        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, EventPipeMetaDataVersion encodingVersion,
+            StreamLabel metadataBlobEnd)
         {
             string[] fieldNames = new string[numFields];
             DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[numFields];
@@ -498,149 +491,33 @@ namespace Microsoft.Diagnostics.Tracing
             ushort offset = 0;
             for (int fieldIndex = 0; fieldIndex < numFields; fieldIndex++)
             {
-                DynamicTraceEventData.PayloadFetch payloadFetch = new DynamicTraceEventData.PayloadFetch();
+                
 
-                // Read the TypeCode for the current field.
-                TypeCode typeCode = (TypeCode)reader.ReadInt32();
-
-                // Fill out the payload fetch object based on the TypeCode.
-                switch (typeCode)
+                StreamLabel fieldEnd = metadataBlobEnd;
+                string fieldName = "<unknown_field>";
+                if (encodingVersion >= EventPipeMetaDataVersion.NetTraceV2)
                 {
-                    case TypeCode.Boolean:
-                        {
-                            payloadFetch.Type = typeof(bool);
-                            payloadFetch.Size = 4; // We follow windows conventions and use 4 bytes for bool.
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Char:
-                        {
-                            payloadFetch.Type = typeof(char);
-                            payloadFetch.Size = sizeof(char);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.SByte:
-                        {
-                            payloadFetch.Type = typeof(SByte);
-                            payloadFetch.Size = sizeof(SByte);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Byte:
-                        {
-                            payloadFetch.Type = typeof(byte);
-                            payloadFetch.Size = sizeof(byte);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Int16:
-                        {
-                            payloadFetch.Type = typeof(Int16);
-                            payloadFetch.Size = sizeof(Int16);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.UInt16:
-                        {
-                            payloadFetch.Type = typeof(UInt16);
-                            payloadFetch.Size = sizeof(UInt16);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Int32:
-                        {
-                            payloadFetch.Type = typeof(Int32);
-                            payloadFetch.Size = sizeof(Int32);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.UInt32:
-                        {
-                            payloadFetch.Type = typeof(UInt32);
-                            payloadFetch.Size = sizeof(UInt32);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Int64:
-                        {
-                            payloadFetch.Type = typeof(Int64);
-                            payloadFetch.Size = sizeof(Int64);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.UInt64:
-                        {
-                            payloadFetch.Type = typeof(UInt64);
-                            payloadFetch.Size = sizeof(UInt64);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Single:
-                        {
-                            payloadFetch.Type = typeof(Single);
-                            payloadFetch.Size = sizeof(Single);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Double:
-                        {
-                            payloadFetch.Type = typeof(Double);
-                            payloadFetch.Size = sizeof(Double);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Decimal:
-                        {
-                            payloadFetch.Type = typeof(Decimal);
-                            payloadFetch.Size = sizeof(Decimal);
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.DateTime:
-                        {
-                            payloadFetch.Type = typeof(DateTime);
-                            payloadFetch.Size = 8;
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case EventPipeEventSource.GuidTypeCode:
-                        {
-                            payloadFetch.Type = typeof(Guid);
-                            payloadFetch.Size = 16;
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.String:
-                        {
-                            payloadFetch.Type = typeof(String);
-                            payloadFetch.Size = DynamicTraceEventData.NULL_TERMINATED;
-                            payloadFetch.Offset = offset;
-                            break;
-                        }
-                    case TypeCode.Object:
-                        {
-                            // TypeCode.Object represents an embedded struct.
+                    StreamLabel fieldStart = reader.Current;
+                    int fieldLength = reader.ReadInt32();
+                    fieldEnd = fieldStart.Add(fieldLength);
+                    Debug.Assert(fieldEnd <= metadataBlobEnd);
 
-                            // Read the number of fields in the struct.  Each of these fields could be an embedded struct,
-                            // but these embedded structs are still counted as single fields.  They will be expanded when they are handled.
-                            int structFieldCount = reader.ReadInt32();
-                            DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(reader, structFieldCount);
-                            if (embeddedStructClassInfo == null)
-                            {
-                                throw new Exception("Unable to parse metadata for embedded struct.");
-                            }
-                            payloadFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(offset, embeddedStructClassInfo);
-                            break;
-                        }
-                    default:
-                        {
-                            throw new NotSupportedException($"{typeCode} is not supported.");
-                        }
+                    fieldName = reader.ReadNullTerminatedUnicodeString();
                 }
 
-                // Read the string name of the event payload field.
-                fieldNames[fieldIndex] = reader.ReadNullTerminatedUnicodeString();
+                DynamicTraceEventData.PayloadFetch payloadFetch = ParseType(reader, encodingVersion, offset, fieldEnd, fieldName);
+
+                if (encodingVersion <= EventPipeMetaDataVersion.NetTraceV1)
+                {
+                    // Read the string name of the event payload field.
+                    // The older format put the name after the type signature rather
+                    // than before it. This is a bit worse for diagnostics because
+                    // we won't have the name available to associate with any failure
+                    // reading the type signature above.
+                    fieldName = reader.ReadNullTerminatedUnicodeString();
+                }
+
+                fieldNames[fieldIndex] = fieldName;
 
                 // Update the offset into the event for the next payload fetch.
                 if (payloadFetch.Size >= DynamicTraceEventData.SPECIAL_SIZES || offset == ushort.MaxValue)
@@ -654,6 +531,13 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // Save the current payload fetch.
                 fieldFetches[fieldIndex] = payloadFetch;
+
+                if (encodingVersion >= EventPipeMetaDataVersion.NetTraceV2)
+                {
+                    // skip over any data that a later version of the format may append
+                    Debug.Assert(reader.Current <= fieldEnd);
+                    reader.Goto(fieldEnd);
+                }
             }
 
             return new DynamicTraceEventData.PayloadFetchClassInfo()
@@ -661,6 +545,167 @@ namespace Microsoft.Diagnostics.Tracing
                 FieldNames = fieldNames,
                 FieldFetches = fieldFetches
             };
+        }
+
+        private DynamicTraceEventData.PayloadFetch ParseType(
+            PinnedStreamReader reader,
+            EventPipeMetaDataVersion encodingVersion,
+            ushort offset,
+            StreamLabel fieldEnd,
+            string fieldName)
+        {
+            Debug.Assert(reader.Current < fieldEnd);
+            DynamicTraceEventData.PayloadFetch payloadFetch = new DynamicTraceEventData.PayloadFetch();
+
+            // Read the TypeCode for the current field.
+            TypeCode typeCode = (TypeCode)reader.ReadInt32();
+
+            // Fill out the payload fetch object based on the TypeCode.
+            switch (typeCode)
+            {
+                case TypeCode.Boolean:
+                    {
+                        payloadFetch.Type = typeof(bool);
+                        payloadFetch.Size = 4; // We follow windows conventions and use 4 bytes for bool.
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Char:
+                    {
+                        payloadFetch.Type = typeof(char);
+                        payloadFetch.Size = sizeof(char);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.SByte:
+                    {
+                        payloadFetch.Type = typeof(SByte);
+                        payloadFetch.Size = sizeof(SByte);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Byte:
+                    {
+                        payloadFetch.Type = typeof(byte);
+                        payloadFetch.Size = sizeof(byte);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Int16:
+                    {
+                        payloadFetch.Type = typeof(Int16);
+                        payloadFetch.Size = sizeof(Int16);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.UInt16:
+                    {
+                        payloadFetch.Type = typeof(UInt16);
+                        payloadFetch.Size = sizeof(UInt16);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Int32:
+                    {
+                        payloadFetch.Type = typeof(Int32);
+                        payloadFetch.Size = sizeof(Int32);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.UInt32:
+                    {
+                        payloadFetch.Type = typeof(UInt32);
+                        payloadFetch.Size = sizeof(UInt32);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Int64:
+                    {
+                        payloadFetch.Type = typeof(Int64);
+                        payloadFetch.Size = sizeof(Int64);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.UInt64:
+                    {
+                        payloadFetch.Type = typeof(UInt64);
+                        payloadFetch.Size = sizeof(UInt64);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Single:
+                    {
+                        payloadFetch.Type = typeof(Single);
+                        payloadFetch.Size = sizeof(Single);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Double:
+                    {
+                        payloadFetch.Type = typeof(Double);
+                        payloadFetch.Size = sizeof(Double);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Decimal:
+                    {
+                        payloadFetch.Type = typeof(Decimal);
+                        payloadFetch.Size = sizeof(Decimal);
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.DateTime:
+                    {
+                        payloadFetch.Type = typeof(DateTime);
+                        payloadFetch.Size = 8;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case EventPipeEventSource.GuidTypeCode:
+                    {
+                        payloadFetch.Type = typeof(Guid);
+                        payloadFetch.Size = 16;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.String:
+                    {
+                        payloadFetch.Type = typeof(String);
+                        payloadFetch.Size = DynamicTraceEventData.NULL_TERMINATED;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case TypeCode.Object:
+                    {
+                        // TypeCode.Object represents an embedded struct.
+
+                        // Read the number of fields in the struct.  Each of these fields could be an embedded struct,
+                        // but these embedded structs are still counted as single fields.  They will be expanded when they are handled.
+                        int structFieldCount = reader.ReadInt32();
+                        DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(reader, structFieldCount, encodingVersion, fieldEnd);
+                        if (embeddedStructClassInfo == null)
+                        {
+                            throw new FormatException($"Field {fieldName}: Unable to parse metadata for embedded struct");
+                        }
+                        payloadFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(offset, embeddedStructClassInfo);
+                        break;
+                    }
+                    
+                case EventPipeEventSource.ArrayTypeCode:
+                    {
+                        DynamicTraceEventData.PayloadFetch elementType = ParseType(reader, encodingVersion, 0, fieldEnd, fieldName);
+                        // This fetchSize marks the array as being prefixed with an unsigned 16 bit count of elements
+                        ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
+                        payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, elementType, fetchSize);
+                        break;
+                    }
+                default:
+                    {
+                        throw new FormatException($"Field {fieldName}: Typecode {typeCode} is not supported.");
+                    }
+            }
+
+            return payloadFetch;
         }
 
         private static void GetOpcodeFromEventName(string eventName, out int opcode, out string opcodeName)
@@ -686,6 +731,8 @@ namespace Microsoft.Diagnostics.Tracing
         // Guid is not part of TypeCode (yet), we decided to use 17 to represent it, as it's the "free slot" 
         // see https://github.com/dotnet/coreclr/issues/16105#issuecomment-361749750 for more
         internal const TypeCode GuidTypeCode = (TypeCode)17;
+        // Array isn't part of TypeCode either
+        internal const TypeCode ArrayTypeCode = (TypeCode)19;
 
 #if SUPPORT_V1_V2
         private StreamLabel _endOfEventStream;
@@ -801,6 +848,30 @@ namespace Microsoft.Diagnostics.Tracing
             short flags = reader.ReadInt16();
             long minTimeStamp = reader.ReadInt64();
             long maxTimeStamp = reader.ReadInt64();
+            
+            
+            if(headerSize >= 32)
+            {
+                // The 2nd version of the header allows for encoding V2 metadata blobs,
+                // a more expressive and extensible metadata encoding
+                int v2HeaderSize = reader.ReadInt32();
+                Debug.Assert(v2HeaderSize >= 12);
+                int metadataRegionStart = reader.ReadInt32();
+                int metadataRegionLength = reader.ReadInt32();
+
+                // V2 metadata blobs are encoded within the bounds of the outer header region 
+                // to hide them from older readers. It probably isn't the way we'd design
+                // if starting from scratch, but the forward compat is worth it.
+                Debug.Assert(v2HeaderSize + 20 <= metadataRegionStart);
+                Debug.Assert(metadataRegionLength >= 0);
+                Debug.Assert(metadataRegionStart + metadataRegionLength <= headerSize);
+                reader.Goto(_startEventData.Add(metadataRegionStart));
+                StreamLabel metadataRegionEnd = _startEventData.Add(metadataRegionStart + metadataRegionLength);
+                while(reader.Current < metadataRegionEnd)
+                {
+                    _source.ReadAndDispatchMetadataV2Blob(reader, metadataRegionEnd);
+                }
+            }
             reader.Goto(_startEventData.Add(headerSize));
             while (reader.Current < _endEventData)
             {
@@ -844,6 +915,14 @@ namespace Microsoft.Diagnostics.Tracing
         }
     }
 
+    internal enum EventPipeMetaDataVersion
+    {
+        LegacyV1 = 1, // Used by NetPerf version 1
+        LegacyV2 = 2, // Used by NetPerf version 2
+        NetTraceV1 = 3, // Used by NetPerf version 3 and NetTrace version 1 onwards
+        NetTraceV2 = 4  // Used by NetTrace file format version 1.1 onwards
+    }
+
     /// <summary>
     /// Private utility class.
     /// 
@@ -874,7 +953,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// the parameters.  We do this because this code does not know the best representation for
         /// this parameter information and so it just lets other code handle it.  
         /// </summary>
-        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
+        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, EventPipeMetaDataVersion encodingVersion, int pointerSize, int processId)
         {
             // Get the event record and fill in fields that we can without deserializing anything.  
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -890,23 +969,24 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             _eventRecord->EventHeader.ProcessId = processId;
+            EncodingVersion = encodingVersion;
 
             // Calculate the position of the end of the metadata blob.
             StreamLabel metadataEndLabel = reader.Current.Add(length);
 
             // Read the metaData
-            if (3 <= fileFormatVersionNumber)
+            if (encodingVersion == EventPipeMetaDataVersion.NetTraceV2)
             {
-                MetaDataId = reader.ReadInt32();
-                ProviderName = reader.ReadNullTerminatedUnicodeString();
-                _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
-
-                ReadEventMetaData(reader, fileFormatVersionNumber);
+                ReadNetTraceV2Metadata(reader, metadataEndLabel);
+            }
+            else if (encodingVersion == EventPipeMetaDataVersion.NetTraceV1)
+            {
+                ReadNetTraceV1Metadata(reader);
             }
 #if SUPPORT_V1_V2
             else
             {
-                ReadObsoleteEventMetaData(reader, fileFormatVersionNumber);
+                ReadObsoleteEventMetaData(reader, encodingVersion);
             }
 #endif
 
@@ -1019,14 +1099,23 @@ namespace Microsoft.Diagnostics.Tracing
         public string EventName { get; private set; }
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } }
-        public int Version { get { return _eventRecord->EventHeader.Version; } }
+        public int EventVersion { get { return _eventRecord->EventHeader.Version; } }
         public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } }
         public int Level { get { return _eventRecord->EventHeader.Level; } }
+        public EventPipeMetaDataVersion EncodingVersion { get; private set; }
 
         /// <summary>
         /// Reads the meta data for information specific to one event.  
         /// </summary>
-        private void ReadEventMetaData(PinnedStreamReader reader, int fileFormatVersionNumber)
+        private void ReadNetTraceV1Metadata(PinnedStreamReader reader)
+        {
+            MetaDataId = reader.ReadInt32();
+            ProviderName = reader.ReadNullTerminatedUnicodeString();
+            _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
+            ReadMetadataCommon(reader);
+        }
+
+        private void ReadMetadataCommon(PinnedStreamReader reader)
         {
             int eventId = (ushort)reader.ReadInt32();
             _eventRecord->EventHeader.Id = (ushort)eventId;
@@ -1058,15 +1147,36 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(_eventRecord->EventHeader.Level <= 5);
         }
 
-#if SUPPORT_V1_V2
-        private void ReadObsoleteEventMetaData(PinnedStreamReader reader, int fileFormatVersionNumber)
+        /// <summary>
+        /// Reads the meta data for information specific to one event.  
+        /// </summary>
+        private void ReadNetTraceV2Metadata(PinnedStreamReader reader, StreamLabel endMetadataBlob)
         {
-            Debug.Assert(fileFormatVersionNumber < 3);
+            MetaDataId = reader.ReadInt32();
+            ProviderName = reader.ReadNullTerminatedUnicodeString();
+            _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
+
+            StreamLabel startMetadataHeader = reader.Current;
+            int metadataHeaderSize = reader.ReadInt32();
+            StreamLabel endMetadataHeader = startMetadataHeader.Add(metadataHeaderSize);
+            Debug.Assert(endMetadataHeader <= endMetadataBlob);
+            ReadMetadataCommon(reader);
+
+            // skip over extra data that future iterations of the header may add
+            Debug.Assert(reader.Current <= endMetadataHeader);
+            reader.Goto(endMetadataHeader);
+
+        }
+
+#if SUPPORT_V1_V2
+        private void ReadObsoleteEventMetaData(PinnedStreamReader reader, EventPipeMetaDataVersion metaDataVersion)
+        {
+            Debug.Assert((int)metaDataVersion <= 2);
 
             // Old versions use the stream offset as the MetaData ID, but the reader has advanced to the payload so undo it.  
-            MetaDataId = ((int)reader.Current) - EventPipeEventHeader.GetHeaderSize(fileFormatVersionNumber);
+            MetaDataId = ((int)reader.Current) - EventPipeEventHeader.GetHeaderSize((int)metaDataVersion);
 
-            if (fileFormatVersionNumber == 1)
+            if (metaDataVersion == EventPipeMetaDataVersion.LegacyV1)
             {
                 _eventRecord->EventHeader.ProviderId = reader.ReadGuid();
             }
@@ -1087,7 +1197,7 @@ namespace Microsoft.Diagnostics.Tracing
             int metadataLength = reader.ReadInt32();
             if (0 < metadataLength)
             {
-                ReadEventMetaData(reader, fileFormatVersionNumber);
+                ReadMetadataCommon(reader);
             }
         }
 #endif
