@@ -161,7 +161,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Cause the children of each CallTreeNode in the CallTree to be sorted (accending) based on comparer
         /// </summary>
-        public void Sort(Comparison<CallTreeNode> comparer)
+        public void Sort(IComparer<CallTreeNode> comparer)
         {
             m_root.SortAll(comparer);
         }
@@ -170,7 +170,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void SortInclusiveMetricDecending()
         {
-            Sort(delegate (CallTreeNode x, CallTreeNode y)
+            var comparer = new FunctorComparer<CallTreeNode>(delegate (CallTreeNode x, CallTreeNode y)
             {
                 int ret = Math.Abs(y.InclusiveMetric).CompareTo(Math.Abs(x.InclusiveMetric));
                 if (ret != 0)
@@ -180,6 +180,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // Sort by first sample time (assending) if the counts are the same.  
                 return x.FirstTimeRelativeMSec.CompareTo(y.FirstTimeRelativeMSec);
             });
+
+            Sort(comparer);
         }
 
         /// <summary>
@@ -295,8 +297,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
+                var capturedThis = this;
+                var capturedStack = stack;
+                var capturedRecursionGuard = recursionGuard;
                 Task<CallTreeNode> result = Task.Factory.StartNew(
-                    () => FindTreeNode(stack, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.FindTreeNode(capturedStack, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
@@ -431,8 +437,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
+                var capturedThis = this;
+                var capturedTreeNode = treeNode;
+                var capturedCallersOnStack = callersOnStack;
+                var capturedRecursionGuard = recursionGuard;
                 Task result = Task.Factory.StartNew(
-                    () => AccumulateSumByID(treeNode, callersOnStack, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.AccumulateSumByID(capturedTreeNode, capturedCallersOnStack, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 result.GetAwaiter().GetResult();
@@ -1181,12 +1192,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Sort the childre of every node in the te
         /// </summary>
         /// <param name="comparer"></param>
-        internal void SortAll(Comparison<CallTreeNode> comparer, RecursionGuard recursionGuard = default(RecursionGuard))
+        internal void SortAll(IComparer<CallTreeNode> comparer, RecursionGuard recursionGuard = default(RecursionGuard))
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
+                var capturedThis = this;
+                var capturedComparer = comparer;
+                var capturedRecursionGuard = recursionGuard;
                 Task result = Task.Factory.StartNew(
-                    () => SortAll(comparer, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.SortAll(capturedComparer, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 result.GetAwaiter().GetResult();
@@ -1752,8 +1767,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
+                var capturedThis = this;
+                var capturedTreeNode = treeNode;
+                var capturedRecursionCount = recursionCount;
+                var capturedRecursionGuard = recursionGuard;
                 Task<AccumulateSamplesResult> result = Task.Factory.StartNew(
-                    () => AccumulateSamplesForNode(treeNode, recursionCount, recursionGuard.ResetOnNewThread),
+                    () => capturedThis.AccumulateSamplesForNode(capturedTreeNode, capturedRecursionCount, capturedRecursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
