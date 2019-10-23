@@ -318,6 +318,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                         if (ip.Protocol == 17)        // UDP
                         {
                             sb.Append(" UDP");
+
+                            UDPHeader udp = new UDPHeader(packetStart + ip.IPHeaderSize);
+                            sb.Append(" SPort=").Append(udp.SourcePort);
+                            sb.Append(" DPort=").Append(udp.DestPort);
+                            sb.Append(" Length=").Append(udp.Length);
+                            sb.Append(" Checksum=").Append(udp.Checksum);
                         }
                         else
                         {
@@ -409,6 +415,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             public int CheckSum { get { return (address[10] << 8) + address[11]; } }
 
             private byte* address;
+        }
+
+        private unsafe struct UDPHeader
+        {
+            public UDPHeader(byte* address) { this.address = address; }
+
+            public int SourcePort { get { return (address[0] << 8) + address[1]; } }
+            public int DestPort { get { return (address[2] << 8) + address[3]; } }
+            public int Length { get { return (address[4] << 8) + address[5]; } }
+            public int Checksum { get { return (address[6] << 8) + address[7]; } }
+            public int UDPHeaderSize { get { return 8; } }
+            #region private
+            private byte* address;
+            #endregion
         }
 
         private unsafe struct TCPHeader
