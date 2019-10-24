@@ -5,8 +5,6 @@ using System.Diagnostics;
 using System.Text;
 using Address = System.UInt64;
 
-#pragma warning disable 1591        // disable warnings on XML comments not being present
-
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>

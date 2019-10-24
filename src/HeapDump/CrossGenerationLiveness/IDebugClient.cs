@@ -3,8 +3,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#pragma warning disable 1591
-
 namespace Microsoft.Diagnostics.CrossGenerationLiveness
 {
     [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("27fe5639-8407-4f47-8364-ee118fb08ac8")]
