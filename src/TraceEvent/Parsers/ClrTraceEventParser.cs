@@ -10566,6 +10566,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         // TODO FIX NOW, need to add ContainsPointer
         // Also want ElementSize.  (not in flags of course)
+        ArrayRankBit0 = 0x100,
+        ArrayRankBit1 = 0x200,
+        ArrayRankBit2 = 0x400,
+        ArrayRankBit3 = 0x800,
+        ArrayRankBit4 = 0x1000,
+        ArrayRankBit5 = 0x2000,
+    }
+    public static class TypeFlagsHelpers
+    {
+        public static int GetArrayRank(this TypeFlags flags)
+        {
+            int rank = (((int)flags) >> 8) & 0x3F;
+            if (rank == 0)
+                return 1; // SzArray case
+            return rank;
+        }
     }
     [Flags]
     public enum GCRootFlags
