@@ -414,17 +414,81 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                classInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
+                classInfo = CheckForWellKnownEventFields(eventMetaDataHeader);
+                if (classInfo == null)
                 {
-                    FieldNames = new string[0],
-                    FieldFetches = new DynamicTraceEventData.PayloadFetch[0]
-                };
+                    classInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
+                    {
+                        FieldNames = new string[0],
+                        FieldFetches = new DynamicTraceEventData.PayloadFetch[0]
+                    };
+                }
             }
 
             template.payloadNames = classInfo.FieldNames;
             template.payloadFetches = classInfo.FieldFetches;
 
             return template;
+        }
+
+        // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
+        // This works around that issue without requiring a runtime or format update for well-known EventSources that used the indescribable types.
+        // Going forward the goal is to update the runtime and file format so these special cases aren't needed, but for backwards compat this is
+        // all we can do.
+        private DynamicTraceEventData.PayloadFetchClassInfo CheckForWellKnownEventFields(EventPipeEventMetaDataHeader eventMetaDataHeader)
+        {
+            if(eventMetaDataHeader.ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
+            {
+                string eventName = eventMetaDataHeader.EventName;
+                if(eventName == "Event" ||
+                   eventName == "Activity1Start" ||
+                   eventName == "Activity1Stop" ||
+                   eventName == "Activity2Start" ||
+                   eventName == "Activity2Stop" ||
+                   eventName == "RecursiveActivity1Start" ||
+                   eventName == "RecursiveActivity1Stop")
+                {
+                    DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[3];
+                    string[] fieldNames = new string[3];
+                    fieldFetches[0].Type = typeof(string);
+                    fieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    fieldFetches[0].Offset = 0;
+                    fieldNames[0] = "SourceName";
+
+                    fieldFetches[1].Type = typeof(string);
+                    fieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    fieldFetches[1].Offset = ushort.MaxValue;
+                    fieldNames[1] = "EventName";
+
+                    DynamicTraceEventData.PayloadFetch[] keyValuePairFieldFetches = new DynamicTraceEventData.PayloadFetch[2];
+                    string[] keyValuePairFieldNames = new string[2];
+                    keyValuePairFieldFetches[0].Type = typeof(string);
+                    keyValuePairFieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    keyValuePairFieldFetches[0].Offset = 0;
+                    keyValuePairFieldNames[0] = "Key";
+                    keyValuePairFieldFetches[1].Type = typeof(string);
+                    keyValuePairFieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    keyValuePairFieldFetches[1].Offset = ushort.MaxValue;
+                    keyValuePairFieldNames[1] = "Value";
+                    DynamicTraceEventData.PayloadFetchClassInfo keyValuePairClassInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
+                    {
+                        FieldFetches = keyValuePairFieldFetches,
+                        FieldNames = keyValuePairFieldNames
+                    };
+                    DynamicTraceEventData.PayloadFetch argumentElementFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(0, keyValuePairClassInfo);
+                    ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
+                    fieldFetches[2] = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(ushort.MaxValue, argumentElementFetch, fetchSize);
+                    fieldNames[2] = "Arguments";
+
+                    return new DynamicTraceEventData.PayloadFetchClassInfo()
+                    {
+                        FieldFetches = fieldFetches,
+                        FieldNames = fieldNames
+                    };
+                }
+            }
+
+            return null;
         }
 
         private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields)
