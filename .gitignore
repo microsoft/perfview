@@ -204,3 +204,4 @@ src/TraceEvent/EventCounterHandler.cs
 OSExtensions.cs
 password.txt
 documentation/internal/
+*.userosscache
