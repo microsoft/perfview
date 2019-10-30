@@ -7588,9 +7588,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public string Name(CodeAddressIndex codeAddressIndex)
         {
-            if (names == null)
+            if (this.names == null)
             {
-                names = new string[Count];
+                this.names = new string[Count];
             }
 
             string name = this.names[(int)codeAddressIndex];
