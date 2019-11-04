@@ -7,20 +7,28 @@ namespace TraceEventTests
 {
     public class IndexSetTest
     {
+        public const int Limit = 1000 * 1000;
+
         [Fact]
         public void BasicTest()
+        {
+            Test(0);
+            Test(1);
+            Test(1000);
+            Test(1000 * 1000);
+        }
+
+        private void Test(int count)
         {
             HashSet<uint> intSet = new HashSet<uint>();
 
             IndexSet oddSet = new IndexSet();
 
-            int limit = 1024 * 1024;
-
             Random random = new Random();
 
-            for (int i = 0; i < limit; i++)
+            for (int i = 0; i < count; i++)
             {
-                int val = random.Next(limit);
+                int val = random.Next(Limit);
 
                 if ((val % 2) == 0)
                 {
@@ -33,7 +41,7 @@ namespace TraceEventTests
 
             int error = 0;
 
-            for (int i = 0; i < limit; i+= 2)
+            for (int i = 0; i < Limit; i += 2)
             {
                 if (oddSet.Contains((uint)i))
                 {
