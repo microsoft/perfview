@@ -7,8 +7,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 1591
-
 namespace Microsoft.Diagnostics.Tracing
 {
     internal struct ETWMapping

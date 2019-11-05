@@ -7579,9 +7579,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     public sealed class TraceCodeAddresses : IFastSerializable, IEnumerable<TraceCodeAddress>
     {
         /// <summary>
+        /// Chunk size for <see cref="codeAddressObjects"/>
+        /// </summary>
+        private const int ChunkSize = 4096;
+
+        /// <summary>
         /// Returns the count of code address indexes (all code address indexes are strictly less than this).   
         /// </summary>
         public int Count { get { return codeAddresses.Count; } }
+
         /// <summary>
         /// Given a code address index, return the name associated with it (the method name).  It will
         /// have the form MODULE!METHODNAME.   If the module name is unknown a ? is used, and if the
@@ -7589,12 +7595,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public string Name(CodeAddressIndex codeAddressIndex)
         {
-            if (names == null)
+            if (this.names == null)
             {
-                names = new string[Count];
+                this.names = new string[Count];
             }
 
-            string name = names[(int)codeAddressIndex];
+            string name = this.names[(int)codeAddressIndex];
+
             if (name == null)
             {
                 string moduleName = "?";
@@ -7615,8 +7622,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     methodName = "0x" + ((ulong)Address(codeAddressIndex)).ToString("x");
                 }
 
-                name = moduleName + "!" + methodName;
+                this.names[(int)codeAddressIndex] = name = moduleName + "!" + methodName;
             }
+
             return name;
         }
         /// <summary>
@@ -7661,6 +7669,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             return ilMap.GetILOffsetForNativeAddress(Address(codeAddressIndex));
         }
+
         /// <summary>
         /// Given a code address index, returns a TraceCodeAddress for it.
         /// </summary>
@@ -7668,22 +7677,38 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             get
             {
-                if (codeAddressObjects == null || (int)codeAddressIndex >= codeAddressObjects.Length)
-                {
-                    codeAddressObjects = new TraceCodeAddress[(int)codeAddressIndex + 16];
-                }
-
                 if (codeAddressIndex == CodeAddressIndex.Invalid)
                 {
                     return null;
                 }
 
-                TraceCodeAddress ret = codeAddressObjects[(int)codeAddressIndex];
+                int chunk = (int)codeAddressIndex / ChunkSize;
+                int offset = (int)codeAddressIndex % ChunkSize;
+
+                if (this.codeAddressObjects == null)
+                {
+                    this.codeAddressObjects = new TraceCodeAddress[chunk + 1][];
+                }
+                else if (chunk >= this.codeAddressObjects.Length)
+                {
+                    Array.Resize(ref this.codeAddressObjects, Math.Max(this.codeAddressObjects.Length * 2, chunk + 1));
+                }
+
+                TraceCodeAddress[] data = this.codeAddressObjects[chunk];
+
+                if (data == null)
+                {
+                    data = this.codeAddressObjects[chunk] = new TraceCodeAddress[ChunkSize];
+                }
+
+                TraceCodeAddress ret = data[offset];
+
                 if (ret == null)
                 {
                     ret = new TraceCodeAddress(this, codeAddressIndex);
-                    codeAddressObjects[(int)codeAddressIndex] = ret;
+                    data[offset] = ret;
                 }
+
                 return ret;
             }
         }
@@ -9006,7 +9031,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private GrowableArray<ILToNativeMap> ILToNativeMaps;                    // only Jitted code has these, indexed by ILMapIndex 
         private Dictionary<long, ILMapIndex> methodIDToILToNativeMap;
 
-        private TraceCodeAddress[] codeAddressObjects;  // If we were asked for TraceCodeAddresses (instead of indexes) we cache them
+        private TraceCodeAddress[][] codeAddressObjects;  // If we were asked for TraceCodeAddresses (instead of indexes) we cache them, in sparse array
         private string[] names;                         // A cache (one per code address) of the string name of the address
         private int managedMethodRecordCount;           // Remembers how many code addresses are managed methods (currently not serialized)
         internal int totalCodeAddresses;                 // Count of the number of times a code address appears in the log.

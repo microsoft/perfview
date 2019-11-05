@@ -3,9 +3,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using System;
 using System.Diagnostics;
 
-
-#pragma warning disable 1591        // disable warnings on XML comments not being present
-
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
     public sealed class EventPipeTraceEventParser : ExternalTraceEventParser

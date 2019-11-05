@@ -157,7 +157,7 @@ namespace PerfView
                                     continue;
                                 }
                                 // We know that .NGENPDB directories are uninteresting, filter them out.  
-                                if (dir.EndsWith(".NENPDB", StringComparison.OrdinalIgnoreCase))
+                                if (dir.EndsWith(".NGENPDB", StringComparison.OrdinalIgnoreCase))
                                 {
                                     continue;
                                 }

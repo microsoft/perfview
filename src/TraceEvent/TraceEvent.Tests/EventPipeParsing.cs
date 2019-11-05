@@ -342,6 +342,87 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void WellKnownDiagnosticSourceEventsHavePayloads()
+        {
+            // NetPerf and NetTrace v1 format don't support serializing array typed parameters.
+            // DiagnosticSourceEventSource declares well known events that use array typed parameters
+            // and the runtime serializes EventPipe metadata which claims the events have no parameters.
+            // We made a targetted fix where EventPipeEventSource will recognize these well-known events
+            // and ignore the empty parameter metadata provided in the stream, treating the events
+            // as if the runtime had provided the correct parameter schema.
+            //
+            // I am concurrently working on a runtime fix and updated file format revision which can 
+            // correctly encode these parameter types. However for back-compat with older runtimes we
+            // need this.
+
+
+            // Serialize an EventPipe stream containing the parameterless metadata for
+            // DiagnosticSourceEventSource events...
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "Microsoft-Diagnostics-DiagnosticSource", "Event", 3),
+                new EventMetadata(2, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Start", 4),
+                new EventMetadata(3, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Stop", 5),
+                new EventMetadata(4, "Microsoft-Diagnostics-DiagnosticSource", "Activity2Start", 6),
+                new EventMetadata(5, "Microsoft-Diagnostics-DiagnosticSource", "Activity2Stop", 7),
+                new EventMetadata(6, "Microsoft-Diagnostics-DiagnosticSource", "RecursiveActivity1Start", 8),
+                new EventMetadata(7, "Microsoft-Diagnostics-DiagnosticSource", "RecursiveActivity1Stop", 9));
+
+            EventPayloadWriter payload = new EventPayloadWriter();
+            payload.Write("FakeProviderName");
+            payload.Write("FakeEventName");
+            payload.WriteArray(new KeyValuePair<string, string>[]
+            {
+                new KeyValuePair<string,string>("key1", "val1"),
+                new KeyValuePair<string, string>("key2", "val2")
+            },
+            kv =>
+            {
+                payload.Write(kv.Key);
+                payload.Write(kv.Value);
+            });
+            byte[] payloadBytes = payload.ToArray();
+
+            int sequenceNumber = 1;
+            writer.WriteEventBlock(
+                w =>
+                {
+                    // write one of each of the 7 well-known DiagnosticSourceEventSource events.
+                    for (int metadataId = 1; metadataId <= 7; metadataId++)
+                    {
+                        EventPipeWriter.WriteEventBlob(w, metadataId, sequenceNumber++, payloadBytes);
+                    }
+                });
+            writer.WriteEndObject();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+
+            // Confirm we can parse the event payloads even though the parameters were not described in
+            // the metadata.
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int diagSourceEventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                Assert.Equal("FakeProviderName", e.PayloadByName("SourceName"));
+                Assert.Equal("FakeEventName", e.PayloadByName("EventName"));
+                IDictionary<string, object>[] args = (IDictionary<string, object>[])e.PayloadByName("Arguments");
+                Assert.Equal(2, args.Length);
+                Assert.Equal("key1", args[0]["Key"]);
+                Assert.Equal("val1", args[0]["Value"]);
+                Assert.Equal("key2", args[1]["Key"]);
+                Assert.Equal("val2", args[1]["Value"]);
+                diagSourceEventCount++;
+            };
+            source.Process();
+            Assert.Equal(7, diagSourceEventCount);
+        }
+
+        private void Dynamic_All(TraceEvent obj)
+        {
+            throw new NotImplementedException();
+        }
+
         private void ValidateEventStatistics(SortedDictionary<string, EventRecord> eventStatistics, string eventPipeFileName)
         {
             StringBuilder sb = new StringBuilder(1024 * 1024);
@@ -404,52 +485,107 @@ namespace TraceEventTests
         }
     }
 
-    class MockHugeStream : Stream
+
+    class EventMetadata
     {
-        MemoryStream _currentChunk = new MemoryStream();
-        long _minSize;
-        long _bytesWritten;
-        int _sequenceNumber = 1;
-
-        public MockHugeStream(long minSize)
+        public EventMetadata(int metadataId, string providerName, string eventName, int eventId)
         {
-            _minSize = minSize;
-            _currentChunk = GetFirstChunk();
-            _bytesWritten = _currentChunk.Length;
+            MetadataId = metadataId;
+            ProviderName = providerName;
+            EventName = eventName;
+            EventId = eventId;
         }
 
-        MemoryStream GetFirstChunk()
+        public int MetadataId { get; set; }
+        public string ProviderName { get; set; }
+        public string EventName { get; set; }
+        public int EventId { get; set; }
+    }
+
+    class EventPayloadWriter
+    {
+        BinaryWriter _writer = new BinaryWriter(new MemoryStream());
+
+        public void Write(string arg)
         {
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(ms);
+            _writer.Write(Encoding.Unicode.GetBytes(arg));
+            _writer.Write((ushort)0);
+        }
+
+        public void WriteArray<T>(T[] elements, Action<T> writeElement)
+        {
+            WriteArrayLength(elements.Length);
+            for(int i = 0; i < elements.Length; i++)
+            {
+                writeElement(elements[i]);
+            }
+        }
+
+        public void WriteArrayLength(int length)
+        {
+            _writer.Write((ushort)length);
+        }
+
+        public byte[] ToArray()
+        {
+            return (_writer.BaseStream as MemoryStream).ToArray();
+        }
+    }
+
+    class EventPipeWriter
+    {
+        BinaryWriter _writer;
+
+        public EventPipeWriter()
+        {
+            _writer = new BinaryWriter(new MemoryStream());
+        }
+
+        public byte[] ToArray()
+        {
+            return (_writer.BaseStream as MemoryStream).ToArray();
+        }
+
+        public void WriteHeaders()
+        {
+            WriteNetTraceHeader(_writer);
+            WriteFastSerializationHeader(_writer);
+            WriteTraceObject(_writer);
+        }
+
+        public void WriteMetadataBlock(params EventMetadata[] metadataBlobs)
+        {
+            WriteMetadataBlock(_writer, metadataBlobs);
+        }
+
+        public void WriteEventBlock(Action<BinaryWriter> writeEventBlobs)
+        {
+            WriteEventBlock(_writer, writeEventBlobs);
+        }
+
+        public void WriteEndObject()
+        {
+            WriteEndObject(_writer);
+        }
+
+        public static void WriteNetTraceHeader(BinaryWriter writer)
+        {
             writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
-            WriteString(writer,"!FastSerialization.1");
-            WriteTrace(writer);
-            WriteMetadataBlock(writer);
-            ms.Position = 0;
-            return ms;
         }
 
-        private void WriteString(BinaryWriter writer, string val)
+        public static void WriteFastSerializationHeader(BinaryWriter writer)
+        {
+            WriteString(writer, "!FastSerialization.1");
+        }
+
+        public static void WriteString(BinaryWriter writer, string val)
         {
             writer.Write(val.Length);
             writer.Write(Encoding.UTF8.GetBytes(val));
         }
 
-        private void Align(BinaryWriter writer)
-        {
-            int offset = (int) ((writer.BaseStream.Position + _bytesWritten) % 4);
-            if(offset != 0)
-            {
-                for(int i = offset; i < 4; i++)
-                {
-                    writer.Write((byte)0);
-                }
-            }
-        }
-
-        private void WriteObject(BinaryWriter writer, string name, int version, int minVersion, 
-            Action writePayload)
+        public static void WriteObject(BinaryWriter writer, string name, int version, int minVersion,
+    Action writePayload)
         {
             writer.Write((byte)5); // begin private object
             writer.Write((byte)5); // begin private object - type
@@ -462,7 +598,7 @@ namespace TraceEventTests
             writer.Write((byte)6); // end object
         }
 
-        private void WriteTrace(BinaryWriter writer)
+        public static void WriteTraceObject(BinaryWriter writer)
         {
             WriteObject(writer, "Trace", 4, 4, () =>
             {
@@ -484,20 +620,34 @@ namespace TraceEventTests
             });
         }
 
-        private void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData)
+        private static void Align(BinaryWriter writer, long previousBytesWritten)
         {
+            int offset = (int)((writer.BaseStream.Position + previousBytesWritten) % 4);
+            if (offset != 0)
+            {
+                for (int i = offset; i < 4; i++)
+                {
+                    writer.Write((byte)0);
+                }
+            }
+        }
+
+        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData, 
+            long previousBytesWritten = 0)
+        {
+            Debug.WriteLine($"Starting block {name} position: {writer.BaseStream.Position + previousBytesWritten}");
             MemoryStream block = new MemoryStream();
             BinaryWriter blockWriter = new BinaryWriter(block);
             writeBlockData(blockWriter);
             WriteObject(writer, name, 2, 0, () =>
             {
                 writer.Write((int)block.Length);
-                Align(writer);
+                Align(writer, previousBytesWritten);
                 writer.Write(block.GetBuffer(), 0, (int)block.Length);
             });
         }
 
-        private void WriteMetadataBlock(BinaryWriter writer)
+        public static void WriteMetadataBlock(BinaryWriter writer, Action<BinaryWriter> writeMetadataEventBlobs, long previousBytesWritten = 0)
         {
             WriteBlock(writer, "MetadataBlock", w =>
             {
@@ -506,19 +656,38 @@ namespace TraceEventTests
                 w.Write((short)0); // flags
                 w.Write((long)0);  // min timestamp
                 w.Write((long)0);  // max timestamp
-                WriteMetadataEventBlob(w);
-            });
+                writeMetadataEventBlobs(w);
+            },
+            previousBytesWritten);
         }
 
-        private void WriteMetadataEventBlob(BinaryWriter writer)
+        public static void WriteMetadataBlock(BinaryWriter writer, EventMetadata[] metadataBlobs, long previousBytesWritten = 0)
+        {
+            WriteMetadataBlock(writer,
+                w =>
+                {
+                    foreach (EventMetadata blob in metadataBlobs)
+                    {
+                        WriteMetadataEventBlob(w, blob);
+                    }
+                },
+                previousBytesWritten);
+        }
+
+        public static void WriteMetadataBlock(BinaryWriter writer, params EventMetadata[] metadataBlobs)
+        {
+            WriteMetadataBlock(writer, metadataBlobs, 0);
+        }
+
+        public static void WriteMetadataEventBlob(BinaryWriter writer, EventMetadata eventMetadataBlob)
         {
             MemoryStream payload = new MemoryStream();
             BinaryWriter payloadWriter = new BinaryWriter(payload);
-            payloadWriter.Write(1);                                      // metadata id
-            payloadWriter.Write(Encoding.Unicode.GetBytes("Provider"));  // provider name
+            payloadWriter.Write(eventMetadataBlob.MetadataId);           // metadata id
+            payloadWriter.Write(Encoding.Unicode.GetBytes(eventMetadataBlob.ProviderName));  // provider name
             payloadWriter.Write((short)0);                               // null terminator
-            payloadWriter.Write(1);                                      // event id
-            payloadWriter.Write(Encoding.Unicode.GetBytes("EventName")); // event name
+            payloadWriter.Write(eventMetadataBlob.EventId);              // event id
+            payloadWriter.Write(Encoding.Unicode.GetBytes(eventMetadataBlob.EventName)); // event name
             payloadWriter.Write((short)0);                               // null terminator
             payloadWriter.Write((long)0);                                // keywords
             payloadWriter.Write(1);                                      // version
@@ -543,7 +712,7 @@ namespace TraceEventTests
             writer.Write(eventBlob.GetBuffer(), 0, (int)eventBlob.Length);
         }
 
-        private void WriteEventBlock(BinaryWriter writer)
+        public static void WriteEventBlock(BinaryWriter writer, Action<BinaryWriter> writeEventBlobs, long previousBytesWritten = 0)
         {
             WriteBlock(writer, "EventBlock", w =>
             {
@@ -552,22 +721,17 @@ namespace TraceEventTests
                 w.Write((short)0);  // flags
                 w.Write((long)0);   // min timestamp
                 w.Write((long)0);   // max timestamp
-                for(int i = 0; i < 20; i++)
-                {
-                    WriteEventBlob(w);
-                }
-            });
+                writeEventBlobs(w);
+            },
+            previousBytesWritten);
         }
 
-        private void WriteEventBlob(BinaryWriter writer)
+        public static void WriteEventBlob(BinaryWriter writer, int metadataId, int sequenceNumber, int payloadSize, Action<BinaryWriter> writeEventPayload)
         {
-            // the events are big to make the stream grow fast
-            const int payloadSize = 60000;
-
             MemoryStream eventBlob = new MemoryStream();
             BinaryWriter eventWriter = new BinaryWriter(eventBlob);
-            eventWriter.Write(1);                                        // metadata id
-            eventWriter.Write(_sequenceNumber++);                        // sequence number
+            eventWriter.Write(metadataId);                               // metadata id
+            eventWriter.Write(sequenceNumber);                           // sequence number
             eventWriter.Write((long)999);                                // thread id
             eventWriter.Write((long)999);                                // capture thread id
             eventWriter.Write(1);                                        // proc number
@@ -579,20 +743,54 @@ namespace TraceEventTests
 
             writer.Write((int)eventBlob.Length + payloadSize);
             writer.Write(eventBlob.GetBuffer(), 0, (int)eventBlob.Length);
-            for(int i = 0; i < payloadSize/8; i++)
-            {
-                writer.Write((long)i);
-            }
+            long beforePayloadPosition = writer.BaseStream.Position;
+            writeEventPayload(writer);
+            long afterPayloadPosition = writer.BaseStream.Position;
+            Debug.Assert(afterPayloadPosition - beforePayloadPosition == payloadSize);
         }
 
-        /*
-         * _deserializer.RegisterFactory("Trace", delegate { return this; });
-            _deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
-            _deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(this); });
-            _deserializer.RegisterFactory("SPBlock", delegate { return new EventPipeSequencePointBlock(this); });
-            _deserializer.RegisterFactory("StackBlock", delegate { return new EventPipeStackBlock(this); });
+        public static void WriteEventBlob(BinaryWriter writer, int metadataId, int sequenceNumber, byte[] payloadBytes)
+        {
+            WriteEventBlob(writer, metadataId, sequenceNumber, payloadBytes.Length, w => w.Write(payloadBytes));
+        }
 
-         * */
+        public static void WriteEndObject(BinaryWriter writer)
+        {
+            writer.Write(1); // null tag
+        }
+    }
+
+    class MockHugeStream : Stream
+    {
+        // the events are big to make the stream grow fast
+        const int payloadSize = 60000;
+
+        MemoryStream _currentChunk = new MemoryStream();
+        long _minSize;
+        long _bytesWritten;
+        int _sequenceNumber = 1;
+
+        public MockHugeStream(long minSize)
+        {
+            _minSize = minSize;
+            _currentChunk = GetFirstChunk();
+            _bytesWritten = _currentChunk.Length;
+        }
+
+        MemoryStream GetFirstChunk()
+        {
+            MemoryStream ms = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(ms);
+            EventPipeWriter.WriteNetTraceHeader(writer);
+            EventPipeWriter.WriteFastSerializationHeader(writer);
+            EventPipeWriter.WriteTraceObject(writer);
+            EventPipeWriter.WriteMetadataBlock(writer, 
+                new EventMetadata(1, "Provider", "Event", 1));
+            ms.Position = 0;
+            return ms;
+        }
+
+
 
         MemoryStream GetNextChunk()
         {
@@ -600,17 +798,34 @@ namespace TraceEventTests
             BinaryWriter writer = new BinaryWriter(ms);
             if (_bytesWritten > _minSize)
             {
-                writer.Write(1); // null tag
+                EventPipeWriter.WriteEndObject(writer);
             }
             else
             {
+                // 20 blocks, each with 20 events in them
                 for(int i = 0; i < 20; i++)
                 {
-                    WriteEventBlock(writer);
+                    EventPipeWriter.WriteEventBlock(writer, 
+                        w =>
+                        {
+                            for (int j = 0; j < 20; j++)
+                            {
+                                EventPipeWriter.WriteEventBlob(w, 1, _sequenceNumber++, payloadSize, WriteEventPayload);
+                            }
+                        }, 
+                        _bytesWritten);
                 }
             }
             ms.Position = 0;
             return ms;
+        }
+
+        static void WriteEventPayload(BinaryWriter writer)
+        {
+            for (int i = 0; i < payloadSize / 8; i++)
+            {
+                writer.Write((long)i);
+            }
         }
 
         public override bool CanRead => true;

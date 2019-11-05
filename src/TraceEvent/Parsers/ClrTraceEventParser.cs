@@ -7,8 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
 
-#pragma warning disable 1591        // disable warnings on XML comments not being present
-
 // This file was generated with the following command:
 //    traceParserGen CLREtwAll.man CLRTraceEventParser.cs
 // And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...)

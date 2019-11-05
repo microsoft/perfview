@@ -314,6 +314,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
                 var capturedThis = this;
                 var capturedStack = stack;
                 var capturedRecursionGuard = recursionGuard;
@@ -571,6 +572,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
                 var capturedThis = this;
                 var capturedTreeNode = treeNode;
                 var capturedCallersOnStack = callersOnStack;
@@ -1338,6 +1340,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
                 var capturedThis = this;
                 var capturedComparer = comparer;
                 var capturedRecursionGuard = recursionGuard;
@@ -1917,6 +1920,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (recursionGuard.RequiresNewThread)
             {
+                // Avoid capturing method parameters for use in the lambda to reduce fast-path allocation costs
                 var capturedThis = this;
                 var capturedTreeNode = treeNode;
                 var capturedRecursionCount = recursionCount;
