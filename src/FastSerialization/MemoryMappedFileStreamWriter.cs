@@ -8,6 +8,7 @@
 using System;
 using System.Text;      // For StringBuilder.
 using System.Threading;
+using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using DeferedStreamLabel = FastSerialization.StreamLabel;
@@ -20,6 +21,8 @@ namespace FastSerialization
 {
     public class MemoryMappedFileStreamWriter : IStreamWriter
     {
+        private const int ERROR_NOT_ENOUGH_MEMORY = unchecked((int)0x80070008);
+
         internal const long PageSize = 64 * 1024;
         internal const long InitialCapacity = 64 * 1024;
         internal const int BlockCopyCapacity = 10 * 1024 * 1024;
@@ -46,8 +49,14 @@ namespace FastSerialization
             _fileCapacity = InitialCapacity;
 
             _capacity = (int)Math.Min(_fileCapacity, BlockCopyCapacity);
-            _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Write);
-
+            try
+            {
+                _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Write);
+            }
+            catch (IOException e) when (e.HResult == ERROR_NOT_ENOUGH_MEMORY)
+            {
+                throw new OutOfMemoryException(e.Message, e);
+            }
         }
 
         public void Dispose()
@@ -85,7 +94,15 @@ namespace FastSerialization
             _view.Dispose();
 
             _capacity = (int)Math.Min(_fileCapacity, BlockCopyCapacity);
-            _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Write);
+            try
+            {
+                _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Write);
+            }
+            catch (IOException e) when (e.HResult == ERROR_NOT_ENOUGH_MEMORY)
+            {
+                throw new OutOfMemoryException(e.Message, e);
+            }
+
             _viewOffset = 0;
             _offset = 0;
         }
@@ -284,10 +301,18 @@ namespace FastSerialization
                 while (remainingSizeToCopy > 0)
                 {
                     int chunkSize = (int)Math.Min(BlockCopyCapacity, remainingSizeToCopy);
-                    using (var readStream = _file.CreateViewStream(currentCopyOffset, chunkSize, MemoryMappedFileAccess.Read))
-                    using (var writeStream = newFile.CreateViewStream(currentCopyOffset, chunkSize, MemoryMappedFileAccess.Write))
+
+                    try
                     {
-                        readStream.CopyTo(writeStream, chunkSize);
+                        using (var readStream = _file.CreateViewStream(currentCopyOffset, chunkSize, MemoryMappedFileAccess.Read))
+                        using (var writeStream = newFile.CreateViewStream(currentCopyOffset, chunkSize, MemoryMappedFileAccess.Write))
+                        {
+                            readStream.CopyTo(writeStream, chunkSize);
+                        }
+                    }
+                    catch (IOException e) when (e.HResult == ERROR_NOT_ENOUGH_MEMORY)
+                    {
+                        throw new OutOfMemoryException(e.Message, e);
                     }
 
                     currentCopyOffset += chunkSize;
@@ -304,7 +329,15 @@ namespace FastSerialization
             long viewOffset = (_viewOffset + _offset) & ~0xFFFF;
             long offset = (_viewOffset + _offset) - viewOffset;
             long viewLength = Math.Max(Math.Min(BlockCopyCapacity, availableInFile + offset), capacity + offset);
-            _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Write);
+            try
+            {
+                _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Write);
+            }
+            catch (IOException e) when (e.HResult == ERROR_NOT_ENOUGH_MEMORY)
+            {
+                throw new OutOfMemoryException(e.Message, e);
+            }
+
             _viewOffset = viewOffset;
             _capacity = (int)viewLength;
             _offset = (int)offset;
