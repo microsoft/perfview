@@ -47,7 +47,7 @@ namespace PerfView
         {
             double maxDepth = GetMaxDepth(callTree.Root);
             double boxHeight = maxHeight / maxDepth;
-            double pixelsPerIncusiveSample = maxWidth / callTree.Root.InclusiveMetric;
+            double pixelsPerIncusiveSample = maxWidth / Math.Abs(callTree.Root.InclusiveMetric);
 
             var rootBox = new FlameBox(callTree.Root, maxWidth, boxHeight, 0, maxHeight - boxHeight);
             yield return rootBox;
@@ -61,11 +61,11 @@ namespace PerfView
                 var parentBox = current.ParentBox;
                 var currentNode = current.Node;
 
-                double nextBoxX = (parentBox.Width - (currentNode.Callees.Sum(child => child.InclusiveMetric) * pixelsPerIncusiveSample)) / 2.0; // centering the starting point
+                double nextBoxX = (parentBox.Width - (currentNode.Callees.Sum(child => Math.Abs(child.InclusiveMetric)) * pixelsPerIncusiveSample)) / 2.0; // centering the starting point
 
                 foreach (var child in currentNode.Callees)
                 {
-                    double childBoxWidth = child.InclusiveMetric * pixelsPerIncusiveSample;
+                    double childBoxWidth = Math.Abs(child.InclusiveMetric) * pixelsPerIncusiveSample;
 
                     var childBox = new FlameBox(child, childBoxWidth, boxHeight, parentBox.X + nextBoxX, parentBox.Y - boxHeight);
                     nextBoxX += childBoxWidth;
