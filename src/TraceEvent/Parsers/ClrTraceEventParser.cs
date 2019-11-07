@@ -437,7 +437,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 10, TypeTaskGuid);
             }
         }
-        public event Action<MethodDetailsTraceData> MethodDetails
+        public event Action<MethodDetailsTraceData> MethodMethodDetails
         {
             add
             {
