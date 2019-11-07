@@ -435,6 +435,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 10, TypeTaskGuid);
             }
         }
+        public event Action<MethodDetailsTraceData> MethodMethodDetails
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new MethodDetailsTraceData(value, 72, 9, "Method", MethodTaskGuid, 43, "MethodDetails", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 72, ProviderGuid);
+                source.UnregisterEventTemplate(value, 43, MethodTaskGuid);
+            }
+        }
         public event Action<GCBulkRootEdgeTraceData> GCBulkRootEdge
         {
             add
@@ -1734,7 +1747,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[118];
+                var templates = new TraceEvent[119];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1857,6 +1870,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[115] = new MethodJitTailCallFailedAnsiTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailedAnsi", ProviderGuid, ProviderName);
                 templates[116] = new EventSourceTraceData(null, 270, 0, "EventSourceEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName);
                 templates[117] = new R2RGetEntryPointTraceData(null, 159, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPoint", ProviderGuid, ProviderName);
+                templates[118] = new MethodDetailsTraceData(null, 72, 9, "Method", MethodTaskGuid, 43, "MethodDetails", ProviderGuid, ProviderName);
 
 
                 s_templates = templates;
@@ -2892,6 +2906,95 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    public sealed class MethodDetailsTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public long TypeID { get { return GetInt64At(8); } }
+        public int MethodToken { get { return GetInt32At(16); } }
+        public int TypeParameterCount { get { return GetInt32At(20); } }
+        public long LoaderModuleID { get { return GetInt64At(24); } }
+        public long TypeParameters(int arrayIndex) { return GetInt64At(32 + (arrayIndex * HostOffset(8, 0))); }
+
+        #region Private
+        internal MethodDetailsTraceData(Action<MethodDetailsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (TypeParameterCount * 8) + 36));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (TypeParameterCount * 8) + 36));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MethodDetailsTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "TypeID", TypeID);
+            XmlAttrib(sb, "MethodToken", MethodToken);
+            XmlAttrib(sb, "TypeParameterCount", TypeParameterCount);
+            XmlAttrib(sb, "LoaderModuleID", LoaderModuleID);
+            string typeParams = "";
+            if (TypeParameterCount != 0)
+            {
+                StringBuilder typeParamsBuilder = new StringBuilder();
+                for (int i = 0; i < TypeParameterCount; i++)
+                {
+                    if (typeParamsBuilder.Length != 0)
+                        typeParamsBuilder.Append(',');
+                    typeParamsBuilder.Append(TypeParameters(i).ToString("x"));
+                }
+                typeParams = typeParamsBuilder.ToString();
+            }
+            XmlAttrib(sb, "TypeParameters", typeParams);
+            sb.Append("/>");
+            return sb;
+        }
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "TypeID", "MethodToken", "TypeParameterCount", "LoaderModuleID", "TypeParameters" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return TypeID;
+                case 2:
+                    return MethodToken;
+                case 4:
+                    return TypeParameterCount;
+                case 5:
+                    return LoaderModuleID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 0x4000000000; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<MethodDetailsTraceData> Action;
+        #endregion
+    }
     public sealed class GCBulkTypeTraceData : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
@@ -10433,6 +10536,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         // TODO FIX NOW, need to add ContainsPointer
         // Also want ElementSize.  (not in flags of course)
+        ArrayRankBit0 = 0x100,
+        ArrayRankBit1 = 0x200,
+        ArrayRankBit2 = 0x400,
+        ArrayRankBit3 = 0x800,
+        ArrayRankBit4 = 0x1000,
+        ArrayRankBit5 = 0x2000,
+    }
+    public static class TypeFlagsHelpers
+    {
+        public static int GetArrayRank(this TypeFlags flags)
+        {
+            int rank = (((int)flags) >> 8) & 0x3F;
+            if (rank == 0)
+                return 1; // SzArray case
+            return rank;
+        }
     }
     [Flags]
     public enum GCRootFlags
