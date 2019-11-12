@@ -5897,7 +5897,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public GCGlobalMechanisms GlobalMechanisms { get { return (GCGlobalMechanisms)GetInt32At(24); } }
         public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(28); } return 0; } }
         public bool HasClrInstanceID { get { return Version >= 1; } }
-        public int PauseMode { get { if (Version >= 2) { return GetInt32At(30); } return 0; } }
+        public GCPauseMode PauseMode { get { if (Version >= 2) { return (GCPauseMode)GetInt32At(30); } return GCPauseMode.Invalid; } }
         public bool HasPauseMode { get { return (Version >= 2); } }
         public int MemoryPressure { get { if (Version >= 2) { return GetInt32At(34); } return 0; } }
         public bool HasMemoryPressure { get { return (Version >= 2); } }
@@ -10621,6 +10621,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         SuspendForGCPrep = 0x6,
         SuspendForDebuggerSweep = 0x7,
     }
+
+    public enum GCPauseMode
+    {
+        Invalid = -1,
+        Batch = 0,
+        Interactive = 1,
+        LowLatency = 2,
+        SustainedLowLatency = 3,
+        NoGC = 4
+    }
+
     public enum ContentionFlags
     {
         Managed = 0x0,
