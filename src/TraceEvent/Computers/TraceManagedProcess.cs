@@ -3399,6 +3399,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public int CondemnReasons0;
         public int CondemnReasons1;
         public bool HasCondemnReasons1;
+        public int CompactMechanisms;
+        public int ExpandMechanisms;
         public int Version;
         public GCPerHeapHistoryGenData[] GenData;
     }
@@ -3414,6 +3416,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public int Gen0ReductionCount;
         public GCReason Reason;
         public GCGlobalMechanisms GlobalMechanisms;
+        public GCPauseMode PauseMode;
         public int MemoryPressure;
         public bool HasMemoryPressure;
     }
@@ -4326,6 +4329,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     CondemnedGeneration = data.CondemnedGeneration,
                     Gen0ReductionCount = data.Gen0ReductionCount,
                     GlobalMechanisms = data.GlobalMechanisms,
+                    PauseMode = data.PauseMode,
                     HasMemoryPressure = data.HasMemoryPressure,
                     MemoryPressure = (data.HasMemoryPressure) ? data.MemoryPressure : -1,
                     NumHeaps = data.NumHeaps,
@@ -4359,6 +4363,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     CondemnReasons0 = data.CondemnReasons0,
                     CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
+                    CompactMechanisms = (int)data.CompactMechanisms,
+                    ExpandMechanisms = (int)data.ExpandMechanisms,
                     Version = data.Version
                 };
 
