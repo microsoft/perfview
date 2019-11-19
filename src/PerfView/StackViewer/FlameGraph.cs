@@ -23,7 +23,7 @@ namespace PerfView
             public FlameBox(CallTreeNode node, double width, double height, double x, double y)
             {
                 Node = node;
-                TooltipText = $"Method: {node.DisplayName} ({node.InclusiveCount} inclusive samples, {node.InclusiveMetricPercent:F}%)";
+                TooltipText = $"Method: {node.DisplayName} ({node.InclusiveCount} inclusive samples, {node.InclusiveMetricPercent:F}%){(node.InclusiveCount < 0 ? " (Memory gain)" : string.Empty)}";
                 Width = width;
                 Height = height;
                 X = x;
