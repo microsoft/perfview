@@ -3292,6 +3292,15 @@
     <center>
         <img src="images/FlameGraphView.png" alt="FlameGraphView" />
     </center>
+    <p>
+        The flame graph view in PerfView traditionally reflects the amount of consumed memory, but this can change when we graph the stack differences.
+        After garbage collection, amount of memory consumed by a type can be negative when inspected in stack differences.
+        In those cases, the corresponding flame graph boxes are drawn with a blue hue, pointing to a memory gain.
+        Increasing memory usage is drawn with yellow/red tint as usual.
+    </p>
+    <center>
+        <img src="images/FlameGraphDiffView.png" alt="FlameGraphDiffView" />
+    </center>
     <hr />
     <!--  ****************** -->
     <h3>
