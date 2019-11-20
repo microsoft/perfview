@@ -2501,7 +2501,7 @@ public class GCHeapDumper
         }
         else
         {
-            ret = GetTypeIndexForName(name, type.Module.FileName, 0);
+            ret = GetTypeIndexForName(name ?? "<Unnamed "+ type.MetadataToken.ToString("x8") + ">", type.Module.FileName, 0);
             m_typeIdxToGraphIdx[idx] = (int)ret + 1;
         }
         return ret;
