@@ -4,16 +4,11 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Session;
-using TraceEventSamples.Producer;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using TraceEventSamples.Producer;
 
 /* README FIRST */
 // Many operations can be done by streaming over the raw events in time order.   However more sophisticated analysis
@@ -65,12 +60,12 @@ using System.Threading.Tasks;
 // print the stack traces for these events and the stack associated with them.
 namespace TraceEventSamples
 {
-    class SimpleTraceLog
+    internal class SimpleTraceLog
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -95,7 +90,7 @@ namespace TraceEventSamples
         /// CollectData doe will turn on logging of data from 'eventSourceName' to the file 'dataFileName'.
         /// It will then call EventGenerator.CreateEvents and wait 12 seconds for it to generate some data. 
         /// </summary>
-        static void CollectData(string eventSourceName, string dataFileName)
+        private static void CollectData(string eventSourceName, string dataFileName)
         {
 
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
@@ -139,7 +134,7 @@ namespace TraceEventSamples
                 // In this mode if a session already exists, it is stopped and the new one is created.   
                 // 
                 // Here we install the Control C handler.   It is OK if Dispose is called more than once.  
-                Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) { session.Dispose(); kernelSession.Dispose(); };
+                Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) { session.Dispose(); kernelSession.Dispose(); };
 
                 // Enable kernel events.  
                 kernelSession.EnableKernelProvider(KernelTraceEventParser.Keywords.ImageLoad | KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread);
@@ -153,7 +148,9 @@ namespace TraceEventSamples
                 var options = new TraceEventProviderOptions() { StacksEnabled = true };
                 var restarted = session.EnableProvider(eventSourceName, TraceEventLevel.Verbose, ulong.MaxValue, options);
                 if (restarted)      // Generally you don't bother with this warning, but for the demo we do.  
+                {
                     Out.WriteLine("The session {0} was already active, it has been restarted.", sessionName);
+                }
 
                 // We also turn on CLR events because we need them to decode Stacks and we also get exception events (and their stacks)
                 session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)ClrTraceEventParser.Keywords.Default);
@@ -181,11 +178,15 @@ namespace TraceEventSamples
                 {
                     rundownSession.EnableProvider(ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)ClrRundownTraceEventParser.Keywords.Default);
                     // Poll until 2 second goes by without growth.  
-                    for (var prevLength = new FileInfo(rundownFileName).Length; ; )
+                    for (var prevLength = new FileInfo(rundownFileName).Length; ;)
                     {
                         Thread.Sleep(2000);
                         var newLength = new FileInfo(rundownFileName).Length;
-                        if (newLength == prevLength) break;
+                        if (newLength == prevLength)
+                        {
+                            break;
+                        }
+
                         prevLength = newLength;
                     }
                 }
@@ -195,7 +196,7 @@ namespace TraceEventSamples
             Out.WriteLine("Zipping the raw files into a single '{0}' file.", dataFileName);
 
             // At this point you have multiple ETL files that don't have all the information 
-            // inside them necessary for analysis off the currentn machine.    To do analsysis
+            // inside them necessary for analysis off the current machine.    To do analysis
             // of the machine you need to merge the ETL files (which can be done with
             //        TraceEventSession.MergeInPlace(dataFileName, Out);
             // However this does not get the symbolic information (NGEN PDBS) needed to
@@ -213,7 +214,7 @@ namespace TraceEventSamples
         /// Process the data in 'dataFileName' printing the events and doing delta computation between 'MyFirstEvent'
         /// and 'MySecondEvent'.  
         /// </summary>
-        static void ProcessData(string dataFileName)
+        private static void ProcessData(string dataFileName)
         {
             var zipDataFileName = dataFileName + ".zip";
             Out.WriteLine("**************  Unpacking the ZIP file {0}", zipDataFileName);
@@ -249,7 +250,9 @@ namespace TraceEventSamples
             foreach (var module in simpleTraceLogProcess.LoadedModules)
             {
                 if (module.Name == "clr" || module.Name == "ntdll" || module.Name == "mscorlib.ni")
+                {
                     traceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                }
             }
 
             // Source line lookup is verbose, so we don't send it to the console but to srcLookupLog (which we currently ignore)
@@ -257,7 +260,7 @@ namespace TraceEventSamples
             var silentSymbolReader = new SymbolReader(srcLookupLog, SymbolPath.MicrosoftSymbolServerPath);
             silentSymbolReader.Options = SymbolReaderOptions.CacheOnly;     // don't try to look things up on the network for source 
             silentSymbolReader.SecurityCheck = (pdbPath) => true;           // for this demo we trust any pdb location.   This lets us find the PDB of the demo itself
-            
+
             // By default the symbol reader will NOT read PDBs from 'unsafe' locations (like next to the EXE)  
             // because hackers might make malicious PDBs.   If you wish ignore this threat, you can override this
             // check to always return 'true' for checking that a PDB is 'safe'.  
@@ -297,14 +300,20 @@ namespace TraceEventSamples
                     var lineInfo = "";
                     var sourceLocation = callStack.CodeAddress.GetSourceLine(symbolReader);
                     if (sourceLocation != null)
+                    {
                         lineInfo = string.Format("  AT: {0}({1})", Path.GetFileName(sourceLocation.SourceFile.BuildTimeFilePath), sourceLocation.LineNumber);
+                    }
 
                     Out.WriteLine("    Method: {0}!{1}{2}", module.Name, method.FullMethodName, lineInfo);
                 }
                 else if (module != null)
+                {
                     Out.WriteLine("    Module: {0}!0x{1:x}", module.Name, callStack.CodeAddress.Address);
+                }
                 else
+                {
                     Out.WriteLine("    ?!0x{0:x}", callStack.CodeAddress.Address);
+                }
 
                 callStack = callStack.Caller;
             }

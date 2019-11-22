@@ -1,18 +1,15 @@
 ﻿//     Copyright (c) Microsoft Corporation.  All rights reserved.
-#define USE_OS_DYNAMIC_EVENT_PARSING    // TODO REMOVE 
+using FastSerialization;
+using Microsoft.Diagnostics.Tracing.Compatibility;
+using Microsoft.Diagnostics.Tracing.Extensions;
+using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text.RegularExpressions;
-using FastSerialization;
-using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Extensions;
-using Microsoft.Diagnostics.Tracing.Compatibility;
-using System.IO;
-using System.Threading;
 using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
@@ -20,7 +17,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     /// RegisteredTraceEventParser uses the standard windows provider database (TDH, what gets registered with wevtutil)
     /// to find the names of events and fields of the events).   
     /// </summary>
-    public unsafe sealed class RegisteredTraceEventParser : ExternalTraceEventParser
+    public sealed unsafe class RegisteredTraceEventParser : ExternalTraceEventParser
     {
         /// <summary>
         /// Create a new RegisteredTraceEventParser and attach it to the given TraceEventSource
@@ -76,7 +73,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
+            {
                 throw new ApplicationException("Could not find provider with name " + providerName);
+            }
+
             return GetManifestForRegisteredProvider(providerGuid);
         }
         /// <summary>
@@ -121,23 +121,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     // Skip the reserved keywords.   
                     if (keywordItem.Value >= 1000000000000UL)
+                    {
                         continue;
+                    }
 
                     keywords[keywordItem.Value] = MakeLegalIdentifier(keywordItem.Name);
                 }
             }
 
-            for (byte ver = 0; ver <= 255; ver++)
+            for (int ver = 0; ver <= 255; ver++)
             {
-                eventRecord.EventHeader.Version = ver;
+                eventRecord.EventHeader.Version = (byte) ver;
                 int count;
                 int status;
-                for (;;)
+                for (; ; )
                 {
                     int dummy;
                     status = ETWParsing.TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out dummy, out count, buffer, ref buffSize);
                     if (status != 122 || 20000000 < buffSize) // 122 == Insufficient buffer keep it under 2Meg
+                    {
                         break;
+                    }
+
                     Marshal.FreeHGlobal((IntPtr)buffer);
                     buffer = (byte*)Marshal.AllocHGlobal(buffSize);
                 }
@@ -155,9 +160,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (providerName == null)
                         {
                             if (eventInfo->ProviderNameOffset != 0)
+                            {
                                 providerName = new string((char*)(&eventInfoBuff[eventInfo->ProviderNameOffset]));
+                            }
                             else
+                            {
                                 providerName = "provider(" + eventInfo->ProviderGuid.ToString() + ")";
+                            }
                         }
 
                         // Compute task name
@@ -167,12 +176,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             taskName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset]))));
                         }
                         if (taskName == null)
+                        {
                             taskName = "task_" + eventInfo->EventDescriptor.Task.ToString();
+                        }
 
                         // Insure task name is unique.  
                         int taskNumForName;
                         if (taskNames.TryGetValue(taskName, out taskNumForName) && taskNumForName != eventInfo->EventDescriptor.Task)
+                        {
                             taskName = taskName + "_" + eventInfo->EventDescriptor.Task.ToString();
+                        }
+
                         taskNames[taskName] = eventInfo->EventDescriptor.Task;
 
                         // Compute opcode name
@@ -180,9 +194,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (eventInfo->EventDescriptor.Opcode != 0)
                         {
                             if (eventInfo->OpcodeNameOffset != 0)
+                            {
                                 opcodeName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset]))));
+                            }
                             else
+                            {
                                 opcodeName = "opcode_" + eventInfo->EventDescriptor.Opcode.ToString();
+                            }
                         }
 
                         // Insure opcode name is unique.  
@@ -191,7 +209,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             // If we did not find a name, use 'opcode and the disambiguator
                             if (eventInfo->OpcodeNameOffset == 0)
+                            {
                                 opcodeName = "opcode";
+                            }
+
                             opcodeName = opcodeName + "_" + eventInfo->EventDescriptor.Task.ToString() + "_" + eventInfo->EventDescriptor.Opcode.ToString();
                         }
                         opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
@@ -199,26 +220,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         // And event name 
                         string eventName = taskName;
                         if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
+                        {
                             eventName += Capitalize(opcodeName);
+                        }
 
                         // Insure uniqueness of the event name
                         int eventNumForName;
                         if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                        {
                             eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                        }
+
                         eventNames[eventName] = eventInfo->EventDescriptor.Id;
 
                         // Get task information
                         TaskInfo taskInfo;
                         if (!tasks.TryGetValue(eventInfo->EventDescriptor.Task, out taskInfo))
+                        {
                             tasks[eventInfo->EventDescriptor.Task] = taskInfo = new TaskInfo() { Name = taskName };
+                        }
 
                         var symbolName = eventName;
                         if (eventInfo->EventDescriptor.Version > 0)
+                        {
                             symbolName += "_V" + eventInfo->EventDescriptor.Version;
+                        }
 
                         StringWriter eventWriter;
                         if (!events.TryGetValue(eventInfo->EventDescriptor.Id, out eventWriter))
+                        {
                             events[eventInfo->EventDescriptor.Id] = eventWriter = new StringWriter();
+                        }
 
                         eventWriter.Write("     <event value=\"{0}\" symbol=\"{1}\" version=\"{2}\" task=\"{3}\"",
                             eventInfo->EventDescriptor.Id,
@@ -229,15 +261,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             string opcodeId;
                             if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
-                                opcodeId = "win:" + opcodeName;
+                            {
+                                // For some reason opcodeName does not have the underscore, which we need. 
+                                if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
+                                {
+                                    opcodeId = "win:DC_Start";
+                                }
+                                else if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStop)
+                                {
+                                    opcodeId = "win:DC_Stop";
+                                }
+                                else
+                                {
+                                    opcodeId = "win:" + opcodeName;
+                                }
+                            }
                             else
                             {
                                 opcodeId = opcodeName;
                                 if (taskInfo.Opcodes == null)
+                                {
                                     taskInfo.Opcodes = new SortedDictionary<int, string>();
+                                }
 
                                 if (!taskInfo.Opcodes.ContainsKey(eventInfo->EventDescriptor.Opcode))
+                                {
                                     taskInfo.Opcodes[eventInfo->EventDescriptor.Opcode] = opcodeId;
+                                }
                             }
                             eventWriter.Write(" opcode=\"{0}\"", opcodeId);
                         }
@@ -251,7 +301,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                         var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
                         if (keywordStr.Length > 0)
+                        {
                             eventWriter.Write(" keywords=\"" + keywordStr + "\"", eventInfo->EventDescriptor.Keyword);
+                        }
 
                         if (eventInfo->TopLevelPropertyCount != 0)
                         {
@@ -270,7 +322,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
 
                                     if (enumBuffer == null)
+                                    {
                                         enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                                    }
 
                                     if (!enumIntern.ContainsKey(mapName))
                                     {
@@ -286,9 +340,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
                                                 enumAttrib = " map=\"" + enumName + "\"";
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                                                {
                                                     enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
+                                                }
                                                 else
+                                                {
                                                     enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
+                                                }
 
                                                 EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
                                                 for (int k = 0; k < enumInfo->EntryCount; k++)
@@ -299,9 +357,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                     enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
                                                 }
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                                                {
                                                     enumWriter.WriteLine("     </valueMap>", enumName);
+                                                }
                                                 else
+                                                {
                                                     enumWriter.WriteLine("     </bitMap>", enumName);
+                                                }
+
                                                 enumIntern[mapName] = enumWriter.ToString();
                                             }
                                         }
@@ -314,9 +377,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 string countOrLengthAttrib = "";
 
                                 if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
+                                {
                                     countOrLengthAttrib = " count=\"" + propertyNames[propertyInfo->CountOrCountIndex] + "\"";
+                                }
                                 else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
+                                {
                                     countOrLengthAttrib = " length=\"" + propertyNames[propertyInfo->LengthOrLengthIndex] + "\"";
+                                }
 
                                 templateWriter.WriteLine("      <data name=\"{0}\" inType=\"win:{1}\"{2}{3}/>", propertyName, propertyType.ToString(), enumAttrib, countOrLengthAttrib);
                             }
@@ -328,7 +395,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             {
                                 templateName = eventName + "Args";
                                 if (eventInfo->EventDescriptor.Version > 0)
+                                {
                                     templateName += "_V" + eventInfo->EventDescriptor.Version;
+                                }
+
                                 templateIntern[templateStr] = templateName;
                             }
                             eventWriter.Write(" template=\"{0}\"", templateName);
@@ -337,14 +407,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
                 else if (status == 1168 && ver != 0)        // Not Found give up
+                {
                     break;
+                }
             }
             if (enumBuffer != null)
+            {
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
+            }
 
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             if (providerName == null)
+            {
                 throw new ApplicationException("Could not find provider with at GUID of " + providerGuid.ToString());
+            }
 
             StringWriter manifest = new StringWriter();
             manifest.WriteLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
@@ -394,14 +470,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 manifest.WriteLine("    <maps>");
                 foreach (var map in enumIntern.Values)
+                {
                     manifest.Write(map);
+                }
+
                 manifest.WriteLine("    </maps>");
                 localizedStrings.Write(enumLocalizations.ToString());
             }
 
             manifest.WriteLine("    <events>");
             foreach (StringWriter eventStr in events.Values)
+            {
                 manifest.Write(eventStr.ToString());
+            }
+
             manifest.WriteLine("    </events>");
 
             manifest.WriteLine("    <templates>");
@@ -431,7 +513,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return manifest.ToString(); ;
         }
 
-#region private
+        #region private
         // Borrowed from Core CLR System.Globalization.CultureInfo
         private static string IetfLanguageTag(CultureInfo culture)
         {
@@ -477,7 +559,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         keywords[keyword] = keywordStr;
                     }
                     if (ret.Length != 0)
+                    {
                         ret += " ";
+                    }
+
                     ret += keywordStr;
                 }
             }
@@ -496,10 +581,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static string Capitalize(string str)
         {
             if (str.Length == 0)
+            {
                 return str;
+            }
+
             char c = str[0];
             if (Char.IsUpper(c))
+            {
                 return str;
+            }
+
             return (str.Substring(1).ToUpper() + str.Substring(1));
         }
 
@@ -534,22 +625,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
 
-#if USE_OS_DYNAMIC_EVENT_PARSING
-                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging
-                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When
-                // that happens this path where we parse the TraceLogging data explicitly will become
-                // unreachable and can be removed.    A fair bit of code can be removed in this way.
-                if (!hasETWEventInformation)
-                    if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
-                    {
-                        ret = CheckForTraceLoggingEventDefinition(unknownEvent);
-                        if (ret != null)
-                        {
-                            ret.containsSelfDescribingMetadata = true;
-                            return ret;
-                        }
-                    }
-#endif
 
                 // TODO cache the buffer?, handle more types, handle structs...
                 int buffSize = 9000;
@@ -574,210 +649,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return ret;
         }
 
-#if USE_OS_DYNAMIC_EVENT_PARSING
-
-        /*************************** TraceLogging format Support ********************************/
-        /// <summary>
-        /// Events that have this special special marker in their channel indicate that the 
-        /// data format is the new self-describing TraceLogging style 
-        /// </summary>
-        internal const TraceEventChannel TraceLoggingMarker = (TraceEventChannel)11;
-
-        /// <summary>
-        /// Given a TraceLogging event 'data' (which has Channel == 11), then parse it adding the
-        /// definition to lookup logic if necessary.   Returns true if a new definition was added
-        /// (which means you need to retry lookup).  
-        /// </summary>
-        private static unsafe DynamicTraceEventData CheckForTraceLoggingEventDefinition(TraceEvent data)
-        {
-            // Format for TraceLogging MetaData
-            //
-            // ProviderBlob
-            //      ushort TotalProviderBlobLength;     // includes this short, null termination, and provider traits
-            //      string UTF8NullTerminatedProviderName
-            //      provider traits (can be ignored).
-            // EventPayloadNameBlob
-            //      ushort TotalEventBlobLength         // includes this short and all type info.  
-            //      byte   Tags[N];                     // N varies, 1 or more. Top bit of each byte is ChainFlag. Stop reading when you hit a byte with ChainFlag unset.
-            //      string UTF8NullTerminatedEventName
-            //                                          // The following are repeated until you reach TotalEventBlobLength.
-            //      string UTF8NullTerminatedFieldName
-            //      byte   InType;                      // bits 0-4 = intype, bits 5-6 == CountFlags, bit 7 == ChainFlag
-            //      byte   OutType                      // Only present if InType.ChainFlag. bits 0-6 = outtype, bit 7 = ChainFlag
-            //      byte   Tags[N];                     // Only present if OutType.ChainFlag. N varies, 1 or more. Top bit of each byte is ChainFlag. Stop reading when you hit a byte with ChainFlag unset.
-            //      ushort Count                        // Only present if CountFlag & FixedCountFlag.
-            //      byte   Custom[Count];               // Only present if CountFlag == CustomCountFlag.
-
-            int offset = data.GetInt16At(0);
-            if (offset < 6 || data.EventDataLength < offset)
-            {
-                Trace.WriteLine("Error: TraceLogging header has illegal Offset " + offset + " for data len " + data.EventDataLength);
-                return null;
-            }
-            string providerName = data.GetUTF8StringAt(2);
-
-            int eventMetaDataEnd = offset + data.GetInt16At(offset); offset += 2;
-
-            // Ignore event tags (read until we find a byte with high bit unset)
-            do
-            {
-                offset++;
-            }
-            while (0 != (data.GetByteAt(offset - 1) & 0x80));
-
-            string eventName = data.GetUTF8StringAt(offset); offset = data.SkipUTF8String(offset);
-
-            var event_ = new DynamicTraceEventData(null, (int)data.ID, 0, eventName, Guid.Empty, 0, "", data.ProviderGuid, providerName);
-            Debug.WriteLine("Got TraceLogging Provider " + providerName + " Event " + eventName);
-
-            TraceLoggingFieldParser fieldParser = new TraceLoggingFieldParser(data, offset, eventMetaDataEnd);
-            fieldParser.ParseFields(out event_.payloadNames, out event_.payloadFetches, (ushort)eventMetaDataEnd);
-
-            return event_;
-        }
-
-        /// <summary>
-        /// A helper class that knows how to parse fields with nested types.  
-        /// </summary>
-        private class TraceLoggingFieldParser
-        {
-            public TraceLoggingFieldParser(TraceEvent data, int metaDataStart, int eventMetaDataEnd)
-            {
-                this.data = data;
-                this.offset = metaDataStart;
-                this.eventMetaDataEnd = eventMetaDataEnd;
-            }
-
-            /// <summary>
-            /// Parses at most 'maxFields' fields starting at the current position.  
-            /// Will return the parse fields in 'payloadNamesRet' and 'payloadFetchesRet'
-            /// Will return true if successful, false means an error occurred.  
-            /// </summary>
-            public bool ParseFields(out string[] payloadNamesRet, out DynamicTraceEventData.PayloadFetch[] payloadFetchesRet, ushort fieldOffset, int maxFields = int.MaxValue)
-            {
-                var payloadFetches = new List<DynamicTraceEventData.PayloadFetch>();
-                var payloadNames = new List<string>();
-
-                while (offset < eventMetaDataEnd)
-                {
-                    if (maxFields <= payloadFetches.Count)
-                        break;
-
-                    // Parse field name
-                    string fieldName = data.GetUTF8StringAt(offset); offset = data.SkipUTF8String(offset);
-
-                    int outType = 0;
-                    int inTypeRaw = data.GetByteAt(offset); offset++;
-                    int countFlags = inTypeRaw & InTypeCountMask;
-
-                    if ((inTypeRaw & InTypeChainFlag) != 0)
-                    {
-                        outType = data.GetByteAt(offset); offset++;
-
-                        // Skip tags, if present.
-                        if ((outType & OutTypeChainFlag) != 0)
-                        {
-                            do
-                            {
-                                offset++;
-                            }
-                            while ((data.GetByteAt(offset - 1) & 0x80) != 0);
-                        }
-
-                        outType &= OutTypeTypeMask;
-                    }
-
-                    TdhInputType inType = (TdhInputType)(inTypeRaw & InTypeTypeMask);
-                    ushort fixedCount = 0;
-                    if ((countFlags & InTypeFixedCountFlag) != 0)
-                    {
-                        fixedCount = (ushort)data.GetInt16At(offset); offset += 2;
-                        if (countFlags == InTypeCustomCountFlag)
-                            offset += fixedCount;
-
-                        if (inTypeRaw == 0 && countFlags == InTypeFixedCountFlag)
-                        {
-                            // Obsolete encoding for struct. Translate into new encoding.
-                            inType = TdhInputType.Struct;
-                            outType = fixedCount;
-                            countFlags = 0;
-                        }
-                    }
-
-                    DynamicTraceEventData.PayloadFetch payloadFetch;
-                    if (inType == TdhInputType.Struct)
-                    {
-                        int numStructFields = outType;
-                        Debug.WriteLine("   " + fieldName + " Is a nested type with " + numStructFields + " fields");
-                        var classInfo = new DynamicTraceEventData.PayloadFetchClassInfo();
-                        if (!ParseFields(out classInfo.FieldNames, out classInfo.FieldFetches, 0, numStructFields))
-                            goto Fail;
-                        payloadFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(fieldOffset, classInfo);
-                    }
-                    else
-                    {
-                        if (inType == TdhInputType.UInt8 && outType == 3)       // This encodes as boolean
-                            outType = 13;          // This TDH_OUTTYPE_BOOLEAN   
-                        payloadFetch = new DynamicTraceEventData.PayloadFetch(fieldOffset, inType, outType);
-                        if (payloadFetch.Size == DynamicTraceEventData.UNKNOWN_SIZE)
-                        {
-                            Trace.WriteLine("    Unknown type for  " + fieldName + " " + inType.ToString() + " fields from here will be missing.");
-                            goto Fail;
-                        }
-                    }
-
-                    // Is it an array? 
-                    if (countFlags != 0 || inType == TdhInputType.Binary)
-                    {
-                        payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(fieldOffset, payloadFetch, fixedCount);
-                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT; // 16 bit, Unicode, does not consume field. 
-                    }
-
-                    var size = payloadFetch.Size;
-                    Debug.Assert(0 < size);
-                    Debug.WriteLine("    Got TraceLogging Field " + fieldName + " " + (payloadFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x"));
-                    payloadNames.Add(fieldName);
-                    payloadFetches.Add(payloadFetch);
-                    if (fieldOffset != ushort.MaxValue)
-                    {
-                        if (size < DynamicTraceEventData.SPECIAL_SIZES)
-                            fieldOffset += size;
-                        else
-                            fieldOffset = ushort.MaxValue;
-                    }
-                }
-
-                payloadNamesRet = payloadNames.ToArray();
-                payloadFetchesRet = payloadFetches.ToArray();
-                return true;
-
-                Fail:
-                payloadNamesRet = new string[0];
-                payloadFetchesRet = new DynamicTraceEventData.PayloadFetch[0];
-                return false;
-            }
-
-#region private
-
-            // TODO we may not need all of these.  
-            internal const byte InTypeTypeMask = 31;
-            internal const byte InTypeFixedCountFlag = 32;
-            internal const byte InTypeVariableCountFlag = 64;
-            internal const byte InTypeCustomCountFlag = 96;
-            internal const byte InTypeCountMask = 96;
-            internal const byte InTypeChainFlag = 128;
-
-            internal const byte OutTypeTypeMask = 127;
-            internal const byte OutTypeChainFlag = 128;
-
-            TraceEvent data;
-            int offset;
-            int eventMetaDataEnd;
-#endregion // private
-        }
-
-#endif
-
         /// <summary>
         /// TdhEventParser takes the Trace Diagnostics Helper (TDH) TRACE_EVENT_INFO structure and
         /// (passed as a byte*) and converts it to a DynamicTraceEventData which which 
@@ -793,9 +664,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             public TdhEventParser(byte* eventInfo, TraceEventNativeMethods.EVENT_RECORD* eventRecord, Dictionary<MapKey, IDictionary<long, string>> mapTable)
             {
-                this.eventBuffer = eventInfo;
+                eventBuffer = eventInfo;
                 this.eventInfo = (TRACE_EVENT_INFO*)eventInfo;
-                this.propertyInfos = &this.eventInfo->EventPropertyInfoArray;
+                propertyInfos = &this.eventInfo->EventPropertyInfoArray;
                 this.eventRecord = eventRecord;
                 this.mapTable = mapTable;
             }
@@ -809,25 +680,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
                 string taskName = null;
                 if (eventInfo->TaskNameOffset != 0)
+                {
                     taskName = MakeLegalIdentifier(new string((char*)(&eventBuffer[eventInfo->TaskNameOffset])));
+                }
 
                 string opcodeName = null;
                 if (eventInfo->OpcodeNameOffset != 0)
                 {
                     opcodeName = new string((char*)(&eventBuffer[eventInfo->OpcodeNameOffset]));
                     if (opcodeName.StartsWith("win:"))
+                    {
                         opcodeName = opcodeName.Substring(4);
+                    }
+
                     opcodeName = MakeLegalIdentifier(opcodeName);
                 }
 
                 string providerName = "UnknownProvider";
                 if (eventInfo->ProviderNameOffset != 0)
+                {
                     providerName = new string((char*)(&eventBuffer[eventInfo->ProviderNameOffset]));
+                }
 
                 var eventID = eventInfo->EventDescriptor.Id;
                 // Mark it as a classic event if necessary. 
                 if (eventInfo->DecodingSource == 1) // means it is from MOF (Classic)
+                {
                     eventID = (int)TraceEventID.Illegal;
+                }
 
                 var newTemplate = new DynamicTraceEventData(null, eventID,
                     eventInfo->EventDescriptor.Task, taskName,
@@ -836,10 +716,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     eventInfo->ProviderGuid, providerName);
 
                 if (eventID == (int)TraceEventID.Illegal)
+                {
                     newTemplate.lookupAsClassic = true;
+                }
 
                 if (eventInfo->EventMessageOffset != 0)
+                {
                     newTemplate.MessageFormat = new string((char*)(&eventBuffer[eventInfo->EventMessageOffset]));
+                }
 
                 Debug.WriteLine("In TdhEventParser for event" + providerName + "/" + taskName + "/" + opcodeName + " with " + eventInfo->TopLevelPropertyCount + " fields");
                 DynamicTraceEventData.PayloadFetchClassInfo fields = ParseFields(0, eventInfo->TopLevelPropertyCount);
@@ -874,7 +758,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var arrayFieldOffset = fieldOffset;
                     if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 &&
                         propertyInfo->InType != TdhInputType.UnicodeString && propertyInfo->InType != TdhInputType.AnsiString)
+                    {
                         fieldOffset = 0;
+                    }
 
                     // Is this a nested struct?
                     if ((propertyInfo->Flags & PROPERTY_FLAGS.Struct) != 0)
@@ -913,7 +799,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
                                 var hr = TdhGetEventMapInformation(eventRecord, mapName, enumInfo, ref buffSize);
                                 if (hr == 0)
+                                {
                                     propertyFetch.Map = ParseMap(enumInfo, enumBuffer);
+                                }
 
                                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
                             }
@@ -921,15 +809,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             {
                                 // This is the kernelTraceControl case,  the map information will be provided
                                 // later, so we have to set up a LAZY map which will be evaluated when we need the
-                                // enum (giving time for the enum defintion to be processed. 
+                                // enum (giving time for the enum definition to be processed. 
                                 var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
 
                                 // Set the map to be a lazyMap, which is a Func that returns a map.  
                                 Func<IDictionary<long, string>> lazyMap = delegate ()
                                 {
                                     IDictionary<long, string> map = null;
-                                    if (this.mapTable != null)
-                                        this.mapTable.TryGetValue(mapKey, out map);
+                                    if (mapTable != null)
+                                    {
+                                        mapTable.TryGetValue(mapKey, out map);
+                                    }
+
                                     return map;
                                 };
                                 propertyFetch.LazyMap = lazyMap;
@@ -938,13 +829,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     // is this dynamically sized with another field specifying the length?
-                    // Is it an array? 
-                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || propertyInfo->InType == TdhInputType.Binary)
+                    // Is it an array (binary and not a struct) (seems InType is not valid if property is a struct, so need to test for both.
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || (propertyInfo->InType == TdhInputType.Binary && (propertyInfo->Flags & PROPERTY_FLAGS.Struct) == 0))
                     {
                         // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.  
                         var countOrCountIndex = propertyInfo->CountOrCountIndex;
                         if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0 || propertyInfo->InType == TdhInputType.Binary)
+                        {
                             countOrCountIndex = propertyInfo->LengthOrLengthIndex;
+                        }
 
                         ushort fixedCount = 0;
                         ushort arraySize;
@@ -963,7 +856,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 var lastFieldIdx = fieldFetches.Count - 1;
                                 arraySize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.CONSUMES_FIELD + DynamicTraceEventData.ELEM_COUNT;
                                 if (fieldFetches[lastFieldIdx].Size == 4)
+                                {
                                     arraySize += DynamicTraceEventData.BIT_32;
+                                }
                                 else if (fieldFetches[lastFieldIdx].Size != 2)
                                 {
                                     Trace.WriteLine("WARNING: Unexpected dynamic length size, giving up");
@@ -972,7 +867,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                                 // remove the previous field (so we have to adjust our offset)
                                 if (arrayFieldOffset != ushort.MaxValue)
+                                {
                                     arrayFieldOffset -= fieldFetches[lastFieldIdx].Size;
+                                }
+
                                 fieldNames.RemoveAt(lastFieldIdx);
                                 fieldFetches.RemoveAt(lastFieldIdx);
                             }
@@ -992,7 +890,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             propertyFetch.Size = (ushort)(arraySize | (propertyFetch.Size & DynamicTraceEventData.IS_ANSI));
                             propertyFetch.Offset = arrayFieldOffset;
                         }
-                        else 
+                        else
                         {
                             Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
                             propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, arraySize, fixedCount);
@@ -1008,7 +906,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     Debug.Assert(0 < size);
                     if (size >= DynamicTraceEventData.SPECIAL_SIZES)
+                    {
                         fieldOffset = ushort.MaxValue;           // Indicate that the offset must be computed at run time. 
+                    }
                     else if (fieldOffset != ushort.MaxValue)
                     {
                         Debug.Assert(fieldOffset + size < ushort.MaxValue);
@@ -1023,7 +923,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // Parses a EVENT_MAP_INFO into a Dictionary for a Value map or a SortedDictionary for a Bitmap
             // returns null if it does not know how to parse it.  
-            internal unsafe static IDictionary<long, string> ParseMap(EVENT_MAP_INFO* enumInfo, byte* enumBuffer)
+            internal static unsafe IDictionary<long, string> ParseMap(EVENT_MAP_INFO* enumInfo, byte* enumBuffer)
             {
                 IDictionary<long, string> map = null;
                 // We only support manifest enums for now.  
@@ -1034,9 +934,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
 
                     if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                    {
                         map = new Dictionary<long, string>();
+                    }
                     else
+                    {
                         map = new SortedDictionary<long, string>();
+                    }
 
                     EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
                     for (int k = 0; k < enumInfo->EntryCount; k++)
@@ -1049,13 +953,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return map;
             }
 
-#region private
-            TRACE_EVENT_INFO* eventInfo;
-            TraceEventNativeMethods.EVENT_RECORD* eventRecord;
-            Dictionary<MapKey, IDictionary<long, string>> mapTable;     // table of enums that have defined. 
-            EVENT_PROPERTY_INFO* propertyInfos;
-            byte* eventBuffer;                           // points at the eventInfo, but in increments of bytes 
-#endregion // private
+            #region private
+            private TRACE_EVENT_INFO* eventInfo;
+            private TraceEventNativeMethods.EVENT_RECORD* eventRecord;
+            private Dictionary<MapKey, IDictionary<long, string>> mapTable;     // table of enums that have defined. 
+            private EVENT_PROPERTY_INFO* propertyInfos;
+            private byte* eventBuffer;                           // points at the eventInfo, but in increments of bytes 
+            #endregion // private
         }
 
         [DllImport("tdh.dll")]
@@ -1226,7 +1130,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             HexDump,
             WbemSID
         };
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1249,31 +1153,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 this.source.RegisterUnhandledEvent(delegate (TraceEvent unknown)
                 {
-                // See if we already have this definition 
-                DynamicTraceEventData parsedTemplate = null;
+                    // See if we already have this definition 
+                    DynamicTraceEventData parsedTemplate = null;
 
                     if (!m_state.m_templates.TryGetValue(unknown, out parsedTemplate))
                     {
                         parsedTemplate = TryLookup(unknown);
                         if (parsedTemplate == null)
+                        {
                             m_state.m_templates.Add(unknown.Clone(), null);         // add an entry to remember that we tried and failed.  
+                        }
                     }
                     if (parsedTemplate == null)
+                    {
                         return false;
+                    }
 
-                // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
-                // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
-                // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
-                // only add the event definition once.  
-                if (!parsedTemplate.registeredWithTraceEventSource)
+                    // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
+                    // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
+                    // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
+                    // only add the event definition once.  
+                    if (!parsedTemplate.registeredWithTraceEventSource)
                     {
                         parsedTemplate.registeredWithTraceEventSource = true;
                         bool ret = OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
 
-                    // If we have subscribers, notify them as well.  
-                    var newEventDefinition = NewEventDefinition;
+                        // If we have subscribers, notify them as well.  
+                        var newEventDefinition = NewEventDefinition;
                         if (newEventDefinition != null)
+                        {
                             ret |= (NewEventDefinition(parsedTemplate, false) == EventFilterResponse.AcceptEvent);
+                        }
+
                         return ret;
                     }
                     return false;
@@ -1286,7 +1197,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override bool IsStatic { get { return false; } }
 
-#region private
+        #region private
         internal Func<TraceEvent, bool, EventFilterResponse> NewEventDefinition;
 
         /// <summary>
@@ -1304,9 +1215,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal bool HasDefinitionForTemplate(TraceEvent template)
         {
             if (m_state == null)
+            {
                 m_state = (ExternalTraceEventParserState)StateObject;
+            }
+
             if (m_state != null)
+            {
                 return m_state.m_templates.ContainsKey(template);
+            }
+
             return false;
         }
 
@@ -1317,16 +1234,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             // Normally state is setup in the constructor, but call can be invoked before the constructor has finished, 
             if (m_state == null)
+            {
                 m_state = (ExternalTraceEventParserState)StateObject;
+            }
 
             if (m_state != null)
             {
                 foreach (var template in m_state.m_templates.Values)
                 {
                     if (template == null)
+                    {
                         continue;
+                    }
+
                     if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
+                    {
                         callback(template);
+                    }
                 }
             }
         }
@@ -1336,7 +1260,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         internal override EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
-            m_state.m_templates[template] = (DynamicTraceEventData) template;
+            m_state.m_templates[template] = (DynamicTraceEventData)template;
             return base.OnNewEventDefintion(template, mayHaveExistedBefore);
         }
 
@@ -1349,16 +1273,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get
             {
                 if (m_maps == null)
+                {
                     m_maps = new Dictionary<MapKey, IDictionary<long, string>>();
+                }
+
                 return m_maps;
             }
         }
-        Dictionary<MapKey, IDictionary<long, string>> m_maps;       // Any maps (enums or bitsets) defined by KernelTraceControl events.  
 
-#endregion
+        private Dictionary<MapKey, IDictionary<long, string>> m_maps;       // Any maps (enums or bitsets) defined by KernelTraceControl events.  
+
+        #endregion
     }
 
-#region internal classes
+    #region internal classes
     /// <summary>
     /// Used to look up Enums (provider x enumName);  Very boring class.  
     /// </summary>
@@ -1412,9 +1340,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 Debug.Assert(!(x.lookupAsWPP && x.lookupAsClassic));
                 if (x.lookupAsClassic != y.lookupAsClassic)
+                {
                     return false;
+                }
+
                 if (x.lookupAsWPP != y.lookupAsWPP)
+                {
                     return false;
+                }
 
                 if (x.lookupAsClassic)
                 {
@@ -1435,15 +1368,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public int GetHashCode(TraceEvent obj)
             {
                 if (obj.lookupAsClassic)
+                {
                     return obj.taskGuid.GetHashCode() + (int)obj.Opcode;
+                }
                 else if (obj.lookupAsWPP)
+                {
                     return obj.taskGuid.GetHashCode() + (int)obj.ID;
+                }
                 else
+                {
                     return obj.ProviderGuid.GetHashCode() + (int)obj.ID;
+                }
             }
         }
 
-#region IFastSerializable Members
+        #region IFastSerializable Members
         /// <summary>
         /// Implements IFastSerializable interface
         /// </summary>
@@ -1454,7 +1393,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             foreach (var template in m_templates.Values)
             {
                 if (template != null)
+                {
                     count++;
+                }
             }
 
             serializer.Write(count);
@@ -1486,8 +1427,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 m_templates.Add(template, template);
             }
         }
-#endregion
+        #endregion
     }
 
-#endregion
+    #endregion
 }

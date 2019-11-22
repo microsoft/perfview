@@ -5,11 +5,7 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
-using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -24,10 +20,11 @@ namespace Microsoft.Diagnostics.Tracing
         public ServerRequestComputer(TraceEventDispatcher source)
         {
         }
+
         /// <summary>
         /// The server request that we currently processing
         /// </summary>
-        ServerRequest GetCurrentRequest(TraceThread thread)
+        private ServerRequest GetCurrentRequest(TraceThread thread)
         {
             return null;
         }

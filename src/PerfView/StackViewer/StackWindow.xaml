@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.StackWindow"
+﻿<src:WindowBase x:Class="PerfView.StackWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -86,6 +86,9 @@
             <CommandBinding Command="{x:Static src:StackWindow.ExpandCommand}" Executed="DoExpand" CanExecute="CanExpand"/>
             <CommandBinding Command="{x:Static src:StackWindow.CollapseCommand}" Executed="DoCollapse" CanExecute="CanExpand"/>
             <CommandBinding Command="{x:Static src:StackWindow.ExpandAllCommand}" Executed="DoExpandAll" CanExecute="CanExpand"/>
+            <CommandBinding Command="{x:Static src:StackWindow.SetBrownBackgroundColorCommand}" Executed="DoSetBrownBackgroundColor" CanExecute="CanSetBackgroundColor"/>
+            <CommandBinding Command="{x:Static src:StackWindow.SetBlueBackgroundColorCommand}" Executed="DoSetBlueBackgroundColor" CanExecute="CanSetBackgroundColor"/>
+            <CommandBinding Command="{x:Static src:StackWindow.SetRedBackgroundColorCommand}" Executed="DoSetRedBackgroundColor" CanExecute="CanSetBackgroundColor"/>
             <CommandBinding Command="{x:Static src:StackWindow.FoldPercentCommand}" Executed="DoFoldPercent" />
             <CommandBinding Command="{x:Static src:StackWindow.IncreaseFoldPercentCommand}" Executed="DoIncreaseFoldPercent" />
             <CommandBinding Command="{x:Static src:StackWindow.DecreaseFoldPercentCommand}" Executed="DoDecreaseFoldPercent" />
@@ -159,6 +162,11 @@
                 <MenuItem Command="{x:Static src:StackWindow.ExpandAllCommand}" />
                 <MenuItem Command="{x:Static src:StackWindow.ExpandCommand}" />
                 <MenuItem Command="{x:Static src:StackWindow.CollapseCommand}" />
+                <MenuItem Header="Set Background Color">
+                    <MenuItem Command="{x:Static src:StackWindow.SetBrownBackgroundColorCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.SetBlueBackgroundColorCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.SetRedBackgroundColorCommand}" />
+                </MenuItem>
                 <Separator/>
                 <MenuItem Header="FilterParams">
                     <MenuItem Command="{x:Static src:StackWindow.CopyFilterParamsCommand}" />
@@ -191,7 +199,6 @@
                     <MenuItem Header="Parent _Window" Click="DoOpenParent"/>
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
                     <MenuItem Header="Set Source Path" Click="DoSetSourcePath" ToolTip="Sets the locations to look for source code."/>
-                    <MenuItem Header="Set As Default Grouping/Folding" Click="DoSetDefaultGroupingFolding" ToolTip="Sets the default values of Group Patterns and Fold Patterns and % to the current values."/>
                     <MenuItem Header="Save" Command="{x:Static src:StackWindow.SaveCommand}" />
                     <MenuItem Header="Save View As" Command="{x:Static src:StackWindow.SaveAsCommand}" />
                     <MenuItem Header="_Close" Click="DoClose"/>
@@ -200,6 +207,7 @@
                 </MenuItem>
                 <MenuItem Name="DiffMenu" Header="_Diff"/>
                 <MenuItem Name="RegressionMenu" Header="_Regression"/>
+                <MenuItem Name="PresetMenu" Header="_Preset"/>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Stack Viewer" Command="Help" CommandParameter="StackViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:StackWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
@@ -473,13 +481,13 @@
                             Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <Canvas Name="FlameGraphCanvas" Background="Transparent" SizeChanged="FlameGraphCanvas_SizeChanged" MouseMove="FlameGraphCanvas_MouseMove">
+                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged">
                         <Canvas.ContextMenu>
                             <ContextMenu Name="noContextMenu" Visibility="Visible">
                                 <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
                             </ContextMenu>
                         </Canvas.ContextMenu>
-                    </Canvas>
+                    </src:FlameGraphDrawingCanvas>
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">
@@ -515,4 +523,4 @@
             </TextBlock>
         </Grid>
     </DockPanel>
-</Window>
+</src:WindowBase>

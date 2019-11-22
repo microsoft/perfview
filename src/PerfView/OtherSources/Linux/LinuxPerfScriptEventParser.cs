@@ -1,5 +1,7 @@
-﻿using System;
+﻿using PerfView.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
@@ -7,7 +9,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using PerfView.Utilities;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -15,8 +16,8 @@ namespace Diagnostics.Tracing.StackSources
     {
         public LinuxPerfScriptEventParser()
         {
-            this.mapper = null;
-            this.SetDefaultValues();
+            mapper = null;
+            SetDefaultValues();
         }
 
         /// <summary>
@@ -34,17 +35,25 @@ namespace Diagnostics.Tracing.StackSources
             // These are bytes put at the begining of a UTF8 file (like the byte order mark (BOM)) that should be skipped.  
             var preambleBytes = Encoding.UTF8.GetPreamble();
             while (preambleBytes.Contains(source.Current))
+            {
                 source.MoveNext();
+            }
 
             // Skip whitespace and comments.   
-            for (;;)
+            for (; ; )
             {
                 if (Char.IsWhiteSpace((char)source.Current))
+                {
                     source.MoveNext();
+                }
                 else if (source.Current == '#')
+                {
                     source.SkipUpTo('\n');
+                }
                 else
+                {
                     break;
+                }
             }
         }
 
@@ -54,19 +63,19 @@ namespace Diagnostics.Tracing.StackSources
         /// </summary>
         public IEnumerable<LinuxEvent> ParseSkippingPreamble(string filename)
         {
-            return this.ParseSkippingPreamble(new FastStream(filename));
+            return ParseSkippingPreamble(new FastStream(filename));
         }
 
         public IEnumerable<LinuxEvent> ParseSkippingPreamble(Stream stream)
         {
-            return this.ParseSkippingPreamble(new FastStream(stream));
+            return ParseSkippingPreamble(new FastStream(stream));
         }
 
         public IEnumerable<LinuxEvent> ParseSkippingPreamble(FastStream source)
         {
-            this.SkipPreamble(source);
+            SkipPreamble(source);
 
-            return this.Parse(source);
+            return Parse(source);
         }
 
         /// <summary>
@@ -80,16 +89,16 @@ namespace Diagnostics.Tracing.StackSources
                 source.MoveNext();
             }
 
-            Regex rgx = this.Pattern;
-            foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, source))
+            Regex rgx = Pattern;
+            foreach (LinuxEvent linuxEvent in NextEvent(rgx, source))
             {
                 if (linuxEvent != null)
                 {
-                    this.EventCount++; // Needs to be thread safe
+                    EventCount++; // Needs to be thread safe
                     yield return linuxEvent;
                 }
 
-                if (this.EventCount > this.MaxSamples)
+                if (EventCount > MaxSamples)
                 {
                     break;
                 }
@@ -113,7 +122,7 @@ namespace Diagnostics.Tracing.StackSources
         /// </summary>
         public void SetSymbolFile(ZipArchive archive)
         {
-            this.mapper = new LinuxPerfScriptMapper(archive, this);
+            mapper = new LinuxPerfScriptMapper(archive, this);
         }
 
         /// <summary>
@@ -122,7 +131,7 @@ namespace Diagnostics.Tracing.StackSources
         /// </summary>
         public void SetSymbolFile(string path)
         {
-            this.SetSymbolFile(ZipFile.OpenRead(path));
+            SetSymbolFile(ZipFile.OpenRead(path));
         }
 
         /// <summary>
@@ -154,7 +163,7 @@ namespace Diagnostics.Tracing.StackSources
 
         public bool IsEndOfSample(FastStream source)
         {
-            return this.IsEndOfSample(source, source.Current, source.Peek(1));
+            return IsEndOfSample(source, source.Current, source.Peek(1));
         }
 
         public bool IsEndOfSample(FastStream source, byte current, byte peek1)
@@ -169,7 +178,7 @@ namespace Diagnostics.Tracing.StackSources
         {
             FastStream source = new FastStream(stream);
             source.MoveNext(); // Prime Current.  
-            this.SkipPreamble(source); // Remove encoding stuff if it's there
+            SkipPreamble(source); // Remove encoding stuff if it's there
             source.SkipWhiteSpace();
 
             StringBuilder sb = new StringBuilder();
@@ -202,7 +211,7 @@ namespace Diagnostics.Tracing.StackSources
         /// Given a stream that contains PerfInfo commands, parses the stream and stores data in the given dictionary.
         /// Key: somedll.ni.dll		Value: {some guid}
         /// </summary>
-        public void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids)
+        public void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids, Dictionary<string, ulong> baseAddresses)
         {
             FastStream source = new FastStream(stream);
             source.MoveNext();
@@ -227,8 +236,22 @@ namespace Diagnostics.Tracing.StackSources
                     source.ReadAsciiStringUpTo(';', sb);
                     string guid = sb.ToString().TrimEnd();
                     sb.Clear();
+                    source.MoveNext();
 
                     guids[GetFileName(path)] = guid;
+
+                    // Check to see if the base address has been appended to the line.
+                    if(source.Current != '\n')
+                    {
+                        sb.Clear();
+                        source.ReadAsciiStringUpTo(';', sb);
+                        string strBaseAddr = sb.ToString().TrimEnd();
+                        if (!string.IsNullOrEmpty(strBaseAddr))
+                        {
+                            ulong baseAddr = ulong.Parse(strBaseAddr, System.Globalization.NumberStyles.HexNumber);
+                            baseAddresses[GetFileName(path)] = baseAddr;
+                        }
+                    }
                 }
 
                 source.SkipUpTo('\n');
@@ -246,23 +269,34 @@ namespace Diagnostics.Tracing.StackSources
         {
             var index = path.LastIndexOfAny(pathSeparators);
             if (index < 0)
+            {
                 return path;
+            }
+
             return path.Substring(index + 1);
         }
-        static char[] pathSeparators = new char[] { '/', '\\' };
-        const string NISuffix = ".ni.";
+
+        private static char[] pathSeparators = new char[] { '/', '\\' };
+        private const string NISuffix = ".ni.";
 
         internal static string GetFileNameWithoutExtension(string path, bool stripNiSuffix)
         {
             var start = path.LastIndexOfAny(pathSeparators);
             if (start < 0)
+            {
                 start = 0;
+            }
             else
+            {
                 start++;
+            }
 
             var end = path.LastIndexOf('.');
             if (end < start)
+            {
                 end = path.Length;
+            }
+
             var name = path.Substring(start, end - start);
 
             if (stripNiSuffix)
@@ -283,9 +317,9 @@ namespace Diagnostics.Tracing.StackSources
 
         private void SetDefaultValues()
         {
-            this.EventCount = 0;
-            this.Pattern = null;
-            this.MaxSamples = 50000;
+            EventCount = 0;
+            Pattern = null;
+            MaxSamples = long.MaxValue;
         }
 
         private IEnumerable<LinuxEvent> NextEvent(Regex regex, FastStream source)
@@ -298,21 +332,22 @@ namespace Diagnostics.Tracing.StackSources
                 source.SkipWhiteSpace();
 
                 if (source.EndOfStream)
-                {
                     break;
-                }
 
                 EventKind eventKind = EventKind.Cpu;
 
                 StringBuilder sb = new StringBuilder();
 
                 // Fetch Command (processName) - Stops when it sees the pattern \s+\d+/\d
-                int idx = FindSpaceNumSlash(source);
+                int idx = FindEndOfProcessCommand(source);
                 if (idx < 0)
+                {
                     break;
+                }
+
                 source.ReadFixedString(idx, sb);
                 source.SkipWhiteSpace();
-                string comm = sb.ToString();
+                string processCommand = sb.ToString();
                 sb.Clear();
 
                 // Process ID
@@ -324,9 +359,13 @@ namespace Diagnostics.Tracing.StackSources
 
                 // CPU
                 source.SkipWhiteSpace();
-                source.MoveNext(); // Move past the "["
-                int cpu = source.ReadInt();
-                source.MoveNext(); // Move past the "]"
+                int cpu = -1;
+                if (source.Peek(0) == '[')
+                {
+                    source.MoveNext(); // Move past the "["
+                    cpu = source.ReadInt();
+                    source.MoveNext(); // Move past the "]"
+                }
 
                 // Time
                 source.SkipWhiteSpace();
@@ -339,7 +378,7 @@ namespace Diagnostics.Tracing.StackSources
                 // Time Property
                 source.SkipWhiteSpace();
                 int timeProp = -1;
-                if (this.IsNumberChar((char)source.Current))
+                if (IsNumberChar((char)source.Current))
                 {
                     timeProp = source.ReadInt();
                 }
@@ -369,7 +408,7 @@ namespace Diagnostics.Tracing.StackSources
                     while (true)
                     {
                         source.MoveNext();
-                        if (this.IsEndOfSample(source, source.Current, source.Peek(1)))
+                        if (IsEndOfSample(source, source.Current, source.Peek(1)))
                         {
                             break;
                         }
@@ -389,19 +428,19 @@ namespace Diagnostics.Tracing.StackSources
                     if (eventKind == EventKind.Scheduler)
                     {
                         source.RestoreToMark(markedPosition);
-                        schedSwitch = this.ReadScheduleSwitch(source);
+                        schedSwitch = ReadScheduleSwitch(source);
                         source.SkipUpTo('\n');
                     }
 
-                    IEnumerable<Frame> frames = this.ReadFramesForSample(comm, pid, tid, threadTimeFrame, source);
+                    IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
 
                     if (eventKind == EventKind.Scheduler)
                     {
-                        linuxEvent = new SchedulerEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
+                        linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
                     }
                     else
                     {
-                        linuxEvent = new CpuEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
+                        linuxEvent = new CpuEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
                     }
 
                     yield return linuxEvent;
@@ -411,45 +450,85 @@ namespace Diagnostics.Tracing.StackSources
 
 
         /// <summary>
-        /// Peeks ahead on source until we see \s+\d+/\d (that is space num/num) and returns the index to first (space)
-        /// character in the pattern.  Returns -1 if not found.  
+        /// This routine should be called at the start of a line after you have skipped whitespace.
         /// 
-        /// We need this complex regular expression because process names in linux can have spaces and numbers and slashes
-        /// in them For example here is a real process name (rs:action 13 qu) or  (kworker/1:3)
+        /// Logically a line starts with PROCESS_COMMAND PID/TID [CPU] TIME: 
+        /// 
+        /// However PROCESS_COMMAND is unfortunately free form, including the fact hat it can have / or numbers in it.   
+        /// For example here is a real PROCESS_COMMAND examples (rs:action 13 qu) or  (kworker/1:3)
+        /// Thus it gets tricky to know when the command stops and the PID/TID starts.
+        /// 
+        /// We use the following regular expression to determine the end of the command
+        /// 
+        ///       \s*\d+/\d        OR
+        ///       ^\d+/\d          THIS PATTERN IS NEEDED BECAUSE THE PROCESS_COMMAND MAY BE EMPTY.  
+        ///
+        /// This routine peeks forward looking for this pattern, and returns either the index to the start of it or -1 if not found.  
         /// </summary>
-        private static int FindSpaceNumSlash(FastStream source)
+        private static int FindEndOfProcessCommand(FastStream source)
         {
             uint idx = 0;
 
             startOver:
             int firstSpaceIdx = -1;
             bool seenDigit = false;
+
+            // Deal with the case where the COMMAND is empty.
+            // Thus we have ANY spaces before the proceed ID Thread ID Num/Num. 
+            // We can deal with this case by 'jump starting the state machine state if it starts with a digit.   
+            if (char.IsDigit((char) source.Peek(0)))
+            {
+                firstSpaceIdx = 0;
+                seenDigit = true;
+            }
+
             for (; ; )
             {
                 idx++;
-                if (idx >= source.MaxPeek-1)
+                if (idx >= source.MaxPeek - 1)
+                {
                     return -1;
+                }
+
                 byte val = source.Peek(idx);
+
+                if (val == '\n')
+                {
+                    Debug.Assert(false, "Could not parse process command");
+                    return -1;
+                }
                 if (firstSpaceIdx < 0)
                 {
                     if (char.IsWhiteSpace((char)val))
-                        firstSpaceIdx = (int) idx;
-                    else 
+                    {
+                        firstSpaceIdx = (int)idx;
+                    }
+                    else
+                    {
                         goto startOver;
+                    }
                 }
                 else if (!seenDigit)
                 {
                     if (char.IsDigit((char)val))
+                    {
                         seenDigit = true;
+                    }
                     else if (!char.IsWhiteSpace((char)val))
+                    {
                         goto startOver;
+                    }
                 }
                 else
                 {
                     if (val == '/' && char.IsDigit((char)source.Peek(idx + 1)))
+                    {
                         return firstSpaceIdx;
+                    }
                     else if (!char.IsDigit((char)val))
+                    {
                         goto startOver;
+                    }
                 }
             }
         }
@@ -463,12 +542,12 @@ namespace Diagnostics.Tracing.StackSources
                 frames.Add(threadTimeFrame);
             }
 
-            while (!this.IsEndOfSample(source, source.Current, source.Peek(1)))
+            while (!IsEndOfSample(source, source.Current, source.Peek(1)))
             {
-                StackFrame stackFrame = this.ReadFrame(source);
-                if (this.mapper != null && (stackFrame.Module == "unknown" || stackFrame.Symbol == "unknown"))
+                StackFrame stackFrame = ReadFrame(source);
+                if (mapper != null && (stackFrame.Module == "unknown" || stackFrame.Symbol == "unknown"))
                 {
-                    string[] moduleSymbol = this.mapper.ResolveSymbols(processID, stackFrame.Module, stackFrame);
+                    string[] moduleSymbol = mapper.ResolveSymbols(processID, stackFrame.Module, stackFrame);
                     stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
                 }
                 frames.Add(stackFrame);
@@ -510,21 +589,21 @@ namespace Diagnostics.Tracing.StackSources
             string assumedModule = sb.ToString();
             sb.Clear();
 
-            assumedModule = this.RemoveOuterBrackets(assumedModule.Trim());
+            assumedModule = RemoveOuterBrackets(assumedModule.Trim());
 
             string actualModule = assumedModule;
-            string actualSymbol = this.RemoveOuterBrackets(assumedSymbol.Trim());
+            string actualSymbol = RemoveOuterBrackets(assumedSymbol.Trim());
 
             if (assumedModule.EndsWith(".map"))
             {
-                string[] moduleSymbol = this.GetSymbolFromMicrosoftMap(assumedSymbol, assumedModule);
+                string[] moduleSymbol = GetSymbolFromMicrosoftMap(assumedSymbol, assumedModule);
                 actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
                 actualModule = moduleSymbol[0];
             }
 
             // Can't use Path.GetFileName Because it throws on illegal Windows characters 
             actualModule = GetFileName(actualModule);
-            actualSymbol = this.RemoveOffset(actualSymbol.Trim());
+            actualSymbol = RemoveOffset(actualSymbol.Trim());
 
             return new StackFrame(address, actualModule, actualSymbol);
         }
@@ -603,7 +682,7 @@ namespace Diagnostics.Tracing.StackSources
 
             // If the offset prefix is found and is not the beginning or end of the frame, then remove the offset.
             int index = s.LastIndexOf(offsetPrefix);
-            if((index > 0) && (index < s.Length - offsetPrefixLength))
+            if ((index > 0) && (index < s.Length - offsetPrefixLength))
             {
                 return s.Substring(0, index);
             }
@@ -643,13 +722,14 @@ namespace Diagnostics.Tracing.StackSources
 
         public LinuxPerfScriptMapper(ZipArchive archive, LinuxPerfScriptEventParser parser)
         {
-            this.fileSymbolMappers = new Dictionary<string, Mapper>();
-            this.processDllGuids = new Dictionary<string, Dictionary<string, string>>();
+            fileSymbolMappers = new Dictionary<string, Mapper>();
+            processDllGuids = new Dictionary<string, Dictionary<string, string>>();
+            processDllBaseAddresses = new Dictionary<string, Dictionary<string, ulong>>();
             this.parser = parser;
 
             if (archive != null)
             {
-                this.PopulateSymbolMapperAndGuids(archive);
+                PopulateSymbolMapperAndGuids(archive);
             }
         }
 
@@ -657,8 +737,9 @@ namespace Diagnostics.Tracing.StackSources
         {
             Dictionary<string, string> guids;
 
-            if (this.processDllGuids.TryGetValue(
-                string.Format("perfinfo-{0}.map", processID.ToString()), out guids))
+            string perfInfoFileName = string.Format("perfinfo-{0}.map", processID.ToString());
+            if (processDllGuids.TryGetValue(
+                perfInfoFileName, out guids))
             {
                 string dllName = modulePath;
 
@@ -668,14 +749,36 @@ namespace Diagnostics.Tracing.StackSources
                     string mapName = Path.ChangeExtension(dllName, guid);
 
                     Mapper mapper;
-                    if (this.fileSymbolMappers.TryGetValue(mapName, out mapper))
+                    if (fileSymbolMappers.TryGetValue(mapName, out mapper))
                     {
                         string symbol;
                         ulong address;
-                        if (mapper.TryFindSymbol(ulong.Parse(stackFrame.Address, System.Globalization.NumberStyles.HexNumber),
+                        ulong ip = ulong.Parse(stackFrame.Address, System.Globalization.NumberStyles.HexNumber);
+                        if (mapper.TryFindSymbol(ip,
                             out symbol, out address))
                         {
-                            return this.parser.GetSymbolFromMicrosoftMap(symbol);
+                            return parser.GetSymbolFromMicrosoftMap(symbol);
+                        }
+                        else
+                        {
+                            Dictionary<string, ulong> baseAddresses;
+
+                            if(processDllBaseAddresses.TryGetValue(
+                                perfInfoFileName, out baseAddresses))
+                            {
+                                if(baseAddresses.TryGetValue(dllName, out ulong baseAddress))
+                                {
+                                    if(baseAddress <= ip)
+                                    {
+                                        ulong offset = ip - baseAddress;
+                                        if(mapper.TryFindSymbol(offset,
+                                            out symbol, out address))
+                                        {
+                                            return parser.GetSymbolFromMicrosoftMap(symbol);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -698,21 +801,23 @@ namespace Diagnostics.Tracing.StackSources
 
                     // Register the mapper both with and without the .ni extension.
                     // Old versions of the runtime contain native images with the .ni extension.
-                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, false)] = mapper;
-                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, true)] = mapper;
+                    fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, false)] = mapper;
+                    fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, true)] = mapper;
                     using (Stream stream = entry.Open())
                     {
-                        this.parser.ParseSymbolFile(stream, mapper);
+                        parser.ParseSymbolFile(stream, mapper);
                     }
                     mapper.DoneMapping();
                 }
                 else if (PerfInfoPattern.IsMatch(LinuxPerfScriptEventParser.GetFileName(entry.FullName)))
                 {
                     Dictionary<string, string> guids = new Dictionary<string, string>();
-                    this.processDllGuids[LinuxPerfScriptEventParser.GetFileName(entry.FullName)] = guids;
+                    processDllGuids[LinuxPerfScriptEventParser.GetFileName(entry.FullName)] = guids;
+                    Dictionary<string, ulong> baseAddresses = new Dictionary<string, ulong>();
+                    processDllBaseAddresses[LinuxPerfScriptEventParser.GetFileName(entry.FullName)] = baseAddresses;
                     using (Stream stream = entry.Open())
                     {
-                        this.parser.ParsePerfInfoFile(stream, guids);
+                        parser.ParsePerfInfoFile(stream, guids, baseAddresses);
                     }
                 }
             }
@@ -720,6 +825,7 @@ namespace Diagnostics.Tracing.StackSources
 
         private readonly Dictionary<string, Mapper> fileSymbolMappers;
         private readonly Dictionary<string, Dictionary<string, string>> processDllGuids;
+        private readonly Dictionary<string, Dictionary<string, ulong>> processDllBaseAddresses;
         private readonly LinuxPerfScriptEventParser parser;
         #endregion
     }
@@ -728,18 +834,18 @@ namespace Diagnostics.Tracing.StackSources
     {
         public Mapper()
         {
-            this.maps = new List<Map>();
+            maps = new List<Map>();
         }
 
         public void DoneMapping()
         {
             // Sort by the start part of the interval... This is for O(log(n)) search time.
-            this.maps.Sort((Map x, Map y) => x.Interval.Start.CompareTo(y.Interval.Start));
+            maps.Sort((Map x, Map y) => x.Interval.Start.CompareTo(y.Interval.Start));
         }
 
         public void Add(ulong start, ulong size, string symbol)
         {
-            this.maps.Add(new Map(new Interval(start, size), symbol));
+            maps.Add(new Map(new Interval(start, size), symbol));
         }
 
         public bool TryFindSymbol(ulong location, out string symbol, out ulong startLocation)
@@ -747,24 +853,29 @@ namespace Diagnostics.Tracing.StackSources
             symbol = "";
             startLocation = 0;
 
+            if(maps.Count <= 0)
+            {
+                return false;
+            }
+
             int start = 0;
-            int end = this.maps.Count;
+            int end = maps.Count;
             int mid = (end - start) / 2;
 
             while (true)
             {
                 int index = start + mid;
-                if (this.maps[index].Interval.IsWithin(location))
+                if (maps[index].Interval.IsWithin(location))
                 {
-                    symbol = this.maps[index].MapTo;
-                    startLocation = this.maps[index].Interval.Start;
+                    symbol = maps[index].MapTo;
+                    startLocation = maps[index].Interval.Start;
                     return true;
                 }
-                else if (location < this.maps[index].Interval.Start)
+                else if (location < maps[index].Interval.Start)
                 {
                     end = index;
                 }
-                else if (location >= this.maps[index].Interval.End)
+                else if (location >= maps[index].Interval.End)
                 {
                     start = index;
                 }
@@ -790,8 +901,8 @@ namespace Diagnostics.Tracing.StackSources
 
         public Map(Interval interval, string mapTo)
         {
-            this.Interval = interval;
-            this.MapTo = mapTo;
+            Interval = interval;
+            MapTo = mapTo;
         }
     }
 
@@ -799,27 +910,27 @@ namespace Diagnostics.Tracing.StackSources
     {
         public ulong Start { get; }
         public ulong Length { get; }
-        public ulong End { get { return this.Start + this.Length; } }
+        public ulong End { get { return Start + Length; } }
 
         // Taking advantage of unsigned arithmetic wrap-around to get it done in just one comparison.
         public bool IsWithin(ulong thing)
         {
-            return (thing - this.Start) < this.Length;
+            return (thing - Start) < Length;
         }
 
         public bool IsWithin(ulong thing, bool inclusiveStart, bool inclusiveEnd)
         {
-            bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
-            bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
-            bool within = thing.CompareTo(this.Start) > 0 && thing.CompareTo(this.End) < 0;
+            bool startEqual = inclusiveStart && thing.CompareTo(Start) == 0;
+            bool endEqual = inclusiveEnd && thing.CompareTo(End) == 0;
+            bool within = thing.CompareTo(Start) > 0 && thing.CompareTo(End) < 0;
 
             return within || startEqual || endEqual;
         }
 
         public Interval(ulong start, ulong length)
         {
-            this.Start = start;
-            this.Length = length;
+            Start = start;
+            Length = length;
         }
 
     }
@@ -859,7 +970,7 @@ namespace Diagnostics.Tracing.StackSources
             string eventName, string eventProp, IEnumerable<Frame> callerStacks, ScheduleSwitch schedSwitch) :
             base(EventKind.Scheduler, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
         {
-            this.Switch = schedSwitch;
+            Switch = schedSwitch;
         }
     }
 
@@ -878,13 +989,13 @@ namespace Diagnostics.Tracing.StackSources
 
         public ScheduleSwitch(string prevComm, int prevTid, int prevPrio, char prevState, string nextComm, int nextTid, int nextPrio)
         {
-            this.PreviousCommand = prevComm;
-            this.PreviousThreadID = prevTid;
-            this.PreviousPriority = prevPrio;
-            this.PreviousState = prevState;
-            this.NextCommand = nextComm;
-            this.NextThreadID = nextTid;
-            this.NextPriority = nextPrio;
+            PreviousCommand = prevComm;
+            PreviousThreadID = prevTid;
+            PreviousPriority = prevPrio;
+            PreviousState = prevState;
+            NextCommand = nextComm;
+            NextThreadID = nextTid;
+            NextPriority = nextPrio;
         }
     }
 
@@ -921,16 +1032,16 @@ namespace Diagnostics.Tracing.StackSources
             double time, int timeProp, int cpu,
             string eventName, string eventProp, IEnumerable<Frame> callerStacks)
         {
-            this.Kind = kind;
-            this.Command = comm;
-            this.ThreadID = tid;
-            this.ProcessID = pid;
-            this.TimeMSec = time;
-            this.TimeProperty = timeProp;
-            this.CpuNumber = cpu;
-            this.EventName = eventName;
-            this.EventProperty = eventProp;
-            this.CallerStacks = callerStacks;
+            Kind = kind;
+            Command = comm;
+            ThreadID = tid;
+            ProcessID = pid;
+            TimeMSec = time;
+            TimeProperty = timeProp;
+            CpuNumber = cpu;
+            EventName = eventName;
+            EventProperty = eventProp;
+            CallerStacks = callerStacks;
         }
     }
 
@@ -972,16 +1083,16 @@ namespace Diagnostics.Tracing.StackSources
     public struct StackFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.StackFrame; } }
-        public string DisplayName { get { return string.Format("{0}!{1}", this.Module, this.Symbol); } }
+        public string DisplayName { get { return string.Format("{0}!{1}", Module, Symbol); } }
         public string Address { get; }
         public string Module { get; }
         public string Symbol { get; }
 
         public StackFrame(string address, string module, string symbol)
         {
-            this.Address = address;
-            this.Module = module;
-            this.Symbol = symbol;
+            Address = address;
+            Module = module;
+            Symbol = symbol;
         }
     }
 
@@ -991,12 +1102,12 @@ namespace Diagnostics.Tracing.StackSources
     public struct ProcessFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.ProcessFrame; } }
-        public string DisplayName { get { return this.Name; } }
+        public string DisplayName { get { return Name; } }
         public string Name { get; }
 
         public ProcessFrame(string name)
         {
-            this.Name = name;
+            Name = name;
         }
     }
 
@@ -1006,14 +1117,14 @@ namespace Diagnostics.Tracing.StackSources
     public struct ThreadFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.ThreadFrame; } }
-        public string DisplayName { get { return string.Format("{0} ({1})", this.Name, this.ID); } }
+        public string DisplayName { get { return string.Format("{0} ({1})", Name, ID); } }
         public string Name { get; }
         public int ID { get; }
 
         public ThreadFrame(int id, string name)
         {
-            this.Name = name;
-            this.ID = id;
+            Name = name;
+            ID = id;
         }
     }
 
@@ -1027,14 +1138,14 @@ namespace Diagnostics.Tracing.StackSources
         /// </summary>
         public string SubKind { get; }
         public FrameKind Kind { get { return FrameKind.BlockedCPUFrame; } }
-        public string DisplayName { get { return this.SubKind; } }
+        public string DisplayName { get { return SubKind; } }
 
         public int ID { get; }
 
         public BlockedCPUFrame(int id, string kind)
         {
-            this.ID = id;
-            this.SubKind = kind;
+            ID = id;
+            SubKind = kind;
         }
     }
 }

@@ -4,14 +4,9 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 
 namespace TraceEventSamples
@@ -22,12 +17,12 @@ namespace TraceEventSamples
     /// writes out to the output ETL file selected events (in this case CLR GC allocation Tick events for
     /// 
     /// </summary>
-    class SimpleMonitorRelogger
+    internal class SimpleMonitorRelogger
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -49,7 +44,9 @@ namespace TraceEventSamples
 
             string outputFileName = "ReloggerMonitorOutput.etl";
             if (File.Exists(outputFileName))
+            {
                 File.Delete(outputFileName);
+            }
 
             Out.WriteLine("******************** Simple Relogger DEMO ********************");
             Out.WriteLine("This program shows how you can monitor an ETW stream in real time.");
@@ -88,21 +85,25 @@ namespace TraceEventSamples
 
                 // Here we set up the callbacks we want in the output file.   In this case all GC allocation Tick
                 // events for 'String' as well as any ExceptionStart events.  
-                relogger.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData data)
+                relogger.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
                 {
                     if (data.TypeName == "System.String")
+                    {
                         relogger.WriteEvent(data);
+                    }
                 };
-                relogger.Clr.ExceptionStart += delegate(ExceptionTraceData data)
+                relogger.Clr.ExceptionStart += delegate (ExceptionTraceData data)
                 {
                     relogger.WriteEvent(data);
                 };
 
                 // We also keep the image load events for DLL with 'clr' in their name.
-                relogger.Kernel.ImageGroup += delegate(ImageLoadTraceData data)
+                relogger.Kernel.ImageGroup += delegate (ImageLoadTraceData data)
                 {
                     if (0 <= data.FileName.IndexOf("clr", StringComparison.OrdinalIgnoreCase))
+                    {
                         relogger.WriteEvent(data);
+                    }
                 };
 
 #if false       // Turn on to get debugging on unhandled events.  
@@ -112,10 +113,10 @@ namespace TraceEventSamples
                 };
 #endif
                 // Allow the test to be terminated with Ctrl-C cleanly. 
-                Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
+                Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
 
                 // Set up a timer to stop processing after monitoringTimeSec
-                var timer = new Timer(delegate(object state)
+                var timer = new Timer(delegate (object state)
                 {
                     Out.WriteLine("Stopped after {0} sec", monitoringTimeSec);
                     session.Dispose();
@@ -153,14 +154,16 @@ namespace TraceEventSamples
         /// <summary>
         /// Processing the data in a particular file.  
         /// </summary>
-        static void DataProcessing(string dataFileName)
+        private static void DataProcessing(string dataFileName)
         {
             Out.WriteLine("Opening the output file and printing the results.");
             Out.WriteLine("The list is filtered quite a bit...");
             using (var source = new ETWTraceEventSource(dataFileName))
             {
                 if (source.EventsLost != 0)
+                {
                     Out.WriteLine("WARNING: there were {0} lost events", source.EventsLost);
+                }
 
                 // Set up callbacks to 
                 source.Clr.All += Print;
@@ -199,19 +202,25 @@ namespace TraceEventSamples
         /// lock any read-write data you access.   It turns out Out.Writeline is already thread safe so
         /// there is nothing I have to do in this case. 
         /// </summary>
-        static void Print(TraceEvent data)
+        private static void Print(TraceEvent data)
         {
             // There are a lot of data collection start on entry that I don't want to see (but often they are quite handy
             if (data.Opcode == TraceEventOpcode.DataCollectionStart || data.Opcode == TraceEventOpcode.DataCollectionStop)
+            {
                 return;
+            }
 
             // Merging inject some 'symbol' events that are not that interesting so we ignore those too.  
             if (data.ProviderGuid == SymbolTraceEventParser.ProviderGuid)
+            {
                 return;
+            }
 
             // To avoid 'rundown' events that happen in the beginning and end of the trace filter out things during those times
             if (data.TimeStampRelativeMSec < 1000 || 9000 < data.TimeStampRelativeMSec)
+            {
                 return;
+            }
 
             Out.WriteLine(data.ToString());
         }

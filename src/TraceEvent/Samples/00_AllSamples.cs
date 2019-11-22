@@ -1,5 +1,4 @@
-﻿using Microsoft.Diagnostics.Tracing.Session;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -9,7 +8,7 @@ namespace TraceEventSamples
     /// <summary>
     /// AllSamples contains a harness for running a the TraceEvent samples. 
     /// </summary>
-    partial class AllSamples
+    internal partial class AllSamples
     {
         /// <summary>
         /// The samples are 'console based' in that the spew text to an output stream.   By default this is
@@ -31,7 +30,7 @@ namespace TraceEventSamples
             Console.WriteLine("****************************************************************************");
             Console.WriteLine();
             Console.WriteLine();
- 
+
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("Pausing 3 seconds for you to notice the statement above.");

@@ -1,8 +1,8 @@
-﻿using System.Xml;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace ETWManifest
 {
@@ -51,7 +51,9 @@ namespace ETWManifest
                     if (provider.m_keywordNames != null)
                     {
                         for (int i = 0; i < provider.m_keywordNames.Length; i++)
+                        {
                             Provider.Replace(ref provider.m_keywordNames[i], stringMap);
+                        }
                     }
 
                     if (provider.m_taskNames != null)
@@ -60,7 +62,9 @@ namespace ETWManifest
                         {
                             var taskName = provider.m_taskNames[taskId];
                             if (Provider.Replace(ref taskName, stringMap))
+                            {
                                 provider.m_taskNames[taskId] = taskName;
+                            }
                         }
                     }
 
@@ -70,12 +74,16 @@ namespace ETWManifest
                         {
                             var opcodeName = provider.m_opcodeNames[opcodeId];
                             if (Provider.Replace(ref opcodeName, stringMap))
+                            {
                                 provider.m_opcodeNames[opcodeId] = opcodeName;
+                            }
                         }
                     }
 
                     foreach (Event ev in provider.Events)
+                    {
                         ev.UpdateStrings(stringMap);
+                    }
                 }
             }
 
@@ -105,7 +113,9 @@ namespace ETWManifest
         {
             Debug.Assert(0 <= bitPos && bitPos < 64);
             if (m_keywordNames == null)
+            {
                 return null;
+            }
 
             return m_keywordNames[bitPos];
         }
@@ -123,29 +133,43 @@ namespace ETWManifest
             for (int bitPos = 0; bitPos < 64; bitPos++)
             {
                 if (keywords == 0)
+                {
                     break;
+                }
+
                 if ((bit & keywords) != 0)
                 {
                     var name = m_keywordNames[bitPos];
                     if (name != null)
                     {
                         if (ret.Length != 0)
+                        {
                             ret += separator;
+                        }
+
                         ret += name;
                     }
                     else
+                    {
                         bitsWithNoName |= bit;
+                    }
                 }
                 bit = bit << 1;
             }
             if (bitsWithNoName != 0)
             {
                 if (ret.Length != 0)
+                {
                     ret += separator;
+                }
+
                 ret += "0x" + bitsWithNoName.ToString("x");
             }
             if (ret.Length == 0)
+            {
                 ret = "0";
+            }
+
             return ret;
         }
 
@@ -153,12 +177,21 @@ namespace ETWManifest
         public string GetTaskName(ushort taskId)
         {
             if (m_taskNames == null)
+            {
                 return "";
+            }
+
             string ret;
             if (m_taskNames.TryGetValue(taskId, out ret))
+            {
                 return ret;
+            }
+
             if (taskId == 0)
+            {
                 return "";
+            }
+
             return "Task" + taskId.ToString();
         }
 
@@ -167,11 +200,16 @@ namespace ETWManifest
             int value = opcodeId + (taskId * 256);
             string ret;
             if (m_opcodeNames.TryGetValue(value, out ret))
+            {
                 return ret;
+            }
 
             value = opcodeId + (GlobalScope * 256);
             if (m_opcodeNames.TryGetValue(value, out ret))
+            {
                 return ret;
+            }
+
             return "Opcode" + opcodeId;
         }
 
@@ -224,12 +262,15 @@ namespace ETWManifest
 
                                     string message = reader.GetAttribute("message");
                                     if (message == null)
+                                    {
                                         message = name;
+                                    }
 
                                     m_keywordNames[keywordIndex] = message;
                                     m_keywordValues.Add(name, value);
                                     reader.Skip();
-                                } break;
+                                }
+                                break;
                             case "task":
                                 {
                                     if (m_taskNames == null)
@@ -242,7 +283,9 @@ namespace ETWManifest
 
                                     string message = reader.GetAttribute("message");
                                     if (message == null)
+                                    {
                                         message = name;
+                                    }
 
                                     m_taskNames.Add(value, message);
                                     m_taskValues.Add(name, value);
@@ -250,19 +293,24 @@ namespace ETWManifest
                                     // Remember enuough to resolve opcodes nested inside this task.  
                                     curTask = value;
                                     curTaskDepth = reader.Depth;
-                                    reader.Skip();
-                                } break;
+                                    reader.Read();
+                                }
+                                break;
                             case "opcode":
                                 {
                                     string name = reader.GetAttribute("name");
                                     int value = (int)ParseNumber(reader.GetAttribute("value"));
                                     int taskForOpcode = GlobalScope;
                                     if (reader.Depth > curTaskDepth)
+                                    {
                                         taskForOpcode = curTask;
+                                    }
 
                                     string message = reader.GetAttribute("message");
                                     if (message == null)
+                                    {
                                         message = name;
+                                    }
 
                                     AddOpcode(taskForOpcode, value, message, name);
                                     reader.Skip();
@@ -287,20 +335,27 @@ namespace ETWManifest
                         }
                     }
                     else if (!reader.Read())
+                    {
                         break;
+                    }
                 }
             }
             catch (Exception e)
             {
                 if (fileName == null)
+                {
                     fileName = "";
+                }
+
                 var message = "Error on line " + fileName + "(" + lineInfo.LineNumber + "," + lineInfo.LinePosition + "): " + e.Message;
                 throw new ApplicationException(message, e);
             }
 
             // Second pass, look up any Ids used in the events.   
             foreach (var ev in m_events)
+            {
                 ev.ResolveIdsInEvent(fileName);
+            }
 
             // We are done with these.  Free up some space.  
             m_taskValues = null;
@@ -327,28 +382,45 @@ namespace ETWManifest
             int value = opcodeId + (taskId * 256);
             m_opcodeNames.Add(value, name);
             if (manifestName == null)
+            {
                 manifestName = name;
-            m_opcodeValues.Add(manifestName, value);
+            }
+
+            // Prefix the key with the taskID if the opcode is local to the task.  
+            string key = manifestName;
+            if (taskId != GlobalScope)
+                key = taskId + ":" + key;
+
+            m_opcodeValues.Add(key, value);
         }
 
         internal static ulong ParseNumber(string valueString)
         {
             if (valueString.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
                 return ulong.Parse(valueString.Substring(2), System.Globalization.NumberStyles.AllowHexSpecifier);
+            }
+
             return ulong.Parse(valueString);
         }
 
         private static int GetBitPosition(ulong value)
         {
             if (value == 0)
+            {
                 throw new ApplicationException("Keyword is not a power of 2");
+            }
+
             int ret = 0;
             for (; ; )
             {
                 if (((int)value & 1) != 0)
                 {
                     if (value == 0)
+                    {
                         throw new ApplicationException("Keyword is not a power of 2");
+                    }
+
                     break;
                 }
                 value = value >> 1;
@@ -360,12 +432,17 @@ namespace ETWManifest
         internal static bool Replace(ref string value, Dictionary<string, string> map)
         {
             if (value == null)
+            {
                 return false;
+            }
+
             if (!value.Contains("$(string."))
+            {
                 return false;
+            }
 
             var ret = false;
-            value = Regex.Replace(value, @"\$\(string\.(.*)\)", delegate(Match m)
+            value = Regex.Replace(value, @"\$\(string\.(.*)\)", delegate (Match m)
             {
                 ret = true;
                 var key = m.Groups[1].Value;
@@ -412,18 +489,22 @@ namespace ETWManifest
                                 int value = (int)ParseNumber(reader.GetAttribute("value"));
                                 string message = reader.GetAttribute("message");
                                 enumeration.Add(value, message);
-                            } break;
+                            }
+                            break;
                         default:
                             Debug.WriteLine("Skipping unknown element {0}", reader.Name);
                             break;
                     }
                 }
                 if (!reader.Read())
+                {
                     break;
+                }
             }
             m_enums.Add(name, enumeration);
         }
-        void ReadTemplate(XmlReader reader)
+
+        private void ReadTemplate(XmlReader reader)
         {
             Debug.Assert(reader.NodeType == XmlNodeType.Element && reader.Name == "template",
                  "Must advance to template element (e.g. call ReadToDescendant)");
@@ -433,10 +514,14 @@ namespace ETWManifest
             if (m_templateValues.TryGetValue(tid, out template))
             {
                 if (template.Count != 0)
+                {
                     throw new ApplicationException("Template " + tid + " is defined twice");
+                }
             }
             else
+            {
                 m_templateValues[tid] = template = new List<Field>();
+            }
 
             var inputDepth = reader.Depth;
             reader.Read();      // Advance to children 
@@ -454,18 +539,21 @@ namespace ETWManifest
                                 var countField = reader.GetAttribute("count");
                                 countField = countField ?? reader.GetAttribute("length");
                                 template.Add(new Field(name, inTypeStr, mapId, countField));
-                            } break;
+                            }
+                            break;
                         default:
                             Debug.WriteLine("Skipping unknown element {0}", reader.Name);
                             break;
                     }
                 }
                 if (!reader.Read())
+                {
                     break;
+                }
             }
         }
 
-        List<Event> m_events = new List<Event>();
+        private List<Event> m_events = new List<Event>();
         internal string[] m_keywordNames;
         internal Dictionary<int, string> m_taskNames;
         // Note that the key is task << 8 + opcode to allow for private opcode names 
@@ -474,6 +562,7 @@ namespace ETWManifest
         // These are not used after parsing.  
         internal Dictionary<string, int> m_taskValues;
         // Note that the value is task << 8 + opcode to allow for private opcode names
+        // Also the key is taskId : opcodeName again to allow private opcode names or simply opcodeName if it is global.  
         internal Dictionary<string, int> m_opcodeValues;
         internal Dictionary<string, ulong> m_keywordValues;
         internal Dictionary<string, List<Field>> m_templateValues;
@@ -490,7 +579,7 @@ namespace ETWManifest
         public ushort Id { get; private set; }
         public ulong Keywords { get; private set; }
         /// <summary>
-        /// A convininece method that returns the keywords as symbol names (comma separated)
+        /// A convenience method that returns the keywords as symbol names (comma separated)
         /// </summary>
         public string KeywordsString { get { return Provider.GetKeywordSetString(Keywords); } }
         public byte Version { get; private set; }
@@ -512,9 +601,16 @@ namespace ETWManifest
             get
             {
                 if (TaskName == null)
+                {
                     return Capitalize(OpcodeName);
-                if (TaskName.EndsWith(OpcodeName, StringComparison.OrdinalIgnoreCase))
-                    return TaskName;
+                }
+
+                // could be that the task name is the prefix of the Opcode name
+                if (OpcodeName.StartsWith(TaskName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Capitalize(OpcodeName);
+                }
+
                 return TaskName + Capitalize(OpcodeName);
             }
         }
@@ -539,18 +635,26 @@ namespace ETWManifest
         internal static string Capitalize(string str)
         {
             if (0 < str.Length)
+            {
                 str = str.Substring(0, 1).ToUpper() + str.Substring(1);
+            }
+
             return str;
         }
 
         internal static string CamelCase(string str)
         {
             if (str.IndexOf(' ') < 0)
+            {
                 return str;
+            }
 
             string[] compontents = str.Split(' ');
             for (int i = 1; i < compontents.Length; i++)
+            {
                 compontents[i] = Capitalize(compontents[i]);
+            }
+
             return string.Join("", compontents);
         }
 
@@ -573,7 +677,10 @@ namespace ETWManifest
                 default:
                     int ret;
                     if (int.TryParse(levelStr, out ret) && (byte)ret == ret)
+                    {
                         return (byte)ret;
+                    }
+
                     return 4;   // Informational
             }
         }
@@ -605,7 +712,7 @@ namespace ETWManifest
                     case "opcode":
                         m_opcodeId = reader.Value;
                         break;
-                    case "keyword":
+                    case "keywords":
                         m_keywordsId = reader.Value;
                         break;
                     case "level":
@@ -628,7 +735,7 @@ namespace ETWManifest
         }
 
         /// <summary>
-        /// We need a two pass system where after all the defintions are parsed, we go back and link
+        /// We need a two pass system where after all the definitions are parsed, we go back and link
         /// up uses to their defs.   This routine does this for Events.
         /// </summary>
         internal void ResolveIdsInEvent(string fileName = null)
@@ -639,36 +746,61 @@ namespace ETWManifest
                 id = m_taskId;
                 m_taskId = null;
                 if (id != null)
+                {
                     Task = (ushort)m_provider.m_taskValues[id];
+                }
 
                 id = m_opcodeId;
                 m_opcodeId = null;
                 if (id != null)
-                    Opcode = (byte)m_provider.m_opcodeValues[id];
+                {
+                    int opcode;
+
+                    // Try the task-specific one, then the global scope.  
+                    if (!m_provider.m_opcodeValues.TryGetValue(Task + ":" + id, out opcode))
+                        opcode = m_provider.m_opcodeValues[id];
+
+                    Opcode = (byte) opcode;
+                }
 
                 id = m_keywordsId;
                 m_keywordsId = null;
                 if (id != null)
-                    Keywords = m_provider.m_keywordValues[id];
+                    if (m_provider.m_keywordValues != null)
+                    {
+                        var keywordsList = id.Split(' ');
+                        foreach (var currKeyword in keywordsList)
+                        {
+                            Keywords |= m_provider.m_keywordValues[currKeyword];
+                        }
+                    }
 
                 id = TemplateName;
                 if (id != null)
                 {
                     List<Field> fields;
                     if (!m_provider.m_templateValues.TryGetValue(id, out fields))
+                    {
                         m_provider.m_templateValues[id] = fields = new List<Field>();
+                    }
+
                     Fields = fields;
                     foreach (var field in Fields)
                     {
                         if (field.m_mapId != null)
+                        {
                             field.Enumeration = m_provider.m_enums[field.m_mapId];
+                        }
                     }
                 }
             }
-            catch
+            catch(Exception e)
             {
                 if (fileName == null)
+                {
                     fileName = "";
+                }
+
                 throw new ApplicationException("Error " + fileName + "(" + m_lineNum + "): Undefined Id " + id);
             }
         }
@@ -677,24 +809,27 @@ namespace ETWManifest
         {
             var message = Message;
             if (Provider.Replace(ref message, stringMap))
+            {
                 Message = message;
+            }
 
             if (Fields != null)
             {
                 foreach (var parameter in Fields)
                 {
                     if (parameter.Enumeration != null)
+                    {
                         parameter.Enumeration.UpdateStrings(stringMap);
+                    }
                 }
             }
         }
 
-
-        Provider m_provider;
-        int m_lineNum;          // used for error messages
-        string m_opcodeId;      // String name used to look up opcode needed becasue def may be later in file
-        string m_keywordsId;    // String name used to look up keywords needed becasue def may be later in file
-        string m_taskId;        // String name used to look up tasks needed becasue def may be later in file
+        private Provider m_provider;
+        private int m_lineNum;          // used for error messages
+        private string m_opcodeId;      // String name used to look up opcode needed because def may be later in file
+        private string m_keywordsId;    // String name used to look up keywords needed because def may be later in file
+        private string m_taskId;        // String name used to look up tasks needed because def may be later in file
         #endregion
     }
 
@@ -732,7 +867,7 @@ namespace ETWManifest
         /// </summary>
         public bool HexFormat { get; private set; }
         #region private
-        internal Field(string name, string type, string mapId, string countField = null) { this.Name = name; this.Type = type; m_mapId = mapId; this.CountField = countField; }
+        internal Field(string name, string type, string mapId, string countField = null) { Name = name; Type = type; m_mapId = mapId; CountField = countField; }
         internal string m_mapId;
 
         #endregion
@@ -773,13 +908,16 @@ namespace ETWManifest
                     Name, name, otherName, value);
                 return;
             }
-            m_values[value] =  name;
+            m_values[value] = name;
         }
 
         internal void UpdateStrings(Dictionary<string, string> stringMap)
         {
             if (m_stringsLookedUp)
+            {
                 return;
+            }
+
             m_stringsLookedUp = true;
             List<int> keys = new List<int>(m_values.Keys);
             foreach (var key in keys)
@@ -790,15 +928,17 @@ namespace ETWManifest
                     value = Event.CamelCase(value);
                     value = Regex.Replace(value, @"[^\w\d_]", "");
                     if (value.Length == 0)
+                    {
                         value = "_";
+                    }
+
                     m_values[key] = value;
                 }
             }
         }
 
-        SortedDictionary<int, string> m_values = new SortedDictionary<int, string>();
-        bool m_stringsLookedUp;
+        private SortedDictionary<int, string> m_values = new SortedDictionary<int, string>();
+        private bool m_stringsLookedUp;
         #endregion
     }
 }
-

@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.EventWindow"
+﻿<src:WindowBase x:Class="PerfView.EventWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
@@ -27,6 +27,7 @@
             <CommandBinding Command="{x:Static src:EventWindow.OpenAnyStartStopStacksCommand}" Executed="DoOpenAnyStartStopStacks"/>
             <CommandBinding Command="{x:Static src:EventWindow.OpenAnyTaskTreeStacksCommand}" Executed="DoOpenAnyTaskTreeStacks"/>
             <CommandBinding Command="{x:Static src:EventWindow.SetProcessFilterCommand}" Executed="DoProcessFilter"/>
+            <CommandBinding Command="{x:Static src:EventWindow.ShowEventCounterGraphCommand}" Executed="DoShowEventCounterGraph"/>
             <CommandBinding Command="{x:Static src:EventWindow.SetRangeFilterCommand}" Executed="DoRangeFilter"/>
             <CommandBinding Command="{x:Static src:EventWindow.NewWindowCommand}" Executed="DoNewWindow"/>
             <CommandBinding Command="{x:Static src:EventWindow.CancelCommand}" Executed="DoCancel"/>
@@ -41,6 +42,8 @@
             <ContextMenu>
                 <MenuItem Command="{x:Static src:EventWindow.NewWindowCommand}" />
                 <MenuItem Command="{x:Static src:EventWindow.UpdateCommand}" />
+                <Separator/>
+                <MenuItem Command="{x:Static src:EventWindow.ShowEventCounterGraphCommand}" />
                 <Separator/>
                 <MenuItem Command="{x:Static src:EventWindow.SetProcessFilterCommand}" />
                 <MenuItem Command="{x:Static src:EventWindow.SetRangeFilterCommand}" />
@@ -287,4 +290,4 @@
             </Grid>
         </Grid>
     </DockPanel>
-</Window>
+</src:WindowBase>

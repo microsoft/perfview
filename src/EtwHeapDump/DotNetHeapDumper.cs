@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,7 +19,7 @@ public class DotNetHeapDumper
     /// If 'memoryGraph is non-null also update it to contain the heap Dump.  If null you get just the ETL file. 
     /// returns true if successful. 
     /// </summary>
-    static public bool DumpAsEtlFile(int processID, string etlFileName, TextWriter log, MemoryGraph memoryGraph = null, DotNetHeapInfo dotNetInfo = null)
+    public static bool DumpAsEtlFile(int processID, string etlFileName, TextWriter log, MemoryGraph memoryGraph = null, DotNetHeapInfo dotNetInfo = null)
     {
         bool success = false;
 
@@ -37,7 +36,7 @@ public class DotNetHeapDumper
             // the Clr Provider WITHOUT the ClrTraceEventParser.Keywords.Type keyword. We achieve this by turning on just the GC events,
             // (which clears the Type table) and then turn all the events we need on.   
             // Note we do this here, as well as in Dump() because it only works if the CLR Type keyword is off (and we turn it on below)
-            session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational, (ulong) ClrTraceEventParser.Keywords.GC, options);
+            session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational, (ulong)ClrTraceEventParser.Keywords.GC, options);
             System.Threading.Thread.Sleep(50);      // Wait for it to complete (it is async)
 
             // For non-project N we need module rundown to figure out the correct module name
@@ -64,7 +63,7 @@ public class DotNetHeapDumper
     /// don't update the memoryGraph.  Thus it is only done for the side effect of triggering a .NET heap 
     /// dump. returns true if successful. 
     /// </summary>
-    static public bool Dump(int processID, MemoryGraph memoryGraph, TextWriter log, DotNetHeapInfo dotNetInfo = null)
+    public static bool Dump(int processID, MemoryGraph memoryGraph, TextWriter log, DotNetHeapInfo dotNetInfo = null)
     {
         var sw = Stopwatch.StartNew();
         var dumper = new DotNetHeapDumpGraphReader(log);
@@ -83,7 +82,7 @@ public class DotNetHeapDumper
                 string sessionName = "PerfViewGCHeapSession";
                 session = new TraceEventSession(sessionName, null);
                 int gcNum = -1;
-                session.BufferSizeMB = 256;         // Events come pretty fast, so make the buffer bigger. 
+                session.BufferSizeMB = 1024;         // Events come pretty fast, so make the buffer bigger. 
 
                 // Start the providers and trigger the GCs.  
                 log.WriteLine("{0,5:n1}s: Requesting a .NET Heap Dump", sw.Elapsed.TotalSeconds);
@@ -93,7 +92,10 @@ public class DotNetHeapDumper
                 session.Source.Clr.GCStart += delegate (GCStartTraceData data)
                 {
                     if (data.ProcessID != processID)
+                    {
                         return;
+                    }
+
                     etwDataPresent = true;
 
                     if (gcNum < 0 && data.Depth == 2 && data.Type != GCType.BackgroundGC)
@@ -106,7 +108,9 @@ public class DotNetHeapDumper
                 session.Source.Clr.GCStop += delegate (GCEndTraceData data)
                 {
                     if (data.ProcessID != processID)
+                    {
                         return;
+                    }
 
                     if (data.Count == gcNum)
                     {
@@ -118,16 +122,24 @@ public class DotNetHeapDumper
                 session.Source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
                 {
                     if (data.ProcessID != processID)
+                    {
                         return;
+                    }
+
                     etwDataPresent = true;
 
                     if ((sw.Elapsed - lastEtwUpdate).TotalMilliseconds > 500)
+                    {
                         log.WriteLine("{0,5:n1}s: Making  GC Heap Progress...", sw.Elapsed.TotalSeconds);
+                    }
+
                     lastEtwUpdate = sw.Elapsed;
                 };
 
                 if (memoryGraph != null)
+                {
                     dumper.SetupCallbacks(memoryGraph, session.Source, processID.ToString());
+                }
 
                 listening = true;
                 session.Source.Process();
@@ -136,7 +148,10 @@ public class DotNetHeapDumper
 
             // Wait for thread above to start listening (should be very fast)
             while (!listening)
+            {
                 readerTask.Wait(1);
+            }
+
             Debug.Assert(session != null);
 
             // Request the heap dump.   We try to isolate this to a single process.  
@@ -156,10 +171,12 @@ public class DotNetHeapDumper
             // Project N support. 
             session.EnableProvider(ClrTraceEventParser.NativeProviderGuid, TraceEventLevel.Informational, (ulong)ClrTraceEventParser.Keywords.GCHeapSnapshot, options);
 
-            for (;;)
+            for (; ; )
             {
                 if (readerTask.Wait(100))
+                {
                     break;
+                }
 
                 if (!etwDataPresent && sw.Elapsed.TotalSeconds > 5)      // Assume it started within 5 seconds.  
                 {
@@ -173,23 +190,31 @@ public class DotNetHeapDumper
                 }
                 // TODO FIX NOW, time out faster if we seek to be stuck
                 if (dumpComplete)
+                {
                     break;
+                }
             }
             if (etwDataPresent)
+            {
                 dumper.ConvertHeapDataToGraph();        // Finish the conversion.  
+            }
         }
         finally
         {
             // Stop the ETW providers
             log.WriteLine("{0,5:n1}s: Shutting down ETW session", sw.Elapsed.TotalSeconds);
             if (session != null)
+            {
                 session.Dispose();
+            }
         }
         if (readerTask != null)
         {
             log.WriteLine("{0,5:n1}s: Waiting for shutdown to complete.", sw.Elapsed.TotalSeconds);
             if (!readerTask.Wait(2000))
+            {
                 log.WriteLine("{0,5:n1}s: Shutdown wait timed out after 2 seconds.", sw.Elapsed.TotalSeconds);
+            }
         }
         log.WriteLine("[{0,5:n1}s: Done Dumping .NET heap success={1}]", sw.Elapsed.TotalSeconds, dumpComplete);
 

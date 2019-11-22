@@ -1,6 +1,7 @@
-﻿<Window x:Class="PerfView.Dialogs.ProviderBrowser"
+﻿<src:WindowBase x:Class="PerfView.Dialogs.ProviderBrowser"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
         Background="#FFA7A7A7" 
          MinHeight="210" MinWidth="750"
@@ -68,4 +69,4 @@
 
         </Grid>
     </Grid>
-</Window>
+</src:WindowBase>

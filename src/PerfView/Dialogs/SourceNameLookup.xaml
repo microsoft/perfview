@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.Dialogs.SourceNameLookup"
+﻿<src:WindowBase x:Class="PerfView.Dialogs.SourceNameLookup"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
@@ -73,4 +73,4 @@
             </DataGrid.Columns>
         </DataGrid>
     </Grid>
-</Window>
+</src:WindowBase>

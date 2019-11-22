@@ -1,32 +1,26 @@
-﻿using System;
+﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
+using Microsoft.Diagnostics.Utilities;
+using PerfView;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using PerfView;
-using PerfViewModel;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using FastSerialization;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Session;
-using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Address = System.UInt64;
-using System.Threading.Tasks;
-using System.ComponentModel;
 
 #if !PERFVIEW_COLLECT
 using Graphs;
@@ -44,13 +38,50 @@ namespace PerfViewExtensibility
     /// </summary>
     public class Commands : CommandEnvironment
     {
+        // If you add new build-in commands you need to add lines to src\PerfView\SupportFiles\PerfVIew.xml.
+        // This is the file that contains the help for the user commands.   If you don't update this
+        // file, your new command will not have help.   
+        //
+        // This can be as simple as coping the PerfView.xml file from output directory to src\PerfView\SupportFiles.
+        // HOwever you can do better than this by removing all 'method' entries that are not user commands
+        // That is members of this class.   THis makes the file (and therefore PerfView.exe) smaller.  
+
+        /// <summary>
+        /// Save Thread stacks from a NetPerf file into a *.speedscope.json file.
+        /// </summary>
+        /// <param name="netPerfFileName">The ETL file to convert</param>
+        public void NetperfToSpeedScope(string netPerfFileName)
+        {
+            string outputName = Path.ChangeExtension(netPerfFileName, ".speedscope.json");
+
+            string etlxFileName = TraceLog.CreateFromEventPipeDataFile(netPerfFileName);
+            using (var eventLog = new TraceLog(etlxFileName))
+            {
+                var startStopSource = new MutableTraceEventStackSource(eventLog);
+                // EventPipe currently only has managed code stacks.
+                startStopSource.OnlyManagedCodeStacks = true;
+
+                var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+                computer.GenerateThreadTimeStacks(startStopSource);
+
+                SpeedScopeStackSourceWriter.WriteStackViewAsJson(startStopSource, outputName);
+
+                LogFile.WriteLine("[Converted {0} to {1}  Use https://www.speedscope.app/ to view.]", netPerfFileName, outputName);
+            }
+        }
+#if false // TODO Ideally you don't need Linux Specific versions, and it should be based
+          // on eventPipe.   You can delete after 1/2018
         public void LinuxGCStats(string traceFileName)
         {
             var options = new TraceLogOptions();
             options.ConversionLog = LogFile;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
@@ -66,7 +97,12 @@ namespace PerfViewExtensibility
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
                 foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
+                {
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                    {
+                        processes.Add(proc);
+                    }
+                }
             }
 
             string outputFileName = traceFileName + ".gcStats.html";
@@ -81,8 +117,12 @@ namespace PerfViewExtensibility
             var options = new TraceLogOptions();
             options.ConversionLog = LogFile;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
@@ -101,12 +141,20 @@ namespace PerfViewExtensibility
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 bgJitEvents[data.ProcessID].Add(data.Clone());
             };
             source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 bgJitEvents[data.ProcessID].Add(data.Clone());
             };
 
@@ -114,13 +162,20 @@ namespace PerfViewExtensibility
             Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
             source.Process();
             foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID)) jitStats.Add(proc.ProcessID, proc);
+            {
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID))
+                {
+                    jitStats.Add(proc.ProcessID, proc);
+                }
+            }
+
             using (TextWriter output = File.CreateText(outputFileName))
             {
                 Stats.ClrStats.ToHtml(output, jitStats.Values.ToList(), outputFileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
             }
         }
 
+#endif
 #if !PERFVIEW_COLLECT
         /// <summary>
         /// Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
@@ -348,14 +403,6 @@ namespace PerfViewExtensibility
                 }
             }
             LogFile.WriteLine("[Created {0} manifest files in {1}]", manifestCount, outputDirectory);
-        }
-
-        /// <summary>
-        /// This is a test hook.  
-        /// </summary>
-        public void DumpJSHeapAsEtlFile(string processID)
-        {
-            JavaScriptHeapDumper.DumpAsEtlFile(int.Parse(processID), processID + ".etl", LogFile);
         }
 
         /// <summary>
@@ -667,7 +714,7 @@ namespace PerfViewExtensibility
                 {
                     GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                     {
-                        var logTextWindow = new Controls.TextEditorWindow();
+                        var logTextWindow = new Controls.TextEditorWindow(GuiApp.MainWindow);
                         // Destroy the session when the widow is closed.  
                         logTextWindow.Closed += delegate (object sender, EventArgs e) { session.Dispose(); };
 
@@ -752,7 +799,7 @@ namespace PerfViewExtensibility
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate (string dirPath, string outFileName)
+                    var dialog = new FileInputAndOutput(GuiApp.MainWindow, delegate (string dirPath, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "DirectorySize", dirPath, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -906,7 +953,7 @@ namespace PerfViewExtensibility
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate (string inExeName, string outFileName)
+                    var dialog = new FileInputAndOutput(GuiApp.MainWindow, delegate (string inExeName, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "ImageSize", inExeName, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -967,6 +1014,7 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
+#if false
         /// <summary>
         /// Mainly here for testing
         /// </summary>
@@ -981,6 +1029,7 @@ namespace PerfViewExtensibility
             else
                 LogFile.WriteLine("[Could not find PDB for {0}]", dllName);
         }
+#endif
 
         public void LookupSymbols(string pdbFileName, string pdbGuid, string pdbAge)
         {
@@ -1003,7 +1052,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-#region private
+        #region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -1080,7 +1129,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-#endregion
+        #endregion
         }
 
         /// <summary>
@@ -1105,6 +1154,11 @@ namespace PerfViewExtensibility
             }
         }
 
+        /// <summary>
+        /// Given an NGEN image 'ngenImagePath' create a 'heap' description of what is
+        /// in the NGEN image (where the metric is size).  
+        /// </summary>
+        /// <param name="ngenImagePath"></param>
         public void NGenImageSize(string ngenImagePath)
         {
             SymbolReader symReader = App.GetSymbolReader();
@@ -1398,7 +1452,6 @@ namespace PerfViewExtensibility
         }
 
 
-#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
         /// <summary>
         /// PrintSerializedExceptionFromProcessDump
         /// </summary>
@@ -1455,7 +1508,6 @@ namespace PerfViewExtensibility
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
             }
         }
-#endif
 
 #if false
         public void Test()
@@ -1483,7 +1535,7 @@ namespace PerfViewExtensibility
             }
         }
 #endif
-#region private
+        #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -1779,7 +1831,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-#endregion
+        #endregion
 #endif
     }
 }
@@ -1791,9 +1843,13 @@ public static class TraceEventStackSourceExtensions
     {
         TraceEvents events;
         if (process == null)
+        {
             events = eventLog.Events.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);
+        }
         else
+        {
             events = process.EventsInProcess.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData);
+        }
 
         var traceStackSource = new TraceEventStackSource(events);
         traceStackSource.ShowUnknownAddresses = showUnknownAddresses;

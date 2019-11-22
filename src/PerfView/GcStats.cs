@@ -3,30 +3,39 @@ using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Utilities;
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Security;
 using Utilities;
 
 namespace Stats
 {
     internal static class GcStats
     {
-        public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime,  string fileName, bool doServerGCReport = false)
+        public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, string fileName, bool doServerGCReport = false)
         {
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
             writer.WriteLine("<UL>");
             if (runtime.GC.Stats().GCVersionInfoMismatch)
+            {
                 writer.WriteLine("<LI><Font size=3 color=\"red\">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>");
+            }
+
             if (!string.IsNullOrEmpty(stats.CommandLine))
+            {
                 writer.WriteLine("<LI>CommandLine: {0}</LI>", stats.CommandLine);
+            }
+
             var runtimeBuiltTime = "";
-            if (runtime.RuntimeBuiltTime != default(DateTime)) runtimeBuiltTime = string.Format(" (built on {0})", runtime.RuntimeBuiltTime);
+            if (runtime.RuntimeBuiltTime != default(DateTime))
+            {
+                runtimeBuiltTime = string.Format(" (built on {0})", runtime.RuntimeBuiltTime);
+            }
+
             writer.WriteLine("<LI>Runtime Version: {0}{1}</LI>", runtime.RuntimeVersion ?? "&lt;Unknown Runtime Version&gt;", runtimeBuiltTime);
             writer.WriteLine("<LI>CLR Startup Flags: {0}</LI>", runtime.StartupFlags.ToString());
             writer.WriteLine("<LI>Total CPU Time: {0:n0} msec</LI>", stats.CPUMSec);
@@ -40,9 +49,14 @@ namespace Stats
 
             writer.WriteLine("<LI>Max GC Heap Size: {0:n3} MB</LI>", runtime.GC.Stats().MaxSizePeakMB);
             if (stats.PeakWorkingSet != 0)
+            {
                 writer.WriteLine("<LI>Peak Process Working Set: {0:n3} MB</LI>", stats.PeakWorkingSet / 1000000.0);
+            }
+
             if (stats.PeakWorkingSet != 0)
+            {
                 writer.WriteLine("<LI>Peak Virtual Memory Usage: {0:n3} MB</LI>", stats.PeakVirtual / 1000000.0);
+            }
 
             var usersGuideFile = ClrStatsUsersGuide.WriteUsersGuide(fileName);
             writer.WriteLine("<LI> <A HREF=\"{0}#UnderstandingGCPerf\">GC Perf Users Guide</A></LI>", usersGuideFile);
@@ -55,7 +69,10 @@ namespace Stats
             writer.WriteLine("<UL><LI> <A HREF=\"command:excel/{0}\">View in Excel</A></LI></UL>", stats.ProcessID);
             writer.WriteLine("<LI> <A HREF=\"command:excel/perGeneration/{0}\">Per Generation GC Events in Excel</A></LI>", stats.ProcessID);
             if (runtime.GC.Stats().HasDetailedGCInfo)
+            {
                 writer.WriteLine("<LI> <A HREF=\"command:xml/{0}\">Raw Data XML file (for debugging)</A></LI>", stats.ProcessID);
+            }
+
             if (runtime.GC.Stats().FinalizedObjects.Count > 0)
             {
                 writer.WriteLine("<LI><A HREF=\"#Finalization_{0}\">Finalized Objects</A> </LI>", stats.ProcessID);
@@ -123,7 +140,7 @@ namespace Stats
             for (int genNum = 0; genNum < runtime.GC.Generations().Length; genNum++)
             {
                 GCStats gen = (runtime.GC.Generations()[genNum] != null) ? runtime.GC.Generations()[genNum] : new GCStats();
-                writer.WriteLine("<TR>" +
+                writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(genNum) + ">" +
                                  "<TD Align=\"Center\">{0}</TD>" +
                                  "<TD Align=\"Center\">{1}</TD>" +
                                  "<TD Align=\"Center\">{2:n1}</TD>" +
@@ -240,7 +257,9 @@ namespace Stats
 
             writer.WriteLine("{0}  <GCEvents Count=\"{1}\">", indent, runtime.GC.GCs.Count);
             foreach (TraceGC _event in runtime.GC.GCs)
+            {
                 ToXmlAttribs(writer, stats, runtime, _event);
+            }
 
             writer.WriteLine("{0}  </GCEvents>", indent);
             writer.WriteLine("{0} </GCProcess>", indent);
@@ -257,7 +276,9 @@ namespace Stats
                 {
                     var _event = runtime.GC.GCs[i];
                     if (!(_event.IsComplete))
+                    {
                         continue;
+                    }
 
                     var allocGen0MB = _event.GenSizeBeforeMB[(int)Gens.Gen0];
                     writer.WriteLine("{0}{26}{1:f3}{26}{2}{26}{3}{26}{4:f3}{26}{5:f1}{26}{6:f3}{26}{7:f2}{26}{8:f3}{26}{9:f3}{26}{10:2}{26}{11:f3}{26}{12:f3}{26}{13:f0}{26}{14:f2}{26}{15:f3}{26}{16:f0}{26}{17:f2}{26}{18:f3}{26}{19:f0}{26}{20:f2}{26}{21:f3}{26}{22:f0}{26}{23:f2}{26}{24:f2}{26}{25:f0}{26}{27:f1}{26}{28:f3}",
@@ -310,7 +331,7 @@ namespace Stats
         public static void PerGenerationCsv(string filePath, TraceLoadedDotNetRuntime runtime)
         {
             // Sadly, streamWriter does not have a way of setting the IFormatProvider property
-            // So we have to do it in this ugly, global variable way.  
+            // So we have to do it in this ugly, global variable way.
             string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
             using (var writer = File.CreateText(filePath))
             {
@@ -327,7 +348,9 @@ namespace Stats
                 foreach (TraceGC _event in runtime.GC.GCs)
                 {
                     if (!_event.IsComplete)
+                    {
                         continue;
+                    }
 
                     writer.WriteLine("{0:f3}{33}{1}{33}{2}{33}{3:f3}{33}{4:f3}{33}" +
                         "{5:f3}{33}{6:f3}{33}{7:f3}{33}{8:f3}{33}" +
@@ -372,7 +395,11 @@ namespace Stats
 
         public static void ToXmlAttribs(TextWriter writer, GCStats gc)
         {
-            if (gc == null) gc = new GCStats();
+            if (gc == null)
+            {
+                gc = new GCStats();
+            }
+
             writer.Write(" GCCount={0}", StringUtilities.QuotePadLeft(gc.Count.ToString(), 6));
             writer.Write(" MaxPauseDurationMSec={0}", StringUtilities.QuotePadLeft(gc.MaxPauseDurationMSec.ToString("n3"), 10));
             writer.Write(" MeanPauseDurationMSec={0}", StringUtilities.QuotePadLeft(gc.MeanPauseDurationMSec.ToString("n3"), 10));
@@ -452,7 +479,7 @@ namespace Stats
                 foreach (var perHeapHistory in gc.PerHeapHistories)
                 {
                     writer.Write("      <PerHeapHistory");
-#if false // TODO FIX NOW 
+#if false // TODO FIX NOW
                     writer.Write(" MemoryPressure=\"{0:n0}\"", gc.perHeapHistory.MemoryPressure);
                     writer.Write(" MechanismHeapExpand=\"{0}\"", gc.perHeapHistory.MechanismHeapExpand);
                     writer.Write(" MechanismHeapCompact=\"{0}\"", gc.perHeapHistory.MechanismHeapCompact);
@@ -469,22 +496,41 @@ namespace Stats
                         if (mt != null)
                         {
                             writer.Write(" MarkStack =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkStack]);
-                            if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkStack]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkStack]);
+                            }
+
                             writer.Write("\" MarkFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkFQ]);
-                            if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkFQ]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkFQ]);
+                            }
+
                             writer.Write("\" MarkHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkHandles]);
-                            if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
+                            }
+
                             writer.Write("\"");
                             if (gc.Generation != 2)
                             {
                                 writer.Write(" MarkOldGen =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOlder]);
-                                if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOlder]);
+                                if (mt.MarkPromoted != null)
+                                {
+                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOlder]);
+                                }
+
                                 writer.Write("\"");
                             }
                             if (mt.MarkTimes[(int)MarkRootType.MarkOverflow] != 0.0)
                             {
                                 writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
-                                if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
+                                if (mt.MarkPromoted != null)
+                                {
+                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
+                                }
                             }
                         }
                     }
@@ -527,7 +573,9 @@ namespace Stats
             foreach (var heap in gc.ServerGcHeapHistories)
             {
                 if (heap.SampleSpans.Count > 0 || heap.SwitchSpans.Count > 0)
+                {
                     return true;
+                }
             }
             return false;
         }
@@ -535,7 +583,9 @@ namespace Stats
         private static bool RenderServerGcConcurrencyGraphs(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, bool doServerGCReport)
         {
             if (runtime.GC.Stats().HeapCount <= 1 || runtime.GC.Stats().IsServerGCUsed != 1)
+            {
                 return false;
+            }
 
             TextWriter serverGCActivityStatsFile = null;
             int gcGraphsToRender = 10;
@@ -546,7 +596,9 @@ namespace Stats
                             .ToArray();
 
             if (serverGCs.Length == 0)
+            {
                 return false;
+            }
 
             if (doServerGCReport)
             {
@@ -569,7 +621,10 @@ namespace Stats
             }
 
             if (serverGCActivityStatsFile != null)
+            {
                 serverGCActivityStatsFile.Close();
+            }
+
             return true;
         }
 
@@ -647,7 +702,10 @@ namespace Stats
                  "</TR>");
 
             if (start != 0)
+            {
                 writer.WriteLine("<TR><TD colspan=\"26\" Align=\"Center\"> {0} Beginning entries truncated, use <A HREF=\"command:excel/{1}\">View in Excel</A> to view all...</TD></TR>", start, stats.ProcessID);
+            }
+
             for (int i = start; i < runtime.GC.GCs.Count; i++)
             {
                 var _event = runtime.GC.GCs[i];
@@ -660,16 +718,16 @@ namespace Stats
 
                     var allocGen0MB = _event.UserAllocated[(int)Gens.Gen0];
 
-                    writer.WriteLine("<TR>" +
+                    writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
                                     "<TD Align=\"right\">{0}</TD>" +      // GC index
                                     "<TD Align=\"right\">{1:n3}</TD>" +   // Pause start
                                     "<TD Align=\"right\">{2}</TD>" +      // Reason
                                     "<TD Align=\"right\">{3}</TD>" +      // Gen
                                     "<TD Align=\"right\">{4:n3}</TD>" +   // Suspension time
-                                    "<TD Align=\"right\">{5:n3}</TD>" +   // Pause duration 
+                                    "<TD Align=\"right\">{5:n3}</TD>" +   // Pause duration
                                     "<TD Align=\"right\">{6:n1}</TD>" +   // % pause time since last GC
                                     "<TD Align=\"right\">{7:n1}</TD>" +   // % time in GC
-                                    "<TD Align=\"right\">{8:n3}</TD>" +   // Amount Allocated in gen0 
+                                    "<TD Align=\"right\">{8:n3}</TD>" +   // Amount Allocated in gen0
                                     "<TD Align=\"right\">{9:n2}</TD>" +   // Gen0 AllocRate
                                     "<TD Align=\"right\">{10:n3}</TD>" +   // Size at the beginning of this GC
                                     "<TD Align=\"right\">{11:n3}</TD>" +   // Size at the end of this GC
@@ -693,7 +751,7 @@ namespace Stats
                                     (ShowPinnedInformation(runtime.GC.Stats()) ?
                                     "<TD Align=\"right\">{28:n0}</TD>" +  // size of pinned object this GC saw
                                     "<TD Align=\"right\">{29:n0}</TD>" + // percent of pinned object this GC saw
-                                    "<TD Align=\"right\">{30:n0}</TD>" + // size of pinned plugs 
+                                    "<TD Align=\"right\">{30:n0}</TD>" + // size of pinned plugs
                                     "<TD Align=\"right\">{31:n0}</TD>"  // size of pinned plugs by GC
                                     : string.Empty) +
 
@@ -777,7 +835,9 @@ namespace Stats
             writer.WriteLine("<P>This table gives a more detailed account of exactly why a GC decided to collect that generation.  ");
             writer.WriteLine("Hover over the column headings for more info.</P>");
             if (start != 0)
+            {
                 writer.WriteLine("<TR><TD colspan=\"26\" Align=\"Center\"> {0} Beginning entries truncated</TD></TR>", start);
+            }
 
             writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
@@ -805,7 +865,8 @@ namespace Stats
                         continue;
                     }
 
-                    writer.WriteLine("<TR><TD Align=\"center\">{0}</TD>{1}",
+                    writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
+                                     "<TD Align=\"center\">{0}</TD>{1}",
                                      _event.Number,
                                      PrintCondemnedReasonsToHtml(_event));
                 }
@@ -911,7 +972,7 @@ namespace Stats
             if (gc.PerHeapCondemnedReasons.Length != 1)
             {
                 // Only need to print out the heap index for server GC - when we are displaying this
-                // in the GCStats Html page we only display the first heap we find that caused us to 
+                // in the GCStats Html page we only display the first heap we find that caused us to
                 // collect the generation we collect.
                 HeapIndexHighestGen = gc.FindFirstHighestCondemnedHeap();
 
@@ -950,10 +1011,20 @@ namespace Stats
                 {
                     if (i == CondemnedReasonGroup.Induced)
                     {
-                        sb.Append((InducedType)perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
+                        var val = (InducedType)perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i];
+                        if (val != 0)
+                        {
+                            sb.Append(val);
+                        }
                     }
                     else
-                        sb.Append(perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
+                    {
+                        var val = perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i];
+                        if (val != 0)
+                        {
+                            sb.Append(val);
+                        }
+                    }
                 }
                 sb.Append("</TD>");
             }
@@ -974,7 +1045,7 @@ namespace Stats
             new string[] {"Ephemeral<BR/>Low", "We are running low on the ephemeral segment, GC needs to do at least a gen1 GC"},
             new string[] {"Expand<BR/>Heap", "We are running low in an ephemeral GC, GC needs to do a full GC"},
             new string[] {"Fragmented<BR/>Ephemeral", "Ephemeral generations are fragmented"},
-            new string[] {"Very<BR/>Fragmented<BR/>Ephemeral", "Ephemeral generations are VERY fragmented, doing a full GC"},
+            new string[] {"Low Ephemeral<BR/>Fragmented Gen2", "We are running low on the ephemeral segment but gen2 is fragmented enough so a full GC would avoid expanding the heap"},
             new string[] {"Fragmented<BR/>Gen2", "Gen2 is too fragmented, doing a full blocking GC"},
             new string[] {"High<BR/>Memory", "We are in high memory load situation and doing a full blocking GC"},
             new string[] {"Compacting<BR/>Full<BR/>GC", "Last GC we trigger before we throw OOM"},
@@ -982,6 +1053,23 @@ namespace Stats
             new string[] {"Ephemeral<BR/>Before<BR/>BGC", "Ephemeral GC before a background GC starts"},
             new string[] {"Internal<BR/>Tuning", "Internal tuning"}
         };
+
+        // Change background color according to generation
+        //          gen0 = robin egg blue
+        //          gen1 = light sky blue
+        //          gen2 = iceberg
+        private static string GetGenerationBackgroundColorAttribute(int gen)
+        {
+            switch (gen)
+            {
+                case 2:
+                    return "bgcolor=#56A5EC";
+                case 1:
+                    return "bgcolor=#82CAFF";
+                default:
+                    return "bgcolor=#BDEDFF";
+            }
+        }
         #endregion
     }
 
@@ -992,7 +1080,7 @@ namespace Stats
     // 3) restarts
     // 4) goes back to 1).
     // We call 1 through 3 an activity. There are as many activities as there are joins.
-    class ServerGcHistoryEx
+    internal class ServerGcHistoryEx
     {
         //returns true if server GC graph has data
         public static bool ServerGcConcurrencyGraphs(TextWriter writer, TextWriter serverGCActivityStatsFile, TraceGC gc)
@@ -1003,11 +1091,17 @@ namespace Stats
 
             int scale;
             if (gc.PauseDurationMSec < 100)
+            {
                 scale = 3;
+            }
             else if (gc.PauseDurationMSec < 600)
+            {
                 scale = 2;
+            }
             else
+            {
                 scale = 1;
+            }
 
             writer.WriteLine("Gen" + gc.Generation + " Pause:" + (int)gc.PauseDurationMSec + "ms");
             writer.WriteLine("1ms = " + scale + "px");
@@ -1030,7 +1124,7 @@ namespace Stats
         }
 
         #region private
-        enum ServerGCThreadState
+        private enum ServerGCThreadState
         {
             // This is when GC thread needs to run to do GC work. We care the most about
             // other threads running during this state.
@@ -1048,7 +1142,7 @@ namespace Stats
             State_Max = 4,
         }
 
-        class ServerGCThreadStateInfo
+        private class ServerGCThreadStateInfo
         {
             public double gcThreadRunningTime;
             // Process ID and running time in that process.
@@ -1056,7 +1150,7 @@ namespace Stats
             public Dictionary<int, OtherThreadInfo> otherThreadsRunningTime;
         }
 
-        class OtherThreadInfo
+        private class OtherThreadInfo
         {
             public string processName;
             public double runningTime;
@@ -1164,14 +1258,19 @@ namespace Stats
                 span.AbsoluteTimestampMsc, (span.AbsoluteTimestampMsc + span.DurationMsc), span.DurationMsc);
 
             if (span.Type == WorkSpanType.GcThread)
+            {
                 info.gcThreadRunningTime += threadTime;
+            }
             else
             {
                 if (info.otherThreadsRunningTime.ContainsKey(span.ProcessId))
                 {
                     OtherThreadInfo other = info.otherThreadsRunningTime[span.ProcessId];
                     if (!other.processName.Contains(span.ProcessName))
+                    {
                         other.processName += ";" + span.ProcessName;
+                    }
+
                     other.runningTime += threadTime;
                 }
                 else
@@ -1209,15 +1308,25 @@ namespace Stats
             {
                 case GcJoinTime.Start:
                     if ((join.Type == GcJoinType.LastJoin) || (join.Type == GcJoinType.FirstJoin))
+                    {
                         newThreadState = ServerGCThreadState.State_SingleThreaded;
+                    }
                     else if (join.Type == GcJoinType.Restart)
+                    {
                         newThreadState = ServerGCThreadState.State_WaitingInRestart;
+                    }
                     else
+                    {
                         newThreadState = ServerGCThreadState.State_WaitInJoin;
+                    }
+
                     break;
                 case GcJoinTime.End:
                     if (join.Heap == heap.HeapId)
+                    {
                         newThreadState = ServerGCThreadState.State_Ready;
+                    }
+
                     break;
                 default:
                     break;
@@ -1240,8 +1349,8 @@ namespace Stats
                     heap.GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc,
                     heap.GcJoins[currentJoinEventIndex].Heap,
                     currentJoinEventIndex,
-                    heap.GcJoins[currentJoinEventIndex].Type, 
-                    heap.GcJoins[currentJoinEventIndex].Time, 
+                    heap.GcJoins[currentJoinEventIndex].Type,
+                    heap.GcJoins[currentJoinEventIndex].Time,
                     state);
             }
         }
@@ -1340,7 +1449,7 @@ namespace Stats
                                 double currentStateDuration = heap.GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc - lastStateEndTime;
                                 UpdateActivityThreadTime(serverGCActivityStatsFile, heap, span, activityStats[(int)currentThreadState], currentStateDuration, currentThreadState);
 
-                                currentThreadState = UpdateCurrentThreadState(serverGCActivityStatsFile,heap, heap.GcJoins[currentJoinEventIndex], currentThreadState);
+                                currentThreadState = UpdateCurrentThreadState(serverGCActivityStatsFile, heap, heap.GcJoins[currentJoinEventIndex], currentThreadState);
                                 //LogJoinInSpan(currentJoinEventIndex, currentThreadState);
                                 lastStateEndTime = heap.GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc;
                                 currentJoinEventIndex++;
@@ -1451,7 +1560,10 @@ namespace Stats
         {
             var usersGuideName = Path.ChangeExtension(Path.ChangeExtension(inputFileName, null), "usersGuide.html");
             if (!File.Exists(usersGuideName) || (DateTime.UtcNow - File.GetLastWriteTimeUtc(usersGuideName)).TotalHours > 1)
+            {
                 File.Copy(Path.Combine(SupportFiles.SupportFileDir, "HtmlReportUsersGuide.htm"), usersGuideName, true);
+            }
+
             return Path.GetFileName(usersGuideName);        // return the relative path
         }
     }

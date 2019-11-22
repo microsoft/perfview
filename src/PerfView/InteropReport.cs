@@ -1,21 +1,19 @@
 ﻿// This is still work in progress - the code is not consolidated as part of the changes came from another dev.
 // I left them in since I would like to keep the functionality they provide. It will be consolidated with my next checkin. 
+using Graphs;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Graphs;
-using PerfView;
 using Address = System.UInt64;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfView
 {
-    class GraphWalker
+    internal class GraphWalker
     {
-        List<NodeIndex> m_target = new List<NodeIndex>();
-        Queue<NodeIndex> m_source = new Queue<NodeIndex>();
-        VisitState[] m_visited;
+        private List<NodeIndex> m_target = new List<NodeIndex>();
+        private Queue<NodeIndex> m_source = new Queue<NodeIndex>();
+        private VisitState[] m_visited;
 
         /// <summary>
         /// Add target node to search for
@@ -36,7 +34,7 @@ namespace PerfView
         }
 
         [Flags]
-        enum VisitState
+        private enum VisitState
         {
             Queued = 1,    // Put into m_source queue
             Visited = 2,    // Reachable through an arc from source nodes
@@ -128,9 +126,9 @@ namespace PerfView
 
     // This finds the cycles (strongly connected components) in the graph.
     // We would only reported it if the path includes at least one RCW and one CCW.
-    class FindSCC
+    internal class FindSCC
     {
-        class SCCInfo
+        private class SCCInfo
         {
             public int m_index;
             public int m_lowLink;
@@ -138,16 +136,16 @@ namespace PerfView
             public string type; // We don't expect to have that many nodes so we just store the type here.
         }
 
-        SCCInfo[] m_sccInfo;
-        Stack<int> m_stack;
-        MemoryGraph m_graph;
-        TextWriter m_htmlRaw;
-        TextWriter m_log;
-        int index;
-        List<int> m_currentCycle = new List<int>();
-        int startNodeIdx;
+        private SCCInfo[] m_sccInfo;
+        private Stack<int> m_stack;
+        private MemoryGraph m_graph;
+        private TextWriter m_htmlRaw;
+        private TextWriter m_log;
+        private int index;
+        private List<int> m_currentCycle = new List<int>();
+        private int startNodeIdx;
 
-        string GetPrintableString(string s)
+        private string GetPrintableString(string s)
         {
             string sPrint = s.Replace("<", "&lt;");
             sPrint = sPrint.Replace(">", "&gt;");
@@ -309,15 +307,14 @@ namespace PerfView
         }
     }
 
-    class HeapDumpInteropObjects : PerfViewHtmlReport
+    internal class HeapDumpInteropObjects : PerfViewHtmlReport
     {
-        HeapDumpPerfViewFile m_heapDumpFile;
-        string m_mainOutput;
-        TextWriter m_htmlRaw;
-        TextWriter m_log;
-
-        MemoryGraph m_graph;
-        InteropInfo m_interop;
+        private HeapDumpPerfViewFile m_heapDumpFile;
+        private string m_mainOutput;
+        private TextWriter m_htmlRaw;
+        private TextWriter m_log;
+        private MemoryGraph m_graph;
+        private InteropInfo m_interop;
 
         public HeapDumpInteropObjects(HeapDumpPerfViewFile dataFile)
             : base(dataFile, "Interop report")
@@ -325,9 +322,9 @@ namespace PerfView
             m_heapDumpFile = dataFile;
         }
 
-        StreamWriter m_writer;
+        private StreamWriter m_writer;
 
-        void WriteAddress(Address addr, bool decode)
+        private void WriteAddress(Address addr, bool decode)
         {
             m_writer.Write(",0x{0:x8}", addr);
 
@@ -344,7 +341,7 @@ namespace PerfView
             }
         }
 
-        void ModuleTable()
+        private void ModuleTable()
         {
             string report = m_mainOutput + "_module.csv";
 
@@ -366,7 +363,7 @@ namespace PerfView
             m_htmlRaw.WriteLine("<li><a href=\"{0}\">{1} Modules, {2:N0} bytes</a></li>", report, m_interop.currentModuleCount, totalSize);
         }
 
-        void ComInterfaceTable(bool bRcw, string kind, string action)
+        private void ComInterfaceTable(bool bRcw, string kind, string action)
         {
             string report = m_mainOutput + "_" + kind + "comInf.csv";
 
@@ -427,10 +424,10 @@ namespace PerfView
             m_htmlRaw.WriteLine("<li><a href=\"{0}\">{1} COM interfaces {2} {3}</a></li>", report, count, action, kind);
         }
 
-        Node m_node;
-        NodeType m_nodeType;
+        private Node m_node;
+        private NodeType m_nodeType;
 
-        void DecodeNode(NodeIndex n)
+        private void DecodeNode(NodeIndex n)
         {
             if (m_node == null)
             {
@@ -443,7 +440,7 @@ namespace PerfView
             m_node.GetType(m_nodeType);
         }
 
-        void WriteRCWInfo()
+        private void WriteRCWInfo()
         {
             string report = m_mainOutput + "_" + "RCW.csv";
 
@@ -477,7 +474,7 @@ namespace PerfView
             m_htmlRaw.WriteLine("<li><a href=\"{0}\">{1} RCWs</a></li>", report, m_interop.m_countRCWs);
         }
 
-        void WriteCCWInfo()
+        private void WriteCCWInfo()
         {
             string report = m_mainOutput + "_" + "CCW.csv";
 
@@ -510,9 +507,9 @@ namespace PerfView
             m_htmlRaw.WriteLine("<li><a href=\"{0}\">{1} CCWs</a></li>", report, m_interop.m_countRCWs);
         }
 
-        InteropInfo.InteropModuleInfo m_lastModule;
+        private InteropInfo.InteropModuleInfo m_lastModule;
 
-        int CheckModule(InteropInfo.InteropModuleInfo mod, ulong addr)
+        private int CheckModule(InteropInfo.InteropModuleInfo mod, ulong addr)
         {
             if (addr < (mod.baseAddress + mod.fileSize))
             {
@@ -531,7 +528,7 @@ namespace PerfView
             return -1; // continue search
         }
 
-        bool FindModule(ulong addr)
+        private bool FindModule(ulong addr)
         {
 #if false 
             if (m_moduleList != null)
@@ -555,16 +552,16 @@ namespace PerfView
             return false;
         }
 
-        static char[] s_SpecialChara = new char[] { '<', '>' };
+        private static char[] s_SpecialChara = new char[] { '<', '>' };
 
-        string GetPrintableString(string s)
+        private string GetPrintableString(string s)
         {
             string sPrint = s.Replace("<", "&lt;");
             sPrint = sPrint.Replace(">", "&gt;");
             return sPrint;
         }
 
-        void GenerateReports()
+        private void GenerateReports()
         {
             m_htmlRaw.WriteLine("Interop Objects (.csv files open in Excel)");
 

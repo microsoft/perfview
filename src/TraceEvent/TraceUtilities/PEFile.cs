@@ -1,10 +1,9 @@
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.IO;
 using System.Diagnostics;
-using System.Text;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace PEFile
 {
@@ -16,7 +15,7 @@ namespace PEFile
 #if PEFILE_PUBLIC
     public
 #endif
-    unsafe sealed class PEFile : IDisposable
+    sealed unsafe class PEFile : IDisposable
     {
         /// <summary>
         /// Create a new PEFile header reader that inspects the 
@@ -28,18 +27,26 @@ namespace PEFile
 
             byte* ptr = m_headerBuff.Fetch(0, 1024);
             if (m_headerBuff.Length < 512)
+            {
                 goto ThrowBadHeader;
+            }
+
             Header = new PEHeader(ptr);
 
             if (Header.PEHeaderSize > 1024 * 64)      // prevent insane numbers;
+            {
                 goto ThrowBadHeader;
+            }
 
             // We did not read in the complete header, Try again using the right sized buffer.  
             if (Header.PEHeaderSize > m_headerBuff.Length)
             {
                 ptr = m_headerBuff.Fetch(0, Header.PEHeaderSize);
                 if (m_headerBuff.Length < Header.PEHeaderSize)
+                {
                     goto ThrowBadHeader;
+                }
+
                 Header = new PEHeader(ptr);
             }
             return;
@@ -85,7 +92,9 @@ namespace PEFile
                             pdbName = info->PdbFileName;
                             ret = true;
                             if (first)
+                            {
                                 break;
+                            }
                         }
                         FreeBuff(stringBuff);
                     }
@@ -103,10 +112,14 @@ namespace PEFile
             var resources = GetResources();
             var versionNode = ResourceNode.GetChild(ResourceNode.GetChild(resources, "Version"), "1");
             if (versionNode == null)
+            {
                 return null;
-            if (!versionNode.IsLeaf && versionNode.Children.Count == 1)
-                versionNode = versionNode.Children[0];
+            }
 
+            if (!versionNode.IsLeaf && versionNode.Children.Count == 1)
+            {
+                versionNode = versionNode.Children[0];
+            }
 
             var buff = AllocBuff();
             byte* bytes = versionNode.FetchData(0, versionNode.DataLength, buff);
@@ -125,15 +138,23 @@ namespace PEFile
             var resources = GetResources();
             var manifest = ResourceNode.GetChild(ResourceNode.GetChild(resources, "RT_MANIFEST"), "1");
             if (manifest == null)
+            {
                 return null;
+            }
+
             if (!manifest.IsLeaf && manifest.Children.Count == 1)
+            {
                 manifest = manifest.Children[0];
+            }
 
             var buff = AllocBuff();
             byte* bytes = manifest.FetchData(0, manifest.DataLength, buff);
             string ret = null;
             using (var textReader = new StreamReader(new UnmanagedMemoryStream(bytes, manifest.DataLength)))
+            {
                 ret = textReader.ReadToEnd();
+            }
+
             FreeBuff(buff);
             return ret;
         }
@@ -146,7 +167,10 @@ namespace PEFile
             get
             {
                 if (!getNativeInfoCalled)
+                {
                     GetNativeInfo();
+                }
+
                 return hasPrecomiledManagedCode;
             }
         }
@@ -159,7 +183,10 @@ namespace PEFile
             get
             {
                 if (!getNativeInfoCalled)
+                {
                     GetNativeInfo();
+                }
+
                 return isManagedReadyToRun;
             }
         }
@@ -170,7 +197,10 @@ namespace PEFile
         public bool ReadyToRunVersion(out short major, out short minor)
         {
             if (!getNativeInfoCalled)
+            {
                 GetNativeInfo();
+            }
+
             major = readyToRunMajor;
             minor = readyToRunMinor;
             return isManagedReadyToRun;
@@ -185,26 +215,31 @@ namespace PEFile
             m_stream.Dispose();
             m_headerBuff.Dispose();
             if (m_freeBuff != null)
+            {
                 m_freeBuff.Dispose();
+            }
         }
 
         // TODO make public?
         internal ResourceNode GetResources()
         {
             if (Header.ResourceDirectory.VirtualAddress == 0 || Header.ResourceDirectory.Size < sizeof(IMAGE_RESOURCE_DIRECTORY))
+            {
                 return null;
+            }
+
             var ret = new ResourceNode("", Header.FileOffsetOfResources, this, false, true);
             return ret;
         }
 
         #region private
-        bool getNativeInfoCalled;
-        bool hasPrecomiledManagedCode;
-        bool isManagedReadyToRun;
-        short readyToRunMajor;
-        short readyToRunMinor;
+        private bool getNativeInfoCalled;
+        private bool hasPrecomiledManagedCode;
+        private bool isManagedReadyToRun;
+        private short readyToRunMajor;
+        private short readyToRunMinor;
 
-        struct IMAGE_COR20_HEADER
+        private struct IMAGE_COR20_HEADER
         {
             // Header versioning
             public int cb;
@@ -227,9 +262,9 @@ namespace PEFile
             public IMAGE_DATA_DIRECTORY ManagedNativeHeader;
         }
 
-        const int READYTORUN_SIGNATURE = 0x00525452; // 'RTR'
+        private const int READYTORUN_SIGNATURE = 0x00525452; // 'RTR'
 
-        struct READYTORUN_HEADER
+        private struct READYTORUN_HEADER
         {
             public int Signature;      // READYTORUN_SIGNATURE
             public short MajorVersion;   // READYTORUN_VERSION_XXX
@@ -246,7 +281,9 @@ namespace PEFile
         public void GetNativeInfo()
         {
             if (getNativeInfoCalled)
+            {
                 return;
+            }
 
             if (Header.ComDescriptorDirectory.VirtualAddress != 0 && sizeof(IMAGE_COR20_HEADER) <= Header.ComDescriptorDirectory.Size)
             {
@@ -270,10 +307,9 @@ namespace PEFile
             }
         }
 
-
-        PEBuffer m_headerBuff;
-        PEBuffer m_freeBuff;
-        FileStream m_stream;
+        private PEBuffer m_headerBuff;
+        private PEBuffer m_freeBuff;
+        private FileStream m_stream;
 
         internal byte* FetchRVA(int rva, int size, PEBuffer buffer)
         {
@@ -283,16 +319,23 @@ namespace PEFile
         {
             var ret = m_freeBuff;
             if (ret == null)
+            {
                 return new PEBuffer(m_stream);
+            }
+
             m_freeBuff = null;
             return ret;
         }
         internal void FreeBuff(PEBuffer buffer)
         {
             if (m_freeBuff != null)
+            {
                 buffer.Dispose();           // Get rid of it, since we already have cached one
+            }
             else
+            {
                 m_freeBuff = buffer;
+            }
         }
         #endregion
     };
@@ -305,30 +348,38 @@ namespace PEFile
 #if PEFILE_PUBLIC
     public
 #endif
-    unsafe sealed class PEHeader
+    sealed unsafe class PEHeader
     {
         /// <summary>
         /// Returns a PEHeader for void* pointer in memory.  It does NO validity checking. 
         /// </summary>
         public PEHeader(void* startOfPEFile)
         {
-            this.dosHeader = (IMAGE_DOS_HEADER*)startOfPEFile;
-            if (this.dosHeader->e_magic != IMAGE_DOS_HEADER.IMAGE_DOS_SIGNATURE)
+            dosHeader = (IMAGE_DOS_HEADER*)startOfPEFile;
+            if (dosHeader->e_magic != IMAGE_DOS_HEADER.IMAGE_DOS_SIGNATURE)
+            {
                 goto ThrowBadHeader;
+            }
 
             var imageHeaderOffset = dosHeader->e_lfanew;
             if (!(sizeof(IMAGE_DOS_HEADER) <= imageHeaderOffset && imageHeaderOffset <= 512))
+            {
                 goto ThrowBadHeader;
+            }
 
-            this.ntHeader = (IMAGE_NT_HEADERS*)((byte*)startOfPEFile + imageHeaderOffset);
+            ntHeader = (IMAGE_NT_HEADERS*)((byte*)startOfPEFile + imageHeaderOffset);
 
             var optionalHeaderSize = ntHeader->FileHeader.SizeOfOptionalHeader;
             if (!(sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32) <= optionalHeaderSize))
+            {
                 goto ThrowBadHeader;
+            }
 
-            this.sections = (IMAGE_SECTION_HEADER*)(((byte*)this.ntHeader) + sizeof(IMAGE_NT_HEADERS) + ntHeader->FileHeader.SizeOfOptionalHeader);
-            if (!((byte*)this.sections - (byte*)startOfPEFile < 1024))
+            sections = (IMAGE_SECTION_HEADER*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + ntHeader->FileHeader.SizeOfOptionalHeader);
+            if (!((byte*)sections - (byte*)startOfPEFile < 1024))
+            {
                 goto ThrowBadHeader;
+            }
 
             return;
             ThrowBadHeader:
@@ -342,7 +393,7 @@ namespace PEFile
         {
             get
             {
-                return VirtualAddressToRva(this.sections) + sizeof(IMAGE_SECTION_HEADER) * ntHeader->FileHeader.NumberOfSections;
+                return VirtualAddressToRva(sections) + sizeof(IMAGE_SECTION_HEADER) * ntHeader->FileHeader.NumberOfSections;
             }
         }
 
@@ -351,14 +402,14 @@ namespace PEFile
         /// </summary>
         public int VirtualAddressToRva(void* ptr)
         {
-            return (int)((byte*)ptr - (byte*)this.dosHeader);
+            return (int)((byte*)ptr - (byte*)dosHeader);
         }
         /// <summary>
         /// Given a relative virtual address (displacement from start of the image) return the virtual address to data in a mapped PE file
         /// </summary>
         public void* RvaToVirtualAddress(int rva)
         {
-            return ((byte*)this.dosHeader) + rva;
+            return ((byte*)dosHeader) + rva;
         }
         /// <summary>
         /// Given a relative virtual address (displacement from start of the image) return a offset in the file data for that data.  
@@ -369,7 +420,9 @@ namespace PEFile
             {
 
                 if (sections[i].VirtualAddress <= rva && rva < sections[i].VirtualAddress + sections[i].VirtualSize)
+                {
                     return (int)sections[i].PointerToRawData + (rva - (int)sections[i].VirtualAddress);
+                }
             }
             throw new InvalidOperationException("Illegal RVA 0x" + rva.ToString("x"));
         }
@@ -468,87 +521,360 @@ namespace PEFile
         /// <summary>
         /// ImageBase (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ulong ImageBase { get { if (IsPE64) return OptionalHeader64->ImageBase; else return OptionalHeader32->ImageBase; } }
+        public ulong ImageBase
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->ImageBase;
+                }
+                else
+                {
+                    return OptionalHeader32->ImageBase;
+                }
+            }
+        }
         /// <summary>
         /// SectionAlignment (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SectionAlignment { get { if (IsPE64) return OptionalHeader64->SectionAlignment; else return OptionalHeader32->SectionAlignment; } }
+        public uint SectionAlignment
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SectionAlignment;
+                }
+                else
+                {
+                    return OptionalHeader32->SectionAlignment;
+                }
+            }
+        }
         /// <summary>
         /// FileAlignment (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint FileAlignment { get { if (IsPE64) return OptionalHeader64->FileAlignment; else return OptionalHeader32->FileAlignment; } }
+        public uint FileAlignment
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->FileAlignment;
+                }
+                else
+                {
+                    return OptionalHeader32->FileAlignment;
+                }
+            }
+        }
         /// <summary>
         /// MajorOperatingSystemVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort MajorOperatingSystemVersion { get { if (IsPE64) return OptionalHeader64->MajorOperatingSystemVersion; else return OptionalHeader32->MajorOperatingSystemVersion; } }
+        public ushort MajorOperatingSystemVersion
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->MajorOperatingSystemVersion;
+                }
+                else
+                {
+                    return OptionalHeader32->MajorOperatingSystemVersion;
+                }
+            }
+        }
         /// <summary>
         /// MinorOperatingSystemVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort MinorOperatingSystemVersion { get { if (IsPE64) return OptionalHeader64->MinorOperatingSystemVersion; else return OptionalHeader32->MinorOperatingSystemVersion; } }
+        public ushort MinorOperatingSystemVersion
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->MinorOperatingSystemVersion;
+                }
+                else
+                {
+                    return OptionalHeader32->MinorOperatingSystemVersion;
+                }
+            }
+        }
         /// <summary>
         /// MajorImageVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort MajorImageVersion { get { if (IsPE64) return OptionalHeader64->MajorImageVersion; else return OptionalHeader32->MajorImageVersion; } }
+        public ushort MajorImageVersion
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->MajorImageVersion;
+                }
+                else
+                {
+                    return OptionalHeader32->MajorImageVersion;
+                }
+            }
+        }
         /// <summary>
         /// MinorImageVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort MinorImageVersion { get { if (IsPE64) return OptionalHeader64->MinorImageVersion; else return OptionalHeader32->MinorImageVersion; } }
+        public ushort MinorImageVersion
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->MinorImageVersion;
+                }
+                else
+                {
+                    return OptionalHeader32->MinorImageVersion;
+                }
+            }
+        }
         /// <summary>
         /// MajorSubsystemVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort MajorSubsystemVersion { get { if (IsPE64) return OptionalHeader64->MajorSubsystemVersion; else return OptionalHeader32->MajorSubsystemVersion; } }
+        public ushort MajorSubsystemVersion
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->MajorSubsystemVersion;
+                }
+                else
+                {
+                    return OptionalHeader32->MajorSubsystemVersion;
+                }
+            }
+        }
         /// <summary>
         /// MinorSubsystemVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort MinorSubsystemVersion { get { if (IsPE64) return OptionalHeader64->MinorSubsystemVersion; else return OptionalHeader32->MinorSubsystemVersion; } }
+        public ushort MinorSubsystemVersion
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->MinorSubsystemVersion;
+                }
+                else
+                {
+                    return OptionalHeader32->MinorSubsystemVersion;
+                }
+            }
+        }
         /// <summary>
         /// Win32VersionValue (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint Win32VersionValue { get { if (IsPE64) return OptionalHeader64->Win32VersionValue; else return OptionalHeader32->Win32VersionValue; } }
+        public uint Win32VersionValue
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->Win32VersionValue;
+                }
+                else
+                {
+                    return OptionalHeader32->Win32VersionValue;
+                }
+            }
+        }
         /// <summary>
         /// SizeOfImage (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfImage { get { if (IsPE64) return OptionalHeader64->SizeOfImage; else return OptionalHeader32->SizeOfImage; } }
+        public uint SizeOfImage
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SizeOfImage;
+                }
+                else
+                {
+                    return OptionalHeader32->SizeOfImage;
+                }
+            }
+        }
         /// <summary>
         /// SizeOfHeaders (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfHeaders { get { if (IsPE64) return OptionalHeader64->SizeOfHeaders; else return OptionalHeader32->SizeOfHeaders; } }
+        public uint SizeOfHeaders
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SizeOfHeaders;
+                }
+                else
+                {
+                    return OptionalHeader32->SizeOfHeaders;
+                }
+            }
+        }
         /// <summary>
         /// CheckSum (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint CheckSum { get { if (IsPE64) return OptionalHeader64->CheckSum; else return OptionalHeader32->CheckSum; } }
+        public uint CheckSum
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->CheckSum;
+                }
+                else
+                {
+                    return OptionalHeader32->CheckSum;
+                }
+            }
+        }
         /// <summary>
         /// Subsystem (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort Subsystem { get { if (IsPE64) return OptionalHeader64->Subsystem; else return OptionalHeader32->Subsystem; } }
+        public ushort Subsystem
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->Subsystem;
+                }
+                else
+                {
+                    return OptionalHeader32->Subsystem;
+                }
+            }
+        }
         /// <summary>
         /// DllCharacteristics (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort DllCharacteristics { get { if (IsPE64) return OptionalHeader64->DllCharacteristics; else return OptionalHeader32->DllCharacteristics; } }
+        public ushort DllCharacteristics
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->DllCharacteristics;
+                }
+                else
+                {
+                    return OptionalHeader32->DllCharacteristics;
+                }
+            }
+        }
         /// <summary>
         /// SizeOfStackReserve (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ulong SizeOfStackReserve { get { if (IsPE64) return OptionalHeader64->SizeOfStackReserve; else return OptionalHeader32->SizeOfStackReserve; } }
+        public ulong SizeOfStackReserve
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SizeOfStackReserve;
+                }
+                else
+                {
+                    return OptionalHeader32->SizeOfStackReserve;
+                }
+            }
+        }
         /// <summary>
         /// SizeOfStackCommit (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ulong SizeOfStackCommit { get { if (IsPE64) return OptionalHeader64->SizeOfStackCommit; else return OptionalHeader32->SizeOfStackCommit; } }
+        public ulong SizeOfStackCommit
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SizeOfStackCommit;
+                }
+                else
+                {
+                    return OptionalHeader32->SizeOfStackCommit;
+                }
+            }
+        }
         /// <summary>
         /// SizeOfHeapReserve (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ulong SizeOfHeapReserve { get { if (IsPE64) return OptionalHeader64->SizeOfHeapReserve; else return OptionalHeader32->SizeOfHeapReserve; } }
+        public ulong SizeOfHeapReserve
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SizeOfHeapReserve;
+                }
+                else
+                {
+                    return OptionalHeader32->SizeOfHeapReserve;
+                }
+            }
+        }
         /// <summary>
         /// SizeOfHeapCommit (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ulong SizeOfHeapCommit { get { if (IsPE64) return OptionalHeader64->SizeOfHeapCommit; else return OptionalHeader32->SizeOfHeapCommit; } }
+        public ulong SizeOfHeapCommit
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->SizeOfHeapCommit;
+                }
+                else
+                {
+                    return OptionalHeader32->SizeOfHeapCommit;
+                }
+            }
+        }
         /// <summary>
         /// LoaderFlags (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint LoaderFlags { get { if (IsPE64) return OptionalHeader64->LoaderFlags; else return OptionalHeader32->LoaderFlags; } }
+        public uint LoaderFlags
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->LoaderFlags;
+                }
+                else
+                {
+                    return OptionalHeader32->LoaderFlags;
+                }
+            }
+        }
         /// <summary>
         /// NumberOfRvaAndSizes (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint NumberOfRvaAndSizes { get { if (IsPE64) return OptionalHeader64->NumberOfRvaAndSizes; else return OptionalHeader32->NumberOfRvaAndSizes; } }
+        public uint NumberOfRvaAndSizes
+        {
+            get
+            {
+                if (IsPE64)
+                {
+                    return OptionalHeader64->NumberOfRvaAndSizes;
+                }
+                else
+                {
+                    return OptionalHeader32->NumberOfRvaAndSizes;
+                }
+            }
+        }
 
         // Well known data blobs (directories)  
         /// <summary>
@@ -557,7 +883,10 @@ namespace PEFile
         public IMAGE_DATA_DIRECTORY Directory(int idx)
         {
             if (idx >= NumberOfRvaAndSizes)
+            {
                 return new IMAGE_DATA_DIRECTORY();
+            }
+
             return ntDirectories[idx];
         }
         /// <summary>
@@ -626,7 +955,7 @@ namespace PEFile
         {
             // Convert seconds from Jan 1 1970 to DateTime ticks.  
             // The 621356004000000000L represents Jan 1 1970 as DateTime 100ns ticks.  
-            DateTime ret = new DateTime(((long)timeDateStampSec) * 10000000 + 621356004000000000L, DateTimeKind.Utc).ToLocalTime();
+            DateTime ret = new DateTime(((long)(uint)timeDateStampSec) * 10000000 + 621356004000000000L, DateTimeKind.Utc).ToLocalTime();
 
             // Calculation above seems to be off by an hour  Don't know why 
             ret = ret.AddHours(-1.0);
@@ -638,21 +967,28 @@ namespace PEFile
             get
             {
                 if (ResourceDirectory.VirtualAddress == 0)
+                {
                     return 0;
+                }
+
                 return RvaToFileOffset(ResourceDirectory.VirtualAddress);
             }
         }
 
-        private IMAGE_OPTIONAL_HEADER32* OptionalHeader32 { get { return (IMAGE_OPTIONAL_HEADER32*)(((byte*)this.ntHeader) + sizeof(IMAGE_NT_HEADERS)); } }
-        private IMAGE_OPTIONAL_HEADER64* OptionalHeader64 { get { return (IMAGE_OPTIONAL_HEADER64*)(((byte*)this.ntHeader) + sizeof(IMAGE_NT_HEADERS)); } }
+        private IMAGE_OPTIONAL_HEADER32* OptionalHeader32 { get { return (IMAGE_OPTIONAL_HEADER32*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS)); } }
+        private IMAGE_OPTIONAL_HEADER64* OptionalHeader64 { get { return (IMAGE_OPTIONAL_HEADER64*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS)); } }
         private IMAGE_DATA_DIRECTORY* ntDirectories
         {
             get
             {
                 if (IsPE64)
-                    return (IMAGE_DATA_DIRECTORY*)(((byte*)this.ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64));
+                {
+                    return (IMAGE_DATA_DIRECTORY*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64));
+                }
                 else
-                    return (IMAGE_DATA_DIRECTORY*)(((byte*)this.ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32));
+                {
+                    return (IMAGE_DATA_DIRECTORY*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32));
+                }
             }
         }
 
@@ -716,7 +1052,7 @@ namespace PEFile
 #if PEFILE_PUBLIC
     public
 #endif
-    unsafe sealed class FileVersionInfo
+    sealed unsafe class FileVersionInfo
     {
         // TODO incomplete, but this is all I need.  
         /// <summary>
@@ -728,7 +1064,9 @@ namespace PEFile
         {
             FileVersion = "";
             if (dataLen <= 0x5c)
+            {
                 return;
+            }
 
             // See http://msdn.microsoft.com/en-us/library/ms647001(v=VS.85).aspx
             byte* stringInfoPtr = data + 0x5c;   // Gets to first StringInfo
@@ -741,17 +1079,25 @@ namespace PEFile
             if (fileVersionIdx >= 0)
             {
                 int valIdx = fileVersionIdx + fileVersionKey.Length;
-                for (;;)
+                for (; ; )
                 {
                     valIdx++;
                     if (valIdx >= dataAsString.Length)
+                    {
                         return;
+                    }
+
                     if (dataAsString[valIdx] != (char)0)
+                    {
                         break;
+                    }
                 }
                 int varEndIdx = dataAsString.IndexOf((char)0, valIdx);
                 if (varEndIdx < 0)
+                {
                     return;
+                }
+
                 FileVersion = dataAsString.Substring(valIdx, varEndIdx - valIdx);
             }
         }
@@ -764,7 +1110,7 @@ namespace PEFile
     /// <summary>
     /// A PEBuffer represents a buffer (efficient) scanner of the 
     /// </summary>
-    internal unsafe sealed class PEBuffer : IDisposable
+    internal sealed unsafe class PEBuffer : IDisposable
     {
         public PEBuffer(Stream stream, int buffSize = 512)
         {
@@ -787,7 +1133,10 @@ namespace PEFile
                 {
                     var count = m_stream.Read(m_buff, m_buffLen, size - m_buffLen);
                     if (count == 0)
+                    {
                         break;
+                    }
+
                     m_buffLen += count;
                 }
             }
@@ -810,7 +1159,9 @@ namespace PEFile
             try
             {
                 if (m_pinningHandle.IsAllocated)
+                {
                     m_pinningHandle.Free();
+                }
             }
             catch (Exception) { }
         }
@@ -821,21 +1172,24 @@ namespace PEFile
 
             m_buff = new byte[buffSize];
             fixed (byte* ptr = m_buff)
+            {
                 m_buffPtr = ptr;
+            }
+
             m_buffLen = 0;
             m_pinningHandle = GCHandle.Alloc(m_buff, GCHandleType.Pinned);
         }
 
-        int m_buffPos;
-        int m_buffLen;      // Number of valid bytes in m_buff
-        byte[] m_buff;
-        byte* m_buffPtr;
-        GCHandle m_pinningHandle;
-        Stream m_stream;
+        private int m_buffPos;
+        private int m_buffLen;      // Number of valid bytes in m_buff
+        private byte[] m_buff;
+        private byte* m_buffPtr;
+        private GCHandle m_pinningHandle;
+        private Stream m_stream;
         #endregion
     }
 
-    internal unsafe sealed class ResourceNode
+    internal sealed unsafe class ResourceNode
     {
         public string Name { get; private set; }
         public bool IsLeaf { get; private set; }
@@ -862,13 +1216,21 @@ namespace PEFile
             return sw.ToString();
         }
 
-        static public ResourceNode GetChild(ResourceNode node, string name)
+        public static ResourceNode GetChild(ResourceNode node, string name)
         {
             if (node == null)
+            {
                 return null;
+            }
+
             foreach (var child in node.Children)
+            {
                 if (child.Name == name)
+                {
                     return child;
+                }
+            }
+
             return null;
         }
 
@@ -898,9 +1260,14 @@ namespace PEFile
                         var entry = &entries[i];
                         string entryName = null;
                         if (m_isTop)
+                        {
                             entryName = IMAGE_RESOURCE_DIRECTORY_ENTRY.GetTypeNameForTypeId(entry->Id);
+                        }
                         else
+                        {
                             entryName = entry->GetName(nameBuff, resourceStartFileOffset);
+                        }
+
                         Children.Add(new ResourceNode(entryName, resourceStartFileOffset + entry->DataOffset, m_file, entry->IsLeaf));
                     }
                     m_file.FreeBuff(nameBuff);
@@ -927,7 +1294,10 @@ namespace PEFile
                 sw.Write("ChildCount=\"{0}\"", Children.Count);
                 sw.WriteLine(">");
                 foreach (var child in Children)
+                {
                     child.ToString(sw, indent + "  ");
+                }
+
                 sw.WriteLine("{0}</ResourceNode>", indent);
             }
         }
@@ -1062,7 +1432,7 @@ namespace PEFile
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    unsafe internal struct IMAGE_SECTION_HEADER
+    internal unsafe struct IMAGE_SECTION_HEADER
     {
         public string Name
         {
@@ -1071,9 +1441,13 @@ namespace PEFile
                 fixed (byte* ptr = NameBytes)
                 {
                     if (ptr[7] == 0)
+                    {
                         return System.Runtime.InteropServices.Marshal.PtrToStringAnsi((IntPtr)ptr);
+                    }
                     else
+                    {
                         return System.Runtime.InteropServices.Marshal.PtrToStringAnsi((IntPtr)ptr, 8);
+                    }
                 }
             }
         }
@@ -1089,7 +1463,7 @@ namespace PEFile
         public uint Characteristics;
     };
 
-    struct IMAGE_DEBUG_DIRECTORY
+    internal struct IMAGE_DEBUG_DIRECTORY
     {
         public int Characteristics;
         public int TimeDateStamp;
@@ -1101,7 +1475,7 @@ namespace PEFile
         public int PointerToRawData;
     };
 
-    enum IMAGE_DEBUG_TYPE
+    internal enum IMAGE_DEBUG_TYPE
     {
         UNKNOWN = 0,
         COFF = 1,
@@ -1111,7 +1485,7 @@ namespace PEFile
         BBT = 10,
     };
 
-    unsafe struct CV_INFO_PDB70
+    internal unsafe struct CV_INFO_PDB70
     {
         public const int PDB70CvSignature = 0x53445352; // RSDS in ascii
 
@@ -1124,7 +1498,9 @@ namespace PEFile
             get
             {
                 fixed (byte* ptr = bytePdbFileName)
+                {
                     return System.Runtime.InteropServices.Marshal.PtrToStringAnsi((IntPtr)ptr);
+                }
             }
         }
     };
@@ -1141,7 +1517,7 @@ namespace PEFile
     //
     // This structure allows fast lookup by either name or number, but for any
     // given resource entry only one form of lookup is supported, not both.
-    unsafe struct IMAGE_RESOURCE_DIRECTORY
+    internal unsafe struct IMAGE_RESOURCE_DIRECTORY
     {
         public int Characteristics;
         public int TimeDateStamp;
@@ -1165,7 +1541,7 @@ namespace PEFile
     // subdirectory), then the high order bit of the offset field will be
     // set to indicate this.  Otherwise the high bit is clear and the offset
     // field points to a resource data entry.
-    unsafe struct IMAGE_RESOURCE_DIRECTORY_ENTRY
+    internal unsafe struct IMAGE_RESOURCE_DIRECTORY_ENTRY
     {
         public bool IsStringName { get { return NameOffsetAndFlag < 0; } }
         public int NameOffset { get { return NameOffsetAndFlag & 0x7FFFFFFF; } }
@@ -1186,7 +1562,9 @@ namespace PEFile
                 return new string(namePtr);
             }
             else
+            {
                 return Id.ToString();
+            }
         }
 
         internal static string GetTypeNameForTypeId(int typeId)
@@ -1244,7 +1622,7 @@ namespace PEFile
     // of bytes of data at that offset, a CodePage that should be used when
     // decoding code point values within the resource data.  Typically for new
     // applications the code page would be the unicode code page.
-    unsafe struct IMAGE_RESOURCE_DATA_ENTRY
+    internal unsafe struct IMAGE_RESOURCE_DATA_ENTRY
     {
         public int RvaToData;
         public int Size;

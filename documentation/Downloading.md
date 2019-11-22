@@ -1,19 +1,27 @@
 # Downloading PerfView 
 
-The [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases)
-is now the official way to download versions of the PerfView.
-It shows the release notes and the full set of binaries for all current and past releases.
+PerfView is a free profiling tool from Microsoft.   This page tells you how to get a copy of it for yourself.  
+See the [PerfView Overview](https://github.com/Microsoft/perfview#perfview-overview) for general information
+about PerfView.   
+
+# PerfView Releases
+
+The [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases) is now the official 
+way to download versions of the PerfView.
+It shows the release notes and the full set of binaries for all current and past releases.  If you
+care about specific bug fixes or features go there.  
 
 ## Shortcut to Download the Latest PerfView.exe
 
-In the common case, the only file you need one file, PerfView.exe, to use the tool.  It can be downloaded here
+In the common case, you only need one file, PerfView.exe, to use the tool.  The most recent copy of
+this file can be downloaded here:
 
-* [Download Version 2.02 of PerfView.exe](https://github.com/Microsoft/perfview/releases/download/P2.0.2/PerfView.exe)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/microsoft/perfview)](https://github.com/microsoft/perfview/releases/latest)
 
 Once you click the above link in your browser it will start downloading, the details of which vary from browser to browser.
 In some cases it will prompt for more information (IE) and in others (Chrome) it may not be obvious that
-you clicked on anything (look at the bottom of the pane for changes).  The result, however will be a PerfVIew.exe on your
-local machine.   
+you clicked on anything (look at the bottom of the pane for changes).  The result, however will be a PerfView.exe on your
+local machine.
 
 Once downloaded you you can simply double click on the downloaded EXE to launch PerfView.
 While Github itself and your browser do some validation, to be extra careful you can

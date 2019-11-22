@@ -5,7 +5,7 @@
 As long as there have been programs, developers have used logging system to diagnosis functional and performance problems. Logging systems break down into two broad categories:
 
 1. Weakly typed: The logging system only knows how to log strings and thus all data is converted into strings before it is logged. Printf logging is an example of this. These are the simplest logging systems and are a fine choice for ad hoc investigations by humans, however they suffer if the volume of data increases or if there is a desire to manipulate the data being logged programmatically.
-2. Strongly typed (also known as [Sematic Logging](http://blogs.msdn.com/b/agile/archive/2013/02/07/embracing-semantic-logging.aspx)): In these logging systems each event is assigned schema which defines
+2. Strongly typed (also known as [Semantic Logging](http://blogs.msdn.com/b/agile/archive/2013/02/07/embracing-semantic-logging.aspx)): In these logging systems each event is assigned schema which defines
     1. The name of the event
     2. The names and types of all the data items that are logged along with the event
     3. Optional meta-data about the event (groups it belongs to, its verbosity etc.).
@@ -320,7 +320,7 @@ class Program
 }
 ```
 
-Clearly this experience is a step down from what you get with a compile time solution. Certainly it is clunkier to write, and also error prone (if you misspell *MyName* above the compiler will not catch it like it would if we misspelled `CommanLine` when accessing process data). It is also MUCH less efficient to use `PayloadByName` than to use compile time trace parser properties. What we would have LIKED to write is something like the following
+Clearly this experience is a step down from what you get with a compile time solution. Certainly it is clunkier to write, and also error prone (if you misspell *MyName* above the compiler will not catch it like it would if we misspelled `CommandLine` when accessing process data). It is also MUCH less efficient to use `PayloadByName` than to use compile time trace parser properties. What we would have LIKED to write is something like the following
 
 ```csharp
 source.Dynamic.AddCallbackForEvent("MyFirstEvent", delegate(MyFirstEventTraceData data) {
@@ -328,7 +328,31 @@ source.Dynamic.AddCallbackForEvent("MyFirstEvent", delegate(MyFirstEventTraceDat
 });
 ```
 
-Where we have an event-specific type that with a `MyName` and `MyId` property. Thus even though `DynamicTraceEventParser` is sufficient to parse events from an `EventSource` with full fidelity, if you are doing more than just printing the event, it is a good idea to create a static (compile time) parser that is tailored for your `EventSource` and thus can return compile time types tailored for your event payloads. This is what the **TraceParserGen** tool is designed to do, which we will cover later.
+Where we have an event-specific type that with a `MyName` and `MyId` property. There are two options for doing that:
+
+1. You can create a static (compile time) parser that is tailored for your `EventSource` and thus can return compile time types tailored for your event payloads. This is what the **TraceParserGen** tool is designed to do, which we will cover later.
+
+1. You can take advantage of built-in DLR integration. In C#, you do this by casting to 'dynamic':
+
+   ```csharp
+   source.Dynamic.AddCallbackForEvent("MyFirstEvent", delegate(TraceEvent data) {
+     var asDynamic = (dynamic) data;
+     Console.WriteLine("GOT MyFirstEvent MyName={0} MyId={1}", asDynamic.MyName, asDynamic.MyId);
+   });
+   ```
+   Note that unlike the **TraceParserGen** approach, this still has the downside of not having compile-time validation (if you misspell a property name, you won't know at compile time). Also note that the perf implications of casting to dynamic have not been measured, but it cannot be better than the `PayloadByName` approach (because that's what happens internally).
+
+   Other languages may have built-in DLR integration, such as PowerShell:
+
+   ```powershell
+   # Get the set of all MyName values
+   $myProc.EventsInProcess | `
+        where ProviderName -eq MyProvider | `
+        %{ $PSItem.MyName } | `
+        Select -Unique
+   ```
+
+While the performance of using the DLR integration might not be as good as the **TraceParserGen** approach, it can be very convenient for prototyping, or just poking around in an interactive shell like PowerShell.
 
 ## Lifetime constraints on `TraceEvent` objects
 
@@ -800,6 +824,9 @@ If you have built your own `EventSource` so far the only way you have of accessi
 * You can then include this C# file in your application and get a first class (and efficient) experience.
 
 In fact most of the parsers included in the TraceEvent library were generated using the **TraceParserGen** tool.
+
+The **TraceParserGen** tool is one of the things that is built when you build the PerfView repository.  
+It ends up in the src\TraceParserGen\bin\Debug\net40 directory and you can run it from there.  
 
 ### Getting the XML Manifest
 

@@ -16,6 +16,7 @@
 
   <PropertyGroup>
     <ApplicationIcon>..\PerfView\performance.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,9 +48,10 @@
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+    <Reference Include="PresentationFramework" />
   </ItemGroup>
 
 </Project>

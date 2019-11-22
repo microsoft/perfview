@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing;
+using PerfView.TestUtilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Microsoft.Diagnostics.Tracing;
-using PerfView.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -36,7 +36,9 @@ namespace TraceEventTests
         private static void UnzipDataFiles()
         {
             if (s_fileUnzipped)
+            {
                 return;
+            }
 
             Trace.WriteLine(string.Format("Current Directory: {0}", Environment.CurrentDirectory));
             Trace.WriteLine(string.Format("TestDataDir Directory: {0}", Path.GetFullPath(TestDataDir)));
@@ -54,22 +56,45 @@ namespace TraceEventTests
                     zipReader.UnpackArchive();
                 }
                 else
+                {
                     Trace.WriteLine(string.Format("using cached ETL file {0}", etlFilePath));
+                }
+
                 Assert.True(File.Exists(etlFilePath));
             }
             Trace.WriteLine("Finished unzipping data");
             s_fileUnzipped = true;
         }
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         protected void PrepareTestData()
         {
             Assert.True(Directory.Exists(TestDataDir));
+            TestDataDir = Path.GetFullPath(TestDataDir);
+            Assert.True(Directory.Exists(OriginalBaselineDir));
+            OriginalBaselineDir = Path.GetFullPath(OriginalBaselineDir);
+
+            // This is all atomic because this method is synchronized.  
+            Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
+            {
                 Directory.Delete(OutputDir, true);
+            }
 
             Directory.CreateDirectory(OutputDir);
-            Output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
+            Output.WriteLine(string.Format("OutputDir: {0}", OutputDir));
+            Assert.True(Path.GetFullPath(OutputDir) == OutputDir);
+
+            Directory.CreateDirectory(NewBaselineDir);
+            NewBaselineDir = Path.GetFullPath(NewBaselineDir);
+            Output.WriteLine(string.Format("NewBaselineDir: {0}", NewBaselineDir));
+
+            Assert.True(Directory.Exists(UnZippedDataDir));
+            UnZippedDataDir = Path.GetFullPath(UnZippedDataDir);
+            Assert.True(Directory.Exists(BaseOutputDir));
+            BaseOutputDir = Path.GetFullPath(BaseOutputDir);
+            Assert.True(Directory.Exists(NewBaselineDir));
         }
     }
 }

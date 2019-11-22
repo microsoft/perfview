@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
     /// <summary>
     /// The parsed metadata.
     /// </summary>
-    class CtfMetadata
+    internal class CtfMetadata
     {
         private Dictionary<string, CtfClock> _clocks = new Dictionary<string, CtfClock>();
 
@@ -17,7 +16,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfEnvironment Environment { get; private set; }
         public CtfStream[] Streams { get; private set; }
         public ICollection<CtfClock> Clocks { get { return _clocks.Values; } }
-        
+
         public CtfMetadata(CtfMetadataParser parser)
         {
             Load(parser);
@@ -56,7 +55,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     case CtfDeclarationTypes.Stream:
                         CtfStream stream = new CtfStream(entry.Properties);
                         while (streams.Count <= stream.ID)
+                        {
                             streams.Add(null);
+                        }
 
                         streams[stream.ID] = stream;
                         break;
@@ -80,14 +81,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             Trace.ResolveReferences(typeAlias);
             foreach (CtfStream stream in Streams)
+            {
                 stream.ResolveReferences(typeAlias);
+            }
         }
     }
 
     /// <summary>
     /// Information about the trace itself.
     /// </summary>
-    class CtfTrace
+    internal class CtfTrace
     {
         public short Major { get; private set; }
         public short Minor { get; private set; }
@@ -126,13 +129,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// Information about a single stream in the trace.
     /// </summary>
-    class CtfStream
+    internal class CtfStream
     {
-        List<CtfEvent> _events = new List<CtfEvent>();
-
-        CtfMetadataType _header;
-        CtfMetadataType _context;
-        CtfMetadataType _eventContext;
+        private List<CtfEvent> _events = new List<CtfEvent>();
+        private CtfMetadataType _header;
+        private CtfMetadataType _context;
+        private CtfMetadataType _eventContext;
 
         public int ID { get; private set; }
         public CtfStruct EventHeader { get { return (CtfStruct)_header; } }
@@ -151,7 +153,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public void AddEvent(CtfEvent evt)
         {
             while (_events.Count <= evt.ID)
+            {
                 _events.Add(null);
+            }
 
             Debug.Assert(_events[evt.ID] == null);
             _events[evt.ID] = evt;
@@ -166,14 +170,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _context.ResolveReference(typealias);
 
             foreach (CtfEvent evt in _events)
+            {
                 evt.ResolveReferences(typealias);
+            }
         }
     }
 
     /// <summary>
     /// The environment the trace was taken in.
     /// </summary>
-    class CtfEnvironment
+    internal class CtfEnvironment
     {
         public CtfEnvironment(CtfPropertyBag bag)
         {
@@ -195,7 +201,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// A clock definition in the trace.
     /// </summary>
-    class CtfClock
+    internal class CtfClock
     {
         public CtfClock(CtfPropertyBag bag)
         {
@@ -216,14 +222,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// A definition of an event.
     /// </summary>
-    class CtfEvent
+    internal class CtfEvent
     {
-        const int SizeUninitialized = -2;
+        private const int SizeUninitialized = -2;
         internal const int SizeIndeterminate = -1;
+        private bool? _isPacked;
+        private int _size = SizeUninitialized;
 
-        bool? _isPacked;
-        int _size = SizeUninitialized;
-        
         public bool IsFixedSize { get { return Size != SizeIndeterminate; } }
 
         public int Size
@@ -231,7 +236,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             get
             {
                 if (_size == SizeUninitialized)
+                {
                     _size = Definition.GetSize();
+                }
 
                 Debug.Assert(_size >= SizeIndeterminate);
                 return _size;

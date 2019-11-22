@@ -1,12 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Utilities;
+using System;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing;
+using Utilities;
 
 namespace PerfView
 {
@@ -33,9 +29,15 @@ namespace PerfView
                 var parser = new CommandLineParser(args);
                 SetupCommandLine(parser);
                 if (parser.HelpRequested != null)
+                {
                     HelpRequested = true;
+                }
+
                 if (CommandAndArgs != null)
+                {
                     CommandLine = CommandLineUtilities.FormCommandLineFromArguments(CommandAndArgs, 0);
+                }
+
                 parser.CompleteValidation();
             }
             catch (CommandLineParserException e)
@@ -99,16 +101,16 @@ namespace PerfView
         public string StopOnEventLogMessage;    // stop collection on event logs
         public string StopCommand;              // is executed when a stop is triggered.   
         public int StopOnAppFabricOverMsec;
-        public int DelayAfterTriggerSec = 5;   // Number of seconds to wait after a trigger  
+        public int DelayAfterTriggerSec = 5;    // Number of seconds to wait after a trigger  
         public string[] MonitorPerfCounter;     // logs perf counters to the ETL file.  
 
         // Start options.
-        public bool StackCompression;           // Used compresses stacks when collecting traces. 
+        public bool StackCompression = true;    // Use compresses stacks when collecting traces. 
         public int BufferSizeMB = 256;
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
         public KernelTraceEventParser.Keywords KernelEvents = KernelTraceEventParser.Keywords.Default;
-        public string[] CpuCounters;    // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
+        public string[] CpuCounters;        // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
         public ClrTraceEventParser.Keywords ClrEvents = ClrTraceEventParser.Keywords.Default;
         public TraceEventLevel ClrEventLevel = Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose;    // The verbosity of CLR events
         public TplEtwProviderTraceEventParser.Keywords TplEvents = TplEtwProviderTraceEventParser.Keywords.Default;
@@ -119,19 +121,23 @@ namespace PerfView
         public bool DotNetAllocSampled;     // Turn on .NET Allocation profiling, but only sampled (in a smart way)
         public bool DotNetCalls;            // Turn on logging of every .NET call
         public bool DotNetCallsSampled;     // Sampling of .NET calls.  
+        public bool DisableInlining;        // Force inlining to be disabled. (useful for DotNetCalls).  
         public bool JITInlining;            // Turn on logging of successful and failed JIT inlining
         public int OSHeapProcess;           // Turn on OS Heap tracing for the process with the given process ID.
         public string OSHeapExe;            // Turn on OS heap tracing for any process with the given EXE
 
         public bool NetworkCapture;         // Capture the full packets of every incoming and outgoing  packet
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
+        public bool CCWRefCount;            // Capture CCW references count increasing and decreasing
 
         public bool Wpr;                    // Collect like WPR (no zip, puts NGEN pdbs in a .ngenpdbs directory).  
 
         public string[] Providers;          // Additional providers to turn on.   
 
         // Stop options.  
+        public string FocusProcess;       // The target process for CLR Rundown.  
         public bool NoRundown;
+        public bool NoNGenPdbs;
         public bool NoNGenRundown;
         public bool NoClrRundown;
         public bool NoV2Rundown;
@@ -145,10 +151,14 @@ namespace PerfView
             {
                 // We must merge if we Zip. 
                 if (ShouldZip)
+                {
                     return true;
+                }
                 // User asks for it explicitly. 
                 if (Merge.HasValue)
+                {
                     return Merge.Value;
+                }
                 // Otherwise the default is to merge.  
                 return true;
             }
@@ -159,14 +169,20 @@ namespace PerfView
             {
                 // User asks for it explicitly. 
                 if (Zip.HasValue)
+                {
                     return Zip.Value;
+                }
                 // If user asks for no-merge explicitly, and Zip was was not asked for, then /Zip:false is assumed 
                 if (Merge.HasValue && Merge.Value == false)
+                {
                     return false;
+                }
 
                 // by default, we don't zip if we were asked to mimic WPR.  
                 if (Wpr)
+                {
                     return false;
+                }
 
                 // But the final default is true. 
                 return true;
@@ -179,7 +195,10 @@ namespace PerfView
         public double CpuSampleMSec = 1.0;
         public bool KeepAllEvents;
         public int MaxEventCount;
+        public bool ContinueOnError;
         public double SkipMSec;
+        public DateTime StartTime;
+        public DateTime EndTime;
         public bool ForceNgenRundown;
         public bool DumpHeap;
 
@@ -221,7 +240,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("BufferSizeMB", ref BufferSizeMB, "The size the buffers (in MB) the OS should use to store events waiting to be written to disk.");
             parser.DefineOptionalQualifier("CircularMB", ref CircularMB, "Do Circular logging with a file size in MB.  Zero means non-circular.");
             parser.DefineOptionalQualifier("InMemoryCircularBuffer", ref InMemoryCircularBuffer, "Keeps the circular buffer in memory until the session is stopped.");
-            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller."); 
+            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller.");
             parser.DefineOptionalQualifier("MaxCollectSec", ref MaxCollectSec,
                 "Turn off collection (and kill the program if perfView started it) after this many seconds. Zero means no timeout.");
             parser.DefineOptionalQualifier("StopOnPerfCounter", ref StopOnPerfCounter,
@@ -247,7 +266,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("StopOnGCSuspendOverMSec", ref StopOnGCSuspendOverMSec,
                 "Trigger a stop of a collect command if there is a .NET Garbage Collection (GC) where suspending for the GC took over the given number of MSec.");
             parser.DefineOptionalQualifier("StopOnBGCFinalPauseOverMsec", ref StopOnBGCFinalPauseOverMsec,
-               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec. To work correctly, "+
+               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec. To work correctly, " +
                "this requires that heap survival and movement tracking is not enabled.");
             parser.DefineOptionalQualifier("StopOnAppFabricOverMsec", ref StopOnAppFabricOverMsec,
                 "Trigger a stop of a collect command if there is a AppFabric request is longer than the given number of MSec.");
@@ -276,14 +295,22 @@ namespace PerfView
 
             List<string> etwStopEvents = new List<string>();
             if (StopOnRequestOverMsec != 0)
+            {
                 etwStopEvents.Add("Microsoft-Windows-IIS/EventID(1);Level=Critical;TriggerMSec=" + StopOnRequestOverMsec);
+            }
+
             if (StopOnGCSuspendOverMSec != 0)
+            {
                 etwStopEvents.Add("E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4/GC/SuspendEEStart;StopEvent=GC/SuspendEEStop;StartStopID=ThreadID;Keywords=0x1;TriggerMSec=" + StopOnGCSuspendOverMSec);
+            }
 
             if (0 < etwStopEvents.Count)
             {
                 if (StopOnEtwEvent != null)
+                {
                     etwStopEvents.AddRange(StopOnEtwEvent);
+                }
+
                 StopOnEtwEvent = etwStopEvents.ToArray();
             }
 
@@ -291,14 +318,19 @@ namespace PerfView
             if (StopOnEtwEvent != null && (Process != null || DecayToZeroHours != 0))
             {
                 etwStopEvents.Clear();
-                foreach(var stopEtwEvent in StopOnEtwEvent)
+                foreach (var stopEtwEvent in StopOnEtwEvent)
                 {
-                    var newStopEtwEvent = stopEtwEvent; 
+                    var newStopEtwEvent = stopEtwEvent;
                     if (Process != null && !stopEtwEvent.Contains(";Process="))
+                    {
                         newStopEtwEvent += ";Process=" + Process;
+                    }
 
-                    if(DecayToZeroHours != 0 && !stopEtwEvent.Contains(";DecayToZeroHours="))
+                    if (DecayToZeroHours != 0 && !stopEtwEvent.Contains(";DecayToZeroHours="))
+                    {
                         newStopEtwEvent += ";DecayToZeroHours=" + DecayToZeroHours;
+                    }
+
                     etwStopEvents.Add(newStopEtwEvent);
                 }
                 StopOnEtwEvent = etwStopEvents.ToArray();
@@ -315,11 +347,15 @@ namespace PerfView
             // These apply to Stop Collect and Run 
             parser.DefineOptionalQualifier("Merge", ref Merge, "Do a merge after stopping collection.");
             parser.DefineOptionalQualifier("Zip", ref Zip, "Zip the ETL file (implies /Merge).");
-            parser.DefineOptionalQualifier("Wpr", ref Wpr, "Make output mimic WPR (Windows Performance Recorder). Don't ZIP, make a .ngenpdbs directory.  " + 
-                "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " + 
+            parser.DefineOptionalQualifier("Wpr", ref Wpr, "Make output mimic WPR (Windows Performance Recorder). Don't ZIP, make a .ngenpdbs directory.  " +
+                "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " +
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
-            parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't request CLR Rundown events.");
+            parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
+            parser.DefineOptionalQualifier("FocusProcess", ref FocusProcess, "Either a decimal process ID or a process name (exe name without path but WITH extension) to focus ETW commands." + 
+                "All NON-KERNEL providers are only send to this process (and rundown is only done on this process) which can cut overhead significantly in some cases.");
+
+            parser.DefineOptionalQualifier("NoNGenPdbs", ref NoNGenPdbs, "Don't generate NGEN Pdbs");
             parser.DefineOptionalQualifier("NoNGenRundown", ref NoNGenRundown,
                 "Don't do rundown of symbolic information in NGEN images (only needed pre V4.5).");
             parser.DefineOptionalQualifier("NoClrRundown", ref NoClrRundown,
@@ -334,6 +370,9 @@ namespace PerfView
                 "Useful for trimming large ETL files. 1M typically yields 300-400 Meg of data considered.");
             parser.DefineOptionalQualifier("SkipMSec", ref SkipMSec, "Skips the first N MSec of the trace.  " +
                 "Useful for trimming large ETL files in conjunction with the /MaxEventCount qualifier.");
+            parser.DefineOptionalQualifier("StartTime", ref StartTime, "The start date and time used to filter events of the input trace for formats that support this.");
+            parser.DefineOptionalQualifier("EndTime", ref EndTime, "The end date and time used to filter events of the input trace for formats that support this.");
+            parser.DefineOptionalQualifier("ContinueOnError", ref ContinueOnError, "Processes bad traces as best it can.");
 
             parser.DefineOptionalQualifier("CpuCounters", ref CpuCounters,
                 "A comma separated list of hardware CPU counters specifications NAME:COUNT to turn on.  " +
@@ -355,11 +394,19 @@ namespace PerfView
                 foreach (var provider in onlyProviders)
                 {
                     if (0 <= provider.IndexOf("@StacksEnabled=true", StringComparison.OrdinalIgnoreCase))
+                    {
                         hasStacks = true;
+                    }
+
                     if (0 <= provider.IndexOf("@EventIDStacksToEnable", StringComparison.OrdinalIgnoreCase))
+                    {
                         hasStacks = true;
+                    }
+
                     if (provider.StartsWith(".NETTasks", StringComparison.OrdinalIgnoreCase))
+                    {
                         hasTpl = true;
+                    }
                 }
 
                 if (hasStacks)
@@ -385,7 +432,9 @@ namespace PerfView
             }
             parser.DefineOptionalQualifier("ThreadTime", ref ThreadTime, "Shortcut for turning on context switch and readyThread events");
             if (ThreadTime)
+            {
                 KernelEvents = KernelTraceEventParser.Keywords.ThreadTime;
+            }
 
             parser.DefineOptionalQualifier("GCOnly", ref GCOnly, "Turns on JUST GC collections an allocation sampling.");
             if (GCOnly)
@@ -394,13 +443,15 @@ namespace PerfView
                 // For stack parsing.  
                 KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad | KernelTraceEventParser.Keywords.VirtualAlloc;
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.Stack |
-                            ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen | 
+                            ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen |
                             ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
                 TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
 
                 // This is not quite correct if you have providers of your own, but this covers the most important case.  
                 if (Providers == null)
+                {
                     Providers = new string[] { "Microsoft-Windows-Kernel-Memory:0x60" };
+                }
 
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCOnly.etl";
@@ -410,7 +461,7 @@ namespace PerfView
             {
                 // TODO this logic is cloned.  We need it in only one place.  If you update it do the other location as well
                 // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
-                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;     
+                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception;
                 ClrEventLevel = TraceEventLevel.Informational;
                 TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
@@ -441,8 +492,9 @@ namespace PerfView
             parser.DefineOptionalQualifier("DotNetAllocSampled", ref DotNetAllocSampled, "Turns on per-allocation .NET profiling, sampling types in a smart way to keep overhead low.");
             parser.DefineOptionalQualifier("DotNetCalls", ref DotNetCalls, "Turns on per-call .NET profiling.");
             parser.DefineOptionalQualifier("DotNetCallsSampled", ref DotNetCallsSampled, "Turns on per-call .NET profiling, sampling types in a smart way to keep overhead low.");
+            parser.DefineOptionalQualifier("DisableInlining", ref DisableInlining, "Turns off inlining (but only affects processes that start after trace start.");
             parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
-
+            parser.DefineOptionalQualifier("CCWRefCount", ref CCWRefCount, "Turns on logging of information about .NET Native CCW reference counting.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
 
@@ -470,8 +522,15 @@ namespace PerfView
             parser.DefineOptionalQualifier("SafeMode", ref SafeMode, "Turn off parallelism and other risky features.");
             parser.DefineOptionalQualifier("RestartingToElevelate", ref RestartingToElevelate, "Internal: indicates that perfView is restarting to get Admin privileges.");
 
-            // TODO FIX NOW this is a hack, does not handle kernel mode ... 
-            parser.DefineOptionalQualifier("SessionName", ref CommandProcessor.s_UserModeSessionName, "Define the name for the user mode session, if kernel events are off.");
+            string sessionName = null;
+            parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session (kernel session will also be named analogously) Useful for collecting traces when another ETW profiler (including PerfView) is being used.");
+            if (sessionName != null)
+            {
+                if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
+                    throw new ApplicationException("SessionName qualifier only works on Windows 8 and above.");
+                CommandProcessor.s_UserModeSessionName = sessionName;
+                CommandProcessor.s_KernelessionName = sessionName + "Kernel";
+            }
 
             parser.DefineOptionalQualifier("MaxNodeCountK", ref MaxNodeCountK,
                 "The maximum number of objects (in K or thousands) that will even be examined when dumping the heap.  Avoids memory use at collection time.  " +
@@ -543,7 +602,9 @@ namespace PerfView
             // We have both a qualifier and a parameter named Process. It is OK that they use the same variable, but the parameter should not
             // overwrite the qualifier if it is null.  
             if (ProcessParam != null)
+            {
                 Process = ProcessParam;
+            }
 
             parser.DefineParameterSet("HeapSnapshotFromProcessDump", ref DoCommand, App.CommandProcessor.HeapSnapshotFromProcessDump,
                 "Extract the CLR GC heap from a process dump file specified.");

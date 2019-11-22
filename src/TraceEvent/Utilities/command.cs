@@ -7,15 +7,13 @@
  * Date  : 11/3/2005  */
 /****************************************************************************/
 
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;               // for StackTrace; Process
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.IO;
-using System.Reflection;
-using System.Diagnostics;               // for StackTrace; Process
-using System.Threading;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 
 namespace Utilities
 {
@@ -29,8 +27,8 @@ namespace Utilities
     /// on Command itself), because it is reasonably common to want to have a set
     /// of options passed to several commands, which is not easily possible otherwise. 
     /// </summary>
-#if COMMAND_PUBLIC 
-    public 
+#if COMMAND_PUBLIC
+    public
 #endif
     sealed class CommandOptions
     {
@@ -69,7 +67,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddNoThrow()
         {
-            this.noThrow = true;
+            noThrow = true;
             return this;
         }
 
@@ -83,7 +81,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddStart()
         {
-            this.Start = true;
+            Start = true;
             return this;
         }
 
@@ -99,7 +97,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddUseShellExecute()
         {
-            this.useShellExecute = true;
+            useShellExecute = true;
             return this;
         }
 
@@ -113,7 +111,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddNoWindow()
         {
-            this.noWindow = true;
+            noWindow = true;
             return this;
         }
 
@@ -127,7 +125,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddNoWait()
         {
-            this.noWait = true;
+            noWait = true;
             return this;
         }
 
@@ -141,7 +139,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddElevate()
         {
-            this.elevate = true;
+            elevate = true;
             return this;
         }
         /// <summary>
@@ -158,7 +156,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddTimeout(int milliseconds)
         {
-            this.timeoutMSec = milliseconds;
+            timeoutMSec = milliseconds;
             return this;
         }
 
@@ -184,7 +182,7 @@ namespace Utilities
         /// </summary>
         public CommandOptions AddCurrentDirectory(string directoryPath)
         {
-            this.currentDirectory = directoryPath;
+            currentDirectory = directoryPath;
             return this;
         }
 
@@ -201,7 +199,10 @@ namespace Utilities
             set
             {
                 if (outputStream != null)
+                {
                     throw new Exception("OutputFile and OutputStream can not both be set");
+                }
+
                 outputFile = value;
             }
         }
@@ -226,7 +227,10 @@ namespace Utilities
             set
             {
                 if (outputFile != null)
+                {
                     throw new Exception("OutputFile and OutputStream can not both be set");
+                }
+
                 outputStream = value;
             }
         }
@@ -253,7 +257,10 @@ namespace Utilities
             get
             {
                 if (environmentVariables == null)
+                {
                     environmentVariables = new Dictionary<string, string>();
+                }
+
                 return environmentVariables;
             }
         }
@@ -297,8 +304,8 @@ namespace Utilities
     /// of System.Diagnostics.Process, and knows how to capture output and otherwise
     /// makes calling commands very easy.
     /// </summary>
-#if COMMAND_PUBLIC 
-    public 
+#if COMMAND_PUBLIC
+    public
 #endif
     sealed class Command
     {
@@ -349,7 +356,10 @@ namespace Utilities
             get
             {
                 if (outputStream != null)
+                {
                     throw new InvalidOperationException("Output not available if redirected to file or stream");
+                }
+
                 return output.ToString();
             }
         }
@@ -371,9 +381,14 @@ namespace Utilities
         public static Command RunToConsole(string commandLine, CommandOptions options = null)
         {
             if (options == null)
+            {
                 options = new CommandOptions();
+            }
             else
+            {
                 options = options.Clone();
+            }
+
             return Run(commandLine, options.AddOutputStream(Console.Out));
         }
 
@@ -386,12 +401,17 @@ namespace Utilities
         /// <param variable="commandLine">The command lineNumber to run as a subprocess</param>
         /// <param variable="options">Additional qualifiers that control how the process is run</param>
         /// <returns>A Command structure that can be queried to determine ExitCode, Output, etc.</returns>
-        public static Command Run(string commandLine, CommandOptions options=null)
+        public static Command Run(string commandLine, CommandOptions options = null)
         {
             if (options == null)
+            {
                 options = new CommandOptions();
+            }
             else
+            {
                 options = options.Clone();
+            }
+
             Command run = new Command(commandLine, options);
             run.Wait();
             return run;
@@ -414,7 +434,9 @@ namespace Utilities
             // See if the command is quoted and match it in that case
             Match m = Regex.Match(commandLine, "^\\s*\"(.*?)\"\\s*(.*)");
             if (!m.Success)
+            {
                 m = Regex.Match(commandLine, @"\s*(\S*)\s*(.*)");    // thing before first space is command
+            }
 
             ProcessStartInfo startInfo = new ProcessStartInfo(m.Groups[1].Value, m.Groups[2].Value);
             process = new Process();
@@ -429,7 +451,9 @@ namespace Utilities
                 options.useShellExecute = true;
                 startInfo.Verb = "runas";
                 if (options.currentDirectory == null)
+                {
                     options.currentDirectory = Directory.GetCurrentDirectory();
+                }
 #endif
             }
 
@@ -439,13 +463,18 @@ namespace Utilities
                 startInfo.UseShellExecute = true;
 #if ! NETSTANDARD1_6
                 if (options.noWindow)
+                {
                     startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                }
 #endif
             }
             else
             {
                 if (options.input != null)
+                {
                     startInfo.RedirectStandardInput = true;
+                }
+
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardError = true;
                 startInfo.RedirectStandardOutput = true;
@@ -473,16 +502,24 @@ namespace Utilities
                         for (; ; )
                         {
                             m = new Regex(@"%(\w+)%").Match(value, startAt);
-                            if (!m.Success) break;
+                            if (!m.Success)
+                            {
+                                break;
+                            }
+
                             string varName = m.Groups[1].Value;
                             string varValue;
                             if (startInfo.GetEnvironment().ContainsKey(varName))
+                            {
                                 varValue = startInfo.GetEnvironment()[varName];
+                            }
                             else
                             {
                                 varValue = Environment.GetEnvironmentVariable(varName);
                                 if (varValue == null)
+                                {
                                     varValue = "";
+                                }
                             }
                             // replace this instance of the variable with its definition.  
                             int varStart = m.Groups[1].Index - 1;     // -1 becasue % chars are not in the group
@@ -521,7 +558,10 @@ namespace Utilities
                     "    Cmd: " + commandLine + "\r\n";
 
                 if (Regex.IsMatch(startInfo.FileName, @"^(copy|dir|del|color|set|cd|cdir|md|mkdir|prompt|pushd|popd|start|assoc|ftype)", RegexOptions.IgnoreCase))
+                {
                     msg += "    Cmd " + startInfo.FileName + " implemented by Cmd.exe, fix by prefixing with 'cmd /c'.";
+                }
+
                 throw new ApplicationException(msg, e);
             }
 
@@ -556,7 +596,9 @@ namespace Utilities
         {
             // we where told not to wait
             if (options.noWait)
+            {
                 return this;
+            }
 
             bool waitReturned = false;
             bool killed = false;
@@ -568,7 +610,9 @@ namespace Utilities
                 //  If you do Run("cmd /c set") you get truncated output at the
                 //  Looks like the problem in the framework.  
                 for (int i = 0; i < 10; i++)
+                {
                     System.Threading.Thread.Sleep(1);
+                }
             }
             finally
             {
@@ -581,14 +625,22 @@ namespace Utilities
 
             // If we created the output stream, we should close it.  
             if (outputStream != null && options.outputFile != null)
+            {
                 outputStream.Dispose();
+            }
+
             outputStream = null;
 
-            if (waitReturned && killed) 
+            if (waitReturned && killed)
+            {
                 throw new Exception("Timeout of " + (options.timeoutMSec / 1000) + " sec exceeded\r\n    Cmd: " + commandLine);
+            }
 
             if (process.ExitCode != 0 && !options.noThrow)
+            {
                 ThrowCommandFailure(null);
+            }
+
             return this;
         }
 
@@ -611,17 +663,26 @@ namespace Utilities
                     // Only show the first lineNumber the last two lines if there are alot of output. 
                     Match m = Regex.Match(outStr, @"^(\s*\n)?(.+\n)(.|\n)*?(.+\n.*\S)\s*$");
                     if (m.Success)
+                    {
                         outStr = m.Groups[2].Value + "    <<< Omitted output ... >>>\r\n" + m.Groups[4].Value;
+                    }
                     else
+                    {
                         outStr = outStr.Trim();
+                    }
                     // Indent the output
                     outStr = outStr.Replace("\n", "\n    ");
                     outSpec = "\r\n  Output: {\r\n    " + outStr + "\r\n  }";
                 }
                 if (message == null)
+                {
                     message = "";
+                }
                 else if (message.Length > 0)
+                {
                     message += "\r\n";
+                }
+
                 throw new Exception(message + "Process returned exit code 0x" + process.ExitCode.ToString("x") + "\r\n" +
                                     "  Cmd: " + commandLine + outSpec);
             }
@@ -669,14 +730,17 @@ namespace Utilities
 
             // If we created the output stream, we should close it.  
             if (outputStream != null && options.outputFile != null)
+            {
                 outputStream.Dispose();
+            }
+
             outputStream = null;
         }
 
         /// <summary>
         /// Put double quotes around 'str' if necessary (handles quotes quotes.  
         /// </summary>
-        static public string Quote(string str)
+        public static string Quote(string str)
         {
             if (str.IndexOf('"') < 0)
             {
@@ -694,7 +758,9 @@ namespace Utilities
         {
             string ret = ProbeForExe(commandExe);
             if (ret != null)
+            {
                 return ret;
+            }
 
             if (!commandExe.Contains("\\"))
             {
@@ -703,7 +769,9 @@ namespace Utilities
                     string baseExe = Path.Combine(path, commandExe);
                     ret = ProbeForExe(baseExe);
                     if (ret != null)
+                    {
                         return ret;
+                    }
                 }
             }
             return null;
@@ -713,13 +781,17 @@ namespace Utilities
         private static string ProbeForExe(string path)
         {
             if (File.Exists(path))
+            {
                 return path;
+            }
 
             foreach (string ext in PathExts)
             {
                 string name = path + ext;
                 if (File.Exists(name))
+                {
                     return name;
+                }
             }
             return null;
         }
@@ -729,7 +801,10 @@ namespace Utilities
             get
             {
                 if (pathExts == null)
+                {
                     pathExts = Environment.GetEnvironmentVariable("PATHEXT").Split(';');
+                }
+
                 return pathExts;
             }
         }
@@ -739,7 +814,10 @@ namespace Utilities
             get
             {
                 if (paths == null)
+                {
                     paths = Environment.GetEnvironmentVariable("PATH").Split(';');
+                }
+
                 return paths;
             }
         }
@@ -751,9 +829,13 @@ namespace Utilities
         private void OnProcessOutput(object sender, DataReceivedEventArgs e)
         {
             if (outputStream != null)
+            {
                 outputStream.WriteLine(e.Data);
+            }
             else
+            {
                 output.AppendLine(e.Data);
+            }
         }
 
         /* private state */

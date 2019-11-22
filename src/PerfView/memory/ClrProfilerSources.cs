@@ -47,7 +47,10 @@ namespace ClrProfiler
             {
                 ProfilerStackTraceID index = m_clrProfiler.NextFrame((ProfilerStackTraceID)callStackIndex);
                 if (index == ProfilerStackTraceID.Null)
+                {
                     return StackSourceCallStackIndex.Invalid;
+                }
+
                 var ret = (StackSourceCallStackIndex)index;
                 Debug.Assert(ret != callStackIndex);
                 return ret;
@@ -59,7 +62,10 @@ namespace ClrProfiler
                 Debug.Assert(allocID != ProfilerAllocID.Null && allocID < m_clrProfiler.AllocIdLimit);
                 ProfilerStackTraceID stackId = m_clrProfiler.GetAllocStack(allocID);
                 if (stackId == ProfilerStackTraceID.Null)
+                {
                     return StackSourceCallStackIndex.Invalid;
+                }
+
                 return (StackSourceCallStackIndex)stackId;
             }
         }
@@ -83,7 +89,10 @@ namespace ClrProfiler
         public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName)
         {
             if (frameIndex < StackSourceFrameIndex.Start)
+            {
                 return System.Enum.GetName(typeof(StackSourceFrameIndex), frameIndex);      // TODO can be more efficient
+            }
+
             frameIndex = (StackSourceFrameIndex)(frameIndex - StackSourceFrameIndex.Start);
 
             // a frame index might be a CLRProfiler method index, or it might be CLRProfiler nodeId index
@@ -121,7 +130,9 @@ namespace ClrProfiler
         public override StackSourceSample GetSampleByIndex(StackSourceSampleIndex sampleIndex)
         {
             if (m_sample == null)
+            {
                 m_sample = new StackSourceSample(this);
+            }
 
             var allocs = m_gcHeap.Allocs;
             m_sample.SampleIndex = sampleIndex; ;
@@ -132,10 +143,10 @@ namespace ClrProfiler
         }
 
         #region private
-        string m_fileName;
-        ClrProfilerParser m_clrProfiler;
-        GCSimulation m_gcHeap;
-        StackSourceSample m_sample;
+        private string m_fileName;
+        private ClrProfilerParser m_clrProfiler;
+        private GCSimulation m_gcHeap;
+        private StackSourceSample m_sample;
         #endregion
     }
 
@@ -146,7 +157,7 @@ namespace ClrProfiler
             m_fileName = clrProfilerFileName;
             m_clrProfiler = new ClrProfilerParser();
             m_calls = new GrowableArray<int>(1000000);
-            m_clrProfiler.Call += delegate(ProfilerStackTraceID stackId, uint threadId)
+            m_clrProfiler.Call += delegate (ProfilerStackTraceID stackId, uint threadId)
             {
                 m_calls.Add((int)stackId);
                 var method = m_clrProfiler.Method(stackId);
@@ -208,7 +219,9 @@ namespace ClrProfiler
         public override StackSourceSample GetSampleByIndex(StackSourceSampleIndex sampleIndex)
         {
             if (m_sample == null)
+            {
                 m_sample = new StackSourceSample(this);
+            }
 
             var stackId = (ProfilerStackTraceID)m_calls[(int)sampleIndex];
             m_sample.SampleIndex = sampleIndex;
@@ -230,12 +243,12 @@ namespace ClrProfiler
             public int count;
         };
 
-        string m_fileName;
-        ClrProfilerParser m_clrProfiler;
-        GrowableArray<int> m_calls;
-        int m_totalMethodCount;
-        int m_totalMethodSize;
-        StackSourceSample m_sample;
+        private string m_fileName;
+        private ClrProfilerParser m_clrProfiler;
+        private GrowableArray<int> m_calls;
+        private int m_totalMethodCount;
+        private int m_totalMethodSize;
+        private StackSourceSample m_sample;
         #endregion
     }
 
@@ -250,14 +263,14 @@ namespace ClrProfiler
             m_relocs = new GrowableArray<Relocation>(256);
             Allocs = new GrowableArray<AllocInfo>(100000);
 
-            m_clrProfiler.GCStart += new ClrProfilerParser.GCEventHandler(this.GCStart);
-            m_clrProfiler.GCEnd += new ClrProfilerParser.GCEventHandler(this.GCEnd);
-            m_clrProfiler.ObjectRangeLive += new ClrProfilerParser.LiveObjectRangeHandler(this.ObjectRangeLive);
-            m_clrProfiler.ObjectRangeRelocation += new ClrProfilerParser.RelocationEventHandler(this.ObjectRangeRelocation);
+            m_clrProfiler.GCStart += new ClrProfilerParser.GCEventHandler(GCStart);
+            m_clrProfiler.GCEnd += new ClrProfilerParser.GCEventHandler(GCEnd);
+            m_clrProfiler.ObjectRangeLive += new ClrProfilerParser.LiveObjectRangeHandler(ObjectRangeLive);
+            m_clrProfiler.ObjectRangeRelocation += new ClrProfilerParser.RelocationEventHandler(ObjectRangeRelocation);
 
             // TODO expose the thread information
             AllocInfo info = new AllocInfo();
-            m_clrProfiler.Allocation += delegate(ProfilerAllocID allocId, Address objectAddress, uint threadId)
+            m_clrProfiler.Allocation += delegate (ProfilerAllocID allocId, Address objectAddress, uint threadId)
             {
                 Debug.Assert(allocId != ProfilerAllocID.Null);
                 info.Size = (int)m_clrProfiler.GetAllocSize(allocId);
@@ -271,7 +284,7 @@ namespace ClrProfiler
                 m_numAllocs++;
             };
 
-            m_clrProfiler.Tick += delegate(int milliSecondsSinceStart)
+            m_clrProfiler.Tick += delegate (int milliSecondsSinceStart)
             {
                 CurrentTimeMSec = milliSecondsSinceStart;
             };
@@ -284,15 +297,18 @@ namespace ClrProfiler
         {
             if (!m_areAllocsSorted)
             {
-                Allocs.Sort(delegate(AllocInfo x, AllocInfo y) { return ((ulong) x.ObjectAddress).CompareTo((ulong) y.ObjectAddress); });
+                Allocs.Sort(delegate (AllocInfo x, AllocInfo y) { return ((ulong)x.ObjectAddress).CompareTo((ulong)y.ObjectAddress); });
                 m_areAllocsSorted = true;
             }
 
             int index;
             bool success = Allocs.BinarySearch(objectAddress, out index,
-                delegate(Address key, AllocInfo elem) { return ((ulong)key).CompareTo((ulong)elem.ObjectAddress); });
+                delegate (Address key, AllocInfo elem) { return ((ulong)key).CompareTo((ulong)elem.ObjectAddress); });
             if (!success)
+            {
                 return ProfilerAllocID.Null;
+            }
+
             Debug.Assert(Allocs[index].ObjectAddress == objectAddress);
             return Allocs[index].AllocId;
         }
@@ -323,13 +339,15 @@ namespace ClrProfiler
             m_condemedGeneration = condemnedGeneration;
             m_promotedToGeneration = condemnedGeneration + 1;
             if (m_promotedToGeneration > 2)
+            {
                 m_promotedToGeneration = 2;
+            }
         }
         private void GCEnd(int gcNumber, bool induced, int condemnedGeneration, List<ProfilerGCSegment> gcMemoryRanges)
         {
             if (!m_areRelocsSorted)
             {
-                m_relocs.Sort(delegate(Relocation x, Relocation y) { return ((ulong)x.SourceStart).CompareTo((ulong)y.SourceStart); });
+                m_relocs.Sort(delegate (Relocation x, Relocation y) { return ((ulong)x.SourceStart).CompareTo((ulong)y.SourceStart); });
                 m_areRelocsSorted = true;
             }
 
@@ -350,7 +368,10 @@ namespace ClrProfiler
                 if (ApplyRelocsToAlloc(ref array[curIdx]))
                 {
                     if (curIdx > writeIdx)
+                    {
                         array[writeIdx] = array[curIdx];
+                    }
+
                     survivedMemSize += array[writeIdx].Size;
                     writeIdx++;
                 }
@@ -365,18 +386,26 @@ namespace ClrProfiler
         {
             // You survive if your generation is large than the condemed generation.  
             if (alloc.Generation > m_condemedGeneration)
+            {
                 return true;
+            }
+
             Debug.Assert(m_areRelocsSorted);
 
             // See if you survived.
             int idx = m_lastRelocIdx;                               // See if you can start where you left off.  
             if (alloc.ObjectAddress < m_lastRelocRegionEnd)
+            {
                 idx = 0;                                            // Nope, start at the begining. 
+            }
 
             while (idx < m_relocs.Count)
             {
                 if (alloc.ObjectAddress < m_relocs[idx].SourceStart)
+                {
                     return false;
+                }
+
                 if (alloc.ObjectAddress < m_relocs[idx].SourceEnd)
                 {
                     alloc.ObjectAddress = alloc.ObjectAddress + m_relocs[idx].DiffToTarget;
@@ -407,7 +436,7 @@ namespace ClrProfiler
             return false;
         }
 
-        struct Relocation
+        private struct Relocation
         {
             public Address SourceStart;
             public Address SourceEnd;       // Points just beyond the region. 
@@ -426,9 +455,8 @@ namespace ClrProfiler
         private bool m_areAllocsSorted;
         private int m_curGC;
         private ClrProfilerParser m_clrProfiler;
-
-        int[] m_genBoundary = new int[3];     // index to the first allocation that can be in Generation N (alwasy 0 for gen 2). 
-        long m_numAllocs;
+        private int[] m_genBoundary = new int[3];     // index to the first allocation that can be in Generation N (alwasy 0 for gen 2). 
+        private long m_numAllocs;
         #endregion
     }
 

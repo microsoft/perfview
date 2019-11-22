@@ -6,15 +6,18 @@ namespace TraceEventTests
 {
     public abstract class TestBase
     {
-        protected static readonly string OriginalBaselineDir = FindInputDir();
-        protected static readonly string TestDataDir = @".\inputs";
-        protected static readonly string UnZippedDataDir = @".\unzipped";
-        protected static readonly string BaseOutputDir = @".\output";
+        // All of these are normalized to full paths. in PrepareTestData.
+        // It also cleans out the output directory and unzips the input data
+        protected static string OriginalBaselineDir = FindInputDir();
+        protected static string TestDataDir = @".\inputs";
+        protected static string UnZippedDataDir = @".\unzipped";
+        protected static string BaseOutputDir = @".\output";
+        protected static string NewBaselineDir = @".\newBaseLines";
 
         protected TestBase(ITestOutputHelper output)
         {
             Output = output;
-            OutputDir = Path.Combine(BaseOutputDir, Guid.NewGuid().ToString("N").Substring(0, 8));
+            OutputDir = Path.Combine(Path.GetFullPath(BaseOutputDir), Guid.NewGuid().ToString("N").Substring(0, 8));
         }
 
         protected ITestOutputHelper Output
@@ -39,7 +42,10 @@ namespace TraceEventTests
             {
                 string candidate = Path.Combine(dir, @"TraceEvent\TraceEvent.Tests\inputs");
                 if (Directory.Exists(candidate))
+                {
                     return Path.GetFullPath(candidate);
+                }
+
                 dir = Path.GetDirectoryName(dir);
             }
             return @"%PERFVIEW%\src\TraceEvent\TraceEvent.Tests\inputs";

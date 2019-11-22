@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
 using System.IO;
 using System.IO.Compression2;
+using System.Text;
 
 namespace ETLStackBrowse
 {
@@ -83,10 +82,10 @@ namespace ETLStackBrowse
 
         public ByteWindow Assign(byte[] b)
         {
-            this.buffer = b;
-            this.fields = null;
-            this.ib = 0;
-            this.len = b.Length;
+            buffer = b;
+            fields = null;
+            ib = 0;
+            len = b.Length;
 
             return this;
         }
@@ -123,7 +122,9 @@ namespace ETLStackBrowse
             int ib = fields[fld];
 
             while (buffer[ib] == (byte)' ')
+            {
                 ib++;
+            }
 
             long t = 0;
 
@@ -169,7 +170,9 @@ namespace ETLStackBrowse
             int i = 0;
 
             while (buffer[ib + i] == (byte)' ')
+            {
                 i++;
+            }
 
             long t = 0;
 
@@ -207,9 +210,13 @@ namespace ETLStackBrowse
                     t += b - '0';
                 }
                 else if (b == ',')
+                {
                     continue;
+                }
                 else
+                {
                     break;
+                }
             }
 
             return t;
@@ -221,10 +228,14 @@ namespace ETLStackBrowse
             int ib = fields[fld];
 
             while (buffer[ib] == (byte)' ')
+            {
                 ib++;
+            }
 
             if (buffer[ib] == '0' && buffer[ib + 1] == 'x')
+            {
                 ib += 2;
+            }
 
             ulong t = 0;
 
@@ -259,7 +270,9 @@ namespace ETLStackBrowse
             int ib = fields[fld];
 
             while (buffer[ib] == (byte)' ')
+            {
                 ib++;
+            }
 
             int t = 0;
 
@@ -279,7 +292,9 @@ namespace ETLStackBrowse
             int ib = this.ib;
 
             while (buffer[ib] == (byte)' ')
+            {
                 ib++;
+            }
 
             int t = 0;
 
@@ -302,7 +317,9 @@ namespace ETLStackBrowse
             }
 
             while (len > 0 && buffer[ib + len - 1] == ' ')
+            {
                 len--;
+            }
 
             return this;
         }
@@ -336,27 +353,40 @@ namespace ETLStackBrowse
             for (i = 0; i < b1.Length; i++)
             {
                 if (i == b2.Length)
+                {
                     return 1;
+                }
 
                 byte c1 = b1[i];
                 byte c2 = b2[i];
                 if (caseInsensitive)
                 {
                     if ('a' <= c1 && c1 <= 'z')
+                    {
                         c1 -= ('a' - 'A');
+                    }
+
                     if ('a' <= c2 && c2 <= 'z')
+                    {
                         c2 -= ('a' - 'A');
+                    }
                 }
 
                 if (c1 < c2)
+                {
                     return -1;
+                }
 
                 if (c1 > c2)
+                {
                     return 1;
+                }
             }
 
             if (i < b2.Length)
+            {
                 return -1;
+            }
 
             return 0;
         }
@@ -364,10 +394,14 @@ namespace ETLStackBrowse
         public bool Contains(byte[] substr)
         {
             if (substr.Length == 0)
+            {
                 return true;
+            }
 
             if (substr.Length > len)
+            {
                 return false;
+            }
 
             for (int i = 0; i < len; i++)
             {
@@ -375,11 +409,15 @@ namespace ETLStackBrowse
                 for (; j < substr.Length; j++)
                 {
                     if (buffer[i + ib + j] != substr[j])
+                    {
                         break;
+                    }
                 }
 
                 if (j == substr.Length)
+                {
                     return true;
+                }
             }
 
             return false;
@@ -388,12 +426,16 @@ namespace ETLStackBrowse
         public bool StartsWith(byte[] prefix)
         {
             if (prefix.Length > len)
+            {
                 return false;
+            }
 
             for (int i = prefix.Length - 1; i >= 0; i--)
             {
                 if (buffer[i + ib] != prefix[i])
+                {
                     return false;
+                }
             }
 
             return true;
@@ -401,9 +443,11 @@ namespace ETLStackBrowse
 
         public byte[] Clone()
         {
-            byte[] bytes = new byte[this.len];
+            byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++)
+            {
                 bytes[i] = buffer[ib + i];
+            }
 
             return bytes;
         }
@@ -411,20 +455,28 @@ namespace ETLStackBrowse
         public int Compare(ByteWindow t)
         {
             int i = 0;
-            for (i = 0; i < this.len; i++)
+            for (i = 0; i < len; i++)
             {
                 if (i == t.len)
+                {
                     return 1;
+                }
 
-                if (this.buffer[this.ib + i] < t.buffer[t.ib + i])
+                if (buffer[ib + i] < t.buffer[t.ib + i])
+                {
                     return -1;
+                }
 
-                if (this.buffer[this.ib + i] > t.buffer[t.ib + i])
+                if (buffer[ib + i] > t.buffer[t.ib + i])
+                {
                     return 1;
+                }
             }
 
             if (i < t.len)
+            {
                 return -1;
+            }
 
             return 0;
         }
@@ -465,23 +517,18 @@ namespace ETLStackBrowse
 
     public class BigStream
     {
-        BackgroundReader bgReader = null;
+        private BackgroundReader bgReader = null;
+        private const int cbBufferSize = 1 << 16;  // 64k
 
-        const int cbBufferSize = 1 << 16;  // 64k
-
-        FileStream src;
-
-        int cb;
-        int ib = 0;
-
-        byte[] stm_buffer = new byte[cbBufferSize];
-        short[] stm_offsets = new short[cbBufferSize / 2];
-        int stm_c_offsets = 0;
-        int stm_i_offset = 0;
-
-        int[] fields = new int[100];
-
-        System.Threading.Thread bgThread = null;
+        private FileStream src;
+        private int cb;
+        private int ib = 0;
+        private byte[] stm_buffer = new byte[cbBufferSize];
+        private short[] stm_offsets = new short[cbBufferSize / 2];
+        private int stm_c_offsets = 0;
+        private int stm_i_offset = 0;
+        private int[] fields = new int[100];
+        private System.Threading.Thread bgThread = null;
 
 
         ~BigStream()
@@ -491,7 +538,7 @@ namespace ETLStackBrowse
 
         public BigStream(string filename)
         {
-            src = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read|FileShare.Delete);
+            src = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
 
             if (filename.EndsWith(".csvz"))
             {
@@ -531,7 +578,7 @@ namespace ETLStackBrowse
             }
         }
 
-        List<long> offsets = new List<long>();
+        private List<long> offsets = new List<long>();
 
         private int ReadBuffer(byte[] buffer, int ib, int len)
         {
@@ -560,7 +607,7 @@ namespace ETLStackBrowse
             return cb;
         }
 
-        void InitArchiveSettings()
+        private void InitArchiveSettings()
         {
             var stmlen = src.Length;
             var r0 = MakeReader(src, stmlen - 8, 8);
@@ -577,7 +624,7 @@ namespace ETLStackBrowse
             }
         }
 
-        BinaryReader MakeReader(FileStream stm, long offset, int count)
+        private BinaryReader MakeReader(FileStream stm, long offset, int count)
         {
             var b = new byte[count];
             stm.Seek(offset, SeekOrigin.Begin);
@@ -586,8 +633,8 @@ namespace ETLStackBrowse
             return new BinaryReader(m);
         }
 
-        long pos = 0;
-        long posNext = 0;
+        private long pos = 0;
+        private long posNext = 0;
 
         public bool ReadLine(ByteWindow b)
         {
@@ -604,7 +651,10 @@ namespace ETLStackBrowse
                     if (ib >= 0)
                     {
                         if (fld < fields.Length)
+                        {
                             fields[fld++] = ib;
+                        }
+
                         stm_i_offset++;
                     }
                     else
@@ -624,12 +674,17 @@ namespace ETLStackBrowse
                         if (ib > 0 && stm_buffer[ib - 1] == '\r')
                         {
                             if (fld < fields.Length)
+                            {
                                 fields[fld++] = ib;  // use the /r if there is one
+                            }
                         }
                         else
                         {
                             if (fld < fields.Length)
+                            {
                                 fields[fld++] = ib + 1; // else use the /n
+                            }
+
                             b.len++;
                         }
 
@@ -665,22 +720,26 @@ namespace ETLStackBrowse
         internal void Close()
         {
             if (bgReader != null)
+            {
                 bgReader.Exit();
+            }
 
             bgReader = null;
 
             if (src != null)
+            {
                 src.Close();
+            }
 
             src = null;
         }
     }
 
-    class BackgroundReader
+    internal class BackgroundReader
     {
-        const int buffersize = 32000;
-        FileStream src = null;
-        List<long> offsets = null;
+        private const int buffersize = 32000;
+        private FileStream src = null;
+        private List<long> offsets = null;
 
         public BackgroundReader(FileStream src, List<long> offsets)
         {
@@ -697,7 +756,7 @@ namespace ETLStackBrowse
             public byte[] buffer = new byte[buffersize];
         }
 
-        enum CmdCode
+        private enum CmdCode
         {
             Seek,
             Stop,
@@ -705,31 +764,30 @@ namespace ETLStackBrowse
             Exit
         }
 
-        class Cmd
+        private class Cmd
         {
             public CmdCode code;
             public long position;
             public Block block;
         }
 
-        LinkedList<Cmd> cmds = new LinkedList<Cmd>();
-        LinkedList<Block> blocksReady = new LinkedList<Block>();
-        LinkedList<Block> blocksFree = new LinkedList<Block>();
-
-        System.Threading.Semaphore semaphoreToBg = new System.Threading.Semaphore(0, 10000);
-        System.Threading.Semaphore semaphoreFromBg = new System.Threading.Semaphore(0, 10000);
-
-        const int blocks_readahead = 16;
-
-        byte[] bufferScratch = new byte[buffersize];
-        int cbScratch = 0;
-        long currentSegmentOffset = 0;
-        int currentSegment = 0;
+        private LinkedList<Cmd> cmds = new LinkedList<Cmd>();
+        private LinkedList<Block> blocksReady = new LinkedList<Block>();
+        private LinkedList<Block> blocksFree = new LinkedList<Block>();
+        private System.Threading.Semaphore semaphoreToBg = new System.Threading.Semaphore(0, 10000);
+        private System.Threading.Semaphore semaphoreFromBg = new System.Threading.Semaphore(0, 10000);
+        private const int blocks_readahead = 16;
+        private byte[] bufferScratch = new byte[buffersize];
+        private int cbScratch = 0;
+        private long currentSegmentOffset = 0;
+        private int currentSegment = 0;
 
         public void DoWork()
         {
             for (int i = 0; i < blocks_readahead; i++)
+            {
                 blocksFree.AddLast(new Block());
+            }
 
             bool fReading = false;
             GZipStream gstm = null;
@@ -802,7 +860,9 @@ namespace ETLStackBrowse
                 }
 
                 if (!fReading)
+                {
                     continue;
+                }
 
                 if (offsets.Count == 0)
                 {
@@ -868,10 +928,14 @@ namespace ETLStackBrowse
                             cbBuffer += cbRead;
 
                             if (cbBuffer == b.buffer.Length)
+                            {
                                 break;
+                            }
 
                             if (cbRead == 0)
+                            {
                                 break;
+                            }
                         }
 
                         if (cbBuffer > 0)
@@ -885,7 +949,9 @@ namespace ETLStackBrowse
                         }
 
                         if (cbRead != 0)
+                        {
                             continue;
+                        }
 
                         currentSegment++;
                         currentSegmentOffset = 0;
@@ -904,7 +970,7 @@ namespace ETLStackBrowse
             }
         }
 
-        long seekPosition = -1;
+        private long seekPosition = -1;
 
         public void Seek(long position)
         {
@@ -961,8 +1027,8 @@ namespace ETLStackBrowse
             semaphoreToBg.Release();
         }
 
-        long lengthStatistic;
-        long countStatistic;
+        private long lengthStatistic;
+        private long countStatistic;
 
         public Block ReadBlock()
         {
@@ -1007,12 +1073,17 @@ namespace ETLStackBrowse
                 int ibLastNewline = cbBuffer - 1;
 
                 while (buffer[ibLastNewline] != '\n' && ibLastNewline > 0)
+                {
                     ibLastNewline--;
+                }
 
                 int ibCopy = ibLastNewline + 1;
                 int ib = 0;
                 while (ibCopy < cbBuffer)
+                {
                     bufferScratch[ib++] = buffer[ibCopy++];
+                }
+
                 cbScratch = ib;
 
                 b.position = (((long)currentSegment) << 32) + currentSegmentOffset;
@@ -1041,9 +1112,9 @@ namespace ETLStackBrowse
         }
     }
 
-    static class LineBreaker
+    internal static class LineBreaker
     {
-        static public void ComputeLineAndFieldOffsets(BackgroundReader.Block b)
+        public static void ComputeLineAndFieldOffsets(BackgroundReader.Block b)
         {
             int cb = b.cb;
             int fld = 0;
@@ -1094,7 +1165,7 @@ namespace ETLStackBrowse
         // function name may contain a comma and we don't want to be fooled into thinking
         // it's a field delimiter.
         // Returns true if there is more to go on this line. false if '\n' was reached.
-        static int ParseCarefully(byte[] buffer, int ib)
+        private static int ParseCarefully(byte[] buffer, int ib)
         {
             // This is pretty naive. No attempt made to pair up brackets.
             int nOpenAngleBrackets = 0;
