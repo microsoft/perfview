@@ -1031,6 +1031,72 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 12, ThreadTaskGuid);
             }
         }
+        public event Action<TieredCompilationIncrementMethodCallCounterTraceData> TieredCompilationIncrement
+        {
+            add
+            {
+                RegisterTemplate(new TieredCompilationIncrementMethodCallCounterTraceData(value, 285, 31, "TieredCompilation", TieredCompilationTaskGuid, 14, "Increment", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 285, TieredCompilationTaskGuid);
+            }
+        }
+        public event Action<TieredCompilationEmptyTraceData> TieredCompilationPause
+        {
+            add
+            {
+                RegisterTemplate(new TieredCompilationEmptyTraceData(value, 281, 31, "TieredCompilation", TieredCompilationTaskGuid, 12, "Pause", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 281, TieredCompilationTaskGuid);
+            }
+        }
+        public event Action<TieredCompilationResumeTraceData> TieredCompilationResume
+        {
+            add
+            {
+                RegisterTemplate(new TieredCompilationResumeTraceData(value, 282, 31, "TieredCompilation", TieredCompilationTaskGuid, 13, "Resume", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 282, TieredCompilationTaskGuid);
+            }
+        }
+        public event Action<TieredCompilationSettingsTraceData> TieredCompilationSettings
+        {
+            add
+            {
+                RegisterTemplate(new TieredCompilationSettingsTraceData(value, 280, 31, "TieredCompilation", TieredCompilationTaskGuid, 11, "Settings", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 280, TieredCompilationTaskGuid);
+            }
+        }
+        public event Action<TieredCompilationBackgroundJitStartTraceData> TieredCompilationStart
+        {
+            add
+            {
+                RegisterTemplate(new TieredCompilationBackgroundJitStartTraceData(value, 283, 31, "TieredCompilation", TieredCompilationTaskGuid, 1, "Start", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 283, TieredCompilationTaskGuid);
+            }
+        }
+        public event Action<TieredCompilationBackgroundJitStopTraceData> TieredCompilationStop
+        {
+            add
+            {
+                RegisterTemplate(new TieredCompilationBackgroundJitStopTraceData(value, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "Stop", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 284, TieredCompilationTaskGuid);
+            }
+        }
         public event Action<ExceptionHandlingTraceData> ExceptionCatchStart
         {
             add
@@ -1741,13 +1807,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new EmptyTraceData(action, 256, 7, "Exception", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
+        static private TieredCompilationIncrementMethodCallCounterTraceData TieredCompilationIncrementTemplate(Action<TieredCompilationIncrementMethodCallCounterTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TieredCompilationIncrementMethodCallCounterTraceData(action, 285, 31, "TieredCompilation", Guid.Empty, 14, "Increment", ProviderGuid, ProviderName);
+        }
+        static private TieredCompilationEmptyTraceData TieredCompilationPauseTemplate(Action<TieredCompilationEmptyTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TieredCompilationEmptyTraceData(action, 281, 31, "TieredCompilation", Guid.Empty, 12, "Pause", ProviderGuid, ProviderName);
+        }
+        static private TieredCompilationResumeTraceData TieredCompilationResumeTemplate(Action<TieredCompilationResumeTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TieredCompilationResumeTraceData(action, 282, 31, "TieredCompilation", Guid.Empty, 13, "Resume", ProviderGuid, ProviderName);
+        }
+        static private TieredCompilationSettingsTraceData TieredCompilationSettingsTemplate(Action<TieredCompilationSettingsTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TieredCompilationSettingsTraceData(action, 280, 31, "TieredCompilation", Guid.Empty, 11, "Settings", ProviderGuid, ProviderName);
+        }
+        static private TieredCompilationBackgroundJitStartTraceData TieredCompilationStartTemplate(Action<TieredCompilationBackgroundJitStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TieredCompilationBackgroundJitStartTraceData(action, 283, 31, "TieredCompilation", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private TieredCompilationBackgroundJitStopTraceData TieredCompilationStopTemplate(Action<TieredCompilationBackgroundJitStopTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[119];
+                var templates = new TraceEvent[125];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1872,6 +1962,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[117] = new R2RGetEntryPointTraceData(null, 159, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPoint", ProviderGuid, ProviderName);
                 templates[118] = new MethodDetailsTraceData(null, 72, 9, "Method", MethodTaskGuid, 43, "MethodDetails", ProviderGuid, ProviderName);
 
+                // More new style
+                templates[119] = new TieredCompilationSettingsTraceData(null, 280, 31, "TieredCompilation", TieredCompilationTaskGuid, 11, "Settings", ProviderGuid, ProviderName);
+                templates[120] = new TieredCompilationEmptyTraceData(null, 281, 31, "TieredCompilation", TieredCompilationTaskGuid, 12, "Pause", ProviderGuid, ProviderName);
+                templates[121] = new TieredCompilationResumeTraceData(null, 282, 31, "TieredCompilation", TieredCompilationTaskGuid, 13, "Resume", ProviderGuid, ProviderName);
+                templates[122] = new TieredCompilationBackgroundJitStartTraceData(null, 283, 31, "TieredCompilation", TieredCompilationTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+                templates[123] = new TieredCompilationBackgroundJitStopTraceData(null, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
+                templates[124] = new TieredCompilationIncrementMethodCallCounterTraceData(null, 285, 31, "TieredCompilation", TieredCompilationTaskGuid, 14, "Increment", ProviderGuid, ProviderName);
+
 
                 s_templates = templates;
             }
@@ -1935,7 +2033,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid ThreadPoolTaskGuid = new Guid(unchecked((int)0xead685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xe9);
         private static readonly Guid ThreadTaskGuid = new Guid(unchecked((int)0x641994c5), unchecked((short)0x16f2), unchecked((short)0x4123), 0x91, 0xa7, 0xa2, 0x99, 0x9d, 0xd7, 0xbf, 0xc3);
         private static readonly Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
-
+        private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0x0f);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -2993,6 +3091,407 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
         public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
         private event Action<MethodDetailsTraceData> Action;
+        #endregion
+    }
+
+    public sealed class TieredCompilationIncrementMethodCallCounterTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public string MethodNamespace { get { return GetUnicodeStringAt(8); } }
+        public string MethodName { get { return GetUnicodeStringAt(SkipUnicodeString(8)); } }
+        public string MethodSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(8))); } }
+        public int CounterValue { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8)))); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8))) + 4); } }
+
+        #region Private
+        internal TieredCompilationIncrementMethodCallCounterTraceData(Action<TieredCompilationIncrementMethodCallCounterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8))) + 6));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(8))) + 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<TieredCompilationIncrementMethodCallCounterTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodNamespace", MethodNamespace);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttrib(sb, "MethodSignature", MethodSignature);
+            XmlAttrib(sb, "CounterValue", CounterValue);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "MethodNamespace", "MethodName", "MethodSignature", "CounterValue", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return MethodNamespace;
+                case 2:
+                    return MethodName;
+                case 3:
+                    return MethodSignature;
+                case 4:
+                    return CounterValue;
+                case 5:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 137438953472; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<TieredCompilationIncrementMethodCallCounterTraceData> Action;
+        #endregion
+    }
+    public sealed class TieredCompilationEmptyTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+
+        #region Private
+        internal TieredCompilationEmptyTraceData(Action<TieredCompilationEmptyTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < 2));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<TieredCompilationEmptyTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 68719476736; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<TieredCompilationEmptyTraceData> Action;
+        #endregion
+    }
+    public sealed class TieredCompilationResumeTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public int NewMethodCount { get { return GetInt32At(2); } }
+
+        #region Private
+        internal TieredCompilationResumeTraceData(Action<TieredCompilationResumeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+            Debug.Assert(!(Version > 0 && EventDataLength < 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<TieredCompilationResumeTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "NewMethodCount", NewMethodCount);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "NewMethodCount" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return NewMethodCount;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 68719476736; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<TieredCompilationResumeTraceData> Action;
+        #endregion
+    }
+    public sealed class TieredCompilationSettingsTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public TieredCompilationSettingsFlags Flags { get { return (TieredCompilationSettingsFlags)GetInt32At(2); } }
+
+        #region Private
+        internal TieredCompilationSettingsTraceData(Action<TieredCompilationSettingsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+            Debug.Assert(!(Version > 0 && EventDataLength < 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<TieredCompilationSettingsTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "Flags", Flags);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "Flags" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return Flags;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 68719476736; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<TieredCompilationSettingsTraceData> Action;
+        #endregion
+    }
+    public sealed class TieredCompilationBackgroundJitStartTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public int PendingMethodCount { get { return GetInt32At(2); } }
+
+        #region Private
+        internal TieredCompilationBackgroundJitStartTraceData(Action<TieredCompilationBackgroundJitStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+            Debug.Assert(!(Version > 0 && EventDataLength < 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<TieredCompilationBackgroundJitStartTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "PendingMethodCount", PendingMethodCount);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "PendingMethodCount" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return PendingMethodCount;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 68719476736; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<TieredCompilationBackgroundJitStartTraceData> Action;
+        #endregion
+    }
+    public sealed class TieredCompilationBackgroundJitStopTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public int PendingMethodCount { get { return GetInt32At(2); } }
+        public int JittedMethodCount { get { return GetInt32At(6); } }
+
+        #region Private
+        internal TieredCompilationBackgroundJitStopTraceData(Action<TieredCompilationBackgroundJitStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 10));
+            Debug.Assert(!(Version > 0 && EventDataLength < 10));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<TieredCompilationBackgroundJitStopTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "PendingMethodCount", PendingMethodCount);
+            XmlAttrib(sb, "JittedMethodCount", JittedMethodCount);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "PendingMethodCount", "JittedMethodCount" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return PendingMethodCount;
+                case 2:
+                    return JittedMethodCount;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 68719476736; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<TieredCompilationBackgroundJitStopTraceData> Action;
         #endregion
     }
     public sealed class GCBulkTypeTraceData : TraceEvent
@@ -10575,6 +11074,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         GCSpecial = 0x1,
         Finalizer = 0x2,
         ThreadPoolWorker = 0x4,
+    }
+    [Flags]
+    public enum TieredCompilationSettingsFlags
+    {
+        None = 0x0,
+        QuickJit = 0x1,
+        QuickJitForLoops = 0x2,
     }
     public enum GCSegmentType
     {
