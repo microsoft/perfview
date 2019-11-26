@@ -4245,6 +4245,10 @@ table {
             {
                 return eventLog.ThreadTimeStacks();
             }
+            else if (streamName == "Runtime Operations (Thread Time)")
+            {
+                return eventLog.RuntimeOperationsStacks();
+            }
             else if (streamName == "Processes / Files / Registry")
             {
                 return GetProcessFileRegistryStackSource(eventSource, log);
@@ -7181,6 +7185,11 @@ table {
             }
 
             advanced.Children.Add(new PerfViewJitStats(this));
+
+            if (hasCPUStacks)
+            {
+                advanced.Children.Add(new PerfViewStackSource(this, "Runtime Operations (Thread Time)"));
+            }
 
             advanced.Children.Add(new PerfViewEventStats(this));
 

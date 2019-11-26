@@ -1867,6 +1867,47 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
+
+    public static MutableTraceEventStackSource RuntimeOperationsStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+    {
+        TraceEvents events;
+        if (process == null)
+        {
+            events = eventLog.Events.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);
+        }
+        else
+        {
+            events = process.EventsInProcess.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData);
+        }
+
+        var stackSource = new MutableTraceEventStackSource(eventLog);
+        stackSource.ShowUnknownAddresses = showUnknownAddresses;
+
+        StackSourceSample sample = new StackSourceSample(stackSource);
+        foreach (var event_ in ((IEnumerable<TraceEvent>)events))
+        {
+            sample.TimeRelativeMSec = event_.TimeStampRelativeMSec;
+            sample.StackIndex = stackSource.GetCallStack(event_.CallStackIndex(), event_);
+            stackSource.AddSample(sample);
+        };
+        stackSource.DoneAddingSamples();
+
+
+        /*
+                var stackSource = new MutableTraceEventStackSource(eventLog);
+                stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+
+                var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+                computer.ExcludeReadyThread = true;
+                computer.GenerateThreadTimeStacks(stackSource);*/
+
+        CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
+
+        var finalStackSource = new MutableTraceEventStackSource(eventLog);
+        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, eventLog.Events.GetSource(), runtimeOperationsComputer.StartStopEvents);
+
+        return finalStackSource;
+    }
     public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
