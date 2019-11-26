@@ -3,7 +3,9 @@ using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using PerfView.Properties;
+using PerfView.Utilities;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +15,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Utilities;
 
 namespace PerfView
 {

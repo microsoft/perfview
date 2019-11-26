@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
     public class ExceptionMessage
     {

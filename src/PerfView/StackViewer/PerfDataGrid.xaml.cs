@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using PerfView.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +9,6 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using Utilities;
 
 namespace PerfView
 {

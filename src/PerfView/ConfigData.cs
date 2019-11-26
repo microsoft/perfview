@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Xml;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
     /// <summary>
     /// ConfigData is simply a Dictionary that knows how to read and write itself to XML efficiently. 

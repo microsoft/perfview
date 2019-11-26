@@ -1,9 +1,9 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using PerfView.Utilities;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Utilities;
 
 namespace PerfView
 {

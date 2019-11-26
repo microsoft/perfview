@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Utilities;
+using PerfView.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Security;
 using System.Text;
 using System.Threading;
-using Utilities;
 
 namespace Stats
 {

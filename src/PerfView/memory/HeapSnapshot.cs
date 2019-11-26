@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Utilities;
+using PerfView.Utilities;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
-using Utilities;
 
 namespace PerfView
 {

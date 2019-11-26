@@ -1,5 +1,6 @@
 ﻿using Controls;
 using Microsoft.Diagnostics.Utilities;
+using PerfView.Utilities;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -14,7 +15,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Utilities;
 
 namespace PerfView
 {

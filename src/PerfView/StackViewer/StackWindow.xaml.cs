@@ -5,8 +5,10 @@ using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.Stacks.Formats;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
+using PerfView.Utilities;
 using PerfViewModel;
 using System;
 using System.Collections;
@@ -25,7 +27,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml;
-using Utilities;
 using Address = System.UInt64;
 using Path = System.IO.Path;
 

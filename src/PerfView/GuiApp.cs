@@ -1,9 +1,9 @@
-﻿using System;
+﻿using PerfView.Utilities;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Markup;
-using Utilities;
 
 namespace PerfView
 {

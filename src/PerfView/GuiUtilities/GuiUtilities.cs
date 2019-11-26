@@ -8,7 +8,7 @@ using System.Windows.Data;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
 
     public static class Helpers

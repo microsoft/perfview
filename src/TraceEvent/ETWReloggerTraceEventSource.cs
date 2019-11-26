@@ -1,13 +1,13 @@
 ﻿#define V4_5_Runtime
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using TraceReloggerLib;
-using Utilities;
 
 #pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
 

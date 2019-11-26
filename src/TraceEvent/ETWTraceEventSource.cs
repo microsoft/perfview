@@ -8,13 +8,13 @@ using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Utilities;
 using Address = System.UInt64;
 
 // code:System.Diagnostics.ETWTraceEventSource definition.

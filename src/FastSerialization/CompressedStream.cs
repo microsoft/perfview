@@ -20,7 +20,7 @@ using System.Threading;
 
 #if !NETSTANDARD1_3
 
-namespace Utilities
+namespace FastSerialization.Utilities
 {
     /// This is basically a DeflateStream that supports seaking ON READ and does good buffering. To do this
     /// we compress in independent chunks of blockSize code:CompressedWriteStream.blockSize. The output stream

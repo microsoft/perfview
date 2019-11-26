@@ -2,8 +2,10 @@
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using PerfView;
+using PerfView.Utilities;
 using PerfViewModel;
 using System;
 using System.Collections.Generic;
@@ -15,7 +17,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml;
-using Utilities;
 
 #if !PERFVIEW_COLLECT
 using Graphs;

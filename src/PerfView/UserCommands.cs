@@ -8,8 +8,10 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.Stacks.Formats;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using PerfView;
+using PerfView.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +21,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using Utilities;
 using Address = System.UInt64;
 
 #if !PERFVIEW_COLLECT

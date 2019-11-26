@@ -1,12 +1,11 @@
 ﻿using Microsoft.Diagnostics.Utilities;
-using PerfView;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
     /// <summary>
     /// SupportFiles is a class that manages the unpacking of DLLs and other resources.  

@@ -5,8 +5,10 @@ using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
+using PerfView.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +20,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Triggers;
-using Utilities;
 using Trigger = Triggers.Trigger;
 
 namespace PerfView

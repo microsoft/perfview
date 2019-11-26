@@ -1,8 +1,8 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using PerfView.Utilities;
 using System;
 using System.Collections.Generic;
-using Utilities;
 
 namespace PerfView
 {

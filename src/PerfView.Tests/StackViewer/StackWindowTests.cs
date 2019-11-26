@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Threading;
 using PerfView;
 using PerfView.TestUtilities;
+using PerfView.Utilities;
 using PerfViewTests.Utilities;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Utilities;
 using Xunit;
 using Xunit.Abstractions;
 using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;

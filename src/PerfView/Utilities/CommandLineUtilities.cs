@@ -7,7 +7,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
     public delegate int MainBody();
 

@@ -1,7 +1,7 @@
-﻿using System.IO;
+﻿using PerfView.Utilities;
+using System.IO;
 using System.Windows;
 using System.Windows.Documents;
-using Utilities;
 
 namespace PerfView.Dialogs
 {

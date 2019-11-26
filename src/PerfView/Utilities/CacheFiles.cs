@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
     /// <summary>
     /// Some applications need to make files that are associated with the application

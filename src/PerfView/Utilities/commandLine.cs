@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace Utilities
+namespace PerfView.Utilities
 {
     // See code:#Overview to get started.
     // <summary>

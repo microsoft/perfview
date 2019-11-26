@@ -7,6 +7,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView;
 using PerfView.GuiUtilities;
+using PerfView.Utilities;
 using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
@@ -599,7 +600,7 @@ public class Commands : CommandEnvironment
     {
         // If you need lots of possible parameters that are optionally present you should use the CommandLineParser
         // to parse the arguments (like what is done for the PerfView command line itself). 
-        var commandLineParser = new Utilities.CommandLineParser(args);
+        var commandLineParser = new CommandLineParser(args);
         string Process = null;
         bool LookupAllSymbols = false;
         string DataFile = "PerfViewDataFile.etl";

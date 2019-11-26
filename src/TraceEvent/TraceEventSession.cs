@@ -7,6 +7,7 @@
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.Extensions;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
 using System;
@@ -16,7 +17,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Utilities;
 
 namespace Microsoft.Diagnostics.Tracing.Session
 {

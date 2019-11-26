@@ -1,5 +1,6 @@
 ﻿using FastSerialization;
 using Graphs;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using Address = System.UInt64;
 
 
 /// <summary>
-/// Represents a .GCDump file.  You can open it for reading with the construtor
+/// Represents a .GCDump file.  You can open it for reading with the constructor
 /// and you can write one with WriteMemoryGraph 
 /// </summary>
 public class GCHeapDump : IFastSerializable, IFastSerializableVersion
@@ -232,8 +233,8 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     {
 #if PERFVIEW
         // TODO FIX NOW, need to work for PerfView64
-        var heapDumpExe = Path.Combine(Utilities.SupportFiles.SupportFileDir, @"amd64\HeapDump.exe");
-        var cmd = Utilities.Command.Run(heapDumpExe + " /GetProcessesWithGCHeaps");
+        var heapDumpExe = Path.Combine(PerfView.Utilities.SupportFiles.SupportFileDir, @"amd64\HeapDump.exe");
+        var cmd = Command.Run(heapDumpExe + " /GetProcessesWithGCHeaps");
         var info = new ProcessInfo();
 
         int idx = 0;

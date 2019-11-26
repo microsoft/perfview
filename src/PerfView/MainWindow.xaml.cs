@@ -1,8 +1,10 @@
 ﻿using Controls;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
 using PerfView.GuiUtilities;
+using PerfView.Utilities;
 using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
@@ -15,7 +17,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Navigation;
-using Utilities;
 
 /* Master TODO list */
 // ****** LARGER ISSUES  ******** 
