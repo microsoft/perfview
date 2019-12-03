@@ -3996,7 +3996,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 pauseTimePercentage = (gc.PauseDurationMSec * 100) / (totalTime);
             }
 
-            Debug.Assert(pauseTimePercentage <= 100);
+            // Debug.Assert(pauseTimePercentage <= 100);
             return pauseTimePercentage;
         }
 
