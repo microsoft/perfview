@@ -1,9 +1,11 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
+using Microsoft.Diagnostics.Tracing.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Address = System.UInt64;
+using ThreadID = System.Int32;
 
 namespace Microsoft.Diagnostics.Tracing.Utilities
 {
@@ -13,6 +15,9 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
         bool TryGetValue(Address id, long time, out T value);
         IEnumerable<Address> Keys { get; }
         int Count { get; }
+
+        [Obsolete]
+        IEnumerable<ThreadIDAndTime> KeysAndTimesFromValue(T value, IEqualityComparer<T> eq);
     }
 
     // Utilities for TraceEventParsers
@@ -21,7 +26,8 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
     /// over time (eg Process IDs, thread IDs).  Thus it takes a handle AND A TIME, and finds the value
     /// associated with that handle at that time.   
     /// </summary>
-    internal class HistoryDictionary<T> : IReadOnlyHistoryDictionary<T>
+    [Obsolete]
+    public class HistoryDictionary<T> : IReadOnlyHistoryDictionary<T>
     {
         public HistoryDictionary(int initialSize)
         {
@@ -162,6 +168,25 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
         }
         public IEnumerable<Address> Keys =>
             (from e in Entries select e.Key);
+
+        [Obsolete] // Experimental
+        public IEnumerable<ThreadIDAndTime> KeysAndTimesFromValue(T value, IEqualityComparer<T> eq) =>
+            // TODO: Would probably be more performant if we collapsed adjacent entries with the same value
+            // Then we wouldn't need `Unique` here
+            Unique(from entry in Entries where eq.Equals(entry.Value, value) select new ThreadIDAndTime((ThreadID)entry.Key, entry.StartTime));
+
+        private static IEnumerable<E> Unique<E>(IEnumerable<E> i)
+        {
+            HashSet<E> set = new HashSet<E>();
+            foreach (E x in i)
+            {
+                if (!set.Contains(x))
+                {
+                    yield return x;
+                    set.Add(x);
+                }
+            }
+        }
 
         public int Count { get { return count; } }
         /// <summary>
