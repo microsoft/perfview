@@ -663,11 +663,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 source.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
                 {
                     var stats = currentManagedProcess(data);
-
-                    if (stats.GC.m_stats.HasAllocTickEvents == false)
-                    {
-                        stats.GC.m_stats.HasAllocTickEvents = true;
-                    }
+                    stats.GC.m_stats.HasAllocTickEvents = true;
 
                     double valueMB = data.GetAllocAmount(ref stats.GC.m_stats.SeenBadAllocTick) / 1000000.0;
 
