@@ -457,7 +457,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                 foreach (GCHeapAndThreadKind htk in stats.GetHeapAndThreadKinds(data.ThreadID))
                                 {
                                     hadHeap = true;
-                                    e.AddServerGcSample(new ThreadWorkSpan(data), heapAndThreadKind: new GCHeapAndThreadKindAndIsNewThread(htk, newThreadIsGC: true));
+                                    e.AddServerGcSample(new ThreadWorkSpan(data), new GCHeapAndThreadKindAndIsNewThread(htk, newThreadIsGC: true));
                                 }
 
                                 loadedRuntime = tmpMang;
@@ -472,9 +472,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                     {
                                         // TODO: From just the processor number, we can't know what the threadkind should be ... so guessing foreground
                                         e.AddServerGcSample(
-                                            sample: new ThreadWorkSpan(data),
-                                            heapAndThreadKind: new GCHeapAndThreadKindAndIsNewThread(
-                                                heapAndThreadKind: new GCHeapAndThreadKind(heapID: heapID.Value, threadKind: GCThreadKind.Foreground),
+                                            new ThreadWorkSpan(data),
+                                            new GCHeapAndThreadKindAndIsNewThread(
+                                                new GCHeapAndThreadKind(heapID: heapID.Value, threadKind: GCThreadKind.Foreground),
                                                 newThreadIsGC: false));
                                     }
                                 }
@@ -507,7 +507,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         //Not necessary now that servergcthreads is a bimap
                         //if (heapIndex != null)
                         //{
-                        //    HandleHeapForegroundThreadID(mang.GC.m_stats, heapID: heapIndex.Value, threadID: data.ThreadID);
+                        //    HandleHeapForegroundThreadID(mang.GC.m_stats, heapIndex.Value, data.ThreadID);
                         //}
 
                         var cpuIncrement = tmpProc.SampleIntervalMSec();
@@ -608,7 +608,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                         int endIndex = procThread.ThreadInfo.IndexOf(')');
                                         string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
                                         int heapNum = int.Parse(heapNumString);
-                                        mang.GC.m_stats.AssociateServerGCThreadAndHeap(threadID: procThread.ThreadID, heapID: heapNum);
+                                        mang.GC.m_stats.AssociateServerGCThreadAndHeap(procThread.ThreadID, heapNum);
                                     }
                                 }
                             }
@@ -1007,7 +1007,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCJoinStage joinStage = (GCJoinStage)data.GCID;
 
                     TraceGarbageCollector.ManagedProcessJoinState procState = GetOrInit(processJoinStates, stats, () => new TraceGarbageCollector.ManagedProcessJoinState());
-                    GCThreadKind? threadKind = procState.GetThreadKindAndPossiblyAddThread(threadID: data.ThreadID, joinStage: joinStage, joinTime: data.JoinTime, joinType: data.JoinType);
+                    GCThreadKind? threadKind = procState.GetThreadKindAndPossiblyAddThread(data.ThreadID, joinStage, data.JoinTime, data.JoinType);
 
                     if (threadKind == null)
                     {
@@ -1020,7 +1020,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         Dictionary<TraceGC, TraceGarbageCollector.GCJoinStateFgOrBg> gcJoinStates = threadKind == GCThreadKind.Foreground ? gcJoinStatesFg : gcJoinStatesBg;
 
-                        if (TraceGarbageCollector.JoinIndicatesNewGc(proc: stats, joinStates: gcJoinStates, joinStage: joinStage, joinTime: data.JoinTime))
+                        if (TraceGarbageCollector.JoinIndicatesNewGc(stats, gcJoinStates, joinStage, data.JoinTime))
                         {
                             if (DEBUG_PRINT_GC) Console.WriteLine("JOIN INDICATES NEW GC");
                             // A generation_determined event only comes on a foreground GC
@@ -1040,19 +1040,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             Debug.Assert(heapCount > 0); // Should have been set by the 3rd GC.
 
                             TraceGC _gc = TraceGarbageCollector.GetCurrentGCForJoin(
-                                proc: stats,
-                                timeStampRelativeMSec: data.TimeStampRelativeMSec,
-                                heapCount: (uint) heapCount,
-                                joinStates: gcJoinStates,
-                                joinStage: joinStage,
-                                time: data.JoinTime,
-                                type: data.JoinType,
-                                threadId: data.ThreadID,
-                                threadKind: threadKind.Value);
+                                stats,
+                                (uint) heapCount,
+                                data.TimeStampRelativeMSec,
+                                gcJoinStates,
+                                joinStage,
+                                data.JoinTime,
+                                data.JoinType,
+                                data.ThreadID,
+                                threadKind.Value);
 
                             if (_gc != null)
                             {
-                                _gc.AddGcJoin(data, isEESuspended: isEESuspended.Contains(stats), threadKind: threadKind.Value);
+                                _gc.AddGcJoin(data, isEESuspended.Contains(stats), threadKind.Value);
                             }
                             else
                             {
@@ -2050,21 +2050,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     Debug.Assert(!SeenRestartEnd);
                     return new SingleJoinState(
-                        stage: Stage,
-                        seenStarts: SeenStarts,
+                        Stage,
+                        SeenStarts,
                         // Restart end is an end -- no JoinEnd event for those that started with FirstJoin / LastJoin
-                        seenEnds: Incr(SeenEnds),
+                        Incr(SeenEnds),
                         expectingRestartThreadID: null,
                         seenRestartEnd: true);
                 }
 
                 public SingleJoinState WithJoinStart() =>
                     new SingleJoinState(
-                        stage: Stage,
-                        seenStarts: Incr(SeenStarts),
-                        seenEnds: SeenEnds,
-                        expectingRestartThreadID: ExpectingRestartThreadID,
-                        seenRestartEnd: SeenRestartEnd);
+                        Stage,
+                        Incr(SeenStarts),
+                        SeenEnds,
+                        SeenRestartEnd,
+                        ExpectingRestartThreadID);
 
                 public SingleJoinState WithJoinEnd()
                 {
@@ -2076,11 +2076,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
 
                     return new SingleJoinState(
-                        stage: Stage,
-                        seenStarts: SeenStarts,
-                        seenEnds: newSeenEnds,
-                        expectingRestartThreadID: ExpectingRestartThreadID,
-                        seenRestartEnd: SeenRestartEnd);
+                        Stage,
+                        SeenStarts,
+                        newSeenEnds,
+                        SeenRestartEnd,
+                        ExpectingRestartThreadID);
                 }
 
                 public bool SeenBegunEnding() =>
@@ -2149,13 +2149,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
             
             private GCJoinStateFgOrBg WithCurJoin(SingleJoinState newCurJoin) =>
-                new GCJoinStateFgOrBg(prev2Join: Prev2Join, prevJoin: PrevJoin, curJoin: newCurJoin);
+                new GCJoinStateFgOrBg(Prev2Join, PrevJoin, newCurJoin);
 
             private GCJoinStateFgOrBg WithPrevJoin(SingleJoinState newPrevJoin) =>
-                new GCJoinStateFgOrBg(prev2Join: Prev2Join, prevJoin: newPrevJoin, curJoin: CurJoin);
+                new GCJoinStateFgOrBg(Prev2Join, newPrevJoin, CurJoin);
 
             private GCJoinStateFgOrBg WithPrev2Join(SingleJoinState newPrev2Join) =>
-                new GCJoinStateFgOrBg(prev2Join: newPrev2Join, prevJoin: PrevJoin, curJoin: CurJoin);
+                new GCJoinStateFgOrBg(newPrev2Join, PrevJoin, CurJoin);
 
             private static bool StagesUniqueOrScanDependentHandles(GCJoinStage? a, GCJoinStage? b, GCJoinStage c)
             {
@@ -2568,7 +2568,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 }
             }
 
-            PrintGCs(proc, joinStates, "new", showRes: true, res: res);
+            PrintGCs(proc, joinStates, "new", showRes: true, res);
             return res;
         }
 
@@ -2608,21 +2608,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         case GcJoinType.Join:
                         {
                             TraceGC gc = HandleJoinStart(
-                               joinStates: joinStates,
-                               oldLastState: oldLastState,
-                               oldBgcState: oldBgcState,
-                               last: last,
-                               bgc: bgc,
-                               threadID: threadId,
-                               threadKind: threadKind,
-                               joinStage: joinStage,
+                               joinStates,
+                               oldLastState,
+                               oldBgcState,
+                               last,
+                               bgc,
+                               threadId,
+                               threadKind,
+                               joinStage,
                                expectRestart: type != GcJoinType.Join,
-                               heapCount: heapCount);
+                               heapCount);
                             return new GCAndJoinStage(gc, joinStage);
                         }
                         case GcJoinType.Restart:
                             return HandleRestartStart(
-                                joinStates: joinStates, oldLastState: oldLastState, oldBgcState: oldBgcState, last: last, bgc: bgc, threadID: threadId);
+                                joinStates, oldLastState, oldBgcState, last, bgc, threadId);
                         default:
                             throw new Exception(type.ToString());
                     }
@@ -2634,18 +2634,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         case GcJoinType.Join:
                         {
                             TraceGC gc = HandleJoinEnd(
-                                joinStates: joinStates,
-                                oldLastState: oldLastState,
-                                oldBgcState: oldBgcState,
-                                last: last,
-                                bgc: bgc,
-                                joinStage: joinStage,
-                                threadKind: threadKind);
+                                joinStates,
+                                oldLastState,
+                                oldBgcState,
+                                last,
+                                bgc,
+                                joinStage,
+                                threadKind);
                             return new GCAndJoinStage(gc, joinStage);
                         }
                         case GcJoinType.Restart:
                             return HandleRestartEnd(
-                                joinStates: joinStates, oldLastState: oldLastState, oldBgcState: oldBgcState, last: last, bgc: bgc, threadID: threadId);
+                                joinStates, oldLastState, oldBgcState, last, bgc, threadId);
                         default:
                             throw new Exception(type.ToString());
                     }
@@ -4374,14 +4374,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             // Debug.Assert(isRestart == (data.Heap == 100 || data.Heap == 200));
             if (data.Heap >= 0 && data.Heap < ServerGcHeapHistories.Count)
             {
-                ServerGcHeapHistories[data.Heap].AddJoin(data, PauseStartRelativeMSec, isEESuspended: isEESuspended, heapAndThreadKind: heapAndThreadKind);
+                ServerGcHeapHistories[data.Heap].AddJoin(data, PauseStartRelativeMSec, isEESuspended, heapAndThreadKind);
             }
             else if (isRestart)
             {
                 // restart
                 foreach (var heap in ServerGcHeapHistories)
                 {
-                    heap.AddJoin(data, PauseStartRelativeMSec, isEESuspended: isEESuspended, heapAndThreadKind: heapAndThreadKind);
+                    heap.AddJoin(data, PauseStartRelativeMSec, isEESuspended, heapAndThreadKind);
                 }
             }
             else
@@ -4854,7 +4854,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     }
 
     /// <summary>
-    /// Container for mark times 
+    /// Container for mark times
     /// </summary>
     public class MarkInfo
     {
@@ -5059,7 +5059,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 SampleSpans.Add(new GcWorkSpan(sample, threadKind)
                 {
-                    Type = GetSpanType(sample, newThreadIsGC: newThreadIsGC),
+                    Type = GetSpanType(sample, newThreadIsGC),
                     RelativeTimestampMsc = sample.AbsoluteTimestampMsc - pauseStartRelativeMSec,
                     DurationMsc = 1
                 });
@@ -5086,7 +5086,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             SwitchSpans.Add(new GcWorkSpan(switchData, threadKind: threadKind)
             {
-                Type = GetSpanType(switchData, newThreadIsGC: newThreadIsGC),
+                Type = GetSpanType(switchData, newThreadIsGC),
                 RelativeTimestampMsc = switchData.AbsoluteTimestampMsc - pauseStartRelativeMSec,
                 Priority = switchData.Priority
             });
@@ -5773,7 +5773,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // See comments for lastCompletedGC.
         private static TraceGC GetLastGC(TraceLoadedDotNetRuntime proc, double timeStampRelativeMSec)
         {
-            TraceGC _event = TraceGarbageCollector.GetCurrentGC(proc, timeStampRelativeMSec: timeStampRelativeMSec);
+            TraceGC _event = TraceGarbageCollector.GetCurrentGC(proc, timeStampRelativeMSec);
             if ((proc.GC.m_stats.IsServerGCUsed == 1) &&
                 (_event == null))
             {
