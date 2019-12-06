@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Utilities;
@@ -62,10 +61,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return res == -1 ? (ProcessID?) null : res;
         }
 
-        public IEnumerable<ThreadIDAndTime> ProcessIDToThreadIDsAndTimes(ProcessID processID) =>
-           from entry in state.threadIDtoProcessID.Entries
-           where entry.Value == processID
-           select new ThreadIDAndTime((ThreadID) entry.Key, entry.StartTime);
+        public IEnumerable<ThreadIDAndTime> ProcessIDToThreadIDsAndTimes(ProcessID processID)
+        {
+            foreach (HistoryDictionary<ProcessID>.HistoryValue entry in state.threadIDtoProcessID.Entries)
+            {
+                if (entry.Value == processID)
+                {
+                    yield return new ThreadIDAndTime((ThreadID)entry.Key, entry.StartTime);
+                }
+            }
+        }
     }
 
     /// <summary>

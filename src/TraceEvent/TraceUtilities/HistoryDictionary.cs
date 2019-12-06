@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Address = System.UInt64;
 using ThreadID = System.Int32;
 
@@ -147,7 +146,7 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             get
             {
 #if DEBUG
-            int ctr = 0;
+                int ctr = 0;
 #endif
                 foreach (HistoryValue entry in entries.Values)
                 {
@@ -155,25 +154,44 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                     while (list != null)
                     {
 #if DEBUG
-                    ctr++;
+                        ctr++;
 #endif
                         yield return list;
                         list = list.next;
                     }
                 }
 #if DEBUG
-            Debug.Assert(ctr == count);
+                Debug.Assert(ctr == count);
 #endif
             }
         }
-        public IEnumerable<Address> Keys =>
-            (from e in Entries select e.Key);
+        public IEnumerable<Address> Keys
+        {
+            get
+            {
+                foreach (HistoryValue e in Entries)
+                {
+                    yield return e.Key;
+                }
+            }
+        }
 
         [Obsolete] // Experimental
         public IEnumerable<ThreadIDAndTime> KeysAndTimesFromValue(T value, IEqualityComparer<T> eq) =>
             // TODO: Would probably be more performant if we collapsed adjacent entries with the same value
             // Then we wouldn't need `Unique` here
-            Unique(from entry in Entries where eq.Equals(entry.Value, value) select new ThreadIDAndTime((ThreadID)entry.Key, entry.StartTime));
+            Unique(NonUniqueKeysAndTimesFromValue(value, eq));
+
+        private IEnumerable<ThreadIDAndTime> NonUniqueKeysAndTimesFromValue(T value, IEqualityComparer<T> eq)
+        {
+            foreach (HistoryValue entry in Entries)
+            {
+                if (eq.Equals(entry.Value, value))
+                {
+                    yield return new ThreadIDAndTime((ThreadID)entry.Key, entry.StartTime);
+                }
+            }
+        }
 
         private static IEnumerable<E> Unique<E>(IEnumerable<E> i)
         {

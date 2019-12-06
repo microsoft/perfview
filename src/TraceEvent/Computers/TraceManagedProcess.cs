@@ -403,12 +403,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     if (processRuntimes.TryGetValue(tmpProc, out mang))
                     {
                         mang.GC.m_stats.ThreadId2Priority[data.NewThreadID] = data.NewThreadPriority;
-                        // Not necessary now that servergcthreads is a bimap
-                        //HeapID? heapIndex = mang.GC.m_stats.IsServerGCThread(data.ThreadID);
-                        //if ((heapIndex != null))
-                        //{
-                        //    HandleHeapForegroundThreadID(mang.GC.m_stats, heapIndex.Value, data.ThreadID);
-                        //}
                     }
 
                     foreach (var pair in processRuntimes)
@@ -422,7 +416,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             // If we are in the middle of a GC.
                             if (_gc != null)
                             {
-                                // TODO: Why does bgc not get cswitch?
+                                // We don't collect cswitch for BGC, because BGC threads aren't affinitized
                                 if (GCShouldHaveServerGCHeapHistories(mang, _gc))
                                 {
                                     _gc.AddServerGcThreadSwitch(new ThreadWorkSpan(data), heapAndThreadKindAndIsNewThread: heapAndThreadKind);
@@ -481,7 +475,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             }
                         }
 
-                        if (loadedRuntime != null && gcProcess != null && gcProcess.MutableTraceEventStackSource() != null)
+                        if (loadedRuntime != null && gcProcess != null)
                         {
                             var stackSource = gcProcess.MutableTraceEventStackSource();
                             if (stackSource != null)
@@ -503,12 +497,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     if (processRuntimes.TryGetValue(tmpProc, out mang))
                     {
                         HeapID? heapIndex = mang.GC.m_stats.GetServerGCHeapFromThread(data.ThreadID);
-
-                        //Not necessary now that servergcthreads is a bimap
-                        //if (heapIndex != null)
-                        //{
-                        //    HandleHeapForegroundThreadID(mang.GC.m_stats, heapIndex.Value, data.ThreadID);
-                        //}
 
                         var cpuIncrement = tmpProc.SampleIntervalMSec();
 
@@ -595,9 +583,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             if (mang.GC.m_stats.IsServerGCUsed == 1)
                             {
                                 mang.GC.m_stats.HeapCount = 0;
-                                //not needed, it's always initialized now
-                                //mang.GC.m_stats.serverGCThreadToHeap = new Dictionary<int, int>(2);
-
+                                
                                 foreach (var procThread in traceProc.Threads)
                                 {
                                     if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC Thread")))
@@ -993,9 +979,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                 Action<GCJoinTraceData> handleJoin = delegate (GCJoinTraceData data)
                 {
-                    if (DEBUG_IGNORE_JOINS)
-                        return;
-
                     MaybePrintEvent(data);
                     TraceLoadedDotNetRuntime stats = currentManagedProcess(data);
 
@@ -1660,8 +1643,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
 
         internal const bool DEBUG_PRINT_GC = false;
-        internal const bool DEBUG_IGNORE_JOINS = false;
-        internal const bool DONTUSE_IGNORE_MISSING_JOIN_EVENTS = false;
 
         private static void MaybePrintEvent(TraceEvent te)
         {
@@ -2007,8 +1988,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     ThreadID? expectingRestartThreadID)
                 {
                     Debug.Assert(stage != GCJoinStage.restart, "join stage should never be 'restart'");
-                    if (!TraceLoadedDotNetRuntime.DONTUSE_IGNORE_MISSING_JOIN_EVENTS)
-                        Debug.Assert(seenEnds <= seenStarts);
+                    Debug.Assert(seenEnds <= seenStarts);
                     Stage = stage;
                     SeenStarts = seenStarts;
                     SeenEnds = seenEnds;
@@ -2071,8 +2051,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     ushort newSeenEnds = Incr(SeenEnds);
                     if (newSeenEnds > SeenStarts)
                     {
-                        if (!TraceLoadedDotNetRuntime.DONTUSE_IGNORE_MISSING_JOIN_EVENTS)
-                            throw new Exception("Should not get more ends than starts");
+                        throw new Exception("Should not get more ends than starts");
                     }
 
                     return new SingleJoinState(
@@ -2203,17 +2182,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
             public GCJoinStateFgOrBg WithNewCur(GCJoinStage newCurJoinStage, bool expectRestart, ThreadID threadID)
             {
-                if (!TraceLoadedDotNetRuntime.DONTUSE_IGNORE_MISSING_JOIN_EVENTS)
+                if (Prev2Join?.SeenRestartEnd == false)
                 {
-                    if (Prev2Join?.SeenRestartEnd == false)
-                    {
-                        throw new Exception($"Never saw a restart end for {Prev2Join.Value.Stage}");
-                    }
+                    throw new Exception($"Never saw a restart end for {Prev2Join.Value.Stage}");
+                }
 
-                    if (Prev2Join?.AwaitingEnd == true)
-                    {
-                        throw new Exception($"{Prev2Join?.Stage} has {Prev2Join?.SeenStarts} starts but only {Prev2Join?.SeenEnds} ends");
-                    }
+                if (Prev2Join?.AwaitingEnd == true)
+                {
+                    throw new Exception($"{Prev2Join?.Stage} has {Prev2Join?.SeenStarts} starts but only {Prev2Join?.SeenEnds} ends");
                 }
 
                 return new GCJoinStateFgOrBg(
@@ -2351,16 +2327,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     else if (stage == PrevJoin?.Stage)
                     {
                         // TODO: actually, even with missing events this shouldn't happen.
-                        if (!TraceLoadedDotNetRuntime.DONTUSE_IGNORE_MISSING_JOIN_EVENTS)
-                            throw new Exception("Adding a new LastJoin for PrevJoin, but we're already on the next.");
-                        return this;
+                        throw new Exception("Adding a new LastJoin for PrevJoin, but we're already on the next.");
                     }
                     else if (stage == Prev2Join?.Stage)
                     {
                         // TODO: actually, even with missing events this shouldn't happen.
-                        if (!TraceLoadedDotNetRuntime.DONTUSE_IGNORE_MISSING_JOIN_EVENTS)
-                            throw new Exception("Adding a new LastJoin for Prev2Join, but we're already on the next.");
-                        return this;
+                        throw new Exception("Adding a new LastJoin for Prev2Join, but we're already on the next.");
                     }
                     else
                     {
@@ -2378,14 +2350,24 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 WithModifyJoin(stage, j => j.WithJoinEnd());
 
             private GCJoinStateFgOrBg WithModifyJoin(GCJoinStage stage, Func<SingleJoinState, SingleJoinState> modify) =>
-                // Note: order we check these matters since both Prev2Join and CurJoin may be scan_dependent_handles.
-                stage == CurJoin.Stage? WithCurJoin(modify(CurJoin))
+                // Note: order we check these matters since both Prev2Join and CurJoin may be scan_dependent_handles (PrevJoin would be rescan_dependent_handles).
+                // In that case we go with CurJoin.
+                stage == CurJoin.Stage ? WithCurJoin(modify(CurJoin))
                 : stage == PrevJoin?.Stage ? WithPrevJoin(modify(PrevJoin.Value))
                 : stage == Prev2Join?.Stage ? WithPrev2Join(modify(Prev2Join.Value))
                 : throw new Exception($"No join matches stage {stage}");
 
             public override string ToString() =>
                 $"{nameof(GCJoinStateFgOrBg)}(prev2: {NullableToString(Prev2Join)}, prev: {NullableToString(PrevJoin)}, cur: {CurJoin})";
+        }
+
+        private static bool Any<T>(IReadOnlyList<T> list) =>
+            list.Count != 0;
+
+        private static T Last<T>(IReadOnlyList<T> list)
+        {
+            Debug.Assert(Any(list));
+            return list[list.Count - 1];
         }
 
         [Obsolete]
@@ -2399,7 +2381,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             IReadOnlyList<TraceGC> gcs = proc.GC.GCs;
             if (gcs.Count > 0)
             {
-                TraceGC last = gcs.Last();
+                TraceGC last = Last(gcs);
                 // Give a 1ms buffer, occasionally a join end event will come out a fraction of a millisecond after the GC is over
                 //double lastPauseEndRelativeMSecSafe = last.PauseEndRelativeMSec + 1;
 
@@ -2472,7 +2454,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             if (TraceLoadedDotNetRuntime.DEBUG_PRINT_GC)
             {
                 IReadOnlyList<TraceGC> gcs = proc.GC.GCs;
-                TraceGC last = gcs.Count == 0 ? null : gcs.Last();
+                TraceGC last = gcs.Count == 0 ? null : Last(gcs);
                 TraceGC bgc = proc.GC.m_stats.currentBGC ?? proc.GC.m_stats.currentOrFinishedBGC;
                 if (res == null)
                 {
@@ -2502,7 +2484,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
 
         // Some GCs don't have a SuspendEEStart event.
-        // Since the first JoinStart comes *before* the GCSTart event, we'll need to add it at the first join start.
+        // Since the first JoinStart comes *before* the GCStart event, we'll need to add it at the first join start.
         internal static bool JoinIndicatesNewGc(
             TraceLoadedDotNetRuntime proc,
             IReadOnlyDictionary<TraceGC, GCJoinStateFgOrBg> joinStates,
@@ -2511,9 +2493,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         {
             if (joinStage == GCJoinStage.generation_determined && joinTime == GcJoinTime.Start)
             {
-                if (proc.GC.GCs.Any())
+                if (Any(proc.GC.GCs))
                 {
-                    TraceGC last = proc.GC.GCs.Last();
+                    TraceGC last = Last(proc.GC.GCs);
                     if (joinStates.TryGetValue(last, out GCJoinStateFgOrBg lastState))
                     {
                         // Since generation_determined must be the first stage, if a state exists but is beyond generation_determined, this new generation_determined must be for a new GC.
@@ -2537,6 +2519,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
         }
 
+        // Choose whether this join should be associated with the latest GC or the BGC
+        // Also updates the join state for this join (which is an entry in joinStates)
         internal static TraceGC GetCurrentGCForJoin(
             TraceLoadedDotNetRuntime proc,
             uint heapCount,
@@ -2704,6 +2688,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return gc;
         }
 
+        // Choose whether this join should be associated with the latest GC or the BGC
         private static TraceGC ChooseGcForJoinStart(
             GCJoinStateFgOrBg? oldLastState,
             GCJoinStateFgOrBg? oldBgcState,
@@ -6002,12 +5987,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal IEnumerable<GCHeapAndThreadKindAndIsNewThread> GetHeapAndThreadKinds(ThreadID? oldThreadID, ThreadID newThreadID) =>
-            Enumerable.Concat<GCHeapAndThreadKindAndIsNewThread>(
-                oldThreadID == null
-                    ? Enumerable.Empty<GCHeapAndThreadKindAndIsNewThread>()
-                    : (from x in GetHeapAndThreadKinds(oldThreadID.Value) select new GCHeapAndThreadKindAndIsNewThread(x, newThreadIsGC: false)),
-                (from x in GetHeapAndThreadKinds(newThreadID) select new GCHeapAndThreadKindAndIsNewThread(x, newThreadIsGC: true)));
+        internal IEnumerable<GCHeapAndThreadKindAndIsNewThread> GetHeapAndThreadKinds(ThreadID? oldThreadID, ThreadID newThreadID)
+        {
+            if (oldThreadID != null)
+            {
+                foreach (GCHeapAndThreadKind heapAndThreadKind in GetHeapAndThreadKinds(oldThreadID.Value))
+                {
+                    yield return new GCHeapAndThreadKindAndIsNewThread(heapAndThreadKind, newThreadIsGC: false);
+                }
+            }
+
+            foreach (GCHeapAndThreadKind heapdAndThreadKind in GetHeapAndThreadKinds(newThreadID))
+            {
+                yield return new GCHeapAndThreadKindAndIsNewThread(heapdAndThreadKind, newThreadIsGC: true);
+            }
+        }
 
         // I keep this for the purpose of server Background GC. Unfortunately for server background 
         // GC we are firing the GCEnd/GCHeaps events and Global/Perheap events in the reversed order.
@@ -6110,7 +6104,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             b2a.TryGetValue(b, out A a) ? a : (A?) null;
     }
 
-    // Dictionary type where a K may map to multiple of V, with different numbers each time.
+    // Dictionary-like structure that counts *how many* times a key has been associated with each value.
+    // So if you called Add("a", "x"), Add("a", "y"), Add("a", "x") -- "a" would be associated with "x" twice and "y" once.
+    // The class is generic but the purpose is to detect when a GC heap is usually on a certain processor.
+    // In that case the count of Add(heap, processor) would be higher than the count of Add(heap, some other processor).
     class CountingDictionary<K, V> where K : struct where V : struct, IEquatable<V>
     {
         private readonly struct Entry
@@ -6213,8 +6210,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
     internal static class Util
     {
-        internal static uint Sum(IEnumerable<uint> e) =>
-            e.Aggregate<uint, uint>(0, (uint a, uint b) => a + b);
+        internal static uint Sum(IEnumerable<uint> e)
+        {
+            uint sum = 0;
+            foreach (uint i in e)
+            {
+                sum += i;
+            }
+            return sum;
+        }
 
         internal static void Swap<T>(List<T> l, uint a, uint b)
         {
