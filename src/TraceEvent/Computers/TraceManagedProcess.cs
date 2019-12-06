@@ -1664,7 +1664,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
     }
 
     // This could be merged into GcJoinID, but this is experimental and that isn't.
-    [Obsolete] // Experimental
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public enum GCJoinStage : sbyte
     {
         restart = -1,
@@ -1710,7 +1710,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         count = 39,
     }
 
-    [Obsolete] // Experimental
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public static class GCJoinStageUtil
     {
         public static bool IsRJoinStage(GCJoinStage stage) =>
@@ -1750,7 +1750,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
         }
 
-        [Obsolete] // Experimental
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public static GCThreadKind? TryGetThreadKindFromJoinStage(GCJoinStage stage)
         {
             switch (stage)
@@ -1855,7 +1855,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         #region private
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         internal readonly struct GCJoinState
         {
             public readonly GCJoinStateFgOrBg Fg;
@@ -1968,7 +1968,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
         }
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         internal readonly struct GCJoinStateFgOrBg
         {
             private readonly struct SingleJoinState
@@ -2370,7 +2370,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return list[list.Count - 1];
         }
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         internal static TraceGC GetCurrentGC(
             TraceLoadedDotNetRuntime proc,
             double timeStampRelativeMSec,
@@ -5005,7 +5005,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public HeapID Heap => HeapAndThreadKind.HeapID;
         public GCThreadKind ThreadKind => HeapAndThreadKind.ThreadKind;
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public GCJoinStage JoinStage =>
             (GCJoinStage) JoinID;
     }

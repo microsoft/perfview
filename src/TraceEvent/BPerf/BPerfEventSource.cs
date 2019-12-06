@@ -134,7 +134,7 @@ namespace Microsoft.Diagnostics.Tracing
             return true;
         }
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public override string ProcessName(int processID, long time100ns)
         {
             if (!this.processNameForID.TryGetValue(processID, out var ret))

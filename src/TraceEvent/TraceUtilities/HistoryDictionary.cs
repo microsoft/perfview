@@ -25,7 +25,7 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
     /// over time (eg Process IDs, thread IDs).  Thus it takes a handle AND A TIME, and finds the value
     /// associated with that handle at that time.   
     /// </summary>
-    [Obsolete]
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class HistoryDictionary<T> : IReadOnlyHistoryDictionary<T>
     {
         public HistoryDictionary(int initialSize)

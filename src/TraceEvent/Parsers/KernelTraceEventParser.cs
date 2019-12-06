@@ -26,14 +26,14 @@ using ThreadID = System.Int32;
 // TODO I have low confidence in the TCP headers, especially for Versions < 2 (how much do we care?)
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
-    [Obsolete]
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public interface IThreadIDToProcessID
     {
         ProcessID? ThreadIDToProcessID(ThreadID threadID, long timeQPC);
         IEnumerable<ThreadIDAndTime> ProcessIDToThreadIDsAndTimes(ProcessID processID);
     }
 
-    [Obsolete]
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public struct ThreadIDAndTime
     {
         public readonly ThreadID ThreadID;
@@ -46,7 +46,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
     }
 
-    [Obsolete]
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     internal class ThreadIDToProcessIDImpl : IThreadIDToProcessID
     {
         private readonly KernelTraceEventParserState state;
@@ -297,11 +297,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public KernelTraceEventParser(TraceEventSource source) : this(source, DefaultOptionsForSource(source)) { }
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public IReadOnlyHistoryDictionary<int> ThreadIDToProcessID =>
             State.threadIDtoProcessID;
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public IThreadIDToProcessID ThreadIDToProcessIDGetter =>
             new ThreadIDToProcessIDImpl(State);
 

@@ -163,7 +163,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal EventCache EventCache { get; private set; }
         internal StackCache StackCache { get; private set; }
 
-        [Obsolete]
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public override string ProcessName(int processID, long timeQPC) => string.Format("Process({0})", processID);
 
         internal void ReadAndDispatchEvent(PinnedStreamReader reader, bool useHeaderCompression)
