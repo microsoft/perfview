@@ -110,11 +110,13 @@ namespace Microsoft.Diagnostics.Tracing
 
         MutableTraceEventStackSource _outputStackSource;
         MutableTraceEventStackSource _inputStackSource;
+        TraceLogEventSource _eventSource;
 
         public StartStopStackMingledComputer(MutableTraceEventStackSource outputStackSource, MutableTraceEventStackSource inputStackSource, TraceLogEventSource source, Dictionary<int, List<StartStopThreadEventData>> perThreadEventStartAndStop)
         {
             _outputStackSource = outputStackSource;
             _inputStackSource = inputStackSource;
+            _eventSource = source;
 
             HashSet<EventUID> interestingEvents = new HashSet<EventUID>();
             foreach (var entry in perThreadEventStartAndStop)
@@ -235,7 +237,7 @@ namespace Microsoft.Diagnostics.Tracing
                 var stackInOutputWorld = MapFromInputStackSampleToOutputStackSample(sample.StackIndex, out int threadID);
 
                 outputSample.Count = sample.Count;
-                outputSample.Metric = sample.Metric;
+                outputSample.Metric = 1;// sample.Metric;
                 outputSample.SampleIndex = sample.SampleIndex;
                 outputSample.Scenario = sample.Scenario;
                 outputSample.TimeRelativeMSec = sample.TimeRelativeMSec;
@@ -277,9 +279,10 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
 
-                outputStackSource.AddSample(sample);
+                outputStackSource.AddSample(outputSample);
             });
 
+            outputStackSource.Interner.DoneInterning();
             outputStackSource.DoneAddingSamples();
         }
 
@@ -298,15 +301,27 @@ namespace Microsoft.Diagnostics.Tracing
             return stackIndices;
         }
 
+
+        private List<StackSourceFrameIndex> StackFrameIndicesOfCallStack(TraceEventStackSource stackSource, StackSourceCallStackIndex callStack)
+        {
+            List<StackSourceFrameIndex> stackIndices = new List<StackSourceFrameIndex>();
+            foreach (var index in StackIndicesOfCallStack(stackSource, callStack))
+            {
+                if (index != StackSourceCallStackIndex.Invalid)
+                {
+                    stackIndices.Add(stackSource.GetFrameIndex(index));
+                }
+            }
+
+            return stackIndices;
+        }
+
         private string StringOfStack(TraceEventStackSource stackSource, StackSourceCallStackIndex callStack)
         {
             StringBuilder output = new StringBuilder();
-            foreach (StackSourceCallStackIndex stackIndex in StackIndicesOfCallStack(stackSource, callStack))
+            foreach (StackSourceFrameIndex stackIndex in StackFrameIndicesOfCallStack(stackSource, callStack))
             {
-                if (stackIndex != StackSourceCallStackIndex.Invalid)
-                {
-                    output.Append($"->{stackSource.GetFrameName(stackSource.GetFrameIndex(stackIndex), false)}");
-                }
+                output.Append($"->{stackSource.GetFrameName(stackIndex, false)}");
             }
             return output.ToString();
         }
@@ -330,8 +345,14 @@ namespace Microsoft.Diagnostics.Tracing
 
         private struct OutputStackData
         {
-            public int ThreadId;
-            public StackSourceCallStackIndex OutputStack;
+            public OutputStackData(int threadId, StackSourceCallStackIndex outputStack)
+            {
+                ThreadId = threadId;
+                OutputStack = outputStack;
+            }
+
+            public readonly int ThreadId;
+            public readonly StackSourceCallStackIndex OutputStack;
         }
 
         Dictionary<StackSourceCallStackIndex, OutputStackData> _stackMapping = new Dictionary<StackSourceCallStackIndex, OutputStackData>();
@@ -348,19 +369,37 @@ namespace Microsoft.Diagnostics.Tracing
                 return result.OutputStack;
             }
 
-            StackSourceCallStackIndex callerOutput = MapFromInputStackSampleToOutputStackSample(_inputStackSource.GetCallerIndex(inputStack), out threadId);
+            StackSourceCallStackIndex outputStack;
             var currentFrame = _inputStackSource.GetFrameIndex(inputStack);
-            if (threadId == -1)
+            if (_stackFrameToThread.TryGetValue(currentFrame, out var thread))
             {
-                if (_stackFrameToThread.TryGetValue(currentFrame, out var thread))
+                threadId = thread.ThreadID;
+                outputStack = inputStack;
+            }
+            else
+            {
+                StackSourceCallStackIndex callerOutput = MapFromInputStackSampleToOutputStackSample(_inputStackSource.GetCallerIndex(inputStack), out threadId);
+                if (inputStack < _outputStackSource.Interner.CallStackStartIndex)
                 {
-                    threadId = thread.ThreadID;
+                    outputStack = inputStack;
+                }
+                else
+                {
+                    StackSourceFrameIndex currentFrameOutput;
+                    if (currentFrame < _outputStackSource.Interner.FrameStartIndex)
+                    {
+                        currentFrameOutput = currentFrame;
+                    }
+                    else
+                    {
+                        string frameName = _inputStackSource.GetFrameName(currentFrame, false);
+                        currentFrameOutput = _outputStackSource.Interner.FrameIntern(frameName);
+                    }
+
+                    outputStack = _outputStackSource.Interner.CallStackIntern(currentFrameOutput, callerOutput);
                 }
             }
-
-            string frameName = _inputStackSource.GetFrameName(currentFrame, false);
-            StackSourceFrameIndex currentFrameOutput = _outputStackSource.Interner.FrameIntern(frameName);
-            StackSourceCallStackIndex outputStack = _outputStackSource.Interner.CallStackIntern(currentFrameOutput, callerOutput);
+            _stackMapping.Add(inputStack, new OutputStackData(threadId, outputStack));
             return outputStack;
         }
 

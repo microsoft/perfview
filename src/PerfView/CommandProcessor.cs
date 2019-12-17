@@ -351,6 +351,11 @@ namespace PerfView
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.DisableInlining;
             }
 
+            if (parsedArgs.RuntimeLoading)
+            {
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.CompilationDiagnostic;
+            }
+
             if (profilerKeywords != 0)
             {
                 InstallETWClrProfiler(LogFile, (int)profilerKeywords);

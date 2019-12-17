@@ -26,6 +26,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             public long Identifier;
             public int ThreadID;
+            public string OperationType;
 
             public override int GetHashCode()
             {
@@ -60,6 +61,7 @@ namespace Microsoft.Diagnostics.Tracing
         public CLRRuntimeActivityComputer(TraceLogEventSource source)
         {
             source.Clr.MethodJittingStarted += Clr_MethodJittingStarted;
+            source.Clr.MethodR2RGetEntryPoint += Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose += Clr_MethodLoadVerbose;
             source.Clr.MethodLoad += Clr_MethodLoad;
             source.Process();
@@ -92,7 +94,7 @@ namespace Microsoft.Diagnostics.Tracing
                     _parsedData[id.ThreadID] = new List<StartStopStackMingledComputer.StartStopThreadEventData>();
 
                 List<StartStopStackMingledComputer.StartStopThreadEventData> startStopData = _parsedData[id.ThreadID];
-                startStopData.Add(new StartStopStackMingledComputer.StartStopThreadEventData(jitStartData.Start, new StartStopStackMingledComputer.EventUID(evt), jitStartData.Name));
+                startStopData.Add(new StartStopStackMingledComputer.StartStopThreadEventData(jitStartData.Start, new StartStopStackMingledComputer.EventUID(evt), id.OperationType + "(" +jitStartData.Name+")"));
             }
         }
 
@@ -105,6 +107,21 @@ namespace Microsoft.Diagnostics.Tracing
             IdOfIncompleteAction id = new IdOfIncompleteAction();
             id.Identifier = obj.MethodID;
             id.ThreadID = obj.ThreadID;
+            id.OperationType = "JIT";
+
+            _incompleteJitEvents[id] = incompleteDesc;
+        }
+
+        private void Clr_MethodR2RGetEntryPoint(R2RGetEntryPointTraceData obj)
+        {
+            IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
+            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
+            incompleteDesc.Name = JITStats.GetMethodName(obj);
+
+            IdOfIncompleteAction id = new IdOfIncompleteAction();
+            id.Identifier = obj.MethodID;
+            id.ThreadID = obj.ThreadID;
+            id.OperationType = "R2R";
 
             _incompleteJitEvents[id] = incompleteDesc;
         }

@@ -3900,6 +3900,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
             return data.MethodNamespace + "." + data.MethodName + data.MethodSignature.Substring(parenIdx);
         }
+
+        internal static string GetMethodName(R2RGetEntryPointTraceData data)
+        {
+            int parenIdx = data.MethodSignature.IndexOf('(');
+            if (parenIdx < 0)
+            {
+                parenIdx = data.MethodSignature.Length;
+            }
+
+            return data.MethodNamespace + "." + data.MethodName + data.MethodSignature.Substring(parenIdx);
+        }
+
         internal static string GetMethodName(MethodLoadUnloadVerboseTraceData data)
         {
             int parenIdx = data.MethodSignature.IndexOf('(');
