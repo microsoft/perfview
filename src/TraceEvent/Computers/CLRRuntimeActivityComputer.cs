@@ -26,7 +26,6 @@ namespace Microsoft.Diagnostics.Tracing
         {
             public long Identifier;
             public int ThreadID;
-            public string OperationType;
 
             public override int GetHashCode()
             {
@@ -50,6 +49,7 @@ namespace Microsoft.Diagnostics.Tracing
         struct IncompleteActionDesc
         {
             public StartStopStackMingledComputer.EventUID Start;
+            public string OperationType;
             public string Name;
         }
 
@@ -64,10 +64,28 @@ namespace Microsoft.Diagnostics.Tracing
             source.Clr.MethodR2RGetEntryPoint += Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose += Clr_MethodLoadVerbose;
             source.Clr.MethodLoad += Clr_MethodLoad;
+            source.Clr.LoaderAssemblyLoad += Clr_LoaderAssemblyLoad;
             source.Process();
             source.Clr.MethodJittingStarted -= Clr_MethodJittingStarted;
             source.Clr.MethodLoadVerbose -= Clr_MethodLoadVerbose;
             source.Clr.MethodLoad -= Clr_MethodLoad;
+            source.Clr.LoaderAssemblyLoad -= Clr_LoaderAssemblyLoad;
+        }
+
+        private void AddStartStopData(int threadId, StartStopStackMingledComputer.EventUID start, StartStopStackMingledComputer.EventUID end, string name)
+        {
+            if (!_parsedData.ContainsKey(threadId))
+                _parsedData[threadId] = new List<StartStopStackMingledComputer.StartStopThreadEventData>();
+
+            List<StartStopStackMingledComputer.StartStopThreadEventData> startStopData = _parsedData[threadId];
+            startStopData.Add(new StartStopStackMingledComputer.StartStopThreadEventData(start, end, name));
+        }
+
+        private void Clr_LoaderAssemblyLoad(AssemblyLoadUnloadTraceData obj)
+        {
+            // Since we don't have start stop data, simply treat the assembly load event as a point in time so that it is visible in the textual load view
+            StartStopStackMingledComputer.EventUID eventTime = new StartStopStackMingledComputer.EventUID(obj);
+            AddStartStopData(obj.ThreadID, eventTime, eventTime, $"ASMLOAD({obj.FullyQualifiedAssemblyName},{obj.AssemblyID})");
         }
 
         private void Clr_MethodLoad(MethodLoadUnloadTraceData obj)
@@ -90,11 +108,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // JitStart is processed, don't process it again.
                 _incompleteJitEvents.Remove(id);
 
-                if (!_parsedData.ContainsKey(id.ThreadID))
-                    _parsedData[id.ThreadID] = new List<StartStopStackMingledComputer.StartStopThreadEventData>();
-
-                List<StartStopStackMingledComputer.StartStopThreadEventData> startStopData = _parsedData[id.ThreadID];
-                startStopData.Add(new StartStopStackMingledComputer.StartStopThreadEventData(jitStartData.Start, new StartStopStackMingledComputer.EventUID(evt), id.OperationType + "(" +jitStartData.Name+")"));
+                AddStartStopData(id.ThreadID, jitStartData.Start, new StartStopStackMingledComputer.EventUID(evt), jitStartData.OperationType + "(" + jitStartData.Name + ")");
             }
         }
 
@@ -103,11 +117,11 @@ namespace Microsoft.Diagnostics.Tracing
             IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
             incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
             incompleteDesc.Name = JITStats.GetMethodName(obj);
+            incompleteDesc.OperationType = "JIT";
 
             IdOfIncompleteAction id = new IdOfIncompleteAction();
             id.Identifier = obj.MethodID;
             id.ThreadID = obj.ThreadID;
-            id.OperationType = "JIT";
 
             _incompleteJitEvents[id] = incompleteDesc;
         }
@@ -117,11 +131,11 @@ namespace Microsoft.Diagnostics.Tracing
             IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
             incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
             incompleteDesc.Name = JITStats.GetMethodName(obj);
+            incompleteDesc.OperationType = "R2R";
 
             IdOfIncompleteAction id = new IdOfIncompleteAction();
             id.Identifier = obj.MethodID;
             id.ThreadID = obj.ThreadID;
-            id.OperationType = "R2R";
 
             _incompleteJitEvents[id] = incompleteDesc;
         }

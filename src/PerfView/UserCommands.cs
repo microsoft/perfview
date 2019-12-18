@@ -1904,7 +1904,7 @@ public static class TraceEventStackSourceExtensions
         CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
 
         var finalStackSource = new MutableTraceEventStackSource(eventLog);
-        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, eventLog.Events.GetSource(), runtimeOperationsComputer.StartStopEvents);
+        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, false, eventLog.Events.GetSource(), runtimeOperationsComputer.StartStopEvents);
 
         return CopyStackSource.Clone(finalStackSource);
     }
