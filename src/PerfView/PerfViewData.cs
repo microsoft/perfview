@@ -3531,6 +3531,82 @@ table {
         private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
     }
 
+    public class PerfViewRuntimeOperationsStats : PerfViewHtmlReport
+    {
+        public PerfViewRuntimeOperationsStats(PerfViewFile dataFile) : base(dataFile, "RuntimeOperations") { }
+        protected override string DoCommand(string command, StatusBar worker)
+        {
+            string textStr = "txt/";
+
+            if (command.StartsWith(textStr))
+            {
+                var rest = command.Substring(textStr.Length);
+                var processId = int.Parse(rest);
+                if (m_interestingProcesses.ContainsKey(processId))
+                {
+                    var proc = m_interestingEtlxProcesses[processId];
+                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeOperationStats." + processId.ToString() + ".txt");
+                    if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                        File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
+                    {
+                        Stats.RuntimeOperationStats.ToTxt(txtFile, proc, m_PerThreadData);
+                    }
+                    Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                    System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                    return "Opening Txt " + txtFile;
+                }
+            }
+            return "Unknown command " + command;
+        }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        {
+            using (var source = dataFile.Events.GetSource())
+            {
+                CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(source);
+                var stackSource = new MutableTraceEventStackSource(source.TraceLog);
+                StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(stackSource, null, true, source, runtimeOperationsComputer.StartStopEvents);
+                m_PerThreadData = mingledComputer.StartStopData;
+                m_interestingProcesses = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc =>
+                {
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, (float)dataFile.SampleProfileInterval.TotalMilliseconds);
+                    proc.Log = dataFile;
+                });
+                source.Process();
+
+                m_interestingEtlxProcesses = new Dictionary<int, TraceProcess>();
+                foreach (var proc in dataFile.Processes)
+                {
+                    foreach (var thread in proc.Threads)
+                    {
+                        if (m_PerThreadData.ContainsKey(thread.ThreadID))
+                        {
+                            m_interestingEtlxProcesses.Add(proc.ProcessID, proc);
+                            break;
+                        }
+                    }
+                }
+
+                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                {
+                    if (m_interestingEtlxProcesses.ContainsKey(proc.ProcessID))
+                    {
+                        m_interestingProcesses.Add(proc.ProcessID, proc);
+                    }
+                }
+
+                Stats.ClrStats.ToHtml(writer, m_interestingProcesses.Values.ToList(), fileName, "RuntimeOperations", Stats.ClrStats.ReportType.RuntimeOperations, true, runtimeOpsStats : m_PerThreadData);
+            }
+        }
+
+        private RuntimeOperationsStats m_PerThreadData;
+        private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_interestingProcesses;
+        private Dictionary<int/*pid*/, TraceProcess> m_interestingEtlxProcesses;
+    }
+
     public class PerfViewJitStats : PerfViewHtmlReport
     {
         public PerfViewJitStats(PerfViewFile dataFile) : base(dataFile, "JITStats") { }
@@ -4295,7 +4371,7 @@ table {
             {
                 return eventLog.ThreadTimeStacks();
             }
-            else if (streamName == "Runtime Operations (Thread Time)")
+            else if (streamName == "Runtime Operations (CPU Time)")
             {
                 return eventLog.RuntimeOperationsStacks();
             }
@@ -7291,10 +7367,11 @@ table {
             }
 
             advanced.Children.Add(new PerfViewJitStats(this));
+            advanced.Children.Add(new PerfViewRuntimeOperationsStats(this));
 
             if (hasCPUStacks)
             {
-                advanced.Children.Add(new PerfViewStackSource(this, "Runtime Operations (Thread Time)"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Runtime Operations (CPU Time)"));
             }
 
             advanced.Children.Add(new PerfViewEventStats(this));
@@ -8475,6 +8552,8 @@ table {
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
+
+                advanced.AddChild(new PerfViewRuntimeOperationsStats(this));
             }
 
             if (memory.Children.Count > 0)
@@ -8721,6 +8800,8 @@ table {
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
+                advanced.AddChild(new PerfViewRuntimeOperationsStats(this));
+
             }
 
             if (memory.Children.Count > 0)

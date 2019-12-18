@@ -19,6 +19,12 @@ using StartStopKey = System.Guid;   // The start-stop key is unique in the trace
 
 namespace Microsoft.Diagnostics.Tracing
 {
+    public class RuntimeOperationsStats : Dictionary<int, StartStopStackMingledComputer.PerThreadStartStopData>
+    {
+        public MutableTraceEventStackSource StackSource;
+        public TraceLogEventSource EventSource;
+    }
+
     /// <summary>
     /// Calculates start-stop activities (computes duration), Its designed to merge nested start and stop data with call stacks
     /// To do so, it requires the both the start and end events to capture stacks, and to be provided to the Computer at construction.
@@ -96,7 +102,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         Dictionary<int, Stack<StackSwap>> _currentStackSwap = new Dictionary<int, Stack<StackSwap>>();
 
-        class PerThreadStartStopData
+        public class PerThreadStartStopData
         {
             public int Offset;
 
@@ -105,18 +111,27 @@ namespace Microsoft.Diagnostics.Tracing
             public double[] SplitUpDataStarts;
         }
 
-        Dictionary<int, PerThreadStartStopData> _startStopData = new Dictionary<int, PerThreadStartStopData>();
+        RuntimeOperationsStats _startStopData = new RuntimeOperationsStats();
         Dictionary<StackSourceFrameIndex, TraceThread> _stackFrameToThread = new Dictionary<StackSourceFrameIndex, TraceThread>();
+
+        public RuntimeOperationsStats StartStopData => _startStopData;
 
         MutableTraceEventStackSource _outputStackSource;
         MutableTraceEventStackSource _inputStackSource;
         TraceLogEventSource _eventSource;
 
-        public StartStopStackMingledComputer(MutableTraceEventStackSource outputStackSource, MutableTraceEventStackSource inputStackSource, TraceLogEventSource source, Dictionary<int, List<StartStopThreadEventData>> perThreadEventStartAndStop)
+        public StartStopStackMingledComputer(MutableTraceEventStackSource outputStackSource, MutableTraceEventStackSource inputStackSource, bool noFullCallStacks, TraceLogEventSource source, Dictionary<int, List<StartStopThreadEventData>> perThreadEventStartAndStop)
         {
             _outputStackSource = outputStackSource;
+            _startStopData.StackSource = outputStackSource;
+            _startStopData.EventSource = source;
             _inputStackSource = inputStackSource;
             _eventSource = source;
+
+            if (noFullCallStacks && inputStackSource != null)
+            {
+                throw new ArgumentException("noFullCallStacks may only be specified if inputStackSource is null");
+            }
 
             HashSet<EventUID> interestingEvents = new HashSet<EventUID>();
             foreach (var entry in perThreadEventStartAndStop)
@@ -144,8 +159,10 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     lock (_interestingEventToCallStackOutput)
                     {
-                        _interestingEventToCallStackOutput.Add(uid, _outputStackSource.GetCallStack(evt.CallStackIndex(), evt));
-                        _interestingEventToCallStackInput.Add(uid, _inputStackSource.GetCallStack(evt.CallStackIndex(), evt));
+                        _interestingEventToCallStackOutput.Add(uid, noFullCallStacks ? outputStackSource.GetCallStackForThread(evt.Thread()) : _outputStackSource.GetCallStack(evt.CallStackIndex(), evt));
+
+                        if (_inputStackSource != null)
+                            _interestingEventToCallStackInput.Add(uid, _inputStackSource.GetCallStack(evt.CallStackIndex(), evt));
                     }
                 }
             };
@@ -157,7 +174,7 @@ namespace Microsoft.Diagnostics.Tracing
             foreach (var thread in source.TraceLog.Threads)
             {
                 var callStackWithThread = outputStackSource.GetCallStackForThread(thread);
-                var threadFrame = inputStackSource.GetFrameIndex(callStackWithThread);
+                var threadFrame = outputStackSource.GetFrameIndex(callStackWithThread);
                 _stackFrameToThread.Add(threadFrame, thread);
             }
 
@@ -232,55 +249,58 @@ namespace Microsoft.Diagnostics.Tracing
 
             StackSourceSample outputSample = new StackSourceSample(outputStackSource);
 
-            inputStackSource.ForEach((StackSourceSample sample) =>
+            if (inputStackSource != null)
             {
-                var stackInOutputWorld = MapFromInputStackSampleToOutputStackSample(sample.StackIndex, out int threadID);
-
-                outputSample.Count = sample.Count;
-                outputSample.Metric = 1;// sample.Metric;
-                outputSample.SampleIndex = sample.SampleIndex;
-                outputSample.Scenario = sample.Scenario;
-                outputSample.TimeRelativeMSec = sample.TimeRelativeMSec;
-                outputSample.StackIndex = stackInOutputWorld;
-
-                if (_startStopData.TryGetValue(threadID, out var perThreadStartStop))
+                inputStackSource.ForEach((StackSourceSample sample) =>
                 {
-                    int interestingIndex = Array.BinarySearch(perThreadStartStop.SplitUpDataStarts, sample.TimeRelativeMSec);
-                    if (interestingIndex > 0)
+                    var stackInOutputWorld = MapFromInputStackSampleToOutputStackSample(sample.StackIndex, out int threadID);
+
+                    outputSample.Count = sample.Count;
+                    outputSample.Metric = 1;// sample.Metric;
+                    outputSample.SampleIndex = sample.SampleIndex;
+                    outputSample.Scenario = sample.Scenario;
+                    outputSample.TimeRelativeMSec = sample.TimeRelativeMSec;
+                    outputSample.StackIndex = stackInOutputWorld;
+
+                    if (_startStopData.TryGetValue(threadID, out var perThreadStartStop))
                     {
+                        int interestingIndex = Array.BinarySearch(perThreadStartStop.SplitUpDataStarts, sample.TimeRelativeMSec);
+                        if (interestingIndex > 0)
+                        {
                         // roll forward until interestingIndex is past exact matches
                         while (interestingIndex < perThreadStartStop.SplitUpDataStarts.Length && perThreadStartStop.SplitUpDataStarts[interestingIndex] == sample.TimeRelativeMSec)
-                        {
-                            interestingIndex++;
-                        }
-                    }
-                    else
-                    {
-                        interestingIndex = ~interestingIndex;
-                    }
-
-                    if (interestingIndex == 0)
-                    {
-                        // Nothing interesting found...
-                        outputSample.StackIndex = stackInOutputWorld;
-                    }
-                    else
-                    {
-                        interestingIndex--;
-                        if (perThreadStartStop.SplitUpData[interestingIndex].End.Time > sample.TimeRelativeMSec)
-                        {
-                            outputSample.StackIndex = MergeInCurrentOverrideStack(stackInOutputWorld, perThreadStartStop.SplitUpData[interestingIndex].OutputStacks);
+                            {
+                                interestingIndex++;
+                            }
                         }
                         else
                         {
+                            interestingIndex = ~interestingIndex;
+                        }
+
+                        if (interestingIndex == 0)
+                        {
+                        // Nothing interesting found...
+                        outputSample.StackIndex = stackInOutputWorld;
+                        }
+                        else
+                        {
+                            interestingIndex--;
+                            if (perThreadStartStop.SplitUpData[interestingIndex].End.Time > sample.TimeRelativeMSec)
+                            {
+                                outputSample.StackIndex = MergeInCurrentOverrideStack(stackInOutputWorld, perThreadStartStop.SplitUpData[interestingIndex].OutputStacks);
+                            }
+                            else
+                            {
                             // Nothing interesting found...
                             outputSample.StackIndex = stackInOutputWorld;
+                            }
                         }
                     }
-                }
 
-                outputStackSource.AddSample(outputSample);
-            });
+                    outputStackSource.AddSample(outputSample);
+                });
+            }
 
             outputStackSource.Interner.DoneInterning();
             outputStackSource.DoneAddingSamples();

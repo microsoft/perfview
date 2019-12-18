@@ -9,9 +9,9 @@ namespace Stats
 {
     internal static class ClrStats
     {
-        public enum ReportType { JIT, GC };
+        public enum ReportType { JIT, GC, RuntimeOperations };
 
-        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false)
+        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, Microsoft.Diagnostics.Tracing.RuntimeOperationsStats runtimeOpsStats = null)
         {
             if (!justBody)
             {
@@ -32,6 +32,10 @@ namespace Stats
             else if (type == ReportType.GC)
             {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB.CompareTo(p2.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB); });
+            }
+            else if (type == ReportType.RuntimeOperations)
+            {
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -RuntimeOperationStats.TotalCPUMSec(p1, runtimeOpsStats).CompareTo(RuntimeOperationStats.TotalCPUMSec(p2, runtimeOpsStats)); });
             }
 
             int count = sortedProcs.Count;
@@ -80,6 +84,11 @@ namespace Stats
                 if (type == ReportType.JIT && mang.JIT.Stats().Interesting)
                 {
                     Stats.JitStats.ToHtml(writer, stats, mang, fileName);
+                }
+
+                if (type == ReportType.RuntimeOperations)
+                {
+                    Stats.RuntimeOperationStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
                 }
             }
 

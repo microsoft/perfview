@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -40,6 +40,7 @@
     <Compile Include="..\PerfView\ClrStats.cs" />
     <Compile Include="..\PerfView\GcStats.cs" />
     <Compile Include="..\PerfView\JitStats.cs" />
+    <Compile Include="..\PerfView\RuntimeOperationsStats.cs" />
   </ItemGroup>
 
   <ItemGroup>
