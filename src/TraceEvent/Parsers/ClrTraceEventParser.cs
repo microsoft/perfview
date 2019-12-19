@@ -6129,7 +6129,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(!(Version == 1 && EventDataLength != 30));
             Debug.Assert(!(Version == 2 && EventDataLength != 38));
             Debug.Assert(!(Version == 3 && EventDataLength != 46));
-            Debug.Assert(!(Version > 2 && EventDataLength < 38));
+            Debug.Assert(!(Version > 3 && EventDataLength < 46));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
