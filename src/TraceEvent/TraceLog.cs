@@ -8465,7 +8465,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // If we have a signature, use it
             if (moduleFile.PdbSignature != Guid.Empty)
             {
-                pdbFileName = symReader.FindSymbolFilePath(moduleFile.PdbName, moduleFile.PdbSignature, moduleFile.PdbAge, moduleFile.FilePath, moduleFile.ProductVersion);
+                pdbFileName = symReader.FindSymbolFilePath(moduleFile.PdbName, moduleFile.PdbSignature, moduleFile.PdbAge, moduleFile.FilePath, moduleFile.ProductVersion, true);
             }
             else
             {
