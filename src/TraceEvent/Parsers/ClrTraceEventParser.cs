@@ -6104,6 +6104,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public bool HasPauseMode { get { return (Version >= 2); } }
         public int MemoryPressure { get { if (Version >= 2) { return GetInt32At(34); } return 0; } }
         public bool HasMemoryPressure { get { return (Version >= 2); } }
+        public int CondemnReasons0 { get { if (Version >= 3) { return GetInt32At(38); } return 0; } }
+        public bool HasCondemnReasons0 { get { return (Version >= 3); } }
+        public int CondemnReasons1 { get { if (Version >= 3) { return GetInt32At(42); } return 0; } }
+        public bool HasCondemnReasons1 { get { return (Version >= 3); } }
         #region Private
         internal GCGlobalHeapHistoryTraceData(Action<GCGlobalHeapHistoryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -6124,6 +6128,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(!(Version == 0 && EventDataLength != 28));
             Debug.Assert(!(Version == 1 && EventDataLength != 30));
             Debug.Assert(!(Version == 2 && EventDataLength != 38));
+            Debug.Assert(!(Version == 3 && EventDataLength != 46));
             Debug.Assert(!(Version > 2 && EventDataLength < 38));
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -6146,7 +6151,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure" };
+                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure", "CondemnReasons0", "CondemnReasons1" };
                 }
 
                 return payloadNames;
@@ -6193,6 +6198,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     if (HasMemoryPressure)
                     {
                         return MemoryPressure;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+                case 9:
+                    if (HasCondemnReasons0)
+                    {
+                        return CondemnReasons0;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+
+                case 10:
+                    if (HasCondemnReasons1)
+                    {
+                        return CondemnReasons1;
                     }
                     else
                     {

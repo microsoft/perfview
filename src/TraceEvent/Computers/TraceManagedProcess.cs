@@ -3125,6 +3125,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Ephemeral_Before_BGC = 13,
         Internal_Tuning = 14,
         Max = 15,
+        // TODO: Handle joined 
     }
 
     /// <summary>
@@ -3433,6 +3434,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public GCPauseMode PauseMode;
         public int MemoryPressure;
         public bool HasMemoryPressure;
+        public int CondemnReasons0;
+        public bool HasCondemnReasons0;
+        public int CondemnReasons1;
+        public bool HasCondemnReasons1;
     }
 
     /// <summary>
@@ -4367,7 +4372,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     HasMemoryPressure = data.HasMemoryPressure,
                     MemoryPressure = (data.HasMemoryPressure) ? data.MemoryPressure : -1,
                     NumHeaps = data.NumHeaps,
-                    Reason = data.Reason
+                    Reason = data.Reason,
+                    CondemnReasons0 = (data.HasCondemnReasons0) ? data.CondemnReasons0 : -1,
+                    CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
+                    HasCondemnReasons0 = data.HasCondemnReasons0,
+                    HasCondemnReasons1 = data.HasCondemnReasons1,
                 };
                 _event.SetHeapCount(proc.GC.m_stats.HeapCount);
             }

@@ -1004,8 +1004,9 @@ namespace Stats
 
             for (CondemnedReasonGroup i = 0; i < CondemnedReasonGroup.Max; i++)
             {
+                // TODO: Add columns for joined
                 sb.Append("<TD Align=\"center\">");
-
+            
                 var perHeapCondemnedReasons = gc.PerHeapCondemnedReasons;
                 if (HeapIndexHighestGen < perHeapCondemnedReasons.Length)
                 {
@@ -1037,6 +1038,7 @@ namespace Stats
         // This is what we use for the html header and the help text.
         private static string[][] CondemnedReasonsHtmlHeader = new string[(int)CondemnedReasonGroup.Max][]
         {
+            // TODO: Add columns for joined
             new string[] {"Initial<BR/>Requested<BR/>Generation", "This is the generation when this GC was triggered"},
             new string[] {"Final<BR/>Generation", "The final generation to be collected"},
             new string[] {"Generation<BR/>Budget<BR/>Exceeded", "This is the highest generation whose budget is exceeded"},
