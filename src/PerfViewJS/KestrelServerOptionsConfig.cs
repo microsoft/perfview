@@ -1,30 +1,27 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="KestrelServerOptionsConfig.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
-    using System;
     using Microsoft.AspNetCore.Server.Kestrel.Core;
-    using Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.Internal;
     using Microsoft.Extensions.Options;
 
     internal sealed class KestrelServerOptionsConfig : IOptions<KestrelServerOptions>
     {
-        public KestrelServerOptionsConfig(IServiceProvider serviceProvider, int port)
+        public KestrelServerOptionsConfig(int port)
         {
             this.Value = new KestrelServerOptions
             {
                 AddServerHeader = false,
                 AllowSynchronousIO = false,
-                ApplicationServices = serviceProvider,
-                ApplicationSchedulingMode = SchedulingMode.Default,
-                ConfigurationLoader = null
+                ApplicationServices = null,
+                ConfigurationLoader = null,
             };
 
             this.Value.ConfigureEndpointDefaults(options =>
             {
                 options.Protocols = HttpProtocols.Http1;
-                options.NoDelay = true;
             });
 
             this.Value.ListenAnyIP(port);

@@ -1,12 +1,13 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="TreeNode.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
-    using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
     using System.Text;
+    using System.Text.Json.Serialization;
     using Microsoft.AspNetCore.WebUtilities;
     using Microsoft.Diagnostics.Tracing.Stacks;
 
@@ -29,12 +30,12 @@ namespace PerfViewJS
             this.Base64EncodedId = Base64UrlTextEncoder.Encode(Encoding.UTF8.GetBytes(template.Name));
             this.Path = string.Empty;
             this.Name = template.Name;
-            this.InclusiveMetric = template.InclusiveMetric;
-            this.InclusiveCount = template.InclusiveCount;
-            this.ExclusiveMetric = template.ExclusiveMetric;
-            this.ExclusiveCount = template.ExclusiveCount;
-            this.ExclusiveFoldedMetric = template.ExclusiveFoldedMetric;
-            this.ExclusiveFoldedCount = template.ExclusiveFoldedCount;
+            this.InclusiveMetric = template.InclusiveMetric.ToString("N3");
+            this.InclusiveCount = template.InclusiveCount.ToString("N0");
+            this.ExclusiveMetric = template.ExclusiveMetric.ToString("N3");
+            this.ExclusiveCount = template.ExclusiveCount.ToString("N0");
+            this.ExclusiveFoldedMetric = template.ExclusiveFoldedMetric.ToString("N0");
+            this.ExclusiveFoldedCount = template.ExclusiveFoldedCount.ToString("N0");
             this.InclusiveMetricByTimeString = template.InclusiveMetricByTimeString;
             this.FirstTimeRelativeMSec = template.FirstTimeRelativeMSec.ToString("N3");
             this.LastTimeRelativeMSec = template.LastTimeRelativeMSec.ToString("N3");
@@ -55,12 +56,12 @@ namespace PerfViewJS
             this.Path = string.Empty;
             this.Base64EncodedId = Base64UrlTextEncoder.Encode(Encoding.UTF8.GetBytes(template.Name));
             this.Name = template.Name;
-            this.InclusiveMetric = template.InclusiveMetric;
-            this.InclusiveCount = template.InclusiveCount;
-            this.ExclusiveMetric = template.ExclusiveMetric;
-            this.ExclusiveCount = template.ExclusiveCount;
-            this.ExclusiveFoldedMetric = template.ExclusiveFoldedMetric;
-            this.ExclusiveFoldedCount = template.ExclusiveFoldedCount;
+            this.InclusiveMetric = template.InclusiveMetric.ToString("N3");
+            this.InclusiveCount = template.InclusiveCount.ToString("N0");
+            this.ExclusiveMetric = template.ExclusiveMetric.ToString("N3");
+            this.ExclusiveCount = template.ExclusiveCount.ToString("N0");
+            this.ExclusiveFoldedMetric = template.ExclusiveFoldedMetric.ToString("N0");
+            this.ExclusiveFoldedCount = template.ExclusiveFoldedCount.ToString("N0");
             this.InclusiveMetricByTimeString = template.InclusiveMetricByTimeString;
             this.FirstTimeRelativeMSec = template.FirstTimeRelativeMSec.ToString("N3");
             this.LastTimeRelativeMSec = template.LastTimeRelativeMSec.ToString("N3");
@@ -76,6 +77,7 @@ namespace PerfViewJS
         {
         }
 
+        [JsonIgnore]
         public CallTreeNodeBase BackingNode { get; }
 
         [DataMember]
@@ -88,22 +90,22 @@ namespace PerfViewJS
         public string Name { get; set; }
 
         [DataMember]
-        public float InclusiveMetric { get; set; }
+        public string InclusiveMetric { get; set; }
 
         [DataMember]
-        public float ExclusiveMetric { get; set; }
+        public string ExclusiveMetric { get; set; }
 
         [DataMember]
-        public float ExclusiveFoldedMetric { get; set; }
+        public string ExclusiveFoldedMetric { get; set; }
 
         [DataMember]
-        public float InclusiveCount { get; set; }
+        public string InclusiveCount { get; set; }
 
         [DataMember]
-        public float ExclusiveCount { get; set; }
+        public string ExclusiveCount { get; set; }
 
         [DataMember]
-        public float ExclusiveFoldedCount { get; set; }
+        public string ExclusiveFoldedCount { get; set; }
 
         [DataMember]
         public string InclusiveMetricPercent { get; set; }
@@ -129,6 +131,7 @@ namespace PerfViewJS
         [DataMember]
         public bool HasChildren { get; set; }
 
+        [JsonIgnore]
         public TreeNode[] Children
         {
             get

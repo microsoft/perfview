@@ -1,40 +1,42 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="EventViewerModel.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Text;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.WebUtilities;
 
     public sealed class EventViewerModel
     {
-        public EventViewerModel(HttpContext httpContext)
+        public EventViewerModel(string dataDirectoryListingRoot, IQueryCollection queryCollection)
         {
-            var filename = (string)httpContext.Request.Query["Filename"] ?? string.Empty;
-            this.Filename = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(filename));
+            var filename = (string)queryCollection["Filename"] ?? string.Empty;
+            this.Filename = Path.Combine(dataDirectoryListingRoot, Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(filename)));
 
-            var start = (string)httpContext.Request.Query["Start"] ?? string.Empty;
+            var start = (string)queryCollection["Start"] ?? string.Empty;
             this.Start = string.IsNullOrEmpty(start) ? 0.0 : double.Parse(start);
 
-            var end = (string)httpContext.Request.Query["End"] ?? string.Empty;
+            var end = (string)queryCollection["End"] ?? string.Empty;
             this.End = string.IsNullOrEmpty(end) ? 0.0 : double.Parse(end);
 
-            var maxEventCount = (string)httpContext.Request.Query["MaxEventCount"] ?? string.Empty;
+            var maxEventCount = (string)queryCollection["MaxEventCount"] ?? string.Empty;
             this.MaxEventCount = string.IsNullOrEmpty(maxEventCount) ? 10000 : int.Parse(maxEventCount);
 
-            var textFilter = (string)httpContext.Request.Query["Filter"] ?? string.Empty;
+            var textFilter = (string)queryCollection["Filter"] ?? string.Empty;
             this.TextFilter = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(textFilter));
 
-            var eventTypesString = (string)httpContext.Request.Query["EventTypes"] ?? string.Empty;
+            var eventTypesString = (string)queryCollection["EventTypes"] ?? string.Empty;
             if (string.IsNullOrEmpty(eventTypesString))
             {
                 this.EventTypes = new HashSet<int>(0);
             }
             else
             {
-                var arr = ((string)httpContext.Request.Query["EventTypes"] ?? string.Empty).Split(',');
+                var arr = ((string)queryCollection["EventTypes"] ?? string.Empty).Split(',');
                 var eventTypes = new HashSet<int>(arr.Length);
                 foreach (var e in arr)
                 {

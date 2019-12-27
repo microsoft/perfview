@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="StackViewerController.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
@@ -23,16 +24,28 @@ namespace PerfViewJS
             this.model = model;
         }
 
-        public async ValueTask<List<StackEventTypeInfo>> EventListAPI()
+        public async ValueTask<StackEventTypeInfo[]> EventListAPIOrderedByName()
         {
             var deserializedData = this.dataCache.GetData(this.model.Filename);
-            return await deserializedData.GetStackEventTypesAsync();
+            return await deserializedData.GetStackEventTypesAsyncOrderedByName();
         }
 
-        public async ValueTask<List<ProcessInfo>> ProcessListAPI()
+        public async ValueTask<StackEventTypeInfo[]> EventListAPIOrderedByStackCount()
         {
             var deserializedData = this.dataCache.GetData(this.model.Filename);
-            return await deserializedData.GetProcessListAsync();
+            return await deserializedData.GetStackEventTypesAsyncOrderedByStackCount();
+        }
+
+        public async ValueTask<ProcessInfo[]> ProcessChooserAPI()
+        {
+            var deserializedData = this.dataCache.GetData(this.model.Filename);
+            return await deserializedData.GetProcessChooserAsync();
+        }
+
+        public async ValueTask<DetailedProcessInfo> DetailedProcessInfoAPI(int processIndex)
+        {
+            var deserializedData = this.dataCache.GetData(this.model.Filename);
+            return await deserializedData.GetDetailedProcessInfoAsync(processIndex);
         }
 
         public async ValueTask<IEnumerable<TreeNode>> HotspotsAPI()
@@ -53,22 +66,48 @@ namespace PerfViewJS
             return await data.GetCallerTree(Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(name)), '-', path);
         }
 
+        public async ValueTask<SourceInformation> GetSourceAPI(string name, string path, string authorizationHeader)
+        {
+            var data = await this.GetData();
+            return await data.Source(authorizationHeader, Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(name)), '-', path);
+        }
+
         public async ValueTask<string> DrillIntoAPI(bool exclusive, string name, string path)
         {
             var data = await this.GetData();
             var stackSource = await data.GetDrillIntoStackSource(exclusive, Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(name)), '-', path);
             string samplesKey = Guid.NewGuid().ToString();
             this.model.SetDrillIntoKey(samplesKey);
-            await this.dataCache.GetData(this.model.Filename).GetCallTreeAsync(this.model, new SourceAwareStackSource(stackSource));
+            await this.dataCache.GetData(this.model.Filename).GetCallTreeAsync(this.model, stackSource);
             return samplesKey;
         }
 
-        public async ValueTask<bool> LookupWarmSymbolsAPI(int minCount)
+        public async ValueTask<string> LookupWarmSymbolsAPI(int minCount)
         {
             var data = await this.GetData();
             var retVal = data.LookupWarmSymbols(minCount);
             this.dataCache.ClearAllCacheEntries();
             return retVal;
+        }
+
+        public async ValueTask<TraceInfo> GetTraceInfoAPI()
+        {
+            return await this.dataCache.GetData(this.model.Filename).GetTraceInfoAsync();
+        }
+
+        public async ValueTask<ModuleInfo[]> GetModulesAPI()
+        {
+            return await this.dataCache.GetData(this.model.Filename).GetModulesAsync();
+        }
+
+        public async ValueTask<string> LookupSymbolAPI(int moduleIndex)
+        {
+            return await this.dataCache.GetData(this.model.Filename).LookupSymbolAsync(moduleIndex);
+        }
+
+        public async ValueTask<string> LookupSymbolsAPI(int[] moduleIndices)
+        {
+            return await this.dataCache.GetData(this.model.Filename).LookupSymbolsAsync(moduleIndices);
         }
 
         private ValueTask<ICallTreeData> GetData()

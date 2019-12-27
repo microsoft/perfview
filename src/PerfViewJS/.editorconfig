@@ -1,0 +1,6 @@
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# SA1600: Elements should be documented
+dotnet_diagnostic.SA1600.severity = none
