@@ -545,11 +545,13 @@ namespace PerfView
                     {
                         userModeSession.BufferSizeMB = Math.Max(512, parsedArgs.BufferSizeMB * 2);
                     }
-                    // Note that you don't need the rundown 300Meg if you are V4.0.   
+
+                    // Note that you don't need the rundown 300Meg if you are V4.0.
                     if (parsedArgs.CircularMB != 0)
                     {
-                        // Typically you only need less than 1/5 the space + rundown 
-                        userModeSession.CircularBufferMB = Math.Min(parsedArgs.CircularMB, parsedArgs.CircularMB / 5 + 300);
+                        // Typically you only need less than 1/5 the space + rundown. However, some scenarios primarily
+                        // use the user mode session so we keep it the full size.
+                        userModeSession.CircularBufferMB = parsedArgs.CircularMB + 300;
                     }
 
                     // Turn on PerfViewLogger
