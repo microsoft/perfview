@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -1386,6 +1387,39 @@ namespace PerfView
             // TODO we may be doing an unnecessary merge.  
             ExecuteCommand("Merging and Zipping " + Path.GetFullPath(App.CommandLineArgs.DataFile), App.CommandProcessor.Merge);
         }
+
+        private void DoMergeAndZipAll(object sender, RoutedEventArgs e)
+        {
+            var unmergedFiles = new List<PerfViewFile>();
+            foreach (var file in TreeView.Items.OfType<PerfViewFile>())
+            {
+                if (file.FilePath.EndsWith(".etl"))
+                    unmergedFiles.Add(file);
+            }
+
+            List<Action> actions = new List<Action>();
+            foreach (var file in TreeView.Items.OfType<PerfViewFile>().Reverse())
+            {
+                var filePath = file.FilePath;
+                if (!filePath.EndsWith(".etl"))
+                {
+                    continue;
+                }
+
+                var continuation = actions.LastOrDefault();
+                actions.Add(() =>
+                {
+                    // TODO this has a side effect... 
+                    App.CommandLineArgs.DataFile = filePath;
+                    App.CommandLineArgs.Zip = true;
+
+                    ExecuteCommand("Merging and Zipping " + Path.GetFullPath(App.CommandLineArgs.DataFile), App.CommandProcessor.Merge, continuation: continuation);
+                });
+            }
+
+            actions.LastOrDefault()?.Invoke();
+        }
+
         private void DoUnZip(object sender, RoutedEventArgs e)
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
