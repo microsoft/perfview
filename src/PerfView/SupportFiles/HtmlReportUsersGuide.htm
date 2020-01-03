@@ -227,6 +227,29 @@
         <li>If the Background JIT feature is enabled the method's usage may have been accurately predicted and jitted in advance on the Multicore JIT background thread, in which case it is accounted for in the 'Multicore JIT Background' group</li>
     </ol>
     <p>In the individual method listings the column 'Trigger' contains the value 'TC' for each Tier1 background recompilation due to Tiered Compilation</p>
+    <hr />
+    <h3>
+        <a id="UnderstandingRuntimeLoader">
+            Understanding Runtime Loader
+            Performance Data
+        </a>
+    </h3>
+    <p>
+        PerfView tracks detailed information of what runtime loader operations were
+        performed. This view provides a process and thread specific view into the
+        detailed behavior of the CLR runtime as it executes code. Unlike the JIT
+        view, this view shows more granular data such as ReadyToRun operations and
+        assembly load operations. This typically makes the data difficult to understand,
+        and less useful to most consumers, but for detailed investigation of runtime
+        behavior may be more useful. When a loader operation in this view occurs during
+        another operation, the nesting of the operation is represented in the view, and
+        the outer operation is broken up to show the time spent around the inner operation.
+
+        To enable data about all loader operations set the ".NET Loader" checkbox when collecting data.
+        Otherwise, the data captured will be restricted to JIT and assembly load operations. The /RuntimeLoading switch may also be used.
+
+        Also see the Runtime Loader stacks view, which ties this data into a view of CPU activity, to allow investigating CPU usage during specific loader operations.
+        <hr />
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>

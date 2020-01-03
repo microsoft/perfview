@@ -1898,10 +1898,10 @@ public static class TraceEventStackSourceExtensions
         };
         stackSource.DoneAddingSamples();
 
-        CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
+        CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
 
         var finalStackSource = new MutableTraceEventStackSource(eventLog);
-        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, false, eventLog.Events.GetSource(), runtimeOperationsComputer.StartStopEvents);
+        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, false, eventLog.Events.GetSource(), runtimeLoaderComputer.StartStopEvents);
 
         return CopyStackSource.Clone(finalStackSource);
     }

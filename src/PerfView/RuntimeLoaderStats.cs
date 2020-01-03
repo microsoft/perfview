@@ -14,9 +14,9 @@ using System.Threading;
 
 namespace Stats
 {
-    internal static class RuntimeOperationStats
+    internal static class RuntimeLoaderStats
     {
-        public static void ToHtml(TextWriter writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess incompleteStatsProc, string fileName, RuntimeOperationsStats runtimeOps)
+        public static void ToHtml(TextWriter writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess incompleteStatsProc, string fileName, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps)
         {
             TraceProcess stats = null;
 
@@ -39,10 +39,10 @@ namespace Stats
                 }
 
                 writer.WriteLine("<LI>Process CPU Time: {0:n0} msec</LI>", stats.CPUMSec);
-                writer.WriteLine("<LI>Guidance on JIT data:");
+                writer.WriteLine("<LI>Guidance on data:");
                 writer.WriteLine("<UL>");
                 {
-                    writer.WriteLine("<LI> <A HREF=\"{0}#UnderstandingJITPerf\">RuntimeOperations Perf Users Guide</A></LI>", usersGuideFile);
+                    writer.WriteLine("<LI> <A HREF=\"{0}#UnderstandingRuntimeLoader\">Runtime Loader Perf Users Guide</A></LI>", usersGuideFile);
                 }
                 writer.WriteLine("</UL>");
                 writer.WriteLine("</LI>");
@@ -58,7 +58,7 @@ namespace Stats
             writer.WriteLine("</UL>");
         }
 
-        public static void ToTxt(string filePath, TraceProcess process, RuntimeOperationsStats runtimeOps)
+        public static void ToTxt(string filePath, TraceProcess process, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps)
         {
             using (var writer = File.CreateText(filePath))
             {
@@ -98,7 +98,7 @@ namespace Stats
                                 inclusiveTimeStr = "";
 
 
-                            writer.Write($"{startTime.ToString("F3").PadLeft(12)}~{inclusiveTimeStr.PadLeft(9)}~{exclusiveTime.ToString("F3").PadLeft(9)} ");
+                            writer.Write($"{startTime.ToString("F3").PadLeft(12)}~{inclusiveTimeStr.PadLeft(9)}~{exclusiveTime.ToString("F3").PadLeft(9)}~");
                             int stackDepth = CountStackDepth(runtimeOps, eventData) - 3;
                             for (int iStackDepth = 0; iStackDepth < stackDepth; iStackDepth++)
                                 writer.Write(" |");
@@ -116,7 +116,7 @@ namespace Stats
             }
         }
 
-        public static double TotalCPUMSec(Microsoft.Diagnostics.Tracing.Analysis.TraceProcess incompleteStatsProc, RuntimeOperationsStats runtimeOps)
+        public static double TotalCPUMSec(Microsoft.Diagnostics.Tracing.Analysis.TraceProcess incompleteStatsProc, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps)
         {
             TraceProcess process = null;
 
@@ -152,7 +152,7 @@ namespace Stats
             return cpuTime;
         }
 
-        private static int CountStackDepth(RuntimeOperationsStats runtimeOps, StartStopStackMingledComputer.StartStopThreadEventData data)
+        private static int CountStackDepth(Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps, StartStopStackMingledComputer.StartStopThreadEventData data)
         {
             var currentStack = data.OutputStacks.ReplacementStack;
             int depthCount = 0;

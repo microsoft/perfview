@@ -3531,9 +3531,9 @@ table {
         private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
     }
 
-    public class PerfViewRuntimeOperationsStats : PerfViewHtmlReport
+    public class PerfViewRuntimeLoaderStats : PerfViewHtmlReport
     {
-        public PerfViewRuntimeOperationsStats(PerfViewFile dataFile) : base(dataFile, "RuntimeOperations") { }
+        public PerfViewRuntimeLoaderStats(PerfViewFile dataFile) : base(dataFile, "Runtime Loader") { }
         protected override string DoCommand(string command, StatusBar worker)
         {
             string textStr = "txt/";
@@ -3545,11 +3545,11 @@ table {
                 if (m_interestingProcesses.ContainsKey(processId))
                 {
                     var proc = m_interestingEtlxProcesses[processId];
-                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeOperationStats." + processId.ToString() + ".txt");
+                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoadertats." + processId.ToString() + ".txt");
                     if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
-                        Stats.RuntimeOperationStats.ToTxt(txtFile, proc, m_PerThreadData);
+                        Stats.RuntimeLoaderStats.ToTxt(txtFile, proc, m_PerThreadData);
                     }
                     Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -3563,9 +3563,9 @@ table {
         {
             using (var source = dataFile.Events.GetSource())
             {
-                CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(source);
+                CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
                 var stackSource = new MutableTraceEventStackSource(source.TraceLog);
-                StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(stackSource, null, true, source, runtimeOperationsComputer.StartStopEvents);
+                StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(stackSource, null, true, source, runtimeLoaderComputer.StartStopEvents);
                 m_PerThreadData = mingledComputer.StartStopData;
                 m_interestingProcesses = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
 
@@ -3598,11 +3598,11 @@ table {
                     }
                 }
 
-                Stats.ClrStats.ToHtml(writer, m_interestingProcesses.Values.ToList(), fileName, "Runtime Operations", Stats.ClrStats.ReportType.RuntimeOperations, true, runtimeOpsStats : m_PerThreadData);
+                Stats.ClrStats.ToHtml(writer, m_interestingProcesses.Values.ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats : m_PerThreadData);
             }
         }
 
-        private RuntimeOperationsStats m_PerThreadData;
+        private RuntimeLoaderStats m_PerThreadData;
         private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_interestingProcesses;
         private Dictionary<int/*pid*/, TraceProcess> m_interestingEtlxProcesses;
     }
@@ -4371,9 +4371,9 @@ table {
             {
                 return eventLog.ThreadTimeStacks();
             }
-            else if (streamName == "Runtime Operations (CPU Time)")
+            else if (streamName == "Runtime Loader (CPU Time)")
             {
-                return eventLog.RuntimeOperationsStacks();
+                return eventLog.RuntimeLoaderStacks();
             }
             else if (streamName == "Processes / Files / Registry")
             {
@@ -7367,11 +7367,11 @@ table {
             }
 
             advanced.Children.Add(new PerfViewJitStats(this));
-            advanced.Children.Add(new PerfViewRuntimeOperationsStats(this));
+            advanced.Children.Add(new PerfViewRuntimeLoaderStats(this));
 
             if (hasCPUStacks)
             {
-                advanced.Children.Add(new PerfViewStackSource(this, "Runtime Operations (CPU Time)"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Runtime Loader (CPU Time)"));
             }
 
             advanced.Children.Add(new PerfViewEventStats(this));
@@ -8553,7 +8553,7 @@ table {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
 
-                advanced.AddChild(new PerfViewRuntimeOperationsStats(this));
+                advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
             }
 
             if (memory.Children.Count > 0)
@@ -8800,7 +8800,7 @@ table {
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
-                advanced.AddChild(new PerfViewRuntimeOperationsStats(this));
+                advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
 
             }
 
