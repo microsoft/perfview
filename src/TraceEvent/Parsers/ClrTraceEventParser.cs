@@ -2927,8 +2927,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            /*Debug.Assert(!(Version == 0 && EventDataLength != 0 + (TypeParameterCount * 8) + 36));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (TypeParameterCount * 8) + 36));*/
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (TypeParameterCount * 8) + 36));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (TypeParameterCount * 8) + 36));
         }
         protected internal override Delegate Target
         {
@@ -3026,7 +3026,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override void Validate()
         {
             m_lastIdx = 0xFFFF; // Invalidate the cache     
-            //Debug.Assert(!(Version == 0 && EventDataLength != OffsetForIndexInValuesArray(Count)));
+            Debug.Assert(!(Version == 0 && EventDataLength != OffsetForIndexInValuesArray(Count)));
             Debug.Assert(Count == 0 || Values(Count - 1).TypeParameterCount < 256);     // This just makes the asserts in the BulkType kick in 
         }
         public override StringBuilder ToXml(StringBuilder sb)

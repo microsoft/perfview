@@ -2993,6 +2993,11 @@ namespace PerfView
                 cmdLineArgs += " /CCWRefCount";
             }
 
+            if (parsedArgs.RuntimeLoading)
+            {
+                cmdLineArgs += " /RuntimeLoading";
+            }
+
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
             if (command == null)
             {

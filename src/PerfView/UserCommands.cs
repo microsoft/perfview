@@ -1892,15 +1892,6 @@ public static class TraceEventStackSourceExtensions
         };
         stackSource.DoneAddingSamples();
 
-
-        /*
-                var stackSource = new MutableTraceEventStackSource(eventLog);
-                stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-
-                var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
-                computer.ExcludeReadyThread = true;
-                computer.GenerateThreadTimeStacks(stackSource);*/
-
         CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
 
         var finalStackSource = new MutableTraceEventStackSource(eventLog);
