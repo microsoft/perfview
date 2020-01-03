@@ -9,9 +9,9 @@ namespace Stats
 {
     internal static class ClrStats
     {
-        public enum ReportType { JIT, GC, RuntimeOperations };
+        public enum ReportType { JIT, GC, RuntimeLoader };
 
-        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, Microsoft.Diagnostics.Tracing.RuntimeOperationsStats runtimeOpsStats = null)
+        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOpsStats = null)
         {
             if (!justBody)
             {
@@ -33,9 +33,9 @@ namespace Stats
             {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB.CompareTo(p2.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB); });
             }
-            else if (type == ReportType.RuntimeOperations)
+            else if (type == ReportType.RuntimeLoader)
             {
-                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -RuntimeOperationStats.TotalCPUMSec(p1, runtimeOpsStats).CompareTo(RuntimeOperationStats.TotalCPUMSec(p2, runtimeOpsStats)); });
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -RuntimeLoaderStats.TotalCPUMSec(p1, runtimeOpsStats).CompareTo(RuntimeLoaderStats.TotalCPUMSec(p2, runtimeOpsStats)); });
             }
 
             int count = sortedProcs.Count;
@@ -86,9 +86,9 @@ namespace Stats
                     Stats.JitStats.ToHtml(writer, stats, mang, fileName);
                 }
 
-                if (type == ReportType.RuntimeOperations)
+                if (type == ReportType.RuntimeLoader)
                 {
-                    Stats.RuntimeOperationStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
+                    Stats.RuntimeLoaderStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
                 }
             }
 

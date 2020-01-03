@@ -40,34 +40,26 @@
     <Compile Include="..\PerfView\ClrStats.cs" />
     <Compile Include="..\PerfView\GcStats.cs" />
     <Compile Include="..\PerfView\JitStats.cs" />
-    <Compile Include="..\PerfView\RuntimeOperationsStats.cs" />
+    <Compile Include="..\PerfView\RuntimeLoaderStats.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- Ensure that the native components of TraceEvent are restored into the target and publish directories so that TraceEvent can pinvoke into them. -->
   <Target Name="CopyTraceEventNativeFilesToTarget" AfterTargets="Build">
     <ItemGroup>
-      <TraceEventNativeFiles
-        Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+      <TraceEventNativeFiles Include="$(TraceEventSupportFilesBase)native\**\*.*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(TraceEventNativeFiles)"
-      DestinationFiles="@(TraceEventNativeFiles->'$(TargetDir)%(RecursiveDir)%(FileName)%(Extension)')"
-      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(TraceEventNativeFiles)" DestinationFiles="@(TraceEventNativeFiles->'$(TargetDir)%(RecursiveDir)%(FileName)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
   <Target Name="CopyTraceEventNativeFilesToPublish" AfterTargets="Publish">
     <ItemGroup>
-      <TraceEventNativeFiles
-        Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+      <TraceEventNativeFiles Include="$(TraceEventSupportFilesBase)native\**\*.*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(TraceEventNativeFiles)"
-      DestinationFiles="@(TraceEventNativeFiles->'$(PublishDir)%(RecursiveDir)%(FileName)%(Extension)')"
-      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(TraceEventNativeFiles)" DestinationFiles="@(TraceEventNativeFiles->'$(PublishDir)%(RecursiveDir)%(FileName)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 
   <ItemGroup>

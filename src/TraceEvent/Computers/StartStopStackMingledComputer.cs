@@ -19,7 +19,7 @@ using StartStopKey = System.Guid;   // The start-stop key is unique in the trace
 
 namespace Microsoft.Diagnostics.Tracing
 {
-    public class RuntimeOperationsStats : Dictionary<int, StartStopStackMingledComputer.PerThreadStartStopData>
+    public class RuntimeLoaderStats : Dictionary<int, StartStopStackMingledComputer.PerThreadStartStopData>
     {
         public MutableTraceEventStackSource StackSource;
         public TraceLogEventSource EventSource;
@@ -111,10 +111,10 @@ namespace Microsoft.Diagnostics.Tracing
             public double[] SplitUpDataStarts;
         }
 
-        RuntimeOperationsStats _startStopData = new RuntimeOperationsStats();
+        RuntimeLoaderStats _startStopData = new RuntimeLoaderStats();
         Dictionary<StackSourceFrameIndex, TraceThread> _stackFrameToThread = new Dictionary<StackSourceFrameIndex, TraceThread>();
 
-        public RuntimeOperationsStats StartStopData => _startStopData;
+        public RuntimeLoaderStats StartStopData => _startStopData;
 
         MutableTraceEventStackSource _outputStackSource;
         MutableTraceEventStackSource _inputStackSource;

@@ -1868,7 +1868,7 @@ public static class TraceEventStackSourceExtensions
         return stackSource;
     }
 
-    public static StackSource RuntimeOperationsStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+    public static StackSource RuntimeLoaderStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
     {
         TraceEvents events;
         if (process == null)
@@ -1892,10 +1892,10 @@ public static class TraceEventStackSourceExtensions
         };
         stackSource.DoneAddingSamples();
 
-        CLRRuntimeActivityComputer runtimeOperationsComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
+        CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
 
         var finalStackSource = new MutableTraceEventStackSource(eventLog);
-        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, false, eventLog.Events.GetSource(), runtimeOperationsComputer.StartStopEvents);
+        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, false, eventLog.Events.GetSource(), runtimeLoaderComputer.StartStopEvents);
 
         return CopyStackSource.Clone(finalStackSource);
     }
