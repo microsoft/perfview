@@ -101,11 +101,15 @@ namespace TraceEventTests
                         // that TraceLog managed to filter out:
                         //    Microsoft-Windows-DotNETRuntime/Method, 2,
                         //    Microsoft-Windows-DotNETRuntimeRundown/Method, 26103, ...
+                        //    Microsoft-Windows-DotNETRuntime/GC/BulkMovedObjectRanges, 1, ...
                         // I haven't had an oportunity to investigate and its probably not a big
                         // deal so just hacking around it for the moment
                         if (eventName == "Microsoft-Windows-DotNETRuntimeRundown/Method" ||
-                            eventName == "Microsoft-Windows-DotNETRuntime/Method")
+                            eventName == "Microsoft-Windows-DotNETRuntime/Method" ||
+                            eventName == "Microsoft-Windows-DotNETRuntime/GC/BulkMovedObjectRanges")
+                        {
                             return;
+                        }
 
                         if (eventStatistics.ContainsKey(eventName))
                         {
