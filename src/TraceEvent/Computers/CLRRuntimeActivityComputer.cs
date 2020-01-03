@@ -54,9 +54,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteJitEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
-        Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>> _parsedData = new Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>>();
+        Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteR2REvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
 
-        public Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>> StartStopEvents => _parsedData;
+        public Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>> StartStopEvents { get; } = new Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>>();
 
         public CLRRuntimeActivityComputer(TraceLogEventSource source)
         {
@@ -67,6 +67,7 @@ namespace Microsoft.Diagnostics.Tracing
             source.Clr.LoaderAssemblyLoad += Clr_LoaderAssemblyLoad;
             source.Process();
             source.Clr.MethodJittingStarted -= Clr_MethodJittingStarted;
+            source.Clr.MethodR2RGetEntryPoint -= Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose -= Clr_MethodLoadVerbose;
             source.Clr.MethodLoad -= Clr_MethodLoad;
             source.Clr.LoaderAssemblyLoad -= Clr_LoaderAssemblyLoad;
@@ -74,10 +75,10 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void AddStartStopData(int threadId, StartStopStackMingledComputer.EventUID start, StartStopStackMingledComputer.EventUID end, string name)
         {
-            if (!_parsedData.ContainsKey(threadId))
-                _parsedData[threadId] = new List<StartStopStackMingledComputer.StartStopThreadEventData>();
+            if (!StartStopEvents.ContainsKey(threadId))
+                StartStopEvents[threadId] = new List<StartStopStackMingledComputer.StartStopThreadEventData>();
 
-            List<StartStopStackMingledComputer.StartStopThreadEventData> startStopData = _parsedData[threadId];
+            List<StartStopStackMingledComputer.StartStopThreadEventData> startStopData = StartStopEvents[threadId];
             startStopData.Add(new StartStopStackMingledComputer.StartStopThreadEventData(start, end, name));
         }
 
@@ -128,16 +129,28 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void Clr_MethodR2RGetEntryPoint(R2RGetEntryPointTraceData obj)
         {
-            IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
-            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
-            incompleteDesc.Name = JITStats.GetMethodName(obj);
-            incompleteDesc.OperationType = "R2R";
-
             IdOfIncompleteAction id = new IdOfIncompleteAction();
             id.Identifier = obj.MethodID;
             id.ThreadID = obj.ThreadID;
 
-            _incompleteJitEvents[id] = incompleteDesc;
+            // If we had a R2R start lookup event, capture that start time, otherwise, use the R2REntrypoint
+            // data as both start and stop
+            StartStopStackMingledComputer.EventUID startUID = new StartStopStackMingledComputer.EventUID(obj);
+            if (_incompleteR2REvents.TryGetValue(id, out IncompleteActionDesc r2rStartData))
+            {
+                startUID = r2rStartData.Start;
+                _incompleteJitEvents.Remove(id);
+            }
+
+            if (obj.EntryPoint == 0)
+            {
+                // If Entrypoint is null then the search failed.
+                AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), "R2R_Failed" + "(" + JITStats.GetMethodName(obj) + ")");
+            }
+            else
+            {
+                AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), "R2R_Found" + "(" + JITStats.GetMethodName(obj) + ")");
+            }
         }
     }
 }

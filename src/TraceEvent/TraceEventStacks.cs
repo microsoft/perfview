@@ -629,7 +629,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             else
             {
                 // We expect the thread we get when looking at the CallStack to match the thread of the event.  
-            //    Debug.Assert(m_log.CallStacks.Thread((CallStackIndex)ret).ThreadID == event_.ThreadID);
+                Debug.Assert(m_log.CallStacks.Thread((CallStackIndex)ret).ThreadID == event_.ThreadID);
                 Debug.Assert(event_.Thread().Process.ProcessID == event_.ProcessID);
             }
             ret = ret + (int)StackSourceCallStackIndex.Start;

@@ -3598,7 +3598,7 @@ table {
                     }
                 }
 
-                Stats.ClrStats.ToHtml(writer, m_interestingProcesses.Values.ToList(), fileName, "RuntimeOperations", Stats.ClrStats.ReportType.RuntimeOperations, true, runtimeOpsStats : m_PerThreadData);
+                Stats.ClrStats.ToHtml(writer, m_interestingProcesses.Values.ToList(), fileName, "Runtime Operations", Stats.ClrStats.ReportType.RuntimeOperations, true, runtimeOpsStats : m_PerThreadData);
             }
         }
 
