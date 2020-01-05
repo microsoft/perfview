@@ -174,7 +174,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// </summary>
         public event Action<TraceProcess, TraceGC> GCStart = null;
         /// <summary>
-        /// Fired at the end of tha GC.  Given the nature of the GC, it is possible that multiple GCs will be inflight at the same time.
+        /// Fired at the end of the GC.  Given the nature of the GC, it is possible that multiple GCs will be inflight at the same time.
         /// </summary>
         public event Action<TraceProcess, TraceGC> GCEnd = null;
 
