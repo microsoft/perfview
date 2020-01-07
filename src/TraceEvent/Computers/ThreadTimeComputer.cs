@@ -87,7 +87,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Reduce nested application insights requests by using related activity id.
         /// </summary>
         /// <value></value>
-        public bool ReduceNestedApplicationInsightsRequests { get; set; } = true;
+        public bool IgnoreApplicationInsightsRequestsWithRelatedActivityId  { get; set; } = true;
 
         /// <summary>
         /// Don't show AwaitTime.  For CPU only traces showing await time is misleading since
@@ -178,7 +178,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (GroupByStartStopActivity)
             {
-                m_startStopActivities = new StartStopActivityComputer(eventSource, m_activityComputer, ReduceNestedApplicationInsightsRequests);
+                m_startStopActivities = new StartStopActivityComputer(eventSource, m_activityComputer, IgnoreApplicationInsightsRequestsWithRelatedActivityId);
 
                 // Maps thread Indexes to the start-stop activity that they are executing.  
                 m_threadToStartStopActivity = new StartStopActivity[m_eventLog.Threads.Count];

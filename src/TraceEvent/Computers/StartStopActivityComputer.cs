@@ -709,7 +709,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 uint nibble = (uint)(*bytePtr >> 4);
                 bool secondNibble = false;              // are we reading the second nibble (low order bits) of the byte.
-            NextNibble:
+                NextNibble:
                 if (nibble == (uint)NumberListCodes.End)
                 {
                     break;
