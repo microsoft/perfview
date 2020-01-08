@@ -1250,6 +1250,83 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 52, AppDomainResourceManagementTaskGuid);
             }
         }
+        public event Action<AppDomainAssemblyResolveHandlerInvokedTraceData> AssemblyLoaderAppDomainAssemblyResolveHandlerInvoked
+        {
+            add
+            {
+                RegisterTemplate(new AppDomainAssemblyResolveHandlerInvokedTraceData(value, 294, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 13, "AppDomainAssemblyResolveHandlerInvoked", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 294, AssemblyLoaderTaskGuid);
+            }
+        }
+        public event Action<AssemblyLoadContextResolvingHandlerInvokedTraceData> AssemblyLoaderAssemblyLoadContextResolvingHandlerInvoked
+        {
+            add
+            {
+                RegisterTemplate(new AssemblyLoadContextResolvingHandlerInvokedTraceData(value, 293, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 12, "AssemblyLoadContextResolvingHandlerInvoked", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 293, AssemblyLoaderTaskGuid);
+            }
+        }
+        public event Action<AssemblyLoadFromResolveHandlerInvokedTraceData> AssemblyLoaderAssemblyLoadFromResolveHandlerInvoked
+        {
+            add
+            {
+                RegisterTemplate(new AssemblyLoadFromResolveHandlerInvokedTraceData(value, 295, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 14, "AssemblyLoadFromResolveHandlerInvoked", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 295, AssemblyLoaderTaskGuid);
+            }
+        }
+        public event Action<KnownPathProbedTraceData> AssemblyLoaderKnownPathProbed
+        {
+            add
+            {
+                RegisterTemplate(new KnownPathProbedTraceData(value, 296, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 15, "KnownPathProbed", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 296, AssemblyLoaderTaskGuid);
+            }
+        }
+        public event Action<ResolutionAttemptedTraceData> AssemblyLoaderResolutionAttempted
+        {
+            add
+            {
+                RegisterTemplate(new ResolutionAttemptedTraceData(value, 292, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 11, "ResolutionAttempted", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 292, AssemblyLoaderTaskGuid);
+            }
+        }
+        public event Action<AssemblyLoadStartTraceData> AssemblyLoaderStart
+        {
+            add
+            {
+                RegisterTemplate(new AssemblyLoadStartTraceData(value, 290, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 1, "Start", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 290, AssemblyLoaderTaskGuid);
+            }
+        }
+        public event Action<AssemblyLoadStopTraceData> AssemblyLoaderStop
+        {
+            add
+            {
+                RegisterTemplate(new AssemblyLoadStopTraceData(value, 291, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 2, "Stop", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 291, AssemblyLoaderTaskGuid);
+            }
+        }
         public event Action<ILStubGeneratedTraceData> ILStubStubGenerated
         {
             add
@@ -1741,13 +1818,41 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new EmptyTraceData(action, 256, 7, "Exception", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
+        static private AppDomainAssemblyResolveHandlerInvokedTraceData AssemblyLoaderAppDomainAssemblyResolveHandlerInvokedTemplate(Action<AppDomainAssemblyResolveHandlerInvokedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new AppDomainAssemblyResolveHandlerInvokedTraceData(action, 294, 32, "AssemblyLoader", Guid.Empty, 13, "AppDomainAssemblyResolveHandlerInvoked", ProviderGuid, ProviderName);
+        }
+        static private AssemblyLoadContextResolvingHandlerInvokedTraceData AssemblyLoaderAssemblyLoadContextResolvingHandlerInvokedTemplate(Action<AssemblyLoadContextResolvingHandlerInvokedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new AssemblyLoadContextResolvingHandlerInvokedTraceData(action, 293, 32, "AssemblyLoader", Guid.Empty, 12, "AssemblyLoadContextResolvingHandlerInvoked", ProviderGuid, ProviderName);
+        }
+        static private AssemblyLoadFromResolveHandlerInvokedTraceData AssemblyLoaderAssemblyLoadFromResolveHandlerInvokedTemplate(Action<AssemblyLoadFromResolveHandlerInvokedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new AssemblyLoadFromResolveHandlerInvokedTraceData(action, 295, 32, "AssemblyLoader", Guid.Empty, 14, "AssemblyLoadFromResolveHandlerInvoked", ProviderGuid, ProviderName);
+        }
+        static private KnownPathProbedTraceData AssemblyLoaderKnownPathProbedTemplate(Action<KnownPathProbedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new KnownPathProbedTraceData(action, 296, 32, "AssemblyLoader", Guid.Empty, 15, "KnownPathProbed", ProviderGuid, ProviderName);
+        }
+        static private ResolutionAttemptedTraceData AssemblyLoaderResolutionAttemptedTemplate(Action<ResolutionAttemptedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ResolutionAttemptedTraceData(action, 292, 32, "AssemblyLoader", Guid.Empty, 11, "ResolutionAttempted", ProviderGuid, ProviderName);
+        }
+        static private AssemblyLoadStartTraceData AssemblyLoaderStartTemplate(Action<AssemblyLoadStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new AssemblyLoadStartTraceData(action, 290, 32, "AssemblyLoader", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private AssemblyLoadStopTraceData AssemblyLoaderStopTemplate(Action<AssemblyLoadStopTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new AssemblyLoadStopTraceData(action, 291, 32, "AssemblyLoader", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[119];
+                var templates = new TraceEvent[126];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1871,8 +1976,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[116] = new EventSourceTraceData(null, 270, 0, "EventSourceEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName);
                 templates[117] = new R2RGetEntryPointTraceData(null, 159, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPoint", ProviderGuid, ProviderName);
                 templates[118] = new MethodDetailsTraceData(null, 72, 9, "Method", MethodTaskGuid, 43, "MethodDetails", ProviderGuid, ProviderName);
-
-
+                templates[119] = new AssemblyLoadStartTraceData(null, 290, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+                templates[120] = new AssemblyLoadStopTraceData(null, 291, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
+                templates[121] = new ResolutionAttemptedTraceData(null, 292, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 11, "ResolutionAttempted", ProviderGuid, ProviderName);
+                templates[122] = new AssemblyLoadContextResolvingHandlerInvokedTraceData(null, 293, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 12, "AssemblyLoadContextResolvingHandlerInvoked", ProviderGuid, ProviderName);
+                templates[123] = new AppDomainAssemblyResolveHandlerInvokedTraceData(null, 294, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 13, "AppDomainAssemblyResolveHandlerInvoked", ProviderGuid, ProviderName);
+                templates[124] = new AssemblyLoadFromResolveHandlerInvokedTraceData(null, 295, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 14, "AssemblyLoadFromResolveHandlerInvoked", ProviderGuid, ProviderName);
+                templates[125] = new KnownPathProbedTraceData(null, 296, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 15, "KnownPathProbed", ProviderGuid, ProviderName);
                 s_templates = templates;
             }
 
@@ -1935,7 +2045,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid ThreadPoolTaskGuid = new Guid(unchecked((int)0xead685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xe9);
         private static readonly Guid ThreadTaskGuid = new Guid(unchecked((int)0x641994c5), unchecked((short)0x16f2), unchecked((short)0x4123), 0x91, 0xa7, 0xa2, 0x99, 0x9d, 0xd7, 0xbf, 0xc3);
         private static readonly Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
-
+        private static readonly Guid AssemblyLoaderTaskGuid = new Guid(unchecked((int)0xbcf2339e), unchecked((short)0xb0a6), unchecked((short)0x452d), 0x96, 0x6c, 0x33, 0xac, 0x9d, 0xd8, 0x25, 0x73);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -8614,6 +8724,574 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<ThreadTerminatedOrTransitionTraceData> Action;
         #endregion
     }
+    public sealed class AppDomainAssemblyResolveHandlerInvokedTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string AssemblyName { get { return GetUnicodeStringAt(2); } }
+        public string HandlerName { get { return GetUnicodeStringAt(SkipUnicodeString(2)); } }
+        public string ResultAssemblyName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(2))); } }
+        public string ResultAssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))); } }
+
+        #region Private
+        internal AppDomainAssemblyResolveHandlerInvokedTraceData(Action<AppDomainAssemblyResolveHandlerInvokedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<AppDomainAssemblyResolveHandlerInvokedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "AssemblyName", AssemblyName);
+            XmlAttrib(sb, "HandlerName", HandlerName);
+            XmlAttrib(sb, "ResultAssemblyName", ResultAssemblyName);
+            XmlAttrib(sb, "ResultAssemblyPath", ResultAssemblyPath);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "AssemblyName", "HandlerName", "ResultAssemblyName", "ResultAssemblyPath" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return AssemblyName;
+                case 2:
+                    return HandlerName;
+                case 3:
+                    return ResultAssemblyName;
+                case 4:
+                    return ResultAssemblyPath;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<AppDomainAssemblyResolveHandlerInvokedTraceData> Action;
+        #endregion
+    }
+    public sealed class AssemblyLoadContextResolvingHandlerInvokedTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string AssemblyName { get { return GetUnicodeStringAt(2); } }
+        public string HandlerName { get { return GetUnicodeStringAt(SkipUnicodeString(2)); } }
+        public string AssemblyLoadContext { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(2))); } }
+        public string ResultAssemblyName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))); } }
+        public string ResultAssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))); } }
+
+        #region Private
+        internal AssemblyLoadContextResolvingHandlerInvokedTraceData(Action<AssemblyLoadContextResolvingHandlerInvokedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<AssemblyLoadContextResolvingHandlerInvokedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "AssemblyName", AssemblyName);
+            XmlAttrib(sb, "HandlerName", HandlerName);
+            XmlAttrib(sb, "AssemblyLoadContext", AssemblyLoadContext);
+            XmlAttrib(sb, "ResultAssemblyName", ResultAssemblyName);
+            XmlAttrib(sb, "ResultAssemblyPath", ResultAssemblyPath);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "AssemblyName", "HandlerName", "AssemblyLoadContext", "ResultAssemblyName", "ResultAssemblyPath" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return AssemblyName;
+                case 2:
+                    return HandlerName;
+                case 3:
+                    return AssemblyLoadContext;
+                case 4:
+                    return ResultAssemblyName;
+                case 5:
+                    return ResultAssemblyPath;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<AssemblyLoadContextResolvingHandlerInvokedTraceData> Action;
+        #endregion
+    }
+    public sealed class AssemblyLoadFromResolveHandlerInvokedTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string AssemblyName { get { return GetUnicodeStringAt(2); } }
+        public bool IsTrackedLoad { get { return GetInt32At(SkipUnicodeString(2)) != 0; } }
+        public string RequestingAssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(2) + 4); } }
+        public string ComputedRequestedAssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(2) + 4)); } }
+
+        #region Private
+        internal AssemblyLoadFromResolveHandlerInvokedTraceData(Action<AssemblyLoadFromResolveHandlerInvokedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2) + 4))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2) + 4))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<AssemblyLoadFromResolveHandlerInvokedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "AssemblyName", AssemblyName);
+            XmlAttrib(sb, "IsTrackedLoad", IsTrackedLoad);
+            XmlAttrib(sb, "RequestingAssemblyPath", RequestingAssemblyPath);
+            XmlAttrib(sb, "ComputedRequestedAssemblyPath", ComputedRequestedAssemblyPath);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "AssemblyName", "IsTrackedLoad", "RequestingAssemblyPath", "ComputedRequestedAssemblyPath" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return AssemblyName;
+                case 2:
+                    return IsTrackedLoad;
+                case 3:
+                    return RequestingAssemblyPath;
+                case 4:
+                    return ComputedRequestedAssemblyPath;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<AssemblyLoadFromResolveHandlerInvokedTraceData> Action;
+        #endregion
+    }
+    public sealed class KnownPathProbedTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string FilePath { get { return GetUnicodeStringAt(2); } }
+        public KnownPathSource Source { get { return (KnownPathSource)GetInt16At(SkipUnicodeString(2)); } }
+        public int Result { get { return GetInt32At(SkipUnicodeString(2) + 2); } }
+
+        #region Private
+        internal KnownPathProbedTraceData(Action<KnownPathProbedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(2) + 6));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(2) + 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<KnownPathProbedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "FilePath", FilePath);
+            XmlAttrib(sb, "Source", Source);
+            XmlAttrib(sb, "Result", Result);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "FilePath", "Source", "Result" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return FilePath;
+                case 2:
+                    return Source;
+                case 3:
+                    return Result;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<KnownPathProbedTraceData> Action;
+        #endregion
+    }
+    public sealed class ResolutionAttemptedTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string AssemblyName { get { return GetUnicodeStringAt(2); } }
+        public ResolutionAttemptedStage Stage { get { return (ResolutionAttemptedStage)GetInt16At(SkipUnicodeString(2)); } }
+        public string AssemblyLoadContext { get { return GetUnicodeStringAt(SkipUnicodeString(2) + 2); } }
+        public ResolutionAttemptedResult Result { get { return (ResolutionAttemptedResult)GetInt16At(SkipUnicodeString(SkipUnicodeString(2) + 2)); } }
+        public string ResultAssemblyName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(2) + 2) + 2); } }
+        public string ResultAssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2) + 2) + 2)); } }
+        public string ErrorMessage { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2) + 2) + 2))); } }
+
+        #region Private
+        internal ResolutionAttemptedTraceData(Action<ResolutionAttemptedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2) + 2) + 2)))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2) + 2) + 2)))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<ResolutionAttemptedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "AssemblyName", AssemblyName);
+            XmlAttrib(sb, "Stage", Stage);
+            XmlAttrib(sb, "AssemblyLoadContext", AssemblyLoadContext);
+            XmlAttrib(sb, "Result", Result);
+            XmlAttrib(sb, "ResultAssemblyName", ResultAssemblyName);
+            XmlAttrib(sb, "ResultAssemblyPath", ResultAssemblyPath);
+            XmlAttrib(sb, "ErrorMessage", ErrorMessage);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "AssemblyName", "Stage", "AssemblyLoadContext", "Result", "ResultAssemblyName", "ResultAssemblyPath", "ErrorMessage" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return AssemblyName;
+                case 2:
+                    return Stage;
+                case 3:
+                    return AssemblyLoadContext;
+                case 4:
+                    return Result;
+                case 5:
+                    return ResultAssemblyName;
+                case 6:
+                    return ResultAssemblyPath;
+                case 7:
+                    return ErrorMessage;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<ResolutionAttemptedTraceData> Action;
+        #endregion
+    }
+    public sealed class AssemblyLoadStartTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string AssemblyName { get { return GetUnicodeStringAt(2); } }
+        public string AssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(2)); } }
+        public string RequestingAssembly { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(2))); } }
+        public string AssemblyLoadContext { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))); } }
+        public string RequestingAssemblyLoadContext { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))); } }
+
+        #region Private
+        internal AssemblyLoadStartTraceData(Action<AssemblyLoadStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<AssemblyLoadStartTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "AssemblyName", AssemblyName);
+            XmlAttrib(sb, "AssemblyPath", AssemblyPath);
+            XmlAttrib(sb, "RequestingAssembly", RequestingAssembly);
+            XmlAttrib(sb, "AssemblyLoadContext", AssemblyLoadContext);
+            XmlAttrib(sb, "RequestingAssemblyLoadContext", RequestingAssemblyLoadContext);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "AssemblyName", "AssemblyPath", "RequestingAssembly", "AssemblyLoadContext", "RequestingAssemblyLoadContext" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return AssemblyName;
+                case 2:
+                    return AssemblyPath;
+                case 3:
+                    return RequestingAssembly;
+                case 4:
+                    return AssemblyLoadContext;
+                case 5:
+                    return RequestingAssemblyLoadContext;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<AssemblyLoadStartTraceData> Action;
+        #endregion
+    }
+    public sealed class AssemblyLoadStopTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string AssemblyName { get { return GetUnicodeStringAt(2); } }
+        public string AssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(2)); } }
+        public string RequestingAssembly { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(2))); } }
+        public string AssemblyLoadContext { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))); } }
+        public string RequestingAssemblyLoadContext { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))); } }
+        public bool Success { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2)))))) != 0; } }
+        public string ResultAssemblyName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))) + 4); } }
+        public string ResultAssemblyPath { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))) + 4)); } }
+        public bool Cached { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))) + 4))) != 0; } }
+
+        #region Private
+        internal AssemblyLoadStopTraceData(Action<AssemblyLoadStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))) + 4)) + 4));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(2))))) + 4)) + 4));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<AssemblyLoadStopTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "AssemblyName", AssemblyName);
+            XmlAttrib(sb, "AssemblyPath", AssemblyPath);
+            XmlAttrib(sb, "RequestingAssembly", RequestingAssembly);
+            XmlAttrib(sb, "AssemblyLoadContext", AssemblyLoadContext);
+            XmlAttrib(sb, "RequestingAssemblyLoadContext", RequestingAssemblyLoadContext);
+            XmlAttrib(sb, "Success", Success);
+            XmlAttrib(sb, "ResultAssemblyName", ResultAssemblyName);
+            XmlAttrib(sb, "ResultAssemblyPath", ResultAssemblyPath);
+            XmlAttrib(sb, "Cached", Cached);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "AssemblyName", "AssemblyPath", "RequestingAssembly", "AssemblyLoadContext", "RequestingAssemblyLoadContext", "Success", "ResultAssemblyName", "ResultAssemblyPath", "Cached" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return AssemblyName;
+                case 2:
+                    return AssemblyPath;
+                case 3:
+                    return RequestingAssembly;
+                case 4:
+                    return AssemblyLoadContext;
+                case 5:
+                    return RequestingAssemblyLoadContext;
+                case 6:
+                    return Success;
+                case 7:
+                    return ResultAssemblyName;
+                case 8:
+                    return ResultAssemblyPath;
+                case 9:
+                    return Cached;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<AssemblyLoadStopTraceData> Action;
+        #endregion
+    }
     public sealed class ILStubGeneratedTraceData : TraceEvent
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
@@ -10697,6 +11375,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         AsyncPinned = 0x7,
         SizedRef = 0x8,
         DependendAsyncPinned = -0x7,
+    }
+
+    public enum KnownPathSource
+    {
+        ApplicationAssemblies = 0x0,
+        AppNativeImagePaths = 0x1,
+        AppPaths = 0x2,
+        PlatformResourceRoots = 0x3,
+        SatelliteSubdirectory = 0x4,
+    }
+    public enum ResolutionAttemptedResult
+    {
+        Success = 0x0,
+        AssemblyNotFound = 0x1,
+        MismatchedAssemblyName = 0x2,
+        IncompatibleVersion = 0x3,
+        Failure = 0x4,
+        Exception = 0x5,
+    }
+    public enum ResolutionAttemptedStage
+    {
+        FindInLoadContext = 0x0,
+        AssemblyLoadContextLoad = 0x1,
+        ApplicationAssemblies = 0x2,
+        DefaultAssemblyLoadContextFallback = 0x3,
+        ResolveSatelliteAssembly = 0x4,
+        AssemblyLoadContextResolvingEvent = 0x5,
+        AppDomainAssemblyResolveEvent = 0x6,
     }
 
     // [SecuritySafeCritical]
