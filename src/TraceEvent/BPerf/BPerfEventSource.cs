@@ -56,7 +56,11 @@ namespace Microsoft.Diagnostics.Tracing
 
         private static readonly Guid VolumeMappingGuid = new Guid("{9b79ee91-b5fd-41c0-a243-4248e266e9d0}");
 
-        private static readonly Guid SystemPathsGuide = new Guid("{9b79ee91-b5fd-41c0-a243-4248e266e9d0}");
+        private static readonly Guid ProcessGuid = new Guid("{3d6fa8d0-fe05-11d0-9dda-00c04fd7ba7c}");
+
+        private static readonly Guid KernelTraceControlImageIdGuid = new Guid("{b3e675d7-2554-4f18-830b-2762732560de}");
+
+        private static readonly Guid KernelTraceControlMetaDataGuid = new Guid("{bbccf6c1-6cd1-48c4-80ff-839482e37671}");
 
         private readonly string btlFilePath;
 
@@ -68,11 +72,13 @@ namespace Microsoft.Diagnostics.Tracing
 
         private readonly Dictionary<int, string> processNameForID = new Dictionary<int, string>();
 
-        private readonly long startQPC;
+        private readonly long endQPCForManagedSymbolsInclusion;
+
+        private readonly long skipQPC;
 
         private readonly long endFileOffset;
 
-        private readonly long endQPC;
+        private readonly bool canResolveSymbols;
 
         private int eventsLost;
 
@@ -94,27 +100,37 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// This constructor is used when the consumer is supplying the buffers for reasons like buffer pooling.
         /// </summary>
-        public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions options, byte[] workspace, byte[] uncompressedBuffer, byte[] compressedBuffer)
+        public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions options, byte[] workspace, byte[] uncompressedBuffer, byte[] compressedBuffer, bool skipReadingUnreachableEvents = false)
         {
             var startTime = options.StartTime == default(DateTime) ? DateTime.MinValue : options.StartTime;
             var endTime = options.EndTime == default(DateTime) ? DateTime.MaxValue : options.EndTime;
             this.btlFilePath = btlFilePath;
             this.startFileOffset = 0;
-            this.startQPC = 0;
+            this.endQPCForManagedSymbolsInclusion = long.MaxValue;
+            this.skipQPC = 0;
             this.endFileOffset = long.MaxValue;
-            this.endQPC = long.MaxValue;
+            this.canResolveSymbols = !skipReadingUnreachableEvents;
 
             string indexFile = this.btlFilePath + ".id";
             bool indexFileExists = File.Exists(indexFile);
 
-            if (startTime > DateTime.MinValue && indexFileExists)
+            if (indexFileExists)
             {
-                this.startFileOffset = GetOffset(indexFile, startTime, out this.startQPC, out var _);
+                var tmp = GetOffset(indexFile, startTime, out this.endQPCForManagedSymbolsInclusion, out var skipqpc);
+                if (startTime > DateTime.MinValue)
+                {
+                    this.skipQPC = skipqpc;
+
+                    if (skipReadingUnreachableEvents)
+                    {
+                        this.startFileOffset = tmp;
+                    }
+                }
             }
 
             if (endTime < DateTime.MaxValue && indexFileExists)
             {
-                this.endFileOffset = GetOffset(indexFile, endTime, out this.endQPC, out var _);
+                this.endFileOffset = GetOffset(indexFile, endTime, out _, out _);
             }
 
             this.workspace = workspace;
@@ -385,88 +401,59 @@ namespace Microsoft.Diagnostics.Tracing
             var nextDot = bperfLogLocation.IndexOf('.', firstDot);
             var processId = int.Parse(bperfLogLocation.Substring(firstDot, nextDot - firstDot));
 
-            long length;
-            using (var fs = new FileStream(bperfLogLocation, FileMode.Open, FileAccess.ReadWrite))
+            using (var fs = new FileStream(bperfLogLocation, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
-                length = fs.Length;
-            }
+                long length = fs.Length;
 
-            using (var mmapedFile = MemoryMappedFile.CreateFromFile(bperfLogLocation))
-            {
-                var accessor = mmapedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
-                byte* ptr = (byte*)0;
-                accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-
-                const int HeaderSize = 16;
-
-                long position = 0;
-                while (position + HeaderSize < length)
+#if NET45
+                using (var mmapedFile = MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.Read, null, HandleInheritability.None, true))
+#else
+                using (var mmapedFile = MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+#endif
                 {
-                    var eventIdToken = accessor.ReadByte(position);
-                    var version = accessor.ReadByte(position + 1);
-                    var flags = accessor.ReadUInt16(position + 2);
-                    var eventId = accessor.ReadUInt16(position + 4);
-                    var userDataLength = accessor.ReadUInt16(position + 6);
-                    var timestamp = accessor.ReadInt64(position + 8);
+                    var accessor = mmapedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
+                    byte* ptr = (byte*)0;
+                    accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
 
-                    position += HeaderSize;
+                    const int HeaderSize = 16;
 
-                    if (position + userDataLength <= length)
+                    long position = 0;
+                    while (position + HeaderSize < length)
                     {
-                        if (timestamp <= this.endQPC)
+                        var eventIdToken = accessor.ReadByte(position);
+                        var version = accessor.ReadByte(position + 1);
+                        var flags = accessor.ReadUInt16(position + 2);
+                        var eventId = accessor.ReadUInt16(position + 4);
+                        var userDataLength = accessor.ReadUInt16(position + 6);
+                        var timestamp = accessor.ReadInt64(position + 8);
+
+                        position += HeaderSize;
+
+                        if (position + userDataLength <= length)
                         {
-                            TraceEventNativeMethods.EVENT_RECORD e;
-                            e.ExtendedDataCount = 0;
-                            e.UserDataLength = userDataLength;
-                            e.UserData = new IntPtr(ptr + position);
-                            e.EventHeader.TimeStamp = timestamp < this.sessionEndTimeQPC ? this.sessionEndTimeQPC : timestamp;
-                            e.EventHeader.Flags = flags;
-                            e.EventHeader.ThreadId = 0;
-                            e.EventHeader.ProcessId = processId;
-                            e.EventHeader.Version = version;
-                            e.EventHeader.Id = eventId;
-
-                            if (eventIdToken == 0)
+                            if (timestamp <= this.endQPCForManagedSymbolsInclusion)
                             {
-                                e.EventHeader.Version = 0;
-                                e.EventHeader.Opcode = 35;
-                                e.EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER | TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
-                                e.EventHeader.ProviderId = VolumeMappingGuid;
-
-                                this.ProcessEventRecord(&e, dispatch: true);
-                            }
-                            else if (eventIdToken == 1 && eventId == 5)
-                            {
-                                e.EventHeader.Version = 3;
-                                e.EventHeader.Opcode = 10;
-                                e.EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER | TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
-                                e.EventHeader.ProviderId = ImageLoadGuid;
-
-                                // BEGIN HACK Alert: We transform a manifest event into classic because of limitations pre-Win8
-
-                                e.UserDataLength = (ushort)(userDataLength - 36 + 56);
-                                var tmp = new byte[e.UserDataLength];
-                                Marshal.Copy(e.UserData, tmp, 0, 36);
-                                Marshal.Copy(e.UserData + 36, tmp, 56, userDataLength - 36);
-
-                                fixed(byte* t = &tmp[0])
+                                if (eventIdToken == 2) // CLR Events
                                 {
-                                    e.UserData = new IntPtr(t);
+                                    TraceEventNativeMethods.EVENT_RECORD e;
+                                    e.ExtendedDataCount = 0;
+                                    e.UserDataLength = userDataLength;
+                                    e.UserData = new IntPtr(ptr + position);
+                                    e.EventHeader.TimeStamp = timestamp < this.sessionEndTimeQPC ? this.sessionEndTimeQPC : timestamp;
+                                    e.EventHeader.Flags = flags;
+                                    e.EventHeader.ThreadId = 0;
+                                    e.EventHeader.ProcessId = processId;
+                                    e.EventHeader.Version = version;
+                                    e.EventHeader.Id = eventId;
+                                    e.EventHeader.ProviderId = ClrGuid;
+
                                     this.ProcessEventRecord(&e, dispatch: true);
                                 }
-
-                                // END HACK Alert: We transform a manifest event into classic because of limitations pre-Win8
-                            }
-                            else if (eventIdToken == 2)
-                            {
-                                e.EventHeader.ProviderId = ClrGuid;
-
-                                this.ProcessEventRecord(&e, dispatch: true);
                             }
                         }
-                    }
 
-                    position += userDataLength;
+                        position += userDataLength;
+                    }
                 }
             }
         }
@@ -495,8 +482,21 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (dispatch)
             {
-                this.Dispatch(traceEvent);
-                this.sessionEndTimeQPC = Math.Max(eventRecord->EventHeader.TimeStamp, this.sessionEndTimeQPC);
+                bool eventNeededForSymbolResolution = false;
+                if (this.canResolveSymbols)
+                {
+                    ref Guid providerId = ref eventRecord->EventHeader.ProviderId;
+                    eventNeededForSymbolResolution = providerId == ClrGuid
+                        ? eventRecord->EventHeader.Id == 190 ||
+                          eventRecord->EventHeader.Id >= 143 && eventRecord->EventHeader.Id <= 157
+                        : providerId == ImageLoadGuid || providerId == ProcessGuid || providerId == VolumeMappingGuid || providerId == KernelTraceControlImageIdGuid || providerId == KernelTraceControlMetaDataGuid;
+                }
+
+                if (eventRecord->EventHeader.TimeStamp >= this.skipQPC || eventNeededForSymbolResolution)
+                {
+                    this.Dispatch(traceEvent);
+                    this.sessionEndTimeQPC = Math.Max(eventRecord->EventHeader.TimeStamp, this.sessionEndTimeQPC);
+                }
             }
         }
 
@@ -558,10 +558,10 @@ namespace Microsoft.Diagnostics.Tracing
             return (num + (align - 1)) & ~(align - 1);
         }
 
-        private static long GetOffset(string indexFile, DateTime requestTimestamp, out long qpc, out long perfFreq)
+        private static long GetOffset(string indexFile, DateTime requestTimestamp, out long sessionStartQPC, out long ts)
         {
-            qpc = 0;
-            perfFreq = 0;
+            sessionStartQPC = 0;
+            ts = 0;
 
             if (!File.Exists(indexFile))
             {
@@ -584,15 +584,15 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             var fileTimestamp = DateTime.FromFileTime(BitConverter.ToInt64(buffer, 0));
-            perfFreq = BitConverter.ToInt64(buffer, 8);
-            qpc = BitConverter.ToInt64(buffer, 16);
+            long perfFreq = BitConverter.ToInt64(buffer, 8);
+            sessionStartQPC = BitConverter.ToInt64(buffer, 16);
 
             var timeEntries = (buffer.Length - 16) / 16;
 
             for (int i = 1; i < timeEntries; ++i)
             {
-                var ts = BitConverter.ToInt64(buffer, 16 + (i * 16));
-                var diff = ts - qpc;
+                ts = BitConverter.ToInt64(buffer, 16 + (i * 16));
+                var diff = ts - sessionStartQPC;
                 diff *= 1000000;
                 diff /= perfFreq;
                 diff /= 1000;
@@ -600,6 +600,7 @@ namespace Microsoft.Diagnostics.Tracing
                 var currentTime = fileTimestamp + TimeSpan.FromMilliseconds(diff);
                 if (currentTime >= requestTimestamp)
                 {
+                    ts = BitConverter.ToInt64(buffer, 16 + ((i - 1) * 16));
                     return BitConverter.ToInt64(buffer, 16 + ((i - 1) * 16) + 8);
                 }
             }

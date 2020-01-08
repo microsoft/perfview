@@ -560,6 +560,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// The GUID that uniquely identifies the Provider for this event.  This can return Guid.Empty for classic (Pre-VISTA) ETW providers.  
         /// </summary>        
         public Guid ProviderGuid { get { return providerGuid; } }
+
+        /// <summary>
+        /// Unique GUID for Pre-VISTA ETW providers.
+        /// </summary>
+        public Guid TaskGuid { get { return taskGuid; } }
+
         /// <summary>
         /// The name of the provider associated with the event.  It may be of the form Provider(GUID) or UnknownProvider in some cases but is never null.  
         /// </summary>
