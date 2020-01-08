@@ -1,20 +1,30 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="ProcessInfo.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
     public sealed class ProcessInfo
     {
-        public ProcessInfo(string processName, int pid, float cpumsec)
+        public ProcessInfo(string processName, int index, float cpumsec, int processId, int parentid, string commandline)
         {
             this.Name = processName;
-            this.Id = pid;
+            this.Id = index;
+            this.ProcessId = processId;
             this.CPUMSec = cpumsec;
+            this.ParentId = parentid;
+            this.CommandLine = commandline;
         }
 
         public string Name { get; }
 
         public int Id { get; }
+
+        public int ProcessId { get; }
+
+        public int ParentId { get; }
+
+        public string CommandLine { get; }
 
         public float CPUMSec { get; }
     }

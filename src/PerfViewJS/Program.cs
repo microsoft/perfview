@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="Program.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
@@ -7,10 +8,8 @@ namespace PerfViewJS
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Server.Kestrel.Core;
     using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
-    using Microsoft.QuickInject;
 
     public static class Program
     {
@@ -21,23 +20,20 @@ namespace PerfViewJS
                 Console.WriteLine("Unobserved exception: {0}", e.Exception);
             };
 
-            var container = new QuickInjectContainer();
-            var hostingEnvironment = new HostingEnvironment
+            if (args.Length != 2)
             {
-                ContentRootPath = Directory.GetCurrentDirectory()
-            };
+                Console.WriteLine("Usage: PerfViewJS portNumber DataRoot");
+                return;
+            }
+
+            string defaultAuthorizationHeaderForSourceLink = Environment.GetEnvironmentVariable("PerfViewJS_DefaultAuthorizationHeaderForSourceLink");
 
             var defaultEventSourceLoggerFactory = new DefaultEventSourceLoggerFactory();
-            var startup = new Startup();
+            var startup = new Startup(Directory.GetCurrentDirectory(), args[1], defaultAuthorizationHeaderForSourceLink);
 
-            startup.SetupQuickInjectContainer(container);
-            startup.Configure(null, hostingEnvironment);
+            var server = new KestrelServer(new KestrelServerOptionsConfig(int.Parse(args[0])), new SocketTransportFactory(new SocketTransportOptionsConfig(), defaultEventSourceLoggerFactory), defaultEventSourceLoggerFactory);
 
-            var requestDelegate = new RequestDelegate(startup.HandleRequest);
-
-            var server = new KestrelServer(new KestrelServerOptionsConfig(container, 5000), new SocketTransportFactory(new SocketTransportOptionsConfig(), new ApplicationLifetime(), defaultEventSourceLoggerFactory), defaultEventSourceLoggerFactory);
-
-            await server.StartAsync(new HttpApplication(requestDelegate), CancellationToken.None);
+            await server.StartAsync(new HttpApplication(startup.HandleRequest), CancellationToken.None);
 
             Thread.Sleep(Timeout.Infinite);
         }

@@ -1,11 +1,11 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="DeserializedDataCache.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
     using System;
     using System.Diagnostics.Tracing;
-    using Microsoft.Diagnostics.Symbols;
     using Microsoft.Extensions.Caching.Memory;
 
     public class DeserializedDataCache : IDeserializedDataCache
@@ -14,13 +14,10 @@ namespace PerfViewJS
 
         private readonly ICacheExpirationTimeProvider cacheExpirationTimeProvider;
 
-        private readonly SymbolReader symbolReader;
-
-        public DeserializedDataCache(CallTreeDataCache cache, ICacheExpirationTimeProvider cacheExpirationTimeProvider, SymbolReader symbolReader)
+        public DeserializedDataCache(CallTreeDataCache cache, ICacheExpirationTimeProvider cacheExpirationTimeProvider)
         {
             this.cache = cache;
             this.cacheExpirationTimeProvider = cacheExpirationTimeProvider;
-            this.symbolReader = symbolReader;
         }
 
         public void ClearAllCacheEntries()
@@ -38,7 +35,7 @@ namespace PerfViewJS
                 if (!this.cache.TryGetValue(cacheKey, out IDeserializedData data))
                 {
                     var cacheEntryOptions = new MemoryCacheEntryOptions().SetPriority(CacheItemPriority.NeverRemove).RegisterPostEvictionCallback(callback: EvictionCallback, state: this).SetSlidingExpiration(this.cacheExpirationTimeProvider.Expiration);
-                    data = new DeserializedData(cacheKey, this.symbolReader);
+                    data = new DeserializedData(cacheKey);
                     this.cache.Set(cacheKey, data, cacheEntryOptions);
                     CacheMonitorEventSource.Logger.CacheEntryAdded(Environment.MachineName, cacheKey);
                 }

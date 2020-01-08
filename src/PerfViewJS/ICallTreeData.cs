@@ -1,5 +1,6 @@
-﻿// Copyright (c) MiValueTask<crosoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="ICallTreeData.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
@@ -11,9 +12,6 @@ namespace PerfViewJS
     {
         // gets a node without a context
         ValueTask<TreeNode> GetNode(string name);
-
-        // gets a node with a caller tree context and looks up the path
-        ValueTask<TreeNode> GetCallerTreeNode(string name, char sep, string path = "");
 
         // gets a node with a callee tree context and looks up the path
         ValueTask<TreeNode> GetCalleeTreeNode(string name, string path = "");
@@ -33,8 +31,10 @@ namespace PerfViewJS
         // returns samples for Drill Into
         ValueTask<StackSource> GetDrillIntoStackSource(bool exclusive, string name, char sep, string path);
 
-        bool LookupWarmSymbols(int minCount);
+        ValueTask<SourceInformation> Source(string authorizationHeader, string name, char sep, string path = "");
 
-        ValueTask<SourceInformation> Source(TreeNode node);
+        void UnInitialize();
+
+        string LookupWarmSymbols(int minCount);
     }
 }

@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="CallTreeData.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
@@ -18,99 +19,27 @@ namespace PerfViewJS
     {
         private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
-        private readonly Dictionary<string, CallTreeNodeBase> nodeNameCache = new Dictionary<string, CallTreeNodeBase>();
-
-        private readonly Dictionary<CallTreeNodeBase, TreeNode> callerTreeCache = new Dictionary<CallTreeNodeBase, TreeNode>();
-
-        private readonly Dictionary<CallTreeNodeBase, TreeNode> calleeTreeCache = new Dictionary<CallTreeNodeBase, TreeNode>();
-
         private readonly object lockObj = new object();
 
-        private readonly GenericStackSource stackSource;
+        private readonly StackSource stackSource;
 
         private readonly StackViewerModel model;
 
-        private readonly SymbolReader symbolReader;
-
         private int initialized;
 
-        private CallTree callTree;
+        private Tuple tuple;
 
-        public CallTreeData(GenericStackSource stackSource, StackViewerModel model, SymbolReader symbolReader)
+        public CallTreeData(StackSource stackSource, StackViewerModel model)
         {
             this.stackSource = stackSource;
             this.model = model;
-            this.symbolReader = symbolReader;
         }
 
         public async ValueTask<TreeNode> GetNode(string name)
         {
             await this.EnsureInitialized();
 
-            lock (this.lockObj)
-            {
-                if (this.nodeNameCache.ContainsKey(name))
-                {
-                    CallTreeDataEventSource.Log.NodeCacheHit(name);
-                    return new TreeNode(this.nodeNameCache[name]);
-                }
-                else
-                {
-                    foreach (var node in this.callTree.ByID)
-                    {
-                        if (node.Name == name)
-                        {
-                            this.nodeNameCache.Add(name, node);
-                            CallTreeDataEventSource.Log.NodeCacheMisss(name);
-                            return new TreeNode(node);
-                        }
-                    }
-
-                    CallTreeDataEventSource.Log.NodeCacheNotFound(name);
-                    return null;
-                }
-            }
-        }
-
-        public async ValueTask<TreeNode> GetCallerTreeNode(string name, char sep, string path = "")
-        {
-            if (name == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(name));
-            }
-
-            var node = await this.GetNode(name);
-
-            lock (this.lockObj)
-            {
-                CallTreeNodeBase backingNode = node.BackingNode;
-                TreeNode callerTreeNode;
-
-                if (this.callerTreeCache.ContainsKey(backingNode))
-                {
-                    callerTreeNode = this.callerTreeCache[backingNode];
-                }
-                else
-                {
-                    callerTreeNode = new TreeNode(AggregateCallTreeNode.CallerTree(backingNode));
-                    this.callerTreeCache.Add(backingNode, callerTreeNode);
-                }
-
-                if (string.IsNullOrEmpty(path))
-                {
-                    return callerTreeNode;
-                }
-
-                var pathArr = path.Split(sep);
-                var pathNodeRoot = callerTreeNode.Children[int.Parse(pathArr[0])];
-
-                for (int i = 1; i < pathArr.Length; ++i)
-                {
-                    pathNodeRoot = pathNodeRoot.Children[int.Parse(pathArr[i])];
-                }
-
-                return pathNodeRoot;
-            }
+            return this.GetNodeInner(name, this.tuple);
         }
 
         public async ValueTask<TreeNode> GetCalleeTreeNode(string name, string path = "")
@@ -120,21 +49,27 @@ namespace PerfViewJS
                 ThrowHelper.ThrowArgumentNullException(nameof(name));
             }
 
-            var node = await this.GetNode(name);
+            await this.EnsureInitialized();
+
+            var t = this.tuple;
+
+            var node = this.GetNodeInner(name, t);
 
             lock (this.lockObj)
             {
                 CallTreeNodeBase backingNode = node.BackingNode;
                 TreeNode calleeTreeNode;
 
-                if (this.calleeTreeCache.ContainsKey(backingNode))
+                var c = t.CalleeTreeCache;
+
+                if (c.ContainsKey(backingNode))
                 {
-                    calleeTreeNode = this.calleeTreeCache[backingNode];
+                    calleeTreeNode = c[backingNode];
                 }
                 else
                 {
                     calleeTreeNode = new TreeNode(AggregateCallTreeNode.CalleeTree(backingNode));
-                    this.calleeTreeCache.Add(backingNode, calleeTreeNode);
+                    c.Add(backingNode, calleeTreeNode);
                 }
 
                 if (string.IsNullOrEmpty(path))
@@ -182,10 +117,10 @@ namespace PerfViewJS
         {
             await this.EnsureInitialized();
 
-            var nodes = this.callTree.ByIDSortedExclusiveMetric().Take(numNodes);
+            var nodes = this.tuple.CallTree.ByIDSortedExclusiveMetric().Take(numNodes);
 
             var summaryNodes = new List<TreeNode>();
-            foreach (CallTreeNodeBase node in nodes)
+            foreach (var node in nodes)
             {
                 summaryNodes.Add(new TreeNode(node));
             }
@@ -210,15 +145,155 @@ namespace PerfViewJS
             return drillIntoStackSource;
         }
 
-        public bool LookupWarmSymbols(int minCount)
+        public async ValueTask<SourceInformation> Source(string authorizationHeader, string name, char sep, string path = "")
         {
-            StackSourceStacks rawSource = this.stackSource.BaseStackSource;
-            for (;;)
+            var node = await this.GetCallerTreeNode(name, sep, path);
+
+            var asCallTreeNodeBase = node.BackingNode;
+            string cellText = node.Name;
+
+            var m = Regex.Match(cellText, "<<(.*!.*)>>");
+
+            if (m.Success)
+            {
+                cellText = m.Groups[1].Value;
+            }
+
+            var ss = this.tuple.CallTree.StackSource;
+
+            var frameIndexCounts = new Dictionary<StackSourceFrameIndex, float>();
+            asCallTreeNodeBase.GetSamples(false, sampleIdx =>
+            {
+                var matchingFrameIndex = StackSourceFrameIndex.Invalid;
+                var sample = ss.GetSampleByIndex(sampleIdx);
+                var callStackIdx = sample.StackIndex;
+
+                while (callStackIdx != StackSourceCallStackIndex.Invalid)
+                {
+                    var frameIndex = ss.GetFrameIndex(callStackIdx);
+                    var frameName = ss.GetFrameName(frameIndex, false);
+
+                    if (frameName == cellText)
+                    {
+                        matchingFrameIndex = frameIndex;
+                    }
+
+                    callStackIdx = ss.GetCallerIndex(callStackIdx);
+                }
+
+                if (matchingFrameIndex != StackSourceFrameIndex.Invalid)
+                {
+                    frameIndexCounts.TryGetValue(matchingFrameIndex, out float count);
+                    frameIndexCounts[matchingFrameIndex] = count + sample.Metric;
+                }
+
+                return true;
+            });
+
+            StackSourceFrameIndex maxFrameIdx = StackSourceFrameIndex.Invalid;
+            float maxFrameIdxCount = -1;
+            foreach (var keyValue in frameIndexCounts)
+            {
+                if (keyValue.Value >= maxFrameIdxCount)
+                {
+                    maxFrameIdxCount = keyValue.Value;
+                    maxFrameIdx = keyValue.Key;
+                }
+            }
+
+            if (maxFrameIdx == StackSourceFrameIndex.Invalid)
+            {
+                // TODO: Error handling ("Could not find " + cellText + " in call stack!")
+                return null;
+            }
+
+            var asTraceEventStackSource = GetTraceEventStackSource(ss);
+
+            if (asTraceEventStackSource == null)
+            {
+                // TODO: Error handling ("Source does not support symbolic lookup.")
+                return null;
+            }
+
+            var log = new StringWriter();
+            using var reader = new SymbolReader(log) { AuthorizationHeaderForSourceLink = authorizationHeader };
+            var sourceLocation = asTraceEventStackSource.GetSourceLine(maxFrameIdx, reader);
+
+            if (sourceLocation == null)
+            {
+                // TODO: Error handling ("Source could not find a source location for the given Frame.")
+                return null;
+            }
+
+            var sourceFile = sourceLocation.SourceFile;
+
+            var filePathForMax = sourceFile.BuildTimeFilePath;
+            var metricOnLine = new SortedDictionary<int, float>(Comparer<int>.Create((x, y) => y.CompareTo(x)));
+
+            foreach (StackSourceFrameIndex frameIdx in frameIndexCounts.Keys)
+            {
+                var loc = asTraceEventStackSource.GetSourceLine(frameIdx, reader);
+                if (loc != null && loc.SourceFile.BuildTimeFilePath == filePathForMax)
+                {
+                    metricOnLine.TryGetValue(loc.LineNumber, out var metric);
+                    metric += frameIndexCounts[frameIdx];
+                    metricOnLine[loc.LineNumber] = metric;
+                }
+            }
+
+            var data = File.ReadAllText(sourceFile.GetSourceFile());
+
+            var list = new LineInformation[metricOnLine.Count];
+
+            int i = 0;
+            foreach (var lineMetric in metricOnLine)
+            {
+                list[i++] = new LineInformation { LineNumber = lineMetric.Key, Metric = lineMetric.Value };
+            }
+
+            var si = new SourceInformation
+            {
+                Url = sourceFile.Url,
+                Log = log.ToString(),
+                BuildTimeFilePath = filePathForMax,
+                Summary = list,
+                Data = data,
+            };
+
+            return si;
+        }
+
+        public void UnInitialize()
+        {
+            this.initialized = 0;
+        }
+
+        public string LookupWarmSymbols(int minCount)
+        {
+            var traceEventStackSource = GetTraceEventStackSource(this.stackSource);
+            if (traceEventStackSource != null)
+            {
+                var writer = new StringWriter();
+                using (var symbolReader = new SymbolReader(writer))
+                {
+                    traceEventStackSource.LookupWarmSymbols(minCount, symbolReader);
+                }
+
+                this.UnInitialize();
+                return writer.ToString();
+            }
+
+            return "Unable to find TraceEventStackSource. This a fatal error for symbol lookup";
+        }
+
+        private static TraceEventStackSource GetTraceEventStackSource(StackSource source)
+        {
+            StackSourceStacks rawSource = source;
+            while (true)
             {
                 if (rawSource is TraceEventStackSource asTraceEventStackSource)
                 {
-                    asTraceEventStackSource.LookupWarmSymbols(minCount, this.symbolReader);
-                    return true;
+                    return asTraceEventStackSource;
                 }
 
                 if (rawSource is CopyStackSource asCopyStackSource)
@@ -233,50 +308,85 @@ namespace PerfViewJS
                     continue;
                 }
 
-                return false;
+                return null;
             }
         }
 
-        public async ValueTask<SourceInformation> Source(TreeNode node)
+        private async ValueTask<TreeNode> GetCallerTreeNode(string name, char sep, string path = "")
         {
-            var index = this.GetSourceLocation(node.BackingNode, node.Name, out Dictionary<StackSourceFrameIndex, float> retVal);
-            var generic = this.callTree.StackSource.BaseStackSource as GenericStackSource;
-
-            var sourceLocation = await generic.GetSourceLocation(index);
-
-            // TODO: needs cleanup
-            if (sourceLocation != null)
+            if (name == null)
             {
-                var buildTimePath = sourceLocation.SourceFile.BuildTimeFilePath;
-                var srcSrvString = sourceLocation.SourceFile.GetSourceFile();
-
-                var lines = File.ReadAllLines(sourceLocation.SourceFile.GetSourceFile());
-
-                var list = new List<LineInformation>();
-                int i = 1;
-
-                foreach (var line in lines)
-                {
-                    var li = new LineInformation
-                    {
-                        Line = line,
-                        LineNumber = i++
-                    };
-
-                    list.Add(li);
-                }
-
-                var si = new SourceInformation
-                {
-                    BuildTimeFilePath = buildTimePath,
-                    Lines = list,
-                    Summary = new List<LineInformation> { new LineInformation { LineNumber = sourceLocation.LineNumber, Metric = retVal[index] } }
-                };
-
-                return si;
+                ThrowHelper.ThrowArgumentNullException(nameof(name));
             }
 
-            return null; // TODO: need to implement the local case i.e. this is the build machine
+            await this.EnsureInitialized();
+
+            var t = this.tuple;
+
+            var node = this.GetNodeInner(name, t);
+
+            lock (this.lockObj)
+            {
+                CallTreeNodeBase backingNode = node.BackingNode;
+                TreeNode callerTreeNode;
+
+                var c = t.CallerTreeCache;
+
+                if (c.ContainsKey(backingNode))
+                {
+                    callerTreeNode = c[backingNode];
+                }
+                else
+                {
+                    callerTreeNode = new TreeNode(AggregateCallTreeNode.CallerTree(backingNode));
+                    c.Add(backingNode, callerTreeNode);
+                }
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    return callerTreeNode;
+                }
+
+                var pathArr = path.Split(sep);
+                var pathNodeRoot = callerTreeNode.Children[int.Parse(pathArr[0])];
+
+                for (int i = 1; i < pathArr.Length; ++i)
+                {
+                    pathNodeRoot = pathNodeRoot.Children[int.Parse(pathArr[i])];
+                }
+
+                return pathNodeRoot;
+            }
+        }
+
+        private TreeNode GetNodeInner(string name, Tuple t)
+        {
+            lock (this.lockObj)
+            {
+                var n = t.NodeNameCache;
+
+                if (n.ContainsKey(name))
+                {
+                    CallTreeDataEventSource.Log.NodeCacheHit(name);
+                    return new TreeNode(n[name]);
+                }
+                else
+                {
+                    var c = t.CallTree;
+                    foreach (var node in c.ByID)
+                    {
+                        if (node.Name == name)
+                        {
+                            n.Add(name, node);
+                            CallTreeDataEventSource.Log.NodeCacheMisss(name);
+                            return new TreeNode(node);
+                        }
+                    }
+
+                    CallTreeDataEventSource.Log.NodeCacheNotFound(name);
+                    return null;
+                }
+            }
         }
 
         private async Task EnsureInitialized()
@@ -307,7 +417,7 @@ namespace PerfViewJS
                     FoldRegExs = this.model.FoldPats,
                     GroupRegExs = this.model.GroupPats,
                     MinInclusiveTimePercent = this.model.FoldPct,
-                    Name = "NoName"
+                    Name = "NoName",
                 };
 
                 var ss = new FilterStackSource(filterParams, this.stackSource, ScalingPolicyKind.TimeMetric);
@@ -315,14 +425,17 @@ namespace PerfViewJS
                 double startTimeRelativeMsec = double.TryParse(filterParams.StartTimeRelativeMSec, out startTimeRelativeMsec) ? Math.Max(startTimeRelativeMsec, 0.0) : 0.0;
                 double endTimeRelativeMsec = double.TryParse(filterParams.EndTimeRelativeMSec, out endTimeRelativeMsec) ? Math.Min(endTimeRelativeMsec, this.stackSource.SampleTimeRelativeMSecLimit) : this.stackSource.SampleTimeRelativeMSecLimit;
 
-                this.callTree = new CallTree(ScalingPolicyKind.TimeMetric);
-                this.callTree.TimeHistogramController = new TimeHistogramController(this.callTree, startTimeRelativeMsec, endTimeRelativeMsec);
-                this.callTree.StackSource = ss;
+                var c = new CallTree(ScalingPolicyKind.TimeMetric);
+                c.TimeHistogramController = new TimeHistogramController(c, startTimeRelativeMsec, endTimeRelativeMsec);
+                c.StackSource = ss;
 
                 if (float.TryParse(filterParams.MinInclusiveTimePercent, out float minIncusiveTimePercent) && minIncusiveTimePercent > 0)
                 {
-                    this.callTree.FoldNodesUnder(minIncusiveTimePercent * this.callTree.Root.InclusiveMetric / 100, true);
+                    c.FoldNodesUnder(minIncusiveTimePercent * c.Root.InclusiveMetric / 100, true);
                 }
+
+                var t = new Tuple(c);
+                this.tuple = t;
 
                 this.initialized = 1;
             }
@@ -332,58 +445,20 @@ namespace PerfViewJS
             }
         }
 
-        private StackSourceFrameIndex GetSourceLocation(CallTreeNodeBase node, string cellText, out Dictionary<StackSourceFrameIndex, float> retVal)
+        private sealed class Tuple
         {
-            var m = Regex.Match(cellText, "<<(.*!.*)>>");
-
-            if (m.Success)
+            public Tuple(CallTree callTree)
             {
-                cellText = m.Groups[1].Value;
+                this.CallTree = callTree;
             }
 
-            var frameIndexCounts = new Dictionary<StackSourceFrameIndex, float>();
-            node.GetSamples(false, sampleIdx =>
-            {
-                var matchingFrameIndex = StackSourceFrameIndex.Invalid;
-                var sample = this.callTree.StackSource.GetSampleByIndex(sampleIdx);
-                var callStackIdx = sample.StackIndex;
+            public Dictionary<string, CallTreeNodeBase> NodeNameCache => new Dictionary<string, CallTreeNodeBase>();
 
-                while (callStackIdx != StackSourceCallStackIndex.Invalid)
-                {
-                    var frameIndex = this.callTree.StackSource.GetFrameIndex(callStackIdx);
-                    var frameName = this.callTree.StackSource.GetFrameName(frameIndex, false);
+            public Dictionary<CallTreeNodeBase, TreeNode> CallerTreeCache => new Dictionary<CallTreeNodeBase, TreeNode>();
 
-                    if (frameName == cellText)
-                    {
-                        matchingFrameIndex = frameIndex;
-                    }
+            public Dictionary<CallTreeNodeBase, TreeNode> CalleeTreeCache => new Dictionary<CallTreeNodeBase, TreeNode>();
 
-                    callStackIdx = this.callTree.StackSource.GetCallerIndex(callStackIdx);
-                }
-
-                if (matchingFrameIndex != StackSourceFrameIndex.Invalid)
-                {
-                    frameIndexCounts.TryGetValue(matchingFrameIndex, out float count);
-                    frameIndexCounts[matchingFrameIndex] = count + sample.Metric;
-                }
-
-                return true;
-            });
-
-            var maxFrameIdx = StackSourceFrameIndex.Invalid;
-            float maxFrameIdxCount = -1;
-            foreach (var keyValue in frameIndexCounts)
-            {
-                if (keyValue.Value >= maxFrameIdxCount)
-                {
-                    maxFrameIdxCount = keyValue.Value;
-                    maxFrameIdx = keyValue.Key;
-                }
-            }
-
-            retVal = frameIndexCounts;
-
-            return maxFrameIdx;
+            public CallTree CallTree { get; }
         }
     }
 }

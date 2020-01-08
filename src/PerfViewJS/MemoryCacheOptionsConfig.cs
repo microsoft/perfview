@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="MemoryCacheOptionsConfig.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
@@ -16,7 +17,7 @@ namespace PerfViewJS
             {
                 CompactionPercentage = 0.9,
                 ExpirationScanFrequency = TimeSpan.FromMinutes(60.0),
-                Clock = new SystemClock()
+                Clock = new SystemClock(),
             };
         }
 

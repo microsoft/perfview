@@ -1,29 +1,31 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="StackViewerModel.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
+    using System.IO;
     using System.Text;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.WebUtilities;
 
     public sealed class StackViewerModel
     {
-        public StackViewerModel(HttpContext httpContext)
+        public StackViewerModel(string dataDirectoryListingRoot, IQueryCollection queryCollection)
         {
-            this.Filename = (string)httpContext.Request.Query["Filename"] ?? string.Empty;
-            this.StackType = (string)httpContext.Request.Query["StackType"] ?? string.Empty;
-            this.Pid = (string)httpContext.Request.Query["Pid"] ?? string.Empty;
-            this.Start = (string)httpContext.Request.Query["Start"] ?? string.Empty;
-            this.End = (string)httpContext.Request.Query["End"] ?? string.Empty;
-            this.GroupPats = (string)httpContext.Request.Query["GroupPats"] ?? string.Empty;
-            this.IncPats = (string)httpContext.Request.Query["IncPats"] ?? string.Empty;
-            this.ExcPats = (string)httpContext.Request.Query["ExcPats"] ?? string.Empty;
-            this.FoldPats = (string)httpContext.Request.Query["FoldPats"] ?? string.Empty;
-            this.FoldPct = (string)httpContext.Request.Query["FoldPct"] ?? string.Empty;
-            this.DrillIntoKey = (string)httpContext.Request.Query["DrillIntoKey"] ?? string.Empty;
+            this.Filename = (string)queryCollection["Filename"] ?? string.Empty;
+            this.StackType = (string)queryCollection["StackType"] ?? string.Empty;
+            this.Pid = (string)queryCollection["Pid"] ?? string.Empty;
+            this.Start = (string)queryCollection["Start"] ?? string.Empty;
+            this.End = (string)queryCollection["End"] ?? string.Empty;
+            this.GroupPats = (string)queryCollection["GroupPats"] ?? string.Empty;
+            this.IncPats = (string)queryCollection["IncPats"] ?? string.Empty;
+            this.ExcPats = (string)queryCollection["ExcPats"] ?? string.Empty;
+            this.FoldPats = (string)queryCollection["FoldPats"] ?? string.Empty;
+            this.FoldPct = (string)queryCollection["FoldPct"] ?? string.Empty;
+            this.DrillIntoKey = (string)queryCollection["DrillIntoKey"] ?? string.Empty;
 
-            this.Filename = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(this.Filename));
+            this.Filename = Path.Combine(dataDirectoryListingRoot, Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(this.Filename)));
             this.Start = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(this.Start));
             this.End = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(this.End));
             this.GroupPats = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(this.GroupPats));
@@ -79,7 +81,7 @@ namespace PerfViewJS
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
             {
                 return false;
             }
