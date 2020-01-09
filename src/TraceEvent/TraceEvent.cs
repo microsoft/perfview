@@ -983,7 +983,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 if (value is Address)
                 {
-                    return "0x" + ((Address)value).ToString("x", formatProvider);
+                    return "0x" + ((Address)value).ToString("x8", formatProvider);
                 }
 
                 if (value is int)
@@ -1011,7 +1011,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (payloadNames[index] == "objectId")      // TODO this is a hack.  
                     {
-                        return "0x" + ((long)value).ToString("x");
+                        return "0x" + ((long)value).ToString("x8");
                     }
 
                     if (formatProvider != null)
