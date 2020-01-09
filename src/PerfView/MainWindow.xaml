@@ -73,6 +73,7 @@
                     <MenuItem Header="_Collect" Command="{x:Static src:MainWindow.CollectCommand}" ToolTip="Collect data machine wide with explicit start and stop."/>
                     <MenuItem Header="_Abort" Command="{x:Static src:MainWindow.AbortCommand}" ToolTip="Abort any collection in progress."/>
                     <MenuItem Header="_Merge" Command="{x:Static src:MainWindow.MergeCommand}" ToolTip="Prepare files for analysis on another computer."/>
+                    <MenuItem Header="Merge and Zip All" Click="DoMergeAndZipAll" ToolTip="Merge and zip all unmerged traces in the current folder."/>
                 </MenuItem>
                 <MenuItem Header="_Memory">
                     <MenuItem Header="_Take Heap Snapshot" Command="{x:Static src:MainWindow.HeapSnapshotCommand}" ToolTip="Take a snapshot of of the CLR GC Heap."/>
