@@ -262,7 +262,7 @@ internal class Program
             }
             else
             {
-                Console.WriteLine("HeapDump Error: {0}", e.ToString());
+                Console.WriteLine("HeapDump Error ({0}): {1}", e.HResult, e.ToString());
             }
 
             if (outputFile != null)
