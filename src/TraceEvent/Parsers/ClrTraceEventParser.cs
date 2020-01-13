@@ -2069,11 +2069,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[125] = new KnownPathProbedTraceData(null, 296, 32, "AssemblyLoader", AssemblyLoaderTaskGuid, 15, "KnownPathProbed", ProviderGuid, ProviderName);
 
                 // Some more new style
-                templates[118] = TieredCompilationSettingsTemplate(null);
-                templates[119] = TieredCompilationPauseTemplate(null);
-                templates[120] = TieredCompilationResumeTemplate(null);
-                templates[121] = TieredCompilationBackgroundJitStartTemplate(null);
-                templates[122] = TieredCompilationBackgroundJitStopTemplate(null);
+                templates[126] = TieredCompilationSettingsTemplate(null);
+                templates[127] = TieredCompilationPauseTemplate(null);
+                templates[128] = TieredCompilationResumeTemplate(null);
+                templates[129] = TieredCompilationBackgroundJitStartTemplate(null);
+                templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
 
                 s_templates = templates;
             }
