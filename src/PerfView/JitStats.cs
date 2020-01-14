@@ -368,7 +368,7 @@ namespace Stats
 
         private static bool ShouldShowOptimizationTiers(TraceLoadedDotNetRuntime runtime)
         {
-            return PerfView.App.CommandLineArgs.ShowOptimizationTiers && runtime.JIT.Stats().HasAtLeastOneKnownOptimizationTier;
+            return PerfView.App.CommandLineArgs.ShowOptimizationTiers && runtime.HasAnyKnownOptimizationTier;
         }
 
         public static void ToCsv(string filePath, TraceLoadedDotNetRuntime runtime)

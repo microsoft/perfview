@@ -4177,16 +4177,18 @@ table {
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
             var eventLog = GetTraceLog(log);
-            if (streamName == "CPU")
+            bool showOptimizationTiers =
+                App.CommandLineArgs.ShowOptimizationTiers || streamName.Contains("(with Optimization Tiers)");
+            if (streamName.StartsWith("CPU"))
             {
-                return eventLog.CPUStacks(null, App.CommandLineArgs, predicate);
+                return eventLog.CPUStacks(null, App.CommandLineArgs, showOptimizationTiers, predicate);
             }
 
             // var stackSource = new InternTraceEventStackSource(eventLog);
             var stackSource = new MutableTraceEventStackSource(eventLog);
 
             stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-            stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+            stackSource.ShowOptimizationTiers = showOptimizationTiers;
 
             TraceEvents events = eventLog.Events;
             if (!streamName.Contains("TaskTree") && !streamName.Contains("Tasks)"))
@@ -6576,7 +6578,7 @@ table {
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
-            ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
+            ConfigureAsEtwStackWindow(stackWindow, stackSourceName.StartsWith("CPU"));
 
             if (stackSourceName == "Processes / Files / Registry")
             {
@@ -6609,7 +6611,7 @@ table {
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 
-            if (stackSourceName == "CPU" || stackSourceName.Contains("Thread Time"))
+            if (stackSourceName.StartsWith("CPU") || stackSourceName.Contains("Thread Time"))
             {
                 if (m_traceLog != null)
                 {
@@ -6992,6 +6994,13 @@ table {
             if (hasCPUStacks)
             {
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
+
+                if (!App.CommandLineArgs.ShowOptimizationTiers &&
+                    tracelog.Events.Any(
+                        e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
+                {
+                    advanced.Children.Add(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
+                }
             }
 
             if (hasCSwitchStacks)
@@ -8255,6 +8264,7 @@ table {
         private string[] PerfScriptStreams = new string[]
         {
             "CPU",
+            "CPU (with Optimization Tiers)",
             "Thread Time (experimental)"
         };
 
@@ -8308,7 +8318,9 @@ table {
                         new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
-                return new XmlStackSource(xmlPath);
+                bool showOptimizationTiers =
+                    App.CommandLineArgs.ShowOptimizationTiers || streamName.Contains("(with Optimization Tiers)");
+                return new XmlStackSource(xmlPath, null, showOptimizationTiers);
             }
 
             return null;
@@ -8341,6 +8353,15 @@ table {
             var memory = new PerfViewTreeGroup("Memory Group");
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
+
+            if (!App.CommandLineArgs.ShowOptimizationTiers &&
+                m_traceLog != null &&
+                m_traceLog.Events.Any(
+                    e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
+            {
+                advanced.AddChild(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
+            }
+
             if (AppLog.InternalUser)
             {
                 advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));

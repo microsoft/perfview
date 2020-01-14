@@ -193,6 +193,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public event Action<TraceProcess, TraceJittedMethod> JITMethodEnd = null;
 
         /// <summary>
+        /// Indicates whether any of the jitted method code versions have a known optimization tier
+        /// </summary>
+        public bool HasAnyKnownOptimizationTier;
+
+        /// <summary>
         /// Indicates whether tiered compilation is enabled
         /// </summary>
         public bool IsTieredCompilationEnabled;
@@ -3790,7 +3795,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             }
             _method.NativeSize = data.MethodSize;
             _method.CompileCpuTimeMSec = data.TimeStampRelativeMSec - _method.StartTimeMSec;
-            _method.SetOptimizationTier(data.OptimizationTier, stats.JIT.m_stats);
+            _method.SetOptimizationTier(data.OptimizationTier, stats);
             _method.VersionID = rejitID;
 
             if (stats.JIT.Stats().BackgroundJitThread != 0 && _method.ThreadID == stats.JIT.Stats().BackgroundJitThread)
@@ -4088,12 +4093,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public bool IsDefaultVersion { get { return VersionID == 0; } }
 
         #region private
-        internal void SetOptimizationTier(OptimizationTier optimizationTier, JITStats stats)
+        internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
         {
             if (optimizationTier != OptimizationTier.Unknown)
             {
                 OptimizationTier = optimizationTier;
-                stats.HasAtLeastOneKnownOptimizationTier = true;
+                stats.HasAnyKnownOptimizationTier = true;
             }
         }
 

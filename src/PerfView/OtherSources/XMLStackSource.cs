@@ -161,8 +161,10 @@ namespace Diagnostics.Tracing.StackSources
         /// see https://msdn.microsoft.com/en-us/library/bb412170.aspx?f=255&amp;MSPPError=-2147217396 for 
         /// more on this mapping.  
         /// </summary>
-        public XmlStackSource(string fileName, Action<XmlReader> readElement = null)
+        public XmlStackSource(string fileName, Action<XmlReader> readElement = null, bool showOptimizationTiers = false)
         {
+            m_showOptimizationTiers = showOptimizationTiers || PerfView.App.CommandLineArgs.ShowOptimizationTiers;
+
             using (Stream dataStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
             {
                 var xmlStream = dataStream;
@@ -419,7 +421,7 @@ namespace Diagnostics.Tracing.StackSources
                                     }
                                     else if (reader.Name == "OptimizationTier")
                                     {
-                                        if (PerfView.App.CommandLineArgs.ShowOptimizationTiers)
+                                        if (m_showOptimizationTiers)
                                         {
                                             var optimizationTierCandidateStr = reader.ReadContentAsString();
                                             if (Enum.TryParse<OptimizationTier>(optimizationTierCandidateStr, out var optimizationTier) &&
@@ -597,6 +599,7 @@ namespace Diagnostics.Tracing.StackSources
         private StackSourceInterner m_interner;     // If the XML has samples with explicit stacks, then this is non-null and used to intern them. 
         private int m_curSample;
         private double m_maxTime;
+        private bool m_showOptimizationTiers;
         #endregion
     }
 }

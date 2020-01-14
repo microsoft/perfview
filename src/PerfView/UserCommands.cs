@@ -1839,7 +1839,7 @@ namespace PerfViewExtensibility
 // TODO FIX NOW decide where to put these.
 public static class TraceEventStackSourceExtensions
 {
-    public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, CommandLineArgs commandLineArgs = null, Predicate<TraceEvent> predicate = null)
+    public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, CommandLineArgs commandLineArgs = null, bool showOptimizationTiers = false, Predicate<TraceEvent> predicate = null)
     {
         TraceEvents events;
         if (process == null)
@@ -1855,7 +1855,7 @@ public static class TraceEventStackSourceExtensions
         if (commandLineArgs != null)
         {
             traceStackSource.ShowUnknownAddresses = commandLineArgs.ShowUnknownAddresses;
-            traceStackSource.ShowOptimizationTiers = commandLineArgs.ShowOptimizationTiers;
+            traceStackSource.ShowOptimizationTiers = showOptimizationTiers || commandLineArgs.ShowOptimizationTiers;
         }
         // We clone the samples so that we don't have to go back to the ETL file from here on.  
         return CopyStackSource.Clone(traceStackSource);
