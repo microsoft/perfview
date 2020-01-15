@@ -7573,7 +7573,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// methods that take a CodeAddressIndex and return properties of the code address (like its method, address, and module file)
     /// </para>
     /// </summary>
-    public sealed class TraceCodeAddresses : IFastSerializable, IFastSerializableVersion, IEnumerable<TraceCodeAddress>
+    public sealed class TraceCodeAddresses : IFastSerializable, IEnumerable<TraceCodeAddress>
     {
         /// <summary>
         /// Chunk size for <see cref="codeAddressObjects"/>
@@ -8595,6 +8595,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 serializer.Write(moduleFiles);
                 serializer.Write(methods);
 
+                serializer.WriteTagged(CodeAddressInfoSerializationVersion);
                 serializer.Write(codeAddresses.Count);
                 serializer.Log("<WriteCollection name=\"codeAddresses\" count=\"" + codeAddresses.Count + "\">\r\n");
                 for (int i = 0; i < codeAddresses.Count; i++)
@@ -8604,7 +8605,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     serializer.Write((int)codeAddresses[i].methodOrProcessOrIlMapIndex);
                     serializer.Write(codeAddresses[i].InclusiveCount);
 
-                    // Version 1
+                    /// <see cref="CodeAddressInfoSerializationVersion"/> >= 1
                     serializer.Write((byte)codeAddresses[i].optimizationTier);
                 }
                 serializer.Write(totalCodeAddresses);
@@ -8626,6 +8627,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 deserializer.Read(out moduleFiles);
                 deserializer.Read(out methods);
 
+                int storedCodeAddressInfoSerializationVersion = 0;
+                deserializer.TryReadTagged(ref storedCodeAddressInfoSerializationVersion);
                 int count = deserializer.ReadInt();
                 deserializer.Log("<Marker name=\"codeAddresses\" count=\"" + count + "\"/>");
                 CodeAddressInfo codeAddressInfo = new CodeAddressInfo();
@@ -8637,8 +8640,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     codeAddressInfo.methodOrProcessOrIlMapIndex = deserializer.ReadInt();
                     deserializer.Read(out codeAddressInfo.InclusiveCount);
 
-                    // Version 1
-                    codeAddressInfo.optimizationTier = (OptimizationTier)deserializer.ReadByte();
+                    if (storedCodeAddressInfoSerializationVersion >= 1)
+                    {
+                        codeAddressInfo.optimizationTier = (OptimizationTier)deserializer.ReadByte();
+                    }
 
                     codeAddresses.Add(codeAddressInfo);
                 }
@@ -8653,9 +8658,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyCodeAddresses.FinishRead();        // TODO REMOVE 
         }
 
-        int IFastSerializableVersion.Version => 1;
-        int IFastSerializableVersion.MinimumVersionCanRead => ((IFastSerializableVersion)this).Version;
-        int IFastSerializableVersion.MinimumReaderVersion => ((IFastSerializableVersion)this).Version;
+        private const int CodeAddressInfoSerializationVersion = 1;
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
