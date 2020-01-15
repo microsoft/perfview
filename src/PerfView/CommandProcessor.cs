@@ -2815,6 +2815,11 @@ namespace PerfView
                 cmdLineArgs += " /ShowUnknownAddresses";
             }
 
+            if (parsedArgs.ShowOptimizationTiers)
+            {
+                cmdLineArgs += " /ShowOptimizationTiers";
+            }
+
             if (parsedArgs.ContinueOnError)
             {
                 cmdLineArgs += " /ContinueOnError";

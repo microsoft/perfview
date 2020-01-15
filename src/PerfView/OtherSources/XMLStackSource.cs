@@ -8,6 +8,8 @@ using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Diagnostics;
 
+using OptimizationTier = Microsoft.Diagnostics.Tracing.Parsers.Clr.OptimizationTier;
+
 namespace Diagnostics.Tracing.StackSources
 {
     public class XmlStackSourceWriter
@@ -62,6 +64,32 @@ namespace Diagnostics.Tracing.StackSources
                 writer.WriteStartElement("Frame");
                 writer.WriteAttributeString("ID", i.ToString());
                 var frameName = source.GetFrameName((StackSourceFrameIndex)i, true);
+
+                // Check for the optimization tier. The frame name would contain the optimization tier in the form:
+                //   Module![OptimizationTier]Symbol
+                // Extract the optimization tier into an attribute and convert the frame name to this form for storage:
+                //   Module!Symbol
+                if (frameName != null && frameName.Length >= 4)
+                {
+                    int openBracketIndex = frameName.IndexOf("![") + 1;
+                    if (openBracketIndex > 0)
+                    {
+                        int closeBracketIndex = frameName.IndexOf(']', openBracketIndex + 1);
+                        if (closeBracketIndex - openBracketIndex > 1)
+                        {
+                            var optimizationTierStr =
+                                frameName.Substring(openBracketIndex + 1, closeBracketIndex - openBracketIndex - 1);
+                            if (Enum.TryParse<OptimizationTier>(optimizationTierStr, out var optimizationTier))
+                            {
+                                if (optimizationTier != OptimizationTier.Unknown)
+                                {
+                                    writer.WriteAttributeString("OptimizationTier", optimizationTierStr);
+                                }
+                                frameName = frameName.Substring(0, openBracketIndex) + frameName.Substring(closeBracketIndex + 1);
+                            }
+                        }
+                    }
+                }
 
                 writer.WriteString(frameName);
                 writer.WriteEndElement();   // Frame
@@ -133,8 +161,10 @@ namespace Diagnostics.Tracing.StackSources
         /// see https://msdn.microsoft.com/en-us/library/bb412170.aspx?f=255&amp;MSPPError=-2147217396 for 
         /// more on this mapping.  
         /// </summary>
-        public XmlStackSource(string fileName, Action<XmlReader> readElement = null)
+        public XmlStackSource(string fileName, Action<XmlReader> readElement = null, bool showOptimizationTiers = false)
         {
+            m_showOptimizationTiers = showOptimizationTiers || PerfView.App.CommandLineArgs.ShowOptimizationTiers;
+
             using (Stream dataStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
             {
                 var xmlStream = dataStream;
@@ -380,6 +410,7 @@ namespace Diagnostics.Tracing.StackSources
                         else if (reader.Name == "Frame")
                         {
                             var frameID = -1;
+                            var optimizationTierStr = string.Empty;
                             if (reader.MoveToFirstAttribute())
                             {
                                 do
@@ -388,10 +419,35 @@ namespace Diagnostics.Tracing.StackSources
                                     {
                                         frameID = reader.ReadContentAsInt();
                                     }
+                                    else if (reader.Name == "OptimizationTier")
+                                    {
+                                        if (m_showOptimizationTiers)
+                                        {
+                                            var optimizationTierCandidateStr = reader.ReadContentAsString();
+                                            if (Enum.TryParse<OptimizationTier>(optimizationTierCandidateStr, out var optimizationTier) &&
+                                                optimizationTier != OptimizationTier.Unknown)
+                                            {
+                                                optimizationTierStr = optimizationTierCandidateStr;
+                                            }
+                                        }
+                                    }
                                 } while (reader.MoveToNextAttribute());
                             }
                             reader.Read();      // Move on to body of the element
                             var frameName = reader.ReadContentAsString();
+
+                            if (optimizationTierStr.Length > 0)
+                            {
+                                int exclamationIndex = frameName.IndexOf('!');
+                                if (exclamationIndex >= 0)
+                                {
+                                    frameName =
+                                        frameName.Substring(0, exclamationIndex + 1) +
+                                        $"[{optimizationTierStr}]" +
+                                        frameName.Substring(exclamationIndex + 1);
+                                }
+                            }
+
                             m_frames.Set(frameID, frameName);
                         }
                         else if (reader.Name == "Frames")
@@ -543,6 +599,7 @@ namespace Diagnostics.Tracing.StackSources
         private StackSourceInterner m_interner;     // If the XML has samples with explicit stacks, then this is non-null and used to intern them. 
         private int m_curSample;
         private double m_maxTime;
+        private bool m_showOptimizationTiers;
         #endregion
     }
 }
