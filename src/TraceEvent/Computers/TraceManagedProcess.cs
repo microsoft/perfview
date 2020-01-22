@@ -2245,6 +2245,25 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return objSizeAfter;
         }
         /// <summary>
+        /// Global condemned reasons by GC
+        /// </summary>
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
+        public GCCondemnedReasons GlobalCondemnedReasons
+        {
+            get
+            {
+                if ((GlobalHeapHistory != null) && (GlobalHeapHistory.HasCondemnReasons0) && (_GlobalCondemnedReasons == null))
+                {
+                    _GlobalCondemnedReasons = new GCCondemnedReasons();
+                    _GlobalCondemnedReasons.EncodedReasons.Reasons = GlobalHeapHistory.CondemnReasons0;
+                    _GlobalCondemnedReasons.EncodedReasons.ReasonsEx = GlobalHeapHistory.CondemnReasons1;
+                    _GlobalCondemnedReasons.CondemnedReasonGroups = new byte[(int)CondemnedReasonGroup.Max];
+                    _GlobalCondemnedReasons.Decode(/* Version = */ 3);
+                }
+                return _GlobalCondemnedReasons;
+            }
+        }
+        /// <summary>
         /// Heap condemned reasons by GC
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
@@ -3085,6 +3104,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // The dictionary of heap number and info on time it takes to mark various roots.
         private GCCondemnedReasons[] _PerHeapCondemnedReasons;
 
+        private GCCondemnedReasons _GlobalCondemnedReasons;
+
         private double _TotalGCTimeMSec = -1;
         // When we are using Server GC we store the CPU spent on each thread
         // so we can see if there's an imbalance. We concurrently don't do this
@@ -3124,8 +3145,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Too_Small_For_BGC = 12,
         Ephemeral_Before_BGC = 13,
         Internal_Tuning = 14,
-        Max = 15,
-        // TODO: Handle joined 
+        Almost_max_alloc = 15,
+        Avoid_unproductive = 16,
+        Pm_induced_fullgc_p = 17,
+        Pm_alloc_loh = 18,
+        Last_gen2_fragmented = 19,
+        Limit_before_oom = 20,
+        Limit_loh_frag = 21,
+        Limit_loh_reclaim = 22,
+        Servo_initial = 23,
+        Servo_ngc = 24,
+        Servo_bgc = 25,
+        Servo_postpone = 26,
+        Stress_mix = 27,
+        Stress = 28,
+        Max = 29
     }
 
     /// <summary>
@@ -3309,6 +3343,48 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         case Condemned_Reason_Condition.Before_bgc:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Ephemeral_Before_BGC] = 1;
                             break;
+                        case Condemned_Reason_Condition.Almost_max_alloc:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Almost_max_alloc] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Avoid_unproductive:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Avoid_unproductive] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Pm_induced_fullgc_p:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_induced_fullgc_p] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Pm_alloc_loh:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_alloc_loh] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Last_gen2_fragmented:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Last_gen2_fragmented] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Limit_before_oom:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_before_oom] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Limit_loh_frag:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_loh_frag] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Limit_loh_reclaim:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_loh_reclaim] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_initial:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_initial] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_ngc:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_ngc] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_bgc:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_bgc] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_postpone:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_postpone] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Stress_mix:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress_mix] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Stress:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress] = 1;
+                            break;
                         default:
                             Debug.Assert(false, "Unexpected reason");
                             break;
@@ -3346,7 +3422,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Gen2_too_small = 13,
             Induced_noforce_p = 14,
             Before_bgc = 15,
-            Max = 16,
+            Almost_max_alloc = 16,
+            Avoid_unproductive = 17,    /* This happens when the GC detects previous attempts to do a full compacting GC is not making progress and therefore reduce its generation */
+            Pm_induced_fullgc_p = 18,   /* This happens when a full gc is induced under provisional mode */
+            Pm_alloc_loh = 19,          /* This happens when a large object heap allocation is requested under provisional mode */
+            Last_gen2_fragmented = 20,  /* This happens when we had a high memory and high fragmentation detected after the last full blocking GC, indicating we have lot of pinned objects in gen 2, so reducing its generation */
+            Limit_before_oom = 21,      /* This happens when the last gc was oom */
+            Limit_loh_frag = 22,        /* This happens when we had a heap limit and the fragmentation is reaching 1/8 of it */
+            Limit_loh_reclaim = 23,     /* This happens when we had a heap limit and we could reclaim 1/8 of it */
+            Servo_initial = 24,         /* This happen when the servo tuning is trying to get some initial data */
+            Servo_ngc = 25,             /* This happen when the servo tuning decides a background gc is appropriate */
+            Servo_bgc = 26,             /* This happen when the servo tuning decides a background gc is appropriate */
+            Servo_postpone = 27,        /* This happen when the servo tuning decides a gen2 gc should be postponed */
+            Stress_mix = 28,            /* This happen in GCStress mix mode, every 10th GC is gen2  */
+            Stress = 29,                /* This happen in GCStress, every GC is gen2  */
+            Max = 30
         };
 
         private int GetReasonWithGenNumber(Condemned_Reason_Generation Reason_GenNumber)
