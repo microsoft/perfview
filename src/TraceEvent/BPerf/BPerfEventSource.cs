@@ -102,8 +102,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions options, byte[] workspace, byte[] uncompressedBuffer, byte[] compressedBuffer, bool skipReadingUnreachableEvents = false)
         {
-            var startTime = options.StartTime == default(DateTime) ? DateTime.MinValue : options.StartTime;
-            var endTime = options.EndTime == default(DateTime) ? DateTime.MaxValue : options.EndTime;
+            var startTime = DateTime.MinValue;
+            var endTime = DateTime.MaxValue;
+            if (options != null)
+            {
+                startTime = options.StartTime == default(DateTime) ? DateTime.MinValue : options.StartTime;
+                endTime = options.EndTime == default(DateTime) ? DateTime.MaxValue : options.EndTime;
+            }
             this.btlFilePath = btlFilePath;
             this.startFileOffset = 0;
             this.endQPCForManagedSymbolsInclusion = long.MaxValue;
