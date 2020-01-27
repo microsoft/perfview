@@ -830,9 +830,49 @@ namespace Stats
                 return;
             }
 
+            List<TraceGC> events = new List<TraceGC>();
+            List<byte[]> condemnedReasonRows = new List<byte[]>();
+            for (int i = start; i < runtime.GC.GCs.Count; i++)
+            {
+                var _event = runtime.GC.GCs[i];
+                if (filter == null || filter(_event))
+                {
+                    if (!_event.IsComplete)
+                    {
+                        continue;
+                    }
+                }
+                events.Add(_event);
+                condemnedReasonRows.Add(GetCondemnedReasonRow(_event));
+            }
+
+            bool hasAnyContent = false;
+            bool[] columnHasContent = new bool[CondemnedReasonsHtmlHeader.Length];
+            foreach (byte[] condemnedReasonRow in condemnedReasonRows)
+            {
+                for (int j = 0; j < CondemnedReasonsHtmlHeader.Length; j++)
+                {
+                    if (columnHasContent[j])
+                    {
+                        break;
+                    }
+                    if (condemnedReasonRow[j] != 0)
+                    {
+                        hasAnyContent = true;
+                        columnHasContent[j] = true;
+                    }
+                }
+            }
+
+            if (!hasAnyContent)
+            {
+                return;
+            }
+
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4>Condemned reasons for GCs</H4>");
-            writer.WriteLine("<P>This table gives a more detailed account of exactly why a GC decided to collect that generation.  </P>");
+            writer.WriteLine("<P>This table gives a more detailed account of exactly why a GC decided to collect that generation.  ");
+            writer.WriteLine("Hover over the column headings for more info.</P>");
             if (start != 0)
             {
                 writer.WriteLine("<TR><TD colspan=\"26\" Align=\"Center\"> {0} Beginning entries truncated</TD></TR>", start);
@@ -845,24 +885,26 @@ namespace Stats
             {
                 writer.WriteLine("<TH>Heap<BR/>Index</TH>");
             }
-            writer.WriteLine("<TH>Condemned<BR/>Reasons</TH>");
+
+            for (int i = 0; i < CondemnedReasonsHtmlHeader.Length; i++)
+            {
+                if (columnHasContent[i])
+                {
+                    writer.WriteLine("<TH Title=\"{0}\">{1}</TH>",
+                                     CondemnedReasonsHtmlHeader[i][1],
+                                     CondemnedReasonsHtmlHeader[i][0]);
+                }
+            }
             writer.WriteLine("</TR>");
 
-            for (int i = start; i < runtime.GC.GCs.Count; i++)
+            for (int i = 0; i < events.Count; i++)
             {
-                var _event = runtime.GC.GCs[i];
-                if (filter == null || filter(_event))
-                {
-                    if (!_event.IsComplete)
-                    {
-                        continue;
-                    }
-
-                    writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
-                                     "<TD Align=\"center\">{0}</TD>{1}",
-                                     _event.Number,
-                                     PrintCondemnedReasonsToHtml(_event));
-                }
+                TraceGC _event = events[i];
+                byte[] condemnedReasons = condemnedReasonRows[i];
+                writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
+                                 "<TD Align=\"center\">{0}</TD>{1}</TR>",
+                                 _event.Number,
+                                 PrintCondemnedReasonsToHtml(condemnedReasons, columnHasContent));
             }
 
             writer.WriteLine("</Table>");
@@ -952,113 +994,117 @@ namespace Stats
             writer.WriteLine("</Center>");
         }
 
-        private static string PrintCondemnedReasonsToHtml(TraceGC gc)
+        private static byte[] GetCondemnedReasonRow(TraceGC gc)
         {
             if (gc.PerHeapCondemnedReasons == null && gc.GlobalCondemnedReasons == null)
             {
                 return null;
             }
+            byte[] result = new byte[(int)CondemnedReasonGroup.Max];
 
-            StringBuilder sb = new StringBuilder(100);
-            int HeapIndexHighestGen = 0;
-
-            if (gc.PerHeapCondemnedReasons.Length != 1)
+            if (gc.PerHeapCondemnedReasons != null)
             {
-                // Only need to print out the heap index for server GC - when we are displaying this
-                // in the GCStats Html page we only display the first heap we find that caused us to
-                // collect the generation we collect.
-                HeapIndexHighestGen = gc.FindFirstHighestCondemnedHeap();
-
-                // We also need to consider the factors that cause blocking GCs.
-                if (((int)gc.Generation == 2) && (gc.Type != GCType.BackgroundGC))
+                int HeapIndexHighestGen = 0;
+                if (gc.PerHeapCondemnedReasons.Length != 1)
                 {
-                    int GenToCheckBlockingIndex = HeapIndexHighestGen;
-                    int BlockingFactorsHighest = 0;
+                    // Only need to print out the heap index for server GC - when we are displaying this
+                    // in the GCStats Html page we only display the first heap we find that caused us to
+                    // collect the generation we collect.
+                    HeapIndexHighestGen = gc.FindFirstHighestCondemnedHeap();
 
-                    for (int HeapIndex = GenToCheckBlockingIndex; HeapIndex < gc.PerHeapCondemnedReasons.Length; HeapIndex++)
+                    // We also need to consider the factors that cause blocking GCs.
+                    if (((int)gc.Generation == 2) && (gc.Type != GCType.BackgroundGC))
                     {
-                        byte[] ReasonGroups = gc.PerHeapCondemnedReasons[HeapIndex].CondemnedReasonGroups;
-                        int BlockingFactors = ReasonGroups[(int)CondemnedReasonGroup.Expand_Heap] +
-                                              ReasonGroups[(int)CondemnedReasonGroup.GC_Before_OOM] +
-                                              ReasonGroups[(int)CondemnedReasonGroup.Fragmented_Gen2] +
-                                              ReasonGroups[(int)CondemnedReasonGroup.Fragmented_Gen2_High_Mem];
+                        int GenToCheckBlockingIndex = HeapIndexHighestGen;
+                        int BlockingFactorsHighest = 0;
 
-                        if (BlockingFactors > BlockingFactorsHighest)
+                        for (int HeapIndex = GenToCheckBlockingIndex; HeapIndex < gc.PerHeapCondemnedReasons.Length; HeapIndex++)
                         {
-                            HeapIndexHighestGen = HeapIndex;
+                            byte[] ReasonGroups = gc.PerHeapCondemnedReasons[HeapIndex].CondemnedReasonGroups;
+                            int BlockingFactors = ReasonGroups[(int)CondemnedReasonGroup.Expand_Heap] +
+                                                  ReasonGroups[(int)CondemnedReasonGroup.GC_Before_OOM] +
+                                                  ReasonGroups[(int)CondemnedReasonGroup.Fragmented_Gen2] +
+                                                  ReasonGroups[(int)CondemnedReasonGroup.Fragmented_Gen2_High_Mem];
+
+                            if (BlockingFactors > BlockingFactorsHighest)
+                            {
+                                HeapIndexHighestGen = HeapIndex;
+                            }
                         }
                     }
                 }
-
-                sb.Append("<TD Align=\"center\">");
-                sb.Append(HeapIndexHighestGen);
-                sb.Append("</TD>");
+                if (HeapIndexHighestGen < gc.PerHeapCondemnedReasons.Length)
+                {
+                    FillCondemnedReason(result, gc.PerHeapCondemnedReasons[HeapIndexHighestGen]);
+                }
             }
 
-            sb.Append("<TD Align=\"center\">");
-            var perHeapCondemnedReasons = gc.PerHeapCondemnedReasons;
-            if (HeapIndexHighestGen < perHeapCondemnedReasons.Length)
+            if (gc.GlobalCondemnedReasons != null)
             {
-                var perHeapCondemnedReason = perHeapCondemnedReasons[HeapIndexHighestGen];
-                if (perHeapCondemnedReason != null)
-                    PrintCondemnedReasonsCellContent(sb, perHeapCondemnedReason);
-                if (gc.GlobalCondemnedReasons != null)
-                    PrintCondemnedReasonsCellContent(sb, gc.GlobalCondemnedReasons);
+                FillCondemnedReason(result, gc.GlobalCondemnedReasons);
             }
-            sb.Append("</TD>");
 
-            sb.Append(Environment.NewLine);
-
-            return sb.ToString();
+            return result;
         }
 
-        private static void PrintCondemnedReasonsCellContent(StringBuilder sb, GCCondemnedReasons perHeapCondemnedReason)
+        private static void FillCondemnedReason(byte[] result, GCCondemnedReasons reasons)
         {
             for (CondemnedReasonGroup i = 0; i < CondemnedReasonGroup.Max; i++)
             {
-                if (i == CondemnedReasonGroup.Induced)
-                {
-                    var val = (InducedType)perHeapCondemnedReason.CondemnedReasonGroups[(int)i];
-                    if (val != 0)
-                    {
-                        sb.Append(CondemnedReasonsHtmlHeader[(int)i][0]);
-                        sb.Append(" = ");
-                        sb.Append(val);
-                        sb.Append("<BR/>");
-                    }
-                }
-                else
-                {
-                    var val = perHeapCondemnedReason.CondemnedReasonGroups[(int)i];
-                    if (val != 0)
-                    {
-                        sb.Append(CondemnedReasonsHtmlHeader[(int)i][0]);
-                        sb.Append(" = ");
-                        sb.Append(val);
-                        sb.Append("<BR/>");
-                    }
-                }
+                result[(int)i] = reasons.CondemnedReasonGroups[(int)i];
             }
+        }
+
+        private static string PrintCondemnedReasonsToHtml(byte[] condemnedReasons, bool[] hasContent)
+        {
+            StringBuilder sb = new StringBuilder(100);
+            for (CondemnedReasonGroup i = 0; i < CondemnedReasonGroup.Max; i++)
+            {
+                int j = (int)i;
+                if (hasContent[j])
+                {
+                    sb.Append("<TD Align=\"center\">");
+                    if (i == CondemnedReasonGroup.Induced)
+                    {
+                        var val = (InducedType)condemnedReasons[j];
+                        if (val != 0)
+                        {
+                            sb.Append(val);
+                        }
+                    }
+                    else
+                    {
+                        var val = condemnedReasons[j];
+                        if (val != 0)
+                        {
+                            sb.Append(val);
+                        }
+                    }
+                    sb.Append("</TD>");
+                }
+                sb.Append(Environment.NewLine);
+            }
+            return sb.ToString();
         }
 
         // This is what we use for the html header and the help text.
         private static string[][] CondemnedReasonsHtmlHeader = new string[(int)CondemnedReasonGroup.Max][]
         {
-            new string[] {"Initial Requested Generation", "This is the generation when this GC was triggered"},
-            new string[] {"Final Generation", "The final generation to be collected"},
-            new string[] {"Generation Budget Exceeded", "This is the highest generation whose budget is exceeded"},
-            new string[] {"Time Tuning", "Time exceeded between GCs so we need to collect this generation"},
+            new string[] {"Initial<BR/>Requested<BR/>Generation", "This is the generation when this GC was triggered"},
+            new string[] {"Final<BR/>Generation", "The final generation to be collected"},
+            new string[] {"Generation<BR/>Budget<BR/>Exceeded", "This is the highest generation whose budget is exceeded"},
+            new string[] {"Time<BR/>Tuning", "Time exceeded between GCs so we need to collect this generation"},
             new string[] {"Induced", "Blocking means this was induced as a blocking GC; NotForced means it's up to GC to decide whether it should be a blocking GC or a background GC"},
-            new string[] {"Ephemeral Low", "We are running low on the ephemeral segment, GC needs to do at least a gen1 GC"},
-            new string[] {"Expand Heap", "We are running low in an ephemeral GC, GC needs to do a full GC"},
-            new string[] {"Fragmented Ephemeral", "Ephemeral generations are fragmented"},
-            new string[] {"Low Ephemeral Fragmented Gen2", "We are running low on the ephemeral segment but gen2 is fragmented enough so a full GC would avoid expanding the heap"},
-            new string[] {"Fragmented Gen2", "Gen2 is too fragmented, doing a full blocking GC"},
-            new string[] {"High Memory", "We are in high memory load situation and doing a full blocking GC"},
-            new string[] {"Compacting Full GC", "Last GC we trigger before we throw OOM"},
-            new string[] {"Small Heap", "Heap is too small for doing a background GC and we do a blocking one instead"},
-            new string[] {"Ephemeral Before BGC", "Ephemeral GC before a background GC starts"},
-            new string[] {"Internal Tuning", "Internal tuning"},
+            new string[] {"Ephemeral<BR/>Low", "We are running low on the ephemeral segment, GC needs to do at least a gen1 GC"},
+            new string[] {"Expand<BR/>Heap", "We are running low in an ephemeral GC, GC needs to do a full GC"},
+            new string[] {"Fragmented<BR/>Ephemeral", "Ephemeral generations are fragmented"},
+            new string[] {"Low Ephemeral<BR/>Fragmented Gen2", "We are running low on the ephemeral segment but gen2 is fragmented enough so a full GC would avoid expanding the heap"},
+            new string[] {"Fragmented<BR/>Gen2", "Gen2 is too fragmented, doing a full blocking GC"},
+            new string[] {"High<BR/>Memory", "We are in high memory load situation and doing a full blocking GC"},
+            new string[] {"Compacting<BR/>Full<BR/>GC", "Last GC we trigger before we throw OOM"},
+            new string[] {"Small<BR/>Heap", "Heap is too small for doing a background GC and we do a blocking one instead"},
+            new string[] {"Ephemeral<BR/>Before<BR/>BGC", "Ephemeral GC before a background GC starts"},
+            new string[] {"Internal<BR/>Tuning", "Internal tuning"},
             new string[] { "Almost_max_alloc", "Almost_max_alloc"},
             new string[] {"Avoid_unproductive", "Avoid_unproductive"},
             new string[] {"Pm_induced_fullgc_p", "Pm_induced_fullgc_p"},
