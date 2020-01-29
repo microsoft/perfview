@@ -864,11 +864,6 @@ namespace Stats
                 }
             }
 
-            if (!hasAnyContent)
-            {
-                return;
-            }
-
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4>Condemned reasons for GCs</H4>");
             writer.WriteLine("<P>This table gives a more detailed account of exactly why a GC decided to collect that generation.  ");
@@ -876,6 +871,11 @@ namespace Stats
             if (start != 0)
             {
                 writer.WriteLine("<TR><TD colspan=\"26\" Align=\"Center\"> {0} Beginning entries truncated</TD></TR>", start);
+            }
+
+            if (!hasAnyContent)
+            {
+                return;
             }
 
             writer.WriteLine("<Center>");
