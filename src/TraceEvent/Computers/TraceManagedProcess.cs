@@ -3146,18 +3146,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Ephemeral_Before_BGC = 13,
         Internal_Tuning = 14,
         Almost_max_alloc = 15,
-        Avoid_unproductive = 16,
-        Pm_induced_fullgc_p = 17,
-        Pm_alloc_loh = 18,
-        Last_gen2_fragmented = 19,
-        Limit_before_oom = 20,
-        Limit_loh_frag = 21,
-        Limit_loh_reclaim = 22,
-        Servo_initial = 23,
-        Servo_ngc = 24,
-        Servo_bgc = 25,
-        Servo_postpone = 26,
-        Stress_mix = 27,
+        Avoid_Unproductive = 16,
+        Pm_Induced_Fullgc_p = 17,
+        Pm_Alloc_LOH = 18,
+        Last_Gen2_Fragmented = 19,
+        Limit_Before_OOM = 20,
+        Limit_LOH_Frag = 21,
+        Limit_LOH_Reclaim = 22,
+        Servo_Initial = 23,
+        Servo_NGC = 24,
+        Servo_BGC = 25,
+        Servo_Postpone = 26,
+        Stress_Mix = 27,
         Stress = 28,
         Max = 29
     }
@@ -3347,40 +3347,40 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Almost_max_alloc] = 1;
                             break;
                         case Condemned_Reason_Condition.Avoid_unproductive:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Avoid_unproductive] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Avoid_Unproductive] = 1;
                             break;
                         case Condemned_Reason_Condition.Pm_induced_fullgc_p:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_induced_fullgc_p] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_Induced_Fullgc_p] = 1;
                             break;
                         case Condemned_Reason_Condition.Pm_alloc_loh:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_alloc_loh] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_Alloc_LOH] = 1;
                             break;
                         case Condemned_Reason_Condition.Last_gen2_fragmented:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Last_gen2_fragmented] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Last_Gen2_Fragmented] = 1;
                             break;
                         case Condemned_Reason_Condition.Limit_before_oom:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_before_oom] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_Before_OOM] = 1;
                             break;
                         case Condemned_Reason_Condition.Limit_loh_frag:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_loh_frag] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_LOH_Frag] = 1;
                             break;
                         case Condemned_Reason_Condition.Limit_loh_reclaim:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_loh_reclaim] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_LOH_Reclaim] = 1;
                             break;
                         case Condemned_Reason_Condition.Servo_initial:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_initial] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_Initial] = 1;
                             break;
                         case Condemned_Reason_Condition.Servo_ngc:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_ngc] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_NGC] = 1;
                             break;
                         case Condemned_Reason_Condition.Servo_bgc:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_bgc] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_BGC] = 1;
                             break;
                         case Condemned_Reason_Condition.Servo_postpone:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_postpone] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_Postpone] = 1;
                             break;
                         case Condemned_Reason_Condition.Stress_mix:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress_mix] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress_Mix] = 1;
                             break;
                         case Condemned_Reason_Condition.Stress:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress] = 1;
@@ -3430,12 +3430,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Limit_before_oom = 21,      /* This happens when the last gc was oom */
             Limit_loh_frag = 22,        /* This happens when we had a heap limit and the fragmentation is reaching 1/8 of it */
             Limit_loh_reclaim = 23,     /* This happens when we had a heap limit and we could reclaim 1/8 of it */
-            Servo_initial = 24,         /* This happen when the servo tuning is trying to get some initial data */
-            Servo_ngc = 25,             /* This happen when the servo tuning decides a background gc is appropriate */
-            Servo_bgc = 26,             /* This happen when the servo tuning decides a background gc is appropriate */
-            Servo_postpone = 27,        /* This happen when the servo tuning decides a gen2 gc should be postponed */
-            Stress_mix = 28,            /* This happen in GCStress mix mode, every 10th GC is gen2  */
-            Stress = 29,                /* This happen in GCStress, every GC is gen2  */
+            Servo_initial = 24,         /* This happens when the servo tuning is trying to get some initial data */
+            Servo_ngc = 25,             /* This happens when the servo tuning decides a background gc is appropriate */
+            Servo_bgc = 26,             /* This happens when the servo tuning decides a background gc is appropriate */
+            Servo_postpone = 27,        /* This happens when the servo tuning decides a gen2 gc should be postponed */
+            Stress_mix = 28,            /* This happens in GCStress mix mode, every 10th GC is gen2  */
+            Stress = 29,                /* This happens in GCStress, every GC is gen2  */
             Max = 30
         };
 
