@@ -3145,11 +3145,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Too_Small_For_BGC = 12,
         Ephemeral_Before_BGC = 13,
         Internal_Tuning = 14,
-        Almost_max_alloc = 15,
+        Almost_Max_Alloc = 15,
         Avoid_Unproductive = 16,
         Pm_Induced_Fullgc_p = 17,
         Pm_Alloc_LOH = 18,
-        Last_Gen2_Fragmented = 19,
+        Gen1_In_Pm = 19,
         Limit_Before_OOM = 20,
         Limit_LOH_Frag = 21,
         Limit_LOH_Reclaim = 22,
@@ -3344,7 +3344,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Ephemeral_Before_BGC] = 1;
                             break;
                         case Condemned_Reason_Condition.Almost_max_alloc:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Almost_max_alloc] = 1;
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Almost_Max_Alloc] = 1;
                             break;
                         case Condemned_Reason_Condition.Avoid_unproductive:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Avoid_Unproductive] = 1;
@@ -3355,8 +3355,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         case Condemned_Reason_Condition.Pm_alloc_loh:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_Alloc_LOH] = 1;
                             break;
-                        case Condemned_Reason_Condition.Last_gen2_fragmented:
-                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Last_Gen2_Fragmented] = 1;
+                        case Condemned_Reason_Condition.Gen1_in_pm:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Gen1_In_Pm] = 1;
                             break;
                         case Condemned_Reason_Condition.Limit_before_oom:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_Before_OOM] = 1;
@@ -3423,19 +3423,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Induced_noforce_p = 14,
             Before_bgc = 15,
             Almost_max_alloc = 16,
-            Avoid_unproductive = 17,    /* This happens when the GC detects previous attempts to do a full compacting GC is not making progress and therefore reduce its generation */
-            Pm_induced_fullgc_p = 18,   /* This happens when a full gc is induced under provisional mode */
-            Pm_alloc_loh = 19,          /* This happens when a large object heap allocation is requested under provisional mode */
-            Last_gen2_fragmented = 20,  /* This happens when we had a high memory and high fragmentation detected after the last full blocking GC, indicating we have lot of pinned objects in gen 2, so reducing its generation */
-            Limit_before_oom = 21,      /* This happens when the last gc was oom */
-            Limit_loh_frag = 22,        /* This happens when we had a heap limit and the fragmentation is reaching 1/8 of it */
-            Limit_loh_reclaim = 23,     /* This happens when we had a heap limit and we could reclaim 1/8 of it */
-            Servo_initial = 24,         /* This happens when the servo tuning is trying to get some initial data */
-            Servo_ngc = 25,             /* This happens when the servo tuning decides a background gc is appropriate */
-            Servo_bgc = 26,             /* This happens when the servo tuning decides a background gc is appropriate */
-            Servo_postpone = 27,        /* This happens when the servo tuning decides a gen2 gc should be postponed */
-            Stress_mix = 28,            /* This happens in GCStress mix mode, every 10th GC is gen2  */
-            Stress = 29,                /* This happens in GCStress, every GC is gen2  */
+            Avoid_unproductive = 17,
+            Pm_induced_fullgc_p = 18,
+            Pm_alloc_loh = 19,
+            Gen1_in_pm = 20,
+            Limit_before_oom = 21,
+            Limit_loh_frag = 22,
+            Limit_loh_reclaim = 23,
+            Servo_initial = 24,
+            Servo_ngc = 25,
+            Servo_bgc = 26,
+            Servo_postpone = 27,
+            Stress_mix = 28,
+            Stress = 29,
             Max = 30
         };
 
