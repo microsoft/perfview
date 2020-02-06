@@ -4368,19 +4368,21 @@ namespace Microsoft.Diagnostics.Tracing
         }
         internal static unsafe double ReadDouble(IntPtr pointer, int offset)
         {
-            return *((double*)((byte*)pointer.ToPointer() + offset));
+            var val = Marshal.ReadInt64(pointer, offset);
+            return *(double*)&val;
         }
         internal static unsafe float ReadSingle(IntPtr pointer, int offset)
         {
-            return *((float*)((byte*)pointer.ToPointer() + offset));
+            var val = Marshal.ReadInt32(pointer, offset);
+            return *(float*)&val;
         }
-        internal static unsafe long ReadInt64(IntPtr pointer, int offset)
+        internal static long ReadInt64(IntPtr pointer, int offset)
         {
-            return *((long*)((byte*)pointer.ToPointer() + offset));
+            return Marshal.ReadInt64(pointer, offset);
         }
-        internal static unsafe int ReadInt32(IntPtr pointer, int offset)
+        internal static int ReadInt32(IntPtr pointer, int offset)
         {
-            return *((int*)((byte*)pointer.ToPointer() + offset));
+            return Marshal.ReadInt32(pointer, offset);
         }
         internal static unsafe short ReadInt16(IntPtr pointer, int offset)
         {
