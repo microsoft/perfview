@@ -15,6 +15,7 @@ using System.Dynamic;
 #endif
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
@@ -4368,21 +4369,19 @@ namespace Microsoft.Diagnostics.Tracing
         }
         internal static unsafe double ReadDouble(IntPtr pointer, int offset)
         {
-            var val = Marshal.ReadInt64(pointer, offset);
-            return *(double*)&val;
+            return Unsafe.ReadUnaligned<double>((byte*)pointer.ToPointer() + offset);
         }
         internal static unsafe float ReadSingle(IntPtr pointer, int offset)
         {
-            var val = Marshal.ReadInt32(pointer, offset);
-            return *(float*)&val;
+            return Unsafe.ReadUnaligned<float>((byte*)pointer.ToPointer() + offset);
         }
-        internal static long ReadInt64(IntPtr pointer, int offset)
+        internal static unsafe long ReadInt64(IntPtr pointer, int offset)
         {
-            return Marshal.ReadInt64(pointer, offset);
+            return Unsafe.ReadUnaligned<long>((byte*)pointer.ToPointer() + offset);
         }
-        internal static int ReadInt32(IntPtr pointer, int offset)
+        internal static unsafe int ReadInt32(IntPtr pointer, int offset)
         {
-            return Marshal.ReadInt32(pointer, offset);
+            return Unsafe.ReadUnaligned<int>((byte*)pointer.ToPointer() + offset);
         }
         internal static unsafe short ReadInt16(IntPtr pointer, int offset)
         {
