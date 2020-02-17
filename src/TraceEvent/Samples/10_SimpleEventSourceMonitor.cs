@@ -99,12 +99,12 @@ namespace TraceEventSamples
                 var firstEventTimeMSec = new Dictionary<int, double>();
 
                 /*****************************************************************************************************/
-                // Hook up events.   To so this first we need a 'Parser. which knows how to part the events of a particular Event Provider.
+                // Hook up events.   To do this we first  need a 'Parser. which knows how to part the events of a particular Event Provider.
                 // In this case we get a DynamicTraceEventSource, which knows how to parse any EventSource provider.    This parser
-                // is so common, that TraceEventSource as a shortcut property called 'Dynamic' that fetches this parsers.  
+                // is so common, that TraceEventSource has a shortcut property called 'Dynamic' that fetches this parser.  
 
                 // For debugging, and demo purposes, hook up a callback for every event that 'Dynamic' knows about (this is not EVERY
-                // event only those know about by DynamiceTraceEventParser).   However the 'UnhandledEvents' handler below will catch
+                // event only those known about by DynamiceTraceEventParser).   However the 'UnhandledEvents' handler below will catch
                 // the other ones.
                 session.Source.Dynamic.All += delegate (TraceEvent data)
                 {
