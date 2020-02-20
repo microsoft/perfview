@@ -431,64 +431,61 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     RecentCpuSamples.Add(new ThreadWorkSpan(data));
                     bool hadHeap = false;
-                    //TODO: This was preventing us from getting stolen times from CPU samples. We don't need stacks for that.
-                    //if (source.HasMutableTraceEventStackSource())
+
+                    TraceLoadedDotNetRuntime loadedRuntime = null;
+                    TraceProcess gcProcess = null;
+                    // Loop over all runtimes. If there's a GC going on, this may be stolen time from that GC.
+                    foreach (var pair in processRuntimes)
                     {
-                        TraceLoadedDotNetRuntime loadedRuntime = null;
-                        TraceProcess gcProcess = null;
-                        // Loop over all runtimes. If there's a GC going on, this may be stolen time from that GC.
-                        foreach (var pair in processRuntimes)
+                        var proc = pair.Key;
+                        var tmpMang = pair.Value;
+
+                        TraceGC e = TraceGarbageCollector.GetCurrentGC(tmpMang, data.TimeStampRelativeMSec);
+                        // If we are in the middle of a GC.
+                        if (e != null && GCShouldHaveServerGCHeapHistories(tmpMang, e))
                         {
-                            var proc = pair.Key;
-                            var tmpMang = pair.Value;
+                            GCStats stats = tmpMang.GC.m_stats;
 
-                            TraceGC e = TraceGarbageCollector.GetCurrentGC(tmpMang, data.TimeStampRelativeMSec);
-                            // If we are in the middle of a GC.
-                            if (e != null && GCShouldHaveServerGCHeapHistories(tmpMang, e))
+                            if (stats.TryGetHeapAndThreadKind(data.ThreadID, out GCHeapAndThreadKind htk))
                             {
-                                GCStats stats = tmpMang.GC.m_stats;
+                                hadHeap = true;
+                                e.AddServerGcSample(new ThreadWorkSpan(data), new GCHeapAndThreadKindAndIsNewThread(htk, newThreadIsGC: true));
+                            }
 
-                                foreach (GCHeapAndThreadKind htk in stats.GetHeapAndThreadKinds(data.ThreadID))
+                            loadedRuntime = tmpMang;
+                            gcProcess = proc;
+
+                            if (!hadHeap)
+                            {
+                                // This is from a different process. So consider it stolen time from this process.
+                                HeapID? heapID = stats.GetHeapIDFromProcessorNumber(data.ProcessorNumber);
+
+                                if (heapID != null)
                                 {
-                                    hadHeap = true;
-                                    e.AddServerGcSample(new ThreadWorkSpan(data), new GCHeapAndThreadKindAndIsNewThread(htk, newThreadIsGC: true));
-                                }
-
-                                loadedRuntime = tmpMang;
-                                gcProcess = proc;
-
-                                if (!hadHeap)
-                                {
-                                    // This is from a different process. So consider it stolen time from this process.
-                                    HeapID? heapID = stats.GetHeapIDFromProcessorNumber(data.ProcessorNumber);
-
-                                    if (heapID != null)
-                                    {
-                                        // TODO: From just the processor number, we can't know what the threadkind should be ... so guessing foreground
-                                        e.AddServerGcSample(
-                                            new ThreadWorkSpan(data),
-                                            new GCHeapAndThreadKindAndIsNewThread(
-                                                new GCHeapAndThreadKind(heapID: heapID.Value, threadKind: GCThreadKind.Foreground),
-                                                newThreadIsGC: false));
-                                    }
+                                    // TODO: From just the processor number, we can't know what the threadkind should be ... so guessing foreground
+                                    e.AddServerGcSample(
+                                        new ThreadWorkSpan(data),
+                                        new GCHeapAndThreadKindAndIsNewThread(
+                                            new GCHeapAndThreadKind(heapID: heapID.Value, threadKind: GCThreadKind.Foreground),
+                                            newThreadIsGC: false));
                                 }
                             }
                         }
+                    }
 
-                        if (loadedRuntime != null && gcProcess != null)
+                    if (loadedRuntime != null && gcProcess != null)
+                    {
+                        var stackSource = gcProcess.MutableTraceEventStackSource();
+                        if (stackSource != null)
                         {
-                            var stackSource = gcProcess.MutableTraceEventStackSource();
-                            if (stackSource != null)
-                            {
-                                TraceGC e = TraceGarbageCollector.GetCurrentGC(loadedRuntime, data.TimeStampRelativeMSec);
-                                StackSourceSample sample = new StackSourceSample(stackSource);
-                                sample.Metric = 1;
-                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                var nodeName = string.Format("Server GCs #{0} in {1} (PID:{2})", e.Number, gcProcess.Name, gcProcess.ProcessID);
-                                var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
-                                sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
-                                stackSource.AddSample(sample);
-                            }
+                            TraceGC e = TraceGarbageCollector.GetCurrentGC(loadedRuntime, data.TimeStampRelativeMSec);
+                            StackSourceSample sample = new StackSourceSample(stackSource);
+                            sample.Metric = 1;
+                            sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                            var nodeName = string.Format("Server GCs #{0} in {1} (PID:{2})", e.Number, gcProcess.Name, gcProcess.ProcessID);
+                            var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                            sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
+                            stackSource.AddSample(sample);
                         }
                     }
 
@@ -496,17 +493,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceLoadedDotNetRuntime mang;
                     if (processRuntimes.TryGetValue(tmpProc, out mang))
                     {
-                        HeapID? heapIndex = mang.GC.m_stats.GetServerGCHeapFromThread(data.ThreadID);
-
-                        var cpuIncrement = tmpProc.SampleIntervalMSec();
-
                         TraceGC _gc = TraceGarbageCollector.GetCurrentGC(mang, data.TimeStampRelativeMSec);
                         // If we are in the middle of a GC.
                         if (_gc != null)
                         {
+                            var cpuIncrement = tmpProc.SampleIntervalMSec();
+
                             bool isThreadDoingGC = false;
                             if ((_gc.Type != GCType.BackgroundGC) && (mang.GC.m_stats.IsServerGCUsed == 1))
                             {
+                                HeapID? heapIndex = mang.GC.m_stats.GetServerGCHeapFromThread(data.ThreadID);
                                 if (heapIndex != null)
                                 {
                                     _gc.AddServerGCThreadTime(heapIndex.Value, cpuIncrement);
@@ -609,8 +605,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                 bool GCMayNeedServerGCHeapHistories(TraceLoadedDotNetRuntime mang, bool isKnownToBeBackground)
                 {
-                    //TODO: don't know why background gcs were excluded from this...
-                    return /*!isKnownToBeBackground &&*/ mang.GC.m_stats.IsServerGCUsed != 0;
+                    // background GCs are not interesting to the stolen time analysis
+                    // they cannot be starved due to affinitization
+                    return !isKnownToBeBackground && mang.GC.m_stats.IsServerGCUsed != 0;
                 }
 
                 bool GCShouldHaveServerGCHeapHistories(TraceLoadedDotNetRuntime mang, TraceGC gc)
@@ -631,20 +628,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         mang.GC.m_stats.SetUpServerGcHistory(process.ProcessID, gc);
 
-                        IEnumerable<GCHeapAndThreadKindAndIsNewThread> threadKinds(ThreadWorkSpan s) =>
-                            mang.GC.m_stats.GetHeapAndThreadKinds(s.OldThreadId, s.ThreadId);
-
                         foreach (var s in RecentCpuSamples)
                         {
-                            foreach (GCHeapAndThreadKindAndIsNewThread htk in threadKinds(s))
+                            Debug.Assert(s.OldThreadId == null);
+
+                            if (mang.GC.m_stats.TryGetHeapAndThreadKind(s.ThreadId, out GCHeapAndThreadKind htk))
                             {
-                                gc.AddServerGcSample(s, heapAndThreadKind: htk);
+                                gc.AddServerGcSample(s, new GCHeapAndThreadKindAndIsNewThread(htk, newThreadIsGC: true));
                             }
                         }
 
                         foreach (var s in RecentThreadSwitches)
                         {
-                            foreach (GCHeapAndThreadKindAndIsNewThread htk in threadKinds(s))
+                            foreach (GCHeapAndThreadKindAndIsNewThread htk in mang.GC.m_stats.GetHeapAndThreadKinds(s.OldThreadId, s.ThreadId))
                             {
                                 gc.AddServerGcThreadSwitch(s, heapAndThreadKindAndIsNewThread: htk);
                             }
@@ -1922,7 +1918,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             Bg.Add(threadID);
                             if (HeapCount != null && Bg.Count > HeapCount)
                             {
-                                throw new Exception($"Seen {Bg.Count} foreground threads but should be only {HeapCount} heaps");
+                                throw new Exception($"Seen {Bg.Count} background threads but should be only {HeapCount} heaps");
                             }
                             return GCThreadKind.Background;
 
@@ -2342,20 +2338,41 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 }
                 else
                 {
-                    return WithModifyJoin(stage, j => j.WithJoinStart());
+                    return WithJoinStart(stage);
                 }
             }
 
-            public GCJoinStateFgOrBg WithJoinEnd(GCJoinStage stage) =>
-                WithModifyJoin(stage, j => j.WithJoinEnd());
-
-            private GCJoinStateFgOrBg WithModifyJoin(GCJoinStage stage, Func<SingleJoinState, SingleJoinState> modify) =>
+            public GCJoinStateFgOrBg WithJoinEnd(GCJoinStage stage)
+            {
                 // Note: order we check these matters since both Prev2Join and CurJoin may be scan_dependent_handles (PrevJoin would be rescan_dependent_handles).
                 // In that case we go with CurJoin.
-                stage == CurJoin.Stage ? WithCurJoin(modify(CurJoin))
-                : stage == PrevJoin?.Stage ? WithPrevJoin(modify(PrevJoin.Value))
-                : stage == Prev2Join?.Stage ? WithPrev2Join(modify(Prev2Join.Value))
-                : throw new Exception($"No join matches stage {stage}");
+                if (stage == CurJoin.Stage)
+                    return WithCurJoin(CurJoin.WithJoinEnd());
+
+                if (stage == PrevJoin?.Stage)
+                    return WithPrevJoin(PrevJoin.Value.WithJoinEnd());
+
+                if (stage == Prev2Join?.Stage)
+                    return WithPrev2Join(Prev2Join.Value.WithJoinEnd());
+
+                throw new Exception($"No join matches stage {stage}");
+            }
+
+            public GCJoinStateFgOrBg WithJoinStart(GCJoinStage stage)
+            {
+                // Note: order we check these matters since both Prev2Join and CurJoin may be scan_dependent_handles (PrevJoin would be rescan_dependent_handles).
+                // In that case we go with CurJoin.
+                if (stage == CurJoin.Stage)
+                    return WithCurJoin(CurJoin.WithJoinStart());
+
+                if (stage == PrevJoin?.Stage)
+                    return WithPrevJoin(PrevJoin.Value.WithJoinStart());
+
+                if (stage == Prev2Join?.Stage)
+                    return WithPrev2Join(Prev2Join.Value.WithJoinStart());
+
+                throw new Exception($"No join matches stage {stage}");
+            }
 
             public override string ToString() =>
                 $"{nameof(GCJoinStateFgOrBg)}(prev2: {NullableToString(Prev2Join)}, prev: {NullableToString(PrevJoin)}, cur: {CurJoin})";
@@ -2659,12 +2676,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 throw new Exception("BGC not a bgc?");
             }
 
-            TraceGC/*?*/ gc = ChooseGcForJoinStart(oldLastState, oldBgcState, last, bgc, joinStage, threadKind, heapCount);
-            if (gc == null)
-            {
-                return gc;
-            }
-            Debug.Assert(gc != null, "Chose a null GC?");
+            TraceGC gc = ChooseGcForJoinStart(oldLastState, oldBgcState, last, bgc, joinStage, threadKind, heapCount);
 
             Debug.Assert(gc == last || gc == bgc);
             Debug.Assert((gc?.Type == GCType.BackgroundGC) == (gc == bgc));
@@ -2834,18 +2846,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             return retLast();
                         }
                     }
-                    else if (lastHasCurrent)
-                    {
-                        return retLast();
-                    }
-                    else if (bgcHasCurrent)
-                    {
-                        return retBgc();
-                    }
-                    else
-                    {
-                        throw new Exception(); // we handled all cases
-                    }
+
+                    return lastHasCurrent ? retLast() : retBgc();
                 }
             }
             else if (lastHas)
@@ -4679,7 +4681,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             ProcessorNumber = sample.ProcessorNumber;
             AbsoluteTimestampMsc = sample.TimeStampRelativeMSec;
             DurationMsc = 1;
-            Priority = 0;
+            Priority = sample.Priority;
             OldThreadId = null;
         }
     }
@@ -5020,14 +5022,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class ServerGcHistory
     {
-        public HeapID HeapId;
-        public int ProcessId;
-        public ThreadID? GcWorkingThreadId;
-        public ThreadID? GcBackgroundThreadId;
+        public readonly HeapID HeapId;
+        public readonly int ProcessId;
+        public readonly List<GcWorkSpan> SwitchSpans = new List<GcWorkSpan>();
+        public readonly List<GcWorkSpan> SampleSpans = new List<GcWorkSpan>();
+        public readonly List<GcJoin> GcJoins = new List<GcJoin>();
+
+        // not always known at construction of the history
         public int? GcWorkingThreadPriority;
-        public List<GcWorkSpan> SwitchSpans = new List<GcWorkSpan>();
-        public List<GcWorkSpan> SampleSpans = new List<GcWorkSpan>();
-        public List<GcJoin> GcJoins = new List<GcJoin>();
+        public ThreadID? GcWorkingThreadId;
+
+        public ServerGcHistory(int processID, HeapID heapId)
+        {
+            ProcessId = processID;
+            HeapId = heapId;
+        }
 
         #region private 
         //list of times in msc starting from GC start when GCJoin events were fired for this heap
@@ -5038,7 +5047,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             if (lastSpan != null && lastSpan.ThreadId == sample.ThreadId && lastSpan.ProcessId == sample.ProcessId &&
                 ((ulong)sample.AbsoluteTimestampMsc == (ulong)(lastSpan.AbsoluteTimestampMsc + lastSpan.DurationMsc)))
             {
-                lastSpan.DurationMsc++;
+                lastSpan.DurationMsc += sample.DurationMsc;
             }
             else
             {
@@ -5046,7 +5055,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     Type = GetSpanType(sample, newThreadIsGC),
                     RelativeTimestampMsc = sample.AbsoluteTimestampMsc - pauseStartRelativeMSec,
-                    DurationMsc = 1
+                    DurationMsc = sample.DurationMsc
                 });
             }
         }
@@ -5959,31 +5968,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        private GCHeapAndThreadKind? TryGetHeapAndThreadKind(ThreadID threadID)
+        internal bool TryGetHeapAndThreadKind(ThreadID threadID, out GCHeapAndThreadKind htk)
         {
             HeapID? heapIDFG = serverGCThreadToHeap.BFromA(threadID);
             if (heapIDFG != null)
             {
-                return new GCHeapAndThreadKind(heapIDFG.Value, GCThreadKind.Foreground);
+                htk = new GCHeapAndThreadKind(heapIDFG.Value, GCThreadKind.Foreground);
+                return true;
             }
             // Can't do anything for background threads, we don't have heap numbers for them
-            //else if (backgroundGCThreads != null && backgroundGCThreads.TryGetValue(threadID, out HeapID heapIDBG))
-            //{
-            //    return new GCHeapAndThreadKind(heapIDBG, GCThreadKind.Background);
-            //}
             else
             {
-                return null;
-            }
-        }
-
-
-        internal IEnumerable<GCHeapAndThreadKind> GetHeapAndThreadKinds(ThreadID threadID)
-        {
-            GCHeapAndThreadKind? heapAndThreadKind = TryGetHeapAndThreadKind(threadID);
-            if (heapAndThreadKind != null)
-            {
-                yield return heapAndThreadKind.Value;
+                htk = default;
+                return false;
             }
         }
 
@@ -5991,15 +5988,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (oldThreadID != null)
             {
-                foreach (GCHeapAndThreadKind heapAndThreadKind in GetHeapAndThreadKinds(oldThreadID.Value))
+                if (TryGetHeapAndThreadKind(oldThreadID.Value, out GCHeapAndThreadKind oldHtk))
                 {
-                    yield return new GCHeapAndThreadKindAndIsNewThread(heapAndThreadKind, newThreadIsGC: false);
+                    yield return new GCHeapAndThreadKindAndIsNewThread(oldHtk, newThreadIsGC: false);
                 }
             }
 
-            foreach (GCHeapAndThreadKind heapdAndThreadKind in GetHeapAndThreadKinds(newThreadID))
+            if (TryGetHeapAndThreadKind(newThreadID, out GCHeapAndThreadKind newHtk))
             {
-                yield return new GCHeapAndThreadKindAndIsNewThread(heapdAndThreadKind, newThreadIsGC: true);
+                yield return new GCHeapAndThreadKindAndIsNewThread(newHtk, newThreadIsGC: true);
             }
         }
 
@@ -6050,13 +6047,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 ThreadID? gcThreadId = serverGCThreadToHeap.AFromB(i);
                 int? gcThreadPriority = gcThreadId != null && ThreadId2Priority.TryGetValue(gcThreadId.Value, out int pri) ? pri : (int?) null;
-                gc.ServerGcHeapHistories.Add(new ServerGcHistory
+                gc.ServerGcHeapHistories.Add(new ServerGcHistory(processID, i)
                 {
-                    ProcessId = processID,
-                    HeapId = i,
                     // NOTE: Since we might not have all the information yet, we'll set this again at the end.
                     GcWorkingThreadId = gcThreadId,
-                    GcBackgroundThreadId = null, // TODO -- similar to above
                     GcWorkingThreadPriority = gcThreadPriority
                 });
             }
