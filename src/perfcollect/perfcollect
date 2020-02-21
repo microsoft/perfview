@@ -1190,20 +1190,14 @@ ProcessArguments()
         fi
     fi
 
-    # echo "action: $action"
-    # echo "operation: $operation"
-
     # Set the data file.
     inputTraceName=$2
-    echo $inputTraceName
     if [ "$inputTraceName" == "" ] 
     then
         FatalError "Invalid trace name specified."
     fi
 
     args=( "$@" )
-    # echo inputTraceName: $inputTraceName
-    # exit
 
     # Process remaining arguments.
     # First copy the args into an array so that we can walk the array.
