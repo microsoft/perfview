@@ -655,16 +655,14 @@ LogAppend()
 
 RunSilent()
 {
-    #HACK 
-    echo $*
-    # if (( $logEnabled == 1 ))
-    # then
-    #     echo "Running \"$*\"" >> $logFile
-    #     $* >> $logFile 2>&1
-    #     echo "" >> $logFile
-    # else
-    #     $* > /dev/null 2>&1
-    # fi
+    if (( $logEnabled == 1 ))
+    then
+        echo "Running \"$*\"" >> $logFile
+        $* >> $logFile 2>&1
+        echo "" >> $logFile
+    else
+        $* > /dev/null 2>&1
+    fi
 }
 
 InitializeLog()
@@ -1140,7 +1138,6 @@ EnsurePrereqsInstalled()
 # Argument Processing
 ######################################
 action=''
-operation=''
 inputTraceName=''
 collectionPid=''
 processFilter=''
@@ -1177,19 +1174,10 @@ ProcessArguments()
     fi
 
     # Validate action name.
-    if [ "$action" != "collect" ] && [ "$action" != "view" ]
+    if [ "$action" != "collect" ] && [ "$action" != "view" ] \
+    && [ "$action" != "start" ] && [ "$action" != "stop" ]
     then
         FatalError "Invalid action specified."
-    fi
-
-    # Validate operation name.
-    if [ "$action" == "collect" ]
-    then
-        if [ "$2" == "start" ] || [ "$2" == "stop" ] 
-        then 
-            operation=$2
-            shift
-        fi
     fi
 
     # Set the data file.
@@ -1378,7 +1366,6 @@ StartLTTngCollection()
 StopLTTngCollection()
 {
     RunSilent "lttng stop $lttngSessionName"
-
     DestroyLTTngSession
 }
 
@@ -1666,7 +1653,7 @@ CTRLC_Handler()
 EndCollect()
 {
     # The user must either use "collect stop" or CTRL+C to stop collection.
-    if [ "$operation" == "stop" ]
+    if [ "$action" == "stop" ]
     then 
         # Recover trace info in the previous program.
         source $collectInfoFile  # TODO: exit and dispose upon missing file
@@ -1813,7 +1800,7 @@ DoCollect()
     if [ "$duration" != "" ]
     then
         WriteStatus "Collection started. Collection will automatically stop in $duration second(s).  Press CTRL+C to stop early."
-    elif [ "$operation" == "start" ]
+    elif [ "$action" == "start" ]
     then
         WriteStatus "Collection started."
     else
@@ -1821,35 +1808,39 @@ DoCollect()
     fi
 
     # Start perf record.
-    if [ "$usePerf" == "1" ]
-    then
-        RunSilent $perfcmd $collectionArgs
-    elif [ "$operation" == "start" ]
+    if [ "$action" == "start" ]
     then 
+        # Skip perf, which can only be stopped by CTRL+C.
         # Pass trace directory and session name to the stop process.
         popd > /dev/null
+        usePerf=0
         declare -p | grep -e lttngTraceDir -e lttngSessionName -e tempDir -e usePerf -e useLttng > $collectInfoFile
     else
-        # Wait here until CTRL+C handler gets called when user types CTRL+C.
-        LogAppend "Waiting for CTRL+C handler to get called."
+        if [ "$usePerf" == "1" ]
+        then
+            RunSilent $perfcmd $collectionArgs
+        else
+            # Wait here until CTRL+C handler gets called when user types CTRL+C.
+            LogAppend "Waiting for CTRL+C handler to get called."
 
-        waitTime=0
-        for (( ; ; ))
-        do
-            if [ "$handlerInvoked" == "1" ]
-            then
-                break;
-            fi
+            waitTime=0
+            for (( ; ; ))
+            do
+                if [ "$handlerInvoked" == "1" ]
+                then
+                    break;
+                fi
 
-            # Wait and then check to see if the handler has been invoked or we've crossed the duration threshold.
-            sleep 1
-            waitTime=$waitTime+1
-            if (( duration > 0 && duration <= waitTime ))
-            then
-                break;
-            fi
-        done
-        # End collection if no operation is set.
+                # Wait and then check to see if the handler has been invoked or we've crossed the duration threshold.
+                sleep 1
+                waitTime=$waitTime+1
+                if (( duration > 0 && duration <= waitTime ))
+                then
+                    break;
+                fi
+            done
+        fi
+        # End collection if action is 'collect'.
         EndCollect
     fi
 }
@@ -1959,15 +1950,12 @@ InitializeLog
 ProcessArguments $@
 
 # Take the appropriate action.
-if [ "$action" == "collect" ]
+if [ "$action" == "collect" ] || [ "$action" == "start" ]
 then
-    if [ "$operation" == "start" ] || [ -z "$operation" ]
-    then
-        DoCollect
-    elif [ "$operation" == "stop" ]
-    then
-        EndCollect
-    fi
+    DoCollect
+elif [ "$action" == "stop" ]
+then
+    EndCollect
 elif [ "$action" == "view" ]
 then
     DoView
