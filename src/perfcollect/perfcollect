@@ -1304,61 +1304,60 @@ CreateLTTngSession()
 
 SetupLTTngSession()
 {
-    # Setup kernel events. 
-    # TODO: enable triggers of different kernel events, instead of a default set of kernel events
-    if [ "$events" == "kernel" ]
-    then
-        RunSilent "lttng add-context --kernel -t pid -t procname"
-        EnableLTTngKernelEvents ${LTTng_Kernel_Default[@]}
-    else
-        # Setup per-event context information.
-        RunSilent "lttng add-context --userspace --type vpid"
-        RunSilent "lttng add-context --userspace --type vtid"
-        RunSilent "lttng add-context --userspace --type procname"
+    
+    # Setup per-event context information.
+    RunSilent "lttng add-context --userspace --type vpid"
+    RunSilent "lttng add-context --userspace --type vtid"
+    RunSilent "lttng add-context --userspace --type procname"
+    RunSilent "lttng add-context --kernel -t pid -t procname"
 
-        if [ "$action" == "livetrace" ]
+    if [ "$action" == "livetrace" ]
+    then
+        RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntime:EventSource"
+    elif [ "$gcCollectOnly" == "1" ]
+    then
+        usePerf=0
+        EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
+        EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
+        EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
+    elif [ "$gcOnly" == "1" ]
+    then
+        usePerf=0
+        EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
+        EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword[@]}
+        EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
+        EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
+        EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
+    elif [ "$gcWithHeap" == "1" ]
+    then
+        usePerf=0
+        EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
+        EnableLTTngEvents ${DotNETRuntime_GCHeapSurvivalAndMovementKeyword[@]}
+    else
+        if [ "$events" == "" ]
         then
-            RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntime:EventSource"
-        elif [ "$gcCollectOnly" == "1" ]
-        then
-            usePerf=0
-            EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
-            EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
+            # Enable the default set of events.
+            EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword_ThreadTransferKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_NoKeyword[@]}
             EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
-        elif [ "$gcOnly" == "1" ]
-        then
-            usePerf=0
-            EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
-            EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_ContentionKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_JitKeyword_NGenKeyword[@]}
             EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
             EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
-            EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
-        elif [ "$gcWithHeap" == "1" ]
+            EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
+            EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
+            EnableLTTngEvents ${DotNETRuntimePrivate_BindingKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntimePrivate_MulticoreJitPrivateKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_CompilationKeyword[@]}
+        elif [ "$events" == "threading" ]
         then
-            usePerf=0
-            EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
-            EnableLTTngEvents ${DotNETRuntime_GCHeapSurvivalAndMovementKeyword[@]}
-        else
-            if [ "$events" == "" ]
-            then
-                # Enable the default set of events.
-                EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword_ThreadTransferKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_NoKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_ContentionKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_JitKeyword_NGenKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
-                EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
-                EnableLTTngEvents ${DotNETRuntimePrivate_BindingKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntimePrivate_MulticoreJitPrivateKeyword[@]}
-                EnableLTTngEvents ${DotNETRuntime_CompilationKeyword[@]}
-            elif [ "$events" == "threading" ]
-            then
-                EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
-            fi
+            EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
+        elif [ "$events" == "kernel" ]
+        then
+            # Setup kernel events. 
+            # TODO: enable triggers of different kernel events, instead of a default set of kernel events
+            EnableLTTngKernelEvents ${LTTng_Kernel_Default[@]}
         fi
     fi
 }
