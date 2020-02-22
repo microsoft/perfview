@@ -607,7 +607,7 @@ declare -a DotNETRuntimePrivate_DynamicTypeUsageKeyword=(
     DotNETRuntimePrivate:ObjectVariantMarshallingToManaged
 )
 
-declare -a Kernel_Default=(
+declare -a LTTng_Kernel_Default=(
     sched_process_exec
     sched_process_exit
 )
@@ -640,7 +640,7 @@ logFilePrefix='/tmp/perfcollect'
 logEnabled=1
 
 # Collect info to pass between processes
-collectInfoFile='collectinfo'
+collectInfoFile=$(dirname `mktemp -u`)/'perfcollect.sessioninfo'
 
 ######################################
 ## Logging Functions
@@ -655,14 +655,16 @@ LogAppend()
 
 RunSilent()
 {
-    if (( $logEnabled == 1 ))
-    then
-        echo "Running \"$*\"" >> $logFile
-        $* >> $logFile 2>&1
-        echo "" >> $logFile
-    else
-        $* > /dev/null 2>&1
-    fi
+    #HACK 
+    echo $*
+    # if (( $logEnabled == 1 ))
+    # then
+    #     echo "Running \"$*\"" >> $logFile
+    #     $* >> $logFile 2>&1
+    #     echo "" >> $logFile
+    # else
+    #     $* > /dev/null 2>&1
+    # fi
 }
 
 InitializeLog()
@@ -1197,8 +1199,6 @@ ProcessArguments()
         FatalError "Invalid trace name specified."
     fi
 
-    args=( "$@" )
-
     # Process remaining arguments.
     # First copy the args into an array so that we can walk the array.
     args=( "$@" )
@@ -1309,7 +1309,7 @@ SetupLTTngSession()
     if [ "$events" == "kernel" ]
     then
         RunSilent "lttng add-context --kernel -t pid -t procname"
-        EnableLTTngKernelEvents ${Kernel_Default[@]}
+        EnableLTTngKernelEvents ${LTTng_Kernel_Default[@]}
     else
         # Setup per-event context information.
         RunSilent "lttng add-context --userspace --type vpid"
@@ -1414,6 +1414,7 @@ ProcessCollectedData()
     local directoryName=$traceName$traceSuffix
     mkdir $directoryName
 
+    # Save LTTng trace files.
     if [ "$useLTTng" == "1" ]
     then
         LogAppend "Saving LTTng trace files."
@@ -1813,8 +1814,11 @@ DoCollect()
     if [ "$duration" != "" ]
     then
         WriteStatus "Collection started. Collection will automatically stop in $duration second(s).  Press CTRL+C to stop early."
-    else
+    elif [ "$operation" == "start" ]
+    then
         WriteStatus "Collection started."
+    else
+        WriteStatus "Collection started. Press CTRL+C to stop."
     fi
 
     # Start perf record.
