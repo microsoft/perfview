@@ -1814,7 +1814,7 @@ DoCollect()
         # Pass trace directory and session name to the stop process.
         popd > /dev/null
         usePerf=0
-        declare -p | grep -e lttngTraceDir -e lttngSessionName -e tempDir -e usePerf -e useLttng > $collectInfoFile
+        declare -p | grep -e lttngTraceDir -e lttngSessionName -e tempDir -e usePerf -e useLttng -e logFile > $collectInfoFile
     else
         if [ "$usePerf" == "1" ]
         then
@@ -1944,7 +1944,10 @@ fi
 EnsurePrereqsInstalled
 
 # Initialize the log.
-InitializeLog
+if [ "$1" != "stop" ]
+then
+    InitializeLog
+fi
 
 # Process arguments.
 ProcessArguments $@
