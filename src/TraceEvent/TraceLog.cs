@@ -1682,7 +1682,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     process.isServerGC = true;
                     foreach (var curThread in process.Threads)
                     {
-                        if (thread.threadInfo == null && process.markThreadsInGC.ContainsKey(curThread.ThreadID))
+                        if (curThread.threadInfo == null && process.markThreadsInGC.ContainsKey(curThread.ThreadID))
                         {
                             curThread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[curThread.ThreadID] + ")";
                         }
