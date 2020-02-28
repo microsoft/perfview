@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Address = System.UInt64;
 using ThreadID = System.Int32;
 
@@ -178,33 +179,9 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
 
         [Obsolete] // Experimental
         public IEnumerable<ThreadIDAndTime> KeysAndTimesFromValue(T value, IEqualityComparer<T> eq) =>
-            // TODO: Would probably be more performant if we collapsed adjacent entries with the same value
-            // Then we wouldn't need `Unique` here
-            Unique(NonUniqueKeysAndTimesFromValue(value, eq));
-
-        private IEnumerable<ThreadIDAndTime> NonUniqueKeysAndTimesFromValue(T value, IEqualityComparer<T> eq)
-        {
-            foreach (HistoryValue entry in Entries)
-            {
-                if (eq.Equals(entry.Value, value))
-                {
-                    yield return new ThreadIDAndTime((ThreadID)entry.Key, entry.StartTime);
-                }
-            }
-        }
-
-        private static IEnumerable<E> Unique<E>(IEnumerable<E> i)
-        {
-            HashSet<E> set = new HashSet<E>();
-            foreach (E x in i)
-            {
-                if (!set.Contains(x))
-                {
-                    yield return x;
-                    set.Add(x);
-                }
-            }
-        }
+           (from entry in Entries
+            where eq.Equals(entry.Value, value)
+            select new ThreadIDAndTime((ThreadID) entry.Key, entry.StartTime)).Distinct();
 
         public int Count { get { return count; } }
         /// <summary>
@@ -249,8 +226,7 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             internal Address key;
             internal long startTime;
             internal T value;
-            //TODO:INTERNAL
-            public HistoryValue next;
+            internal HistoryValue next;
             // To improve getting to the end quickly, we allow nodes to store values that 'skip ahead'.
             // Today we only use this field for the first node to skip to the end (for fast append) 
             // The only strong invarient for this field is that it point further up the same list.  
