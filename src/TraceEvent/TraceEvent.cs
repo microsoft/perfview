@@ -505,7 +505,6 @@ namespace Microsoft.Diagnostics.Tracing
             return ret;
         }
 
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public virtual string ProcessName(int processID, long timeQPC)
         {
             return "Process(" + processID.ToString() + ")";

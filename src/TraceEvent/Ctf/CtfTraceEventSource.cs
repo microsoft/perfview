@@ -538,7 +538,6 @@ namespace Microsoft.Diagnostics.Tracing
             return true;
         }
 
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public override string ProcessName(int processID, long timeQPC)
         {
             string result;

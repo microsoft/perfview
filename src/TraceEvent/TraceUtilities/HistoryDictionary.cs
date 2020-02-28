@@ -9,7 +9,7 @@ using ThreadID = System.Int32;
 
 namespace Microsoft.Diagnostics.Tracing.Utilities
 {
-    [Obsolete]
+    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public interface IReadOnlyHistoryDictionary<T>
     {
         bool TryGetValue(Address id, long time, out T value);

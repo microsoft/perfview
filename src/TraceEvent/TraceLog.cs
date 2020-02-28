@@ -3029,7 +3029,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return isBookkeepingEvent;
         }
 
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public override string ProcessName(int processID, long timeQPC)
         {
             TraceProcess process = Processes.GetProcess(processID, timeQPC);
@@ -4328,7 +4327,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             base.Dispose(disposing);
         }
 
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public override string ProcessName(int processID, long timeQPC)
         {
             return TraceLog.ProcessName(processID, timeQPC);
@@ -5251,7 +5249,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// is guaranteed to be the correct process. Using timeQPC = TraceLog.sessionEndTimeQPC will return the
         /// last process with the given PID, even if it had died.
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public TraceProcess GetProcess(int processID, long timeQPC)
         {
             int index;
