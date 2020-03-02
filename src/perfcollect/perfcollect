@@ -15,13 +15,21 @@
 # How to collect a performance trace:
 # 1. Prior to starting the .NET process, set the environment variable COMPlus_PerfMapEnabled=1.
 #    This tells the runtime to emit information that enables perf_event to resolve JIT-compiled code symbols.
+# 
 # 2. Setup your system to reproduce the performance issue you'd like to capture.  Data collection can be
 #    started on already running processes.
-# 2. Run this script: sudo ./perfcollect collect samplePerfTrace
-#    This will start data collection.
-# 3. Let the repro run as long as you need to capture the performance problem.
-# 4. Hit CTRL+C to stop collection.
-#    When collection is stopped, the script will create a trace.zip file matching the name specified on the
+# 
+# 3. [Usage #1] use "collect" command
+#    - Run this script: sudo ./perfcollect collect samplePerfTrace. This will start data collection.
+#    - Let the repro run as long as you need to capture the performance problem.
+#    - Hit CTRL+C to stop collection.
+#
+#    [Usage #2] use "start" and "stop" command
+#    - Run this script: sudo ./perfcollect start samplePerfTrace. This will start data colletion.
+#    - Let the repro run as long as you need to capture the performance problem.
+#    - Run: sudo ./perfcollect stop samplePerfTrace. This will stop collection.
+#
+# 4. When collection is stopped, the script will create a trace.zip file matching the name specified on the
 #    command line.  This file will contain the trace, JIT-compiled symbol information, and all debugging
 #    symbols for binaries referenced by this trace that were available on the machine at collection time.
 #
@@ -607,6 +615,11 @@ declare -a DotNETRuntimePrivate_DynamicTypeUsageKeyword=(
     DotNETRuntimePrivate:ObjectVariantMarshallingToManaged
 )
 
+declare -a LTTng_Kernel_ProcessLifetime=(
+    sched_process_exec
+    sched_process_exit
+)
+
 ######################################
 ## Global Variables
 ######################################
@@ -633,6 +646,9 @@ handlerInvoked=0
 declare logFile
 logFilePrefix='/tmp/perfcollect'
 logEnabled=1
+
+# Collect info to pass between processes
+collectInfoFile=$(dirname `mktemp -u`)/'perfcollect.sessioninfo'
 
 ######################################
 ## Logging Functions
@@ -1166,14 +1182,15 @@ ProcessArguments()
     fi
 
     # Validate action name.
-    if [ "$action" != "collect" ] && [ "$action" != "view" ]
+    if [ "$action" != "collect" ] && [ "$action" != "view" ] \
+    && [ "$action" != "start" ] && [ "$action" != "stop" ]
     then
         FatalError "Invalid action specified."
     fi
 
     # Set the data file.
     inputTraceName=$2
-    if [ "$inputTraceName" == "" ]
+    if [ "$inputTraceName" == "" ] 
     then
         FatalError "Invalid trace name specified."
     fi
@@ -1234,6 +1251,9 @@ ProcessArguments()
         elif [ "-nolttng" == "$arg" ]
         then
             useLTTng=0
+        elif [ "-noperf" == "$arg" ]
+        then 
+            usePerf=0
         elif [ "-gccollectonly" == "$arg" ]
         then
             gcCollectOnly=1
@@ -1280,10 +1300,12 @@ CreateLTTngSession()
 
 SetupLTTngSession()
 {
+    
     # Setup per-event context information.
     RunSilent "lttng add-context --userspace --type vpid"
     RunSilent "lttng add-context --userspace --type vtid"
     RunSilent "lttng add-context --userspace --type procname"
+    RunSilent "lttng add-context --kernel -t pid -t procname"
 
     if [ "$action" == "livetrace" ]
     then
@@ -1327,6 +1349,11 @@ SetupLTTngSession()
         elif [ "$events" == "threading" ]
         then
             EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
+        elif [ "$events" == "processlifetime" ]
+        then
+            # Setup kernel events. 
+            # TODO: enable triggers of different kernel events, instead of a default set of kernel events
+            EnableLTTngKernelEvents ${LTTng_Kernel_ProcessLifetime[@]}
         fi
     fi
 }
@@ -1347,7 +1374,6 @@ StartLTTngCollection()
 StopLTTngCollection()
 {
     RunSilent "lttng stop $lttngSessionName"
-
     DestroyLTTngSession
 }
 
@@ -1358,6 +1384,15 @@ EnableLTTngEvents()
     for (( i=0; i<${#args[@]}; i++ ))
     do
         RunSilent "lttng enable-event -s $lttngSessionName -u --tracepoint ${args[$i]}"
+    done
+}
+
+EnableLTTngKernelEvents()
+{
+    args=( "$@" )
+    for (( i=0; i<${#args[@]}; i++ ))
+    do 
+        RunSilent "lttng enable-event -s $lttngSessionName -k ${args[$i]}"
     done
 }
 
@@ -1581,7 +1616,7 @@ ProcessCollectedData()
     WriteStatus "Compressing trace files"
     
     # Move all collected files to the new directory.
-    RunSilent "mv * $directoryName"
+    RunSilent "mv -f * $directoryName"
 
     # Close the log - this stops all writing to the log, so that we can move it into the archive.
     CloseLog
@@ -1605,7 +1640,7 @@ ProcessCollectedData()
     WriteStatus "Cleaning up artifacts"
 
     # Delete the temp directory.
-    RunSilent "rm -rf $tempDir"
+    RunSilent "rm -rf $tempDir $collectInfoFile"
 
     WriteStatus "...FINISHED"
 
@@ -1625,6 +1660,15 @@ CTRLC_Handler()
 
 EndCollect()
 {
+    # The user must either use "collect stop" or CTRL+C to stop collection.
+    if [ "$action" == "stop" ]
+    then 
+        # Recover trace info in the previous program.
+        source $collectInfoFile  # TODO: exit and dispose upon missing file
+        # New program started, so go back to the temp directory.
+        pushd $tempDir > /dev/null
+    fi
+
     if [ "$useLTTng" == "1" ]
     then
         StopLTTngCollection
@@ -1637,7 +1681,7 @@ EndCollect()
     WriteStatus "Starting post-processing.  This may take some time."
     WriteStatus
 
-    # The user must CTRL+C to stop collection.
+    # The user used CTRL+C to stop collection.
     # When this happens, we catch the signal and finish our work.
     ProcessCollectedData
 }
@@ -1651,13 +1695,19 @@ PrintUsage()
     echo "For detailed collection and viewing steps, view this script in a text editor or viewer."
     echo ""
     echo "./perfcollect <action> <tracename>"
-    echo "Valid Actions: collect view livetrace install"
+    echo "Valid Actions: collect start/stop view livetrace install"
     echo ""
     echo "collect options:"
     echo "By default, collection includes CPU samples collected every ms."
     echo "    -pid          : Only collect data from the specified process id."
     echo "    -threadtime       : Collect context switch events."
     echo "  -hwevents         : Collect (some) hardware counters."
+    echo ""
+    echo "start:"
+    echo "    Start collection, but with Lttng trace ONLY. It needs to be used with 'stop' action."
+    echo ""
+    echo "stop:"
+    echo "    Stop collection if 'start' action is used."
     echo ""
     echo "view options:"
     echo "    -processfilter      : Filter data by the specified process name."
@@ -1749,7 +1799,7 @@ DoCollect()
 
     # Create a temp directory to use for collection.
     local tempDir=`mktemp -d`
-        LogAppend "Created temp directory $tempDir"
+    LogAppend "Created temp directory $tempDir"
 
     # Switch to the directory.
     pushd $tempDir > /dev/null
@@ -1764,36 +1814,49 @@ DoCollect()
     if [ "$duration" != "" ]
     then
         WriteStatus "Collection started. Collection will automatically stop in $duration second(s).  Press CTRL+C to stop early."
+    elif [ "$action" == "start" ]
+    then
+        WriteStatus "Collection started."
     else
-            WriteStatus "Collection started. Press CTRL+C to stop."
+        WriteStatus "Collection started. Press CTRL+C to stop."
     fi
 
     # Start perf record.
-    if [ "$usePerf" == "1" ]
-    then
-        RunSilent $perfcmd $collectionArgs
+    if [ "$action" == "start" ]
+    then 
+        # Skip perf, which can only be stopped by CTRL+C.
+        # Pass trace directory and session name to the stop process.
+        popd > /dev/null
+        usePerf=0
+        declare -p | grep -e lttngTraceDir -e lttngSessionName -e tempDir -e usePerf -e useLttng -e logFile > $collectInfoFile
     else
-        # Wait here until CTRL+C handler gets called when user types CTRL+C.
-                LogAppend "Waiting for CTRL+C handler to get called."
+        if [ "$usePerf" == "1" ]
+        then
+            RunSilent $perfcmd $collectionArgs
+        else
+            # Wait here until CTRL+C handler gets called when user types CTRL+C.
+            LogAppend "Waiting for CTRL+C handler to get called."
 
-        waitTime=0
-        for (( ; ; ))
-        do
-            if [ "$handlerInvoked" == "1" ]
-            then
-                break;
-            fi
+            waitTime=0
+            for (( ; ; ))
+            do
+                if [ "$handlerInvoked" == "1" ]
+                then
+                    break;
+                fi
 
-            # Wait and then check to see if the handler has been invoked or we've crossed the duration threshold.
-            sleep 1
-            waitTime=$waitTime+1
-            if (( duration > 0 && duration <= waitTime ))
-            then
-                break;
-            fi
-        done
+                # Wait and then check to see if the handler has been invoked or we've crossed the duration threshold.
+                sleep 1
+                waitTime=$waitTime+1
+                if (( duration > 0 && duration <= waitTime ))
+                then
+                    break;
+                fi
+            done
+        fi
+        # End collection if action is 'collect'.
+        EndCollect
     fi
-    EndCollect
 }
 
 DoLiveTrace()
@@ -1895,15 +1958,21 @@ fi
 EnsurePrereqsInstalled
 
 # Initialize the log.
-InitializeLog
+if [ "$1" != "stop" ]
+then
+    InitializeLog
+fi
 
 # Process arguments.
 ProcessArguments $@
 
 # Take the appropriate action.
-if [ "$action" == "collect" ]
+if [ "$action" == "collect" ] || [ "$action" == "start" ]
 then
     DoCollect
+elif [ "$action" == "stop" ]
+then
+    EndCollect
 elif [ "$action" == "view" ]
 then
     DoView
