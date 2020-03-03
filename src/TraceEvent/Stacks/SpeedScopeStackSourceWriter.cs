@@ -26,9 +26,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         {
             var samplesPerThread = GetSortedSamplesPerThread(source);
 
-            foreach (var samples in samplesPerThread.Values)
-                MakeSureSamplesDoNotOverlap(samples);
-
             var exportedFrameNameToExportedFrameId = new Dictionary<string, int>();
             var profileEventsPerThread = new Dictionary<string, IReadOnlyList<ProfileEvent>>();
 
@@ -84,34 +81,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             foreach (var samples in samplesPerThread.Values)
             {
                 // all samples in the StackSource should be sorted, but we want to ensure it
-                samples.Sort((x, y) => x.RelativeTime.CompareTo(y.RelativeTime));
+                samples.Sort(CompareSamples);
             }
 
             return samplesPerThread;
-        }
-
-        /// <summary>
-        /// this method fixes the metrics of the samples to make sure they don't overlap
-        /// it's very common that following samples overlap by a very small number like 0.0000000000156
-        /// we can't allow for that to happen because the SpeedScope can't draw such samples
-        /// </summary>
-        internal static void MakeSureSamplesDoNotOverlap(List<Sample> samples)
-        {
-            for (int i = 0; i < samples.Count - 1; i++)
-            {
-                var current = samples[i];
-                var next = samples[i + 1];
-
-                if (current.RelativeTime + current.Metric > next.RelativeTime)
-                {
-                    // the difference between current.Metric and recalculatedMetric is typically
-                    // a very small number like 0.0000000000156
-                    double recalculatedMetric = next.RelativeTime - current.RelativeTime;
-                    samples[i] = new Sample(current.StackIndex, -1, current.RelativeTime, recalculatedMetric, current.Depth);
-                }
-            }
-            // we don't need to worry about the last sample
-            // it can't overlap the next one because it is the last one and there is no next one
         }
 
         /// <summary>
@@ -187,7 +160,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
                 var samples = samplesInfo.Value;
 
                 // this should not be required, but I prefer to be sure that the data is sorted
-                samples.Sort((x, y) => x.RelativeTime.CompareTo(y.RelativeTime));
+                samples.Sort(CompareSamples);
 
                 Sample openSample = samples[0]; // samples are never empty
                 for (int i = 1; i < samples.Count; i++)
@@ -319,6 +292,17 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             }
 
             writer.Write("] }");
+        }
+
+        private static int CompareSamples(Sample x, Sample y)
+        {
+            int timeComparison = x.RelativeTime.CompareTo(y.RelativeTime);
+
+            if (timeComparison != 0)
+                return timeComparison;
+
+            // in case both samples start at the same time, the one with smaller metric should be the first one
+            return x.Metric.CompareTo(y.Metric);
         }
 
         internal struct Sample
