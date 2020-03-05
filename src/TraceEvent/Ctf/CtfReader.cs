@@ -90,14 +90,19 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             CtfInteger pid = null;
             CtfInteger tid = null;
+            CtfInteger vpid = null;
+            CtfInteger vtid = null;
             CtfArray processName = null;
             string lastProcessName = "";
             int processLen = 0;
             CtfStruct eventContext = _streamDefinition.EventContext;
             if (eventContext != null)
             {
-                pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
-                tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+                vpid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
+                vtid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+                pid = (CtfInteger)eventContext.GetField("_pid")?.Type ?? vpid;
+                tid = (CtfInteger)eventContext.GetField("_tid")?.Type ?? vtid;
+
                 processName = (CtfArray)eventContext.GetField("_procname")?.Type;
 
                 // We only handle ascii process names, which seems to be the only thing lttng provides.
