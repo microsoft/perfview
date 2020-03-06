@@ -1148,7 +1148,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.ThreadStartGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
+                thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start);
                 thread.startTimeQPC = data.TimeStampQPC;
                 thread.userStackBase = data.UserStackBase;
                 if (data.Opcode == TraceEventOpcode.DataCollectionStart)

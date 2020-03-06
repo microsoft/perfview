@@ -1945,7 +1945,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 public readonly bool SeenRestartEnd;
                 public readonly ThreadID? ExpectingRestartThreadID;
 
-                public SingleJoinState(
+                private SingleJoinState(
                     GCJoinStage stage,
                     ushort seenStarts,
                     ushort seenEnds,
@@ -2148,9 +2148,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 : PrevJoin?.Stage == stage ? PrevJoin
                 : null;
 
-            public bool HasJoinWithRemainingStarts(GCJoinStage stage, uint heapCount)
+            public bool HasJoinWithRemainingStartsNoPrev2(GCJoinStage stage, uint heapCount)
             {
-                SingleJoinState? state = StateForStage(stage);
+                SingleJoinState? state = StateForStageNoPrev2(stage);
                 return state != null && state.Value.SeenStarts < heapCount;
             }
 
@@ -2201,7 +2201,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 }
                 else
                 {
-                    throw new Exception();
+                    throw new Exception("UNREACHABLE");
                 }
             }
 
@@ -2226,13 +2226,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 }
                 else
                 {
-                    throw new Exception();
+                    throw new Exception("UNREACHABLE");
                 }
             }
 
             public GCJoinStateFgOrBg WithJoinStart(GCJoinStage stage, ThreadID threadID, bool expectRestart, uint? heapCount)
             {
-                if (heapCount != null && !HasJoinWithRemainingStarts(stage, heapCount.Value))
+                if (heapCount != null && !HasJoinWithRemainingStartsNoPrev2(stage, heapCount.Value))
                 {
                     throw new Exception($"Getting a JoinStart for {stage} when we shouldn't");
                 }
@@ -2615,7 +2615,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
             // Only check PrevOrCur here and not prev2 -- we may see the same stage multiple times,
             // so consider a new JoinStart at the same stage as Prev2 to be a new join.
-            else if (oldState.Value.HasJoinWithRemainingStarts(joinStage, heapCount))
+            else if (oldState.Value.HasJoinWithRemainingStartsNoPrev2(joinStage, heapCount))
             {
                 joinStates[gc] = oldState.Value.WithJoinStart(joinStage, threadID, expectRestart: expectRestart, heapCount: heapCount);
             }
@@ -2684,7 +2684,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                 else
                                 {
                                     Debug.Assert(oldLastState.HasValue, "If the gc is complete we should have state by now");
-                                    if (oldLastState.Value.HasJoinWithRemainingStarts(joinStage, heapCount))
+                                    if (oldLastState.Value.HasJoinWithRemainingStartsNoPrev2(joinStage, heapCount))
                                     {
                                         return last;
                                     }
@@ -2755,7 +2755,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                 case GCThreadKind.Background:
                                     return retBgc();
                                 default:
-                                    throw new Exception();
+                                    throw new Exception("UNREACHABLE");
                             }
                         }
                         else if (last.IsComplete)

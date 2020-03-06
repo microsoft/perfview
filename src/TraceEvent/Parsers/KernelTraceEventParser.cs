@@ -4502,14 +4502,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         // public int PreviousCState { get { return GetByteAt(10); } }
         // public int SpareByte { get { return GetByteAt(11); } }
 
-        public ThreadWaitReason OldThreadWaitReason {
-            get {
-                int res = GetByteAt(0xc);
-                // Assert it's a valid reason 
-                Debug.Assert(res <= (int) ThreadWaitReason.Unknown);
-                return (ThreadWaitReason)res;
-            }
-        }
+        // TODO: native WaitReason is documented up to 20, but actual values of KWAIT_REASON can go up to 37 
+        //       it does not map directly to ThreadWaitReason
+        //       see https://github.com/dotnet/runtime/blob/e771456512f1c5a1a8e443c8ff6307a9a3425d62/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/ProcessManager.Windows.cs#L519
+        //       casting to ThreadWaitReason is not correct here.
+        //       The parts that rely on the numeric value (like join analysis) are ok.
+        //       Other use of this may need revising. 
+        public ThreadWaitReason OldThreadWaitReason { get { return (ThreadWaitReason)GetByteAt(0xc); } }
         public ThreadWaitMode OldThreadWaitMode { get { return (ThreadWaitMode)GetByteAt(0xd); } }
         public ThreadState OldThreadState { get { return (ThreadState)GetByteAt(0xe); } }
         public int OldThreadWaitIdealProcessor { get { return GetByteAt(15); } }
