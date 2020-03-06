@@ -31,7 +31,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ProcessStartTraceData(value, 1, 1, "Process", ProcessTaskGuid, 1, "ProcessStart", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ProcessStartTraceData(value, 1, 1, "Process", ProcessTaskGuid, 1, "Start", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -42,7 +42,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ProcessStopTraceData(value, 2, 1, "Process", ProcessTaskGuid, 2, "ProcessStop", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ProcessStopTraceData(value, 2, 1, "Process", ProcessTaskGuid, 2, "Stop", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -54,13 +54,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         protected override string GetProviderName() { return ProviderName; }
 
         static private volatile TraceEvent[] s_templates;
+
+/*        static private ProcessStartTraceData ProcessStartTemplate(Action<ProcessStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ProcessStartTraceData(action, 1, 1, "Process", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private ProcessStopTraceData ProcessStopTemplate(Action<ProcessStopTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ProcessStopTraceData(action, 2, 1, "Process", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }*/
+
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
                 var templates = new TraceEvent[2];
-                templates[0] = new ProcessStartTraceData(null, 1, 1, "Process", ProcessTaskGuid, 1, "ProcessStart", ProviderGuid, ProviderName);
-                templates[1] = new ProcessStopTraceData(null, 2, 1, "Process", ProcessTaskGuid, 2, "ProcessStop", ProviderGuid, ProviderName);
+                templates[0] = new ProcessStartTraceData(null, 1, 1, "Process", ProcessTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+                templates[1] = new ProcessStopTraceData(null, 2, 1, "Process", ProcessTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -76,8 +86,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel
 {
     public sealed class ProcessStartTraceData : TraceEvent
     {
-        public int ProcessID { get { return GetInt32At(0); } }
-        public string ProcessName { get { return GetUnicodeStringAt(4); } }
+/*      public int ProcessID { get { return GetInt32At(0); } }
+        public string ProcessName { get { return GetUnicodeStringAt(4); } }*/
 
         #region Private
         internal ProcessStartTraceData(Action<ProcessStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -140,8 +150,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel
     }
     public sealed class ProcessStopTraceData : TraceEvent
     {
-        public int ProcessID { get { return GetInt32At(0); } }
-        public string ProcessName { get { return GetUnicodeStringAt(4); } }
+/*      public int ProcessID { get { return GetInt32At(0); } }
+        public string ProcessName { get { return GetUnicodeStringAt(4); } }*/
 
         #region Private
         internal ProcessStopTraceData(Action<ProcessStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
