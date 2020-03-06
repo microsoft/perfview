@@ -67,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// it's required to build full information
         /// </summary>
         internal static IReadOnlyDictionary<int, List<Sample>> WalkTheStackAndExpandSamples(StackSource stackSource, IEnumerable<Sample> leafs,
-            Dictionary<string, int> exportedFrameNameToExportedFrameId)
+            Dictionary<string, int> exportedFrameNameToExportedFrameId, Dictionary<int, FrameInfo> exportedFrameIdToExportedNameAndCallerId)
         {
             var frameIdToSamples = new Dictionary<int, List<Sample>>();
 
@@ -110,6 +110,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     // the time and metric are the same as for the leaf sample
                     // the difference is stack index (not really used from here), caller frame id and depth (used for sorting the exported data)
                     samples.Add(new Sample(stackIndex, callerFrameId, leafSample.RelativeTime, leafSample.Metric, depth));
+
+                    if (!exportedFrameIdToExportedNameAndCallerId.ContainsKey(exportedFrameId))
+                    {
+                        int index = frameName.IndexOf('!');
+                        string category = index > 0 ? frameName.Substring(0, index) : string.Empty;
+                        string shortName = index > 0 ? frameName.Substring(index + 1) : frameName;
+                        exportedFrameIdToExportedNameAndCallerId.Add(exportedFrameId, new FrameInfo(callerFrameId, shortName, category));
+                    }
 
                     callerFrameId = exportedFrameId;
                 }
@@ -298,6 +306,22 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             internal int FrameId { get; }
             internal double RelativeTime { get; }
             internal int Depth { get; }
+            #endregion private
+        }
+
+        internal readonly struct FrameInfo
+        {
+            public FrameInfo(int parentId, string frameName, string category)
+            {
+                ParentId = parentId;
+                Name = frameName;
+                Category = category;
+            }
+
+            #region private
+            internal int ParentId { get; }
+            internal string Name { get; }
+            internal string Category { get; }
             #endregion private
         }
     }

@@ -89,7 +89,7 @@ namespace TraceEventTests
             var stackSource = new StackSourceStub(allSamples);
             var frameNameToId = new Dictionary<string, int>();
 
-            var frameIdToSamples = WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
+            var frameIdToSamples = WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId, new Dictionary<int, FrameInfo>());
 
             Assert.Equal(0, frameNameToId[main.Name]);
             Assert.Equal(1, frameNameToId[a.Name]);
@@ -126,7 +126,7 @@ namespace TraceEventTests
             var stackSource = new StackSourceStub(allSamples);
             var frameNameToId = new Dictionary<string, int>();
 
-            var frameIdToSamples = WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId);
+            var frameIdToSamples = WalkTheStackAndExpandSamples(stackSource, leafs, frameNameToId, new Dictionary<int, FrameInfo>());
 
             Assert.Equal(0, frameNameToId[main.Name]);
             Assert.False(frameNameToId.ContainsKey(wrong.Name));

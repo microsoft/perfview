@@ -28,11 +28,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             var samplesPerThread = GetSortedSamplesPerThread(source);
 
             var exportedFrameNameToExportedFrameId = new Dictionary<string, int>();
+            var exportedFrameIdToFrameTuple = new Dictionary<int, FrameInfo>();
             var profileEventsPerThread = new Dictionary<string, IReadOnlyList<ProfileEvent>>();
 
             foreach(var pair in samplesPerThread)
             {
-                var frameIdToSamples = WalkTheStackAndExpandSamples(source, pair.Value, exportedFrameNameToExportedFrameId);
+                var frameIdToSamples = WalkTheStackAndExpandSamples(source, pair.Value, exportedFrameNameToExportedFrameId, exportedFrameIdToFrameTuple);
 
                 var sortedProfileEvents = GetAggregatedOrderedProfileEvents(frameIdToSamples);
 
