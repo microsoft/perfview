@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
@@ -12,9 +13,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// overlaping of samples for the concurrent code so we group the samples by Threads
         /// this method also sorts the samples by relative time (ascending)
         /// </summary>
-        internal static IReadOnlyDictionary<string, List<Sample>> GetSortedSamplesPerThread(StackSource stackSource)
+        internal static IReadOnlyDictionary<ThreadInfo, List<Sample>> GetSortedSamplesPerThread(StackSource stackSource)
         {
-            var samplesPerThread = new Dictionary<string, List<Sample>>();
+            var samplesPerThread = new Dictionary<ThreadInfo, List<Sample>>();
 
             stackSource.ForEach(sample =>
             {
@@ -31,15 +32,23 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         continue;
                     }
 
-                    if (!samplesPerThread.TryGetValue(frameName, out var samples))
-                        samplesPerThread[frameName] = samples = new List<Sample>();
+                    // we assume that the next caller is always process
+                    var processStackIndex = stackSource.GetCallerIndex(stackIndex);
+                    var processFrameName = processStackIndex == StackSourceCallStackIndex.Invalid
+                        ? "Unknown"
+                        : stackSource.GetFrameName(stackSource.GetFrameIndex(processStackIndex), false);
+
+                    var threadInfo = new ThreadInfo(frameName, processFrameName);
+
+                    if (!samplesPerThread.TryGetValue(threadInfo, out var samples))
+                        samplesPerThread[threadInfo] = samples = new List<Sample>();
 
                     samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, sample.Metric, -1));
 
                     return;
                 }
 
-                throw new InvalidOperationException("Sample with no Thread assigned!");
+                // Sample with no Thread assigned - it's most probably a "Process" sample, we just ignore it
             });
 
             foreach (var samples in samplesPerThread.Values)
@@ -209,7 +218,43 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             return x.Metric.CompareTo(y.Metric);
         }
 
-        internal struct Sample
+        internal readonly struct ThreadInfo : IEquatable<ThreadInfo>
+        {
+            private static readonly Regex IdExpression = new Regex(@"\((\d+)\)", RegexOptions.Compiled);
+
+            internal ThreadInfo(string threadFrameName, string processFrameName)
+            {
+                var threadIdMatch = IdExpression.Match(threadFrameName);
+                var processIdMatch = IdExpression.Match(processFrameName);
+
+                Name = threadFrameName;
+                Id = threadIdMatch.Success ? int.Parse(threadIdMatch.Groups[1].Value) : 0;
+                ProcessId = processIdMatch.Success ? int.Parse(processIdMatch.Groups[1].Value) : 0;
+            }
+
+            internal ThreadInfo(string name, int id, int processId)
+            {
+                Name = name;
+                Id = id;
+                ProcessId = processId;
+            }
+
+            public override string ToString() => Name;
+
+            public bool Equals(ThreadInfo other) => Name == other.Name && Id == other.Id && ProcessId == other.ProcessId;
+
+            public override bool Equals(object obj) => obj is ThreadInfo other && Equals(other);
+
+            public override int GetHashCode() => Name.GetHashCode() ^ Id ^ ProcessId;
+
+            #region private
+            internal string Name { get; }
+            internal int Id { get; }
+            internal int ProcessId { get; }
+            #endregion private
+        }
+
+        internal readonly struct Sample
         {
             internal Sample(StackSourceCallStackIndex stackIndex, int callerFrameId, double relativeTime, double metric, int depth)
             {
@@ -236,7 +281,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Open = 0, Close = 1
         }
 
-        internal struct ProfileEvent
+        internal readonly struct ProfileEvent
         {
             public ProfileEvent(ProfileEventType type, int frameId, double relativeTime, int depth)
             {

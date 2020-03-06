@@ -36,7 +36,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 
                 var sortedProfileEvents = GetAggregatedOrderedProfileEvents(frameIdToSamples);
 
-                profileEventsPerThread.Add(pair.Key, sortedProfileEvents);
+                profileEventsPerThread.Add(pair.Key.Name, sortedProfileEvents);
             };
 
             var orderedFrameNames = exportedFrameNameToExportedFrameId.OrderBy(pair => pair.Value).Select(pair => pair.Key).ToArray();

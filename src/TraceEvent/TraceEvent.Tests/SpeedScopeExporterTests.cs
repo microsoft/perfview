@@ -1,5 +1,4 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,40 +10,49 @@ namespace TraceEventTests
 {
     public class SpeedScopeStackSourceWriterTests
     {
-        [Fact]
-        public void GetSortedSamplesReturnsSamplesSortedByRelativeTimeAndGrouppedByThread()
+        [Theory]
+        [InlineData("Process (321)", 321)]
+        [InlineData("Unknown", 0)]
+        public void GetSortedSamplesReturnsSamplesSortedByRelativeTimeAndGrouppedByThreadWithProcessInfo(string processName, int expectedProcessId)
         {
             const string ThreadName = "Thread (123)";
-            var thread_1 = new FakeStackSourceSample(
+
+            var process = new FakeStackSourceSample(
                 relativeTime: 0.1,
-                name: ThreadName,
+                name: processName,
                 frameIndex: (StackSourceFrameIndex)5, // 5 is first non-taken enum value
                 stackIndex: (StackSourceCallStackIndex)1, // 1 is first non-taken enum value
                 callerIndex: StackSourceCallStackIndex.Invalid);
+            var thread_1 = new FakeStackSourceSample(
+                relativeTime: 0.1,
+                name: ThreadName,
+                frameIndex: (StackSourceFrameIndex)6,
+                stackIndex: (StackSourceCallStackIndex)2,
+                callerIndex: process.StackIndex);
             var a_1 = new FakeStackSourceSample(
                 relativeTime: 0.1,
                 name: "A",
-                frameIndex: (StackSourceFrameIndex)6,
-                stackIndex: (StackSourceCallStackIndex)2,
+                frameIndex: (StackSourceFrameIndex)7,
+                stackIndex: (StackSourceCallStackIndex)3,
                 callerIndex: thread_1.StackIndex);
             var thread_2 = new FakeStackSourceSample(
                 relativeTime: 0.2,
                 name: ThreadName,
-                frameIndex: (StackSourceFrameIndex)5, // 5 is first non-taken enum value
-                stackIndex: (StackSourceCallStackIndex)3, // 1 is first non-taken enum value
-                callerIndex: StackSourceCallStackIndex.Invalid);
+                frameIndex: (StackSourceFrameIndex)6,
+                stackIndex: (StackSourceCallStackIndex)4,
+                callerIndex: process.StackIndex);
             var a_2 = new FakeStackSourceSample(
                 relativeTime: 0.2,
                 name: "A",
-                frameIndex: (StackSourceFrameIndex)6,
-                stackIndex: (StackSourceCallStackIndex)4,
+                frameIndex: (StackSourceFrameIndex)7,
+                stackIndex: (StackSourceCallStackIndex)5,
                 callerIndex: thread_2.StackIndex);
 
-            var sourceSamples = new[] { thread_1, thread_2, a_2, a_1 };
+            var sourceSamples = new[] { process, thread_1, thread_2, a_2, a_1 };
 
             var stackSource = new StackSourceStub(sourceSamples);
 
-            var result = GetSortedSamplesPerThread(stackSource)[ThreadName];
+            var result = GetSortedSamplesPerThread(stackSource)[new ThreadInfo(ThreadName, 123, expectedProcessId)];
 
             Assert.Equal(0.1, result[0].RelativeTime);
             Assert.Equal(0.1, result[1].RelativeTime);
