@@ -950,7 +950,7 @@ namespace PerfView
             }
             else if (m_fileName.EndsWith(".chromium.json", StringComparison.OrdinalIgnoreCase))
             {
-                ChromiumStackSourceWriter.WriteStackViewAsJson(CallTree.StackSource, m_fileName);
+                ChromiumStackSourceWriter.WriteStackViewAsJson(CallTree.StackSource, m_fileName, false);
             }
             else
             {

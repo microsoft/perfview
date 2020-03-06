@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using static Microsoft.Diagnostics.Tracing.Stacks.StackSourceWriterHelper;
 
@@ -12,13 +13,28 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         /// exports provided StackSource to a Chromium Trace File format 
         /// schema: https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/
         /// </summary>
-        public static void WriteStackViewAsJson(StackSource source, string filePath)
+        public static void WriteStackViewAsJson(StackSource source, string filePath, bool compress)
         {
             if (File.Exists(filePath))
                 File.Delete(filePath);
 
             using (var writeStream = File.CreateText(filePath))
                 Export(source, writeStream, Path.GetFileNameWithoutExtension(filePath));
+
+            if (compress)
+            {
+                string tempName = filePath + ".temp";
+                File.Move(filePath, tempName);
+
+                using (FileStream originalFileStream = File.OpenRead(tempName))
+                using (FileStream compressedFileStream = File.Create(filePath))
+                using (GZipStream compressionStream = new GZipStream(compressedFileStream, CompressionMode.Compress))
+                {
+                    originalFileStream.CopyTo(compressionStream);
+                }
+
+                File.Delete(tempName);
+            }
         }
 
         #region private
