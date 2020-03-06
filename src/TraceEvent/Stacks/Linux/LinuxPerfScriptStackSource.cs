@@ -1,5 +1,5 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
-using PerfView.Utilities;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,9 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-
-
-namespace Diagnostics.Tracing.StackSources
+namespace Microsoft.Diagnostics.Tracing.StackSources
 {
     public class ParallelLinuxPerfScriptStackSource : LinuxPerfScriptStackSource
     {

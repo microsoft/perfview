@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace PerfView.Utilities
+namespace Microsoft.Diagnostics.Tracing.Utilities
 {
     /// <summary>
     /// The is really what BinaryReader should have been... (sigh)
