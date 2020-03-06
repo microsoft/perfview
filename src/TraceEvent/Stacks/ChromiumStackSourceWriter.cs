@@ -23,6 +23,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 
             if (compress)
             {
+                // MemoryStream has a limited max size, so to avoid OOM a temporary file is used
                 string tempName = filePath + ".temp";
                 File.Move(filePath, tempName);
 
@@ -38,7 +39,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         }
 
         #region private
-        internal static void Export(StackSource source, TextWriter writer, string name)
+        private static void Export(StackSource source, TextWriter writer, string name)
         {
             var samplesPerThread = GetSortedSamplesPerThread(source);
 
@@ -58,7 +59,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             WriteToFile(exportedFrameIdToFrameTuple, profileEventsPerThread, writer, name);
         }
 
-        internal static void WriteToFile(Dictionary<int, FrameInfo> frameIdToFrameTuple,
+        private static void WriteToFile(Dictionary<int, FrameInfo> frameIdToFrameTuple,
             IReadOnlyDictionary<ThreadInfo, IReadOnlyList<ProfileEvent>> sortedProfileEventsPerThread,
             TextWriter writer, string name)
         {

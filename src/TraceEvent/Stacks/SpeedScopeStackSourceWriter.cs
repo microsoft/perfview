@@ -23,7 +23,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         }
 
         #region private
-        internal static void Export(StackSource source, TextWriter writer, string name)
+        private static void Export(StackSource source, TextWriter writer, string name)
         {
             var samplesPerThread = GetSortedSamplesPerThread(source);
 
@@ -48,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         /// <summary>
         /// writes pre-calculated data to SpeedScope format
         /// </summary>
-        internal static void WriteToFile(IReadOnlyDictionary<string, IReadOnlyList<ProfileEvent>> sortedProfileEventsPerThread, 
+        private static void WriteToFile(IReadOnlyDictionary<string, IReadOnlyList<ProfileEvent>> sortedProfileEventsPerThread, 
             IReadOnlyList<string> orderedFrameNames, TextWriter writer, string name)
         {
             writer.Write("{");

@@ -113,6 +113,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                     if (!exportedFrameIdToExportedNameAndCallerId.ContainsKey(exportedFrameId))
                     {
+                        // in the future we could identify the categories in a more advance way
+                        // and split JIT, GC, Runtime, Libraries and ASP.NET Code into separate categories
                         int index = frameName.IndexOf('!');
                         string category = index > 0 ? frameName.Substring(0, index) : string.Empty;
                         string shortName = index > 0 ? frameName.Substring(index + 1) : frameName;
