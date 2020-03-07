@@ -1,4 +1,4 @@
-﻿using Diagnostics.Tracing.StackSources;
+﻿using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.TestUtilities;
 using System.Collections.Generic;
