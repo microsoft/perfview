@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -15,26 +16,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         /// </summary>
         public static void WriteStackViewAsJson(StackSource source, string filePath, bool compress)
         {
+            if (compress && !filePath.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+                filePath += ".gz";
+
             if (File.Exists(filePath))
                 File.Delete(filePath);
 
-            using (var writeStream = File.CreateText(filePath))
-                Export(source, writeStream, Path.GetFileNameWithoutExtension(filePath));
-
-            if (compress)
+            using (var writeStream = compress ? (Stream)new GZipStream(File.Create(filePath), CompressionMode.Compress, leaveOpen: false) : File.Create(filePath))
+            using (var streamWriter = new StreamWriter(writeStream))
             {
-                // MemoryStream has a limited max size, so to avoid OOM a temporary file is used
-                string tempName = filePath + ".temp";
-                File.Move(filePath, tempName);
-
-                using (FileStream originalFileStream = File.OpenRead(tempName))
-                using (FileStream compressedFileStream = File.Create(filePath))
-                using (GZipStream compressionStream = new GZipStream(compressedFileStream, CompressionMode.Compress))
-                {
-                    originalFileStream.CopyTo(compressionStream);
-                }
-
-                File.Delete(tempName);
+                Export(source, streamWriter, Path.GetFileNameWithoutExtension(filePath));
             }
         }
 
