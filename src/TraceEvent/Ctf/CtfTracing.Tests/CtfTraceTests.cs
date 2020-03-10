@@ -7,14 +7,15 @@ namespace Tests
 {
     public class CtfTraceTests
     {
-        private static string TestDataDirectory = @"..\..\inputs";
+        private static string TestDataDirectory = @"..\..\..\inputs";
 
-        [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
+        [Fact]
         public void LTTng_GCAllocationTick()
         {
             int allocTicks = 0, allocTicksFromAll = 0;
 
-            string[] files = new string[] { "auto-20160204-132425.trace.zip", "auto-20151103-132930.trace.zip", "auto-20160204-162218.tracego.zip" };
+            //string[] files = new string[] { /*"auto-20160204-132425.trace.zip", "auto-20151103-132930.trace.zip",*/ "auto-20160204-162218.trace.zip" };
+            string[] files = new string[] { "netcoreapp31.trace.zip" };
             foreach (string file in files)
             {
                 string path = Path.Combine(TestDataDirectory, file);
@@ -95,37 +96,41 @@ namespace Tests
             Assert.Equal(allocTicks, allocTicksFromAll);
         }
 
-        [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
+        [Fact]
         public void LTTng_GCStartStopEvents()
         {
-            string path = Path.Combine(TestDataDirectory, "auto-20151103-132930.lttng.zip");
-
-            using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
+            string[] files = new string[] { "netcoreapp22.trace.zip", "netcoreapp31.trace.zip" };
+            foreach (string file in files)
             {
-                ctfSource.AllEvents += delegate (TraceEvent obj)
+                string path = Path.Combine(TestDataDirectory, file);
+
+                using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
                 {
-                };
+                    ctfSource.AllEvents += delegate (TraceEvent obj)
+                    {
+                    };
 
-                ctfSource.Clr.GCRestartEEStart += delegate (GCNoUserDataTraceData obj)
-                {
-                };
+                    ctfSource.Clr.GCRestartEEStart += delegate (GCNoUserDataTraceData obj)
+                    {
+                    };
 
-                ctfSource.Clr.GCRestartEEStop += delegate (GCNoUserDataTraceData obj)
-                {
-                };
-
-
-                ctfSource.Clr.GCSuspendEEStart += delegate (GCSuspendEETraceData obj)
-                {
-                };
+                    ctfSource.Clr.GCRestartEEStop += delegate (GCNoUserDataTraceData obj)
+                    {
+                    };
 
 
-                ctfSource.Clr.GCSuspendEEStop += delegate (GCNoUserDataTraceData obj)
-                {
-                };
+                    ctfSource.Clr.GCSuspendEEStart += delegate (GCSuspendEETraceData obj)
+                    {
+                    };
 
 
-                ctfSource.Process();
+                    ctfSource.Clr.GCSuspendEEStop += delegate (GCNoUserDataTraceData obj)
+                    {
+                    };
+
+
+                    ctfSource.Process();
+                }
             }
         }
     }

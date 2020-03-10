@@ -49,7 +49,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
 
                 _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
-                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
+                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata" && p.FullName.Contains("ust")))
                 {
                     CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
                     CtfMetadata metadata = new CtfMetadata(parser);
