@@ -113,7 +113,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
 
-            // Kernel events 
+            // Linux Kernel events 
             result["sched_process_exec"] = new ETWMapping(Parsers.LinuxKernelEventParser.ProviderGuid, 1, 1, 0);
             result["sched_process_exit"] = new ETWMapping(Parsers.LinuxKernelEventParser.ProviderGuid, 2, 2, 0);
             

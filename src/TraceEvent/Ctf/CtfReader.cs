@@ -90,18 +90,28 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             CtfInteger pid = null;
             CtfInteger tid = null;
-            CtfInteger vpid = null;
-            CtfInteger vtid = null;
             CtfArray processName = null;
             string lastProcessName = "";
             int processLen = 0;
             CtfStruct eventContext = _streamDefinition.EventContext;
             if (eventContext != null)
             {
-                vpid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
-                vtid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
-                pid = (CtfInteger)eventContext.GetField("_pid")?.Type ?? vpid;
-                tid = (CtfInteger)eventContext.GetField("_tid")?.Type ?? vtid;
+
+                if (_metadata.Environment.Domain == "kernel")
+                {
+                    pid = (CtfInteger)eventContext.GetField("_pid")?.Type;
+                    tid = (CtfInteger)eventContext.GetField("_tid")?.Type;
+                }
+                else if (_metadata.Environment.Domain == "ust")
+                {
+                    pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
+                    tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+                }
+                else
+                {
+                    Debug.Fail("Other domains not supported.");
+                }
+
 
                 processName = (CtfArray)eventContext.GetField("_procname")?.Type;
 

@@ -86,9 +86,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel
 {
     public sealed class ProcessStartTraceData : TraceEvent
     {
-/*      public int ProcessID { get { return GetInt32At(0); } }
-        public string ProcessName { get { return GetUnicodeStringAt(4); } }*/
-
         #region Private
         internal ProcessStartTraceData(Action<ProcessStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
