@@ -16,6 +16,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfEnvironment Environment { get; private set; }
         public CtfStream[] Streams { get; private set; }
         public ICollection<CtfClock> Clocks { get { return _clocks.Values; } }
+        public bool NoEvents { get; private set; }
 
         public CtfMetadata(CtfMetadataParser parser)
         {
@@ -73,6 +74,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 }
             }
 
+            if(streams.Count == 1 && streams[0].Events.Count == 0)
+            {
+                NoEvents = true;
+                return;
+            }
             Streams = streams.ToArray();
             ResolveReferences(typeAlias);
         }

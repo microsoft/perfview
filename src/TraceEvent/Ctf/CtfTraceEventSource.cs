@@ -47,19 +47,21 @@ namespace Microsoft.Diagnostics.Tracing
             bool success = false;
             try
             {
-
                 _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
-                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
+                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata" ))
                 {
                     CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
                     CtfMetadata metadata = new CtfMetadata(parser);
 
-                    string path = Path.GetDirectoryName(metadataArchive.FullName);
-                    _channels.AddRange(from entry in _zip.Entries
-                                       where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
-                                       select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
+                    if (!metadata.NoEvents)
+                    {
+                        string path = Path.GetDirectoryName(metadataArchive.FullName);
+                        _channels.AddRange(from entry in _zip.Entries
+                                           where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
+                                           select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
 
-                    pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
+                        pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
+                    }
                 }
 
 
