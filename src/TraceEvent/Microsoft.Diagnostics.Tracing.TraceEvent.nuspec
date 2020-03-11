@@ -33,6 +33,10 @@
     <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/T$version$</releaseNotes>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
+
+    <dependencies>
+      <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.5.2" />
+    </dependencies>
   </metadata>
 
   <files>
