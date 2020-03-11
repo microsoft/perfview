@@ -1,4 +1,4 @@
-﻿using PerfView.Utilities;
+﻿using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 
 using OptimizationTier = Microsoft.Diagnostics.Tracing.Parsers.Clr.OptimizationTier;
 
-namespace Diagnostics.Tracing.StackSources
+namespace Microsoft.Diagnostics.Tracing.StackSources
 {
     public class LinuxPerfScriptEventParser
     {

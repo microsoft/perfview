@@ -1,4 +1,5 @@
 ﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
