@@ -127,7 +127,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 8.1 
   SDK installed (We like to build PerfView so it works event on Windows 8).    Unfortunately this library tends not to be 
   installed with Visual Studio anymore unless you ask for it explicitly.   To fix it 
-     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1 option is selected.  If not, select it and have the setup install this.  THen try building PerfView again.   
+     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1 option is selected.  If not, select it and have the setup install this.  Then try building PerfView again.
   
 ### Running Tests
 
