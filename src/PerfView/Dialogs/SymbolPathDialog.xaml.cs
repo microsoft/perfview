@@ -47,7 +47,7 @@ namespace PerfView.Dialogs
         private void AddMSSymbolsClicked(object sender, RoutedEventArgs e)
         {
             var symPath = new SymbolPath(GetValue());
-            symPath.Add("SRV*http://msdl.microsoft.com/download/symbols");
+            symPath.Add("SRV*https://msdl.microsoft.com/download/symbols");
             SymbolPathTextBox.Text = symPath.InsureHasCache(symPath.DefaultSymbolCache()).CacheFirst().ToString();
             GetValue();
         }
