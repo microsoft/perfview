@@ -830,8 +830,11 @@ namespace Stats
                 return;
             }
 
+            bool isServerGC = (runtime.GC.Stats().IsServerGCUsed == 1);
+
             List<TraceGC> events = new List<TraceGC>();
             List<byte[]> condemnedReasonRows = new List<byte[]>();
+            List<int> heapIndexes = isServerGC ? new List<int>() : null;
             for (int i = start; i < runtime.GC.GCs.Count; i++)
             {
                 var _event = runtime.GC.GCs[i];
@@ -843,7 +846,12 @@ namespace Stats
                     }
                 }
                 events.Add(_event);
-                condemnedReasonRows.Add(GetCondemnedReasonRow(_event));
+                int heapIndexHighestGen;
+                condemnedReasonRows.Add(GetCondemnedReasonRow(_event, out heapIndexHighestGen));
+                if (isServerGC)
+                {
+                    heapIndexes.Add(heapIndexHighestGen);
+                }
             }
 
             bool hasAnyContent = false;
@@ -881,7 +889,7 @@ namespace Stats
             writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
             writer.WriteLine("<TR><TH>GC Index</TH>");
-            if (runtime.GC.Stats().IsServerGCUsed == 1)
+            if (isServerGC)
             {
                 writer.WriteLine("<TH>Heap<BR/>Index</TH>");
             }
@@ -904,7 +912,7 @@ namespace Stats
                 writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
                                  "<TD Align=\"center\">{0}</TD>{1}</TR>",
                                  _event.Number,
-                                 PrintCondemnedReasonsToHtml(condemnedReasons, columnHasContent));
+                                 PrintCondemnedReasonsToHtml(((heapIndexes == null) ? null : (int?)heapIndexes[i]), condemnedReasons, columnHasContent));
             }
 
             writer.WriteLine("</Table>");
@@ -994,8 +1002,9 @@ namespace Stats
             writer.WriteLine("</Center>");
         }
 
-        private static byte[] GetCondemnedReasonRow(TraceGC gc)
+        private static byte[] GetCondemnedReasonRow(TraceGC gc, out int HeapIndexHighestGen)
         {
+            HeapIndexHighestGen = 0;
             if (gc.PerHeapCondemnedReasons == null && gc.GlobalCondemnedReasons == null)
             {
                 return null;
@@ -1004,7 +1013,6 @@ namespace Stats
 
             if (gc.PerHeapCondemnedReasons != null)
             {
-                int HeapIndexHighestGen = 0;
                 if (gc.PerHeapCondemnedReasons.Length != 1)
                 {
                     // Only need to print out the heap index for server GC - when we are displaying this
@@ -1032,6 +1040,7 @@ namespace Stats
                             }
                         }
                     }
+
                 }
                 if (HeapIndexHighestGen < gc.PerHeapCondemnedReasons.Length)
                 {
@@ -1055,9 +1064,15 @@ namespace Stats
             }
         }
 
-        private static string PrintCondemnedReasonsToHtml(byte[] condemnedReasons, bool[] hasContent)
+        private static string PrintCondemnedReasonsToHtml(int? heapIndex, byte[] condemnedReasons, bool[] hasContent)
         {
             StringBuilder sb = new StringBuilder(100);
+            if (heapIndex != null)
+            {
+                sb.Append("<TD Align=\"center\">");
+                sb.Append(heapIndex);
+                sb.Append("</TD>");
+            }
             for (CondemnedReasonGroup i = 0; i < CondemnedReasonGroup.Max; i++)
             {
                 int j = (int)i;
