@@ -50,7 +50,6 @@ namespace Microsoft.Diagnostics.Tracing
                 isNetTrace = false;
             }
 
-            _processName = "ProcessBeingTraced";
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
 
@@ -693,7 +692,6 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
         private Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
         private Deserializer _deserializer;
-        private string _processName;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates = 
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
         private EventPipeEventHeader _compressedHeader;

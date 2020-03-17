@@ -9447,7 +9447,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
         public string FilePath { get { return GetUnicodeStringAt(2); } }
-        public KnownPathSource Source { get { return (KnownPathSource)GetInt16At(SkipUnicodeString(2)); } }
+        public KnownPathSource PathSource { get { return (KnownPathSource)GetInt16At(SkipUnicodeString(2)); } }
         public int Result { get { return GetInt32At(SkipUnicodeString(2) + 2); } }
 
         #region Private
@@ -9475,7 +9475,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Prefix(sb);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
             XmlAttrib(sb, "FilePath", FilePath);
-            XmlAttrib(sb, "Source", Source);
+            XmlAttrib(sb, "Source", PathSource);
             XmlAttrib(sb, "Result", Result);
             sb.Append("/>");
             return sb;
@@ -9500,7 +9500,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 case 1:
                     return FilePath;
                 case 2:
-                    return Source;
+                    return PathSource;
                 case 3:
                     return Result;
                 default:

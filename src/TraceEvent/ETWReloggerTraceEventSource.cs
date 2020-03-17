@@ -432,7 +432,7 @@ namespace Microsoft.Diagnostics.Tracing
             private unsafe void Initialize(TraceEventNativeMethods.EVENT_RECORD* rawData)
             {
                 var eventHeader = new EventTraceHeaderTraceData(null, 0xFFFF, 0, "EventTrace", KernelTraceEventParser.EventTraceTaskGuid, 0, "Header", KernelTraceEventParser.ProviderGuid, KernelTraceEventParser.ProviderName, null);
-                eventHeader.source = m_source;
+                eventHeader.traceEventSource = m_source;
                 eventHeader.eventRecord = rawData;
                 eventHeader.userData = rawData->UserData;
 
