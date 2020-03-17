@@ -48,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
-            var process = _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
+            var process = _event.traceEventSource.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
             if (process.StartTimeRelativeMsec == -1 || process.StartTimeRelativeMsec > _event.TimeStampRelativeMSec)
             {
                 process.StartTimeRelativeMsec = _event.TimeStampRelativeMSec;
@@ -123,7 +123,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             {
                 // do not use .Process() to retrive the process, since you need to pass in a special flag indicating that 
                 //  this is a process start event
-                var process = data.source.Processes().GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start);
+                var process = data.traceEventSource.Processes().GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start);
 
                 process.ProcessStart(data);
                 // Don't filter them out (not that many, useful for finding command line)
@@ -131,7 +131,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
             kernelParser.ProcessEndGroup += delegate (ProcessTraceData data)
             {
-                data.source.Processes().ProcessStop(data);
+                data.traceEventSource.Processes().ProcessStop(data);
                 // Don't filter them out (not that many, useful for finding command line) unless a lifetime is being applied
             };
             // Thread level events
