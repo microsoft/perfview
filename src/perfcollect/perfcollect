@@ -1156,13 +1156,6 @@ events=''
 
 ProcessArguments()
 {
-    # No arguments
-    if [ "$#" == "0" ]
-    then
-        PrintUsage
-        exit 0
-    fi
-
     # Set the action
     action=$1
 
@@ -1943,6 +1936,13 @@ DoView()
 #####################################
 ## Main Script Start
 #####################################
+
+# No arguments
+if [ "$#" == "0" ]
+then
+    PrintUsage
+    exit 0
+fi
 
 # Install perf if requested.  Do this before all other validation.
 if [ "$1" == "install" ]
