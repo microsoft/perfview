@@ -47,21 +47,19 @@ namespace Microsoft.Diagnostics.Tracing
             bool success = false;
             try
             {
+
                 _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
-                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata" ))
+                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
                 {
                     CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
                     CtfMetadata metadata = new CtfMetadata(parser);
 
-                    if (!metadata.NoEvents)
-                    {
-                        string path = Path.GetDirectoryName(metadataArchive.FullName);
-                        _channels.AddRange(from entry in _zip.Entries
-                                           where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
-                                           select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
+                    string path = Path.GetDirectoryName(metadataArchive.FullName);
+                    _channels.AddRange(from entry in _zip.Entries
+                                       where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
+                                       select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
 
-                        pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
-                    }
+                    pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
                 }
 
 
@@ -162,6 +160,7 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:ThreadPoolWorkerThreadStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 51, 0);
             result["DotNETRuntime:ThreadPoolWorkerThreadRetirementStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 53, 0);
             result["DotNETRuntime:ContentionStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 91, 0);
+            result["DotNETRuntime:ContentionStop_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 91, 1);
             result["DotNETRuntime:StrongNameVerificationStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 182, 0);
             result["DotNETRuntime:StrongNameVerificationStop_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 182, 1);
             result["DotNETRuntime:AuthenticodeVerificationStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 184, 0);

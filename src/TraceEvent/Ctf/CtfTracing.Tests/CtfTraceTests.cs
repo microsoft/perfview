@@ -1,5 +1,10 @@
 ﻿using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -129,6 +134,34 @@ namespace Tests
                     };
 
 
+                    ctfSource.Process();
+                }
+            }
+        }
+
+        [Fact]
+        public void LTTng_KernelEvents()
+        {
+            // test trace files with kernel events only, with clr events only or with both types of events presents
+            string[] files = new string[] { "kernel-only.trace.zip", "clr-only.trace.zip", "kernel-clr.trace.zip" };
+            foreach(string file in files)
+            {
+                string path = Path.Combine(TestDataDirectory, file);
+                using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
+                {
+                    var kernelParser = new LinuxKernelEventParser(ctfSource);
+
+                    var procStartList = new List<TraceEvent>();
+                    var gcList = new List<TraceEvent>();
+                    kernelParser.ProcessStart += delegate (ProcessStartTraceData data)
+                    {
+                        procStartList.Add(data.Clone());
+                    };
+
+                    ctfSource.Clr.GCStart += delegate (GCStartTraceData data)
+                    {
+                        gcList.Add(data.Clone());
+                    };
                     ctfSource.Process();
                 }
             }
