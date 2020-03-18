@@ -927,6 +927,15 @@ InstallPerf_Ubuntu()
     BlueText
     echo "Installing perf_event packages."
     ResetText
+
+    # Handle Azure instances.
+    release=`uname -r`
+    if [ "-azure" == "${release:-6:6}" ]
+    then
+        releaseLen=`expr length "$release"`
+        version=${release:0:$releaseLen-6}
+        apt-get install -y linux-azure-tools-$version zip software-properties-common
+    fi
     apt-get install -y linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r` zip software-properties-common
 }
 
