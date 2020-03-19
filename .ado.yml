@@ -1,0 +1,148 @@
+# https://aka.ms/yaml
+
+name: "$(date:yyyyMMdd)$(rev:.r)"
+
+trigger:
+  - master
+
+pr:
+  - master
+
+jobs:
+  - job: PerfView_Debug
+    pool:
+      vmImage: 'windows-2019'
+      name: Azure Pipelines
+      demands:
+      - msbuild
+      - vstest
+
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Use .NET Core SDK 2.1.505'
+      inputs:
+        version: 2.1.505
+
+    - task: NuGetCommand@2
+      displayName: 'NuGet Restore PerfView.sln'
+      inputs:
+        restoreSolution: PerfView.sln
+
+    - task: MSBuild@1
+      displayName: 'Build PerfView.sln'
+      inputs:
+        solution: PerfView.sln
+        configuration: Debug
+
+    - task: VSTest@2
+      displayName: 'Run Tests'
+      inputs:
+        testAssemblyVer2: |
+         **\LinuxTracing.Tests.dll
+         **\Tests.dll
+         **\TraceEventTests.dll
+         **\PerfViewTests.dll
+         !**\*TestAdapter.dll
+         !**\obj\**
+        testRunTitle: 'PerfView - Debug'
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to Artifacts Staging'
+      inputs:
+        SourceFolder: '$(system.defaultworkingdirectory)'
+        Contents: '**\bin\$(BuildConfiguration)\**'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+      condition: succeededOrFailed()
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+        ArtifactName: 'PerfViewBinaries-Debug'
+      condition: succeededOrFailed()
+
+  - job: PerfView_Release
+    pool:
+      vmImage: 'windows-2019'
+      name: Azure Pipelines
+      demands:
+      - msbuild
+      - vstest
+
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Use .NET Core SDK 2.1.505'
+      inputs:
+        version: 2.1.505
+
+    - task: NuGetCommand@2
+      displayName: 'NuGet Restore PerfView.sln'
+      inputs:
+        restoreSolution: PerfView.sln
+
+    - task: MSBuild@1
+      displayName: 'Build PerfView.sln'
+      inputs:
+        solution: PerfView.sln
+        configuration: Release
+
+    - task: VSTest@2
+      displayName: 'Run Tests'
+      inputs:
+        testAssemblyVer2: |
+         **\LinuxTracing.Tests.dll
+         **\Tests.dll
+         **\TraceEventTests.dll
+         **\PerfViewTests.dll
+         !**\*TestAdapter.dll
+         !**\obj\**
+        testRunTitle: 'PerfView - Release'
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to Artifacts Staging'
+      inputs:
+        SourceFolder: '$(system.defaultworkingdirectory)'
+        Contents: '**\bin\$(BuildConfiguration)\**'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+        ArtifactName: 'PerfViewBinaries-Release'
+
+  - job: PerfCollect
+    pool:
+      vmImage: 'ubuntu-18.04'
+      name: Azure Pipelines
+
+    steps:
+    - task: DockerInstaller@0
+      displayName: 'Install Docker'
+
+    - task: Bash@3
+      displayName: 'Build Containers'
+      inputs:
+        targetType: filePath
+        filePath: './src/perfcollect/tests/build-containers.sh'
+        workingDirectory: src/perfcollect/tests
+
+    - task: Bash@3
+      displayName: 'Run Tests'
+      inputs:
+        targetType: filePath
+        filePath: './src/perfcollect/tests/run-containers.sh'
+        workingDirectory: src/perfcollect/tests
+
+  - job: PerfViewJS
+    pool:
+      vmImage: 'windows-2019'
+      name: Azure Pipelines
+      demands: msbuild
+
+    steps:
+    - task: MSBuild@1
+      displayName: 'Build src/PerfViewJS/PerfViewJS.csproj'
+      inputs:
+        solution: src/PerfViewJS/PerfViewJS.csproj
+        msbuildArguments: /restore
