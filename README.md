@@ -139,15 +139,17 @@ the debugger to figure out what went wrong.
 
 ### Check in testing and code coverage statistica
 
-This repository uses [AppVeyor](https://www.appveyor.com/) to automatically build and test pull requests, which allows
+This repository uses [AppVeyor](https://www.appveyor.com/) and Azure DevOps to automatically build and test pull requests, which allows
 the community to easily view build results. Code coverage is provided by [codecov.io](https://codecov.io). The build and
-coverage status reflected here is the AppVeyor build status of the **master** branch.
+coverage status reflected here is the AppVeyor and Azure DevOps build status of the **master** branch.
+
+[![Build status](https://dev.azure.com/ms/perfview/_apis/build/status/CI)](https://dev.azure.com/ms/perfview/_build/latest?definitionId=328)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
 
 [![codecov](https://codecov.io/gh/Microsoft/perfview/branch/master/graph/badge.svg)](https://codecov.io/gh/Microsoft/perfview)
 
-> :warning: Builds produced by AppVeyor are not considered official builds of PerfView, and are not signed or otherwise
+> :warning: Builds produced by AppVeyor and Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
 > participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
 > information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.\
