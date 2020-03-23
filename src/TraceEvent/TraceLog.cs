@@ -2509,11 +2509,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     Debug.Assert(!stackInfo.WaitingToLeaveKernel);
                     userStackKeyToInfo.Remove(data.StackKey);
 
-                    // User mode stacks we can convert immediately.  
-                    CallStackIndex callStack = callStacks.GetStackIndexForStackEvent(
-                         data.InstructionPointers, data.FrameCount, data.PointerSize, stackInfo.Thread, stackInfo.UserModeStackIndex);
                     while (stackInfo != null)
                     {
+                        // User mode stacks we can convert immediately.
+                        CallStackIndex callStack = callStacks.GetStackIndexForStackEvent(
+                             data.InstructionPointers, data.FrameCount, data.PointerSize, stackInfo.Thread, stackInfo.UserModeStackIndex);
+
                         Debug.Assert(!stackInfo.IsDead);
                         Debug.Assert(stackInfo.UserModeStackKey == data.StackKey);
                         Debug.Assert(stackInfo.UserModeStackIndex == CallStackIndex.Invalid);
