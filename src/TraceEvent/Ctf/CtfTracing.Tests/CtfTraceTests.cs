@@ -1,10 +1,9 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -142,27 +141,36 @@ namespace Tests
         [Fact]
         public void LTTng_KernelEvents()
         {
-            // test trace files with kernel events only, with clr events only or with both types of events presents
-            string[] files = new string[] { "kernel-only.trace.zip", "clr-only.trace.zip", "kernel-clr.trace.zip" };
-            foreach(string file in files)
+            var assertValues = new Dictionary<string, List<int>>
+            {
+                // key: trace file name, value: {expected number of ProcessStart events, expected number of GCStart events}
+                { "kernel-only.trace.zip", new List<int> { 20, 0 } },
+                { "clr-only.trace.zip", new List<int> { 0, 11 } },
+                { "kernel-clr.trace.zip", new List<int> { 19, 12 } }
+            };
+            foreach (string file in assertValues.Keys)
             {
                 string path = Path.Combine(TestDataDirectory, file);
                 using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
                 {
                     var kernelParser = new LinuxKernelEventParser(ctfSource);
 
-                    var procStartList = new List<TraceEvent>();
-                    var gcList = new List<TraceEvent>();
+                    int processStartCount=0;
+                    int gcStartCount=0;
                     kernelParser.ProcessStart += delegate (ProcessStartTraceData data)
                     {
-                        procStartList.Add(data.Clone());
+                        processStartCount++;
                     };
 
                     ctfSource.Clr.GCStart += delegate (GCStartTraceData data)
                     {
-                        gcList.Add(data.Clone());
+                        gcStartCount++;
                     };
+
                     ctfSource.Process();
+
+                    Assert.Equal(assertValues[file][0], processStartCount);
+                    Assert.Equal(assertValues[file][1], gcStartCount);
                 }
             }
         }
