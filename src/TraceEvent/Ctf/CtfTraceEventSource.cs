@@ -49,7 +49,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
 
                 _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
-                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata" && p.FullName.Contains("ust")))
+                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
                 {
                     CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
                     CtfMetadata metadata = new CtfMetadata(parser);
@@ -113,6 +113,11 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
 
+            // Linux Kernel events 
+            result["sched_process_exec"] = new ETWMapping(Parsers.LinuxKernelEventParser.ProviderGuid, 1, 1, 0);
+            result["sched_process_exit"] = new ETWMapping(Parsers.LinuxKernelEventParser.ProviderGuid, 2, 2, 0);
+            
+
             // Public events
             result["DotNETRuntime:GCStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 1, 0);
             result["DotNETRuntime:GCStart_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 1, 1);
@@ -155,6 +160,7 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:ThreadPoolWorkerThreadStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 51, 0);
             result["DotNETRuntime:ThreadPoolWorkerThreadRetirementStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 53, 0);
             result["DotNETRuntime:ContentionStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 91, 0);
+            result["DotNETRuntime:ContentionStop_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 91, 1);
             result["DotNETRuntime:StrongNameVerificationStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 182, 0);
             result["DotNETRuntime:StrongNameVerificationStop_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 182, 1);
             result["DotNETRuntime:AuthenticodeVerificationStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 184, 0);

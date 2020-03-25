@@ -39,6 +39,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public override IEnumerable<CtfMetadataDeclaration> Parse()
         {
             string metadata = GetMetadata();
+            // add new line before string in case some metadata doesn't start with \n (kernel metadata)
+            metadata = "\n" + metadata;
             int index = 0;
 
             CtfMetadataDeclaration declaration;
