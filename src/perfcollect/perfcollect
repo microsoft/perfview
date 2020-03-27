@@ -615,9 +615,13 @@ declare -a DotNETRuntimePrivate_DynamicTypeUsageKeyword=(
     DotNETRuntimePrivate:ObjectVariantMarshallingToManaged
 )
 
-declare -a LTTng_Kernel_ProcessLifetime=(
+declare -a LTTng_Kernel_ProcessLifetimeKeyword=(
     sched_process_exec
     sched_process_exit
+)
+
+declare -a LTTng_Kernel_ContextSwitchKeyword=(
+    sched_switch
 )
 
 ######################################
@@ -1201,8 +1205,12 @@ ProcessArguments()
         then
             local value=${args[$i+1]}
 
-            # Convert the value to lower case.
-            value=`echo $value | tr '[:upper:]' '[:lower:]'`
+            # Keep the cases of '-events' value to match keyword variables
+            if [ "-events" != "$arg" ]
+            then
+                # Convert the value to lower case.
+                value=`echo $value | tr '[:upper:]' '[:lower:]'`
+            fi
         fi
 
         # Match the arg to a known value.
@@ -1339,11 +1347,25 @@ SetupLTTngSession()
         elif [ "$events" == "threading" ]
         then
             EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
-        elif [ "$events" == "processlifetime" ]
-        then
-            # Setup kernel events. 
-            # TODO: enable triggers of different kernel events, instead of a default set of kernel events
-            EnableLTTngKernelEvents ${LTTng_Kernel_ProcessLifetime[@]}
+        else     
+            # Enable other keywords
+            events=(${events//","/" "})
+            for (( i=0; i<${#events[@]}; i++ ))
+            do 
+                local event=${events[$i]}
+                if [ "${!event}" == "" ]
+                then
+                    echo Invalid keyword $event, skipped...
+                    continue
+                fi
+                local -a 'keywords=("${'"$event"'[@]}")'
+                if [ "${event#"LTTng_Kernel_"}" != "$event" ]
+                then 
+                    EnableLTTngKernelEvents ${keywords[@]}
+                else
+                    EnableLTTngEvents ${keywords[@]}
+                fi
+            done
         fi
     fi
 }
