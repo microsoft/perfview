@@ -620,9 +620,6 @@ declare -a LTTng_Kernel_ProcessLifetimeKeyword=(
     sched_process_exit
 )
 
-declare -a LTTng_Kernel_ContextSwitchKeyword=(
-    sched_switch
-)
 
 ######################################
 ## Global Variables
@@ -1353,7 +1350,7 @@ SetupLTTngSession()
             for (( i=0; i<${#events[@]}; i++ ))
             do 
                 local event=${events[$i]}
-                if [ "${!event}" == "" ]
+                if [ "${!event}" == "" ] || [ "$( echo `declare -p $event | grep -- -a` )" == "" ]
                 then
                     echo Invalid keyword $event, skipped...
                     continue
