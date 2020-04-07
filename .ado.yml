@@ -23,6 +23,11 @@ jobs:
       inputs:
         version: 2.1.505
 
+    - task: NuGetToolInstaller@1
+      inputs:
+        versionSpec: 4.5.1
+        checkLatest: false
+
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
       inputs:
@@ -74,6 +79,11 @@ jobs:
       displayName: 'Use .NET Core SDK 2.1.505'
       inputs:
         version: 2.1.505
+
+    - task: NuGetToolInstaller@1
+      inputs:
+        versionSpec: 4.5.1
+        checkLatest: false
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
