@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -155,11 +154,23 @@ namespace Tests
                 {
                     var kernelParser = new LinuxKernelEventParser(ctfSource);
 
-                    int processStartCount=0;
-                    int gcStartCount=0;
+                    int processStartCount = 0;
+                    int gcStartCount = 0;
                     kernelParser.ProcessStart += delegate (ProcessStartTraceData data)
                     {
                         processStartCount++;
+                        // Check payload fields
+                        Assert.True(!string.IsNullOrEmpty(data.FileName));
+                        Assert.True(data.PayloadThreadID != 0);
+                        Assert.True(data.OldThreadID != 0);
+                    };
+
+                    kernelParser.ProcessStop += delegate (ProcessStopTraceData data)
+                    {
+                        // Check payload fields
+                        Assert.True(!string.IsNullOrEmpty(data.Command));
+                        Assert.True(data.PayloadThreadID != 0);
+                        Assert.True(data.ThreadPriority != 0); // There's no event with priority 0 in this source
                     };
 
                     ctfSource.Clr.GCStart += delegate (GCStartTraceData data)
