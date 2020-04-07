@@ -24,6 +24,7 @@ namespace PerfView
     /// on ARM devices we don't have WPF, however we still want to enable some things (like data collection).   
     /// Thus we need to defer touching WPF until we know we need it.  To do this we take explicit control over
     /// the Entry point and do command line processing first, before doing any GUI stuff.  
+    ///
     /// </summary>
     public class App
     {
