@@ -3506,6 +3506,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public bool HasCondemnReasons1;
         public int CompactMechanisms;
         public int ExpandMechanisms;
+        public long ExtraGen0Commit;
+        public bool HasExtraGen0Commit;
         public int Version;
         public GCPerHeapHistoryGenData[] GenData;
     }
@@ -4498,6 +4500,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     HasCondemnReasons1 = data.HasCondemnReasons1,
                     CompactMechanisms = (int)data.CompactMechanisms,
                     ExpandMechanisms = (int)data.ExpandMechanisms,
+                    ExtraGen0Commit = data.ExtraGen0Commit,
+                    HasExtraGen0Commit = data.HasExtraGen0Commit,
                     Version = data.Version
                 };
 
