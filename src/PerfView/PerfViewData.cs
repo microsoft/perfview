@@ -3,6 +3,7 @@ using global::DiagnosticsHub.Packaging.Interop;
 using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -1514,6 +1515,17 @@ table {
         /// </summary>
         private List<TraceProcess> m_processes;
         #endregion
+    }
+
+    public class AutomatedAnalysisReport : PerfViewHtmlReport
+    {
+        public AutomatedAnalysisReport(PerfViewFile dataFile) : base(dataFile, "Automatic CPU Analysis") { }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        {
+            AutomatedAnalysisManager manager = new AutomatedAnalysisManager(dataFile, log, App.GetSymbolReader(dataFile.FilePath));
+            manager.GenerateReport(writer);
+        }
     }
 
     public class PerfViewIisStats : PerfViewHtmlReport
@@ -6840,6 +6852,7 @@ table {
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
             var obsolete = new PerfViewTreeGroup("Old Group");
+            var experimental = new PerfViewTreeGroup("Experimental Group");
             m_Children = new List<PerfViewTreeItem>();
 
             bool hasCPUStacks = false;
@@ -7028,7 +7041,7 @@ table {
             if (hasCPUStacks)
             {
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
-
+                experimental.Children.Add(new AutomatedAnalysisReport(this));
                 if (!App.CommandLineArgs.ShowOptimizationTiers &&
                     tracelog.Events.Any(
                         e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
@@ -7243,6 +7256,11 @@ table {
             if (0 < obsolete.Children.Count)
             {
                 m_Children.Add(obsolete);
+            }
+
+            if(AppLog.InternalUser && 0 < experimental.Children.Count)
+            {
+                m_Children.Add(experimental);
             }
 
             return null;
