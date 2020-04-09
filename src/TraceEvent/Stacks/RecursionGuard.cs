@@ -2,6 +2,32 @@
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
+    public static class RecursionGuardConfiguration
+    {
+        private static ushort _singleThreadRecursionLimit = 400;
+        private static ushort _maxResets = 40;
+
+        /// <summary>
+        /// For recursive methods that need to process deep stacks, this value defines the limit for recursion within
+        /// a single thread. After reaching this limit, methods need to trampoline to a new thread before continuing to
+        /// recurse.
+        /// </summary>
+        public static ushort SingleThreadRecursionLimit
+        {
+            get { return _singleThreadRecursionLimit; }
+            set { _singleThreadRecursionLimit = value; }
+        }
+
+        /// <summary>
+        /// The number of times to trampoline to a new thread before assuming infinite recursion and failing the operation.
+        /// </summary>
+        public static ushort MaxResets
+        {
+            get { return _maxResets; }
+            set { _maxResets = value; }
+        }
+    }
+
     /// <summary>
     /// This structure provides a clean API for a lightweight recursion stack guard to prevent StackOverflow exceptions
     /// We do ultimately do a stack-overflow to prevent infinite recursion, but it is now under our
@@ -9,24 +35,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     /// </summary>
     internal struct RecursionGuard
     {
-        /// <summary>
-        /// For recursive methods that need to process deep stacks, this constant defines the limit for recursion within
-        /// a single thread. After reaching this limit, methods need to trampoline to a new thread before continuing to
-        /// recurse.
-        /// </summary>
-        internal const ushort SingleThreadRecursionLimit = 400;
-
-        /// <summary>
-        /// To prevent run-away recursion, fail after this depth (in this case 20*400 = 8K)
-        /// </summary>
-        internal const ushort MaxResets = 20;
-
         private readonly ushort _currentThreadRecursionDepth;
         private readonly ushort _resetCount;
 
         private RecursionGuard(int currentThreadRecursionDepth, int numResets = 0)
         {
-            if (numResets > MaxResets)
+            if (numResets > RecursionGuardConfiguration.MaxResets)
             {
 #if NETSTANDARD1_6
                 throw new Exception("Stack Overflow");
@@ -41,7 +55,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The amount of recursion we have currently done.  
         /// </summary>
-        public int Depth => (_resetCount * SingleThreadRecursionLimit) + _currentThreadRecursionDepth;
+        public int Depth => (_resetCount * RecursionGuardConfiguration.SingleThreadRecursionLimit) + _currentThreadRecursionDepth;
 
         /// <summary>
         /// Gets the recursion guard for entering a recursive method.
@@ -65,6 +79,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Gets a value indicating whether the current operation has exceeded the recursion depth for a single thread,
         /// and needs to continue executing on a new thread.
         /// </summary>
-        public bool RequiresNewThread => _currentThreadRecursionDepth >= SingleThreadRecursionLimit;
+        public bool RequiresNewThread => _currentThreadRecursionDepth >= RecursionGuardConfiguration.SingleThreadRecursionLimit;
     }
 }
