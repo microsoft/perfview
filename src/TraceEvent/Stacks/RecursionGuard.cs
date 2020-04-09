@@ -5,7 +5,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     public static class RecursionGuardConfiguration
     {
         private static ushort _singleThreadRecursionLimit = 400;
-        private static ushort _maxResets = 40;
+        private static ushort _maxResets = 80;
 
         /// <summary>
         /// For recursive methods that need to process deep stacks, this value defines the limit for recursion within
