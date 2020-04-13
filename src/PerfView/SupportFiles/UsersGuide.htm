@@ -6545,10 +6545,10 @@
     </ul>
     <p>Where the 'Provider' can be </p>
     <ul>
-        <li>The name of an ETW provider that is registered with the operating system (returned by 'logman query Providers'</li>
+        <li>The name of an ETW provider that is registered with the operating system (returned by 'logman query Providers')</li>
         <li>
             A string of the form '*EventSourceName', which specifies the name of a dynamically registered ETW provider (e.g. an
-            EventSource.  The '*' indicates that the name should be hashed to a GUID and that GUID be used as the provider ID.
+            EventSource).  The '*' indicates that the name should be hashed to a GUID and that GUID be used as the provider ID.
         </li>
         <li>A explicit GUID</li>
     </ul>
@@ -6567,6 +6567,7 @@
         <li>
             <strong>Keywords=XXXX</strong> Specify the ETW keywords to turn on the event needed for the stop.
             The XXXX is specified in hexadecimal (with or without the 0x prefix) and the default value is ulong.MaxValue
+            If using Windows Kernel Trace provider the default value is 0x0001270F (same as default in perfview for kernel events except profile)
         </li>
         <li>
             <strong>Level=N</strong> Specify the ETW Level (1 = critical, 5 = verbose) to turn on the event needed for the stop.
@@ -6575,13 +6576,13 @@
         <li>
             <strong>Process=SSSS</strong> Specify a decimal process ID or a process name (exe name without path or extension),
             to filter by.   This can also be specified by using the /Process qualifier.  The default is to listen to all processes.
-            As with the /Process qualifier, if multiple processes with the same name are present it only ONE of them at any particular
+            As with the /Process qualifier, if multiple processes with the same name are present only ONE of them at any particular
             time will be the focus process (thus use process IDs in that case).
         </li>
         <li>
             <a id="FieldFilter"><strong>FieldFilter=FieldName OP Value </strong></a>  Specifies a field filter.
             OP is one of &lt; &lt;= &gt; &gt;= = != or ~ (which means match
-            .NET regular expression, case insensitive), and value is either a string or integer value (currently no floating point).   This option can be
+            .NET regular expression, case insensitive), and value is either a string, integer value or a floating point value.   This option can be
             repeated more than once in which case the event has to match ALL the filters (currently no OR operator).  This can work
             on single event triggers as well as start-stop triggers however for start-stop triggers it only applies to the START event.
             This is a very powerful option that allows you to be quite specific about which particular event to trigger on.
@@ -6590,11 +6591,9 @@
             <strong>BufferSizeMB=NNN</strong> Specify the buffer size used by the trigger session.   This is only needed if
             the provider generates a LARGE volume of events rapidly.  The default value is 256 MB.
         </li>
-    </ul>
-    <ul>
         <li>
             <strong>TriggerMSec=NNN</strong> Specifies that PerfView will listen not for a single event but for a start stop
-            pair and that only duration large than NNN MSec will trigger a stop.   If this key-value is present then the following
+            pair and that only duration larger than NNN MSec will trigger a stop.   If this key-value is present then the following
             key-values have meaning.
         </li>
         <li>
@@ -6634,7 +6633,7 @@
         <li>PerfView /StopOnEtwEvent:*MyEventSource/MyWarning collect</li>
     </ul>
     <p>
-        If you defined your provider 'MyEventSource, and had two events 'MyRequestStart' and 'MyRequestStop,
+        If you defined your provider 'MyEventSource, and had two events 'MyRequestStart' and 'MyRequestStop',
         you could stop whenever your requests took more than 2 seconds by doing
     </p>
     <ul>
@@ -6650,25 +6649,31 @@
         If want to stop when a process starts it is a bit more problematic because the 'start' event actually occurs in the process that
         spawned the process not the process being created.  Instead you can use the fact that the ProcessStart has a 'ImageName' field
         and you can use the ~ operator of the <a href="#FieldFilter">FieldFilter</a> option to trigger on that.
-        Thus to stop when a process called GCTest.exe is launch you can do
+        Thus to stop when a process called GCTest.exe is launched you can do
     </p>
     <ul>
         <li>PerfView /StopOnEtwEvent:Microsoft-Windows-Kernel-Process/ProcessStart/Start;FieldFilter=ImageName~GCTest.exe collect</li>
     </ul>
     <p>
-        Here is a slightly more complex example where we only stop of the GCTest.exe executable fails with a non-zero exit code.   Here
-        we use the ImageName field to find a particular Exe and well as the ExitCode field to determine if the process fails.
+        Here is a slightly more complex example where we only stop if the GCTest.exe executable fails with a non-zero exit code.   Here
+        we use the ImageName field to find a particular Exe as well as the ExitCode field to determine if the process fails.
         You can use this to stop PerfView when a particular process in a large script fails (which is a reasonably common scenario).
     </p>
     <ul>
         <li>PerfView /StopOnEtwEvent:Microsoft-Windows-Kernel-Process/ProcessStop/Stop;FieldFilter=ImageName~GCTest.exe;FieldFilter=ExitCode!=0 collect</li>
     </ul>
     <p>
-        Here is an example where we want to stop when a particular URL is serviced by a ASP.NET server.  Basically we stop wan a ASP.NET
+        Here is an example where we want to stop when a particular URL is serviced by a ASP.NET server.  Basically we stop when a ASP.NET
         Request event fires with a 'FullUrl' field that matches the pattern (ends in /stop.aspx).
     </p>
     <ul>
-        <li>PerfView PerfView "/StopOnEtwEvent:*Microsoft-Windows-ASPNET/Request/Start;FieldFilter=FullUrl~http://.*/stop.aspx" collect</li>
+        <li>PerfView "/StopOnEtwEvent:*Microsoft-Windows-ASPNET/Request/Start;FieldFilter=FullUrl~http://.*/stop.aspx" collect</li>
+    </ul>
+    <p>
+        Here is an example where we want to stop when a disk I/O takes longer than 10000 ms.  We want to monitor Windows Kernel Trace/DiskIO/Read events and use 'DiskServiceTimeMSec' field in a FieldFilter expression.
+    </p>
+    <ul>
+        <li>PerfView "/StopOnEtwEvent:Windows Kernel Trace/DiskIO/Read;FieldFilter=DiskServiceTimeMSec>10000.0;Keywords=0x100" collect</li>
     </ul>
     <p>
         In general the option is pretty powerful, especially if you have the ability to add ETW events to your code (EventSource)  Coupled with
@@ -6693,9 +6698,9 @@
         button.  This will bring up the complete XML manifest for the provider.  You will find a 'keywords' section and in that you will find the definitions
         of each keyword.  Thus we find that the WINEVENT_KEYWORD_PROCESS keyword has the value 0x10, and we can see that the event of interest (ProcessStop/Stop)
         is tied to this keyword, we know that this is the only keyword we actually need.   Thus we know the 'magic' number to give to the 'Keywords' option
-        above.   Note you don't have to do this, but it does make debugging easier (since there are fewer events to have to filter out).
+        above.   Another way to find the keywords is using "logman query providers <b>provider</b>".
+        Note you don't have to do this, but it does make debugging easier and processing more efficient (since there are fewer events to have to filter out).
     </p>
-
     <h5>Debugging Triggering Issues</h5>
     <p>
         It is not uncommon for you to try out a /StopOnEtwEvent qualifier and find that it does not do what you want (typically because it did not
