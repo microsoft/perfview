@@ -22,8 +22,8 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <PerfViewVersion>2.0.54</PerfViewVersion>
-    <TraceEventVersion>2.0.54</TraceEventVersion>
+    <PerfViewVersion>2.0.55</PerfViewVersion>
+    <TraceEventVersion>2.0.55</TraceEventVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
