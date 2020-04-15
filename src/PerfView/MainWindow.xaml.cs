@@ -2242,8 +2242,10 @@ namespace PerfView
 
         private string m_openNextFileName;
 
-        // When you right click an item in the TreeView it doesn't automatically change to the TreeViewItem you clicked on.
-        // This helper method changes focus so that the right-click menu items commands are bound to the right TreeViewItem
+        /// <summary>
+        /// When you right click an item in the TreeView it doesn't automatically change to the TreeViewItem you clicked on.
+        /// This helper method changes focus so that the right-click menu items commands are bound to the right TreeViewItem
+        /// </summary>
         private void TreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             TreeViewItem treeViewItem = FindTreeViewItemInVisualHeirarchy(e.OriginalSource as DependencyObject);
@@ -2255,9 +2257,11 @@ namespace PerfView
             }
         }
 
-        static TreeViewItem FindTreeViewItemInVisualHeirarchy(DependencyObject source)
+        /// <summary>
+        /// Given an item in visual a tree, navigate the parents upwards until we find the TreeViewItem it represents.
+        /// </summary>
+        private static TreeViewItem FindTreeViewItemInVisualHeirarchy(DependencyObject source)
         {
-            // Given an item in visual a tree, navigate the parents upwards until we find the TreeViewItem it represents.
             while (source != null && !(source is TreeViewItem))
             {
                 source = VisualTreeHelper.GetParent(source);

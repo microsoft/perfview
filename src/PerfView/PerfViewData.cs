@@ -1116,6 +1116,10 @@ namespace PerfView
             }
         }
 
+        /// <summary>
+        /// Generates an HTML report and opens it using the machine's default handler .html file paths.
+        /// </summary>
+        /// <param name="worker">The StatusBar that should be updated with progress.</param>
         public void OpenInExternalBrowser(StatusBar worker)
         {
             TraceLog trace = GetTrace(worker);
