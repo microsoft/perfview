@@ -894,7 +894,7 @@ namespace PerfView
             if (caller == StackSourceCallStackIndex.Invalid)
             {
                 string topCallStackStr = stackSource.GetFrameName(stackSource.GetFrameIndex(callStack), true);
-                
+
                 if (GetProcessForStackSourceFromTopCallStackFrame(topCallStackStr, out ret))
                 {
                     processes.Add(ret);
@@ -1063,80 +1063,11 @@ namespace PerfView
         {
             if (Viewer == null)
             {
-                var etlDataFile = DataFile as ETLPerfViewData;
-                TraceLog trace = null;
-                if (etlDataFile != null)
-                {
-                    trace = etlDataFile.GetTraceLog(worker.LogWriter);
-                }
-                else
-                {
-                    var linuxDataFile = DataFile as LinuxPerfViewData;
-                    if (linuxDataFile != null)
-                    {
-                        trace = linuxDataFile.GetTraceLog(worker.LogWriter);
-                    }
-                    else
-                    {
-                        var eventPipeDataFile = DataFile as EventPipePerfViewData;
-                        if (eventPipeDataFile != null)
-                        {
-                            trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
-                        }
-                    }
-                }
+                TraceLog trace = GetTrace(worker);
 
                 worker.StartWork("Opening " + Name, delegate ()
                 {
-                    var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
-                    using (var writer = File.CreateText(reportFileName))
-                    {
-                        writer.WriteLine("<html>");
-                        writer.WriteLine("<head>");
-                        writer.WriteLine("<title>{0}</title>", Title);
-                        writer.WriteLine("<meta charset=\"UTF-8\"/>");
-                        writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
-
-                        // Add basic styling to the generated HTML
-                        writer.WriteLine(@"
-<style>
-body {
-    font-family: Segoe UI Light, Helvetica, sans-serif;
-}
-
-tr:hover {
-    background-color: #eeeeee;
-}
-
-th {
-    background-color: #eeeeee;
-    font-family: Helvetica;
-    padding: 4px;
-    font-size: small;
-    font-weight: normal;
-}
-
-td {
-    font-family: Consolas, monospace;
-    font-size: small;
-    padding: 3px;
-    padding-bottom: 5px;
-}
-
-table {
-    border-collapse: collapse;
-}
-</style>
-");
-
-                        writer.WriteLine("</head>");
-                        writer.WriteLine("<body>");
-                        WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
-                        writer.WriteLine("</body>");
-                        writer.WriteLine("</html>");
-
-
-                    }
+                    string reportFileName = GenerateReportFile(worker, trace);
 
                     worker.EndWork(delegate ()
                     {
@@ -1185,8 +1116,106 @@ table {
             }
         }
 
+        public void OpenInExternalBrowser(StatusBar worker)
+        {
+            TraceLog trace = GetTrace(worker);
+
+            worker.StartWork("Opening in external browser " + Name, delegate ()
+            {
+                string reportFileName = GenerateReportFile(worker, trace);
+
+                worker.EndWork(delegate ()
+                {
+                    Process.Start(reportFileName);
+                });
+            });
+        }
+
         public override void Close() { }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["HtmlReportBitmapImage"] as ImageSource; } }
+
+        private TraceLog GetTrace(StatusBar worker)
+        {
+            var etlDataFile = DataFile as ETLPerfViewData;
+            TraceLog trace = null;
+            if (etlDataFile != null)
+            {
+                trace = etlDataFile.GetTraceLog(worker.LogWriter);
+            }
+            else
+            {
+                var linuxDataFile = DataFile as LinuxPerfViewData;
+                if (linuxDataFile != null)
+                {
+                    trace = linuxDataFile.GetTraceLog(worker.LogWriter);
+                }
+                else
+                {
+                    var eventPipeDataFile = DataFile as EventPipePerfViewData;
+                    if (eventPipeDataFile != null)
+                    {
+                        trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
+                    }
+                }
+            }
+
+            return trace;
+        }
+
+        private string GenerateReportFile(StatusBar worker, TraceLog trace)
+        {
+            var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
+            using (var writer = File.CreateText(reportFileName))
+            {
+                writer.WriteLine("<html>");
+                writer.WriteLine("<head>");
+                writer.WriteLine("<title>{0}</title>", Title);
+                writer.WriteLine("<meta charset=\"UTF-8\"/>");
+                writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+
+                // Add basic styling to the generated HTML
+                writer.WriteLine(@"
+<style>
+body {
+    font-family: Segoe UI Light, Helvetica, sans-serif;
+}
+
+tr:hover {
+    background-color: #eeeeee;
+}
+
+th {
+    background-color: #eeeeee;
+    font-family: Helvetica;
+    padding: 4px;
+    font-size: small;
+    font-weight: normal;
+}
+
+td {
+    font-family: Consolas, monospace;
+    font-size: small;
+    padding: 3px;
+    padding-bottom: 5px;
+}
+
+table {
+    border-collapse: collapse;
+}
+</style>
+");
+
+                writer.WriteLine("</head>");
+                writer.WriteLine("<body>");
+                WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
+                writer.WriteLine("</body>");
+                writer.WriteLine("</html>");
+
+
+            }
+
+            return reportFileName;
+        }
     }
 
     public class PerfViewTraceInfo : PerfViewHtmlReport
@@ -6705,7 +6734,7 @@ table {
             {
                 if (App.ConfigData["WarnedAboutOsHeapAllocTypes"] == null)
                 {
-                    MessageBox.Show(stackWindow, 
+                    MessageBox.Show(stackWindow,
                         "Warning: Allocation type resolution only happens on window launch.\r\n" +
                         "Thus if you manually lookup symbols in this view you will get method\r\n" +
                         "names of allocations sites, but to get the type name associated the \r\n" +
@@ -8766,18 +8795,18 @@ table {
                                 {
                                     sample.Metric = objInfo.RepresentativeSize;
                                     sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
-                                sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
-                                stackSource.AddSample(sample);
+                                    stackSource.AddSample(sample);
                                     return true;
                                 };
                                 newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                                 {
                                     sample.Metric = -objInfo.RepresentativeSize;
                                     sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
-                                sample.TimeRelativeMSec = time;
+                                    sample.TimeRelativeMSec = time;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
-                                stackSource.AddSample(sample);
+                                    stackSource.AddSample(sample);
                                 };
 
                                 newHeap.OnGC += delegate (double time, int gen)
@@ -8812,7 +8841,7 @@ table {
                                     {
                                         sample.Metric = objInfo.RepresentativeSize;
                                         sample.Count = (objInfo.RepresentativeSize / objInfo.Size);                                         // We guess a count from the size.  
-                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                        sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);
                                         stackSource.AddSample(sample);
                                     }
@@ -8848,12 +8877,12 @@ table {
                                 var typeName = data.TypeName;
                                 if (string.IsNullOrEmpty(typeName))
                                 {
-                                // Attempt to resolve the type name.
-                                TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                                    // Attempt to resolve the type name.
+                                    TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
                                     if (module != null)
                                     {
-                                    // Resolve the type name.
-                                    typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                                        // Resolve the type name.
+                                        typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
                                     }
                                 }
 
@@ -8912,7 +8941,7 @@ table {
                 stackWindow.ComputeMaxInTopStats = true;
             }
 
-            if(m_extraTopStats != null)
+            if (m_extraTopStats != null)
             {
                 stackWindow.ExtraTopStats += " " + m_extraTopStats;
             }
