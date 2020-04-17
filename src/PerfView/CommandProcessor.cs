@@ -250,21 +250,23 @@ namespace PerfView
                 DateTime waitStartTime = DateTime.Now;
                 DateTime lastProgressReportTime = waitStartTime;
                 LogFile.WriteLine("[StartOnPerfCounter active waiting for trigger: {0}]", string.Join(",", parsedArgs.StartOnPerfCounter));
-                var startTigggers = new List<Trigger>();
+                var startTriggers = new List<Trigger>();
                 try
                 {
                     // Set up the triggers
                     bool startTriggered = false;
                     foreach (var startTriggerSpec in parsedArgs.StartOnPerfCounter)
                     {
-                        startTigggers.Add(new PerformanceCounterTrigger(startTriggerSpec, 0, LogFile, delegate (PerformanceCounterTrigger startTrigger)
+                        var perfCtrTrigger = new PerformanceCounterTrigger(startTriggerSpec, 0, LogFile, delegate (PerformanceCounterTrigger startTrigger)
                         {
                             LogFile.WriteLine("StartOnPerfCounter " + startTriggerSpec + " Triggered.  Value: " + startTrigger.CurrentValue.ToString("n1"));
                             startTriggered = true;
-                        }));
+                        });
+                        perfCtrTrigger.MinSecForTrigger = parsedArgs.MinSecForTrigger;
+                        startTriggers.Add(perfCtrTrigger);
                     }
 
-                    // Wait for the triggers to happen.  
+                    // Wait for the triggers to happen.
                     while (!collectionCompleted.WaitOne(200))
                     {
                         if (startTriggered)
@@ -276,7 +278,7 @@ namespace PerfView
                         if ((now - lastProgressReportTime).TotalSeconds > 10)
                         {
                             LogFile.WriteLine("Waiting for start trigger {0} sec.", (int)(now - waitStartTime).TotalSeconds);
-                            foreach (var startTrigger in startTigggers)
+                            foreach (var startTrigger in startTriggers)
                             {
                                 var triggerStatus = startTrigger.Status;
                                 if (triggerStatus.Length != 0)
@@ -290,7 +292,7 @@ namespace PerfView
                 }
                 finally
                 {
-                    foreach (var startTrigger in startTigggers)
+                    foreach (var startTrigger in startTriggers)
                     {
                         startTrigger.Dispose();
                     }

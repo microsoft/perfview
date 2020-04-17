@@ -97,7 +97,7 @@ namespace PerfView
         public int StopOnGCOverMsec;
         public int StopOnBGCFinalPauseOverMsec; // Stop on a BGC whose final pause is over this many ms
         public float DecayToZeroHours;          //causes 'StopOn*OverMSec' timeouts to decay to zero over this time period
-        public int MinSecForTrigger;            // affects StopOnPerfCounter
+        public int MinSecForTrigger = 3;        // affects StopOnPerfCounter and StartOnPerfCounter
         public string StopOnEventLogMessage;    // stop collection on event logs
         public string StopCommand;              // is executed when a stop is triggered.   
         public int StopOnAppFabricOverMsec;
