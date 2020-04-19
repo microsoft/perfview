@@ -112,7 +112,9 @@ namespace PerfView
             List<IProcess> processes = new List<IProcess>();
             foreach (var process in m_processes)
             {
-                if (filterRegex.Match(process.Name).Success || filterRegex.Match(process.CommandLine).Success)
+                if (filterRegex.Match(process.Name).Success ||
+                    filterRegex.Match(process.CommandLine).Success ||
+                    filterRegex.Match(process.ProcessID.ToString()).Success)
                 {
                     processes.Add(process);
                 }
