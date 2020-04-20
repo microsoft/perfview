@@ -964,20 +964,32 @@ InstallLTTng_RHEL()
     # Disallow non-root users.
     EnsureRoot
 
-    packageRepo="https://packages.efficios.com/repo.files/EfficiOS-RHEL7-x86-64.repo"
-
-    if [ "$forceInstall" != 1 ]
-    then 
-        # Prompt for confirmation, since we need to add a new repository.
-        BlueText
-        echo "LTTng installation requires that a new package repo be added to your yum configuration."
-        echo "The package repo url is: $packageRepo"
-        echo ""
-        read -p "Would you like to add the LTTng package repo to your YUM configuration? [Y/N]" resp
-        ResetText
+    local isRHEL7=0
+    local isRHEL8=0
+    if [ -e /etc/redhat-release ]; then
+        local redhatRelease=$(</etc/redhat-release)
+        if   [[ $redhatRelease == "CentOS Linux release 7."* || $redhatRelease == "Red Hat Enterprise Linux "*"release 7."* ]]; then
+            isRHEL7=1
+        elif [[ $redhatRelease == "CentOS Linux release 8."* || $redhatRelease == "Red Hat Enterprise Linux "*"release 8."* ]]; then
+            isRHEL8=1
+        fi
     fi
-    if [ "$resp" == "Y" ] || [ "$resp" == "y" ] || [ "$forceInstall" == 1 ]
+
+    if  [ "$isRHEL7" == "1" ] || [ "$isRHEL8" == "1" ]
     then
+        packageRepo="https://packages.efficios.com/repo.files/EfficiOS-RHEL7-x86-64.repo"
+
+        if [ "$forceInstall" != 1 ]
+        then
+            # Prompt for confirmation, since we need to add a new repository.
+            BlueText
+            echo "LTTng installation requires that a new package repo be added to your yum configuration."
+            echo "The package repo url is: $packageRepo"
+            echo ""
+            read -p "Would you like to add the LTTng package repo to your YUM configuration? [Y/N]" resp
+            ResetText
+        fi
+
         # Make sure that wget is installed.
         BlueText
         echo "Installing wget.  Required to add package repo."
@@ -992,9 +1004,17 @@ InstallLTTng_RHEL()
 
         # Update the yum package database.
         yum updateinfo
+    fi
 
-        # Install LTTng
-        yum install lttng-tools lttng-ust kmod-lttng-modules babeltrace
+    # Install LTTng
+    yum install -y lttng-tools lttng-ust babeltrace
+    if  [ "$isRHEL7" == "1" ]
+    then
+        yum install -y kmod-lttng-modules
+    else
+        YellowText
+        echo "LTTng kernel package (kmod-lttng-modules) is not available on this platform."
+        ResetText
     fi
 }
 
