@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Media;
+using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace PerfView
@@ -21,6 +23,8 @@ namespace PerfView
             {
                 AllProcsButton.Visibility = System.Windows.Visibility.Hidden;
             }
+
+            ProcessFilterTextBox.Text = "";
 
             UpdateItemSource();
             var filteredProcesses = Grid.ItemsSource as List<IProcess>;
@@ -95,7 +99,28 @@ namespace PerfView
                 return;
             }
 
-            Grid.ItemsSource = m_processes;
+            var filterText = ProcessFilterTextBox.Text;
+            if (filterText == "")
+            {
+                Grid.ItemsSource = m_processes;
+                return;
+            }
+            var regex = Regex.Escape(filterText);
+            regex = regex.Replace(@"\*", ".*");
+            var filterRegex = new Regex(regex, RegexOptions.IgnoreCase);
+
+            List<IProcess> processes = new List<IProcess>();
+            foreach (var process in m_processes)
+            {
+                if (filterRegex.Match(process.Name).Success ||
+                    filterRegex.Match(process.CommandLine).Success ||
+                    filterRegex.Match(process.ProcessID.ToString()).Success)
+                {
+                    processes.Add(process);
+                }
+            }
+
+            Grid.ItemsSource = processes;
         }
 
         internal void OKClicked(object sender, RoutedEventArgs e)
@@ -120,7 +145,7 @@ namespace PerfView
         {
             MainWindow.DisplayUsersGuide(e.Parameter as string);
         }
-        private void KeyDownHander(object sender, KeyEventArgs e)
+        private void GridKeyDownHander(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Return)
             {
@@ -147,6 +172,11 @@ namespace PerfView
                 e.Handled = true;
             }
         }
+        private void FilterTextChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateItemSource();
+        }
+
         private void AllProcsClicked(object sender, RoutedEventArgs e)
         {
             m_action(null);
