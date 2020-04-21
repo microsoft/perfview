@@ -615,6 +615,10 @@ declare -a DotNETRuntimePrivate_DynamicTypeUsageKeyword=(
     DotNETRuntimePrivate:ObjectVariantMarshallingToManaged
 )
 
+declare -a EventSource=(
+    DotNETRuntime:EventSource
+)
+
 declare -a LTTng_Kernel_ProcessLifetimeKeyword=(
     sched_process_exec
     sched_process_exit
