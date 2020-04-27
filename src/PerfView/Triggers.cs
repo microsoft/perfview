@@ -109,6 +109,8 @@ namespace Triggers
 
             m_task = Task.Factory.StartNew(delegate
             {
+                var desiredDirection = IsGreaterThan ? "above" : "below";
+                var otherDirection = IsGreaterThan ? "below" : "above";
                 while (!m_monitoringDone)
                 {
                     var isTriggered = IsCurrentlyTrue();
@@ -116,8 +118,8 @@ namespace Triggers
                     {
                         if (m_wasUntriggered)
                         {
-                            m_log.WriteLine("[Counter is at " + CurrentValue.ToString("f1") + " which is above the trigger for " + m_count + " sec.  Need " + MinSecForTrigger + " sec to trigger.]");
-                            // Perf counters are noisy, only trigger if we get 3 consecutive counts that trigger.  
+                            m_log.WriteLine($"[Counter is at {CurrentValue:n1} which is {desiredDirection} the threshold for {m_count} sec.  Need {MinSecForTrigger} sec to trigger.]");
+                            // Perf counters are noisy, only trigger if we get MinSecForTrigger consecutive counts that are above/below the threshold.
                             m_count++;
                             if (m_count > MinSecForTrigger)
                             {
@@ -128,8 +130,8 @@ namespace Triggers
                         {
                             if (!m_warnedAboutUntriggered)
                             {
-                                m_log.WriteLine("[WARNING: {0}: Counter is above the trigger level already!]", Status);
-                                m_log.WriteLine("[WARNING: PerfView will not trigger until the counter drops below the trigger level.]");
+                                m_log.WriteLine($"[WARNING: {Status}: Counter is {desiredDirection} the trigger level initially!]");
+                                m_log.WriteLine($"[WARNING: PerfView will not trigger until the counter moves from {otherDirection} the trigger level to {desiredDirection} the level.]");
                                 m_warnedAboutUntriggered = true;
                             }
                             m_count = 0;
@@ -144,7 +146,7 @@ namespace Triggers
                             {
                                 m_count = 0;
                                 m_wasUntriggered = true;
-                                m_log.WriteLine("[{0}: Waiting for trigger of {1}, CurVal {2:n1}]", Status, EffectiveThreshold, CurrentValue);
+                                m_log.WriteLine($"[{Status}: Waiting for trigger of {EffectiveThreshold}, CurVal {CurrentValue:n1}]");
                             }
                         }
                         else

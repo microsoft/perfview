@@ -6314,9 +6314,15 @@
         <li>PerfView collect "/StopOnPerfCounter:Memory:Committed Bytes: > 50000000000"</li>
     </ul>
     <p>
-        will stop collection of the committed bytes for the entire machine exceed 50GB.  Notice
+        will stop collection when the committed bytes for the entire machine exceed 50GB.  Notice
         that the counter is still CATEGORY:NAME:INSTANCE, but in this case INSTANCE is the
         empty string (the trailing :).
+    </p>
+    <p>
+        The performance counter will trigger when PerfView detects that the
+        counter has satisfied the condition for a certain number of seconds,
+        defaulting to 3 seconds. You can control this with the flag
+        /MinSecForTrigger:N to set the threshold to N seconds.
     </p>
     <p>
         When the performance counter triggers, PerfView actually collects 10 more seconds
@@ -6423,7 +6429,7 @@
         event log, but if you wish to monitor another you can do so by prefixing 'Pattern'
         with the name of the event log following by a @.
     </p>
-    <h5>Using log .NET GCs as as the trigger to stop</h5>
+    <h5>Using long .NET GCs as as the trigger to stop</h5>
     <p>
         Another&nbsp; reasonably common scenario is
         you have some non-HTTP based service that is experiencing pause times and you have a large
@@ -6720,7 +6726,10 @@
         inefficient if the point of interest was well after the performance counter
         triggers.   In this case it makes more sense to <b>not event start</b> collection until the interesting time.
         This is what the /StartOnPerfCounter option is for. Its syntax is identical to <a href="#StopOnPerfCounter">/StopOnPerfCounter</a>
-        however it will not even start collect until this trigger trips.
+        except that it will not even start collecting until this trigger trips. 
+        The flag /MinSecForTrigger:N applies to /StartOnPerfCounter, to
+        control how many seconds the performance counter has to satisfy the
+        condition before triggering collection (the default is 3 seconds).
     </p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
@@ -7383,7 +7392,7 @@
     </p>
     <hr />
     <!--  ********************************** -->
-    <h2>Command Line Reference</h2>
+    <h2><a id="CommandLineReference">Command Line Reference</a></h2>
     <p>
         Most functionality that is not intimately tied to viewing is available from the
         command line to allow for easy automation of data collection.&nbsp; At the command
