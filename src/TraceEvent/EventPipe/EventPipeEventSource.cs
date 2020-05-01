@@ -265,19 +265,23 @@ namespace Microsoft.Diagnostics.Tracing
                 if (reader.Current != metaDataEnd)
                 {
                     // If we've already parsed the V1 metadata and there's more left to decode,
-                    // then we have V2 metadata to read
-                    StreamLabel metadataV2Start = reader.Current;
-                    int v1Length = (int)(metadataV2Start - metadataV1Start);
-                    int length = payloadSize - v1Length;
-                    Debug.Assert(4 <= length && metadataV2Start.Add(length) <= metaDataEnd);
+                    // then we have a new version of metadata to read
+                    string identifier = reader.ReadNullTerminatedUnicodeString();
+                    if (identifier == "V2")
+                    {
+                        StreamLabel metadataV2Start = reader.Current;
+                        int v1Length = (int)(metadataV2Start - metadataV1Start);
+                        int length = payloadSize - v1Length;
+                        Debug.Assert(4 <= length && metadataV2Start.Add(length) <= metaDataEnd);
 
-                    var metaDataV2Header = new EventPipeEventMetaDataHeader(reader, length - 4,
-                        EventPipeMetaDataVersion.NetTraceV2, PointerSize, _processId, metaDataHeader.MetaDataId, metaDataHeader.ProviderName);
+                        var metaDataV2Header = new EventPipeEventMetaDataHeader(reader, length - 4,
+                            EventPipeMetaDataVersion.NetTraceV2, PointerSize, _processId, metaDataHeader.MetaDataId, metaDataHeader.ProviderName);
 
-                    // Record the metadata for this new event (overwriting the old event);
-                    _eventMetadataDictionary.Remove(metaDataHeader.MetaDataId);
-                    _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataV2Header);
-                    OnNewEventPipeEventDefinition(metaDataV2Header, reader, metaDataEnd);
+                        // Record the metadata for this new event (overwriting the old event);
+                        _eventMetadataDictionary.Remove(metaDataHeader.MetaDataId);
+                        _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataV2Header);
+                        OnNewEventPipeEventDefinition(metaDataV2Header, reader, metaDataEnd);
+                    }
                 }
 
                 Debug.Assert(eventData.StackBytesSize == 0, "Meta-data events should always have a empty stack");
