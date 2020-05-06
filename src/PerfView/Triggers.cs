@@ -567,8 +567,12 @@ namespace Triggers
                         }
                         else
                         {
-                            m_processID = WaitingForProcessID;              // This is an illegal process ID 
-                            m_session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process);
+                            m_processID = WaitingForProcessID; // WaitingForProcessID is an illegal process ID
+                            // monitor kernel process events to late bind the process name
+                            if (ProviderGuid != KernelTraceEventParser.ProviderGuid)
+                            {
+                                m_session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process);
+                            }
                             m_log.WriteLine("[Only allowing process with Name {0} to stop the trace.]", ProcessFilter);
                         }
                     }
@@ -655,6 +659,9 @@ namespace Triggers
                             {
                                 if (m_startEvent.Matches(data))
                                 {
+                                    // Track that we got an event of interest. Helps to debug why a trigger may not be firing.
+                                    m_requestCount++;
+
                                     // Check field filters
                                     if (!PassesFieldFilters(data))
                                     {
@@ -808,7 +815,26 @@ namespace Triggers
                         m_log.WriteLine("[Enabling ETW session for monitoring requests.]");
                         m_log.WriteLine("In Trigger session {0} enabling Provider {1} ({2}) Level {3} Keywords 0x{4:x}",
                             sessionName, ProviderName, ProviderGuid, ProviderLevel, ProviderKeywords);
-                        m_session.EnableProvider(ProviderGuid, ProviderLevel, ProviderKeywords);
+
+                        // Windows Kernel Trace has to be enabled via EnableKernelProvider
+                        if (ProviderGuid == KernelTraceEventParser.ProviderGuid)
+                        {
+                            var kernelKeywords = KernelTraceEventParser.Keywords.Default & ~KernelTraceEventParser.Keywords.Profile;
+                            if (ProviderKeywords != ulong.MaxValue)
+                            {
+                                kernelKeywords = (KernelTraceEventParser.Keywords)ProviderKeywords;
+                            }
+                            if (m_processID == WaitingForProcessID) // need to add process events to late bind ProcessFilter
+                            {
+                                kernelKeywords |= KernelTraceEventParser.Keywords.Process;
+                            }
+                            m_session.EnableKernelProvider(kernelKeywords);
+                        }
+                        else
+                        {
+                            m_session.EnableProvider(ProviderGuid, ProviderLevel, ProviderKeywords);
+                        }
+
                         LogVerbose(DateTime.Now, "Starting Provider " + ProviderName + " GUID " + ProviderGuid);
 
                         listening = true;
@@ -825,8 +851,6 @@ namespace Triggers
         /// <summary>
         /// Returns true of 'data' passes any field filters we might have.  
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private unsafe bool PassesFieldFilters(TraceEvent data)
         {
             // Do we have any field filters?
@@ -1098,13 +1122,17 @@ namespace Triggers
                         Value = filterMatch.Groups[3].Value
                     };
 
-                    // Try to convert it to an integer value if possible.  
+                    // Try to convert it to an integer or double value if possible.
                     if (newFilter.Op != "~")
                     {
                         long longValue;
                         if (long.TryParse((string)newFilter.Value, out longValue))
                         {
                             newFilter.Value = longValue;
+                        }
+                        else if (double.TryParse((string)newFilter.Value, out double doubleValue))
+                        {
+                            newFilter.Value = doubleValue;
                         }
                     }
                     if (FieldFilters == null)
@@ -1374,12 +1402,18 @@ namespace Triggers
             else
             {
                 int result = int.MinValue;
-                if (Value is long)
+                if (Value is long || Value is double)
                 {
-                    long longValue = 0;
-                    if (long.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out longValue))
+                    // if it's a number, try to parse a long first, then as a double
+                    if (long.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out long longValue))
                     {
-                        result = -((long)Value).CompareTo(longValue);       // negated because the x and y arguments are swapped.  
+                        var expressionValue = Convert.ToInt64(Value);
+                        result = -expressionValue.CompareTo(longValue);     // negated because the x and y arguments are swapped.  
+                    }
+                    else if (double.TryParse(fieldValue, System.Globalization.NumberStyles.Integer | System.Globalization.NumberStyles.AllowDecimalPoint, null, out double doubleValue))
+                    {
+                        var expressionValue = Convert.ToDouble(Value);
+                        result = -expressionValue.CompareTo(doubleValue);   // negated because the x and y arguments are swapped.
                     }
                 }
 
