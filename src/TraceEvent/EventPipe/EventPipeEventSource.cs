@@ -424,10 +424,13 @@ namespace Microsoft.Diagnostics.Tracing
         private DynamicTraceEventData ReadEventParametersAndBuildTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters,
             StreamLabel metadataBlobEnd)
         {
-            int opcode;
-            string opcodeName;
+            int opcode = eventMetaDataHeader.Opcode;
+            string opcodeName = ((TraceEventOpcode)opcode).ToString();
 
-            GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
+            if (opcode == 0)
+            {
+                GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
+            }
 
             DynamicTraceEventData.PayloadFetchClassInfo classInfo = null;
             DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, opcode, opcodeName, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
@@ -922,7 +925,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// the parameters.  We do this because this code does not know the best representation for
         /// this parameter information and so it just lets other code handle it.
         /// </summary>
-        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, EventPipeMetaDataVersion encodingVersion, 
+        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, EventPipeMetaDataVersion encodingVersion,
                                             int pointerSize, int processId, int metadataId = 0, string providerName = null)
         {
             // Get the event record and fill in fields that we can without deserializing anything.
@@ -1078,6 +1081,7 @@ namespace Microsoft.Diagnostics.Tracing
         public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } }
         public int Level { get { return _eventRecord->EventHeader.Level; } }
         public EventPipeMetaDataVersion EncodingVersion { get; private set; }
+        public int Opcode { get { return _eventRecord->EventHeader.Opcode; } }
 
         /// <summary>
         /// Reads the meta data for information specific to one event.
@@ -1136,6 +1140,9 @@ namespace Microsoft.Diagnostics.Tracing
             StreamLabel endMetadataHeader = startMetadataHeader.Add(metadataHeaderSize);
             Debug.Assert(endMetadataHeader <= endMetadataBlob);
             ReadMetadataCommon(reader);
+
+            int opcode = reader.ReadInt32();
+            _eventRecord->EventHeader.Opcode = (byte)opcode;
 
             // skip over extra data that future iterations of the header may add
             Debug.Assert(reader.Current <= endMetadataHeader);
