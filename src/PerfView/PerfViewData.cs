@@ -3345,7 +3345,7 @@ table {
             writer.WriteLine("<UL>");
             writer.WriteLine("<LI> <A HREF=\"command:excel\">View Event Statistics in Excel</A></LI>");
             writer.WriteLine("<LI>Total Event Count = {0:n0}</LI>", dataFile.EventCount);
-            writer.WriteLine("<LI>Total Lost Events = {0}</LI>", dataFile.EventsLost);
+            writer.WriteLine("<LI>Total Lost Events = {0:n0}</LI>", dataFile.EventsLost);
             writer.WriteLine("</UL>");
 
             writer.WriteLine("<Table Border=\"1\">");
@@ -8561,7 +8561,14 @@ table {
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
             // Open the file.
-            m_traceLog = GetTraceLog(worker.LogWriter);
+            m_traceLog = GetTraceLog(worker.LogWriter, delegate (bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
+            {
+                if (!m_notifiedAboutLostEvents)
+                {
+                    HandleLostEvents(parentWindow, truncated, numberOfLostEvents, eventCountAtTrucation, worker);
+                    m_notifiedAboutLostEvents = true;
+                }
+            });
 
             bool hasGC = false;
             bool hasJIT = false;
@@ -8961,7 +8968,7 @@ table {
             base.Close();
         }
 
-        public TraceLog GetTraceLog(TextWriter log)
+        public TraceLog GetTraceLog(TextWriter log, Action<bool, int, int> onLostEvents = null)
         {
             if (m_traceLog != null)
             {
@@ -8991,7 +8998,7 @@ table {
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            //options.OnLostEvents = onLostEvents;
+            options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
 
@@ -9042,7 +9049,7 @@ table {
                     FileUtilities.ForceDelete(etlxFile);
                     if (!File.Exists(etlxFile))
                     {
-                        return GetTraceLog(log);
+                        return GetTraceLog(log, onLostEvents);
                     }
                 }
                 throw;
@@ -9101,8 +9108,38 @@ table {
         public TraceLog TryGetTraceLog() { return m_traceLog; }
 
         #region Private
+
+        private void HandleLostEvents(Window parentWindow, bool truncated, int numberOfLostEvents, int eventCountAtTrucation, StatusBar worker)
+        {
+            string warning;
+            if (!truncated)
+            {
+                warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
+                    "Some analysis might be invalid.";
+            }
+            else
+            {
+                warning = "WARNING: The ETLX file was truncated at " + eventCountAtTrucation + " events.\r\n" +
+                    "This is to keep the ETLX file size under 4GB, however all rundown events are processed.\r\n" +
+                    "Use /SkipMSec:XXX after clearing the cache (File->Clear Temp Files) to see the later parts of the file.\r\n" +
+                    "See log for more details.";
+            }
+
+            MessageBoxResult result = MessageBoxResult.None;
+            parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+            {
+                result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
+                worker.LogWriter.WriteLine(warning);
+                if (result != MessageBoxResult.OK)
+                {
+                    worker.AbortWork();
+                }
+            });
+        }
+
         private TraceLog m_traceLog;
         private bool m_noTraceLogInfo;
+        private bool m_notifiedAboutLostEvents;
         #endregion
     }
 
