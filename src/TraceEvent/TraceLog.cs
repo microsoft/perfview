@@ -178,12 +178,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             using (var source = new EventPipeEventSource(filePath))
             {
+                CreateFromEventPipeEventSources(source, etlxFilePath, options);
+                
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                 {
                     options.OnLostEvents(false, source.EventsLost, 0);
                 }
-
-                CreateFromEventPipeEventSources(source, etlxFilePath, options);
             }
 
             return etlxFilePath;
@@ -2062,6 +2062,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 rawEtwEvents.DisallowEventIndexAccess = false;
             }
 #endif
+
+            // EventPipe doesn't set EventsLost until after Process is called.
+            if(rawEvents is EventPipeEventSource)
+            {
+                eventsLost = rawEvents.EventsLost;
+            }
 
             if (eventCount >= maxEventCount)
             {
