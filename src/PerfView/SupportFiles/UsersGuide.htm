@@ -4359,25 +4359,19 @@
             where <strong>CpuCtrName</strong> is the name of the counter and <strong>RolloverCount</strong>
             is the number of such events to skip after taking a sample (thus BranchInstruction:10000
             will take a stack trace once ever 10K branch instructions.&nbsp;&nbsp;&nbsp;
-            <b>The set of CPU counters that are supported depends on the processor chip</b>.
-            This feature is only supported on Windows 8 and and above, and currently <strong>does NOT work in virtual machines</strong>
-            or <strong>if you have hypervisor installed (that is you can host virtual machines)</strong>.   You can
-            tell if hypervisor is installed by trying to launch the hyper-V manager (type 'virtmgmt.msc' in the 'Run' dialog).
-            If you do have the hypervisor installed, then you can go to Control Panel -> Programs and Features -> Turn Windows Features on and off
-            and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
-            do your collection and the turn it back on without losing your virtual machines (although it is a pain).
-            Hopefully this will be fixed in Win 10.  In addition to the GUI you can access this feature
+            <b>The set of CPU counters that are supported depends on the processor</b>.
+            In addition to the GUI you can access this feature
             using the command line /CpuCounters:XXX qualifier.   (See PerfView -> Command Line Help for more)
             <p>
-                If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
-                suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because
-                you are running in a VM or a machine that has Hyper-V installed (see above).
                 You can select several of these options from
                 the drop down menu and the modify the counts if desired.&nbsp;&nbsp;  Currently there
                 is no special view for these events, they show up in the 'Any Stacks Stacks' view as the
                 PMCSample event.  Thus going to that view and doing a 'Include Item' on this
                 item will allow you to see at what stacks the samples where taken.
             </p>
+            <strong>Note:</strong> Earlier than Windows 10 this feature does not work if there is a hypervisor enabled. 
+            If you only have 'Timer' events available this is the cause. Disable the hypervisor to use
+            this feature.
         </li>
         <li>
             The <strong><a id="OSHeapExeTextBox">OS Heap Executable TextBox</a></strong> -&nbsp;
