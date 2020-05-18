@@ -30,15 +30,13 @@ namespace Microsoft.Diagnostics.Tracing
     /// The EVENT_RECORD is laid out as a memory dump of the structure in memory. All pointers from
     /// the structure are laid out successively in front of the EVENT_RECORD.
     /// 
-    /// The compression mechanism is using the NTDLL.RtlDecompressBufferEx Express Huffman procedure.
+    /// The compression mechanism is using the LZ4 17-Bits Window, 3 Bit Run Length, 4 Bits Match Length.
     /// </summary>
     public sealed class BPerfEventSource : TraceEventDispatcher
     {
         private const int OffsetToExtendedData = 88; // offsetof(TraceEventNativeMethods.EVENT_RECORD*, ExtendedData);
 
         private const int OffsetToUTCOffsetMinutes = 64; // offsetof(FAKE_TRACE_LOGFILE_HEADER, OrigHdr.TimeZone.Bias);
-
-        private const ushort CompressionFormatXpressHuff = 4;
 
         private const int BufferSize = 1024 * 1024 * 2;
 
@@ -63,8 +61,6 @@ namespace Microsoft.Diagnostics.Tracing
         private static readonly Guid KernelTraceControlMetaDataGuid = new Guid("{bbccf6c1-6cd1-48c4-80ff-839482e37671}");
 
         private readonly string btlFilePath;
-
-        private readonly byte[] workspace;
 
         private readonly byte[] uncompressedBuffer;
 
@@ -93,22 +89,24 @@ namespace Microsoft.Diagnostics.Tracing
         /// This constructor is used when the consumer has an offset within the BTL file that it would like to seek to.
         /// </summary>
         public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions traceEventDispatcherOptions)
-            : this(btlFilePath, traceEventDispatcherOptions, new byte[BufferSize], new byte[BufferSize], new byte[BufferSize])
+            : this(btlFilePath, traceEventDispatcherOptions, new byte[BufferSize], new byte[BufferSize])
         {
         }
 
         /// <summary>
         /// This constructor is used when the consumer is supplying the buffers for reasons like buffer pooling.
         /// </summary>
-        public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions options, byte[] workspace, byte[] uncompressedBuffer, byte[] compressedBuffer, bool skipReadingUnreachableEvents = false)
+        public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions options, byte[] uncompressedBuffer, byte[] compressedBuffer, bool skipReadingUnreachableEvents = false)
         {
             var startTime = DateTime.MinValue;
             var endTime = DateTime.MaxValue;
+
             if (options != null)
             {
                 startTime = options.StartTime == default(DateTime) ? DateTime.MinValue : options.StartTime;
                 endTime = options.EndTime == default(DateTime) ? DateTime.MaxValue : options.EndTime;
             }
+
             this.btlFilePath = btlFilePath;
             this.startFileOffset = 0;
             this.endQPCForManagedSymbolsInclusion = long.MaxValue;
@@ -138,7 +136,6 @@ namespace Microsoft.Diagnostics.Tracing
                 this.endFileOffset = GetOffset(indexFile, endTime, out _, out _);
             }
 
-            this.workspace = workspace;
             this.uncompressedBuffer = uncompressedBuffer;
             this.compressedBuffer = compressedBuffer;
 
@@ -216,10 +213,10 @@ namespace Microsoft.Diagnostics.Tracing
 
                         if (off + userDataLength <= buffer.Length)
                         {
-                            fixed (byte* userData = &buffer[off])
+                            fixed (byte* userDataPtr = &buffer[off])
                             {
                                 eventRecord.UserDataLength = (ushort)userDataLength;
-                                eventRecord.UserData = (IntPtr)userData;
+                                eventRecord.UserData = (IntPtr)userDataPtr;
                                 this.ProcessEventRecord(&eventRecord, dispatch: false);
                             }
                         }
@@ -522,12 +519,12 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 fixed (byte* uncompressedBufferPtr = &this.uncompressedBuffer[0])
-                fixed (byte* compressedBufferPtr = &this.compressedBuffer[0])
-                fixed (byte* workspacePtr = &this.workspace[0])
+                fixed (byte* compressedBufferPtr = &this.compressedBuffer[offset])
                 {
-                    if (RtlDecompressBufferEx(CompressionFormatXpressHuff, uncompressedBufferPtr, uncompressedBufferSize, compressedBufferPtr + offset, compressedBufferSize, out var finalUncompressedSize, workspacePtr) != 0)
+                    var finalUncompressedSize = Decompress(compressedBufferPtr, compressedBufferSize, uncompressedBufferPtr, BufferSize);
+                    if (finalUncompressedSize != uncompressedBufferSize)
                     {
-                        throw new Exception("Decompression failed");
+                        throw new Exception($"Decompression failed. Expecting {uncompressedBufferSize}, but got {finalUncompressedSize}!");
                     }
 
                     int bufferOffset = 0;
@@ -613,8 +610,113 @@ namespace Microsoft.Diagnostics.Tracing
             return 0;
         }
 
-        [DllImport("ntdll.dll")]
-        private static extern unsafe uint RtlDecompressBufferEx(ushort compressionFormat, byte* uncompressedBuffer, int uncompressedBufferSize, byte* compressedBuffer, int compressedBufferSize, out int finalUncompressedSize, byte* workSpace);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe uint DecodeMod(ref byte* p)
+        {
+            uint x = 0;
+
+            for (int i = 0; i <= 21; i += 7)
+            {
+                uint c = *p++;
+                x += c << i;
+                if (c < 128)
+                {
+                    break;
+                }
+            }
+
+            return x;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WildCopy(byte* d, byte* s, int n)
+        {
+            *(ulong*)d = *(ulong*)s;
+
+            for (int i = 8; i < n; i += 8)
+            {
+                *(ulong*)(d + i) = *(ulong*)(s + i);
+            }
+        }
+
+        private static unsafe int Decompress(byte* input, int inputLength, byte* output, int outputLength)
+        {
+            const int MIN_MATCH = 4;
+
+            byte* op = output;
+            byte* ip = input;
+            byte* ipEnd = ip + inputLength;
+            byte* opEnd = op + outputLength;
+
+            while (ip < ipEnd)
+            {
+                int token = *ip++;
+
+                if (token >= 32)
+                {
+                    int run = token >> 5;
+                    if (run == 7)
+                    {
+                        run += (int)DecodeMod(ref ip);
+                    }
+
+                    // Overrun check
+                    if (opEnd - op < run || ipEnd - ip < run)
+                    {
+                        return -1;
+                    }
+
+                    WildCopy(op, ip, run);
+                    op += run;
+                    ip += run;
+                    if (ip >= ipEnd)
+                    {
+                        break;
+                    }
+                }
+
+                int len = (token & 15) + MIN_MATCH;
+                if (len == 15 + MIN_MATCH)
+                {
+                    len += (int)DecodeMod(ref ip);
+                }
+
+                // Overrun check
+                if (opEnd - op < len)
+                {
+                    return -1;
+                }
+
+                int dist = ((token & 16) << 12) + *(ushort*)ip;
+                ip += 2;
+                byte* cp = op - dist;
+
+                // Range check
+                if (op - output < dist)
+                {
+                    return -1;
+                }
+
+                if (dist >= 8)
+                {
+                    WildCopy(op, cp, len);
+                    op += len;
+                }
+                else
+                {
+                    *op++ = *cp++;
+                    *op++ = *cp++;
+                    *op++ = *cp++;
+                    *op++ = *cp++;
+                    while (len-- != 4)
+                    {
+                        *op++ = *cp++;
+                    }
+                }
+            }
+
+            return ip == ipEnd ? (int)(op - output) : -1;
+        }
 
         [StructLayout(LayoutKind.Explicit)]
         private struct FAKE_TRACE_LOGFILE_HEADER

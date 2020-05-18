@@ -99,7 +99,7 @@ export class Callers extends React.Component<Props, State> {
                 <NavMenu dataFile={JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).a} />
                 <div style={{ margin: 2 + 'px' }}>
                     <div style={{ margin: 10 + 'px' }}>
-                        <h4>{base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} >> <Link to={`/ui/stackviewer/hotspots/${this.props.match.params.routeKey}`}>Hotspots</Link> >> Callers</h4>
+                        <h4>{base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} &raquo; <Link to={`/ui/stackviewer/hotspots/${this.props.match.params.routeKey}`}>Hotspots</Link> &raquo; Callers</h4>
                         <StackViewerFilter routeKey={this.props.match.params.routeKey}></StackViewerFilter>
                     </div>
                     {contents}
