@@ -136,6 +136,7 @@
     </None>
     <None Include="EventPipe\EventPipeFormat.md" />
     <None Include="EventPipe\EventSerialization.md" />
+    <None Include="EventPipe\NetPerfFormat.md" />
   </ItemGroup>
 
     <!-- *********************************************************** -->
