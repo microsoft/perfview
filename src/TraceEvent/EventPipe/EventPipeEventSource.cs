@@ -262,26 +262,35 @@ namespace Microsoft.Diagnostics.Tracing
                 _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
                 OnNewEventPipeEventDefinition(metaDataHeader, reader, metaDataEnd);
 
-                if (reader.Current != metaDataEnd)
+                while (reader.Current != metaDataEnd)
                 {
                     // If we've already parsed the V1 metadata and there's more left to decode,
-                    // then we have a new version of metadata to read
-                    string identifier = reader.ReadNullTerminatedUnicodeString();
-                    if (identifier == "V2")
+                    // then we have some tags to read
+                    int tagLength = reader.ReadInt32();
+                    EventPipeMetadataTag tag = (EventPipeMetadataTag)reader.ReadByte();
+
+                    StreamLabel tagEnd = reader.Current.Add(tagLength);
+                    if (tag == EventPipeMetadataTag.Opcode)
                     {
-                        StreamLabel metadataV2Start = reader.Current;
-                        int v1Length = (int)(metadataV2Start - metadataV1Start);
-                        int length = payloadSize - v1Length;
-                        Debug.Assert(4 <= length && metadataV2Start.Add(length) <= metaDataEnd);
-
-                        var metaDataV2Header = new EventPipeEventMetaDataHeader(reader, length - 4,
-                            EventPipeMetaDataVersion.NetTraceV2, PointerSize, _processId, metaDataHeader.MetaDataId, metaDataHeader.ProviderName);
-
-                        // Record the metadata for this new event (overwriting the old event);
-                        _eventMetadataDictionary.Remove(metaDataHeader.MetaDataId);
-                        _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataV2Header);
-                        OnNewEventPipeEventDefinition(metaDataV2Header, reader, metaDataEnd);
+                        Debug.Assert(tagLength == 1);
+                        metaDataHeader.Opcode = reader.ReadByte();
+                        UpdateEventDefinitionWithOpcode(metaDataHeader);
                     }
+                    else if (tag == EventPipeMetadataTag.ParameterPayload)
+                    {
+                        StreamLabel v2MetadataEnd = reader.Current.Add(tagLength);
+                        metaDataHeader.EncodingVersion = EventPipeMetaDataVersion.NetTraceV2;
+                        // Overwrite the current definitions with the new ones
+                        OnNewEventPipeEventDefinition(metaDataHeader, reader, v2MetadataEnd);
+                    }
+                    else
+                    {
+                        // There is an unhandled tag type we need to implement
+                        Debug.Assert(false);
+                    }
+
+                    // Skip any remaining bytes or unknown tags
+                    reader.Goto(tagEnd);
                 }
 
                 Debug.Assert(eventData.StackBytesSize == 0, "Meta-data events should always have a empty stack");
@@ -411,6 +420,18 @@ namespace Microsoft.Diagnostics.Tracing
             _metadataTemplates[template] = template;
         }
 
+        internal void UpdateEventDefinitionWithOpcode(EventPipeEventMetaDataHeader eventMetaDataHeader)
+        {
+            TraceEvent key = _metadataTemplates.Keys.Where(x => (int)x.eventID == eventMetaDataHeader.EventId).FirstOrDefault();
+            if (key == null)
+            {
+                return;
+            }
+
+            DynamicTraceEventData template = _metadataTemplates[key];
+            template.opcode = (TraceEventOpcode)eventMetaDataHeader.Opcode;
+        }
+
         internal bool TryGetTemplateFromMetadata(TraceEvent unhandledEvent, out DynamicTraceEventData template)
         {
             return _metadataTemplates.TryGetValue(unhandledEvent, out template);
@@ -486,8 +507,6 @@ namespace Microsoft.Diagnostics.Tracing
             ushort offset = 0;
             for (int fieldIndex = 0; fieldIndex < numFields; fieldIndex++)
             {
-
-
                 StreamLabel fieldEnd = metadataBlobEnd;
                 string fieldName = "<unknown_field>";
                 if (encodingVersion >= EventPipeMetaDataVersion.NetTraceV2)
@@ -892,7 +911,13 @@ namespace Microsoft.Diagnostics.Tracing
         LegacyV1 = 1, // Used by NetPerf version 1
         LegacyV2 = 2, // Used by NetPerf version 2
         NetTraceV1 = 3, // Used by NetPerf version 3 and NetTrace version 1 onwards
-        NetTraceV2 = 4  // Used by NetTrace file format version 1.1 onwards
+        NetTraceV2 = 4, // Used by NetTrace version 1.1 and onwards
+    }
+
+    internal enum EventPipeMetadataTag
+    {
+        Opcode = 1,
+        ParameterPayload = 2
     }
 
     /// <summary>
@@ -948,18 +973,9 @@ namespace Microsoft.Diagnostics.Tracing
             StreamLabel metadataEndLabel = reader.Current.Add(length);
 
             // Read the metaData
-            if (encodingVersion == EventPipeMetaDataVersion.NetTraceV2)
+            if (encodingVersion == EventPipeMetaDataVersion.NetTraceV1)
             {
-                if (metadataId == 0 || providerName == null)
-                {
-                    throw new ArgumentException();
-                }
-
-                ReadNetTraceV2Metadata(reader, metadataEndLabel, metadataId, providerName);
-            }
-            else if (encodingVersion == EventPipeMetaDataVersion.NetTraceV1)
-            {
-                ReadNetTraceV1Metadata(reader);
+                ReadNetTraceMetadata(reader);
             }
 #if SUPPORT_V1_V2
             else
@@ -1080,13 +1096,13 @@ namespace Microsoft.Diagnostics.Tracing
         public int EventVersion { get { return _eventRecord->EventHeader.Version; } }
         public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } }
         public int Level { get { return _eventRecord->EventHeader.Level; } }
-        public EventPipeMetaDataVersion EncodingVersion { get; private set; }
-        public int Opcode { get { return _eventRecord->EventHeader.Opcode; } }
+        public EventPipeMetaDataVersion EncodingVersion { get; internal set; }
+        public byte Opcode { get { return _eventRecord->EventHeader.Opcode; } internal set { _eventRecord->EventHeader.Opcode = (byte)value; } }
 
         /// <summary>
         /// Reads the meta data for information specific to one event.
         /// </summary>
-        private void ReadNetTraceV1Metadata(PinnedStreamReader reader)
+        private void ReadNetTraceMetadata(PinnedStreamReader reader)
         {
             MetaDataId = reader.ReadInt32();
             ProviderName = reader.ReadNullTerminatedUnicodeString();
@@ -1124,30 +1140,6 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
             Debug.Assert(_eventRecord->EventHeader.Level <= 5);
-        }
-
-        /// <summary>
-        /// Reads the meta data for information specific to one event.
-        /// </summary>
-        private void ReadNetTraceV2Metadata(PinnedStreamReader reader, StreamLabel endMetadataBlob, int metadataId, string providerName)
-        {
-            MetaDataId = metadataId;
-            ProviderName = providerName;
-            _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
-
-            StreamLabel startMetadataHeader = reader.Current;
-            int metadataHeaderSize = reader.ReadInt32();
-            StreamLabel endMetadataHeader = startMetadataHeader.Add(metadataHeaderSize);
-            Debug.Assert(endMetadataHeader <= endMetadataBlob);
-            ReadMetadataCommon(reader);
-
-            int opcode = reader.ReadInt32();
-            _eventRecord->EventHeader.Opcode = (byte)opcode;
-
-            // skip over extra data that future iterations of the header may add
-            Debug.Assert(reader.Current <= endMetadataHeader);
-            reader.Goto(endMetadataHeader);
-
         }
 
 #if SUPPORT_V1_V2
