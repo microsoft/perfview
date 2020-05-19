@@ -59,13 +59,18 @@ namespace TraceEventTests
             var sb = new StringBuilder(1024 * 1024);
             var traceEventDispatcherOptions = new TraceEventDispatcherOptions();
 
+            Guid systemTrace = new Guid("9e814aad-3204-11d2-9a82-006008a86939");
+
             using (var traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(Path.GetFullPath(bperfFileName), traceEventDispatcherOptions: traceEventDispatcherOptions)))
             {
                 var traceSource = traceLog.Events.GetSource();
 
                 traceSource.AllEvents += delegate (TraceEvent data)
                 {
-                    sb.AppendLine(Parse(data));
+                    if (data.ProviderGuid != systemTrace || (int)data.Opcode != 80)
+                    {
+                        sb.AppendLine(Parse(data));
+                    }
                 };
 
                 // Process

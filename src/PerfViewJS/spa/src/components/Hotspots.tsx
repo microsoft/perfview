@@ -116,7 +116,7 @@ export class Hotspots extends React.Component<Props, State> {
                 <NavMenu dataFile={JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).a} />
                 <div style={{ margin: 2 + 'px' }}>
                     <div style={{ margin: 10 + 'px' }}>
-                        <h4>{base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} >> Hotspots</h4>
+                        <h4>{base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} &raquo; Hotspots</h4>
                         <StackViewerFilter routeKey={this.props.match.params.routeKey}></StackViewerFilter>
                     </div>
                     {contents}
