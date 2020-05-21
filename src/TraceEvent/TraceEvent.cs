@@ -698,7 +698,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// end of a interval of time.   Many tools will match up start and stop opcodes automatically and compute durations.  
         /// </para>
         /// </summary>
-        public TraceEventOpcode Opcode { get { return opcode; } }
+        public TraceEventOpcode Opcode { get { return opcode; } internal set { opcode = value; } }
         /// <summary>
         /// Returns the human-readable string name for the Opcode property. 
         /// </summary>

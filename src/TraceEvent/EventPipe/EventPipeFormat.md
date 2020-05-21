@@ -249,7 +249,7 @@ Followed by PayloadSize bytes of payload and no alignment.
 
 ### Metadata event encoding
 
-For event blobs within a MetadataBlock, the payload describes a type of event. The payload contains a V1 and V2 field description, V1 of the nettrace format did not support array types (arbritrary number of arguments of the same type) and the V2 field description was added to enable this.
+For event blobs within a MetadataBlock, the payload describes a type of event. The payload contains a V1 and V2 field description, versions 1-4 of the file format did not support array types (arbritrary number of arguments of the same type) and the V2 field description was added to enable this.
 
 
 The PayloadBytes of such a MetaData definition are:
@@ -273,7 +273,7 @@ Followed by FieldCount number of field definitions
     <PAYLOAD_DESCRIPTION>
     string FieldName;    // The 2 byte Unicode, null terminated string representing the Name of the Field
 
-Following the FieldCount number of fields there are an optional set of metadata tags, where a tag consists of 
+In File format V5 and later only, following the FieldCount number of fields there are an optional set of metadata tags, where a tag consists of 
     int TagPayloadBytes; // The number of bytes the tag payload uses, uninclusive of this field
     byte TagKind;        // The type of tag it is. Currently used values are OpCode=1 V2Params=2
 
@@ -289,6 +289,7 @@ Followed by V2FieldCount number of field definitions
     <PAYLOAD_DESCRIPTION>
     string FieldName
 
+If the metadata event specifies a V2Params tag, the event must have an empty V1 parameter FieldCount and no field definitions.
 
 For primitive types and strings <PAYLOAD_DESCRIPTION> is not present, however if TypeCode == Object (1) then <PAYLOAD_DESCRIPTION> another payload
 description (that is a field count, followed by a list of field definitions).   These can be nested to arbitrary depth.  
@@ -481,5 +482,6 @@ Changes:
 9. SequencePoint blocks are new and were added to support several of the above features: Cache boundaries for the stack interning, dropped event detection for the seqeunce numbering, and cache management/sort boundaries for the unsorted events.
 10. The version number of the Trace object moved from 3 -> 4 and the version of EventBlock moved 1 -> 2.
 11. BeginObject tags are replaced by PrivateBeginObject to avoid memoization based memory leaks in the FastSerialization library.
+12. V5 of the file format introduce, this adds a set of optional tags after the metadata header and payload. These tags are used to describe the opcode of an event or include metadata for types that are unsupported in V4 and earlier.
 
 
