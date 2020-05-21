@@ -277,7 +277,7 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void CanReadV4EventPipeArrayTypes()
+        public void CanReadV5EventPipeArrayTypes()
         {
             PrepareTestData();
 

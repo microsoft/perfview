@@ -278,7 +278,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                     else if (tag == EventPipeMetadataTag.ParameterPayload)
                     {
-                        StreamLabel v2MetadataEnd = reader.Current.Add(tagLength);
+                        StreamLabel v2ParametersEnd = reader.Current.Add(tagLength);
                         metaDataHeader.EncodingVersion = EventPipeMetaDataVersion.NetTraceV2;
                         // Overwrite the current definitions with the new ones
                         OnNewEventPipeEventDefinition(metaDataHeader, reader, v2MetadataEnd);
@@ -973,13 +973,18 @@ namespace Microsoft.Diagnostics.Tracing
         LegacyV1 = 1, // Used by NetPerf version 1
         LegacyV2 = 2, // Used by NetPerf version 2
         NetTraceV1 = 3, // Used by NetPerf version 3 and NetTrace version 1 onwards
-        NetTraceV2 = 4, // Used by NetTrace version 1.1 and onwards
+    internal enum EventPipeMetaDataVersion
+    {
+        LegacyV1 = 1, // Used by NetPerf version 1
+        LegacyV2 = 2, // Used by NetPerf version 2
+        NetTrace = 3, // Used by NetPerf (version 3) and NetTrace (version 4+)
+   }
     }
 
     internal enum EventPipeMetadataTag
     {
         Opcode = 1,
-        ParameterPayload = 2
+        ParameterPayloadV2 = 2
     }
 
     /// <summary>
@@ -1207,7 +1212,7 @@ namespace Microsoft.Diagnostics.Tracing
 #if SUPPORT_V1_V2
         private void ReadObsoleteEventMetaData(PinnedStreamReader reader, EventPipeMetaDataVersion metaDataVersion)
         {
-            Debug.Assert((int)metaDataVersion <= 2);
+            Debug.Assert((int)metaDataVersion <= (int)EventPipeMetaDataVersion.LegacyV2);
 
             // Old versions use the stream offset as the MetaData ID, but the reader has advanced to the payload so undo it.
             MetaDataId = ((int)reader.Current) - EventPipeEventHeader.GetHeaderSize((int)metaDataVersion);
