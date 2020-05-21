@@ -286,7 +286,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         Debug.Assert(tagLength == 1);
                         metaDataHeader.Opcode = reader.ReadByte();
-                        eventTemplate.Opcode = (TraceEventOpcode)metaDataHeader.Opcode;
+                        SetOpcode(eventTemplate, metaDataHeader.Opcode);
                     }
 
                     // skip to next tag
@@ -479,17 +479,24 @@ namespace Microsoft.Diagnostics.Tracing
             return;
         }
 
-        private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
+        private void SetOpcode(DynamicTraceEventData template, int opcode)
         {
-            int opcode = eventMetaDataHeader.Opcode;
             string opcodeName = ((TraceEventOpcode)opcode).ToString();
 
             if (opcode == 0)
             {
-                GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
+                GetOpcodeFromEventName(template.EventName, out opcode, out opcodeName);
             }
 
-            return new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, opcode, opcodeName, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
+            template.opcode = (TraceEventOpcode)opcode;
+            template.opcodeName = opcodeName;
+        }
+
+        private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
+        {
+            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, 0, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
+            SetOpcode(template, eventMetaDataHeader.Opcode);
+            return template;
         }
 
         // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
