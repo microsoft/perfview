@@ -265,7 +265,7 @@ The PayloadBytes of such a MetaData definition are:
 
 Following this header there is a V1 Payload description.   This consists of 
 
-*   int FieldCount;      // The number of fields in the payload
+    int FieldCount;      // The number of fields in the payload
 
 Followed by FieldCount number of field definitions 
 
@@ -274,16 +274,20 @@ Followed by FieldCount number of field definitions
     string FieldName;    // The 2 byte Unicode, null terminated string representing the Name of the Field
 
 In File format V5 and later only, following the FieldCount number of fields there are an optional set of metadata tags, where a tag consists of 
+
     int TagPayloadBytes; // The number of bytes the tag payload uses, uninclusive of this field
     byte TagKind;        // The type of tag it is. Currently used values are OpCode=1 V2Params=2
 
 Followed by a tag payload. If TagKind==OpCode the payload consists of
+
     byte OpCode;         // The event's opcode
 
 If TagKind=V2Params the payload consists of
+
     int V2FieldCount;    // The total number of fields in this payload
 
 Followed by V2FieldCount number of field definitions
+
     int V2TypeCode;      // In V2 this can be EventPipeTypeCodeArray==19
     int ArrayTypeCode;   // This optional field only appears when V2TypeCode==EventPipeTypeCodeArray
     <PAYLOAD_DESCRIPTION>
