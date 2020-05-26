@@ -486,6 +486,8 @@ Changes:
 9. SequencePoint blocks are new and were added to support several of the above features: Cache boundaries for the stack interning, dropped event detection for the seqeunce numbering, and cache management/sort boundaries for the unsorted events.
 10. The version number of the Trace object moved from 3 -> 4 and the version of EventBlock moved 1 -> 2.
 11. BeginObject tags are replaced by PrivateBeginObject to avoid memoization based memory leaks in the FastSerialization library.
-12. V5 of the file format introduce, this adds a set of optional tags after the metadata header and payload. These tags are used to describe the opcode of an event or include metadata for types that are unsupported in V4 and earlier.
 
+### Version 4 -> 5
+
+This version adds a set of optional tags after the metadata header and payload. These tags are used to describe the opcode of an event or include metadata for types that are unsupported in V4 and earlier.
 
