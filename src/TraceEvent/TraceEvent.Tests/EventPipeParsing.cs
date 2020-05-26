@@ -345,7 +345,7 @@ namespace TraceEventTests
                             ++successCount;
                             return;
                         }
-                        if (traceEvent.EventName == "TestEvent3")
+                        if (traceEvent.EventName == "TestEvent3/24")
                         {
                             if ((int)traceEvent.Level != 2) { throw new Exception(String.Format(traceLevelValidationMessage, 2, (int)traceEvent.Level, "TestEventSource0", "TestEvent3")); }
                             if ((int)traceEvent.Keywords != 0) { throw new Exception(String.Format(traceKeywordValidationMessage, 0, (int)traceEvent.Keywords, "TestEventSource0", "TestEvent3")); }

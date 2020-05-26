@@ -101,7 +101,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// It should be set to Version unless changes since the last version are forward compatible
         /// (old readers can still read this format), in which case this should be unchanged.
         /// </summary>
-        public int MinimumReaderVersion => 4;
+        public int MinimumReaderVersion => Version;
 
         /// <summary>
         /// This is the smallest version that the deserializer here can read.   Currently
@@ -289,7 +289,8 @@ namespace Microsoft.Diagnostics.Tracing
                         SetOpcode(eventTemplate, metaDataHeader.Opcode);
                     }
 
-                    // skip to next tag
+                    // Skip any remaining bytes or unknown tags
+                    reader.Goto(tagEndLabel);
                 }
 
                 _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
@@ -408,18 +409,6 @@ namespace Microsoft.Diagnostics.Tracing
             _eventsLost = (int)Math.Min(totalLostEvents, int.MaxValue);
         }
 
-        internal void UpdateEventDefinitionWithOpcode(EventPipeEventMetaDataHeader eventMetaDataHeader)
-        {
-            TraceEvent key = _metadataTemplates.Keys.Where(x => (int)x.eventID == eventMetaDataHeader.EventId).FirstOrDefault();
-            if (key == null)
-            {
-                return;
-            }
-
-            DynamicTraceEventData template = _metadataTemplates[key];
-            template.opcode = (TraceEventOpcode)eventMetaDataHeader.Opcode;
-        }
-
         internal bool TryGetTemplateFromMetadata(TraceEvent unhandledEvent, out DynamicTraceEventData template)
         {
             return _metadataTemplates.TryGetValue(unhandledEvent, out template);
@@ -450,7 +439,7 @@ namespace Microsoft.Diagnostics.Tracing
                 try
                 {
                     // Recursively parse the metadata, building up a list of payload names and payload field fetch objects.
-                    classInfo = ParseFields(readerForParameters, fieldCount, eventMetaDataHeader.EncodingVersion, metadataBlobEnd, fieldLayoutVersion);
+                    classInfo = ParseFields(readerForParameters, fieldCount, metadataBlobEnd, fieldLayoutVersion);
                 }
                 catch (FormatException)
                 {
@@ -481,20 +470,21 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void SetOpcode(DynamicTraceEventData template, int opcode)
         {
-            string opcodeName = ((TraceEventOpcode)opcode).ToString();
-
-            if (opcode == 0)
-            {
-                GetOpcodeFromEventName(template.EventName, out opcode, out opcodeName);
-            }
-
             template.opcode = (TraceEventOpcode)opcode;
-            template.opcodeName = opcodeName;
+            template.opcodeName = template.opcode.ToString();
         }
 
         private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
         {
-            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, 0, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
+            string opcodeName = ((TraceEventOpcode)eventMetaDataHeader.Opcode).ToString();
+
+            int opcode = eventMetaDataHeader.Opcode;
+            if (opcode == 0)
+            {
+                GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
+            }
+
+            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, opcode, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
             SetOpcode(template, eventMetaDataHeader.Opcode);
             return template;
         }
@@ -557,8 +547,8 @@ namespace Microsoft.Diagnostics.Tracing
             return null;
         }
 
-        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, EventPipeMetaDataVersion encodingVersion,
-            StreamLabel metadataBlobEnd, NetTraceFieldLayoutVersion fieldLayoutVersion)
+        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, StreamLabel metadataBlobEnd, 
+            NetTraceFieldLayoutVersion fieldLayoutVersion)
         {
             string[] fieldNames = new string[numFields];
             DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[numFields];
@@ -578,7 +568,7 @@ namespace Microsoft.Diagnostics.Tracing
                     fieldName = reader.ReadNullTerminatedUnicodeString();
                 }
 
-                DynamicTraceEventData.PayloadFetch payloadFetch = ParseType(reader, encodingVersion, offset, fieldEnd, fieldName, fieldLayoutVersion);
+                DynamicTraceEventData.PayloadFetch payloadFetch = ParseType(reader, offset, fieldEnd, fieldName, fieldLayoutVersion);
 
                 if (fieldLayoutVersion <= NetTraceFieldLayoutVersion.V1)
                 {
@@ -622,7 +612,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         private DynamicTraceEventData.PayloadFetch ParseType(
             PinnedStreamReader reader,
-            EventPipeMetaDataVersion encodingVersion,
             ushort offset,
             StreamLabel fieldEnd,
             string fieldName,
@@ -756,7 +745,7 @@ namespace Microsoft.Diagnostics.Tracing
                         // Read the number of fields in the struct.  Each of these fields could be an embedded struct,
                         // but these embedded structs are still counted as single fields.  They will be expanded when they are handled.
                         int structFieldCount = reader.ReadInt32();
-                        DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(reader, structFieldCount, encodingVersion, fieldEnd, fieldLayoutVersion);
+                        DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(reader, structFieldCount, fieldEnd, fieldLayoutVersion);
                         if (embeddedStructClassInfo == null)
                         {
                             throw new FormatException($"Field {fieldName}: Unable to parse metadata for embedded struct");
@@ -772,7 +761,7 @@ namespace Microsoft.Diagnostics.Tracing
                             throw new FormatException($"EventPipeEventSource.ArrayTypeCode is not a valid type code in V1 field metadata.");
                         }
 
-                        DynamicTraceEventData.PayloadFetch elementType = ParseType(reader, encodingVersion, 0, fieldEnd, fieldName, fieldLayoutVersion);
+                        DynamicTraceEventData.PayloadFetch elementType = ParseType(reader, 0, fieldEnd, fieldName, fieldLayoutVersion);
                         // This fetchSize marks the array as being prefixed with an unsigned 16 bit count of elements
                         ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
                         payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, elementType, fetchSize);
