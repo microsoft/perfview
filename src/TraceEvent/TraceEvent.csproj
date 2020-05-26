@@ -68,6 +68,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
 
   <!-- *** SourceLink Support *** -->
   <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
@@ -100,6 +101,11 @@
     <Compile Remove="Ctf/CtfTracing.Tests/**/*.*" />
     <Compile Remove="TraceEvent.Tests/**/*.*" />
     <Compile Remove="Samples/**/*.*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
+    <Compile Remove="Utilities/FastStream.cs" />
+    <Compile Remove="Stacks/Linux/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="TraceEventStackSourceExtensions.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
@@ -11,25 +12,65 @@ namespace PerfViewJS
 
     internal static class TraceEventStackSourceExtensions
     {
-        public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+        public static StackSource CPUStacks(this TraceEvents events, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
         {
-            TraceEvents events = process == null ? eventLog.Events.Filter(x => (predicate == null || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0) : process.EventsInProcess.Filter(x => (predicate == null || predicate(x)) && x is SampledProfileTraceData);
-
-            var traceStackSource = new TraceEventStackSource(events)
+            // optimization only
+            if (process != null)
             {
-                ShowUnknownAddresses = showUnknownAddresses
-            };
+                var start = Math.Max(events.StartTimeRelativeMSec, process.StartTimeRelativeMsec);
+                var end = Math.Min(events.EndTimeRelativeMSec, process.EndTimeRelativeMsec);
+                events = events.FilterByTime(start, end);
+                events = events.Filter(x => (predicate == null || predicate(x)) && x is SampledProfileTraceData && x.ProcessID == process.ProcessID);
+            }
+            else
+            {
+                events = events.Filter(x => (predicate == null || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);  // TODO: Is it really correc that x.ProcessID != 0 should be there? What if we want see these?
+            }
 
-            return traceStackSource;
+            var traceStackSource = new TraceEventStackSource(events) { ShowUnknownAddresses = true };
+
+            return CopyStackSource.Clone(traceStackSource);
         }
 
-        public static StackSource AnyStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+        public static StackSource SingleEventTypeStack(this TraceEvents events, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
         {
-            var stackSource = new MutableTraceEventStackSource(eventLog);
-            var sample = new StackSourceSample(stackSource);
+            // optimization only
+            if (process != null)
+            {
+                var start = Math.Max(events.StartTimeRelativeMSec, process.StartTimeRelativeMsec);
+                var end = Math.Min(events.EndTimeRelativeMSec, process.EndTimeRelativeMsec);
+                events = events.FilterByTime(start, end);
+                events = events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID == process.ProcessID);
+            }
+            else
+            {
+                events = events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID != 0); // TODO: Is it really correc that x.ProcessID != 0 should be there? What if we want see these?
+            }
 
-            TraceEvents events = process == null ? eventLog.Events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID != 0) : process.EventsInProcess.Filter(x => predicate == null || predicate(x));
+            var traceStackSource = new TraceEventStackSource(events) { ShowUnknownAddresses = true };
+
+            return CopyStackSource.Clone(traceStackSource);
+        }
+
+        public static StackSource AnyStacks(this TraceEvents events, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
+        {
+            // optimization only
+            if (process != null)
+            {
+                var start = Math.Max(events.StartTimeRelativeMSec, process.StartTimeRelativeMsec);
+                var end = Math.Min(events.EndTimeRelativeMSec, process.EndTimeRelativeMsec);
+                events = events.FilterByTime(start, end);
+                events = events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID == process.ProcessID);
+            }
+            else
+            {
+                events = events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID != 0); // TODO: Is it really correc that x.ProcessID != 0 should be there? What if we want see these?
+            }
+
+            var stackSource = new MutableTraceEventStackSource(events.Log) { ShowUnknownAddresses = true };
+            var sample = new StackSourceSample(stackSource);
             var eventSource = events.GetSource();
+
             eventSource.AllEvents += data =>
             {
                 var callStackIdx = data.CallStackIndex();
@@ -44,19 +85,29 @@ namespace PerfViewJS
             };
 
             eventSource.Process();
-
             stackSource.DoneAddingSamples();
 
             return stackSource;
         }
 
-        public static StackSource Exceptions(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+        public static StackSource Exceptions(this TraceEvents events, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
         {
-            var stackSource = new MutableTraceEventStackSource(eventLog);
-            var sample = new StackSourceSample(stackSource);
-            TraceEvents events = process == null ? eventLog.Events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID != 0) : process.EventsInProcess.Filter(x => predicate == null || predicate(x));
+            // optimization only
+            if (process != null)
+            {
+                var start = Math.Max(events.StartTimeRelativeMSec, process.StartTimeRelativeMsec);
+                var end = Math.Min(events.EndTimeRelativeMSec, process.EndTimeRelativeMsec);
+                events = events.FilterByTime(start, end);
+                events = events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID == process.ProcessID);
+            }
+            else
+            {
+                events = events.Filter(x => (predicate == null || predicate(x)) && x.ProcessID != 0); // TODO: Is it really correc that x.ProcessID != 0 should be there? What if we want see these?
+            }
 
             var eventSource = events.GetSource();
+            var stackSource = new MutableTraceEventStackSource(events.Log) { ShowUnknownAddresses = true };
+            var sample = new StackSourceSample(stackSource);
 
             eventSource.Clr.ExceptionStart += data =>
             {

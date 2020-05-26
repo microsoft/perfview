@@ -97,7 +97,7 @@ namespace PerfView
         public int StopOnGCOverMsec;
         public int StopOnBGCFinalPauseOverMsec; // Stop on a BGC whose final pause is over this many ms
         public double DecayToZeroHours;          //causes 'StopOn*OverMSec' timeouts to decay to zero over this time period
-        public int MinSecForTrigger;            // affects StopOnPerfCounter
+        public int MinSecForTrigger = 3;        // affects StopOnPerfCounter and StartOnPerfCounter
         public string StopOnEventLogMessage;    // stop collection on event logs
         public string StopCommand;              // is executed when a stop is triggered.   
         public int StopOnAppFabricOverMsec;
@@ -212,6 +212,7 @@ namespace PerfView
         // Viewer options
         public bool UnsafePDBMatch;
         public bool ShowUnknownAddresses;
+        public bool ShowOptimizationTiers;
 
         // Parameter to CreateExtensionTemplate
         public string ExtensionName = "Global";
@@ -517,6 +518,8 @@ namespace PerfView
                 "Allow the use of PDBs even when the trace does not contain PDB signatures.");
             parser.DefineOptionalQualifier("ShowUnknownAddresses", ref ShowUnknownAddresses,
                 "Displays the hexadecimal address rather than ? when the address is unknown.");
+            parser.DefineOptionalQualifier("ShowOptimizationTiers", ref ShowOptimizationTiers,
+                "Displays the optimization tier of each code version executed for the method.");
             parser.DefineOptionalQualifier("NoGui", ref NoGui,
                 "Use the Command line version of the command (like on ARM).  Brings up a console window.  For batch scripts/automation use /LogFile instead (see users guide under 'Scripting' for more).");
             parser.DefineOptionalQualifier("SafeMode", ref SafeMode, "Turn off parallelism and other risky features.");

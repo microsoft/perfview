@@ -15,6 +15,7 @@ using System.Dynamic;
 #endif
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
@@ -369,8 +370,8 @@ namespace Microsoft.Diagnostics.Tracing
         // [SecuritySafeCritical]
         void ITraceParserServices.RegisterEventTemplate(TraceEvent template)
         {
-            Debug.Assert(template.source == null);
-            template.source = this;
+            Debug.Assert(template.traceEventSource == null);
+            template.traceEventSource = this;
 
             Debug.Assert(template.eventRecord == null);
             Debug.Assert(template.next == null);
@@ -560,6 +561,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// The GUID that uniquely identifies the Provider for this event.  This can return Guid.Empty for classic (Pre-VISTA) ETW providers.  
         /// </summary>        
         public Guid ProviderGuid { get { return providerGuid; } }
+
+        /// <summary>
+        /// Unique GUID for Pre-VISTA ETW providers.
+        /// </summary>
+        public Guid TaskGuid { get { return taskGuid; } }
+
         /// <summary>
         /// The name of the provider associated with the event.  It may be of the form Provider(GUID) or UnknownProvider in some cases but is never null.  
         /// </summary>
@@ -753,7 +760,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public DateTime TimeStamp
         {
-            get { return source.QPCTimeToDateTimeUTC(TimeStampQPC).ToLocalTime(); }
+            get { return traceEventSource.QPCTimeToDateTimeUTC(TimeStampQPC).ToLocalTime(); }
         }
         /// <summary>
         /// Returns a double representing the number of milliseconds since the beginning of the session.     
@@ -762,7 +769,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                return source.QPCTimeToRelMSec(TimeStampQPC);
+                return traceEventSource.QPCTimeToRelMSec(TimeStampQPC);
             }
         }
         /// <summary>
@@ -777,7 +784,7 @@ namespace Microsoft.Diagnostics.Tracing
                 var ret = eventRecord->EventHeader.ThreadId;
                 if (ret == -1)
                 {
-                    ret = source.LastChanceGetThreadID(this);     // See if the source has additional information (like a stack event associated with it)
+                    ret = traceEventSource.LastChanceGetThreadID(this);     // See if the source has additional information (like a stack event associated with it)
                 }
 
                 return ret;
@@ -795,7 +802,7 @@ namespace Microsoft.Diagnostics.Tracing
                 var ret = eventRecord->EventHeader.ProcessId;
                 if (ret == -1)
                 {
-                    ret = source.LastChanceGetProcessID(this);     // See if the source has additional information (like a stack event associated with it)
+                    ret = traceEventSource.LastChanceGetProcessID(this);     // See if the source has additional information (like a stack event associated with it)
                 }
 
                 return ret;
@@ -809,7 +816,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                return source.ProcessName(ProcessID, TimeStampQPC);
+                return traceEventSource.ProcessName(ProcessID, TimeStampQPC);
             }
         }
         /// <summary>
@@ -821,7 +828,7 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 int ret = eventRecord->BufferContext.ProcessorNumber;
-                Debug.Assert(0 <= ret && ret < source.NumberOfProcessors);
+                Debug.Assert(0 <= ret && ret < traceEventSource.NumberOfProcessors);
                 return ret;
             }
         }
@@ -865,7 +872,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (eventRecord->ExtendedDataCount > 0)
                     {
-                        return source.GetRelatedActivityID(eventRecord);
+                        return traceEventSource.GetRelatedActivityID(eventRecord);
                     }
                 }
                 return Guid.Empty;
@@ -919,7 +926,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The TraceEventSource associated with this event.  
         /// </summary>
-        public TraceEventSource Source { get { return source; } }
+        public TraceEventSource Source { get { return traceEventSource; } }
         /// <summary>
         /// Returns true if this event is from a Classic (Pre-VISTA) provider
         /// </summary>
@@ -1034,10 +1041,10 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     DateTime asDateTime = (DateTime)value;
                     string ret;
-                    if (formatProvider == null && source.SessionStartTime <= asDateTime)
+                    if (formatProvider == null && traceEventSource.SessionStartTime <= asDateTime)
                     {
                         ret = asDateTime.ToString("HH:mm:ss.ffffff");
-                        ret += " (" + (asDateTime - source.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
+                        ret += " (" + (asDateTime - traceEventSource.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
                     else
                     {
@@ -2189,7 +2196,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// The array of names for each property in the payload (in order).  
         /// </summary>
         protected internal string[] payloadNames;
-        internal TraceEventSource source;
+        internal TraceEventSource traceEventSource;
         internal EventIndex eventIndex;               // something that uniquely identifies this event in the stream.  
         internal IntPtr myBuffer;                     // If the raw data is owned by this instance, this points at it.  Normally null.
         #endregion
@@ -2965,7 +2972,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // Configure the template with callback associated with the subscription
             var templateWithCallback = template.Clone();
-            Debug.Assert(templateWithCallback.source == null);
+            Debug.Assert(templateWithCallback.traceEventSource == null);
             templateWithCallback.SetState(templateState);
             templateWithCallback.Target = cur.m_callback;
 
@@ -3011,8 +3018,8 @@ namespace Microsoft.Diagnostics.Tracing
             // Actually Register it with the source.     
             source.RegisterEventTemplate(templateWithCallback);
 #if !DOTNET_V35
-            Debug.Assert(templateWithCallback.source == Source ||
-                (templateWithCallback.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog &&
+            Debug.Assert(templateWithCallback.traceEventSource == Source ||
+                (templateWithCallback.traceEventSource is Microsoft.Diagnostics.Tracing.Etlx.TraceLog &&
                  Source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
 #endif
         }
@@ -3354,7 +3361,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // Initialize our data structures. 
             unhandledEventTemplate = new UnhandledTraceEvent();
-            unhandledEventTemplate.source = this;
+            unhandledEventTemplate.traceEventSource = this;
             ReHash();       // Allocates the hash table
         }
         internal override void RegisterUnhandledEventImpl(Func<TraceEvent, bool> callback)
@@ -3693,8 +3700,8 @@ namespace Microsoft.Diagnostics.Tracing
         private unsafe void Insert(TraceEvent template)
         {
 #if !DOTNET_V35
-            Debug.Assert(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog || template.source == this);
-            Debug.Assert(!(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
+            Debug.Assert(template.traceEventSource is Microsoft.Diagnostics.Tracing.Etlx.TraceLog || template.traceEventSource == this);
+            Debug.Assert(!(template.traceEventSource is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
 #endif
 
             if (numTemplates * 4 > templates.Length * 3)    // Are we over 3/4 full?
@@ -4362,19 +4369,19 @@ namespace Microsoft.Diagnostics.Tracing
         }
         internal static unsafe double ReadDouble(IntPtr pointer, int offset)
         {
-            return *((double*)((byte*)pointer.ToPointer() + offset));
+            return Unsafe.ReadUnaligned<double>((byte*)pointer.ToPointer() + offset);
         }
         internal static unsafe float ReadSingle(IntPtr pointer, int offset)
         {
-            return *((float*)((byte*)pointer.ToPointer() + offset));
+            return Unsafe.ReadUnaligned<float>((byte*)pointer.ToPointer() + offset);
         }
         internal static unsafe long ReadInt64(IntPtr pointer, int offset)
         {
-            return *((long*)((byte*)pointer.ToPointer() + offset));
+            return Unsafe.ReadUnaligned<long>((byte*)pointer.ToPointer() + offset);
         }
         internal static unsafe int ReadInt32(IntPtr pointer, int offset)
         {
-            return *((int*)((byte*)pointer.ToPointer() + offset));
+            return Unsafe.ReadUnaligned<int>((byte*)pointer.ToPointer() + offset);
         }
         internal static unsafe short ReadInt16(IntPtr pointer, int offset)
         {

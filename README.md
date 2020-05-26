@@ -2,7 +2,7 @@
 PerfView is a free performance-analysis tool that helps isolate CPU and memory-related performance issues.  It is a Windows tool, but it also has some support for analyzing data collected on Linux machines.  It works for a wide variety of scenarios, but has a number of special features for investigating performance issues in code written for the .NET runtime.  
 
 If you are unfamiliar with PerfView, there are [PerfView video tutorials](http://channel9.msdn.com/Series/PerfView-Tutorial). 
-Also, [Vance Morrison's blog](http://blogs.msdn.com/b/vancem/archive/tags/perfview) gives overview and getting 
+Also, [Vance Morrison's blog](https://docs.microsoft.com/en-us/archive/blogs/vancem/) gives overview and getting 
 started information. 
 
 ### Getting PerfView 
@@ -127,7 +127,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 8.1 
   SDK installed (We like to build PerfView so it works event on Windows 8).    Unfortunately this library tends not to be 
   installed with Visual Studio anymore unless you ask for it explicitly.   To fix it 
-     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1 option is selected.  If not, select it and have the setup install this.  THen try building PerfView again.   
+     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2017 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 8.1 option is selected.  If not, select it and have the setup install this.  Then try building PerfView again.
   
 ### Running Tests
 
@@ -139,15 +139,17 @@ the debugger to figure out what went wrong.
 
 ### Check in testing and code coverage statistica
 
-This repository uses [AppVeyor](https://www.appveyor.com/) to automatically build and test pull requests, which allows
+This repository uses [AppVeyor](https://www.appveyor.com/) and Azure DevOps to automatically build and test pull requests, which allows
 the community to easily view build results. Code coverage is provided by [codecov.io](https://codecov.io). The build and
-coverage status reflected here is the AppVeyor build status of the **master** branch.
+coverage status reflected here is the AppVeyor and Azure DevOps build status of the **master** branch.
+
+[![Build status](https://dev.azure.com/ms/perfview/_apis/build/status/CI?label=build)](https://dev.azure.com/ms/perfview/_build/latest?definitionId=332)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
 
 [![codecov](https://codecov.io/gh/Microsoft/perfview/branch/master/graph/badge.svg)](https://codecov.io/gh/Microsoft/perfview)
 
-> :warning: Builds produced by AppVeyor are not considered official builds of PerfView, and are not signed or otherwise
+> :warning: Builds produced by AppVeyor and Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
 > participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
 > information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.\

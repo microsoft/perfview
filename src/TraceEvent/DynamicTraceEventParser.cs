@@ -1018,6 +1018,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        private static readonly Regex paramReplacer = new Regex(@"%(\d+)", RegexOptions.Compiled);
+
         public override string GetFormattedMessage(IFormatProvider formatProvider)
         {
             if (MessageFormat == null)
@@ -1027,7 +1029,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
-            return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
+            return paramReplacer.Replace(MessageFormat, delegate (Match m)
             {
                 int targetIndex = int.Parse(m.Groups[1].Value) - 1;
 

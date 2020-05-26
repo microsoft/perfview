@@ -646,6 +646,8 @@ namespace PerfView
 
             #region private
 
+            private static readonly Regex specialCharRemover = new Regex(" *[\r\n\t]+ *", RegexOptions.Compiled);
+
             /// <summary>
             /// Adds 'fieldName' with value 'fieldValue' to the output.  It either goes into a column (based on columnOrder) or it goes into
             /// 'rest' as a fieldName="fieldValue" string.   It also updates 'columnSums' for the fieldValue for any in a true column 
@@ -658,7 +660,7 @@ namespace PerfView
                 }
                 // If the field value has to many newlines in it, the GUI gets confused because the text block is larger than
                 // the vertical size.   WPF may fix this at some point, but in the mean time this is a work around. 
-                fieldValue = Regex.Replace(fieldValue, " *[\r\n\t]+ *", " ");
+                fieldValue = specialCharRemover.Replace(fieldValue, " ");
 
                 var putInRest = true;
                 if (columnOrder != null)

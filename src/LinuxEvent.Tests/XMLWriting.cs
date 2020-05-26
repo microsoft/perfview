@@ -1,4 +1,5 @@
 ﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Tracing.StackSources;
 using System.IO;
 using Xunit;
 

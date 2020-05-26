@@ -9,11 +9,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using Utilities;
 
@@ -1386,6 +1388,39 @@ namespace PerfView
             // TODO we may be doing an unnecessary merge.  
             ExecuteCommand("Merging and Zipping " + Path.GetFullPath(App.CommandLineArgs.DataFile), App.CommandProcessor.Merge);
         }
+
+        private void DoMergeAndZipAll(object sender, RoutedEventArgs e)
+        {
+            var unmergedFiles = new List<PerfViewFile>();
+            foreach (var file in TreeView.Items.OfType<PerfViewFile>())
+            {
+                if (file.FilePath.EndsWith(".etl"))
+                    unmergedFiles.Add(file);
+            }
+
+            List<Action> actions = new List<Action>();
+            foreach (var file in TreeView.Items.OfType<PerfViewFile>().Reverse())
+            {
+                var filePath = file.FilePath;
+                if (!filePath.EndsWith(".etl"))
+                {
+                    continue;
+                }
+
+                var continuation = actions.LastOrDefault();
+                actions.Add(() =>
+                {
+                    // TODO this has a side effect... 
+                    App.CommandLineArgs.DataFile = filePath;
+                    App.CommandLineArgs.Zip = true;
+
+                    ExecuteCommand("Merging and Zipping " + Path.GetFullPath(App.CommandLineArgs.DataFile), App.CommandProcessor.Merge, continuation: continuation);
+                });
+            }
+
+            actions.LastOrDefault()?.Invoke();
+        }
+
         private void DoUnZip(object sender, RoutedEventArgs e)
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
@@ -1687,6 +1722,26 @@ namespace PerfView
             StatusBar.Log("Looking up topic " + anchor + " in Users Guide.");
             DisplayUsersGuide(anchor);
         }
+
+        private void OpenInBrowser(object sender, ExecutedRoutedEventArgs e)
+        {
+            var selectedReport = TreeView.SelectedItem as PerfViewHtmlReport;
+            if (selectedReport == null)
+            {
+                throw new ApplicationException("No report selected.");
+            }
+
+            selectedReport.OpenInExternalBrowser(StatusBar);
+        }
+
+        private void CanOpenInBrowser(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (TreeView.SelectedItem is PerfViewHtmlReport)
+            {
+                e.CanExecute = true;
+            }
+        }
+
         private void DoRefreshDir(object sender, ExecutedRoutedEventArgs e)
         {
             RefreshCurrentDirectory();
@@ -1935,6 +1990,7 @@ namespace PerfView
         public static RoutedUICommand ZipCommand = new RoutedUICommand("Zip", "Zip", typeof(MainWindow));
         public static RoutedUICommand UnZipCommand = new RoutedUICommand("UnZip", "UnZip", typeof(MainWindow));
         public static RoutedUICommand ItemHelpCommand = new RoutedUICommand("Help on Item", "ItemHelp", typeof(MainWindow));
+        public static RoutedUICommand OpenInBrowserCommand = new RoutedUICommand("Open in Browser", "OpenInBrowser", typeof(MainWindow));
         public static RoutedUICommand HideCommand = new RoutedUICommand("Hide", "Hide", typeof(MainWindow),
             new InputGestureCollection() { new KeyGesture(Key.H, ModifierKeys.Alt) });
         public static RoutedUICommand UserCommand = new RoutedUICommand("User Command", "UserCommand", typeof(MainWindow),
@@ -2185,5 +2241,33 @@ namespace PerfView
         }
 
         private string m_openNextFileName;
+
+        /// <summary>
+        /// When you right click an item in the TreeView it doesn't automatically change to the TreeViewItem you clicked on.
+        /// This helper method changes focus so that the right-click menu items commands are bound to the right TreeViewItem
+        /// </summary>
+        private void TreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            TreeViewItem treeViewItem = FindTreeViewItemInVisualHeirarchy(e.OriginalSource as DependencyObject);
+
+            if (treeViewItem != null)
+            {
+                treeViewItem.Focus();
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// Given an item in visual a tree, navigate the parents upwards until we find the TreeViewItem it represents.
+        /// </summary>
+        private static TreeViewItem FindTreeViewItemInVisualHeirarchy(DependencyObject source)
+        {
+            while (source != null && !(source is TreeViewItem))
+            {
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return source as TreeViewItem;
+        }
     }
 }

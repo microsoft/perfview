@@ -254,6 +254,13 @@
       <Link>System.Reflection.Metadata.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.CompilerServices.Unsafe.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+      <Link>System.Runtime.CompilerServices.Unsafe.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

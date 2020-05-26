@@ -15,6 +15,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.DiagnosticsHub.Packaging.InteropEx;
 using PerfView.GuiUtilities;
@@ -884,7 +885,7 @@ namespace PerfView
             if (caller == StackSourceCallStackIndex.Invalid)
             {
                 string topCallStackStr = stackSource.GetFrameName(stackSource.GetFrameIndex(callStack), true);
-                
+
                 if (GetProcessForStackSourceFromTopCallStackFrame(topCallStackStr, out ret))
                 {
                     processes.Add(ret);
@@ -1053,80 +1054,11 @@ namespace PerfView
         {
             if (Viewer == null)
             {
-                var etlDataFile = DataFile as ETLPerfViewData;
-                TraceLog trace = null;
-                if (etlDataFile != null)
-                {
-                    trace = etlDataFile.GetTraceLog(worker.LogWriter);
-                }
-                else
-                {
-                    var linuxDataFile = DataFile as LinuxPerfViewData;
-                    if (linuxDataFile != null)
-                    {
-                        trace = linuxDataFile.GetTraceLog(worker.LogWriter);
-                    }
-                    else
-                    {
-                        var eventPipeDataFile = DataFile as EventPipePerfViewData;
-                        if (eventPipeDataFile != null)
-                        {
-                            trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
-                        }
-                    }
-                }
+                TraceLog trace = GetTrace(worker);
 
                 worker.StartWork("Opening " + Name, delegate ()
                 {
-                    var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
-                    using (var writer = File.CreateText(reportFileName))
-                    {
-                        writer.WriteLine("<html>");
-                        writer.WriteLine("<head>");
-                        writer.WriteLine("<title>{0}</title>", Title);
-                        writer.WriteLine("<meta charset=\"UTF-8\"/>");
-                        writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
-
-                        // Add basic styling to the generated HTML
-                        writer.WriteLine(@"
-<style>
-body {
-    font-family: Segoe UI Light, Helvetica, sans-serif;
-}
-
-tr:hover {
-    background-color: #eeeeee;
-}
-
-th {
-    background-color: #eeeeee;
-    font-family: Helvetica;
-    padding: 4px;
-    font-size: small;
-    font-weight: normal;
-}
-
-td {
-    font-family: Consolas, monospace;
-    font-size: small;
-    padding: 3px;
-    padding-bottom: 5px;
-}
-
-table {
-    border-collapse: collapse;
-}
-</style>
-");
-
-                        writer.WriteLine("</head>");
-                        writer.WriteLine("<body>");
-                        WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
-                        writer.WriteLine("</body>");
-                        writer.WriteLine("</html>");
-
-
-                    }
+                    string reportFileName = GenerateReportFile(worker, trace);
 
                     worker.EndWork(delegate ()
                     {
@@ -1175,8 +1107,110 @@ table {
             }
         }
 
+        /// <summary>
+        /// Generates an HTML report and opens it using the machine's default handler .html file paths.
+        /// </summary>
+        /// <param name="worker">The StatusBar that should be updated with progress.</param>
+        public void OpenInExternalBrowser(StatusBar worker)
+        {
+            TraceLog trace = GetTrace(worker);
+
+            worker.StartWork("Opening in external browser " + Name, delegate ()
+            {
+                string reportFileName = GenerateReportFile(worker, trace);
+
+                worker.EndWork(delegate ()
+                {
+                    Process.Start(reportFileName);
+                });
+            });
+        }
+
         public override void Close() { }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["HtmlReportBitmapImage"] as ImageSource; } }
+
+        private TraceLog GetTrace(StatusBar worker)
+        {
+            var etlDataFile = DataFile as ETLPerfViewData;
+            TraceLog trace = null;
+            if (etlDataFile != null)
+            {
+                trace = etlDataFile.GetTraceLog(worker.LogWriter);
+            }
+            else
+            {
+                var linuxDataFile = DataFile as LinuxPerfViewData;
+                if (linuxDataFile != null)
+                {
+                    trace = linuxDataFile.GetTraceLog(worker.LogWriter);
+                }
+                else
+                {
+                    var eventPipeDataFile = DataFile as EventPipePerfViewData;
+                    if (eventPipeDataFile != null)
+                    {
+                        trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
+                    }
+                }
+            }
+
+            return trace;
+        }
+
+        private string GenerateReportFile(StatusBar worker, TraceLog trace)
+        {
+            var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
+            using (var writer = File.CreateText(reportFileName))
+            {
+                writer.WriteLine("<html>");
+                writer.WriteLine("<head>");
+                writer.WriteLine("<title>{0}</title>", Title);
+                writer.WriteLine("<meta charset=\"UTF-8\"/>");
+                writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+
+                // Add basic styling to the generated HTML
+                writer.WriteLine(@"
+<style>
+body {
+    font-family: Segoe UI Light, Helvetica, sans-serif;
+}
+
+tr:hover {
+    background-color: #eeeeee;
+}
+
+th {
+    background-color: #eeeeee;
+    font-family: Helvetica;
+    padding: 4px;
+    font-size: small;
+    font-weight: normal;
+}
+
+td {
+    font-family: Consolas, monospace;
+    font-size: small;
+    padding: 3px;
+    padding-bottom: 5px;
+}
+
+table {
+    border-collapse: collapse;
+}
+</style>
+");
+
+                writer.WriteLine("</head>");
+                writer.WriteLine("<body>");
+                WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
+                writer.WriteLine("</body>");
+                writer.WriteLine("</html>");
+
+
+            }
+
+            return reportFileName;
+        }
     }
 
     public class PerfViewTraceInfo : PerfViewHtmlReport
@@ -2659,7 +2693,7 @@ table {
                 }
             };
 
-            dispatcher.Clr.ContentionStart += delegate (ContentionTraceData data)
+            dispatcher.Clr.ContentionStart += delegate (ContentionStartTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
@@ -3302,7 +3336,7 @@ table {
             writer.WriteLine("<UL>");
             writer.WriteLine("<LI> <A HREF=\"command:excel\">View Event Statistics in Excel</A></LI>");
             writer.WriteLine("<LI>Total Event Count = {0:n0}</LI>", dataFile.EventCount);
-            writer.WriteLine("<LI>Total Lost Events = {0}</LI>", dataFile.EventsLost);
+            writer.WriteLine("<LI>Total Lost Events = {0:n0}</LI>", dataFile.EventsLost);
             writer.WriteLine("</UL>");
 
             writer.WriteLine("<Table Border=\"1\">");
@@ -4168,15 +4202,18 @@ table {
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
             var eventLog = GetTraceLog(log);
-            if (streamName == "CPU")
+            bool showOptimizationTiers =
+                App.CommandLineArgs.ShowOptimizationTiers || streamName.Contains("(with Optimization Tiers)");
+            if (streamName.StartsWith("CPU"))
             {
-                return eventLog.CPUStacks(null, App.CommandLineArgs.ShowUnknownAddresses, predicate);
+                return eventLog.CPUStacks(null, App.CommandLineArgs, showOptimizationTiers, predicate);
             }
 
             // var stackSource = new InternTraceEventStackSource(eventLog);
             var stackSource = new MutableTraceEventStackSource(eventLog);
 
             stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+            stackSource.ShowOptimizationTiers = showOptimizationTiers;
 
             TraceEvents events = eventLog.Events;
             if (!streamName.Contains("TaskTree") && !streamName.Contains("Tasks)"))
@@ -6566,7 +6603,7 @@ table {
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
-            ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
+            ConfigureAsEtwStackWindow(stackWindow, stackSourceName.StartsWith("CPU"));
 
             if (stackSourceName == "Processes / Files / Registry")
             {
@@ -6599,7 +6636,7 @@ table {
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 
-            if (stackSourceName == "CPU" || stackSourceName.Contains("Thread Time"))
+            if (stackSourceName.StartsWith("CPU") || stackSourceName.Contains("Thread Time"))
             {
                 if (m_traceLog != null)
                 {
@@ -6692,7 +6729,7 @@ table {
             {
                 if (App.ConfigData["WarnedAboutOsHeapAllocTypes"] == null)
                 {
-                    MessageBox.Show(stackWindow, 
+                    MessageBox.Show(stackWindow,
                         "Warning: Allocation type resolution only happens on window launch.\r\n" +
                         "Thus if you manually lookup symbols in this view you will get method\r\n" +
                         "names of allocations sites, but to get the type name associated the \r\n" +
@@ -6982,6 +7019,13 @@ table {
             if (hasCPUStacks)
             {
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
+
+                if (!App.CommandLineArgs.ShowOptimizationTiers &&
+                    tracelog.Events.Any(
+                        e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
+                {
+                    advanced.Children.Add(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
+                }
             }
 
             if (hasCSwitchStacks)
@@ -8197,6 +8241,7 @@ table {
         private string[] PerfScriptStreams = new string[]
         {
             "CPU",
+            "CPU (with Optimization Tiers)",
             "Thread Time (experimental)"
         };
 
@@ -8250,7 +8295,9 @@ table {
                         new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
-                return new XmlStackSource(xmlPath);
+                bool showOptimizationTiers =
+                    App.CommandLineArgs.ShowOptimizationTiers || streamName.Contains("(with Optimization Tiers)");
+                return new XmlStackSource(xmlPath, null, showOptimizationTiers);
             }
 
             return null;
@@ -8283,6 +8330,15 @@ table {
             var memory = new PerfViewTreeGroup("Memory Group");
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
+
+            if (!App.CommandLineArgs.ShowOptimizationTiers &&
+                m_traceLog != null &&
+                m_traceLog.Events.Any(
+                    e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
+            {
+                advanced.AddChild(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
+            }
+
             if (AppLog.InternalUser)
             {
                 advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
@@ -8448,7 +8504,14 @@ table {
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
             // Open the file.
-            m_traceLog = GetTraceLog(worker.LogWriter);
+            m_traceLog = GetTraceLog(worker.LogWriter, delegate (bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
+            {
+                if (!m_notifiedAboutLostEvents)
+                {
+                    HandleLostEvents(parentWindow, truncated, numberOfLostEvents, eventCountAtTrucation, worker);
+                    m_notifiedAboutLostEvents = true;
+                }
+            });
 
             bool hasGC = false;
             bool hasJIT = false;
@@ -8564,6 +8627,7 @@ table {
                         stackSource.OnlyManagedCodeStacks = true;
 
                         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
                         TraceEvents events = eventLog.Events;
 
@@ -8685,18 +8749,18 @@ table {
                                 {
                                     sample.Metric = objInfo.RepresentativeSize;
                                     sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
-                                sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
-                                stackSource.AddSample(sample);
+                                    stackSource.AddSample(sample);
                                     return true;
                                 };
                                 newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                                 {
                                     sample.Metric = -objInfo.RepresentativeSize;
                                     sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
-                                sample.TimeRelativeMSec = time;
+                                    sample.TimeRelativeMSec = time;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
-                                stackSource.AddSample(sample);
+                                    stackSource.AddSample(sample);
                                 };
 
                                 newHeap.OnGC += delegate (double time, int gen)
@@ -8731,7 +8795,7 @@ table {
                                     {
                                         sample.Metric = objInfo.RepresentativeSize;
                                         sample.Count = (objInfo.RepresentativeSize / objInfo.Size);                                         // We guess a count from the size.  
-                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                        sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);
                                         stackSource.AddSample(sample);
                                     }
@@ -8767,12 +8831,12 @@ table {
                                 var typeName = data.TypeName;
                                 if (string.IsNullOrEmpty(typeName))
                                 {
-                                // Attempt to resolve the type name.
-                                TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                                    // Attempt to resolve the type name.
+                                    TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
                                     if (module != null)
                                     {
-                                    // Resolve the type name.
-                                    typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                                        // Resolve the type name.
+                                        typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
                                     }
                                 }
 
@@ -8831,7 +8895,7 @@ table {
                 stackWindow.ComputeMaxInTopStats = true;
             }
 
-            if(m_extraTopStats != null)
+            if (m_extraTopStats != null)
             {
                 stackWindow.ExtraTopStats += " " + m_extraTopStats;
             }
@@ -8847,7 +8911,7 @@ table {
             base.Close();
         }
 
-        public TraceLog GetTraceLog(TextWriter log)
+        public TraceLog GetTraceLog(TextWriter log, Action<bool, int, int> onLostEvents = null)
         {
             if (m_traceLog != null)
             {
@@ -8877,7 +8941,7 @@ table {
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            //options.OnLostEvents = onLostEvents;
+            options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
 
@@ -8928,7 +8992,7 @@ table {
                     FileUtilities.ForceDelete(etlxFile);
                     if (!File.Exists(etlxFile))
                     {
-                        return GetTraceLog(log);
+                        return GetTraceLog(log, onLostEvents);
                     }
                 }
                 throw;
@@ -8987,8 +9051,38 @@ table {
         public TraceLog TryGetTraceLog() { return m_traceLog; }
 
         #region Private
+
+        private void HandleLostEvents(Window parentWindow, bool truncated, int numberOfLostEvents, int eventCountAtTrucation, StatusBar worker)
+        {
+            string warning;
+            if (!truncated)
+            {
+                warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
+                    "Some analysis might be invalid.";
+            }
+            else
+            {
+                warning = "WARNING: The ETLX file was truncated at " + eventCountAtTrucation + " events.\r\n" +
+                    "This is to keep the ETLX file size under 4GB, however all rundown events are processed.\r\n" +
+                    "Use /SkipMSec:XXX after clearing the cache (File->Clear Temp Files) to see the later parts of the file.\r\n" +
+                    "See log for more details.";
+            }
+
+            MessageBoxResult result = MessageBoxResult.None;
+            parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+            {
+                result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
+                worker.LogWriter.WriteLine(warning);
+                if (result != MessageBoxResult.OK)
+                {
+                    worker.AbortWork();
+                }
+            });
+        }
+
         private TraceLog m_traceLog;
         private bool m_noTraceLogInfo;
+        private bool m_notifiedAboutLostEvents;
         #endregion
     }
 

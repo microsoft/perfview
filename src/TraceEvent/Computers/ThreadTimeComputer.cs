@@ -82,6 +82,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// LIke the GroupByAspNetRequest but use start-stop activities instead of ASP.NET Requests as the grouping construct. 
         /// </summary>
         public bool GroupByStartStopActivity;
+
+        /// <summary>
+        /// Reduce nested application insights requests by using related activity id.
+        /// </summary>
+        /// <value></value>
+        public bool IgnoreApplicationInsightsRequestsWithRelatedActivityId  { get; set; } = true;
+
         /// <summary>
         /// Don't show AwaitTime.  For CPU only traces showing await time is misleading since
         /// blocked time will not show up.  
@@ -171,7 +178,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (GroupByStartStopActivity)
             {
-                m_startStopActivities = new StartStopActivityComputer(eventSource, m_activityComputer);
+                m_startStopActivities = new StartStopActivityComputer(eventSource, m_activityComputer, IgnoreApplicationInsightsRequestsWithRelatedActivityId);
 
                 // Maps thread Indexes to the start-stop activity that they are executing.  
                 m_threadToStartStopActivity = new StartStopActivity[m_eventLog.Threads.Count];

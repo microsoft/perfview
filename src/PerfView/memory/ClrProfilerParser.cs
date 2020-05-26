@@ -1,4 +1,4 @@
-using PerfView.Utilities;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -4442,7 +4442,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int NewThreadPriority { get { return GetByteAt(8); } }
         public int OldThreadPriority { get { return GetByteAt(9); } }
         public int OldProcessID { get { return state.ThreadIDToProcessID(OldThreadID, TimeStampQPC); } }
-        public string OldProcessName { get { return source.ProcessName(OldProcessID, TimeStampQPC); } }
+        public string OldProcessName { get { return traceEventSource.ProcessName(OldProcessID, TimeStampQPC); } }
         // TODO figure out which one of these are right
         public int NewThreadQuantum { get { return GetByteAt(10); } }
         public int OldThreadQuantum { get { return GetByteAt(11); } }
@@ -5389,13 +5389,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
 
         /// <summary>
-        /// The time since the I/O was initiated.  
+        /// The time since the I/O was initiated.
         /// </summary>
         public double ElapsedTimeMSec
         {
             get
             {
-                return HighResResponseTime * 1000.0 / source.QPCFreq;
+                return HighResResponseTime * 1000.0 / traceEventSource.QPCFreq;
             }
         }
         // TODO you can get service time (what XPERF gives) by taking the minimum of 
@@ -5586,7 +5586,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             get
             {
-                return HighResResponseTime * 1000.0 / source.QPCFreq;
+                return HighResResponseTime * 1000.0 / traceEventSource.QPCFreq;
             }
         }
         public Address Irp { get { return GetAddressAt(16); } }
@@ -6057,7 +6057,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     {
         private long InitialTimeQPC { get { if (Version >= 2) { return GetInt64At(0); } return 0; } }
 
-        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
+        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - traceEventSource.QPCTimeToRelMSec(InitialTimeQPC); } }
 
         public int Status { get { if (Version >= 2) { GetInt32At(8); } return 0; } }
 
@@ -8326,7 +8326,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             get
             {
-                return (TimeStampQPC - InitialTime) * 1000.0 / source.QPCFreq;
+                return (TimeStampQPC - InitialTime) * 1000.0 / traceEventSource.QPCFreq;
             }
         }
         private long InitialTime { get { return GetInt64At(0); } }
@@ -9808,7 +9808,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     {
         private long InitialTimeQPC { get { return GetInt64At(0); } }
 
-        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
+        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - traceEventSource.QPCTimeToRelMSec(InitialTimeQPC); } }
         public Address Routine { get { return GetAddressAt(8); } }
         public int ReturnValue { get { return GetByteAt(HostOffset(12, 1)); } }
         public int Vector { get { return GetByteAt(HostOffset(13, 1)); } }
@@ -9902,7 +9902,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     {
         private long InitialTimeQPC { get { return GetInt64At(0); } }
 
-        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
+        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - traceEventSource.QPCTimeToRelMSec(InitialTimeQPC); } }
 
         public Address Routine { get { return GetAddressAt(8); } }
 
@@ -9969,7 +9969,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
 
     /// <summary>
-    /// Collects the call callStacks for some other event.  
+    /// Collects the call callStacks for some other event.
     /// 
     /// (TODO: always for the event that preceded it on the same thread)?  
     /// </summary>
@@ -9983,7 +9983,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// <summary>
         /// Converts this to a time relative to the start of the trace in msec. 
         /// </summary>
-        public double EventTimeStampRelativeMSec { get { return source.QPCTimeToRelMSec(EventTimeStampQPC); } }
+        public double EventTimeStampRelativeMSec { get { return traceEventSource.QPCTimeToRelMSec(EventTimeStampQPC); } }
         /// <summary>
         /// The total number of eventToStack frames collected.  The Windows OS currently has a maximum of 96 frames. 
         /// </summary>
@@ -10111,7 +10111,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// <summary>
         /// Converts this to a time relative to the start of the trace in msec. 
         /// </summary>
-        public double EventTimeStampRelativeMSec { get { return source.QPCTimeToRelMSec(EventTimeStampQPC); } }
+        public double EventTimeStampRelativeMSec { get { return traceEventSource.QPCTimeToRelMSec(EventTimeStampQPC); } }
         /// <summary>
         /// Returns a key that can be used to look up the stack in KeyDelete or KeyRundown events 
         /// </summary>
