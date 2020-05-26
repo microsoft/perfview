@@ -794,7 +794,7 @@ namespace ETWManifest
                     }
                 }
             }
-            catch(Exception e)
+            catch(Exception)
             {
                 if (fileName == null)
                 {
