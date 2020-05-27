@@ -2,12 +2,20 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
     internal static class StackSourceWriterHelper
     {
+        internal static string GetExporterName()
+        {
+            var traceEvent = typeof(StackSourceWriterHelper).GetTypeInfo().Assembly.GetName();
+
+            return $"{traceEvent.Name}@{traceEvent.Version}"; // sth like "Microsoft.Diagnostics.Tracing.TraceEvent@2.0.56.0"
+        }
+
         /// <summary>
         /// we want to identify the thread for every sample to prevent from 
         /// overlaping of samples for the concurrent code so we group the samples by Threads
