@@ -270,7 +270,7 @@ namespace Microsoft.Diagnostics.Tracing
                     ParseEventParameters(eventTemplate, metaDataHeader, reader, metaDataEnd, NetTraceFieldLayoutVersion.V1);
                 }
 
-                while (reader.Current != metaDataEnd)
+                while (reader.Current < metaDataEnd)
                 {
                     // If we've already parsed the V1 metadata and there's more left to decode,
                     // then we have some tags to read
@@ -292,6 +292,8 @@ namespace Microsoft.Diagnostics.Tracing
                     // Skip any remaining bytes or unknown tags
                     reader.Goto(tagEndLabel);
                 }
+
+                Debug.Assert(reader.Current == metaDataEnd);
 
                 _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
                 _metadataTemplates[eventTemplate] = eventTemplate;
