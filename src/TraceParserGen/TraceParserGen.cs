@@ -340,11 +340,6 @@ internal class TraceParserGen
             output.WriteLine("        {");
             output.WriteLine("            add");
             output.WriteLine("            {");
-            var extraArg = "";
-            if (NeedsParserState)
-            {
-                extraArg = ", State";
-            }
             var taskGuid = (string.IsNullOrEmpty(evnt.TaskName))
                 ? "Guid.Empty"
                 : evnt.TaskName + "TaskGuid";

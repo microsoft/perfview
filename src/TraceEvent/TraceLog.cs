@@ -8624,7 +8624,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     serializer.Write((int)codeAddresses[i].methodOrProcessOrIlMapIndex);
                     serializer.Write(codeAddresses[i].InclusiveCount);
 
-                    /// <see cref="CodeAddressInfoSerializationVersion"/> >= 1
+                    // 'CodeAddressInfoSerializationVersion' >= 1
                     serializer.Write((byte)codeAddresses[i].optimizationTier);
                 }
                 serializer.Write(totalCodeAddresses);
