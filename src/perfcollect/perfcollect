@@ -1371,9 +1371,8 @@ SetupLTTngSession()
         else     
             # Enable other keywords
             events=(${events//","/" "})
-            for (( i=0; i<${#events[@]}; i++ ))
+            for event in ${events[@]}
             do 
-                local event=${events[$i]}
                 if [ "${!event}" == "" ] || [ "$( echo `declare -p $event | grep -- -a` )" == "" ]
                 then
                     echo Invalid keyword $event, skipped...
