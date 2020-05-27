@@ -7271,7 +7271,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsWPF
     public sealed class LayoutSourceTemplate : TraceEvent
     {
         public long Id { get { return GetInt64At(0); } }
-        public new LayoutSource source { get { return (LayoutSource)GetByteAt(8); } }
+        public LayoutSource source { get { return (LayoutSource)GetByteAt(8); } }
 
         #region Private
         internal LayoutSourceTemplate(Action<LayoutSourceTemplate> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
