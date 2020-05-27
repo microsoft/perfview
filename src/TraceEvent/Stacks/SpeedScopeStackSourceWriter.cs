@@ -52,7 +52,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             IReadOnlyList<string> orderedFrameNames, TextWriter writer, string name)
         {
             writer.Write("{");
-            writer.Write($"\"exporter\": \"{GetExporterName()}\", ");
+            writer.Write($"\"exporter\": \"{GetExporterInfo()}\", ");
             writer.Write($"\"name\": \"{name}\", ");
             writer.Write("\"activeProfileIndex\": 0, ");
             writer.Write("\"$schema\": \"https://www.speedscope.app/file-format-schema.json\", ");

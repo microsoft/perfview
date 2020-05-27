@@ -55,7 +55,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             TextWriter writer, string name)
         {
             writer.Write("{");
-            writer.Write($"\"otherData\": {{ \"name\": \"{name}\", \"exporter\": \"{GetExporterName()}\" }}, ");
+            writer.Write($"\"otherData\": {{ \"name\": \"{name}\", \"exporter\": \"{GetExporterInfo()}\" }}, ");
             writer.Write("\"traceEvents\": [");
             bool isFirst = true;
             foreach (var perThread in sortedProfileEventsPerThread.OrderBy(pair => pair.Value.First().RelativeTime))
