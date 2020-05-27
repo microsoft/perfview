@@ -55,6 +55,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             TextWriter writer, string name)
         {
             writer.Write("{");
+            writer.Write($"\"otherData\": {{ \"name\": \"{name}\", \"exporter\": \"{GetExporterInfo()}\" }}, ");
             writer.Write("\"traceEvents\": [");
             bool isFirst = true;
             foreach (var perThread in sortedProfileEventsPerThread.OrderBy(pair => pair.Value.First().RelativeTime))
@@ -97,9 +98,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
                     writer.Write($", \"parent\": {frameInfo.ParentId}");
                 writer.Write("}");
             }
-            writer.Write("}, ");
-            writer.Write($"\"otherData\": {{ \"name\": \"{name}\" }}");
-            writer.Write("}");
+            writer.Write("}}");
         }
         #endregion private
     }

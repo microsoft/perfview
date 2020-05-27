@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
@@ -162,6 +163,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             // MUST HAVE!!! the tool expects the profile events in certain order!!
             return OrderForExport(profileEvents).ToArray();
+        }
+
+        internal static string GetExporterInfo()
+        {
+            var traceEvent = typeof(StackSourceWriterHelper).GetTypeInfo().Assembly.GetName();
+
+            return $"{traceEvent.Name}@{traceEvent.Version}"; // sth like "Microsoft.Diagnostics.Tracing.TraceEvent@2.0.56.0"
         }
 
         /// <summary>
