@@ -249,7 +249,7 @@ Followed by PayloadSize bytes of payload and no alignment.
 
 ### Metadata event encoding
 
-For event blobs within a MetadataBlock, the payload describes a type of event. This payload format hasn't changed from earlier versions of the file format so copying that description here:
+For event blobs within a MetadataBlock, the payload describes a type of event. The payload contains a V1 and V2 field description, versions 1-4 of the file format did not support array types (arbritrary number of arguments of the same type) and the V2 field description was added to enable this.
 
 
 The PayloadBytes of such a MetaData definition are:
@@ -263,16 +263,37 @@ The PayloadBytes of such a MetaData definition are:
     int Version          // The version number for this event.
     int Level;           // The verbosity (5 is verbose, 1 is only critical) for the event.
 
-Following this header there is a Payload description.   This consists of 
+Following this header there is a V1 Payload description.   This consists of 
 
-*   int FieldCount;      // The number of fields in the payload
+    int FieldCount;      // The number of fields in the payload
 
-Followed by FieldCount number of field Definitions 
+Followed by FieldCount number of field definitions 
 
     int TypeCode;	 // This is the System.Typecode enumeration
     <PAYLOAD_DESCRIPTION>
     string FieldName;    // The 2 byte Unicode, null terminated string representing the Name of the Field
 
+In File format V5 and later only, following the FieldCount number of fields there are an optional set of metadata tags, where a tag consists of 
+
+    int TagPayloadBytes; // The number of bytes the tag payload uses, uninclusive of this field
+    byte TagKind;        // The type of tag it is. Currently used values are OpCode=1 V2Params=2
+
+Followed by a tag payload. If TagKind==OpCode the payload consists of
+
+    byte OpCode;         // The event's opcode
+
+If TagKind=V2Params the payload consists of
+
+    int V2FieldCount;    // The total number of fields in this payload
+
+Followed by V2FieldCount number of field definitions
+
+    int V2TypeCode;      // In V2 this can be EventPipeTypeCodeArray==19
+    int ArrayTypeCode;   // This optional field only appears when V2TypeCode==EventPipeTypeCodeArray
+    <PAYLOAD_DESCRIPTION>
+    string FieldName
+
+If the metadata event specifies a V2Params tag, the event must have an empty V1 parameter FieldCount and no field definitions.
 
 For primitive types and strings <PAYLOAD_DESCRIPTION> is not present, however if TypeCode == Object (1) then <PAYLOAD_DESCRIPTION> another payload
 description (that is a field count, followed by a list of field definitions).   These can be nested to arbitrary depth.  
@@ -466,4 +487,7 @@ Changes:
 10. The version number of the Trace object moved from 3 -> 4 and the version of EventBlock moved 1 -> 2.
 11. BeginObject tags are replaced by PrivateBeginObject to avoid memoization based memory leaks in the FastSerialization library.
 
+### Version 4 -> 5
+
+This version adds a set of optional tags after the metadata header and payload. These tags are used to describe the opcode of an event or include metadata for types that are unsupported in V4 and earlier.
 

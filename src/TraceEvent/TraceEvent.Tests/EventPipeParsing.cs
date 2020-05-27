@@ -26,7 +26,7 @@ namespace TraceEventTests
             : base(output)
         {
         }
-
+        
         [Theory()]
         [MemberData(nameof(TestEventPipeFiles))]
         public void Basic(string eventPipeFileName)
@@ -273,6 +273,101 @@ namespace TraceEventTests
                 traceSource.Process();
 
                 Assert.Equal(71600, eventCount);
+            }
+        }
+
+        [Fact]
+        public void CanReadV5EventPipeArrayTypes()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore5.0-win-x64-arraytypes.nettrace";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            using (var traceSource = new EventPipeEventSource(eventPipeFilePath))
+            {
+                int successCount = 0;
+                Action<TraceEvent> handler = delegate (TraceEvent traceEvent)
+                {
+                    string traceLevelValidationMessage = "Expected level {0} but got level {1} for EventSource={2} Event={3}";
+                    string traceKeywordValidationMessage = "Expected keywords {0} but got keywords{1} for EventSource={2} Event={3}";
+                    string traceOpcodeValidationMessage = "Expected opcode {0} but got opcode {1} for EventSource={2} Event={3}";
+                    string tracePayloadValidationMessage = "Expected {0} payload items but got {1} items for EventSource={2} Event={3}";
+                    string tracePayloadNamesValidationMessage = "Expected argument name {0} but got name {1} for EventSource={2} Event={3}";
+                    string tracePayloadTypeValidationMessage = "Expected type {0} but got type {1} for EventSource={2} Event={3} Argument={4}";
+                    string tracePayloadValueValidationMessage = "Expected argument value {0} but got value {1} for EventSource={2} Event={3} Argument={4}";
+
+                    if (traceEvent.ProviderName == "TestEventSource0")
+                    {
+                        if (traceEvent.EventName == "TestEvent1")
+                        {
+                            if ((int)traceEvent.Level != 2) { throw new Exception(String.Format(traceLevelValidationMessage, 2, (int)traceEvent.Level, "TestEventSource0", "TestEvent1")); }
+                            if ((int)traceEvent.Keywords != 0) { throw new Exception(String.Format(traceKeywordValidationMessage, 0, (int)traceEvent.Keywords, "TestEventSource0", "TestEvent1")); }
+                            if ((int)traceEvent.Opcode != 0) { throw new Exception(String.Format(traceOpcodeValidationMessage, 0, (int)traceEvent.Opcode, "TestEventSource0", "TestEvent1")); }
+                            if (traceEvent.PayloadNames.Count() != 3) { throw new Exception(String.Format(tracePayloadValidationMessage, 3, traceEvent.PayloadNames.Count(), "TestEventSource0", "TestEvent1")); }
+                            uint[] testEvent1Array0 = new uint[] { (uint)2032854139, (uint)1608221689, (uint)1470019200, (uint)199494339, (uint)1238846140, (uint)1366609043 };
+                            if (traceEvent.PayloadNames[0] != "arg0") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg0", traceEvent.PayloadNames[0], "TestEventSource0", "TestEvent1")); }
+                            if (traceEvent.PayloadValue(0).GetType() != typeof(uint[])) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "uint[]", traceEvent.PayloadValue(0).GetType(), "TestEventSource0", "TestEvent1", "arg0")); }
+                            if (!Enumerable.SequenceEqual((uint[])traceEvent.PayloadValue(0), testEvent1Array0)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent1Array0, traceEvent.PayloadValue(0), "TestEventSource0", "TestEvent1", "arg0")); }
+                            short[] testEvent1Array1 = new short[] { (short)26494, (short)17115, (short)-7229, (short)18850, (short)27931 };
+                            if (traceEvent.PayloadNames[1] != "arg1") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg1", traceEvent.PayloadNames[1], "TestEventSource0", "TestEvent1")); }
+                            if (traceEvent.PayloadValue(1).GetType() != typeof(short[])) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "short[]", traceEvent.PayloadValue(1).GetType(), "TestEventSource0", "TestEvent1", "arg1")); }
+                            if (!Enumerable.SequenceEqual((short[])traceEvent.PayloadValue(1), testEvent1Array1)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent1Array1, traceEvent.PayloadValue(1), "TestEventSource0", "TestEvent1", "arg1")); }
+                            if (traceEvent.PayloadNames[2] != "arg2") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg2", traceEvent.PayloadNames[2], "TestEventSource0", "TestEvent1")); }
+                            if (traceEvent.PayloadValue(2).GetType() != typeof(long)) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "long", traceEvent.PayloadValue(2).GetType(), "TestEventSource0", "TestEvent1", "arg2")); }
+                            if ((long)traceEvent.PayloadValue(2) != 2033417279) { throw new Exception(String.Format(tracePayloadValueValidationMessage, 2033417279, traceEvent.PayloadValue(2), "TestEventSource0", "TestEvent1", "arg2")); }
+
+                            ++successCount;
+                            return;
+                        }
+                        if (traceEvent.EventName == "TestEvent2")
+                        {
+                            if ((int)traceEvent.Level != 4) { throw new Exception(String.Format(traceLevelValidationMessage, 4, (int)traceEvent.Level, "TestEventSource0", "TestEvent2")); }
+                            if ((int)traceEvent.Keywords != 1231036291) { throw new Exception(String.Format(traceKeywordValidationMessage, 1231036291, (int)traceEvent.Keywords, "TestEventSource0", "TestEvent2")); }
+                            if ((int)traceEvent.Opcode != 0) { throw new Exception(String.Format(traceOpcodeValidationMessage, 0, (int)traceEvent.Opcode, "TestEventSource0", "TestEvent2")); }
+                            if (traceEvent.PayloadNames.Count() != 4) { throw new Exception(String.Format(tracePayloadValidationMessage, 4, traceEvent.PayloadNames.Count(), "TestEventSource0", "TestEvent2")); }
+                            if (traceEvent.PayloadNames[0] != "arg0") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg0", traceEvent.PayloadNames[0], "TestEventSource0", "TestEvent2")); }
+                            if (traceEvent.PayloadValue(0).GetType() != typeof(long)) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "long", traceEvent.PayloadValue(0).GetType(), "TestEventSource0", "TestEvent2", "arg0")); }
+                            if ((long)traceEvent.PayloadValue(0) != -1001479330) { throw new Exception(String.Format(tracePayloadValueValidationMessage, -1001479330, traceEvent.PayloadValue(0), "TestEventSource0", "TestEvent2", "arg0")); }
+                            if (traceEvent.PayloadNames[1] != "arg1") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg1", traceEvent.PayloadNames[1], "TestEventSource0", "TestEvent2")); }
+                            if (traceEvent.PayloadValue(1).GetType() != typeof(int)) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "int", traceEvent.PayloadValue(1).GetType(), "TestEventSource0", "TestEvent2", "arg1")); }
+                            if ((int)traceEvent.PayloadValue(1) != -1397908228) { throw new Exception(String.Format(tracePayloadValueValidationMessage, -1397908228, traceEvent.PayloadValue(1), "TestEventSource0", "TestEvent2", "arg1")); }
+                            int[] testEvent2Array0 = new int[] { 1470938110, 172564262, 1133558854, -1572049829 };
+                            if (traceEvent.PayloadNames[2] != "arg2") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg2", traceEvent.PayloadNames[2], "TestEventSource0", "TestEvent2")); }
+                            if (traceEvent.PayloadValue(2).GetType() != typeof(int[])) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "int[]", traceEvent.PayloadValue(2).GetType(), "TestEventSource0", "TestEvent2", "arg2")); }
+                            if (!Enumerable.SequenceEqual((int[])traceEvent.PayloadValue(2), testEvent2Array0)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent2Array0, traceEvent.PayloadValue(2), "TestEventSource0", "TestEvent2", "arg2")); }
+                            ulong[] testEvent2Array1 = new ulong[] { (ulong)2055126903, (ulong)593325874, (ulong)2130052527, (ulong)162795177 };
+                            if (traceEvent.PayloadNames[3] != "arg3") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg3", traceEvent.PayloadNames[3], "TestEventSource0", "TestEvent2")); }
+                            if (traceEvent.PayloadValue(3).GetType() != typeof(ulong[])) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "ulong[]", traceEvent.PayloadValue(3).GetType(), "TestEventSource0", "TestEvent2", "arg3")); }
+                            if (!Enumerable.SequenceEqual((ulong[])traceEvent.PayloadValue(3), testEvent2Array1)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent2Array1, traceEvent.PayloadValue(3), "TestEventSource0", "TestEvent2", "arg3")); }
+
+                            ++successCount;
+                            return;
+                        }
+                        if (traceEvent.EventName == "TestEvent3/24")
+                        {
+                            if ((int)traceEvent.Level != 2) { throw new Exception(String.Format(traceLevelValidationMessage, 2, (int)traceEvent.Level, "TestEventSource0", "TestEvent3")); }
+                            if ((int)traceEvent.Keywords != 0) { throw new Exception(String.Format(traceKeywordValidationMessage, 0, (int)traceEvent.Keywords, "TestEventSource0", "TestEvent3")); }
+                            if ((int)traceEvent.Opcode != 24) { throw new Exception(String.Format(traceOpcodeValidationMessage, 24, (int)traceEvent.Opcode, "TestEventSource0", "TestEvent3")); }
+                            if (traceEvent.PayloadNames.Count() != 1) { throw new Exception(String.Format(tracePayloadValidationMessage, 1, traceEvent.PayloadNames.Count(), "TestEventSource0", "TestEvent3")); }
+                            if (traceEvent.PayloadNames[0] != "arg0") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg0", traceEvent.PayloadNames[0], "TestEventSource0", "TestEvent3")); }
+                            if (traceEvent.PayloadValue(0).GetType() != typeof(char[])) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "char[]", traceEvent.PayloadValue(0).GetType(), "TestEventSource0", "TestEvent3", "arg0")); }
+                            char[] testEvent3Array = new char[] { (char)59299, (char)13231, (char)38541, (char)7407, (char)35812 };
+                            if (!Enumerable.SequenceEqual((char[])traceEvent.PayloadValue(0), testEvent3Array)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent3Array, traceEvent.PayloadValue(0), "TestEventSource0", "TestEvent3", "arg0")); }
+
+                            ++successCount;
+                            return;
+                        }
+                    }
+                };
+
+                traceSource.Dynamic.All += handler;
+
+                // Process
+                traceSource.Process();
+
+                Assert.Equal(3, successCount);
             }
         }
 
