@@ -8302,27 +8302,11 @@ table {
             "Thread Time (experimental)"
         };
 
-        public override string FormatName { get { return "LTTng"; } }
+        public override string FormatName { get { return "Perf"; } }
 
         public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
 
         public override bool SupportsProcesses => true;
-
-        internal override string GetProcessIncPat(IProcess process) => process.Name;
-
-        internal override string FindExeName(string incPat) => string.IsNullOrEmpty(incPat) ? incPat : incPat.Split('|').FirstOrDefault();
-
-        internal override bool GetProcessForStackSourceFromTopCallStackFrame(string topCallStackStr, out IProcessForStackSource result)
-        {
-            if (!string.IsNullOrEmpty(topCallStackStr))
-            {
-                // the top call stack is always process name, the process ID is missing as of today (a perf_events limitation)
-                result = new IProcessForStackSource(topCallStackStr);
-                return true;
-            }
-            result = null;
-            return false;
-        }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {

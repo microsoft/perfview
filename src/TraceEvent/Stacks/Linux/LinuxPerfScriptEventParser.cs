@@ -556,7 +556,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             }
 
             frames.Add(new ThreadFrame(threadID, "Thread"));
-            frames.Add(new ProcessFrame(command));
+            frames.Add(new ProcessFrame(processID, command));
 
             return frames;
         }
@@ -1126,11 +1126,13 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
     public struct ProcessFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.ProcessFrame; } }
-        public string DisplayName { get { return Name; } }
+        public string DisplayName { get { return string.Format("Process {0} ({1})", Name, ID); } }
         public string Name { get; }
+        public int ID { get; }
 
-        public ProcessFrame(string name)
+        public ProcessFrame(int id, string name)
         {
+            ID = id;
             Name = name;
         }
     }
