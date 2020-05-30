@@ -8299,7 +8299,7 @@ table {
         {
             "CPU",
             "CPU (with Optimization Tiers)",
-            "Thread Time (experimental)"
+            "Thread Time"
         };
 
         public override string FormatName { get { return "Perf"; } }
@@ -8320,7 +8320,7 @@ table {
                 string xmlPath;
                 bool doThreadTime = false;
 
-                if (streamName == "Thread Time (experimental)")
+                if (streamName == "Thread Time")
                 {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.threadtime.xml.zip");
                     doThreadTime = true;
@@ -8330,10 +8330,12 @@ table {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.cpu.xml.zip");
                 }
 
+#if !DEBUG
                 if (!CacheFiles.UpToDate(xmlPath, FilePath))
+#endif
                 {
                     XmlStackSourceWriter.WriteStackViewAsZippedXml(
-                        new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
+                        new LinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
                 bool showOptimizationTiers =
@@ -8369,6 +8371,7 @@ table {
             m_Children = new List<PerfViewTreeItem>();
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
+            var experimental = new PerfViewTreeGroup("Experimental Group");
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
 
@@ -8380,10 +8383,7 @@ table {
                 advanced.AddChild(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
             }
 
-            if (AppLog.InternalUser)
-            {
-                advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
-            }
+            experimental.AddChild(new PerfViewStackSource(this, "Thread Time"));
 
             if (m_traceLog != null)
             {
@@ -8409,6 +8409,11 @@ table {
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
+            }
+
+            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            {
+                m_Children.Add(experimental);
             }
 
             return null;

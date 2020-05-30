@@ -354,10 +354,15 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
                 // Process ID
                 int pid = source.ReadInt();
-                source.MoveNext(); // Move past the "/"
 
-                // Thread ID
-                int tid = source.ReadInt();
+                // Detect whether or not the Thread ID is present.
+                int tid = pid;
+                if (source.Peek(0) == '/')
+                {
+                    // Thread ID
+                    source.MoveNext(); // Move past the "/"
+                    tid = source.ReadInt();
+                }
 
                 // CPU
                 source.SkipWhiteSpace();
@@ -403,6 +408,10 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 {
                     eventKind = EventKind.Scheduler;
                 }
+                else if(eventDetails.Length > ThreadExitEvent.Name.Length && eventDetails.Substring(0, ThreadExitEvent.Name.Length) == ThreadExitEvent.Name)
+                {
+                    eventKind = EventKind.ThreadExit;
+                }
 
                 // Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
                 if (regex != null && !regex.IsMatch(eventName))
@@ -434,11 +443,23 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         source.SkipUpTo('\n');
                     }
 
+                    ThreadExit exit = null;
+                    if(eventKind == EventKind.ThreadExit)
+                    {
+                        source.RestoreToMark(markedPosition);
+                        exit = ReadExit(source);
+                        source.SkipUpTo('\n');
+                    }
+
                     IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
 
                     if (eventKind == EventKind.Scheduler)
                     {
                         linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
+                    }
+                    else if (eventKind == EventKind.ThreadExit)
+                    {
+                        linuxEvent = new ThreadExitEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, exit);
                     }
                     else
                     {
@@ -529,6 +550,10 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     }
                     else if (!char.IsDigit((char)val))
                     {
+                        if(source.Peek(idx+1) == '[')
+                        {
+                            return firstSpaceIdx;
+                        }
                         goto startOver;
                     }
                 }
@@ -656,6 +681,30 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             int nextPrio = source.ReadInt();
 
             return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+        }
+
+        private ThreadExit ReadExit(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            source.SkipUpTo('=');
+            source.MoveNext();
+
+            source.ReadAsciiStringUpTo(' ', sb);
+            string comm = sb.ToString();
+            sb.Clear();
+
+            source.SkipUpTo('=');
+            source.MoveNext();
+
+            int tid = source.ReadInt();
+
+            source.SkipUpTo('=');
+            source.MoveNext();
+
+            int prio = source.ReadInt();
+
+            return new ThreadExit(comm, tid, prio);
         }
 
         private string RemoveOuterBrackets(string s)
@@ -952,6 +1001,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         /// Represents an event that may context switch
         /// </summary>
         Scheduler,
+
+        /// <summary>
+        /// Represents a thread exit event.
+        /// </summary>
+        ThreadExit,
     }
 
     /// <summary>
@@ -998,6 +1052,42 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             NextCommand = nextComm;
             NextThreadID = nextTid;
             NextPriority = nextPrio;
+        }
+    }
+
+    public class ThreadExitEvent : LinuxEvent
+    {
+        public static readonly string Name = "sched_process_exit";
+
+        /// <summary>
+        /// The details of the context switch.
+        /// </summary>
+        public ThreadExit Exit { get; }
+
+        public ThreadExitEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, ThreadExit exit) :
+            base(EventKind.ThreadExit, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            Exit = exit;
+        }
+    }
+
+    /// <summary>
+    /// Stores all relevant information retrieved by a thread exit.
+    /// </summary>
+    public class ThreadExit
+    {
+        public string Command { get; }
+        public int ThreadID { get; }
+        public int Priority { get; }
+
+        public ThreadExit(string comm, int tid, int prio)
+        {
+            Command = comm;
+            ThreadID = tid;
+            Priority = prio;
         }
     }
 
