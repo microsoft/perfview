@@ -44,7 +44,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     if (!samplesPerThread.TryGetValue(threadInfo, out var samples))
                         samplesPerThread[threadInfo] = samples = new List<Sample>();
 
-                    samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, sample.Metric, -1));
+                    // The single-to-double floating point error may cause unexpected overlapping of samples.
+                    // At best we can add some minimum buffer between the samples to deal with it.
+                    var metric = sample.Metric - 1e-7;
+
+                    samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, metric, -1));
 
                     return;
                 }
@@ -143,7 +147,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 var frameId = samplesInfo.Key;
                 var samples = samplesInfo.Value;
 
-                // this should not be required, but I prefer to be sure that the data is sorted
+                // make sure the samples are sorted by depth and then time
                 samples.Sort(CompareSamples);
 
                 Sample openSample = samples[0]; // samples are never empty
@@ -227,6 +231,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         private static int CompareSamples(Sample x, Sample y)
         {
+            int depthComparison = x.Depth.CompareTo(y.Depth);
+
+            if (depthComparison != 0)
+                return depthComparison;
+
             int timeComparison = x.RelativeTime.CompareTo(y.RelativeTime);
 
             if (timeComparison != 0)
