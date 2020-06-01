@@ -46,7 +46,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                     // The single-to-double floating point error may cause unexpected overlapping of samples.
                     // At best we can add some minimum buffer between the samples to deal with it.
-                    var metric = sample.Metric - 1e-7;
+                    var metric = sample.Metric > 0 ? (sample.Metric - 1e-7) : sample.Metric;
 
                     samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, metric, -1));
 
