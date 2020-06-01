@@ -59,7 +59,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             foreach (var samples in samplesPerThread.Values)
             {
                 // all samples in the StackSource should be sorted, but we want to ensure it
-                samples.Sort(CompareSamples);
+                samples.Sort(CompareSamplesByTimeThenDepth);
             }
 
             return samplesPerThread;
@@ -147,8 +147,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 var frameId = samplesInfo.Key;
                 var samples = samplesInfo.Value;
 
-                // make sure the samples are sorted by depth and then time
-                samples.Sort(CompareSamples);
+                // make sure the samples are sorted by depth and then time (crucial for recursive methods)
+                samples.Sort(CompareSamplesByDepthThenTime);
 
                 Sample openSample = samples[0]; // samples are never empty
                 for (int i = 1; i < samples.Count; i++)
@@ -229,15 +229,27 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 });
         }
 
-        private static int CompareSamples(Sample x, Sample y)
+        private static int CompareSamplesByTimeThenDepth(Sample x, Sample y)
+        {
+            int timeComparison = x.RelativeTime.CompareTo(y.RelativeTime);
+            if (timeComparison != 0)
+                return timeComparison;
+
+            // in case both samples start at the same time, the one with smaller metric should be the first one
+            int metricComparison = x.Metric.CompareTo(y.Metric);
+            if (metricComparison != 0)
+                return metricComparison;
+
+            return x.Depth.CompareTo(y.Depth);
+        }
+
+        private static int CompareSamplesByDepthThenTime(Sample x, Sample y)
         {
             int depthComparison = x.Depth.CompareTo(y.Depth);
-
             if (depthComparison != 0)
                 return depthComparison;
 
             int timeComparison = x.RelativeTime.CompareTo(y.RelativeTime);
-
             if (timeComparison != 0)
                 return timeComparison;
 
