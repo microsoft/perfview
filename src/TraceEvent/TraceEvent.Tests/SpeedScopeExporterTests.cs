@@ -214,6 +214,59 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void GetAggregatedOrderedProfileEventsConvertsRecursiveMethodSamplesToMultipleEvents()
+        {
+            const double metric = 0.1;
+            const double relativeTime = 0.1;
+
+            var samples = new[]
+            {
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, relativeTime: relativeTime, depth: 0),
+                new Sample((StackSourceCallStackIndex)2, callerStackIndex: (StackSourceCallStackIndex)1, metric: metric, relativeTime: relativeTime, depth: 1), // relative time stays the same
+                new Sample((StackSourceCallStackIndex)3, callerStackIndex: (StackSourceCallStackIndex)2, metric: metric, relativeTime: relativeTime, depth: 2),
+                new Sample((StackSourceCallStackIndex)4, callerStackIndex: (StackSourceCallStackIndex)3, metric: metric, relativeTime: relativeTime, depth: 3),
+            };
+
+            var input = new Dictionary<int, List<Sample>>() { { 0, samples.ToList() } };
+
+            var aggregatedEvents = GetAggregatedOrderedProfileEvents(input);
+
+            // open x4
+            Assert.Equal(ProfileEventType.Open, aggregatedEvents[0].Type);
+            Assert.Equal(relativeTime, aggregatedEvents[0].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[0].Depth);
+
+            Assert.Equal(ProfileEventType.Open, aggregatedEvents[1].Type);
+            Assert.Equal(relativeTime, aggregatedEvents[1].RelativeTime);
+            Assert.Equal(1, aggregatedEvents[1].Depth);
+
+            Assert.Equal(ProfileEventType.Open, aggregatedEvents[2].Type);
+            Assert.Equal(relativeTime, aggregatedEvents[2].RelativeTime);
+            Assert.Equal(2, aggregatedEvents[2].Depth);
+
+            Assert.Equal(ProfileEventType.Open, aggregatedEvents[3].Type);
+            Assert.Equal(relativeTime, aggregatedEvents[3].RelativeTime);
+            Assert.Equal(3, aggregatedEvents[3].Depth);
+
+            // close x4
+            Assert.Equal(ProfileEventType.Close, aggregatedEvents[4].Type);
+            Assert.Equal(relativeTime + metric, aggregatedEvents[4].RelativeTime);
+            Assert.Equal(3, aggregatedEvents[4].Depth);
+
+            Assert.Equal(ProfileEventType.Close, aggregatedEvents[5].Type);
+            Assert.Equal(relativeTime + metric, aggregatedEvents[5].RelativeTime);
+            Assert.Equal(2, aggregatedEvents[5].Depth);
+
+            Assert.Equal(ProfileEventType.Close, aggregatedEvents[6].Type);
+            Assert.Equal(relativeTime + metric, aggregatedEvents[6].RelativeTime);
+            Assert.Equal(1, aggregatedEvents[6].Depth);
+
+            Assert.Equal(ProfileEventType.Close, aggregatedEvents[7].Type);
+            Assert.Equal(relativeTime + metric, aggregatedEvents[7].RelativeTime);
+            Assert.Equal(0, aggregatedEvents[7].Depth);
+        }
+
+        [Fact]
         public void GetAggregatedOrderedProfileEventsConvertsContinuousSamplesWithDifferentCallerStackIndexToMultipleEvents()
         {
             const double metric = 0.1;
