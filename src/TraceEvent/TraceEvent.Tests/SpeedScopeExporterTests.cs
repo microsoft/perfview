@@ -85,7 +85,7 @@ namespace TraceEventTests
                 callerIndex: a.StackIndex);
 
             var allSamples = new[] { main, a, b };
-            var leafs = new[] { new Sample(b.StackIndex, -1, b.RelativeTime, b.Metric, -1) };
+            var leafs = new[] { new Sample(b.StackIndex, StackSourceCallStackIndex.Invalid, b.RelativeTime, b.Metric, -1) };
             var stackSource = new StackSourceStub(allSamples);
             var frameNameToId = new Dictionary<string, int>();
 
@@ -122,7 +122,7 @@ namespace TraceEventTests
                 callerIndex: main.StackIndex);
 
             var allSamples = new[] { main, wrong };
-            var leafs = new[] { new Sample(wrong.StackIndex, -1, wrong.RelativeTime, wrong.Metric, -1) };
+            var leafs = new[] { new Sample(wrong.StackIndex, StackSourceCallStackIndex.Invalid, wrong.RelativeTime, wrong.Metric, -1) };
             var stackSource = new StackSourceStub(allSamples);
             var frameNameToId = new Dictionary<string, int>();
 
@@ -143,14 +143,14 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.1),
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.2),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, depth: 0, relativeTime: 0.1),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, depth: 0, relativeTime: 0.2),
 
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 0.7),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, depth: 0, relativeTime: 0.7),
 
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.1),
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.2),
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, depth: 0, relativeTime: 1.3),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, depth: 0, relativeTime: 1.1),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, depth: 0, relativeTime: 1.2),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, depth: 0, relativeTime: 1.3),
             };
 
             var input = new Dictionary<int, List<Sample>>() { { 0, samples.ToList() } };
@@ -183,8 +183,8 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.1, depth: 0),
-                new Sample((StackSourceCallStackIndex)1, callerFrameId: 0, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, relativeTime: 0.1, depth: 0),
+                new Sample((StackSourceCallStackIndex)1, callerStackIndex: 0, metric: metric, relativeTime: 0.2, depth: 1), // depth change!
             };
 
             var input = new Dictionary<int, List<Sample>>() { { 0, samples.ToList() } };
@@ -214,14 +214,14 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void GetAggregatedOrderedProfileEventsConvertsContinuousSamplesWithDifferentCallerIdToMultipleEvents()
+        public void GetAggregatedOrderedProfileEventsConvertsContinuousSamplesWithDifferentCallerStackIndexToMultipleEvents()
         {
             const double metric = 0.1;
 
             var samples = new[]
             {
-                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerFrameId: 0),
-                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerFrameId: 1), // callerFrameId change!
+                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerStackIndex: 0),
+                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerStackIndex: (StackSourceCallStackIndex)1), // callerStackIndex change!
             };
 
             var input = new Dictionary<int, List<Sample>>() { { 0, samples.ToList() } };
@@ -257,9 +257,9 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerFrameId: 0),
-                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerFrameId: 0),
-                new Sample((StackSourceCallStackIndex)1, metric: 0.0, relativeTime: 0.3, depth: 0, callerFrameId: 0), // 0.0 metric
+                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.1, depth: 0, callerStackIndex: 0),
+                new Sample((StackSourceCallStackIndex)1, metric: metric, relativeTime: 0.2, depth: 0, callerStackIndex: 0),
+                new Sample((StackSourceCallStackIndex)1, metric: 0.0, relativeTime: 0.3, depth: 0, callerStackIndex: 0), // 0.0 metric
             };
 
             var input = new Dictionary<int, List<Sample>>() { { 0, samples.ToList() } };
@@ -287,8 +287,8 @@ namespace TraceEventTests
 
             var samples = new[]
             {
-                new Sample((StackSourceCallStackIndex)1, metric: zeroMetric, relativeTime: relativeTime, depth: 0, callerFrameId: 0), // 0.0 metric
-                new Sample((StackSourceCallStackIndex)1, metric: zeroMetric, relativeTime: relativeTime, depth: 0, callerFrameId: 0), // 0.0 metric and same relative time
+                new Sample((StackSourceCallStackIndex)1, metric: zeroMetric, relativeTime: relativeTime, depth: 0, callerStackIndex: 0), // 0.0 metric
+                new Sample((StackSourceCallStackIndex)1, metric: zeroMetric, relativeTime: relativeTime, depth: 0, callerStackIndex: 0), // 0.0 metric and same relative time
             };
 
             var input = new Dictionary<int, List<Sample>>() { { 0, samples.ToList() } };

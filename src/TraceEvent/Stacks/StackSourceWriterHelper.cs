@@ -48,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     // At best we can add some minimum buffer between the samples to deal with it.
                     var metric = sample.Metric > 0 ? (sample.Metric - 1e-7) : sample.Metric;
 
-                    samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, metric, -1));
+                    samples.Add(new Sample(sample.StackIndex, StackSourceCallStackIndex.Invalid, sample.TimeRelativeMSec, metric, -1));
 
                     return;
                 }
@@ -93,6 +93,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // add sample for every method on the stack
                 int depth = -1;
                 int callerFrameId = -1;
+                var callerStackIndex = StackSourceCallStackIndex.Invalid;
                 while (stackIndexesToHandle.Count > 0)
                 {
                     stackIndex = stackIndexesToHandle.Pop();
@@ -114,7 +115,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                     // the time and metric are the same as for the leaf sample
                     // the difference is stack index (not really used from here), caller frame id and depth (used for sorting the exported data)
-                    samples.Add(new Sample(stackIndex, callerFrameId, leafSample.RelativeTime, leafSample.Metric, depth));
+                    samples.Add(new Sample(stackIndex, callerStackIndex, leafSample.RelativeTime, leafSample.Metric, depth));
 
                     if (!exportedFrameIdToExportedNameAndCallerId.ContainsKey(exportedFrameId))
                     {
@@ -126,6 +127,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         exportedFrameIdToExportedNameAndCallerId.Add(exportedFrameId, new FrameInfo(callerFrameId, shortName, category));
                     }
 
+                    callerStackIndex = stackIndex;
                     callerFrameId = exportedFrameId;
                 }
             }
@@ -183,7 +185,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (left.Depth != right.Depth)
                 return true;
-            if (left.CallerFrameId != right.CallerFrameId)
+            if (left.CallerStackIndex != right.CallerStackIndex)
                 return true;
 
             // 1.2 is a magic number based on some experiments ;)
@@ -295,10 +297,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         internal readonly struct Sample
         {
-            internal Sample(StackSourceCallStackIndex stackIndex, int callerFrameId, double relativeTime, double metric, int depth)
+            internal Sample(StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerStackIndex, double relativeTime, double metric, int depth)
             {
                 StackIndex = stackIndex;
-                CallerFrameId = callerFrameId;
+                CallerStackIndex = callerStackIndex;
                 RelativeTime = relativeTime;
                 Metric = metric;
                 Depth = depth;
@@ -308,7 +310,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             #region private
             internal StackSourceCallStackIndex StackIndex { get; }
-            internal int CallerFrameId { get; }
+            internal StackSourceCallStackIndex CallerStackIndex { get; }
             internal double RelativeTime { get; }
             internal double Metric { get; }
             internal int Depth { get; }
