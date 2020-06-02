@@ -44,7 +44,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     if (!samplesPerThread.TryGetValue(threadInfo, out var samples))
                         samplesPerThread[threadInfo] = samples = new List<Sample>();
 
-                    samples.Add(new Sample(sample.StackIndex, -1, sample.TimeRelativeMSec, sample.Metric, -1));
+                    samples.Add(new Sample(sample.StackIndex, StackSourceCallStackIndex.Invalid, sample.TimeRelativeMSec, sample.Metric, -1));
 
                     return;
                 }
@@ -55,7 +55,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             foreach (var samples in samplesPerThread.Values)
             {
                 // all samples in the StackSource should be sorted, but we want to ensure it
-                samples.Sort(CompareSamples);
+                samples.Sort(CompareSamplesByTimeThenDepth);
             }
 
             return samplesPerThread;
@@ -89,6 +89,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // add sample for every method on the stack
                 int depth = -1;
                 int callerFrameId = -1;
+                var callerStackIndex = StackSourceCallStackIndex.Invalid;
                 while (stackIndexesToHandle.Count > 0)
                 {
                     stackIndex = stackIndexesToHandle.Pop();
@@ -110,7 +111,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                     // the time and metric are the same as for the leaf sample
                     // the difference is stack index (not really used from here), caller frame id and depth (used for sorting the exported data)
-                    samples.Add(new Sample(stackIndex, callerFrameId, leafSample.RelativeTime, leafSample.Metric, depth));
+                    samples.Add(new Sample(stackIndex, callerStackIndex, leafSample.RelativeTime, leafSample.Metric, depth));
 
                     if (!exportedFrameIdToExportedNameAndCallerId.ContainsKey(exportedFrameId))
                     {
@@ -122,6 +123,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         exportedFrameIdToExportedNameAndCallerId.Add(exportedFrameId, new FrameInfo(callerFrameId, shortName, category));
                     }
 
+                    callerStackIndex = stackIndex;
                     callerFrameId = exportedFrameId;
                 }
             }
@@ -143,8 +145,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 var frameId = samplesInfo.Key;
                 var samples = samplesInfo.Value;
 
-                // this should not be required, but I prefer to be sure that the data is sorted
-                samples.Sort(CompareSamples);
+                // make sure the samples are sorted by depth and then time (crucial for recursive methods)
+                samples.Sort(CompareSamplesByDepthThenTime);
 
                 Sample openSample = samples[0]; // samples are never empty
                 for (int i = 1; i < samples.Count; i++)
@@ -179,7 +181,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (left.Depth != right.Depth)
                 return true;
-            if (left.CallerFrameId != right.CallerFrameId)
+            if (left.CallerStackIndex != right.CallerStackIndex)
                 return true;
 
             // 1.2 is a magic number based on some experiments ;)
@@ -197,8 +199,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (openSample.RelativeTime == closeSample.RelativeTime + closeSample.Metric)
                 throw new ArgumentException("Invalid samples, two samples can not happen at the same time.");
 
-            profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, openSample.RelativeTime, openSample.Depth));
-            profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, closeSample.RelativeTime + closeSample.Metric, closeSample.Depth));
+            profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, (float)openSample.RelativeTime, openSample.Depth));
+            profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, (float)(closeSample.RelativeTime + closeSample.Metric), closeSample.Depth));
         }
 
         /// <summary>
@@ -225,10 +227,27 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 });
         }
 
-        private static int CompareSamples(Sample x, Sample y)
+        private static int CompareSamplesByTimeThenDepth(Sample x, Sample y)
         {
             int timeComparison = x.RelativeTime.CompareTo(y.RelativeTime);
+            if (timeComparison != 0)
+                return timeComparison;
 
+            // in case both samples start at the same time, the one with smaller metric should be the first one
+            int metricComparison = x.Metric.CompareTo(y.Metric);
+            if (metricComparison != 0)
+                return metricComparison;
+
+            return x.Depth.CompareTo(y.Depth);
+        }
+
+        private static int CompareSamplesByDepthThenTime(Sample x, Sample y)
+        {
+            int depthComparison = x.Depth.CompareTo(y.Depth);
+            if (depthComparison != 0)
+                return depthComparison;
+
+            int timeComparison = x.RelativeTime.CompareTo(y.RelativeTime);
             if (timeComparison != 0)
                 return timeComparison;
 
@@ -274,10 +293,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         internal readonly struct Sample
         {
-            internal Sample(StackSourceCallStackIndex stackIndex, int callerFrameId, double relativeTime, double metric, int depth)
+            internal Sample(StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerStackIndex, double relativeTime, float metric, int depth)
             {
                 StackIndex = stackIndex;
-                CallerFrameId = callerFrameId;
+                CallerStackIndex = callerStackIndex;
                 RelativeTime = relativeTime;
                 Metric = metric;
                 Depth = depth;
@@ -287,9 +306,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             #region private
             internal StackSourceCallStackIndex StackIndex { get; }
-            internal int CallerFrameId { get; }
+            internal StackSourceCallStackIndex CallerStackIndex { get; }
             internal double RelativeTime { get; }
-            internal double Metric { get; }
+            internal float Metric { get; }
             internal int Depth { get; }
             #endregion private
         }
@@ -301,7 +320,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         internal readonly struct ProfileEvent
         {
-            public ProfileEvent(ProfileEventType type, int frameId, double relativeTime, int depth)
+            public ProfileEvent(ProfileEventType type, int frameId, float relativeTime, int depth)
             {
                 Type = type;
                 FrameId = frameId;
@@ -314,7 +333,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             #region private
             internal ProfileEventType Type { get; }
             internal int FrameId { get; }
-            internal double RelativeTime { get; }
+            internal float RelativeTime { get; }
             internal int Depth { get; }
             #endregion private
         }
