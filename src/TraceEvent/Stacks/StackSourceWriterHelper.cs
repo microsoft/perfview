@@ -44,11 +44,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     if (!samplesPerThread.TryGetValue(threadInfo, out var samples))
                         samplesPerThread[threadInfo] = samples = new List<Sample>();
 
-                    // The single-to-double floating point error may cause unexpected overlapping of samples.
-                    // At best we can add some minimum buffer between the samples to deal with it.
-                    var metric = sample.Metric > 0 ? (sample.Metric - 1e-7) : sample.Metric;
-
-                    samples.Add(new Sample(sample.StackIndex, StackSourceCallStackIndex.Invalid, sample.TimeRelativeMSec, metric, -1));
+                    samples.Add(new Sample(sample.StackIndex, StackSourceCallStackIndex.Invalid, sample.TimeRelativeMSec, sample.Metric, -1));
 
                     return;
                 }
@@ -203,8 +199,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (openSample.RelativeTime == closeSample.RelativeTime + closeSample.Metric)
                 throw new ArgumentException("Invalid samples, two samples can not happen at the same time.");
 
-            profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, openSample.RelativeTime, openSample.Depth));
-            profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, closeSample.RelativeTime + closeSample.Metric, closeSample.Depth));
+            profileEvents.Add(new ProfileEvent(ProfileEventType.Open, frameId, (float)openSample.RelativeTime, openSample.Depth));
+            profileEvents.Add(new ProfileEvent(ProfileEventType.Close, frameId, (float)(closeSample.RelativeTime + closeSample.Metric), closeSample.Depth));
         }
 
         /// <summary>
@@ -297,7 +293,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         internal readonly struct Sample
         {
-            internal Sample(StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerStackIndex, double relativeTime, double metric, int depth)
+            internal Sample(StackSourceCallStackIndex stackIndex, StackSourceCallStackIndex callerStackIndex, double relativeTime, float metric, int depth)
             {
                 StackIndex = stackIndex;
                 CallerStackIndex = callerStackIndex;
@@ -312,7 +308,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             internal StackSourceCallStackIndex StackIndex { get; }
             internal StackSourceCallStackIndex CallerStackIndex { get; }
             internal double RelativeTime { get; }
-            internal double Metric { get; }
+            internal float Metric { get; }
             internal int Depth { get; }
             #endregion private
         }
@@ -324,7 +320,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         internal readonly struct ProfileEvent
         {
-            public ProfileEvent(ProfileEventType type, int frameId, double relativeTime, int depth)
+            public ProfileEvent(ProfileEventType type, int frameId, float relativeTime, int depth)
             {
                 Type = type;
                 FrameId = frameId;
@@ -337,7 +333,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             #region private
             internal ProfileEventType Type { get; }
             internal int FrameId { get; }
-            internal double RelativeTime { get; }
+            internal float RelativeTime { get; }
             internal int Depth { get; }
             #endregion private
         }
