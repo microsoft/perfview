@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26918.3
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30104.5
 MinimumVisualStudioVersion = 15.0
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "src\EtwClrProfiler\ETWClrProfilerX86.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}"
 EndProject
