@@ -39,7 +39,6 @@
 
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="MSFT.snk" />
     <Content Include="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -59,13 +58,13 @@
        needs to give this DLL 'InternalVisibleTo' and signed DLLs
        can only give this to other signed DLLs.  But since we run
        on dev machines with signing validation skipped, we can
-       delay sign it and never real sign it.  Note that we don't
-       even delay sign it unless we are on a SIGNING_BUILD -->
+       public sign it and never real sign it. -->
 
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 

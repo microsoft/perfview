@@ -42,8 +42,9 @@
 
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
