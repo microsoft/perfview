@@ -26,6 +26,11 @@ namespace Microsoft.Diagnostics.Symbols
         public SymbolReader(TextWriter log, string nt_symbol_path = null)
         {
             m_log = log;
+#if SYNC_SYMBOLREADER_LOG
+            // Make sure that accesses to the log are synchronized to avoid races due to the fact that System.Diagnostics.Process
+            // uses AsyncStreamReader to read from the stdout/stderr and so it's possible to have concurrent writes to this log.
+            m_log = TextWriter.Synchronized(log);
+#endif
             m_symbolModuleCache = new Cache<string, ManagedSymbolModule>(10);
             m_pdbPathCache = new Cache<PdbSignature, string>(10);
 
@@ -35,7 +40,7 @@ namespace Microsoft.Diagnostics.Symbols
                 m_symbolPath = Microsoft.Diagnostics.Symbols.SymbolPath.SymbolPathFromEnvironment;
             }
 
-            log.WriteLine("Created SymbolReader with SymbolPath {0}", m_symbolPath);
+            m_log.WriteLine("Created SymbolReader with SymbolPath {0}", m_symbolPath);
 
             // TODO FIX NOW.  the code below does not support probing a file extension directory.  
             // we work around this by adding more things to the symbol path
