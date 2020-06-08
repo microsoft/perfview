@@ -184,8 +184,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (left.CallerStackIndex != right.CallerStackIndex)
                 return true;
 
-            // 1.2 is a magic number based on some experiments ;)
-            return left.RelativeTime + (left.Metric * 1.2) < right.RelativeTime;
+            return left.RelativeTime + (left.Metric * 1.1) < right.RelativeTime;
         }
 
         /// <summary>
