@@ -560,8 +560,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != FragmentSize + 12));
-            Debug.Assert(!(Version > 0 && EventDataLength < FragmentSize + 12));
+            //Debug.Assert(!(Version == 0 && EventDataLength != FragmentSize + 12));
+            //Debug.Assert(!(Version > 0 && EventDataLength < FragmentSize + 12));
         }
         protected internal override Delegate Target
         {
