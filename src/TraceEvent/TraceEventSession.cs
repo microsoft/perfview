@@ -2318,16 +2318,16 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public byte[] RawArguments { get; set; }
         /// <summary>
-        /// Setting StackEnabled to true will cause all events in the provider to collect stacks when event are fired. 
+        /// Setting StackEnabled to true will cause all events in the provider to collect stacks when events are fired. 
         /// </summary>
         public bool StacksEnabled { get; set; }
         /// <summary>
-        /// Setting ProcessIDFilter will limit the providers that receive the EnableCommand to those that match on of
+        /// Setting ProcessIDFilter will limit the providers that receive the EnableCommand to those that match one of
         /// the given Process IDs.  
         /// </summary>
         public IList<int> ProcessIDFilter { get; set; }
         /// <summary>
-        /// Setting ProcessNameFilter will limit the providers that receive the EnableCommand to those that match on of
+        /// Setting ProcessNameFilter will limit the providers that receive the EnableCommand to those that match one of
         /// the given Process names (a process name is the name of the EXE without the PATH but WITH the extension).  
         /// </summary>
         public IList<string> ProcessNameFilter { get; set; }
@@ -2337,7 +2337,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public IList<int> EventIDsToEnable { get; set; }
         /// <summary>
-        /// Setting EventIDs to Enable will enable the collection of stacks for  a event of a provider by EventID 
+        /// Setting EventIDs to Enable will enable the collection of stacks for an event of a provider by EventID 
         /// (Has no effect if StacksEnabled is also set since that enable stacks for all events IDs)
         /// </summary>
         public IList<int> EventIDStacksToEnable { get; set; }
@@ -2347,7 +2347,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public IList<int> EventIDsToDisable { get; set; }
         /// <summary>
-        /// Setting EventIDs to Enable will disable the collection of stacks for a event of a provider by EventID 
+        /// Setting EventIDs to Enable will disable the collection of stacks for an event of a provider by EventID 
         /// Has no effect unless StacksEnabled is also set (since otherwise stack collection is off).   
         /// </summary>
         public IList<int> EventIDStacksToDisable { get; set; }
