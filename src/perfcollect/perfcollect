@@ -53,6 +53,7 @@
 # Set when we parse command line arguments to determine if we should enable specific collection options.
 collect_cpu=1
 collect_threadTime=0
+collect_offcpu=0
 
 ######################################
 ## .NET Event Categories
@@ -1250,6 +1251,11 @@ ProcessArguments()
         elif [ "-threadtime" == "$arg" ]
         then
             collect_threadTime=1
+        elif [ "-offcpu" == "$arg" ]
+        then
+            # Perf doesn't support capturing cpu-clock events and sched events concurrently.
+            collect_cpu=0
+            collect_offcpu=1
         elif [ "-hwevents" == "$arg" ]
         then
             collect_HWevents=1
@@ -1612,33 +1618,38 @@ ProcessCollectedData()
 
         WriteStatus "...FINISHED"
 
-            WriteStatus "Exporting perf.data file"
+        WriteStatus "Resolving JIT and R2R symbols."
 
-        # Merge sched_stat and sched_switch events.
+        originalFile="perf.data"
+        inputFile="perf-jit.data"
+        RunSilent $perfcmd inject --input $originalFile --jit --output $inputFile
+
+        WriteStatus "...FINISHED"
+
+        WriteStatus "Exporting perf.data file"
+
         outputDumpFile="perf.data.txt"
-        mergedFile="perf.data.merged"
-        RunSilent "$perfcmd inject -v -s -i perf.data -o $mergedFile"
 
-            # I've not found a good way to get the behavior that we want here - running the command and redirecting the output
-            # when passing the command line to a function.  Thus, this case is hardcoded.
+        # I've not found a good way to get the behavior that we want here - running the command and redirecting the output
+        # when passing the command line to a function.  Thus, this case is hardcoded.
 
         # There is a breaking change where the capitalization of the -f parameter changed.
-        LogAppend "Running $perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
-        $perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+        LogAppend "Running $perfcmd script -i $inputFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+        $perfcmd script -i $inputFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
         LogAppend
 
         if [ $? -ne 0 ]
         then
-            LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
-            $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+            LogAppend "Running $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+            $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
             LogAppend
         fi
 
         # If the dump file is zero length, try to collect without the period field, which was added recently.
         if [ ! -s $outputDumpFile ]
         then
-            LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile"
-            $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+            LogAppend "Running $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile"
+            $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
             LogAppend
         fi
 
@@ -1732,8 +1743,8 @@ PrintUsage()
     echo "collect options:"
     echo "By default, collection includes CPU samples collected every ms."
     echo "    -pid          : Only collect data from the specified process id."
-    echo "    -threadtime       : Collect context switch events."
-    echo "  -hwevents         : Collect (some) hardware counters."
+    echo "    -offcpu       : Collect events for off-cpu analysis."
+    echo "    -hwevents     : Collect (some) hardware counters."
     echo ""
     echo "start:"
     echo "    Start collection, but with Lttng trace ONLY. It needs to be used with 'stop' action."
@@ -1761,8 +1772,8 @@ PrintUsage()
 
 BuildPerfRecordArgs()
 {
-    # Start with default collection arguments that record all CPUs (-a) and collect call stacks (-g)
-    collectionArgs="record -g"
+    # Start with default collection arguments that record at realtime priority, all CPUs (-a), and collect call stacks (-g)
+    collectionArgs="record -r 50 -k 1 -a -g"
 
     # Filter to a single process if desired
     if [ "$collectionPid" != "" ]
@@ -1787,6 +1798,12 @@ BuildPerfRecordArgs()
     
     # Enable context switches.
     if [ $collect_threadTime -eq 1 ]
+    then
+        eventsToCollect=( "${eventsToCollect[@]}" "sched:sched_stat_sleep" "sched:sched_switch" "sched:sched_process_exit" )
+    fi
+
+    # Enable offcpu collection
+    if [ $collect_offcpu -eq 1 ]
     then
         eventsToCollect=( "${eventsToCollect[@]}" "sched:sched_stat_sleep" "sched:sched_switch" "sched:sched_process_exit" )
     fi
