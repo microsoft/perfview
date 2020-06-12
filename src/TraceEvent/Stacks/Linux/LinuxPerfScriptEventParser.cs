@@ -577,6 +577,86 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     string[] moduleSymbol = mapper.ResolveSymbols(processID, stackFrame.Module, stackFrame);
                     stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
                 }
+                if(stackFrame.Module.StartsWith("jitted-") && stackFrame.Module.EndsWith(".so") && stackFrame.Symbol.EndsWith(")"))
+                {
+                    // Jitted or R2R code.  Replace the module with the IL module name, and shorten the symbol.
+                    // Example: uint8[] [System.Private.CoreLib] Internal.IO.File::ReadAllBytes(string)
+                    // Example: instance uint8[] [System.Private.CoreLib] Internal.IO.File::ReadAllBytes(string)
+
+                    // Start at the end of the string, which should be ')'.  Walk until we find the matching '('.
+                    string symbol = stackFrame.Symbol;
+                    int currentIndex = symbol.Length - 1;
+                    int endIndex = 0;
+                    int parenDepth = 0;
+                    while(currentIndex >= endIndex)
+                    {
+                        char current = symbol[currentIndex];
+                        if(current == ')')
+                        {
+                            // We know that we'll immediately increment the paren depth from 0 to 1 on the first loop iteration because
+                            // the conditions on the if statement above require it.
+                            parenDepth++;
+                        }
+                        else if(current == '(')
+                        {
+                            parenDepth--;
+                        }
+
+                        if(parenDepth <= 0)
+                        {
+                            // We found the open paren that matches the last close paren.
+                            break;
+                        }
+
+                        currentIndex--;
+                    }
+
+                    // Continue walking until we find the first whitespace char.  This is the beginning of the full function name (with namespace).
+                    while (currentIndex >= endIndex && symbol[currentIndex] != ' ')
+                    {
+                        currentIndex--;
+                    }
+
+                    // Make sure we actually hit a ' ' char.
+                    if(symbol[currentIndex] != ' ')
+                    {
+                        goto abort;
+                    }
+
+                    // Save the symbol name.
+                    string newSymbol = symbol.Substring(currentIndex + 1, (symbol.Length - currentIndex - 1));
+
+                    // Find the beginning of the module name by looking for ']'.
+                    while(currentIndex >= endIndex && symbol[currentIndex] != ']')
+                    {
+                        currentIndex--;
+                    }
+
+                    // Make sure we actually hit a ']' char.
+                    if (symbol[currentIndex] != ']')
+                    {
+                        goto abort;
+                    }
+                    int moduleEndIndex = currentIndex;
+
+                    // Find the matching '[' char.
+                    while (currentIndex >= endIndex && symbol[currentIndex] != '[')
+                    {
+                        currentIndex--;
+                    }
+
+                    // Make sure we actually hit a '[' char.
+                    if (symbol[currentIndex] != '[')
+                    {
+                        goto abort;
+                    }
+
+                    // Save the module name.
+                    string newModuleName = symbol.Substring(currentIndex + 1, (moduleEndIndex - currentIndex - 1));
+
+                    stackFrame = new StackFrame(stackFrame.Address, newModuleName, newSymbol, stackFrame.OptimizationTier);
+                }
+            abort:
                 frames.Add(stackFrame);
             }
 
@@ -1175,20 +1255,34 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
     public struct StackFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.StackFrame; } }
-        public string DisplayName { get { return string.Format("{0}!{1}", Module, Symbol); } }
+        public string DisplayName
+        {
+            get
+            {
+                if (OptimizationTier == OptimizationTier.Unknown)
+                {
+                    return string.Format("{0}!{1}", Module, Symbol);
+                }
+                else
+                {
+                    return string.Format("{0}![{1}]{2}", Module, OptimizationTier.ToString(), Symbol);
+                }
+            }
+        }
         public string Address { get; }
         public string Module { get; }
         public string Symbol { get; }
+        public OptimizationTier OptimizationTier { get; }
 
         public StackFrame(string address, string module, string symbol)
         {
             Address = address;
             Module = module;
+            OptimizationTier = OptimizationTier.Unknown;
 
             // Check for the optimization tier. The symbol would contain the optimization tier in the form:
             //   Symbol[OptimizationTier]
-            // Convert it to this form, which is used elsewhere:
-            //   [OptimizationTier]Symbol
+            // Save the optimization tier so that it can be put onto the front of the frame if present.
             if (symbol != null && symbol.Length >= 3 && symbol[symbol.Length - 1] == ']')
             {
                 int openBracketIndex = symbol.LastIndexOf('[', symbol.Length - 2);
@@ -1198,15 +1292,20 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     if (Enum.TryParse<OptimizationTier>(optimizationTierStr, out var optimizationTier))
                     {
                         symbol = symbol.Substring(0, openBracketIndex);
-                        if (optimizationTier != OptimizationTier.Unknown)
-                        {
-                            symbol = $"[{optimizationTierStr}]{symbol}";
-                        }
+                        OptimizationTier = optimizationTier;
                     }
                 }
             }
 
             Symbol = symbol;
+        }
+
+        public StackFrame(string address, string module, string symbol, OptimizationTier optimizationTier)
+        {
+            Address = address;
+            Module = module;
+            Symbol = symbol;
+            OptimizationTier = optimizationTier;
         }
     }
 
