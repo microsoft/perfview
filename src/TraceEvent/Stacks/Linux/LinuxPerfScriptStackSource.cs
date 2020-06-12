@@ -74,7 +74,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                                 blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
 
                                 StackSourceSample sample = CreateSampleFor(linuxEvent, blockedTimeAnalyzer);
-                                threadSamples[(int)givenArrayIndex].Add(sample);
+
+                                if (linuxEvent.Kind == EventKind.Cpu)
+                                {
+                                    threadSamples[(int)givenArrayIndex].Add(sample);
+                                }
 
                                 blockedTimeAnalyzer?.LinuxEventSampleAssociation(linuxEvent, sample);
                             }
@@ -296,7 +300,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             StackSourceCallStackIndex stackIndex = currentStackIndex;
 
             var sample = new StackSourceSample(this);
-            Debug.Assert(StartTimeStampMSec != 0);
             sample.TimeRelativeMSec = linuxEvent.TimeMSec - StartTimeStampMSec;
             if (linuxEvent.Kind == EventKind.Cpu)
             {
