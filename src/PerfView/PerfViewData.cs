@@ -1,15 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Windows;
-using System.Windows.Media;
-using System.Xml;
 using Diagnostics.Tracing.StackSources;
 using global::DiagnosticsHub.Packaging.Interop;
 using Graphs;
@@ -34,6 +22,19 @@ using Microsoft.DiagnosticsHub.Packaging.InteropEx;
 using PerfView.GuiUtilities;
 using PerfViewExtensibility;
 using PerfViewModel;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Windows;
+using System.Windows.Media;
+using System.Xml;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
@@ -5112,10 +5113,8 @@ table {
                     var asSampledProfile = data as SampledProfileTraceData;
                     if (asSampledProfile != null)
                     {
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Priority (" + asSampledProfile.Priority + ")"), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Processor (" + asSampledProfile.ProcessorNumber + ")"), stackIndex);
-//                        var processorPriority = "Processor (" + asSampledProfile.ProcessorNumber + ") Priority (" + asSampledProfile.Priority + ")";
-//                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
+                        var processorPriority = "Processor (" + asSampledProfile.ProcessorNumber + ") Priority (" + asSampledProfile.Priority + ")";
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
 
                         sample.StackIndex = stackIndex;
                         sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
@@ -6696,6 +6695,12 @@ table {
                 {
                     stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
                 }
+            }
+
+            if (stackSourceName.StartsWith("Processor"))
+            {
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Priority ($2)");
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Processor ($1)");
             }
 
             if (stackSourceName == "Net OS Heap Alloc" || stackSourceName == "Image Load" || stackSourceName == "Disk I/O" ||
