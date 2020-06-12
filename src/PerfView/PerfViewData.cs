@@ -724,7 +724,7 @@ namespace PerfView
 
         protected internal virtual void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow) { }
         /// <summary>
-        /// Allows you to do a firt action after everything is done.  
+        /// Allows you to do a first action after everything is done.  
         /// </summary>
         protected internal virtual void FirstAction(StackWindow stackWindow) { }
         protected internal virtual StackSource OpenStackSourceImpl(
@@ -735,7 +735,6 @@ namespace PerfView
         /// <summary>
         /// Simplified form, you should implement one overload or the other.  
         /// </summary>
-        /// <returns></returns>
         protected internal virtual StackSource OpenStackSourceImpl(TextWriter log) { return null; }
         protected internal virtual EventSource OpenEventSourceImpl(TextWriter log) { return null; }
 
@@ -5098,6 +5097,29 @@ table {
                 eventSource.Kernel.AddCallbackForEvents<ObjectDuplicateHandleTraceData>(data => onHandleEvent(data.ObjectTypeName, data.Object, data.TargetHandle, data.TargetProcessID, data));
                 eventSource.Process();
             }
+            else if (streamName.StartsWith("Processor"))
+            {
+                eventSource.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
+                {
+                    StackSourceCallStackIndex stackIndex;
+                    var callStackIdx = data.CallStackIndex();
+                    if (callStackIdx == CallStackIndex.Invalid)
+                    {
+                        return;
+                    }
+
+                    stackIndex = stackSource.GetCallStack(callStackIdx, data);
+
+                    var processorPriority = "Processor (" + data.ProcessorNumber + ") Priority (" + data.Priority + ")";
+                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = 1;
+                    stackSource.AddSample(sample);
+                };
+                eventSource.Process();
+            }
             else if (streamName.StartsWith("Any"))
             {
                 ActivityComputer activityComputer = null;
@@ -5834,7 +5856,7 @@ table {
                     sample.Metric = data.AllocSize;
                     sample.StackIndex = stackSource.GetCallStack(callStackIndex, data);
 
-                    // Add the 'Alloc < XXX' psuedo node. 
+                    // Add the 'Alloc < XXX' pseudo node. 
                     var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
                     sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
 
@@ -6671,6 +6693,12 @@ table {
                 }
             }
 
+            if (stackSourceName.StartsWith("Processor"))
+            {
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Priority ($2)");
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Processor ($1)");
+            }
+
             if (stackSourceName == "Net OS Heap Alloc" || stackSourceName == "Image Load" || stackSourceName == "Disk I/O" ||
                 stackSourceName == "File I/O" || stackSourceName == "Exceptions" || stackSourceName == "Managed Load" || stackSourceName.StartsWith("Process")
                 || stackSourceName.StartsWith("Virtual") || stackSourceName == "Pinning" || stackSourceName.Contains("Thread Time"))
@@ -7048,6 +7076,7 @@ table {
                 {
                     advanced.Children.Add(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
                 }
+                advanced.Children.Add(new PerfViewStackSource(this, "Processor"));
             }
 
             if (hasCSwitchStacks)
@@ -7258,7 +7287,7 @@ table {
                 m_Children.Add(obsolete);
             }
 
-            if(AppLog.InternalUser && 0 < experimental.Children.Count)
+            if (AppLog.InternalUser && 0 < experimental.Children.Count)
             {
                 m_Children.Add(experimental);
             }
