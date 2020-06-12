@@ -5099,7 +5099,7 @@ table {
             }
             else if (streamName.StartsWith("Processor"))
             {
-                eventSource.AllEvents += delegate (TraceEvent data)
+                eventSource.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
                 {
                     StackSourceCallStackIndex stackIndex;
                     var callStackIdx = data.CallStackIndex();
@@ -5110,17 +5110,13 @@ table {
 
                     stackIndex = stackSource.GetCallStack(callStackIdx, data);
 
-                    var asSampledProfile = data as SampledProfileTraceData;
-                    if (asSampledProfile != null)
-                    {
-                        var processorPriority = "Processor (" + asSampledProfile.ProcessorNumber + ") Priority (" + asSampledProfile.Priority + ")";
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
+                    var processorPriority = "Processor (" + data.ProcessorNumber + ") Priority (" + data.Priority + ")";
+                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
 
-                        sample.StackIndex = stackIndex;
-                        sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                        sample.Metric = 1;
-                        stackSource.AddSample(sample);
-                    }
+                    sample.StackIndex = stackIndex;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = 1;
+                    stackSource.AddSample(sample);
                 };
                 eventSource.Process();
             }
