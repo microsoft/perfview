@@ -131,12 +131,63 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             return frameIdToSamples;
         }
 
+
+        internal static IReadOnlyList<ProfileEvent> GetAggregatedOrderedProfileEvents(IReadOnlyDictionary<int, List<Sample>> frameIdToSamples)
+        {
+            // we want to try given aggregationThreshold and validate the results
+            // by checking that each close event is closing corresponding open event
+            // if not, we try smaller aggregationThreshold or end up disabling the aggregation
+            var result = GetAggregatedOrderedProfileEvents(frameIdToSamples, aggregationThreshold: 1.2);
+            if (!Validate(result))
+            {
+                result = GetAggregatedOrderedProfileEvents(frameIdToSamples, aggregationThreshold: 1.1);
+
+                if (!Validate(result))
+                {
+                    result = GetAggregatedOrderedProfileEvents(frameIdToSamples, aggregationThreshold: 1.0);
+                }
+            }
+
+            return result;
+        }
+
+        internal static bool Validate(IReadOnlyList<ProfileEvent> orderedProfileEvents)
+        {
+            var stack = new Stack<ProfileEvent>();
+
+            foreach (var current in orderedProfileEvents)
+            {
+                if (current.Type == ProfileEventType.Open)
+                {
+                    stack.Push(current);
+                }
+                else if (stack.Count == 0)
+                {
+                    // we have a closing event, but there is no corresponding open event
+                    return false;
+                }
+                else
+                {
+                    var previous = stack.Pop();
+
+                    // the closing event must be closing an Open event of the same Frame and Depth
+                    if (previous.Type != ProfileEventType.Open || previous.Depth != current.Depth || previous.FrameId != current.FrameId)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return stack.Count == 0;
+        }
+
         /// <summary>
         /// this method aggregates all the singular samples to continuous events
+        /// using provided aggregationThreshold
         /// example: samples for Main taken at time 0.1 0.2 0.3 0.4 0.5
         /// are gonna be translated to Main start at 0.1 stop at 0.5
         /// </summary>
-        internal static IReadOnlyList<ProfileEvent> GetAggregatedOrderedProfileEvents(IReadOnlyDictionary<int, List<Sample>> frameIdToSamples)
+        private static IReadOnlyList<ProfileEvent> GetAggregatedOrderedProfileEvents(IReadOnlyDictionary<int, List<Sample>> frameIdToSamples, double aggregationThreshold)
         {
             List<ProfileEvent> profileEvents = new List<ProfileEvent>();
 
@@ -151,7 +202,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 Sample openSample = samples[0]; // samples are never empty
                 for (int i = 1; i < samples.Count; i++)
                 {
-                    if (AreNotContinuous(samples[i - 1], samples[i]))
+                    if (AreNotContinuous(samples[i - 1], samples[i], aggregationThreshold))
                     {
                         AddEvents(profileEvents, openSample, samples[i - 1], frameId);
 
@@ -177,15 +228,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// this method checks if both samples do NOT belong to the same profile event
         /// </summary>
-        private static bool AreNotContinuous(Sample left, Sample right)
+        private static bool AreNotContinuous(Sample left, Sample right, double aggregationThreshold)
         {
             if (left.Depth != right.Depth)
                 return true;
             if (left.CallerStackIndex != right.CallerStackIndex)
                 return true;
 
-            // 1.2 is a magic number based on some experiments ;)
-            return left.RelativeTime + (left.Metric * 1.2) < right.RelativeTime;
+            return left.RelativeTime + (left.Metric * aggregationThreshold) < right.RelativeTime;
         }
 
         /// <summary>

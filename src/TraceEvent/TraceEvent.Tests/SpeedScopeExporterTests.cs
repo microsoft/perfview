@@ -397,6 +397,60 @@ namespace TraceEventTests
             Assert.Equal(2, ordered[5].FrameId);
         }
 
+        [Fact]
+        public void ValidationDetectsIncompleteResults_NoCloseProfileEvent()
+        {
+            // there is just open event, but no closing one
+            var profileEvent = new ProfileEvent(ProfileEventType.Open, 1, 1.0f, 1);
+
+            Assert.False(Validate(new[] { profileEvent }));
+        }
+
+        [Fact]
+        public void ValidationDetectsIncompleteResults_NoOpenProfileEvent()
+        {
+            // there is just close event, but no opening one
+            var profileEvent = new ProfileEvent(ProfileEventType.Close, 1, 1.0f, 1);
+
+            Assert.False(Validate(new [] { profileEvent }));
+        }
+
+        [Fact]
+        public void ValidationDetectsIncompleteResults_DifferentFrameIds()
+        {
+            var openEvent = new ProfileEvent(ProfileEventType.Open, frameId: 1, 1.0f, 1);
+            var closeEvent = new ProfileEvent(ProfileEventType.Close, frameId: openEvent.FrameId + 1, 1.0f, 1);
+
+            Assert.False(Validate(new[] { openEvent, closeEvent }));
+        }
+
+        [Fact]
+        public void ValidationDetectsIncompleteResults_DifferentDepths()
+        {
+            var openEvent = new ProfileEvent(ProfileEventType.Open, 1, 1.0f, depth: 1);
+            var closeEvent = new ProfileEvent(ProfileEventType.Close, 1, 1.0f, depth: openEvent.Depth + 1);
+
+            Assert.False(Validate(new[] { openEvent, closeEvent }));
+        }
+
+        [Fact]
+        public void ValidationDetectsIncompleteResults_InvalidOrder()
+        {
+            var openEvent = new ProfileEvent(ProfileEventType.Open, frameId: 1, 1.0f, depth: 1);
+            var closeEvent = new ProfileEvent(ProfileEventType.Close, frameId: 1, 1.0f, depth: 1);
+
+            Assert.False(Validate(new[] { closeEvent, openEvent })); // close and then open
+        }
+
+        [Fact]
+        public void ValidationAllowsForCompleteResults()
+        {
+            var openEvent = new ProfileEvent(ProfileEventType.Open, frameId: 1, 1.0f, depth: 1);
+            var closeEvent = new ProfileEvent(ProfileEventType.Close, frameId: 1, 1.0f, depth: 1);
+
+            Assert.True(Validate(new[] { openEvent, closeEvent }));
+        }
+
         #region private
         internal class FakeStackSourceSample
         {
