@@ -227,6 +227,21 @@ namespace PerfView
             SetupCommandLine(parser);
             helpString = parser.GetHelp(maxLineWidth, null);
         }
+
+        /// <summary>
+        /// Shared logic to configure CommandLineArgs for GCCollectOnly mode
+        /// </summary>
+        /// <param name="commandLineArgs"></param>
+        internal static void ConfigureForGCCollectOnly(CommandLineArgs commandLineArgs)
+        {
+            // The process events are so we get process names. The ImageLoad events are so that we get version information about the DLLs.
+            commandLineArgs.KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
+            commandLineArgs.ClrEvents = ClrTraceEventParser.Keywords.GC;
+            commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
+            commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
+            commandLineArgs.NoRundown = true;
+        }
+
         private void SetupCommandLine(CommandLineParser parser)
         {
             // #CommandLineDefinitions
@@ -353,7 +368,7 @@ namespace PerfView
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
             parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
-            parser.DefineOptionalQualifier("FocusProcess", ref FocusProcess, "Either a decimal process ID or a process name (exe name without path but WITH extension) to focus ETW commands." + 
+            parser.DefineOptionalQualifier("FocusProcess", ref FocusProcess, "Either a decimal process ID or a process name (exe name without path but WITH extension) to focus ETW commands." +
                 "All NON-KERNEL providers are only send to this process (and rundown is only done on this process) which can cut overhead significantly in some cases.");
 
             parser.DefineOptionalQualifier("NoNGenPdbs", ref NoNGenPdbs, "Don't generate NGEN Pdbs");
@@ -460,13 +475,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("GCCollectOnly", ref GCCollectOnly, "Turns on GC collections (no allocation sampling).");
             if (GCCollectOnly)
             {
-                // TODO this logic is cloned.  We need it in only one place.  If you update it do the other location as well
-                // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
-                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
-                ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception;
-                ClrEventLevel = TraceEventLevel.Informational;
-                TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
-                NoRundown = true;
+                ConfigureForGCCollectOnly(this);
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCCollectOnly.etl";
             }
