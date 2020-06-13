@@ -521,6 +521,11 @@ namespace Microsoft.Diagnostics.Tracing
             if (eventMetaDataHeader.ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
             {
                 string eventName = eventMetaDataHeader.EventName;
+                if (eventMetaDataHeader.Opcode == (int)TraceEventOpcode.Start || eventMetaDataHeader.Opcode == (int)TraceEventOpcode.Stop)
+                {
+                    eventName = eventName + ((TraceEventOpcode)eventMetaDataHeader.Opcode).ToString();
+                }
+
                 if (eventName == "Event" ||
                    eventName == "Activity1Start" ||
                    eventName == "Activity1Stop" ||
