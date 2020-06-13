@@ -6,6 +6,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+//using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -479,16 +480,38 @@ namespace Microsoft.Diagnostics.Tracing
         private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
         {
             string opcodeName = ((TraceEventOpcode)eventMetaDataHeader.Opcode).ToString();
-
+            
             int opcode = eventMetaDataHeader.Opcode;
             if (opcode == 0)
             {
-                GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
+                string eventNameWithoutOpcode;
+                GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName, out eventNameWithoutOpcode);
+                if (eventNameWithoutOpcode != null)
+                {
+                    eventMetaDataHeader.EventName = eventNameWithoutOpcode;
+                }
+            }
+            else if (opcode == (int)TraceEventOpcode.Start || opcode == (int)TraceEventOpcode.Stop)
+            {
+                FilterOpcodeNameFromEventName(eventMetaDataHeader, opcode);
             }
 
             DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, opcode, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
             SetOpcode(template, eventMetaDataHeader.Opcode);
             return template;
+        }
+
+        private void FilterOpcodeNameFromEventName(EventPipeEventMetaDataHeader eventMetaDataHeader, int opcode)
+        {
+            string eventName = eventMetaDataHeader.EventName;
+            if (opcode == (int)TraceEventOpcode.Start && eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+            {
+                eventMetaDataHeader.EventName = eventName.Remove(eventName.Length - 5, 5);
+            }
+            else if (opcode == (int)TraceEventOpcode.Stop && eventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
+            {
+                eventMetaDataHeader.EventName = eventName.Remove(eventName.Length - 4, 4);
+            }
         }
 
         // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
@@ -778,10 +801,13 @@ namespace Microsoft.Diagnostics.Tracing
             return payloadFetch;
         }
 
-        private static void GetOpcodeFromEventName(string eventName, out int opcode, out string opcodeName)
+        private static void GetOpcodeFromEventName(string eventName, out int opcode, out string opcodeName, out string eventNameWithoutOpcode)
         {
             opcode = 0;
             opcodeName = null;
+            // If this EventName suggests that it has an Opcode, then we must remove the opcode name from its name
+            // Otherwise the events will show up with duplicate opcode names (i.e. RequestStart/Start)
+            eventNameWithoutOpcode = null;
 
             if (eventName != null)
             {
@@ -789,11 +815,13 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     opcode = (int)TraceEventOpcode.Start;
                     opcodeName = nameof(TraceEventOpcode.Start);
+                    eventNameWithoutOpcode.Remove(eventName.Length - 5, 5);
                 }
                 else if (eventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
                 {
                     opcode = (int)TraceEventOpcode.Stop;
                     opcodeName = nameof(TraceEventOpcode.Stop);
+                    eventNameWithoutOpcode.Remove(eventName.Length - 4, 4);
                 }
             }
         }
@@ -1151,7 +1179,8 @@ namespace Microsoft.Diagnostics.Tracing
         public int MetaDataId { get; internal set; }
         public bool ContainsParameterMetadata { get; private set; }
         public string ProviderName { get; internal set; }
-        public string EventName { get; private set; }
+        // EventName can be changed when they are parsed for any implied opcode names.
+        public string EventName { get; set; }
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } }
         public int EventVersion { get { return _eventRecord->EventHeader.Version; } }
