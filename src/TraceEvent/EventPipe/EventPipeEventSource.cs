@@ -479,7 +479,6 @@ namespace Microsoft.Diagnostics.Tracing
         private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
         {
             string opcodeName = ((TraceEventOpcode)eventMetaDataHeader.Opcode).ToString();
-            
             int opcode = eventMetaDataHeader.Opcode;
             if (opcode == 0)
             {
@@ -502,6 +501,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void FilterOpcodeNameFromEventName(EventPipeEventMetaDataHeader eventMetaDataHeader, int opcode)
         {
+            // If the event has an opcode associated and the opcode name is also specified, we should
+            // remove the opcode name from the event's name. Otherwise the events will show up with
+            // duplicate opcode names (i.e. RequestStart/Start)
             string eventName = eventMetaDataHeader.EventName;
             if (opcode == (int)TraceEventOpcode.Start && eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
             {
