@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
+using System.Linq.Expressions;
 
 namespace LinuxTracing.Tests
 {
@@ -89,7 +90,7 @@ namespace LinuxTracing.Tests
         {
             string path = Constants.GetTestingPerfDumpPath("onegeneric");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>> {
-                new List<string>{ "module!symbol", "Thread (0)", "comm", null }
+                new List<string>{ "module!symbol", "Thread (0)", "Process comm (0)", null }
             });
         }
 
@@ -99,7 +100,7 @@ namespace LinuxTracing.Tests
         {
             string path = Constants.GetTestingPerfDumpPath("onegeneric");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>> {
-                new List<string>{ "module!symbol", "Thread (0)", "comm", null }
+                new List<string>{ "module!symbol", "Thread (0)", "Process comm (0)", null }
             });
         }
 
@@ -122,8 +123,8 @@ namespace LinuxTracing.Tests
             string path = Constants.GetTestingPerfDumpPath("two_small_generic");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
             {
-                new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "comm" },
-                new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (0)", "comm2" }
+                new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "Process comm (0)" },
+                new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (1)", "Process comm2 (1)" }
             });
         }
 
@@ -133,7 +134,7 @@ namespace LinuxTracing.Tests
             string path = Constants.GetTestingPerfDumpPath("ms_stack");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
             {
-                new List<string> { "module!symbol(param[])", "Thread (0)", "comm" },
+                new List<string> { "module!symbol(param[])", "Thread (0)", "Process comm (0)" },
             });
         }
 
@@ -143,8 +144,8 @@ namespace LinuxTracing.Tests
             string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
             DoStackTraceTest(path, doBlockedTime: true, callerStacks: new List<List<string>>
             {
-                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1"},
-                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2"},
+                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "Process comm1 (0)"},
+                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "Process comm2 (1)"},
             });
         }
 
@@ -155,8 +156,8 @@ namespace LinuxTracing.Tests
             DoStackTraceTest(path, doBlockedTime: false,
                 callerStacks: new List<List<string>>
                 {
-                    new List<string> { "Thread (0)", "comm" },
-                    new List<string> { "module!symbol", "Thread (0)", "comm" },
+                    new List<string> { "Thread (0)", "Process comm (0)" },
+                    new List<string> { "module!symbol", "Thread (0)", "Process comm (0)" },
                 });
         }
 

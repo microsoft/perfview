@@ -8346,30 +8346,14 @@ table {
         {
             "CPU",
             "CPU (with Optimization Tiers)",
-            "Thread Time (experimental)"
+            "Thread Time"
         };
 
-        public override string FormatName { get { return "LTTng"; } }
+        public override string FormatName { get { return "Perf"; } }
 
         public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
 
         public override bool SupportsProcesses => true;
-
-        internal override string GetProcessIncPat(IProcess process) => process.Name;
-
-        internal override string FindExeName(string incPat) => string.IsNullOrEmpty(incPat) ? incPat : incPat.Split('|').FirstOrDefault();
-
-        internal override bool GetProcessForStackSourceFromTopCallStackFrame(string topCallStackStr, out IProcessForStackSource result)
-        {
-            if (!string.IsNullOrEmpty(topCallStackStr))
-            {
-                // the top call stack is always process name, the process ID is missing as of today (a perf_events limitation)
-                result = new IProcessForStackSource(topCallStackStr);
-                return true;
-            }
-            result = null;
-            return false;
-        }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
@@ -8383,7 +8367,7 @@ table {
                 string xmlPath;
                 bool doThreadTime = false;
 
-                if (streamName == "Thread Time (experimental)")
+                if (streamName == "Thread Time")
                 {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.threadtime.xml.zip");
                     doThreadTime = true;
@@ -8393,10 +8377,12 @@ table {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.cpu.xml.zip");
                 }
 
+#if !DEBUG
                 if (!CacheFiles.UpToDate(xmlPath, FilePath))
+#endif
                 {
                     XmlStackSourceWriter.WriteStackViewAsZippedXml(
-                        new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
+                        new LinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
                 bool showOptimizationTiers =
@@ -8432,6 +8418,7 @@ table {
             m_Children = new List<PerfViewTreeItem>();
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
+            var experimental = new PerfViewTreeGroup("Experimental Group");
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
 
@@ -8443,10 +8430,7 @@ table {
                 advanced.AddChild(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
             }
 
-            if (AppLog.InternalUser)
-            {
-                advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
-            }
+            experimental.AddChild(new PerfViewStackSource(this, "Thread Time"));
 
             if (m_traceLog != null)
             {
@@ -8472,6 +8456,11 @@ table {
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
+            }
+
+            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            {
+                m_Children.Add(experimental);
             }
 
             return null;

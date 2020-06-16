@@ -11680,6 +11680,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         // Pregenerated code, not sent by the runtime
         ReadyToRun,
+
+        // This value is not sent by the runtime through this parser, but
+        // does get sent through Linux traces.  Set the value to byte.MaxValue
+        // to avoid clobbering a real value.
+        PreJIT = byte.MaxValue
     }
     [Flags]
     public enum StartupMode

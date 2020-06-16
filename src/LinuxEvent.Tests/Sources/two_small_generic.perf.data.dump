@@ -3,7 +3,7 @@
 	address symbol2 (module2)
 	address main (main)
 
-comm2	0/0		[000] 0.0:			1 event_name: event_properties
+comm2	1/1		[000] 0.0:			1 event_name: event_properties
 	address symbol3 (module3)
 	address symbol4 (module4)
 	address main (main)
