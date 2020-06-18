@@ -1,6 +1,12 @@
-﻿using Microsoft.Diagnostics.Tracing.Stacks;
+﻿using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using Xunit;
 
@@ -321,6 +327,75 @@ namespace TraceEventTests
             var closeEvent = new ProfileEvent(ProfileEventType.Close, frameId: 1, 1.0f, depth: 1);
 
             Assert.True(Validate(new[] { openEvent, closeEvent }));
+        }
+
+        [Theory]
+        [InlineData("HeartRateMonitor.10068.nettrace.zip")]
+        [InlineData("VoiceMemo.23092.nettrace.zip")]
+        public void CanConverProviedTraceFiles(string zippedTraceFileName)
+        {
+            var debugListenersCopy = new TraceListener[Debug.Listeners.Count];
+            Debug.Listeners.CopyTo(debugListenersCopy, index: 0);
+            Debug.Listeners.Clear();
+
+            string fileToUnzip = Path.Combine("inputs", zippedTraceFileName);
+            string unzippedFile = Path.ChangeExtension(fileToUnzip, string.Empty);
+
+            if (File.Exists(unzippedFile))
+            {
+                File.Delete(unzippedFile);
+            }
+            ZipFile.ExtractToDirectory(fileToUnzip, Path.GetDirectoryName(fileToUnzip));
+            var etlxFilePath = TraceLog.CreateFromEventPipeDataFile(unzippedFile, null, new TraceLogOptions() { ContinueOnError = true });
+
+            try
+            {
+                
+                using (var symbolReader = new SymbolReader(TextWriter.Null) { SymbolPath = SymbolPath.MicrosoftSymbolServerPath })
+                using (var eventLog = new TraceLog(etlxFilePath))
+                {
+                    var stackSource = new MutableTraceEventStackSource(eventLog)
+                    {
+                        OnlyManagedCodeStacks = true // EventPipe currently only has managed code stacks.
+                    };
+
+                    var computer = new SampleProfilerThreadTimeComputer(eventLog, symbolReader)
+                    {
+                        IncludeEventSourceEvents = false // SpeedScope handles only CPU samples, events are not supported
+                    };
+                    computer.GenerateThreadTimeStacks(stackSource);
+
+                    var samplesPerThread = GetSortedSamplesPerThread(stackSource);
+
+                    var exportedFrameNameToExportedFrameId = new Dictionary<string, int>();
+                    var exportedFrameIdToFrameTuple = new Dictionary<int, FrameInfo>();
+                    var profileEventsPerThread = new Dictionary<string, IReadOnlyList<ProfileEvent>>();
+
+                    foreach (var pair in samplesPerThread)
+                    {
+                        var sortedProfileEvents = GetProfileEvents(stackSource, pair.Value, exportedFrameNameToExportedFrameId, exportedFrameIdToFrameTuple);
+
+                        Assert.True(Validate(sortedProfileEvents), "The output should be always valid");
+
+                        profileEventsPerThread.Add(pair.Key.Name, sortedProfileEvents);
+                    };
+                }
+            }
+            finally
+            {
+                if (File.Exists(etlxFilePath))
+                {
+                    File.Delete(etlxFilePath);
+                }
+                if (File.Exists(unzippedFile))
+                {
+                    File.Delete(unzippedFile);
+                }
+                if (debugListenersCopy.Length > 0)
+                {
+                    Debug.Listeners.AddRange(debugListenersCopy);
+                }
+            }
         }
 
         #region private
