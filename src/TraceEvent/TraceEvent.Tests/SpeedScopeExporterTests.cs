@@ -338,7 +338,7 @@ namespace TraceEventTests
             Debug.Listeners.CopyTo(debugListenersCopy, index: 0);
             Debug.Listeners.Clear();
 
-            string fileToUnzip = Path.Combine("inputs", zippedTraceFileName);
+            string fileToUnzip = Path.Combine("inputs", "speedscope", zippedTraceFileName);
             string unzippedFile = Path.ChangeExtension(fileToUnzip, string.Empty);
 
             if (File.Exists(unzippedFile))
