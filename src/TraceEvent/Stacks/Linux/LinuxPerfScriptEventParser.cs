@@ -731,8 +731,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             var pos = source.MarkPosition();
 
             // Look for 'prev_comm' (Example1)
-            if (source.ReadByte() == 'p' && source.ReadByte() == 'r' && source.ReadByte() == 'e' && source.ReadByte() == 'v' && source.ReadByte() == '_' &&
-                source.ReadByte() == 'c' && source.ReadByte() == 'o' && source.ReadByte() == 'm' && source.ReadByte() == 'm')
+            source.ReadFixedString(9, sb);
+            string nextField = sb.ToString();
+            sb.Clear();
+
+            if (nextField.Equals("prev_comm"))
             {
                 // This is of the format in Example1.
 

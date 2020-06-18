@@ -196,7 +196,7 @@ namespace LinuxTracing.Tests
         }
 
         [Fact]
-        public void SchedHeader()
+        public void SchedHeaderFormat1()
         {
             string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
             HeaderTest(path, blockedTime: true,
@@ -208,6 +208,27 @@ namespace LinuxTracing.Tests
                 timeProperties: new int[] { 1, 1 },
                 events: new string[] { "sched", "sched" },
                 eventProperties: new string[] { "sched_switch: prev_comm=comm1 prev_pid=0 prev_prio=0 prev_state=S ==> next_comm=comm2 next_pid=1 next_prio=1", "sched_switch: prev_comm=comm2 prev_pid=1 prev_prio=0 prev_state=S ==> next_comm=comm1 next_pid=0 next_prio=1" },
+                eventKinds: new EventKind[] { EventKind.Scheduler, EventKind.Scheduler },
+                switches: new ScheduleSwitch[]
+                {
+                    new ScheduleSwitch("comm1", 0, 0, 'S', "comm2", 1, 1),
+                    new ScheduleSwitch("comm2", 1, 0, 'S', "comm1", 0, 1)
+                });
+        }
+
+        [Fact]
+        public void SchedHeaderFormat2()
+        {
+            string path = Constants.GetTestingPerfDumpPath("one_complete_switch_format2");
+            HeaderTest(path, blockedTime: true,
+                commands: new string[] { "comm1", "comm2" },
+                pids: new int[] { 0, 1 },
+                tids: new int[] { 0, 1 },
+                cpus: new int[] { 0, 1 },
+                times: new double[] { 0.0, 1000.0 },
+                timeProperties: new int[] { 1, 1 },
+                events: new string[] { "sched", "sched" },
+                eventProperties: new string[] { "sched_switch: comm1:0 [0] S ==> comm2:1 [1]", "sched_switch: comm2:1 [0] S ==> comm1:0 [1]" },
                 eventKinds: new EventKind[] { EventKind.Scheduler, EventKind.Scheduler },
                 switches: new ScheduleSwitch[]
                 {
