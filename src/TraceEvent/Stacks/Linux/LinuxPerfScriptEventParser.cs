@@ -719,48 +719,110 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         {
             StringBuilder sb = new StringBuilder();
 
-            source.SkipUpTo('=');
-            source.MoveNext();
+            // There are two formats for ScheduleSwitch serialization:
+            // Example1: sched:sched_switch: prev_comm=swapper/3 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=rcu_sched next_pid=8 next_prio=120
+            // Example2: sched:sched_switch: perf_4.9:3005 [49] S ==> swapper/2:0 [120]
 
-            source.ReadAsciiStringUpTo(' ', sb);
-            string prevComm = sb.ToString();
-            sb.Clear();
+            // Skip "sched:sched_switch: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
 
-            source.SkipUpTo('=');
-            source.MoveNext();
+            // Figure out which format we have.
+            var pos = source.MarkPosition();
 
-            int prevTid = source.ReadInt();
+            // Look for 'prev_comm' (Example1)
+            if (source.ReadByte() == 'p' && source.ReadByte() == 'r' && source.ReadByte() == 'e' && source.ReadByte() == 'v' && source.ReadByte() == '_' &&
+                source.ReadByte() == 'c' && source.ReadByte() == 'o' && source.ReadByte() == 'm' && source.ReadByte() == 'm')
+            {
+                // This is of the format in Example1.
 
-            source.SkipUpTo('=');
-            source.MoveNext();
+                source.SkipUpTo('=');
+                source.MoveNext();
 
-            int prevPrio = source.ReadInt();
+                source.ReadAsciiStringUpTo(' ', sb);
+                string prevComm = sb.ToString();
+                sb.Clear();
 
-            source.SkipUpTo('=');
-            source.MoveNext();
+                source.SkipUpTo('=');
+                source.MoveNext();
 
-            char prevState = (char)source.Current;
+                int prevTid = source.ReadInt();
 
-            source.MoveNext();
-            source.SkipUpTo('n'); // this is to bypass the ==>
-            source.SkipUpTo('=');
-            source.MoveNext();
+                source.SkipUpTo('=');
+                source.MoveNext();
 
-            source.ReadAsciiStringUpTo(' ', sb);
-            string nextComm = sb.ToString();
-            sb.Clear();
+                int prevPrio = source.ReadInt();
 
-            source.SkipUpTo('=');
-            source.MoveNext();
+                source.SkipUpTo('=');
+                source.MoveNext();
 
-            int nextTid = source.ReadInt();
+                char prevState = (char)source.Current;
 
-            source.SkipUpTo('=');
-            source.MoveNext();
+                source.MoveNext();
+                source.SkipUpTo('n'); // this is to bypass the ==>
+                source.SkipUpTo('=');
+                source.MoveNext();
 
-            int nextPrio = source.ReadInt();
+                source.ReadAsciiStringUpTo(' ', sb);
+                string nextComm = sb.ToString();
+                sb.Clear();
 
-            return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                int nextTid = source.ReadInt();
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                int nextPrio = source.ReadInt();
+
+                return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+            }
+            else
+            {
+                // This is of the format in Example2.
+
+                // Restore the position back so the full text can be parsed here.
+                source.RestoreToMark(pos);
+
+                source.ReadAsciiStringUpTo(':', sb);
+                string prevComm = sb.ToString();
+                sb.Clear();
+
+                source.MoveNext();
+
+                int prevTid = source.ReadInt();
+
+                source.SkipUpTo('[');
+                source.MoveNext();
+
+                int prevPrio = source.ReadInt();
+
+                source.MoveNext();
+                source.SkipWhiteSpace();
+
+                char prevState = (char)source.Current;
+
+                source.SkipUpTo('>'); // this is to bypass the ==>
+                source.MoveNext();
+                source.SkipWhiteSpace();
+
+                source.ReadAsciiStringUpTo(':', sb);
+                string nextComm = sb.ToString();
+                sb.Clear();
+
+                source.MoveNext();
+
+                int nextTid = source.ReadInt();
+
+                source.SkipUpTo('[');
+                source.MoveNext();
+
+                int nextPrio = source.ReadInt();
+
+                return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+            }
         }
 
         private ThreadExit ReadExit(FastStream source)

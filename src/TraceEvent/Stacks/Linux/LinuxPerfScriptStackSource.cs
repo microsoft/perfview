@@ -301,16 +301,9 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
             var sample = new StackSourceSample(this);
             sample.TimeRelativeMSec = linuxEvent.TimeMSec - StartTimeStampMSec;
-            if (linuxEvent.Kind == EventKind.Cpu)
-            {
-                sample.Metric = 1;
-            }
-            else if(linuxEvent.Kind == EventKind.Scheduler)
-            {
-                sample.Metric = (float)linuxEvent.Period;
-            }
+            sample.Metric = (float)linuxEvent.Period;
 
-            stackIndex = InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, blockedTimeAnalyzer);
+            stackIndex = InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, doThreadTime ? blockedTimeAnalyzer : null);
             sample.StackIndex = stackIndex;
 
             return sample;
@@ -342,7 +335,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         protected virtual void DoInterning()
         {
-            BlockedTimeAnalyzer blockedTimeAnalyzer = doThreadTime ? new BlockedTimeAnalyzer(this) : null;
+            BlockedTimeAnalyzer blockedTimeAnalyzer = new BlockedTimeAnalyzer(this);
 
             foreach (var linuxEvent in parser.ParseSkippingPreamble(masterSource))
             {
@@ -352,13 +345,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     StartTimeStampMSec = linuxEvent.TimeMSec;
                 }
 
-                blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
-
-                // Always add a sample for CPU events.
-                // Blocked time samples must be added by the BlockedTimeAnalyzer.
-                if (linuxEvent.Kind == EventKind.Cpu)
+                // BlockedTimeAnalyzer handles all sample production.
+                // Only give it the set of events that we want it to process.
+                if (doThreadTime || linuxEvent.Kind == EventKind.Cpu)
                 {
-                    AddSample(CreateSampleFor(linuxEvent, blockedTimeAnalyzer));
+                    blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
                 }
             }
 
@@ -366,7 +357,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             // TODO: Sort things in blocked time analyzer
             // this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 
-            TotalBlockedTime = blockedTimeAnalyzer != null ? blockedTimeAnalyzer.TotalBlockedTime : -1;
+            TotalBlockedTime = blockedTimeAnalyzer.TotalBlockedTime;
         }
 
         protected virtual StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
@@ -485,7 +476,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> BeginningStates { get; }
         public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> EndingStates { get; }
         public Dictionary<LinuxEvent, StackSourceSample> LinuxEventSamples { get; }
-        public Dictionary<int, int> EndingCpuUsage { get; }
+        public Dictionary<int, LinuxEvent> LastCpuUsage { get; }
         public List<ThreadPeriod> BlockedThreadPeriods { get; }
         public LinuxPerfScriptStackSource StackSource { get; }
 
@@ -508,7 +499,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             BeginningStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
             EndingStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
             LinuxEventSamples = new Dictionary<LinuxEvent, StackSourceSample>();
-            EndingCpuUsage = new Dictionary<int, int>();
+            LastCpuUsage = new Dictionary<int, LinuxEvent>();
             BlockedThreadPeriods = new List<ThreadPeriod>();
             StackSource = stackSource;
         }
@@ -595,7 +586,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     EndingStates[schedEvent.Switch.NextThreadID] =
                         new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
                 }
-
             }
             else if(linuxEvent.Kind == EventKind.ThreadExit)
             {
@@ -620,21 +610,16 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             }
             else if (linuxEvent.Kind == EventKind.Cpu)
             {
-                int threadid;
-                if (EndingCpuUsage.TryGetValue(linuxEvent.CpuNumber, out threadid) && threadid != linuxEvent.ThreadID) // Unblocking
+                // Keep track of the last CPU sample for each CPU, and use its timestamp
+                // to determine how much weight to give the sample.
+                if(LastCpuUsage.TryGetValue(linuxEvent.CpuNumber, out LinuxEvent lastCpuEvent))
                 {
-                    if (EndingStates.TryGetValue(threadid, out sampleInfo))
-                    {
-                        EndingStates[threadid] =
-                            new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
-                        sampleInfo.Value.Period = linuxEvent.TimeMSec - sampleInfo.Value.TimeMSec;
-                        AddThreadPeriod(linuxEvent.ThreadID, sampleInfo.Value.TimeMSec, linuxEvent.TimeMSec);
-                        StackSource.AddSample(StackSource.CreateSampleFor(sampleInfo.Value, this));
-                    }
+                    lastCpuEvent.Period = linuxEvent.TimeMSec - lastCpuEvent.TimeMSec;
+                    StackSource.AddSample(StackSource.CreateSampleFor(lastCpuEvent, this));
                 }
-            }
 
-            EndingCpuUsage[linuxEvent.CpuNumber] = linuxEvent.ThreadID;
+                LastCpuUsage[linuxEvent.CpuNumber] = linuxEvent;
+            }
         }
 
         private void AddThreadPeriod(int threadId, double startTime, double endTime)
