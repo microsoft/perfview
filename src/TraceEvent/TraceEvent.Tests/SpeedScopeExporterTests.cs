@@ -121,7 +121,7 @@ namespace TraceEventTests
             // fourth: close the A method at time 0.3 (relativeTime * 2 + metric)
             var closeMethod = profileEvents[3];
             Assert.Equal(ProfileEventType.Close, closeMethod.Type);
-            Assert.Equal(a_1.RelativeTime + a_1.Metric + + a_2.Metric, closeMethod.RelativeTime);
+            Assert.Equal(a_1.RelativeTime + a_1.Metric + a_2.Metric, closeMethod.RelativeTime);
             Assert.Equal(2, closeMethod.Depth);
             Assert.Equal(2, closeMethod.FrameId);
             Assert.Equal(closeMethod.FrameId, frameNameToId[a_2.Name]);
@@ -332,7 +332,7 @@ namespace TraceEventTests
         [Theory]
         [InlineData("HeartRateMonitor.10068.nettrace.zip")]
         [InlineData("VoiceMemo.23092.nettrace.zip")]
-        public void CanConverProviedTraceFiles(string zippedTraceFileName)
+        public void CanConvertProvidedTraceFiles(string zippedTraceFileName)
         {
             var debugListenersCopy = new TraceListener[Debug.Listeners.Count];
             Debug.Listeners.CopyTo(debugListenersCopy, index: 0);

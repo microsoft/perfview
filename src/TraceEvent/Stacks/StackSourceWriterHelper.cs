@@ -149,7 +149,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             int i = 0;
             int max = Math.Min(previousSamples.Count, currentSamples.Count);
-            // increase the duration of corrently opened samples until they are not continuous
+            // increase the duration of currently opened samples until they are not continuous
             while (i < max && !AreNotContinuous(previousSamples[i], currentSamples[i]))
             {
                 previousSamples[i] = previousSamples[i].IncreaseDuration(currentSamples[i].Metric);
