@@ -750,11 +750,35 @@ namespace PerfView
                             EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCfg",
                                  new Guid("9F0C4EA8-EC01-4200-A00D-B9701CBEA5D8"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
-                            // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
-                            // It does not increase the volume in a significant way and they can be pretty useful.     
+                            // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff and antimalware too.
+                            // It does not increase the volume in a significant way and they can be pretty useful.
                             if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
                                 == (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
                             {
+                                EnableUserProvider(userModeSession, MicrosoftAntimalwareEngineTraceEventParser.ProviderName,
+                                    MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid,
+                                    TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                                EnableUserProvider(userModeSession, MicrosoftAntimalwareAMFilterTraceEventParser.ProviderName,
+                                    MicrosoftAntimalwareAMFilterTraceEventParser.ProviderGuid,
+                                    TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-Service",
+                                    new Guid("751ef305-6c6e-4fed-b847-02ef79d26aef"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-RTP",
+                                    new Guid("8e92deef-5e17-413b-b927-59b2f06a3cfc"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-Protection",
+                                    new Guid("e4b70372-261f-4c54-8fa6-a5a7914d73da"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-Service",
+                                    new Guid("751ef305-6c6e-4fed-b847-02ef79d26aef"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService",
                                     new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"),
                                     parsedArgs.ClrEventLevel, ulong.MaxValue, stacksEnabled);
