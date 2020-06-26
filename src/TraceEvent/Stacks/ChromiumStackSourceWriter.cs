@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -40,9 +41,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 
             foreach (var pair in samplesPerThread)
             {
-                var frameIdToSamples = WalkTheStackAndExpandSamples(source, pair.Value, exportedFrameNameToExportedFrameId, exportedFrameIdToFrameTuple);
+                var sortedProfileEvents = GetProfileEvents(source, pair.Value, exportedFrameNameToExportedFrameId, exportedFrameIdToFrameTuple);
 
-                var sortedProfileEvents = GetAggregatedOrderedProfileEvents(frameIdToSamples);
+                Debug.Assert(Validate(sortedProfileEvents), "The output should be always valid");
 
                 profileEventsPerThread.Add(pair.Key, sortedProfileEvents);
             };
