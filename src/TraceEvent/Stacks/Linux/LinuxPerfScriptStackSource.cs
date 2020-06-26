@@ -302,6 +302,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             var sample = new StackSourceSample(this);
             sample.TimeRelativeMSec = linuxEvent.TimeMSec - StartTimeStampMSec;
             sample.Metric = (float)linuxEvent.Period;
+            sample.Count = linuxEvent.CpuNumber;
 
             stackIndex = InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, doThreadTime ? blockedTimeAnalyzer : null);
             sample.StackIndex = stackIndex;

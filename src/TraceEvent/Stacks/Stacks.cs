@@ -374,7 +374,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     /// StackSource.ProductSamples push these.  
     /// 
     /// In general StackSourceSample are NOT immutable but expected to be overwritted frequently.  Thus you need to copy 
-    /// the sample if you want to keep a refernece to it.    
+    /// the sample if you want to keep a reference to it.      
     /// </summary>
     public class StackSourceSample
     {
@@ -409,13 +409,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public int Scenario { get; set; }
 
+        public int CpuNumber { get; set; }
+
         /// <summary>
         /// Returns an XML string representing the sample
         /// </summary>
         public override string ToString()
         {
-            return String.Format("<Sample Metric=\"{0:f1}\" TimeRelativeMSec=\"{1:f3}\" StackIndex=\"{2}\" SampleIndex=\"{3}\">",
-                Metric, TimeRelativeMSec, StackIndex, SampleIndex);
+            return String.Format("<Sample Metric=\"{0:f1}\" TimeRelativeMSec=\"{1:f3}\" StackIndex=\"{2}\" SampleIndex=\"{3}\" CpuNumber=\"{4}\">",
+                Metric, TimeRelativeMSec, StackIndex, SampleIndex, CpuNumber);
         }
         /// <summary>
         /// Returns an XML string representing the sample, howevever this one can actually expand the stack because it is given the source

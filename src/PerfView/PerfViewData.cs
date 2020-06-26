@@ -8372,6 +8372,7 @@ table {
         public override string FormatName { get { return "Perf"; } }
 
         public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".trace.zip", "perf.data.txt" }; } }
 
         public override bool SupportsProcesses => true;
 
