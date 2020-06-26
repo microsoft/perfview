@@ -15,6 +15,8 @@ using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
 using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareAMFilter;
+using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareEngine;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Utilities;
@@ -6045,6 +6047,13 @@ table {
                 eventSource.Process();
                 return stackSource;
             }
+            else if(streamName == "Anti-Malware Real-Time Scan")
+            {
+                RealtimeAntimalwareComputer computer = new RealtimeAntimalwareComputer(eventSource, stackSource);
+                computer.Execute();
+
+                return stackSource;
+            }
             else
             {
                 throw new Exception("Unknown stream " + streamName);
@@ -6911,6 +6920,7 @@ table {
             bool hasObjectUpdate = false;
             bool hasGCEvents = false;
             bool hasProjectNExecutionTracingEvents = false;
+            bool hasDefenderEvents = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -6964,6 +6974,11 @@ table {
                 if (counts.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                 {
                     hasTpl = true;
+                }
+
+                if (counts.ProviderGuid == MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid)
+                {
+                    hasDefenderEvents = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -7251,6 +7266,11 @@ table {
             if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
+            }
+
+            if(hasDefenderEvents)
+            {
+                advanced.Children.Add(new PerfViewStackSource(this, "Anti-Malware Real-Time Scan"));
             }
 
             memory.Children.Add(new PerfViewGCStats(this));
