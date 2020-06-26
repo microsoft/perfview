@@ -775,10 +775,6 @@ namespace PerfView
                                     new Guid("e4b70372-261f-4c54-8fa6-a5a7914d73da"),
                                     TraceEventLevel.Verbose, ulong.MaxValue, options);
 
-                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-Service",
-                                    new Guid("751ef305-6c6e-4fed-b847-02ef79d26aef"),
-                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
-
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService",
                                     new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"),
                                     parsedArgs.ClrEventLevel, ulong.MaxValue, stacksEnabled);
