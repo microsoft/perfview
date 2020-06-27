@@ -217,6 +217,11 @@ namespace PerfView
                 OSHeapProcessTextBox.Text = args.OSHeapProcess.ToString();
             }
 
+            if (args.InMemoryCircularBuffer)
+            {
+                InMemoryCircularBufferCheckBox.IsChecked = true;
+            }
+
             if ((args.KernelEvents & (KernelTraceEventParser.Keywords.ContextSwitch | KernelTraceEventParser.Keywords.Dispatcher)) != 0)
             {
                 ThreadTimeCheckbox.IsChecked = true;
@@ -308,7 +313,7 @@ namespace PerfView
                 CommandToRunLabel.Visibility = Visibility.Hidden;
                 FocusProcessCheckBox.Visibility = Visibility.Visible;
                 FocusProcessTextBox.Visibility = Visibility.Visible;
-                FocusProcessLabel.Visibility = Visibility.Visible;
+                FocusProcessLabel.Visibility = Visibility.Visible;                
                 if (!string.IsNullOrEmpty(FocusProcessTextBox.Text))
                 {
                     FocusProcessCheckBox.IsChecked = true;
@@ -790,6 +795,8 @@ namespace PerfView
                 // m_args.Merge = MergeCheckBox.IsChecked;
                 // m_args.Zip = ZipCheckBox.IsChecked;
                 m_args.Message = MarkTextBox.Text;
+
+                m_args.InMemoryCircularBuffer = InMemoryCircularBufferCheckBox.IsChecked ?? false;
 
                 string fullPath;
                 try

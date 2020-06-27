@@ -135,7 +135,9 @@
                     <RowDefinition Height="100*"/>
                     <RowDefinition Height="100*"/>
                     <RowDefinition Height="100*"/>
-                    <RowDefinition Height="100*"/>  <!-- Row 4 Additional Providers -->
+                    <RowDefinition Height="100*"/>
+                    <RowDefinition Height="100*"/>
+                    <!-- Row 5 Additional Providers -->
                     <RowDefinition Height="100*"/>
                     <RowDefinition Height="100*"/>
                     <RowDefinition Height="100*"/>
@@ -317,7 +319,7 @@
                     <TextBlock Grid.Row="0" Grid.Column="10" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2" 
                                 ToolTip="Log information about .NET Native CCW Ref Counting.">
                      <Hyperlink Command="Help" CommandParameter="CCWRefCountCheckBox"> .NET Native CCW:</Hyperlink>
-                    </TextBlock>                    
+                    </TextBlock>
                     <CheckBox Grid.Row="0" Grid.Column="11" Name="CCWRefCountCheckBox" VerticalAlignment="Center"/>
 
                     <CheckBox Grid.Row="0" Grid.Column="13" Name="Unused2" Visibility="Hidden" VerticalAlignment="Center"/>
@@ -383,8 +385,37 @@
                     <CheckBox Grid.Row="0" Grid.Column="14" VerticalAlignment="Center" Visibility="Hidden" Margin="0,2" />
                 </Grid>
 
+                <!-- Check boxes for more options -->
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="105*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="105*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="105*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="92*"/>
+                        <ColumnDefinition Width="13*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="105*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="104*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="21*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,5,2" 
+                               ToolTip="Enable /InMemoryCircularBuffer" >
+                    <Hyperlink Command="Help" CommandParameter="InMemoryCircularBufferCheckBox">InMemCircBuffer:</Hyperlink>
+                    </TextBlock>
+                    <CheckBox Grid.Row="0" Grid.Column="1" Name="InMemoryCircularBufferCheckBox" VerticalAlignment="Center" Margin="0,2,0,2" />
+
+                </Grid>
+
                 <!-- Additional Providers -->
-                <Grid Grid.Row="4" Margin="0,2,0,2">
+                <Grid Grid.Row="5" Margin="0,2,0,2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="100*"/>
@@ -396,7 +427,7 @@
                                ToolTip="A comma separated list of additional providers to turn on during data collection." >
                     <Hyperlink Command="Help" CommandParameter="AdditionalProvidersTextBox">Additional Providers:</Hyperlink>
                     </TextBlock>
-                    <controls:HistoryComboBox  x:Name="AdditionalProvidersTextBox" Grid.Column="1" Margin="2,2,5,2" />
+                    <controls:HistoryComboBox  x:Name="AdditionalProvidersTextBox" Grid.Column="1" Margin="2,2,5,2" Grid.ColumnSpan="2" />
                     <Button Grid.Column="2" Margin="0,2,5,2" Content=" Provider Browser " Click="ProviderBrowserButtonClick" 
                             ToolTip="Click to browse the available ETW providers."/>
                     <TextBlock  Grid.Column="3" Margin="2,0,10,0" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12
@@ -404,9 +435,9 @@
                         <Hyperlink Command="Help" CommandParameter="ProviderBrowser">?</Hyperlink>
                     </TextBlock>
                 </Grid>
-                
+
                 <!-- CPU Sample interval CPU Ctrs, OS Heap stuff -->
-                <Grid Grid.Row="5" Margin="0,2,0,2">
+                <Grid Grid.Row="6" Margin="0,2,0,2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
@@ -455,7 +486,7 @@
                 </Grid>
 
                 <!-- Net Symbol collection, rundown, ... -->
-                <Grid Grid.Row="6" Margin="0,5,0,2">
+                <Grid Grid.Row="7" Margin="0,5,0,2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
@@ -482,7 +513,7 @@
                 </Grid>
 
                 <!-- Max Collect Sec, Stop Trigger ... -->
-                <Grid Grid.Row="7" Margin="0,5,0,2">
+                <Grid Grid.Row="8" Margin="0,5,0,2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
