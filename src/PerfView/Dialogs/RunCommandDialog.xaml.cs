@@ -313,7 +313,7 @@ namespace PerfView
                 CommandToRunLabel.Visibility = Visibility.Hidden;
                 FocusProcessCheckBox.Visibility = Visibility.Visible;
                 FocusProcessTextBox.Visibility = Visibility.Visible;
-                FocusProcessLabel.Visibility = Visibility.Visible;                
+                FocusProcessLabel.Visibility = Visibility.Visible;
                 if (!string.IsNullOrEmpty(FocusProcessTextBox.Text))
                 {
                     FocusProcessCheckBox.IsChecked = true;
