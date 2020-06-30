@@ -17,7 +17,7 @@ namespace LinuxTracing.Tests
 
             for (int i = 0; i < stackSource.SampleIndexLimit; i++)
             {
-                var sample = stackSource.GetSampleByIndex((StackSourceSampleIndex)i);
+                var sample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i);
 
                 var stackIndex = sample.StackIndex;
                 for (int j = 0; (int)stackIndex != -1; j++)
