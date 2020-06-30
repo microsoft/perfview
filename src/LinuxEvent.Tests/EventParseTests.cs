@@ -17,7 +17,7 @@ namespace LinuxTracing.Tests
 
             for (int i = 0; i < stackSource.SampleIndexLimit; i++)
             {
-                var sample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i);
+                var sample = stackSource.GetSampleByIndex((StackSourceSampleIndex)i);
 
                 var stackIndex = sample.StackIndex;
                 for (int j = 0; (int)stackIndex != -1; j++)
@@ -28,6 +28,10 @@ namespace LinuxTracing.Tests
                 }
 
                 Assert.Equal(-1, (int)stackIndex);
+
+                var linuxsample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i);
+                Assert.NotNull(linuxsample);
+                Assert.NotEqual(StackSourceSampleIndex.Invalid, linuxsample.SampleIndex);
             }
         }
 

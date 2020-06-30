@@ -22,6 +22,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Copy a LinuxPerfScriptStackSourceSample from 'template'
         /// </summary>
         /// <param name="template"></param>
+        public LinuxPerfScriptStackSourceSample(StackSourceSample template, int cpuNumber) : base(template)
+        {
+            CpuNumber = cpuNumber;
+        }
+
+        /// <summary>
+        /// Copy a LinuxPerfScriptStackSourceSample from 'template'
+        /// </summary>
+        /// <param name="template"></param>
         public LinuxPerfScriptStackSourceSample(LinuxPerfScriptStackSourceSample template) : base(template)
         {
             CpuNumber = template.CpuNumber;

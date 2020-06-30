@@ -74,7 +74,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                                 blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
 
                                 LinuxPerfScriptStackSourceSample sample = CreateSampleFor(linuxEvent, blockedTimeAnalyzer);
-                                m_LinuxPerfScriptSamples.Add(sample);
 
                                 if (linuxEvent.Kind == EventKind.Cpu)
                                 {
@@ -339,10 +338,15 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             {
                 sample.TimeRelativeMSec -= startTime;
                 AddSample(sample);
-                m_LinuxPerfScriptSamples.Add(sample);
             }
 
             SampleEndTime = samples.Last().TimeRelativeMSec;
+        }
+
+        public void AddSample(LinuxPerfScriptStackSourceSample sample)
+        {
+            var baseSample = AddSample((StackSourceSample) sample);
+            m_LinuxPerfScriptSamples.Add(new LinuxPerfScriptStackSourceSample(baseSample, sample.CpuNumber));
         }
 
         protected virtual void DoInterning()
