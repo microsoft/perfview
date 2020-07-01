@@ -723,32 +723,52 @@ CloseLog()
 ##
 RedText()
 {
-    tput setaf 1
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+    	$tput setaf 1
+    fi
 }
 
 GreenText()
 {
-    tput setaf 2
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput setaf 2
+    fi
 }
 
 BlueText()
 {
-    tput setaf 6
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput setaf 6
+    fi
 }
 YellowText()
 {
-    tput setaf 3
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput setaf 3
+    fi
 }
 
 ResetText()
 {
-    tput sgr0
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput sgr0
+    fi
 }
 
 # $1 == Status message
 WriteStatus()
 {
-        LogAppend $*
+    LogAppend $*
     BlueText
     echo $1
     ResetText
@@ -832,6 +852,27 @@ GetCommandFullPath()
 ######################################
 # Prerequisite Installation
 ######################################
+IsAlpine()
+{
+    local alpine=0
+    local apk=`GetCommandFullPath "apk"`
+    if [ "$apk" != "" ]
+    then
+        alpine=1
+    fi
+
+    echo $alpine
+}
+
+InstallPerf_Alpine()
+{
+    # Disallow non-root users.
+    EnsureRoot
+
+    # Install perf
+    apk add perf --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+}
+
 IsRHEL()
 {
     local rhel=0
@@ -959,6 +1000,9 @@ InstallPerf()
     elif [ "$(IsRHEL)" == "1" ]
     then
         InstallPerf_RHEL
+    elif [ "$(IsAlpine)" == "1" ]
+    then
+        InstallPerf_Alpine
     else
         FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
     fi
@@ -1094,6 +1138,9 @@ InstallLTTng()
     elif [ "$(IsRHEL)" == "1" ]
     then
         InstallLTTng_RHEL
+    elif [ "$(IsAlpine)" == "1" ]
+    then
+        echo "lttng-tools is not currently supported on Alpine Linux, so no lttng-ust events will be collected."
     else
         FatalError "Auto install unsupported for this distribution.  Install lttng and lttng-ust packages manually."
     fi
