@@ -698,7 +698,7 @@ InitializeLog()
 
     # The system information.
     LogAppend 'Machine info: '  `uname -a`
-    LogAppend 'perf version:'   `$perfcmd --version`
+    LogAppend 'perf version:'   `$perfcmd --version 2>&1`
     LogAppend 'LTTng version: ' `lttng --version`
     LogAppend
 }
@@ -1159,9 +1159,6 @@ SupportsAutoInstall()
 
 EnsurePrereqsInstalled()
 {
-    # Discover commands and then determine if they're all present.
-    DiscoverCommands
-
     # If perf is not installed, then bail, as it is currently required.
     if [ "$perfcmd" == "" ]
     then
@@ -2082,8 +2079,8 @@ then
     exit 0
 fi
 
-# Ensure prerequisites are installed.
-EnsurePrereqsInstalled
+# Discover external commands that will be called by this script.
+DiscoverCommands
 
 # Initialize the log.
 if [ "$1" != "stop" ]
@@ -2093,6 +2090,9 @@ fi
 
 # Process arguments.
 ProcessArguments $@
+
+# Ensure prerequisites are installed.
+EnsurePrereqsInstalled
 
 # Take the appropriate action.
 if [ "$action" == "collect" ] || [ "$action" == "start" ]
