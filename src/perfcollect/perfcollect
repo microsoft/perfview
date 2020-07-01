@@ -877,6 +877,9 @@ InstallPerf_Alpine()
 
     # Install perf
     apk add perf --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+
+    # Install zip and unzip
+    apk add zip unzip
 }
 
 IsRHEL()
@@ -1146,7 +1149,7 @@ InstallLTTng()
         InstallLTTng_RHEL
     elif [ "$(IsAlpine)" == "1" ]
     then
-        echo "lttng-tools is not currently supported on Alpine Linux, so no lttng-ust events will be collected."
+        echo "lttng-tools is not available on Alpine Linux, so no lttng-ust events will be collected."
     else
         FatalError "Auto install unsupported for this distribution.  Install lttng and lttng-ust packages manually."
     fi
