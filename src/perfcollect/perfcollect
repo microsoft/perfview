@@ -698,8 +698,14 @@ InitializeLog()
 
     # The system information.
     LogAppend 'Machine info: '  `uname -a`
-    LogAppend 'perf version:'   `$perfcmd --version 2>&1`
-    LogAppend 'LTTng version: ' `lttng --version`
+    if [ "$perfcmd" != "" ]
+    then
+        LogAppend 'perf version:'   `$perfcmd --version 2>&1`
+    fi
+    if [ "$lttngcmd" != "" ]
+    then
+        LogAppend 'LTTng version: ' `$lttngcmd --version`
+    fi
     LogAppend
 }
 
