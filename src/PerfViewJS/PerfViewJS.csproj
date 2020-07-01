@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.113" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.164" />
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
   </ItemGroup>
 

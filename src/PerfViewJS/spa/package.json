@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@monaco-editor/react": "^3.3.0",
+    "@monaco-editor/react": "^3.4.0",
     "@types/jest": "^24.9.0",
-    "@types/react": "^16.9.35",
+    "@types/react": "^16.9.41",
     "@types/react-dom": "^16.9.8",
     "@types/react-router-dom": "^5.1.5",
-    "@types/reactstrap": "^8.2.0",
+    "@types/reactstrap": "^8.4.3",
     "base64url": "^3.0.1",
     "bootstrap": "^4.5.0",
     "monaco-editor": "^0.19.3",
@@ -17,9 +17,9 @@
     "react-router-bootstrap": "^0.25.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^3.4.1",
-    "reactstrap": "^8.3.2",
+    "reactstrap": "^8.5.1",
     "rimraf": "^3.0.0",
-    "typescript": "^3.9.2"
+    "typescript": "^3.9.5"
   },
   "devDependencies": {
     "ajv": "^6.12.2",
@@ -28,9 +28,9 @@
     "eslint": "^6.8.0",
     "eslint-config-react-app": "^5.2.1",
     "eslint-plugin-flowtype": "^4.7.0",
-    "eslint-plugin-import": "^2.20.2",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-react": "^7.20.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-jsx-a11y": "^6.3.1",
+    "eslint-plugin-react": "^7.20.3",
     "zlib": "^1.0.5"
   },
   "eslintConfig": {
