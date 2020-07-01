@@ -28,6 +28,10 @@ namespace LinuxTracing.Tests
                 }
 
                 Assert.Equal(-1, (int)stackIndex);
+
+                var linuxsample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i);
+                Assert.NotNull(linuxsample);
+                Assert.NotEqual(StackSourceSampleIndex.Invalid, linuxsample.SampleIndex);
             }
         }
 
