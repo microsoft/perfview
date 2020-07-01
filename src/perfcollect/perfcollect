@@ -1181,6 +1181,12 @@ EnsurePrereqsInstalled()
         exit 1
     fi
 
+    # Disable LTTng use if running on Alpine.
+    if [ "$(IsAlpine)" == "1" ]
+    then
+        useLTTng=0
+    fi
+
     # If LTTng is installed, consider using it.
     if [ "$lttngcmd" == "" ] && [ "$useLTTng" == "1" ]
     then
