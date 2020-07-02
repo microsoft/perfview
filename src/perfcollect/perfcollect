@@ -698,8 +698,14 @@ InitializeLog()
 
     # The system information.
     LogAppend 'Machine info: '  `uname -a`
-    LogAppend 'perf version:'   `$perfcmd --version`
-    LogAppend 'LTTng version: ' `lttng --version`
+    if [ "$perfcmd" != "" ]
+    then
+        LogAppend 'perf version:'   `$perfcmd --version 2>&1`
+    fi
+    if [ "$lttngcmd" != "" ]
+    then
+        LogAppend 'LTTng version: ' `$lttngcmd --version`
+    fi
     LogAppend
 }
 
@@ -723,32 +729,52 @@ CloseLog()
 ##
 RedText()
 {
-    tput setaf 1
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+    	$tput setaf 1
+    fi
 }
 
 GreenText()
 {
-    tput setaf 2
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput setaf 2
+    fi
 }
 
 BlueText()
 {
-    tput setaf 6
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput setaf 6
+    fi
 }
 YellowText()
 {
-    tput setaf 3
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput setaf 3
+    fi
 }
 
 ResetText()
 {
-    tput sgr0
+    tput=`GetCommandFullPath "tput"`
+    if [ "$tput" != "" ]
+    then
+        $tput sgr0
+    fi
 }
 
 # $1 == Status message
 WriteStatus()
 {
-        LogAppend $*
+    LogAppend $*
     BlueText
     echo $1
     ResetText
@@ -822,6 +848,7 @@ DiscoverCommands()
     lttngcmd=`GetCommandFullPath "lttng"`
     zipcmd=`GetCommandFullPath "zip"`
     unzipcmd=`GetCommandFullPath "unzip"`
+    objdumpcmd=`GetCommandFullPath "objdump"`
 }
 
 GetCommandFullPath()
@@ -832,6 +859,30 @@ GetCommandFullPath()
 ######################################
 # Prerequisite Installation
 ######################################
+IsAlpine()
+{
+    local alpine=0
+    local apk=`GetCommandFullPath "apk"`
+    if [ "$apk" != "" ]
+    then
+        alpine=1
+    fi
+
+    echo $alpine
+}
+
+InstallPerf_Alpine()
+{
+    # Disallow non-root users.
+    EnsureRoot
+
+    # Install perf
+    apk add perf --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+
+    # Install zip and unzip
+    apk add zip unzip
+}
+
 IsRHEL()
 {
     local rhel=0
@@ -959,6 +1010,9 @@ InstallPerf()
     elif [ "$(IsRHEL)" == "1" ]
     then
         InstallPerf_RHEL
+    elif [ "$(IsAlpine)" == "1" ]
+    then
+        InstallPerf_Alpine
     else
         FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
     fi
@@ -1094,6 +1148,9 @@ InstallLTTng()
     elif [ "$(IsRHEL)" == "1" ]
     then
         InstallLTTng_RHEL
+    elif [ "$(IsAlpine)" == "1" ]
+    then
+        echo "lttng-tools is not available on Alpine Linux, so no lttng-ust events will be collected."
     else
         FatalError "Auto install unsupported for this distribution.  Install lttng and lttng-ust packages manually."
     fi
@@ -1112,9 +1169,6 @@ SupportsAutoInstall()
 
 EnsurePrereqsInstalled()
 {
-    # Discover commands and then determine if they're all present.
-    DiscoverCommands
-
     # If perf is not installed, then bail, as it is currently required.
     if [ "$perfcmd" == "" ]
     then
@@ -1129,6 +1183,12 @@ EnsurePrereqsInstalled()
         fi
         ResetText
         exit 1
+    fi
+
+    # Disable LTTng use if running on Alpine.
+    if [ "$(IsAlpine)" == "1" ]
+    then
+        useLTTng=0
     fi
 
     # If LTTng is installed, consider using it.
@@ -1314,9 +1374,9 @@ CreateLTTngSession()
 {
     if [ "$action" == "livetrace" ]
     then
-        output=`lttng create --live`
+        output=`$lttngcmd create --live`
     else
-        output=`lttng create`
+        output=`$lttngcmd create`
     fi
 
     lttngSessionName=`echo $output | grep -o "Session.*created." | sed 's/\(Session \| created.\)//g'`
@@ -1327,14 +1387,14 @@ SetupLTTngSession()
 {
     
     # Setup per-event context information.
-    RunSilent "lttng add-context --userspace --type vpid"
-    RunSilent "lttng add-context --userspace --type vtid"
-    RunSilent "lttng add-context --userspace --type procname"
-    RunSilent "lttng add-context --kernel -t pid -t procname"
+    RunSilent "$lttngcmd add-context --userspace --type vpid"
+    RunSilent "$lttngcmd add-context --userspace --type vtid"
+    RunSilent "$lttngcmd add-context --userspace --type procname"
+    RunSilent "$lttngcmd add-context --kernel -t pid -t procname"
 
     if [ "$action" == "livetrace" ]
     then
-        RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntime:EventSource"
+        RunSilent "$lttngcmd enable-event --userspace --tracepoint DotNETRuntime:EventSource"
     elif [ "$gcCollectOnly" == "1" ]
     then
         usePerf=0
@@ -1398,7 +1458,7 @@ SetupLTTngSession()
 
 DestroyLTTngSession()
 {
-    RunSilent "lttng destroy $lttngSessionName"
+    RunSilent "$lttngcmd destroy $lttngSessionName"
 }
 
 StartLTTngCollection()
@@ -1406,12 +1466,12 @@ StartLTTngCollection()
     CreateLTTngSession
     SetupLTTngSession
 
-    RunSilent "lttng start $lttngSessionName"
+    RunSilent "$lttngcmd start $lttngSessionName"
 }
 
 StopLTTngCollection()
 {
-    RunSilent "lttng stop $lttngSessionName"
+    RunSilent "$lttngcmd stop $lttngSessionName"
     DestroyLTTngSession
 }
 
@@ -1421,7 +1481,7 @@ EnableLTTngEvents()
     args=( "$@" )
     for (( i=0; i<${#args[@]}; i++ ))
     do
-        RunSilent "lttng enable-event -s $lttngSessionName -u --tracepoint ${args[$i]}"
+        RunSilent "$lttngcmd enable-event -s $lttngSessionName -u --tracepoint ${args[$i]}"
     done
 }
 
@@ -1430,7 +1490,7 @@ EnableLTTngKernelEvents()
     args=( "$@" )
     for (( i=0; i<${#args[@]}; i++ ))
     do 
-        RunSilent "lttng enable-event -s $lttngSessionName -k ${args[$i]}"
+        RunSilent "$lttngcmd enable-event -s $lttngSessionName -k ${args[$i]}"
     done
 }
 
@@ -1565,9 +1625,6 @@ ProcessCollectedData()
                         LogAppend "Skipping ${path}"
                     fi
                 done
-
-            WriteStatus "...FINISHED"
-
         else
         if [ "$buildidList" != "" ] && [ $writeCrossgenWarning -eq 1 ]
         then
@@ -1580,57 +1637,62 @@ ProcessCollectedData()
 
         IFS=$OLDIFS
 
-        # Create debuginfo files (separate symbols) for all modules in the trace.
-        WriteStatus "Saving native symbols"
-
-        # Get the list of DSOs with hits in the trace file (those that are actually used).
-        # Filter out /tmp/perf-$pid.map files and files that end in .dll.
-        local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
-        for dso in $dsosWithHits
-        do
-            # Build up tuples of buildid and binary path.
-            local processEntry=0
-            if [ -f $dso ]
-            then
-                local pathToBinary=$dso
-                processEntry=1
-            else
-                local buildid=$dso
-                pathToBinary=''
-            fi
-
-            # Once we have a tuple for a binary path that exists, process it.
-            if [ "$processEntry" == "1" ]
-            then
-                # Get the binary name without path.
-                local binaryName=`basename $pathToBinary`
-
-                # Build the debuginfo file name.
-                local destFileName=$binaryName.debuginfo
-
-                # Build the destination directory for the debuginfo file.
-                local currentDir=`pwd`
-                local destDir=$currentDir/debuginfo/$buildid
-
-                # Build the full path to the debuginfo file.
-                local destPath=$destDir/$destFileName
-
-                # Check to see if the DSO contains symbols, and if so, build the debuginfo file.
-                local noSymbols=`objdump -t $pathToBinary | grep "no symbols" -c`
-                if [ "$noSymbols" == "0" ]
-                then
-                    LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
-                    RunSilent "mkdir -p $destDir"
-                    RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
-                else
-                    LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
-                fi
-            fi
-        done
-
         WriteStatus "...FINISHED"
 
-        WriteStatus "Resolving JIT and R2R symbols."
+        if [ "$objdumpcmd" != "" ]
+        then
+            # Create debuginfo files (separate symbols) for all modules in the trace.
+            WriteStatus "Saving native symbols"
+
+            # Get the list of DSOs with hits in the trace file (those that are actually used).
+            # Filter out /tmp/perf-$pid.map files and files that end in .dll.
+            local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
+            for dso in $dsosWithHits
+            do
+                # Build up tuples of buildid and binary path.
+                local processEntry=0
+                if [ -f $dso ]
+                then
+                    local pathToBinary=$dso
+                    processEntry=1
+                else
+                    local buildid=$dso
+                    pathToBinary=''
+                fi
+
+                # Once we have a tuple for a binary path that exists, process it.
+                if [ "$processEntry" == "1" ]
+                then
+                    # Get the binary name without path.
+                    local binaryName=`basename $pathToBinary`
+
+                    # Build the debuginfo file name.
+                    local destFileName=$binaryName.debuginfo
+
+                    # Build the destination directory for the debuginfo file.
+                    local currentDir=`pwd`
+                    local destDir=$currentDir/debuginfo/$buildid
+
+                    # Build the full path to the debuginfo file.
+                    local destPath=$destDir/$destFileName
+
+                    # Check to see if the DSO contains symbols, and if so, build the debuginfo file.
+                    local noSymbols=`$objdumpcmd -t $pathToBinary | grep "no symbols" -c`
+                    if [ "$noSymbols" == "0" ]
+                    then
+                        LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
+                        RunSilent "mkdir -p $destDir"
+                        RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
+                    else
+                        LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
+                    fi
+                fi
+            done
+
+            WriteStatus "...FINISHED"
+        fi
+
+        WriteStatus "Resolving JIT and R2R symbols"
 
         originalFile="perf.data"
         inputFile="perf-jit.data"
@@ -2035,8 +2097,8 @@ then
     exit 0
 fi
 
-# Ensure prerequisites are installed.
-EnsurePrereqsInstalled
+# Discover external commands that will be called by this script.
+DiscoverCommands
 
 # Initialize the log.
 if [ "$1" != "stop" ]
@@ -2046,6 +2108,9 @@ fi
 
 # Process arguments.
 ProcessArguments $@
+
+# Ensure prerequisites are installed.
+EnsurePrereqsInstalled
 
 # Take the appropriate action.
 if [ "$action" == "collect" ] || [ "$action" == "start" ]
