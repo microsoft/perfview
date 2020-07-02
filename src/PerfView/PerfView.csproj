@@ -56,6 +56,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisRulesVersion)" PrivateAssets="all"/>
 
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
@@ -67,6 +68,14 @@
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
+
+  <!-- Copy AutomatedAnalysis rules to the target directory. -->
+  <ItemGroup>
+    <AutomatedAnalysisRules Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
+  </ItemGroup>
+  <Target Name="CopyRulesToTarget" AfterTargets="Build">
+    <Copy SourceFiles="@(AutomatedAnalysisRules)" DestinationFolder="$(TargetDir)Rules" />
+  </Target>
 
   <ItemGroup>
     <Compile Include="..\heapDump\GCHeapDump.cs">
@@ -174,6 +183,13 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
       <Link>amd64\KernelTraceControl.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</LogicalName>
+      <Link>Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
