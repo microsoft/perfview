@@ -479,16 +479,31 @@ namespace Microsoft.Diagnostics.Tracing
         private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
         {
             string opcodeName = ((TraceEventOpcode)eventMetaDataHeader.Opcode).ToString();
-
             int opcode = eventMetaDataHeader.Opcode;
             if (opcode == 0)
             {
                 GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
             }
-
-            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, opcode, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
+            string eventName = FilterOpcodeNameFromEventName(eventMetaDataHeader.EventName, opcode);
+            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventName, Guid.Empty, opcode, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
             SetOpcode(template, eventMetaDataHeader.Opcode);
             return template;
+        }
+
+        private string FilterOpcodeNameFromEventName(string eventName, int opcode)
+        {
+            // If the event has an opcode associated and the opcode name is also specified, we should
+            // remove the opcode name from the event's name. Otherwise the events will show up with
+            // duplicate opcode names (i.e. RequestStart/Start)
+            if (opcode == (int)TraceEventOpcode.Start && eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+            {
+                return eventName.Remove(eventName.Length - 5, 5);
+            }
+            else if (opcode == (int)TraceEventOpcode.Stop && eventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
+            {
+                return eventName.Remove(eventName.Length - 4, 4);
+            }
+            return eventName;
         }
 
         // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
@@ -498,6 +513,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (eventMetaDataHeader.ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
             {
                 string eventName = eventMetaDataHeader.EventName;
+
                 if (eventName == "Event" ||
                    eventName == "Activity1Start" ||
                    eventName == "Activity1Stop" ||
@@ -782,6 +798,8 @@ namespace Microsoft.Diagnostics.Tracing
         {
             opcode = 0;
             opcodeName = null;
+            // If this EventName suggests that it has an Opcode, then we must remove the opcode name from its name
+            // Otherwise the events will show up with duplicate opcode names (i.e. RequestStart/Start)
 
             if (eventName != null)
             {

@@ -354,10 +354,15 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
                 // Process ID
                 int pid = source.ReadInt();
-                source.MoveNext(); // Move past the "/"
 
-                // Thread ID
-                int tid = source.ReadInt();
+                // Detect whether or not the Thread ID is present.
+                int tid = pid;
+                if (source.Peek(0) == '/')
+                {
+                    // Thread ID
+                    source.MoveNext(); // Move past the "/"
+                    tid = source.ReadInt();
+                }
 
                 // CPU
                 source.SkipWhiteSpace();
@@ -403,6 +408,10 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 {
                     eventKind = EventKind.Scheduler;
                 }
+                else if(eventDetails.Length > ThreadExitEvent.Name.Length && eventDetails.Substring(0, ThreadExitEvent.Name.Length) == ThreadExitEvent.Name)
+                {
+                    eventKind = EventKind.ThreadExit;
+                }
 
                 // Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
                 if (regex != null && !regex.IsMatch(eventName))
@@ -434,11 +443,23 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         source.SkipUpTo('\n');
                     }
 
+                    ThreadExit exit = null;
+                    if(eventKind == EventKind.ThreadExit)
+                    {
+                        source.RestoreToMark(markedPosition);
+                        exit = ReadExit(source);
+                        source.SkipUpTo('\n');
+                    }
+
                     IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
 
                     if (eventKind == EventKind.Scheduler)
                     {
                         linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
+                    }
+                    else if (eventKind == EventKind.ThreadExit)
+                    {
+                        linuxEvent = new ThreadExitEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, exit);
                     }
                     else
                     {
@@ -529,6 +550,10 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     }
                     else if (!char.IsDigit((char)val))
                     {
+                        if(source.Peek(idx+1) == '[')
+                        {
+                            return firstSpaceIdx;
+                        }
                         goto startOver;
                     }
                 }
@@ -552,11 +577,91 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     string[] moduleSymbol = mapper.ResolveSymbols(processID, stackFrame.Module, stackFrame);
                     stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
                 }
+                if(stackFrame.Module.StartsWith("jitted-") && stackFrame.Module.EndsWith(".so") && stackFrame.Symbol.EndsWith(")"))
+                {
+                    // Jitted or R2R code.  Replace the module with the IL module name, and shorten the symbol.
+                    // Example: uint8[] [System.Private.CoreLib] Internal.IO.File::ReadAllBytes(string)
+                    // Example: instance uint8[] [System.Private.CoreLib] Internal.IO.File::ReadAllBytes(string)
+
+                    // Start at the end of the string, which should be ')'.  Walk until we find the matching '('.
+                    string symbol = stackFrame.Symbol;
+                    int currentIndex = symbol.Length - 1;
+                    int endIndex = 0;
+                    int parenDepth = 0;
+                    while(currentIndex >= endIndex)
+                    {
+                        char current = symbol[currentIndex];
+                        if(current == ')')
+                        {
+                            // We know that we'll immediately increment the paren depth from 0 to 1 on the first loop iteration because
+                            // the conditions on the if statement above require it.
+                            parenDepth++;
+                        }
+                        else if(current == '(')
+                        {
+                            parenDepth--;
+                        }
+
+                        if(parenDepth <= 0)
+                        {
+                            // We found the open paren that matches the last close paren.
+                            break;
+                        }
+
+                        currentIndex--;
+                    }
+
+                    // Continue walking until we find the first whitespace char.  This is the beginning of the full function name (with namespace).
+                    while (currentIndex >= endIndex && symbol[currentIndex] != ' ')
+                    {
+                        currentIndex--;
+                    }
+
+                    // Make sure we actually hit a ' ' char.
+                    if(symbol[currentIndex] != ' ')
+                    {
+                        goto abort;
+                    }
+
+                    // Save the symbol name.
+                    string newSymbol = symbol.Substring(currentIndex + 1, (symbol.Length - currentIndex - 1));
+
+                    // Find the beginning of the module name by looking for ']'.
+                    while(currentIndex >= endIndex && symbol[currentIndex] != ']')
+                    {
+                        currentIndex--;
+                    }
+
+                    // Make sure we actually hit a ']' char.
+                    if (symbol[currentIndex] != ']')
+                    {
+                        goto abort;
+                    }
+                    int moduleEndIndex = currentIndex;
+
+                    // Find the matching '[' char.
+                    while (currentIndex >= endIndex && symbol[currentIndex] != '[')
+                    {
+                        currentIndex--;
+                    }
+
+                    // Make sure we actually hit a '[' char.
+                    if (symbol[currentIndex] != '[')
+                    {
+                        goto abort;
+                    }
+
+                    // Save the module name.
+                    string newModuleName = symbol.Substring(currentIndex + 1, (moduleEndIndex - currentIndex - 1));
+
+                    stackFrame = new StackFrame(stackFrame.Address, newModuleName, newSymbol, stackFrame.OptimizationTier);
+                }
+            abort:
                 frames.Add(stackFrame);
             }
 
             frames.Add(new ThreadFrame(threadID, "Thread"));
-            frames.Add(new ProcessFrame(command));
+            frames.Add(new ProcessFrame(processID, command));
 
             return frames;
         }
@@ -614,48 +719,137 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         {
             StringBuilder sb = new StringBuilder();
 
+            // There are two formats for ScheduleSwitch serialization:
+            // Example1: sched:sched_switch: prev_comm=swapper/3 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=rcu_sched next_pid=8 next_prio=120
+            // Example2: sched:sched_switch: perf_4.9:3005 [49] S ==> swapper/2:0 [120]
+
+            // Skip "sched:sched_switch: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            // Figure out which format we have.
+            var pos = source.MarkPosition();
+
+            // Look for 'prev_comm' (Example1)
+            source.ReadFixedString(9, sb);
+            string nextField = sb.ToString();
+            sb.Clear();
+
+            if (nextField.Equals("prev_comm"))
+            {
+                // This is of the format in Example1.
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                source.ReadAsciiStringUpTo(' ', sb);
+                string prevComm = sb.ToString();
+                sb.Clear();
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                int prevTid = source.ReadInt();
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                int prevPrio = source.ReadInt();
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                char prevState = (char)source.Current;
+
+                source.MoveNext();
+                source.SkipUpTo('n'); // this is to bypass the ==>
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                source.ReadAsciiStringUpTo(' ', sb);
+                string nextComm = sb.ToString();
+                sb.Clear();
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                int nextTid = source.ReadInt();
+
+                source.SkipUpTo('=');
+                source.MoveNext();
+
+                int nextPrio = source.ReadInt();
+
+                return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+            }
+            else
+            {
+                // This is of the format in Example2.
+
+                // Restore the position back so the full text can be parsed here.
+                source.RestoreToMark(pos);
+
+                source.ReadAsciiStringUpTo(':', sb);
+                string prevComm = sb.ToString();
+                sb.Clear();
+
+                source.MoveNext();
+
+                int prevTid = source.ReadInt();
+
+                source.SkipUpTo('[');
+                source.MoveNext();
+
+                int prevPrio = source.ReadInt();
+
+                source.MoveNext();
+                source.SkipWhiteSpace();
+
+                char prevState = (char)source.Current;
+
+                source.SkipUpTo('>'); // this is to bypass the ==>
+                source.MoveNext();
+                source.SkipWhiteSpace();
+
+                source.ReadAsciiStringUpTo(':', sb);
+                string nextComm = sb.ToString();
+                sb.Clear();
+
+                source.MoveNext();
+
+                int nextTid = source.ReadInt();
+
+                source.SkipUpTo('[');
+                source.MoveNext();
+
+                int nextPrio = source.ReadInt();
+
+                return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+            }
+        }
+
+        private ThreadExit ReadExit(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
             source.SkipUpTo('=');
             source.MoveNext();
 
             source.ReadAsciiStringUpTo(' ', sb);
-            string prevComm = sb.ToString();
+            string comm = sb.ToString();
             sb.Clear();
 
             source.SkipUpTo('=');
             source.MoveNext();
 
-            int prevTid = source.ReadInt();
+            int tid = source.ReadInt();
 
             source.SkipUpTo('=');
             source.MoveNext();
 
-            int prevPrio = source.ReadInt();
+            int prio = source.ReadInt();
 
-            source.SkipUpTo('=');
-            source.MoveNext();
-
-            char prevState = (char)source.Current;
-
-            source.MoveNext();
-            source.SkipUpTo('n'); // this is to bypass the ==>
-            source.SkipUpTo('=');
-            source.MoveNext();
-
-            source.ReadAsciiStringUpTo(' ', sb);
-            string nextComm = sb.ToString();
-            sb.Clear();
-
-            source.SkipUpTo('=');
-            source.MoveNext();
-
-            int nextTid = source.ReadInt();
-
-            source.SkipUpTo('=');
-            source.MoveNext();
-
-            int nextPrio = source.ReadInt();
-
-            return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
+            return new ThreadExit(comm, tid, prio);
         }
 
         private string RemoveOuterBrackets(string s)
@@ -952,6 +1146,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         /// Represents an event that may context switch
         /// </summary>
         Scheduler,
+
+        /// <summary>
+        /// Represents a thread exit event.
+        /// </summary>
+        ThreadExit,
     }
 
     /// <summary>
@@ -998,6 +1197,42 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             NextCommand = nextComm;
             NextThreadID = nextTid;
             NextPriority = nextPrio;
+        }
+    }
+
+    public class ThreadExitEvent : LinuxEvent
+    {
+        public static readonly string Name = "sched_process_exit";
+
+        /// <summary>
+        /// The details of the context switch.
+        /// </summary>
+        public ThreadExit Exit { get; }
+
+        public ThreadExitEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, ThreadExit exit) :
+            base(EventKind.ThreadExit, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            Exit = exit;
+        }
+    }
+
+    /// <summary>
+    /// Stores all relevant information retrieved by a thread exit.
+    /// </summary>
+    public class ThreadExit
+    {
+        public string Command { get; }
+        public int ThreadID { get; }
+        public int Priority { get; }
+
+        public ThreadExit(string comm, int tid, int prio)
+        {
+            Command = comm;
+            ThreadID = tid;
+            Priority = prio;
         }
     }
 
@@ -1085,20 +1320,34 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
     public struct StackFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.StackFrame; } }
-        public string DisplayName { get { return string.Format("{0}!{1}", Module, Symbol); } }
+        public string DisplayName
+        {
+            get
+            {
+                if (OptimizationTier == OptimizationTier.Unknown)
+                {
+                    return string.Format("{0}!{1}", Module, Symbol);
+                }
+                else
+                {
+                    return string.Format("{0}![{1}]{2}", Module, OptimizationTier.ToString(), Symbol);
+                }
+            }
+        }
         public string Address { get; }
         public string Module { get; }
         public string Symbol { get; }
+        public OptimizationTier OptimizationTier { get; }
 
         public StackFrame(string address, string module, string symbol)
         {
             Address = address;
             Module = module;
+            OptimizationTier = OptimizationTier.Unknown;
 
             // Check for the optimization tier. The symbol would contain the optimization tier in the form:
             //   Symbol[OptimizationTier]
-            // Convert it to this form, which is used elsewhere:
-            //   [OptimizationTier]Symbol
+            // Save the optimization tier so that it can be put onto the front of the frame if present.
             if (symbol != null && symbol.Length >= 3 && symbol[symbol.Length - 1] == ']')
             {
                 int openBracketIndex = symbol.LastIndexOf('[', symbol.Length - 2);
@@ -1108,15 +1357,20 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     if (Enum.TryParse<OptimizationTier>(optimizationTierStr, out var optimizationTier))
                     {
                         symbol = symbol.Substring(0, openBracketIndex);
-                        if (optimizationTier != OptimizationTier.Unknown)
-                        {
-                            symbol = $"[{optimizationTierStr}]{symbol}";
-                        }
+                        OptimizationTier = optimizationTier;
                     }
                 }
             }
 
             Symbol = symbol;
+        }
+
+        public StackFrame(string address, string module, string symbol, OptimizationTier optimizationTier)
+        {
+            Address = address;
+            Module = module;
+            Symbol = symbol;
+            OptimizationTier = optimizationTier;
         }
     }
 
@@ -1126,11 +1380,13 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
     public struct ProcessFrame : Frame
     {
         public FrameKind Kind { get { return FrameKind.ProcessFrame; } }
-        public string DisplayName { get { return Name; } }
+        public string DisplayName { get { return string.Format("Process {0} ({1})", Name, ID); } }
         public string Name { get; }
+        public int ID { get; }
 
-        public ProcessFrame(string name)
+        public ProcessFrame(int id, string name)
         {
+            ID = id;
             Name = name;
         }
     }

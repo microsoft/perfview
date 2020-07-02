@@ -1782,8 +1782,11 @@ namespace FastSerialization
         /// </summary>
         public void Dispose()
         {
-            reader.Dispose();
-            reader = null;
+            if (reader != null)
+            {
+                reader.Dispose();
+                reader = null;
+            }
             ObjectsInGraph = null;
             forwardReferenceDefinitions = null;
             unInitializedForwardReferences = null;

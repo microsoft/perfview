@@ -2760,6 +2760,12 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
             }
 
+            // Antimalware events do heavy sharing of templates.
+            if (GetType().Name == "MicrosoftAntimalwareEngineTraceEventParser" || GetType().Name == "MicrosoftAntimalwareAMFilterTraceEventParser")
+            {
+                return;
+            }
+
             // Use reflection to see what events have declared 
             MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)

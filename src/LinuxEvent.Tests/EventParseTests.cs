@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
+using System.Linq.Expressions;
 
 namespace LinuxTracing.Tests
 {
@@ -27,6 +28,10 @@ namespace LinuxTracing.Tests
                 }
 
                 Assert.Equal(-1, (int)stackIndex);
+
+                var linuxsample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i);
+                Assert.NotNull(linuxsample);
+                Assert.NotEqual(StackSourceSampleIndex.Invalid, linuxsample.SampleIndex);
             }
         }
 
@@ -89,7 +94,7 @@ namespace LinuxTracing.Tests
         {
             string path = Constants.GetTestingPerfDumpPath("onegeneric");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>> {
-                new List<string>{ "module!symbol", "Thread (0)", "comm", null }
+                new List<string>{ "module!symbol", "Thread (0)", "Process comm (0)", null }
             });
         }
 
@@ -99,7 +104,7 @@ namespace LinuxTracing.Tests
         {
             string path = Constants.GetTestingPerfDumpPath("onegeneric");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>> {
-                new List<string>{ "module!symbol", "Thread (0)", "comm", null }
+                new List<string>{ "module!symbol", "Thread (0)", "Process comm (0)", null }
             });
         }
 
@@ -122,8 +127,8 @@ namespace LinuxTracing.Tests
             string path = Constants.GetTestingPerfDumpPath("two_small_generic");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
             {
-                new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "comm" },
-                new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (0)", "comm2" }
+                new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "Process comm (0)" },
+                new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (1)", "Process comm2 (1)" }
             });
         }
 
@@ -133,7 +138,7 @@ namespace LinuxTracing.Tests
             string path = Constants.GetTestingPerfDumpPath("ms_stack");
             DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
             {
-                new List<string> { "module!symbol(param[])", "Thread (0)", "comm" },
+                new List<string> { "module!symbol(param[])", "Thread (0)", "Process comm (0)" },
             });
         }
 
@@ -143,8 +148,8 @@ namespace LinuxTracing.Tests
             string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
             DoStackTraceTest(path, doBlockedTime: true, callerStacks: new List<List<string>>
             {
-                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1"},
-                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2"},
+                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "Process comm1 (0)"},
+                new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "Process comm2 (1)"},
             });
         }
 
@@ -155,8 +160,8 @@ namespace LinuxTracing.Tests
             DoStackTraceTest(path, doBlockedTime: false,
                 callerStacks: new List<List<string>>
                 {
-                    new List<string> { "Thread (0)", "comm" },
-                    new List<string> { "module!symbol", "Thread (0)", "comm" },
+                    new List<string> { "Thread (0)", "Process comm (0)" },
+                    new List<string> { "module!symbol", "Thread (0)", "Process comm (0)" },
                 });
         }
 
@@ -195,7 +200,7 @@ namespace LinuxTracing.Tests
         }
 
         [Fact]
-        public void SchedHeader()
+        public void SchedHeaderFormat1()
         {
             string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
             HeaderTest(path, blockedTime: true,
@@ -207,6 +212,27 @@ namespace LinuxTracing.Tests
                 timeProperties: new int[] { 1, 1 },
                 events: new string[] { "sched", "sched" },
                 eventProperties: new string[] { "sched_switch: prev_comm=comm1 prev_pid=0 prev_prio=0 prev_state=S ==> next_comm=comm2 next_pid=1 next_prio=1", "sched_switch: prev_comm=comm2 prev_pid=1 prev_prio=0 prev_state=S ==> next_comm=comm1 next_pid=0 next_prio=1" },
+                eventKinds: new EventKind[] { EventKind.Scheduler, EventKind.Scheduler },
+                switches: new ScheduleSwitch[]
+                {
+                    new ScheduleSwitch("comm1", 0, 0, 'S', "comm2", 1, 1),
+                    new ScheduleSwitch("comm2", 1, 0, 'S', "comm1", 0, 1)
+                });
+        }
+
+        [Fact]
+        public void SchedHeaderFormat2()
+        {
+            string path = Constants.GetTestingPerfDumpPath("one_complete_switch_format2");
+            HeaderTest(path, blockedTime: true,
+                commands: new string[] { "comm1", "comm2" },
+                pids: new int[] { 0, 1 },
+                tids: new int[] { 0, 1 },
+                cpus: new int[] { 0, 1 },
+                times: new double[] { 0.0, 1000.0 },
+                timeProperties: new int[] { 1, 1 },
+                events: new string[] { "sched", "sched" },
+                eventProperties: new string[] { "sched_switch: comm1:0 [0] S ==> comm2:1 [1]", "sched_switch: comm2:1 [0] S ==> comm1:0 [1]" },
                 eventKinds: new EventKind[] { EventKind.Scheduler, EventKind.Scheduler },
                 switches: new ScheduleSwitch[]
                 {

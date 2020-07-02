@@ -65,7 +65,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard1.6'">
-    <DefineConstants>$(DefineConstants);AUTOANALYSIS_EXTENSIBILITY</DefineConstants>
+    <DefineConstants>$(DefineConstants);AUTOANALYSIS_EXTENSIBILITY;SYNC_SYMBOLREADER_LOG</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -74,7 +74,7 @@
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
 
   <!-- *** SourceLink Support *** -->
-  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
+  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

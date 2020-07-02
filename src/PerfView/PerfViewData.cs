@@ -15,6 +15,8 @@ using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
 using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareAMFilter;
+using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareEngine;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Utilities;
@@ -724,7 +726,7 @@ namespace PerfView
 
         protected internal virtual void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow) { }
         /// <summary>
-        /// Allows you to do a firt action after everything is done.  
+        /// Allows you to do a first action after everything is done.  
         /// </summary>
         protected internal virtual void FirstAction(StackWindow stackWindow) { }
         protected internal virtual StackSource OpenStackSourceImpl(
@@ -735,7 +737,6 @@ namespace PerfView
         /// <summary>
         /// Simplified form, you should implement one overload or the other.  
         /// </summary>
-        /// <returns></returns>
         protected internal virtual StackSource OpenStackSourceImpl(TextWriter log) { return null; }
         protected internal virtual EventSource OpenEventSourceImpl(TextWriter log) { return null; }
 
@@ -5098,6 +5099,29 @@ table {
                 eventSource.Kernel.AddCallbackForEvents<ObjectDuplicateHandleTraceData>(data => onHandleEvent(data.ObjectTypeName, data.Object, data.TargetHandle, data.TargetProcessID, data));
                 eventSource.Process();
             }
+            else if (streamName.StartsWith("Processor"))
+            {
+                eventSource.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
+                {
+                    StackSourceCallStackIndex stackIndex;
+                    var callStackIdx = data.CallStackIndex();
+                    if (callStackIdx == CallStackIndex.Invalid)
+                    {
+                        return;
+                    }
+
+                    stackIndex = stackSource.GetCallStack(callStackIdx, data);
+
+                    var processorPriority = "Processor (" + data.ProcessorNumber + ") Priority (" + data.Priority + ")";
+                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = 1;
+                    stackSource.AddSample(sample);
+                };
+                eventSource.Process();
+            }
             else if (streamName.StartsWith("Any"))
             {
                 ActivityComputer activityComputer = null;
@@ -5834,7 +5858,7 @@ table {
                     sample.Metric = data.AllocSize;
                     sample.StackIndex = stackSource.GetCallStack(callStackIndex, data);
 
-                    // Add the 'Alloc < XXX' psuedo node. 
+                    // Add the 'Alloc < XXX' pseudo node. 
                     var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
                     sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
 
@@ -6021,6 +6045,13 @@ table {
                     Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.SetMutableTraceEventStackSource(proc, stackSource);
                 });
                 eventSource.Process();
+                return stackSource;
+            }
+            else if(streamName == "Anti-Malware Real-Time Scan")
+            {
+                RealtimeAntimalwareComputer computer = new RealtimeAntimalwareComputer(eventSource, stackSource);
+                computer.Execute();
+
                 return stackSource;
             }
             else
@@ -6671,6 +6702,12 @@ table {
                 }
             }
 
+            if (stackSourceName.StartsWith("Processor"))
+            {
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Priority ($2)");
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Processor ($1)");
+            }
+
             if (stackSourceName == "Net OS Heap Alloc" || stackSourceName == "Image Load" || stackSourceName == "Disk I/O" ||
                 stackSourceName == "File I/O" || stackSourceName == "Exceptions" || stackSourceName == "Managed Load" || stackSourceName.StartsWith("Process")
                 || stackSourceName.StartsWith("Virtual") || stackSourceName == "Pinning" || stackSourceName.Contains("Thread Time"))
@@ -6883,6 +6920,7 @@ table {
             bool hasObjectUpdate = false;
             bool hasGCEvents = false;
             bool hasProjectNExecutionTracingEvents = false;
+            bool hasDefenderEvents = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -6936,6 +6974,11 @@ table {
                 if (counts.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                 {
                     hasTpl = true;
+                }
+
+                if (counts.ProviderGuid == MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid)
+                {
+                    hasDefenderEvents = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -7048,6 +7091,7 @@ table {
                 {
                     advanced.Children.Add(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
                 }
+                advanced.Children.Add(new PerfViewStackSource(this, "Processor"));
             }
 
             if (hasCSwitchStacks)
@@ -7224,6 +7268,11 @@ table {
                 advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
 
+            if(hasDefenderEvents)
+            {
+                advanced.Children.Add(new PerfViewStackSource(this, "Anti-Malware Real-Time Scan"));
+            }
+
             memory.Children.Add(new PerfViewGCStats(this));
 
             // TODO currently this is experimental enough that we don't show it publicly.  
@@ -7258,7 +7307,7 @@ table {
                 m_Children.Add(obsolete);
             }
 
-            if(AppLog.InternalUser && 0 < experimental.Children.Count)
+            if (AppLog.InternalUser && 0 < experimental.Children.Count)
             {
                 m_Children.Add(experimental);
             }
@@ -8317,30 +8366,14 @@ table {
         {
             "CPU",
             "CPU (with Optimization Tiers)",
-            "Thread Time (experimental)"
+            "Thread Time"
         };
 
-        public override string FormatName { get { return "LTTng"; } }
+        public override string FormatName { get { return "Perf"; } }
 
-        public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".trace.zip", "perf.data.txt" }; } }
 
         public override bool SupportsProcesses => true;
-
-        internal override string GetProcessIncPat(IProcess process) => process.Name;
-
-        internal override string FindExeName(string incPat) => string.IsNullOrEmpty(incPat) ? incPat : incPat.Split('|').FirstOrDefault();
-
-        internal override bool GetProcessForStackSourceFromTopCallStackFrame(string topCallStackStr, out IProcessForStackSource result)
-        {
-            if (!string.IsNullOrEmpty(topCallStackStr))
-            {
-                // the top call stack is always process name, the process ID is missing as of today (a perf_events limitation)
-                result = new IProcessForStackSource(topCallStackStr);
-                return true;
-            }
-            result = null;
-            return false;
-        }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
@@ -8354,7 +8387,7 @@ table {
                 string xmlPath;
                 bool doThreadTime = false;
 
-                if (streamName == "Thread Time (experimental)")
+                if (streamName == "Thread Time")
                 {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.threadtime.xml.zip");
                     doThreadTime = true;
@@ -8364,10 +8397,12 @@ table {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.cpu.xml.zip");
                 }
 
+#if !DEBUG
                 if (!CacheFiles.UpToDate(xmlPath, FilePath))
+#endif
                 {
                     XmlStackSourceWriter.WriteStackViewAsZippedXml(
-                        new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
+                        new LinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
                 bool showOptimizationTiers =
@@ -8403,6 +8438,7 @@ table {
             m_Children = new List<PerfViewTreeItem>();
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
+            var experimental = new PerfViewTreeGroup("Experimental Group");
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
 
@@ -8414,10 +8450,7 @@ table {
                 advanced.AddChild(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
             }
 
-            if (AppLog.InternalUser)
-            {
-                advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
-            }
+            experimental.AddChild(new PerfViewStackSource(this, "Thread Time"));
 
             if (m_traceLog != null)
             {
@@ -8443,6 +8476,11 @@ table {
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
+            }
+
+            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            {
+                m_Children.Add(experimental);
             }
 
             return null;
