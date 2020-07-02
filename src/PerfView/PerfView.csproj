@@ -73,7 +73,7 @@
   <ItemGroup>
     <AutomatedAnalysisRules Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
   </ItemGroup>
-  <Target Name="CopyRulesToTarget" AfterTargets="CoreCompile">
+  <Target Name="CopyRulesToTarget" AfterTargets="Build">
     <Copy SourceFiles="@(AutomatedAnalysisRules)" DestinationFolder="$(TargetDir)Rules" />
   </Target>
 
