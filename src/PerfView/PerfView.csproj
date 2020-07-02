@@ -71,7 +71,7 @@
 
   <!-- Copy AutomatedAnalysis rules to the target directory. -->
   <ItemGroup>
-    <AutomatedAnalysisRules Include="$(TraceEventAutomatedAnalysisRulesBase)netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
+    <AutomatedAnalysisRules Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
   </ItemGroup>
   <Target Name="CopyRulesToTarget" AfterTargets="CoreCompile">
     <Copy SourceFiles="@(AutomatedAnalysisRules)" DestinationFolder="$(TargetDir)Rules" />
@@ -185,7 +185,7 @@
       <Link>amd64\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisRulesBase)netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll">
+    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</LogicalName>
