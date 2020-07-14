@@ -369,6 +369,10 @@ namespace PerfView
             {
                 parsedArgs.DataFile = parsedArgs.DataFile.Substring(0, parsedArgs.DataFile.Length - 4);
             }
+            else if(!parsedArgs.DataFile.EndsWith(".etl"))
+            {
+                parsedArgs.DataFile = parsedArgs.DataFile + ".etl";
+            }
 
             // Don't clobber the results file if we were told not to.  
             if (parsedArgs.CollectMultiple > 1)
