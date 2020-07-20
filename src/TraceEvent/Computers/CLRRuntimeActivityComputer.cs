@@ -25,7 +25,6 @@ namespace Microsoft.Diagnostics.Tracing
         public TraceLogEventSource EventSource;
     }
 
-
     public class CLRRuntimeActivityComputer
     {
         public struct EventUID : IComparable<EventUID>, IEquatable<EventUID>
@@ -126,8 +125,47 @@ namespace Microsoft.Diagnostics.Tracing
             public int Offset;
 
             public StartStopThreadEventData[] Data;
-            public StartStopThreadEventData[] SplitUpData;
-            public double[] SplitUpDataStarts;
+
+            public static IEnumerable<StartStopThreadEventData> FilterData(string[] filters, IEnumerable<StartStopThreadEventData> inputStream)
+            {
+                foreach (var input in inputStream)
+                {
+                    foreach (var filter in filters)
+                    {
+                        if (input.Name.StartsWith(filter))
+                            yield return input;
+                    }
+                }
+            }
+
+            public static IEnumerable<StartStopThreadEventData> Stackify(IEnumerable<StartStopThreadEventData> inputStream)
+            {
+                Stack<StartStopThreadEventData> currentPerThreadProcessingState = new Stack<StartStopThreadEventData>();
+                foreach (var startStopIn in inputStream)
+                {
+                    var startStop = startStopIn;
+                    if (currentPerThreadProcessingState.Count > 0)
+                    {
+                        while ((currentPerThreadProcessingState.Count > 0) && (currentPerThreadProcessingState.Peek().End.CompareTo(startStop.Start) < 0))
+                        {
+                            // Current stack top event finished before this event happened.
+                            var poppedEvent = currentPerThreadProcessingState.Pop();
+                            EventUID lastEventProcessedEnd = poppedEvent.End;
+                            if (currentPerThreadProcessingState.Count > 0)
+                            {
+                                var tempPoppedEvent = currentPerThreadProcessingState.Pop();
+                                tempPoppedEvent.Start = lastEventProcessedEnd;
+                                yield return tempPoppedEvent;
+                                currentPerThreadProcessingState.Push(tempPoppedEvent);
+                            }
+                        }
+                    }
+
+                    startStop.StackDepth = currentPerThreadProcessingState.Count;
+                    yield return startStop;
+                    currentPerThreadProcessingState.Push(startStop);
+                }
+            }
         }
 
         RuntimeLoaderStats _startStopData = new RuntimeLoaderStats();
@@ -174,44 +212,6 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 _startStopData.Add(entry.Key, perThread);
             }
-
-            foreach (var entry in _startStopData)
-            {
-                List<StartStopThreadEventData> splitUpStartStopData = new List<StartStopThreadEventData>();
-
-                Stack<StartStopThreadEventData> currentPerThreadProcessingState = new Stack<StartStopThreadEventData>();
-                for (int i = 0; i < entry.Value.Data.Length; i++)
-                {
-                    var startStop = entry.Value.Data[i];
-
-                    if (currentPerThreadProcessingState.Count > 0)
-                    {
-                        while ((currentPerThreadProcessingState.Count > 0) && (currentPerThreadProcessingState.Peek().End.CompareTo(startStop.Start) < 0))
-                        {
-                            // Current stack top event finished before this event happened.
-                            var poppedEvent = currentPerThreadProcessingState.Pop();
-                            EventUID lastEventProcessedEnd = poppedEvent.End;
-                            if (currentPerThreadProcessingState.Count > 0)
-                            {
-                                var tempPoppedEvent = currentPerThreadProcessingState.Pop();
-                                tempPoppedEvent.Start = lastEventProcessedEnd;
-                                splitUpStartStopData.Add(tempPoppedEvent);
-                                currentPerThreadProcessingState.Push(tempPoppedEvent);
-                            }
-                        }
-                    }
-
-                    startStop.StackDepth = currentPerThreadProcessingState.Count;
-                    splitUpStartStopData.Add(startStop);
-                    currentPerThreadProcessingState.Push(startStop);
-                }
-                entry.Value.SplitUpData = splitUpStartStopData.ToArray();
-                entry.Value.SplitUpDataStarts = new double[entry.Value.SplitUpData.Length];
-                for (int i = 0; i < entry.Value.SplitUpDataStarts.Length; i++)
-                {
-                    entry.Value.SplitUpDataStarts[i] = entry.Value.SplitUpData[i].Start.Time;
-                }
-            }
         }
 
         private void AddStartStopData(int threadId, EventUID start, EventUID end, string name)
@@ -227,7 +227,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // Since we don't have start stop data, simply treat the assembly load event as a point in time so that it is visible in the textual load view
             EventUID eventTime = new EventUID(obj);
-            AddStartStopData(obj.ThreadID, eventTime, eventTime, $"ASMLOAD({obj.FullyQualifiedAssemblyName},{obj.AssemblyID})");
+            AddStartStopData(obj.ThreadID, eventTime, eventTime, $"AssemblyLoad({obj.FullyQualifiedAssemblyName},{obj.AssemblyID})");
         }
 
         private void Clr_MethodLoad(MethodLoadUnloadTraceData obj)

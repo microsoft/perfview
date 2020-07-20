@@ -1061,6 +1061,11 @@ namespace PerfView
             return DoCommand(command, worker);
         }
 
+        protected virtual string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
+        {
+            return DoCommand(commandUri.LocalPath, worker, out continuation);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter)
         {
             if (Viewer == null)
@@ -1087,7 +1092,7 @@ namespace PerfView
                                 Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                                 {
                                     Action continuation;
-                                    var message = DoCommand(e.Uri.LocalPath, Viewer.StatusBar, out continuation);
+                                    var message = DoCommand(e.Uri, Viewer.StatusBar, out continuation);
                                     Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
@@ -3534,22 +3539,52 @@ table {
     public class PerfViewRuntimeLoaderStats : PerfViewHtmlReport
     {
         public PerfViewRuntimeLoaderStats(PerfViewFile dataFile) : base(dataFile, "Runtime Loader") { }
-        protected override string DoCommand(string command, StatusBar worker)
+        protected override string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
         {
+            continuation = null;
+
+            string command = commandUri.LocalPath;
             string textStr = "txt/";
 
             if (command.StartsWith(textStr))
             {
                 var rest = command.Substring(textStr.Length);
+
+
+                bool tree = true;
+                List<string> filters = null;
+                if (!String.IsNullOrEmpty(commandUri.Query))
+                {
+                    filters = new List<string>();
+                    tree = commandUri.Query.Contains("TreeView");
+                    if (commandUri.Query.Contains("JIT"))
+                        filters.Add("JIT");
+                    if (commandUri.Query.Contains("R2R_Found"))
+                        filters.Add("R2R_Found");
+                    if (commandUri.Query.Contains("R2R_Failed"))
+                        filters.Add("R2R_Failed");
+                    if (commandUri.Query.Contains("TypeLoad"))
+                        filters.Add("TypeLoad");
+                    if (commandUri.Query.Contains("AssemblyLoad"))
+                        filters.Add("AssemblyLoad");
+                }
+                string identifier = $"{(tree?"Tree":"Flat")}_";
+                if (filters != null)
+                {
+                    foreach (var filter in filters)
+                    {
+                        identifier = identifier + "_" + filter;
+                    }
+                }
                 var processId = int.Parse(rest);
                 if (m_interestingProcesses.ContainsKey(processId))
                 {
                     var proc = m_interestingEtlxProcesses[processId];
-                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + ".txt");
+                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + identifier + ".txt");
                     if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
-                        Stats.RuntimeLoaderStats.ToTxt(txtFile, proc, m_PerThreadData);
+                        Stats.RuntimeLoaderStats.ToTxt(txtFile, proc, m_PerThreadData, filters.ToArray(), tree);
                     }
                     Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -7362,12 +7397,6 @@ table {
 
             advanced.Children.Add(new PerfViewJitStats(this));
             advanced.Children.Add(new PerfViewRuntimeLoaderStats(this));
-
-            if (hasCPUStacks)
-            {
-                advanced.Children.Add(new PerfViewStackSource(this, "Runtime Loader (CPU Time)"));
-            }
-
             advanced.Children.Add(new PerfViewEventStats(this));
 
             m_Children.Add(new PerfViewEventSource(this));

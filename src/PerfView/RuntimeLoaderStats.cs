@@ -50,7 +50,23 @@ namespace Stats
                 writer.WriteLine("<LI>Raw data:");
                 writer.WriteLine("<UL>");
                 {
-                    writer.WriteLine("<LI>Individual Runtime Operation Events <A HREF=\"command:txt/{0}\">Txt</A></LI>", stats.ProcessID);
+                    writer.WriteLine($@"
+                    <form action=""command:txt/{stats.ProcessID}"">
+                      <input type=""checkbox"" checked=""yes"" id=""TreeView"" name=""TreeView"" value=""true"">
+                      <label for=""TreeView"">Show data as a tree</label>
+                      <input type=""checkbox"" checked=""yes"" id=""JIT"" name=""JIT"" value=""true"">
+                      <label for=""JIT"">Show JIT data</label>
+                      <input type=""checkbox"" checked=""yes"" id=""R2R_Found"" name=""R2R_Found"" value=""true"">
+                      <label for=""R2R_Found"">Show R2R found data</label>
+                      <input type=""checkbox"" id=""R2R_Failed"" name=""R2R_Failed"" value=""true"">
+                      <label for=""R2R_Failed"">Show R2R not found data</label>
+                      <input type=""checkbox"" checked=""yes"" id=""TypeLoad"" name=""TypeLoad"" value=""true"">
+                      <label for=""TypeLoad"">Show TypeLoad data</label>
+                      <input type=""checkbox"" checked=""yes"" id=""AssemblyLoad"" name=""AssemblyLoad"" value=""true"">
+                      <label for=""AssemblyLoad"">Show AssemblyLoad data</label>
+                      <input type=""submit"" value=""Submit"">
+                    </form>
+                    ");
                 }
                 writer.WriteLine("</UL>");
                 writer.WriteLine("</LI>");
@@ -58,7 +74,7 @@ namespace Stats
             writer.WriteLine("</UL>");
         }
 
-        public static void ToTxt(string filePath, TraceProcess process, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps)
+        public static void ToTxt(string filePath, TraceProcess process, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps, string[] filters, bool tree)
         {
             using (var writer = File.CreateText(filePath))
             {
@@ -76,18 +92,28 @@ namespace Stats
 
                         HashSet<EventIndex> seenEvents = new HashSet<EventIndex>();
 
-                        for (int i = 0; i < runtimeOps[threadId].SplitUpData.Length; i++)
+                        IEnumerable<CLRRuntimeActivityComputer.StartStopThreadEventData> dataToProcess = runtimeOps[threadId].Data;
+
+                        if (filters != null)
+                            dataToProcess = CLRRuntimeActivityComputer.PerThreadStartStopData.FilterData(filters, dataToProcess);
+
+                        if (tree)
+                            dataToProcess = CLRRuntimeActivityComputer.PerThreadStartStopData.Stackify(dataToProcess);
+
+                        var perThreadData = new List<CLRRuntimeActivityComputer.StartStopThreadEventData>(dataToProcess);
+
+                        for (int i = 0; i < perThreadData.Count; i++)
                         {
-                            var eventData = runtimeOps[threadId].SplitUpData[i];
+                            var eventData = perThreadData[i];
                             double startTime = eventData.Start.Time;
                             double endTime = eventData.End.Time;
                             double inclusiveTime = endTime - startTime;
                             double exclusiveTime = inclusiveTime;
                             string inclusiveTimeStr = inclusiveTime.ToString("F3");
 
-                            if (runtimeOps[threadId].SplitUpData.Length > (i + 1))
+                            if (perThreadData.Count > (i + 1))
                             {
-                                double startOfNextItem = runtimeOps[threadId].SplitUpData[i + 1].Start.Time;
+                                double startOfNextItem = perThreadData[i + 1].Start.Time;
                                 if (startOfNextItem < endTime)
                                 {
                                     exclusiveTime = startOfNextItem - startTime;
@@ -138,7 +164,7 @@ namespace Stats
                 double lastThreadTimeSeen = double.MinValue;
                 if (runtimeOps.ContainsKey(threadId))
                 {
-                    foreach (var eventData in runtimeOps[threadId].SplitUpData)
+                    foreach (var eventData in runtimeOps[threadId].Data)
                     {
                         if (lastThreadTimeSeen >= eventData.End.Time)
                             continue;
