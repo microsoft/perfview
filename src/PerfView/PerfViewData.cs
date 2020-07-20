@@ -3564,9 +3564,7 @@ table {
             using (var source = dataFile.Events.GetSource())
             {
                 CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
-                var stackSource = new MutableTraceEventStackSource(source.TraceLog);
-                StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(stackSource, null, true, source, runtimeLoaderComputer.StartStopEvents);
-                m_PerThreadData = mingledComputer.StartStopData;
+                m_PerThreadData = runtimeLoaderComputer.StartStopData;
                 m_interestingProcesses = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
 
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
@@ -4370,10 +4368,6 @@ table {
             else if (streamName == "Thread Time")
             {
                 return eventLog.ThreadTimeStacks();
-            }
-            else if (streamName == "Runtime Loader (CPU Time)")
-            {
-                return eventLog.RuntimeLoaderStacks();
             }
             else if (streamName == "Processes / Files / Registry")
             {

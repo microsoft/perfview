@@ -20,8 +20,76 @@ using StartStopKey = System.Guid;   // The start-stop key is unique in the trace
 
 namespace Microsoft.Diagnostics.Tracing
 {
+    public class RuntimeLoaderStats : Dictionary<int, CLRRuntimeActivityComputer.PerThreadStartStopData>
+    {
+        public TraceLogEventSource EventSource;
+    }
+
+
     public class CLRRuntimeActivityComputer
     {
+        public struct EventUID : IComparable<EventUID>, IEquatable<EventUID>
+        {
+            public EventUID(TraceEvent evt) : this(evt.EventIndex, evt.TimeStampRelativeMSec) { }
+
+            public EventUID(EventIndex eventId, double time)
+            {
+                EventId = eventId;
+                Time = time;
+            }
+
+            public readonly EventIndex EventId;
+            public readonly double Time;
+
+            public int CompareTo(EventUID other)
+            {
+                int timeCompare = Time.CompareTo(other.Time);
+                if (timeCompare != 0)
+                    return timeCompare;
+
+                return EventId.CompareTo(other.EventId);
+            }
+
+            public override int GetHashCode()
+            {
+                return (int)EventId;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is EventUID))
+                    return false;
+                return this.CompareTo((EventUID)obj) == 0;
+            }
+
+            public bool Equals(EventUID other)
+            {
+                return this.CompareTo(other) == 0;
+            }
+        }
+
+        public struct StartStopThreadEventData : IComparable<StartStopThreadEventData>
+        {
+            public StartStopThreadEventData(EventUID start, EventUID end, string name)
+            {
+                Start = start;
+                End = end;
+                Name = name;
+                StackDepth = 0;
+            }
+
+            public EventUID Start;
+            public EventUID End;
+            public int StackDepth;
+            public string Name;
+
+            int IComparable<StartStopThreadEventData>.CompareTo(StartStopThreadEventData other)
+            {
+                return Start.CompareTo(other.Start);
+            }
+        }
+
+
         struct IdOfIncompleteAction : IEquatable<IdOfIncompleteAction>
         {
             public long Identifier;
@@ -48,19 +116,32 @@ namespace Microsoft.Diagnostics.Tracing
 
         struct IncompleteActionDesc
         {
-            public StartStopStackMingledComputer.EventUID Start;
+            public EventUID Start;
             public string OperationType;
             public string Name;
         }
+
+        public class PerThreadStartStopData
+        {
+            public int Offset;
+
+            public StartStopThreadEventData[] Data;
+            public StartStopThreadEventData[] SplitUpData;
+            public double[] SplitUpDataStarts;
+        }
+
+        RuntimeLoaderStats _startStopData = new RuntimeLoaderStats();
+        public RuntimeLoaderStats StartStopData => _startStopData;
 
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteJitEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteR2REvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteTypeLoadEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
 
-        public Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>> StartStopEvents { get; } = new Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>>();
+        public Dictionary<int, List<StartStopThreadEventData>> StartStopEvents { get; } = new Dictionary<int, List<StartStopThreadEventData>>();
 
         public CLRRuntimeActivityComputer(TraceLogEventSource source)
         {
+            _startStopData.EventSource = source;
             source.Clr.MethodJittingStarted += Clr_MethodJittingStarted;
             source.Clr.MethodR2RGetEntryPoint += Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose += Clr_MethodLoadVerbose;
@@ -78,21 +159,74 @@ namespace Microsoft.Diagnostics.Tracing
             source.Clr.LoaderAssemblyLoad -= Clr_LoaderAssemblyLoad;
             source.Clr.TypeLoadStart -= Clr_TypeLoadStart;
             source.Clr.TypeLoadStop -= Clr_TypeLoadStop;
+
+            HashSet<EventUID> interestingEvents = new HashSet<EventUID>();
+            foreach (var entry in StartStopEvents)
+            {
+                StartStopThreadEventData[] data = entry.Value.ToArray();
+                Array.Sort(data);
+                PerThreadStartStopData perThread = new PerThreadStartStopData();
+                perThread.Data = data;
+                for (int i = 0; i < data.Length; i++)
+                {
+                    interestingEvents.Add(data[i].Start);
+                    interestingEvents.Add(data[i].End);
+                }
+                _startStopData.Add(entry.Key, perThread);
+            }
+
+            foreach (var entry in _startStopData)
+            {
+                List<StartStopThreadEventData> splitUpStartStopData = new List<StartStopThreadEventData>();
+
+                Stack<StartStopThreadEventData> currentPerThreadProcessingState = new Stack<StartStopThreadEventData>();
+                for (int i = 0; i < entry.Value.Data.Length; i++)
+                {
+                    var startStop = entry.Value.Data[i];
+
+                    if (currentPerThreadProcessingState.Count > 0)
+                    {
+                        while ((currentPerThreadProcessingState.Count > 0) && (currentPerThreadProcessingState.Peek().End.CompareTo(startStop.Start) < 0))
+                        {
+                            // Current stack top event finished before this event happened.
+                            var poppedEvent = currentPerThreadProcessingState.Pop();
+                            EventUID lastEventProcessedEnd = poppedEvent.End;
+                            if (currentPerThreadProcessingState.Count > 0)
+                            {
+                                var tempPoppedEvent = currentPerThreadProcessingState.Pop();
+                                tempPoppedEvent.Start = lastEventProcessedEnd;
+                                splitUpStartStopData.Add(tempPoppedEvent);
+                                currentPerThreadProcessingState.Push(tempPoppedEvent);
+                            }
+                        }
+                    }
+
+                    startStop.StackDepth = currentPerThreadProcessingState.Count;
+                    splitUpStartStopData.Add(startStop);
+                    currentPerThreadProcessingState.Push(startStop);
+                }
+                entry.Value.SplitUpData = splitUpStartStopData.ToArray();
+                entry.Value.SplitUpDataStarts = new double[entry.Value.SplitUpData.Length];
+                for (int i = 0; i < entry.Value.SplitUpDataStarts.Length; i++)
+                {
+                    entry.Value.SplitUpDataStarts[i] = entry.Value.SplitUpData[i].Start.Time;
+                }
+            }
         }
 
-        private void AddStartStopData(int threadId, StartStopStackMingledComputer.EventUID start, StartStopStackMingledComputer.EventUID end, string name)
+        private void AddStartStopData(int threadId, EventUID start, EventUID end, string name)
         {
             if (!StartStopEvents.ContainsKey(threadId))
-                StartStopEvents[threadId] = new List<StartStopStackMingledComputer.StartStopThreadEventData>();
+                StartStopEvents[threadId] = new List<StartStopThreadEventData>();
 
-            List<StartStopStackMingledComputer.StartStopThreadEventData> startStopData = StartStopEvents[threadId];
-            startStopData.Add(new StartStopStackMingledComputer.StartStopThreadEventData(start, end, name));
+            List<StartStopThreadEventData> startStopData = StartStopEvents[threadId];
+            startStopData.Add(new StartStopThreadEventData(start, end, name));
         }
 
         private void Clr_LoaderAssemblyLoad(AssemblyLoadUnloadTraceData obj)
         {
             // Since we don't have start stop data, simply treat the assembly load event as a point in time so that it is visible in the textual load view
-            StartStopStackMingledComputer.EventUID eventTime = new StartStopStackMingledComputer.EventUID(obj);
+            EventUID eventTime = new EventUID(obj);
             AddStartStopData(obj.ThreadID, eventTime, eventTime, $"ASMLOAD({obj.FullyQualifiedAssemblyName},{obj.AssemblyID})");
         }
 
@@ -116,14 +250,14 @@ namespace Microsoft.Diagnostics.Tracing
                 // JitStart is processed, don't process it again.
                 _incompleteJitEvents.Remove(id);
 
-                AddStartStopData(id.ThreadID, jitStartData.Start, new StartStopStackMingledComputer.EventUID(evt), jitStartData.OperationType + "(" + jitStartData.Name + ")");
+                AddStartStopData(id.ThreadID, jitStartData.Start, new EventUID(evt), jitStartData.OperationType + "(" + jitStartData.Name + ")");
             }
         }
 
         private void Clr_MethodJittingStarted(MethodJittingStartedTraceData obj)
         {
             IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
-            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
+            incompleteDesc.Start = new EventUID(obj);
             incompleteDesc.Name = JITStats.GetMethodName(obj);
             incompleteDesc.OperationType = "JIT";
 
@@ -137,7 +271,7 @@ namespace Microsoft.Diagnostics.Tracing
         private void Clr_R2RGetEntryPointStarted(R2RGetEntryPointStartedTraceData obj)
         {
             IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
-            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
+            incompleteDesc.Start = new EventUID(obj);
             incompleteDesc.Name = "";
             incompleteDesc.OperationType = "R2R";
 
@@ -156,7 +290,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // If we had a R2R start lookup event, capture that start time, otherwise, use the R2REntrypoint
             // data as both start and stop
-            StartStopStackMingledComputer.EventUID startUID = new StartStopStackMingledComputer.EventUID(obj);
+            EventUID startUID = new EventUID(obj);
             if (_incompleteR2REvents.TryGetValue(id, out IncompleteActionDesc r2rStartData))
             {
                 startUID = r2rStartData.Start;
@@ -166,18 +300,18 @@ namespace Microsoft.Diagnostics.Tracing
             if (obj.EntryPoint == 0)
             {
                 // If Entrypoint is null then the search failed.
-                AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), "R2R_Failed" + "(" + JITStats.GetMethodName(obj) + ")");
+                AddStartStopData(id.ThreadID, startUID, new EventUID(obj), "R2R_Failed" + "(" + JITStats.GetMethodName(obj) + ")");
             }
             else
             {
-                AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), "R2R_Found" + "(" + JITStats.GetMethodName(obj) + ")");
+                AddStartStopData(id.ThreadID, startUID, new EventUID(obj), "R2R_Found" + "(" + JITStats.GetMethodName(obj) + ")");
             }
         }
 
         private void Clr_TypeLoadStart(TypeLoadStartTraceData obj)
         {
             IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
-            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
+            incompleteDesc.Start = new EventUID(obj);
             incompleteDesc.Name = "";
             incompleteDesc.OperationType = "TypeLoad";
 
@@ -196,14 +330,14 @@ namespace Microsoft.Diagnostics.Tracing
 
             // If we had a TypeLoad start lookup event, capture that start time, otherwise, use the TypeLoadStop
             // data as both start and stop
-            StartStopStackMingledComputer.EventUID startUID = new StartStopStackMingledComputer.EventUID(obj);
+            EventUID startUID = new EventUID(obj);
             if (_incompleteTypeLoadEvents.TryGetValue(id, out IncompleteActionDesc typeLoadStartData))
             {
                 startUID = typeLoadStartData.Start;
                 _incompleteTypeLoadEvents.Remove(id);
             }
 
-            AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), $"TypeLoad ({obj.TypeName}, {obj.LoadLevel})");
+            AddStartStopData(id.ThreadID, startUID, new EventUID(obj), $"TypeLoad ({obj.TypeName}, {obj.LoadLevel})");
         }
     }
 }

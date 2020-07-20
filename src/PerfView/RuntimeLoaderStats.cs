@@ -99,7 +99,7 @@ namespace Stats
 
 
                             writer.Write($"{startTime.ToString("F3").PadLeft(12)}~{inclusiveTimeStr.PadLeft(9)}~{exclusiveTime.ToString("F3").PadLeft(9)}~");
-                            int stackDepth = CountStackDepth(runtimeOps, eventData) - 3;
+                            int stackDepth = eventData.StackDepth;
                             for (int iStackDepth = 0; iStackDepth < stackDepth; iStackDepth++)
                                 writer.Write(" |");
 
@@ -108,7 +108,7 @@ namespace Stats
                             else
                                 writer.Write("--");
 
-                            writer.WriteLine(runtimeOps.StackSource.GetFrameName(eventData.NameFrame, false));
+                            writer.WriteLine(eventData.Name, false);
                             seenEvents.Add(eventData.End.EventId);
                         }
                     }
@@ -150,19 +150,6 @@ namespace Stats
             }
 
             return cpuTime;
-        }
-
-        private static int CountStackDepth(Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps, StartStopStackMingledComputer.StartStopThreadEventData data)
-        {
-            var currentStack = data.OutputStacks.ReplacementStack;
-            int depthCount = 0;
-
-            for (;currentStack != StackSourceCallStackIndex.Invalid; currentStack = runtimeOps.StackSource.GetCallerIndex(currentStack))
-            {
-                depthCount++;
-            }
-
-            return depthCount;
         }
     }
 }

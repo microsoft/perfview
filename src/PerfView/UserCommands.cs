@@ -1874,38 +1874,6 @@ public static class TraceEventStackSourceExtensions
         return stackSource;
     }
 
-    public static StackSource RuntimeLoaderStacks(this TraceLog eventLog, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
-    {
-        TraceEvents events;
-        if (process == null)
-        {
-            events = eventLog.Events.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);
-        }
-        else
-        {
-            events = process.EventsInProcess.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData);
-        }
-
-        var stackSource = new MutableTraceEventStackSource(eventLog);
-        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-
-        StackSourceSample sample = new StackSourceSample(stackSource);
-        foreach (var event_ in ((IEnumerable<TraceEvent>)events))
-        {
-            sample.TimeRelativeMSec = event_.TimeStampRelativeMSec;
-            sample.StackIndex = stackSource.GetCallStack(event_.CallStackIndex(), event_);
-            stackSource.AddSample(sample);
-        };
-        stackSource.DoneAddingSamples();
-
-        CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(eventLog.Events.GetSource());
-
-        var finalStackSource = new MutableTraceEventStackSource(eventLog);
-        StartStopStackMingledComputer mingledComputer = new StartStopStackMingledComputer(finalStackSource, stackSource, false, eventLog.Events.GetSource(), runtimeLoaderComputer.StartStopEvents);
-
-        return CopyStackSource.Clone(finalStackSource);
-    }
-
     public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
