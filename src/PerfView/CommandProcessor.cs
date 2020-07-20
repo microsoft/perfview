@@ -356,6 +356,8 @@ namespace PerfView
             if (parsedArgs.RuntimeLoading)
             {
                 parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.CompilationDiagnostic;
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.MethodDiagnostic;
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.TypeDiagnostic;
             }
 
             if (profilerKeywords != 0)

@@ -3545,7 +3545,7 @@ table {
                 if (m_interestingProcesses.ContainsKey(processId))
                 {
                     var proc = m_interestingEtlxProcesses[processId];
-                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoadertats." + processId.ToString() + ".txt");
+                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + ".txt");
                     if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {

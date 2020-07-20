@@ -1874,7 +1874,7 @@ public static class TraceEventStackSourceExtensions
         return stackSource;
     }
 
-    public static StackSource RuntimeOperationsStacks(this TraceLog eventLog, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
+    public static StackSource RuntimeLoaderStacks(this TraceLog eventLog, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
     {
         TraceEvents events;
         if (process == null)

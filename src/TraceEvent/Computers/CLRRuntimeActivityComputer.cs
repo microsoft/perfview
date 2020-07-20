@@ -55,6 +55,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteJitEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteR2REvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
+        Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteTypeLoadEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
 
         public Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>> StartStopEvents { get; } = new Dictionary<int, List<StartStopStackMingledComputer.StartStopThreadEventData>>();
 
@@ -65,12 +66,18 @@ namespace Microsoft.Diagnostics.Tracing
             source.Clr.MethodLoadVerbose += Clr_MethodLoadVerbose;
             source.Clr.MethodLoad += Clr_MethodLoad;
             source.Clr.LoaderAssemblyLoad += Clr_LoaderAssemblyLoad;
+            source.Clr.MethodR2RGetEntryPointStarted += Clr_R2RGetEntryPointStarted;
+            source.Clr.TypeLoadStart += Clr_TypeLoadStart;
+            source.Clr.TypeLoadStop += Clr_TypeLoadStop;
             source.Process();
             source.Clr.MethodJittingStarted -= Clr_MethodJittingStarted;
+            source.Clr.MethodR2RGetEntryPointStarted -= Clr_R2RGetEntryPointStarted;
             source.Clr.MethodR2RGetEntryPoint -= Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose -= Clr_MethodLoadVerbose;
             source.Clr.MethodLoad -= Clr_MethodLoad;
             source.Clr.LoaderAssemblyLoad -= Clr_LoaderAssemblyLoad;
+            source.Clr.TypeLoadStart -= Clr_TypeLoadStart;
+            source.Clr.TypeLoadStop -= Clr_TypeLoadStop;
         }
 
         private void AddStartStopData(int threadId, StartStopStackMingledComputer.EventUID start, StartStopStackMingledComputer.EventUID end, string name)
@@ -127,6 +134,20 @@ namespace Microsoft.Diagnostics.Tracing
             _incompleteJitEvents[id] = incompleteDesc;
         }
 
+        private void Clr_R2RGetEntryPointStarted(R2RGetEntryPointStartedTraceData obj)
+        {
+            IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
+            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
+            incompleteDesc.Name = "";
+            incompleteDesc.OperationType = "R2R";
+
+            IdOfIncompleteAction id = new IdOfIncompleteAction();
+            id.Identifier = obj.MethodID;
+            id.ThreadID = obj.ThreadID;
+
+            _incompleteR2REvents[id] = incompleteDesc;
+        }
+
         private void Clr_MethodR2RGetEntryPoint(R2RGetEntryPointTraceData obj)
         {
             IdOfIncompleteAction id = new IdOfIncompleteAction();
@@ -139,7 +160,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (_incompleteR2REvents.TryGetValue(id, out IncompleteActionDesc r2rStartData))
             {
                 startUID = r2rStartData.Start;
-                _incompleteJitEvents.Remove(id);
+                _incompleteR2REvents.Remove(id);
             }
 
             if (obj.EntryPoint == 0)
@@ -151,6 +172,38 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), "R2R_Found" + "(" + JITStats.GetMethodName(obj) + ")");
             }
+        }
+
+        private void Clr_TypeLoadStart(TypeLoadStartTraceData obj)
+        {
+            IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
+            incompleteDesc.Start = new StartStopStackMingledComputer.EventUID(obj);
+            incompleteDesc.Name = "";
+            incompleteDesc.OperationType = "TypeLoad";
+
+            IdOfIncompleteAction id = new IdOfIncompleteAction();
+            id.Identifier = obj.TypeLoadStartID;
+            id.ThreadID = obj.ThreadID;
+
+            _incompleteTypeLoadEvents[id] = incompleteDesc;
+        }
+
+        private void Clr_TypeLoadStop(TypeLoadStopTraceData obj)
+        {
+            IdOfIncompleteAction id = new IdOfIncompleteAction();
+            id.Identifier = obj.TypeLoadStartID;
+            id.ThreadID = obj.ThreadID;
+
+            // If we had a TypeLoad start lookup event, capture that start time, otherwise, use the TypeLoadStop
+            // data as both start and stop
+            StartStopStackMingledComputer.EventUID startUID = new StartStopStackMingledComputer.EventUID(obj);
+            if (_incompleteTypeLoadEvents.TryGetValue(id, out IncompleteActionDesc typeLoadStartData))
+            {
+                startUID = typeLoadStartData.Start;
+                _incompleteTypeLoadEvents.Remove(id);
+            }
+
+            AddStartStopData(id.ThreadID, startUID, new StartStopStackMingledComputer.EventUID(obj), $"TypeLoad ({obj.TypeName}, {obj.LoadLevel})");
         }
     }
 }

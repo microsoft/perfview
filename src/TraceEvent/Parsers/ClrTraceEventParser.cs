@@ -180,6 +180,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             CompilationDiagnostic = 0x2000000000,
 
             /// <summary>
+            /// Diagnostic events for capturing token information for events that express MethodID
+            /// </summary>
+            MethodDiagnostic = 0x4000000000,
+
+            /// <summary>
+            /// Diagnostic events for diagnosing issues involving the type loader.
+            /// </summary>
+            TypeDiagnostic = 0x8000000000,
+
+            /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
@@ -1515,6 +1525,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        public event Action<R2RGetEntryPointStartedTraceData> MethodR2RGetEntryPointStarted
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(R2RGetEntryPointStartedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 160, ProviderGuid);
+                source.UnregisterEventTemplate(value, 33, MethodTaskGuid);
+            }
+        }
+
         public event Action<MethodJittingStartedTraceData> MethodJittingStarted
         {
             add
@@ -1528,6 +1552,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 42, MethodTaskGuid);
             }
         }
+
+        public event Action<TypeLoadStartTraceData> TypeLoadStart
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(TypeLoadStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 73, ProviderGuid);
+                source.UnregisterEventTemplate(value, 46, LoaderTaskGuid);
+            }
+        }
+
+        public event Action<TypeLoadStopTraceData> TypeLoadStop
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new TypeLoadStopTraceData(value, 74, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 74, ProviderGuid);
+                source.UnregisterEventTemplate(value, 46, LoaderTaskGuid);
+            }
+        }
+
         public event Action<ModuleLoadUnloadTraceData> LoaderModuleDCStartV2
         {
             add
@@ -1931,12 +1984,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
 
+        static private R2RGetEntryPointStartedTraceData R2RGetEntryPointStartedTemplate(Action<R2RGetEntryPointStartedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new R2RGetEntryPointStartedTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStarted", ProviderGuid, ProviderName);
+        }
+        static private TypeLoadStartTraceData TypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TypeLoadStartTraceData(action, 73, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName);
+        }
+        static private TypeLoadStopTraceData TypeLoadStopTemplate(Action<TypeLoadStopTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TypeLoadStopTraceData(action, 74, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName);
+        }
+
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[131];
+                var templates = new TraceEvent[134];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2074,6 +2140,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[128] = TieredCompilationResumeTemplate(null);
                 templates[129] = TieredCompilationBackgroundJitStartTemplate(null);
                 templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
+
+                templates[131]  = R2RGetEntryPointStartedTemplate(null);
+                templates[132]  = TypeLoadStartTemplate(null);
+                templates[133]  = TypeLoadStopTemplate(null);
 
                 s_templates = templates;
             }
@@ -8659,6 +8729,196 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<R2RGetEntryPointTraceData> m_target;
         #endregion
     }
+
+    public sealed class R2RGetEntryPointStartedTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(8); } }
+
+        #region Private
+        internal R2RGetEntryPointStartedTraceData(Action<R2RGetEntryPointStartedTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 10));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<R2RGetEntryPointStartedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<R2RGetEntryPointStartedTraceData> m_target;
+        #endregion
+    }
+
+    public sealed class TypeLoadStartTraceData : TraceEvent
+    {
+        public int TypeLoadStartID { get { return GetInt32At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+
+        #region Private
+        internal TypeLoadStartTraceData(Action<TypeLoadStartTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<TypeLoadStartTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "TypeLoadStartID", TypeLoadStartID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "TypeLoadStartID", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return TypeLoadStartID;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<TypeLoadStartTraceData> m_target;
+        #endregion
+    }
+
+    public sealed class TypeLoadStopTraceData : TraceEvent
+    {
+        public int TypeLoadStartID { get { return GetInt32At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+        public int LoadLevel { get { return GetInt16At(6); } }
+        public long TypeID { get { return GetInt64At(8); } }
+        public string TypeName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal TypeLoadStopTraceData(Action<TypeLoadStopTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != (16 + SkipUnicodeString(16))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<TypeLoadStopTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "TypeLoadStartID", TypeLoadStartID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "LoadLevel", LoadLevel);
+            XmlAttrib(sb, "TypeID", TypeID);
+            XmlAttrib(sb, "TypeName", TypeName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "TypeLoadStartID", "ClrInstanceID", "LoadLevel", "TypeID", "TypeName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return TypeLoadStartID;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<TypeLoadStopTraceData> m_target;
+        #endregion
+    }
+
     public sealed class MethodILToNativeMapTraceData : TraceEvent
     {
         private const int ILProlog = -2;    // Returned by ILOffset to represent the prologue of the method
