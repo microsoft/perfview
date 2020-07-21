@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace Stats
@@ -91,6 +92,7 @@ namespace Stats
 
         public static void ToTxt(string filePath, TraceProcess process, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps, string[] filters, bool tree)
         {
+            bool csv = filePath.EndsWith("csv");
             using (var writer = File.CreateText(filePath))
             {
                 writer.WriteLine("\"ThreadId  \",\"Start time\",\"Inclusive\",\"Exclusive\",\"RuntimeOperation\",\"Process\"");
@@ -133,23 +135,47 @@ namespace Stats
                             if (seenEvents.Contains(eventData.End.EventId))
                                 inclusiveTimeStr = "";
 
+                            writer.Write($"{PadIfNotCsv(threadId.ToString(), 12)},{PadIfNotCsv(startTime.ToString("F3"), 12)},{PadIfNotCsv(inclusiveTimeStr, 11)},{PadIfNotCsv(exclusiveTime.ToString("F3"), 11)},");
 
-                            //                            writer.Write($"\"{threadId.ToString().PadLeft(12)}\",\"{startTime.ToString("F3").PadLeft(12)}\",\"{inclusiveTimeStr.PadLeft(9)}\",\"{exclusiveTime.ToString("F3").PadLeft(9)}\",\"");
-                            writer.Write($"{threadId.ToString().PadLeft(12)},{startTime.ToString("F3").PadLeft(12)},{inclusiveTimeStr.PadLeft(9)},{exclusiveTime.ToString("F3").PadLeft(9)},\"");
+                            StringBuilder eventName = new StringBuilder();
+
                             int stackDepth = eventData.StackDepth;
                             for (int iStackDepth = 0; iStackDepth < stackDepth; iStackDepth++)
-                                writer.Write(" |");
+                                eventName.Append(" |");
 
                             if (seenEvents.Contains(eventData.End.EventId))
-                                writer.Write(" +");
+                                eventName.Append(" +");
                             else
-                                writer.Write("--");
+                                eventName.Append("--");
 
-                            writer.Write(eventData.Name, false);
-                            writer.WriteLine("\",\"" + process.Name + "\"");
+                            eventName.Append(eventData.Name);
+                            writer.WriteLine($"{QuoteIfCsv(eventName.ToString())},{QuoteIfCsv(process.Name)}");
                             seenEvents.Add(eventData.End.EventId);
                         }
                     }
+                }
+            }
+
+            return;
+
+            string PadIfNotCsv(string str, int pad)
+            {
+                if (!csv)
+                {
+                    return str.PadLeft(pad);
+                }
+                return str;
+            }
+
+            string QuoteIfCsv(string str)
+            {
+                if (csv)
+                {
+                    return $"\"'{str}\"";
+                }
+                else
+                {
+                    return str;
                 }
             }
         }
