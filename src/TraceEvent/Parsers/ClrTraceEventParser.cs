@@ -1525,12 +1525,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<R2RGetEntryPointStartedTraceData> MethodR2RGetEntryPointStarted
+        public event Action<R2RGetEntryPointStartTraceData> MethodR2RGetEntryPointStart
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(R2RGetEntryPointStartedTemplate(value));
+                RegisterTemplate(R2RGetEntryPointStartTemplate(value));
             }
             remove
             {
@@ -1984,9 +1984,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
 
-        static private R2RGetEntryPointStartedTraceData R2RGetEntryPointStartedTemplate(Action<R2RGetEntryPointStartedTraceData> action)
+        static private R2RGetEntryPointStartTraceData R2RGetEntryPointStartTemplate(Action<R2RGetEntryPointStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new R2RGetEntryPointStartedTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStarted", ProviderGuid, ProviderName);
+            return new R2RGetEntryPointStartTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStart", ProviderGuid, ProviderName);
         }
         static private TypeLoadStartTraceData LoaderTypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
@@ -2141,7 +2141,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[129] = TieredCompilationBackgroundJitStartTemplate(null);
                 templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
 
-                templates[131]  = R2RGetEntryPointStartedTemplate(null);
+                templates[131]  = R2RGetEntryPointStartTemplate(null);
                 templates[132]  = LoaderTypeLoadStartTemplate(null);
                 templates[133]  = LoaderTypeLoadStopTemplate(null);
 
@@ -8730,13 +8730,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
-    public sealed class R2RGetEntryPointStartedTraceData : TraceEvent
+    public sealed class R2RGetEntryPointStartTraceData : TraceEvent
     {
         public long MethodID { get { return GetInt64At(0); } }
         public int ClrInstanceID { get { return GetInt16At(8); } }
 
         #region Private
-        internal R2RGetEntryPointStartedTraceData(Action<R2RGetEntryPointStartedTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal R2RGetEntryPointStartTraceData(Action<R2RGetEntryPointStartTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8752,7 +8752,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<R2RGetEntryPointStartedTraceData>)value; }
+            set { m_target = (Action<R2RGetEntryPointStartTraceData>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8787,7 +8787,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        private event Action<R2RGetEntryPointStartedTraceData> m_target;
+        private event Action<R2RGetEntryPointStartTraceData> m_target;
         #endregion
     }
 

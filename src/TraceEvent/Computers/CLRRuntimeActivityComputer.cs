@@ -185,12 +185,12 @@ namespace Microsoft.Diagnostics.Tracing
             source.Clr.MethodLoadVerbose += Clr_MethodLoadVerbose;
             source.Clr.MethodLoad += Clr_MethodLoad;
             source.Clr.LoaderAssemblyLoad += Clr_LoaderAssemblyLoad;
-            source.Clr.MethodR2RGetEntryPointStarted += Clr_R2RGetEntryPointStarted;
+            source.Clr.MethodR2RGetEntryPointStart += Clr_R2RGetEntryPointStart;
             source.Clr.LoaderTypeLoadStart += Clr_LoaderTypeLoadStart;
             source.Clr.LoaderTypeLoadStop += Clr_LoaderTypeLoadStop;
             source.Process();
             source.Clr.MethodJittingStarted -= Clr_MethodJittingStarted;
-            source.Clr.MethodR2RGetEntryPointStarted -= Clr_R2RGetEntryPointStarted;
+            source.Clr.MethodR2RGetEntryPointStart -= Clr_R2RGetEntryPointStart;
             source.Clr.MethodR2RGetEntryPoint -= Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose -= Clr_MethodLoadVerbose;
             source.Clr.MethodLoad -= Clr_MethodLoad;
@@ -268,7 +268,7 @@ namespace Microsoft.Diagnostics.Tracing
             _incompleteJitEvents[id] = incompleteDesc;
         }
 
-        private void Clr_R2RGetEntryPointStarted(R2RGetEntryPointStartedTraceData obj)
+        private void Clr_R2RGetEntryPointStart(R2RGetEntryPointStartTraceData obj)
         {
             IncompleteActionDesc incompleteDesc = new IncompleteActionDesc();
             incompleteDesc.Start = new EventUID(obj);
