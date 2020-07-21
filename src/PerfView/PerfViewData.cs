@@ -3545,8 +3545,11 @@ table {
 
             string command = commandUri.LocalPath;
             string textStr = "txt/";
+            string csvStr = "csv/";
+            bool text = command.StartsWith(textStr);
+            bool csv = command.StartsWith(csvStr);
 
-            if (command.StartsWith(textStr))
+            if (text || csv)
             {
                 var rest = command.Substring(textStr.Length);
 
@@ -3580,7 +3583,7 @@ table {
                 if (m_interestingProcesses.ContainsKey(processId))
                 {
                     var proc = m_interestingEtlxProcesses[processId];
-                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + identifier + ".txt");
+                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + identifier + (csv ? ".csv" : ".txt"));
                     if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {

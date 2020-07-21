@@ -64,7 +64,22 @@ namespace Stats
                       <label for=""TypeLoad"">Show TypeLoad data</label>
                       <input type=""checkbox"" checked=""yes"" id=""AssemblyLoad"" name=""AssemblyLoad"" value=""true"">
                       <label for=""AssemblyLoad"">Show AssemblyLoad data</label>
-                      <input type=""submit"" value=""Submit"">
+                      <input type=""submit"" value=""Show as Text"">
+                    </form>
+                    <form action=""command:csv/{stats.ProcessID}"">
+                      <input type=""checkbox"" checked=""yes"" id=""TreeView"" name=""TreeView"" value=""true"">
+                      <label for=""TreeView"">Show data as a tree</label>
+                      <input type=""checkbox"" checked=""yes"" id=""JIT"" name=""JIT"" value=""true"">
+                      <label for=""JIT"">Show JIT data</label>
+                      <input type=""checkbox"" checked=""yes"" id=""R2R_Found"" name=""R2R_Found"" value=""true"">
+                      <label for=""R2R_Found"">Show R2R found data</label>
+                      <input type=""checkbox"" id=""R2R_Failed"" name=""R2R_Failed"" value=""true"">
+                      <label for=""R2R_Failed"">Show R2R not found data</label>
+                      <input type=""checkbox"" checked=""yes"" id=""TypeLoad"" name=""TypeLoad"" value=""true"">
+                      <label for=""TypeLoad"">Show TypeLoad data</label>
+                      <input type=""checkbox"" checked=""yes"" id=""AssemblyLoad"" name=""AssemblyLoad"" value=""true"">
+                      <label for=""AssemblyLoad"">Show AssemblyLoad data</label>
+                      <input type=""submit"" value=""Show in Excel"">
                     </form>
                     ");
                 }
@@ -78,17 +93,12 @@ namespace Stats
         {
             using (var writer = File.CreateText(filePath))
             {
-                writer.WriteLine($"Process {process.Name}");
-                writer.WriteLine($"========");
-
+                writer.WriteLine("\"ThreadId  \",\"Start time\",\"Inclusive\",\"Exclusive\",\"RuntimeOperation\",\"Process\"");
                 foreach (var thread in process.Threads)
                 {
                     int threadId = thread.ThreadID;
                     if (runtimeOps.ContainsKey(threadId))
                     {
-                        writer.WriteLine($"Thread {threadId}");
-                        writer.WriteLine($"========");
-                        writer.WriteLine("Start time  ~Inclusive~Exclusive~RuntimeOperation");
 
                         HashSet<EventIndex> seenEvents = new HashSet<EventIndex>();
 
@@ -124,7 +134,8 @@ namespace Stats
                                 inclusiveTimeStr = "";
 
 
-                            writer.Write($"{startTime.ToString("F3").PadLeft(12)}~{inclusiveTimeStr.PadLeft(9)}~{exclusiveTime.ToString("F3").PadLeft(9)}~");
+                            //                            writer.Write($"\"{threadId.ToString().PadLeft(12)}\",\"{startTime.ToString("F3").PadLeft(12)}\",\"{inclusiveTimeStr.PadLeft(9)}\",\"{exclusiveTime.ToString("F3").PadLeft(9)}\",\"");
+                            writer.Write($"{threadId.ToString().PadLeft(12)},{startTime.ToString("F3").PadLeft(12)},{inclusiveTimeStr.PadLeft(9)},{exclusiveTime.ToString("F3").PadLeft(9)},\"");
                             int stackDepth = eventData.StackDepth;
                             for (int iStackDepth = 0; iStackDepth < stackDepth; iStackDepth++)
                                 writer.Write(" |");
@@ -134,7 +145,8 @@ namespace Stats
                             else
                                 writer.Write("--");
 
-                            writer.WriteLine(eventData.Name, false);
+                            writer.Write(eventData.Name, false);
+                            writer.WriteLine("\",\"" + process.Name + "\"");
                             seenEvents.Add(eventData.End.EventId);
                         }
                     }

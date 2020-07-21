@@ -1553,12 +1553,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<TypeLoadStartTraceData> TypeLoadStart
+        public event Action<TypeLoadStartTraceData> LoaderTypeLoadStart
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(TypeLoadStartTemplate(value));
+                RegisterTemplate(LoaderTypeLoadStartTemplate(value));
             }
             remove
             {
@@ -1567,12 +1567,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<TypeLoadStopTraceData> TypeLoadStop
+        public event Action<TypeLoadStopTraceData> LoaderTypeLoadStop
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new TypeLoadStopTraceData(value, 74, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName));
+                RegisterTemplate(LoaderTypeLoadStopTemplate(value));
             }
             remove
             {
@@ -1988,13 +1988,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new R2RGetEntryPointStartedTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStarted", ProviderGuid, ProviderName);
         }
-        static private TypeLoadStartTraceData TypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
+        static private TypeLoadStartTraceData LoaderTypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TypeLoadStartTraceData(action, 73, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName);
         }
-        static private TypeLoadStopTraceData TypeLoadStopTemplate(Action<TypeLoadStopTraceData> action)
+        static private TypeLoadStopTraceData LoaderTypeLoadStopTemplate(Action<TypeLoadStopTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TypeLoadStopTraceData(action, 74, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName);
+            return new TypeLoadStopTraceData(action, 74, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStop", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -2142,8 +2142,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
 
                 templates[131]  = R2RGetEntryPointStartedTemplate(null);
-                templates[132]  = TypeLoadStartTemplate(null);
-                templates[133]  = TypeLoadStopTemplate(null);
+                templates[132]  = LoaderTypeLoadStartTemplate(null);
+                templates[133]  = LoaderTypeLoadStopTemplate(null);
 
                 s_templates = templates;
             }
