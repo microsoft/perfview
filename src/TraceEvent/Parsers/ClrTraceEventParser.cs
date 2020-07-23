@@ -1553,31 +1553,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<TypeLoadStartTraceData> LoaderTypeLoadStart
+        public event Action<TypeLoadStartTraceData> TypeLoadStart
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(LoaderTypeLoadStartTemplate(value));
+                RegisterTemplate(TypeLoadStartTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 73, ProviderGuid);
-                source.UnregisterEventTemplate(value, 46, LoaderTaskGuid);
+                source.UnregisterEventTemplate(value, 1, LoaderTaskGuid);
             }
         }
 
-        public event Action<TypeLoadStopTraceData> LoaderTypeLoadStop
+        public event Action<TypeLoadStopTraceData> TypeLoadStop
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(LoaderTypeLoadStopTemplate(value));
+                RegisterTemplate(TypeLoadStopTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 74, ProviderGuid);
-                source.UnregisterEventTemplate(value, 46, LoaderTaskGuid);
+                source.UnregisterEventTemplate(value, 2, LoaderTaskGuid);
             }
         }
 
@@ -1988,13 +1988,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new R2RGetEntryPointStartTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStart", ProviderGuid, ProviderName);
         }
-        static private TypeLoadStartTraceData LoaderTypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
+        static private TypeLoadStartTraceData TypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TypeLoadStartTraceData(action, 73, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStart", ProviderGuid, ProviderName);
+            return new TypeLoadStartTraceData(action, 73, 33, "TypeLoad", LoaderTaskGuid, 1, "Start", ProviderGuid, ProviderName);
         }
-        static private TypeLoadStopTraceData LoaderTypeLoadStopTemplate(Action<TypeLoadStopTraceData> action)
+        static private TypeLoadStopTraceData TypeLoadStopTemplate(Action<TypeLoadStopTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TypeLoadStopTraceData(action, 74, 10, "Loader", LoaderTaskGuid, 46, "TypeLoadStop", ProviderGuid, ProviderName);
+            return new TypeLoadStopTraceData(action, 74, 33, "TypeLoad", LoaderTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -2142,8 +2142,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
 
                 templates[131]  = R2RGetEntryPointStartTemplate(null);
-                templates[132]  = LoaderTypeLoadStartTemplate(null);
-                templates[133]  = LoaderTypeLoadStopTemplate(null);
+                templates[132]  = TypeLoadStartTemplate(null);
+                templates[133]  = TypeLoadStopTemplate(null);
 
                 s_templates = templates;
             }
@@ -2209,6 +2209,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
         private static readonly Guid AssemblyLoaderTaskGuid = new Guid(unchecked((int)0xbcf2339e), unchecked((short)0xb0a6), unchecked((short)0x452d), 0x96, 0x6c, 0x33, 0xac, 0x9d, 0xd8, 0x25, 0x73);
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
+        private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
