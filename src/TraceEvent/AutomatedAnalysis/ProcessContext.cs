@@ -9,13 +9,23 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     {
         private StackView _cpuStacks;
         private SymbolReader _symbolReader;
+        private AutomatedAnalysisExecutionContext _executionContext;
 
-        public ProcessContext(AutomatedAnalysisExecutionContext executionContext, TraceProcess process)
+        public ProcessContext(AutomatedAnalysisExecutionContext executionContext, AutomatedAnalysisTraceProcess process)
         {
-            Process = process;
+            _executionContext = executionContext;
+            AutomatedAnalysisProcess = process;
+            AutomatedAnalysisTraceLog traceLog = executionContext.Trace as AutomatedAnalysisTraceLog;
+            if(traceLog != null)
+            {
+                Process = traceLog.TraceLog.Processes[(ProcessIndex)process.UniqueID];
+            }
+
             Issues = executionContext.Issues[process];
             _symbolReader = executionContext.SymbolReader;
         }
+
+        public AutomatedAnalysisTraceProcess AutomatedAnalysisProcess { get; }
 
         public TraceProcess Process { get; }
 
@@ -27,8 +37,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             {
                 if (_cpuStacks == null)
                 {
-                    StackSource stackSource = Process.Log.CPUStacks(Process);
-                    _cpuStacks = new StackView(Process.Log, stackSource, _symbolReader);
+                    _cpuStacks = _executionContext.Trace.GetCPUStacks(AutomatedAnalysisProcess);
                 }
                 return _cpuStacks;
             }
