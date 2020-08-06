@@ -1318,10 +1318,10 @@ namespace PerfView
 
         private static DateTime s_startTime;    // used as a unique ID for the launch of the program (for SQM style logging)    
         internal static bool s_IsUnderTest; // set from tests: indicates we're in a test
+        private static bool? s_InternalUser;
 #if !PUBLIC_BUILD
         private static DateTime s_ProbedForFeedbackAt;
         private static bool? s_CanSendFeedback;
-        private static bool? s_InternalUser;
 #endif
         private static bool WriteFeedbackToLog(string filePath, string message)
         {
