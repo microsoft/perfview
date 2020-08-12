@@ -4,8 +4,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:src="clr-namespace:PerfView"
     xmlns:src1="clr-namespace:PerfView"
-    xmlns:controls="clr-namespace:Controls" xmlns:drawing="clr-namespace:System.Drawing;assembly=System.Drawing"
-                Title="PerfView Stacks"
+    xmlns:controls="clr-namespace:Controls"
+    xmlns:drawing="clr-namespace:System.Drawing;assembly=System.Drawing"
+    Title="PerfView Stacks"
     Width="919" Height="605"
     >
     <Window.Resources>
