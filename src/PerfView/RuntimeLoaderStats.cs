@@ -1,34 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
 
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Analysis.JIT;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.Diagnostics.Utilities;
 using System;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Analysis;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading;
 
 namespace Stats
 {
     internal static class RuntimeLoaderStats
     {
-        public static void ToHtml(TextWriter writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess incompleteStatsProc, string fileName, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps)
+        public static void ToHtml(TextWriter writer, TraceProcess stats, string fileName, RuntimeLoaderStatsData runtimeOps)
         {
-            TraceProcess stats = null;
-
-            foreach (var proc in runtimeOps.EventSource.TraceLog.Processes)
-            {
-                if (proc.ProcessID == incompleteStatsProc.ProcessID)
-                {
-                    stats = proc;
-                }
-            }
-
             var usersGuideFile = ClrStatsUsersGuide.WriteUsersGuide(fileName);
 
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">Runtime Operation Stats for for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
@@ -52,7 +36,7 @@ namespace Stats
                 writer.WriteLine("<UL>");
                 {
                     writer.WriteLine($@"
-                    <form action=""command:txt/{stats.ProcessID}"">
+                    <form action=""command:txt/{stats.ProcessID},{stats.StartTimeRelativeMsec}"">
                       <input type=""checkbox"" checked=""yes"" id=""TreeView"" name=""TreeView"" value=""true"">
                       <label for=""TreeView"">Show data as a tree</label>
                       <input type=""checkbox"" checked=""yes"" id=""JIT"" name=""JIT"" value=""true"">
@@ -67,7 +51,7 @@ namespace Stats
                       <label for=""AssemblyLoad"">Show AssemblyLoad data</label>
                       <input type=""submit"" value=""Show as Text"">
                     </form>
-                    <form action=""command:csv/{stats.ProcessID}"">
+                    <form action=""command:csv/{stats.ProcessID},{stats.StartTimeRelativeMsec}"">
                       <input type=""checkbox"" checked=""yes"" id=""TreeView"" name=""TreeView"" value=""true"">
                       <label for=""TreeView"">Show data as a tree</label>
                       <input type=""checkbox"" checked=""yes"" id=""JIT"" name=""JIT"" value=""true"">
@@ -90,68 +74,64 @@ namespace Stats
             writer.WriteLine("</UL>");
         }
 
-        public static void ToTxt(string filePath, TraceProcess process, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps, string[] filters, bool tree)
+        public static void ToTxt(string filePath, RuntimeLoaderProcessData runtimeProcessData, string[] filters, bool tree)
         {
             bool csv = filePath.EndsWith("csv");
             using (var writer = File.CreateText(filePath))
             {
-                writer.WriteLine("\"ThreadId  \",\"Start time\",\"Inclusive\",\"Exclusive\",\"RuntimeOperation\",\"Process\"");
-                foreach (var thread in process.Threads)
+                writer.WriteLine("\"ThreadId  \",\"Start time\",\"Inclusive\",\"Exclusive\",\"RuntimeOperation\"");
+                foreach (var threadData in runtimeProcessData.ThreadData)
                 {
-                    int threadId = thread.ThreadID;
-                    if (runtimeOps.ContainsKey(threadId))
+                    int threadId = threadData.Key;
+                    HashSet<EventIndex> seenEvents = new HashSet<EventIndex>();
+
+                    IEnumerable<CLRRuntimeActivityComputer.StartStopThreadEventData> dataToProcess = threadData.Value.Data;
+
+                    if (filters != null)
+                        dataToProcess = CLRRuntimeActivityComputer.PerThreadStartStopData.FilterData(filters, dataToProcess);
+
+                    if (tree)
+                        dataToProcess = CLRRuntimeActivityComputer.PerThreadStartStopData.Stackify(dataToProcess);
+
+                    var perThreadData = new List<CLRRuntimeActivityComputer.StartStopThreadEventData>(dataToProcess);
+
+                    for (int i = 0; i < perThreadData.Count; i++)
                     {
+                        var eventData = perThreadData[i];
+                        double startTime = eventData.Start.Time;
+                        double endTime = eventData.End.Time;
+                        double inclusiveTime = endTime - startTime;
+                        double exclusiveTime = inclusiveTime;
+                        string inclusiveTimeStr = inclusiveTime.ToString("F3");
 
-                        HashSet<EventIndex> seenEvents = new HashSet<EventIndex>();
-
-                        IEnumerable<CLRRuntimeActivityComputer.StartStopThreadEventData> dataToProcess = runtimeOps[threadId].Data;
-
-                        if (filters != null)
-                            dataToProcess = CLRRuntimeActivityComputer.PerThreadStartStopData.FilterData(filters, dataToProcess);
-
-                        if (tree)
-                            dataToProcess = CLRRuntimeActivityComputer.PerThreadStartStopData.Stackify(dataToProcess);
-
-                        var perThreadData = new List<CLRRuntimeActivityComputer.StartStopThreadEventData>(dataToProcess);
-
-                        for (int i = 0; i < perThreadData.Count; i++)
+                        if (perThreadData.Count > (i + 1))
                         {
-                            var eventData = perThreadData[i];
-                            double startTime = eventData.Start.Time;
-                            double endTime = eventData.End.Time;
-                            double inclusiveTime = endTime - startTime;
-                            double exclusiveTime = inclusiveTime;
-                            string inclusiveTimeStr = inclusiveTime.ToString("F3");
-
-                            if (perThreadData.Count > (i + 1))
+                            double startOfNextItem = perThreadData[i + 1].Start.Time;
+                            if (startOfNextItem < endTime)
                             {
-                                double startOfNextItem = perThreadData[i + 1].Start.Time;
-                                if (startOfNextItem < endTime)
-                                {
-                                    exclusiveTime = startOfNextItem - startTime;
-                                }
+                                exclusiveTime = startOfNextItem - startTime;
                             }
-
-                            if (seenEvents.Contains(eventData.End.EventId))
-                                inclusiveTimeStr = "";
-
-                            writer.Write($"{PadIfNotCsv(threadId.ToString(), 12)},{PadIfNotCsv(startTime.ToString("F3"), 12)},{PadIfNotCsv(inclusiveTimeStr, 11)},{PadIfNotCsv(exclusiveTime.ToString("F3"), 11)},");
-
-                            StringBuilder eventName = new StringBuilder();
-
-                            int stackDepth = eventData.StackDepth;
-                            for (int iStackDepth = 0; iStackDepth < stackDepth; iStackDepth++)
-                                eventName.Append(" |");
-
-                            if (seenEvents.Contains(eventData.End.EventId))
-                                eventName.Append(" +");
-                            else
-                                eventName.Append("--");
-
-                            eventName.Append(eventData.Name);
-                            writer.WriteLine($"{QuoteIfCsv(eventName.ToString())},{QuoteIfCsv(process.Name)}");
-                            seenEvents.Add(eventData.End.EventId);
                         }
+
+                        if (seenEvents.Contains(eventData.End.EventId))
+                            inclusiveTimeStr = "";
+
+                        writer.Write($"{PadIfNotCsv(threadId.ToString(), 12)},{PadIfNotCsv(startTime.ToString("F3"), 12)},{PadIfNotCsv(inclusiveTimeStr, 11)},{PadIfNotCsv(exclusiveTime.ToString("F3"), 11)},");
+
+                        StringBuilder eventName = new StringBuilder();
+
+                        int stackDepth = eventData.StackDepth;
+                        for (int iStackDepth = 0; iStackDepth < stackDepth; iStackDepth++)
+                            eventName.Append(" |");
+
+                        if (seenEvents.Contains(eventData.End.EventId))
+                            eventName.Append(" +");
+                        else
+                            eventName.Append("--");
+
+                        eventName.Append(eventData.Name);
+                        writer.WriteLine($"{QuoteIfCsv(eventName.ToString())}");
+                        seenEvents.Add(eventData.End.EventId);
                     }
                 }
             }
@@ -180,40 +160,31 @@ namespace Stats
             }
         }
 
-        public static double TotalCPUMSec(Microsoft.Diagnostics.Tracing.Analysis.TraceProcess incompleteStatsProc, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOps)
+        public static double TotalCPUMSec(TraceProcess incompleteStatsProc, RuntimeLoaderStatsData runtimeOps)
         {
-            TraceProcess process = null;
-
-            foreach (var proc in runtimeOps.EventSource.TraceLog.Processes)
-            {
-                if (proc.ProcessID == incompleteStatsProc.ProcessID)
-                {
-                    process = proc;
-                }
-            }
-
-            if (process == null)
-                return 0;
+            var runtimeProcessData = runtimeOps.GetProcessDataFromAnalysisProcess(incompleteStatsProc);
 
             double cpuTime = 0;
-            foreach (var thread in process.Threads)
+            foreach (var threadData in runtimeProcessData.ThreadData.Values)
             {
-                int threadId = thread.ThreadID;
                 double lastThreadTimeSeen = double.MinValue;
-                if (runtimeOps.ContainsKey(threadId))
+                foreach (var eventData in threadData.Data)
                 {
-                    foreach (var eventData in runtimeOps[threadId].Data)
-                    {
-                        if (lastThreadTimeSeen >= eventData.End.Time)
-                            continue;
+                    if (lastThreadTimeSeen >= eventData.End.Time)
+                        continue;
 
-                        lastThreadTimeSeen = eventData.End.Time;
-                        cpuTime += eventData.End.Time - eventData.Start.Time;
-                    }
+                    lastThreadTimeSeen = eventData.End.Time;
+                    cpuTime += eventData.End.Time - eventData.Start.Time;
                 }
             }
 
             return cpuTime;
+        }
+
+        public static bool IsInteresting(TraceProcess proc, RuntimeLoaderStatsData runtimeOps)
+        {
+            var runtimeProcessData = runtimeOps.GetProcessDataFromAnalysisProcess(proc);
+            return (runtimeProcessData.ThreadData.Count > 0);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Utilities;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace Stats
     {
         public enum ReportType { JIT, GC, RuntimeLoader };
 
-        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, Microsoft.Diagnostics.Tracing.RuntimeLoaderStats runtimeOpsStats = null)
+        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, RuntimeLoaderStatsData runtimeOpsStats = null)
         {
             if (!justBody)
             {
@@ -57,6 +58,11 @@ namespace Stats
                         continue;
                     }
 
+                    if (type == ReportType.RuntimeLoader && !RuntimeLoaderStats.IsInteresting(data, runtimeOpsStats))
+                    {
+                        continue;
+                    }
+
                     var id = Shorten(data.CommandLine);
                     if (string.IsNullOrEmpty(id))
                     {
@@ -86,7 +92,7 @@ namespace Stats
                     Stats.JitStats.ToHtml(writer, stats, mang, fileName);
                 }
 
-                if (type == ReportType.RuntimeLoader)
+                if (type == ReportType.RuntimeLoader && RuntimeLoaderStats.IsInteresting(stats, runtimeOpsStats))
                 {
                     Stats.RuntimeLoaderStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
                 }

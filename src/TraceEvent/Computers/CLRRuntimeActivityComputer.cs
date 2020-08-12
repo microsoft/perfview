@@ -3,26 +3,101 @@
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
-// using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
-using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Analysis.JIT;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using StartStopKey = System.Guid;   // The start-stop key is unique in the trace.  We incorperate the process as well as activity ID to achieve this.
 
 namespace Microsoft.Diagnostics.Tracing
 {
-    public class RuntimeLoaderStats : Dictionary<int, CLRRuntimeActivityComputer.PerThreadStartStopData>
+    public class RuntimeLoaderProcessData
     {
-        public TraceLogEventSource EventSource;
+        public Dictionary<int, CLRRuntimeActivityComputer.PerThreadStartStopData> ThreadData { get; } = new Dictionary<int, CLRRuntimeActivityComputer.PerThreadStartStopData>();
+        public double FirstEventTimestamp { get; }
+        public int ProcessID { get; }
+
+        public double FinalTimestamp
+        {
+            get
+            {
+                if (_finalTimestamp.HasValue)
+                    return _finalTimestamp.Value;
+                
+                throw new Exception();
+            }
+        }
+
+        public double? _finalTimestamp;
+
+        internal Dictionary<int, List<CLRRuntimeActivityComputer.StartStopThreadEventData>> StartStopEvents { get; private set; } = new Dictionary<int, List<CLRRuntimeActivityComputer.StartStopThreadEventData>>();
+
+        internal void FinishData(double finalTimestamp)
+        {
+            foreach (var entry in StartStopEvents)
+            {
+                var data = entry.Value.ToArray();
+                Array.Sort(data);
+                var perThread = new CLRRuntimeActivityComputer.PerThreadStartStopData();
+                perThread.Data = data;
+                ThreadData.Add(entry.Key, perThread);
+            }
+            StartStopEvents = null;
+            _finalTimestamp = finalTimestamp;
+        }
+
+        public RuntimeLoaderProcessData(double timestamp, int processID)
+        {
+            ProcessID = processID;
+            FirstEventTimestamp = timestamp;
+        }
+
+        internal static RuntimeLoaderProcessData EmptyData(int processID)
+        {
+            RuntimeLoaderProcessData emptyData = new RuntimeLoaderProcessData(0, processID);
+            emptyData.FinishData(Double.MaxValue);
+            return emptyData;
+        }
+
+        public override string ToString()
+        {
+            return $"PID={ProcessID} FirstTimestamp {FirstEventTimestamp} Finished {_finalTimestamp.HasValue}";
+        }
+    }
+
+    public class RuntimeLoaderStatsData
+    {
+        List<RuntimeLoaderProcessData> _processData = new List<RuntimeLoaderProcessData>();
+
+        public IEnumerable<RuntimeLoaderProcessData> GetData()
+        {
+            return _processData.ToArray();
+        }
+
+        public RuntimeLoaderProcessData GetProcessDataFromProcessIDAndTimestamp(int processID, double timestamp)
+        {
+            foreach (var procData in _processData)
+            {
+                if (procData.ProcessID == processID)
+                {
+                    if (timestamp < procData.FinalTimestamp)
+                        return procData;
+                }
+            }
+
+            return RuntimeLoaderProcessData.EmptyData(processID);
+        }
+
+        public RuntimeLoaderProcessData GetProcessDataFromAnalysisProcess(TraceProcess process)
+        {
+            return GetProcessDataFromProcessIDAndTimestamp(process.ProcessID, process.StartTimeRelativeMsec);
+        }
+
+        internal void AddProcessData(RuntimeLoaderProcessData processData, double finalTimestamp)
+        {
+            processData.FinishData(finalTimestamp);
+            _processData.Add(processData);
+        }
     }
 
     public class CLRRuntimeActivityComputer
@@ -168,18 +243,17 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        RuntimeLoaderStats _startStopData = new RuntimeLoaderStats();
-        public RuntimeLoaderStats StartStopData => _startStopData;
+        RuntimeLoaderStatsData _startStopData = new RuntimeLoaderStatsData();
+        public RuntimeLoaderStatsData RuntimeLoaderData => _startStopData;
 
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteJitEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteR2REvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
         Dictionary<IdOfIncompleteAction, IncompleteActionDesc> _incompleteTypeLoadEvents = new Dictionary<IdOfIncompleteAction, IncompleteActionDesc>();
 
-        public Dictionary<int, List<StartStopThreadEventData>> StartStopEvents { get; } = new Dictionary<int, List<StartStopThreadEventData>>();
+        Dictionary<int, RuntimeLoaderProcessData> _processSpecificDataInProgress = new Dictionary<int, RuntimeLoaderProcessData>();
 
-        public CLRRuntimeActivityComputer(TraceLogEventSource source)
+        public CLRRuntimeActivityComputer(TraceEventDispatcher source)
         {
-            _startStopData.EventSource = source;
             source.Clr.MethodJittingStarted += Clr_MethodJittingStarted;
             source.Clr.MethodR2RGetEntryPoint += Clr_MethodR2RGetEntryPoint;
             source.Clr.MethodLoadVerbose += Clr_MethodLoadVerbose;
@@ -188,46 +262,50 @@ namespace Microsoft.Diagnostics.Tracing
             source.Clr.MethodR2RGetEntryPointStart += Clr_R2RGetEntryPointStart;
             source.Clr.TypeLoadStart += Clr_TypeLoadStart;
             source.Clr.TypeLoadStop += Clr_TypeLoadStop;
-            source.Process();
-            source.Clr.MethodJittingStarted -= Clr_MethodJittingStarted;
-            source.Clr.MethodR2RGetEntryPointStart -= Clr_R2RGetEntryPointStart;
-            source.Clr.MethodR2RGetEntryPoint -= Clr_MethodR2RGetEntryPoint;
-            source.Clr.MethodLoadVerbose -= Clr_MethodLoadVerbose;
-            source.Clr.MethodLoad -= Clr_MethodLoad;
-            source.Clr.LoaderAssemblyLoad -= Clr_LoaderAssemblyLoad;
-            source.Clr.TypeLoadStart -= Clr_TypeLoadStart;
-            source.Clr.TypeLoadStop -= Clr_TypeLoadStop;
-
-            HashSet<EventUID> interestingEvents = new HashSet<EventUID>();
-            foreach (var entry in StartStopEvents)
-            {
-                StartStopThreadEventData[] data = entry.Value.ToArray();
-                Array.Sort(data);
-                PerThreadStartStopData perThread = new PerThreadStartStopData();
-                perThread.Data = data;
-                for (int i = 0; i < data.Length; i++)
-                {
-                    interestingEvents.Add(data[i].Start);
-                    interestingEvents.Add(data[i].End);
-                }
-                _startStopData.Add(entry.Key, perThread);
-            }
+            source.Kernel.ProcessStop += Kernel_ProcessStop;
+            source.Completed += ProcessingComplete;
         }
 
-        private void AddStartStopData(int threadId, EventUID start, EventUID end, string name)
+        private void ProcessingComplete()
         {
-            if (!StartStopEvents.ContainsKey(threadId))
-                StartStopEvents[threadId] = new List<StartStopThreadEventData>();
+            foreach (var entry in _processSpecificDataInProgress.Values)
+            {
+                _startStopData.AddProcessData(entry, Double.MaxValue);
+            }
 
-            List<StartStopThreadEventData> startStopData = StartStopEvents[threadId];
+            _processSpecificDataInProgress.Clear();
+        }
+
+        private void AddStartStopData(int processID, int threadId, EventUID start, EventUID end, string name)
+        {
+            if (!_processSpecificDataInProgress.TryGetValue(processID, out RuntimeLoaderProcessData processData))
+            {
+                processData = new RuntimeLoaderProcessData(end.Time, processID);
+                _processSpecificDataInProgress[processID] = processData;
+            }
+
+            if (!processData.StartStopEvents.ContainsKey(threadId))
+                processData.StartStopEvents[threadId] = new List<StartStopThreadEventData>();
+
+            List<StartStopThreadEventData> startStopData = processData.StartStopEvents[threadId];
             startStopData.Add(new StartStopThreadEventData(start, end, name));
+        }
+
+        private void Kernel_ProcessStop(Parsers.Kernel.ProcessTraceData traceData)
+        {
+            if (_processSpecificDataInProgress.TryGetValue(traceData.ProcessID, out var processData))
+            {
+                _startStopData.AddProcessData(processData, traceData.TimeStampRelativeMSec);
+                _processSpecificDataInProgress.Remove(traceData.ProcessID);
+            }
         }
 
         private void Clr_LoaderAssemblyLoad(AssemblyLoadUnloadTraceData obj)
         {
             // Since we don't have start stop data, simply treat the assembly load event as a point in time so that it is visible in the textual load view
             EventUID eventTime = new EventUID(obj);
-            AddStartStopData(obj.ThreadID, eventTime, eventTime, $"AssemblyLoad({obj.FullyQualifiedAssemblyName},{obj.AssemblyID})");
+
+            AddStartStopData(obj.ProcessID, obj.ThreadID, eventTime, eventTime, $"AssemblyLoad({obj.FullyQualifiedAssemblyName},{obj.AssemblyID})");
         }
 
         private void Clr_MethodLoad(MethodLoadUnloadTraceData obj)
@@ -250,7 +328,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // JitStart is processed, don't process it again.
                 _incompleteJitEvents.Remove(id);
 
-                AddStartStopData(id.ThreadID, jitStartData.Start, new EventUID(evt), jitStartData.OperationType + "(" + jitStartData.Name + ")");
+                AddStartStopData(evt.ProcessID, id.ThreadID, jitStartData.Start, new EventUID(evt), jitStartData.OperationType + "(" + jitStartData.Name + ")");
             }
         }
 
@@ -300,11 +378,11 @@ namespace Microsoft.Diagnostics.Tracing
             if (obj.EntryPoint == 0)
             {
                 // If Entrypoint is null then the search failed.
-                AddStartStopData(id.ThreadID, startUID, new EventUID(obj), "R2R_Failed" + "(" + JITStats.GetMethodName(obj) + ")");
+                AddStartStopData(obj.ProcessID, id.ThreadID, startUID, new EventUID(obj), "R2R_Failed" + "(" + JITStats.GetMethodName(obj) + ")");
             }
             else
             {
-                AddStartStopData(id.ThreadID, startUID, new EventUID(obj), "R2R_Found" + "(" + JITStats.GetMethodName(obj) + ")");
+                AddStartStopData(obj.ProcessID, id.ThreadID, startUID, new EventUID(obj), "R2R_Found" + "(" + JITStats.GetMethodName(obj) + ")");
             }
         }
 
@@ -337,7 +415,7 @@ namespace Microsoft.Diagnostics.Tracing
                 _incompleteTypeLoadEvents.Remove(id);
             }
 
-            AddStartStopData(id.ThreadID, startUID, new EventUID(obj), $"TypeLoad ({obj.TypeName}, {obj.LoadLevel})");
+            AddStartStopData(obj.ProcessID, id.ThreadID, startUID, new EventUID(obj), $"TypeLoad ({obj.TypeName}, {obj.LoadLevel})");
         }
     }
 }

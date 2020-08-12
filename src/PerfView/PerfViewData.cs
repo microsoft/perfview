@@ -3579,20 +3579,20 @@ table {
                         identifier = identifier + "_" + filter;
                     }
                 }
-                var processId = int.Parse(rest);
-                if (m_interestingProcesses.ContainsKey(processId))
+
+                var startMSec = double.Parse(rest.Substring(rest.IndexOf(',') + 1));
+                var processId = int.Parse(rest.Substring(0, rest.IndexOf(',')));
+                var processData = m_runtimeData.GetProcessDataFromProcessIDAndTimestamp(processId, startMSec);
+
+                var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + ((long)startMSec).ToString() + "_" + identifier + (csv ? ".csv" : ".txt"));
+                if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                    File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
-                    var proc = m_interestingEtlxProcesses[processId];
-                    var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + identifier + (csv ? ".csv" : ".txt"));
-                    if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
-                    {
-                        Stats.RuntimeLoaderStats.ToTxt(txtFile, proc, m_PerThreadData, filters.ToArray(), tree);
-                    }
-                    Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
-                    System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
-                    return "Opening Txt " + txtFile;
+                    Stats.RuntimeLoaderStats.ToTxt(txtFile, processData, filters.ToArray(), tree);
                 }
+                Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                return "Opening Txt " + txtFile;
             }
             return "Unknown command " + command;
         }
@@ -3601,46 +3601,15 @@ table {
         {
             using (var source = dataFile.Events.GetSource())
             {
-                CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
-                m_PerThreadData = runtimeLoaderComputer.StartStopData;
-                m_interestingProcesses = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc =>
-                {
-                    Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, (float)dataFile.SampleProfileInterval.TotalMilliseconds);
-                    proc.Log = dataFile;
-                });
+                CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
                 source.Process();
-
-                m_interestingEtlxProcesses = new Dictionary<int, TraceProcess>();
-                foreach (var proc in dataFile.Processes)
-                {
-                    foreach (var thread in proc.Threads)
-                    {
-                        if (m_PerThreadData.ContainsKey(thread.ThreadID))
-                        {
-                            m_interestingEtlxProcesses.Add(proc.ProcessID, proc);
-                            break;
-                        }
-                    }
-                }
-
-                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                {
-                    if (m_interestingEtlxProcesses.ContainsKey(proc.ProcessID))
-                    {
-                        m_interestingProcesses.Add(proc.ProcessID, proc);
-                    }
-                }
-
-                Stats.ClrStats.ToHtml(writer, m_interestingProcesses.Values.ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats : m_PerThreadData);
+                m_runtimeData = runtimeLoaderComputer.RuntimeLoaderData;
+                Stats.ClrStats.ToHtml(writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source).ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats : m_runtimeData);
             }
         }
 
-        private RuntimeLoaderStats m_PerThreadData;
-        private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_interestingProcesses;
-        private Dictionary<int/*pid*/, TraceProcess> m_interestingEtlxProcesses;
+        private RuntimeLoaderStatsData m_runtimeData;
     }
 
     public class PerfViewJitStats : PerfViewHtmlReport
@@ -7033,6 +7002,9 @@ table {
             bool hasGCEvents = false;
             bool hasProjectNExecutionTracingEvents = false;
             bool hasDefenderEvents = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
+            bool hasJIT = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -7091,6 +7063,19 @@ table {
                 if (counts.ProviderGuid == MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid)
                 {
                     hasDefenderEvents = true;
+                }
+
+                if (name.StartsWith("Method/JittingStarted"))
+                {
+                    hasJIT = true;
+                }
+                if (name.StartsWith("TypeLoad/Start"))
+                {
+                    hasTypeLoad = true;
+                }
+                if (name.StartsWith("Loader/AssemblyLoad"))
+                {
+                    hasAssemblyLoad = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -7399,7 +7384,12 @@ table {
             }
 
             advanced.Children.Add(new PerfViewJitStats(this));
-            advanced.Children.Add(new PerfViewRuntimeLoaderStats(this));
+
+            if (hasJIT || hasAssemblyLoad || hasTypeLoad)
+            {
+                advanced.Children.Add(new PerfViewRuntimeLoaderStats(this));
+            }
+
             advanced.Children.Add(new PerfViewEventStats(this));
 
             m_Children.Add(new PerfViewEventSource(this));
@@ -8532,6 +8522,8 @@ table {
 
             bool hasGC = false;
             bool hasJIT = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8543,6 +8535,14 @@ table {
                     else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
                     {
                         hasJIT = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("TypeLoad/Start"))
+                    {
+                        hasTypeLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
+                    {
+                        hasAssemblyLoad = true;
                     }
                 }
             }
@@ -8579,7 +8579,10 @@ table {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
 
-                advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                if (hasJIT || hasTypeLoad || hasAssemblyLoad)
+                {
+                    advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
             }
 
             if (memory.Children.Count > 0)
@@ -8747,6 +8750,8 @@ table {
             bool hasGCAllocationTicks = false;
             bool hasObjectUpdate = false;
             bool hasMemAllocStacks = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8779,6 +8784,14 @@ table {
                     if (eventStats.EventName.StartsWith("GC/SampledObjectAllocation"))
                     {
                         hasMemAllocStacks = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("TypeLoad/Start"))
+                    {
+                        hasTypeLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
+                    {
+                        hasAssemblyLoad = true;
                     }
                 }
             }
@@ -8826,8 +8839,11 @@ table {
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
-                advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
 
+                if (hasJIT || hasTypeLoad || hasAssemblyLoad)
+                {
+                    advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
             }
 
             if (memory.Children.Count > 0)
