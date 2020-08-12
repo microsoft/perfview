@@ -246,9 +246,11 @@
         the outer operation is broken up to show the time spent around the inner operation.
 
         To enable data about all loader operations set the ".NET Loader" checkbox when collecting data.
-        Otherwise, the data captured will be restricted to JIT and assembly load operations. The /RuntimeLoading switch may also be used.
+        Information about all loader operations is restricted to analysis of .NET Core runtimes.
+        R2R information is only available in .NET Core 3 and above.
+        TypeLoad information is only available in .NET 5 and above.
 
-        Also see the Runtime Loader stacks view, which ties this data into a view of CPU activity, to allow investigating CPU usage during specific loader operations.
+        Otherwise, the data captured will be restricted to JIT and assembly load operations. The /RuntimeLoading switch may also be used.
         <hr />
     <p>&nbsp;</p>
     <p>&nbsp;</p>

@@ -79,7 +79,9 @@ namespace Stats
             bool csv = filePath.EndsWith("csv");
             using (var writer = File.CreateText(filePath))
             {
-                writer.WriteLine("\"ThreadId  \",\"Start time\",\"Inclusive\",\"Exclusive\",\"RuntimeOperation\"");
+                bool showExclusiveTime = tree;
+
+                writer.WriteLine($"\"ThreadId  \",\"Start time\",\"Inclusive\"{(showExclusiveTime ? ",\"Exclusive\"" : "") },\"RuntimeOperation\"");
                 foreach (var threadData in runtimeProcessData.ThreadData)
                 {
                     int threadId = threadData.Key;
@@ -116,7 +118,9 @@ namespace Stats
                         if (seenEvents.Contains(eventData.End.EventId))
                             inclusiveTimeStr = "";
 
-                        writer.Write($"{PadIfNotCsv(threadId.ToString(), 12)},{PadIfNotCsv(startTime.ToString("F3"), 12)},{PadIfNotCsv(inclusiveTimeStr, 11)},{PadIfNotCsv(exclusiveTime.ToString("F3"), 11)},");
+                        writer.Write($"{PadIfNotCsv(threadId.ToString(), 12)},{PadIfNotCsv(startTime.ToString("F3"), 12)},{PadIfNotCsv(inclusiveTimeStr, 11)},");
+                        if (showExclusiveTime)
+                            writer.Write($"{PadIfNotCsv(exclusiveTime.ToString("F3"), 11)},");
 
                         StringBuilder eventName = new StringBuilder();
 
