@@ -240,5 +240,22 @@ namespace LinuxTracing.Tests
                     new ScheduleSwitch("comm2", 1, 0, 'S', "comm1", 0, 1)
                 });
         }
+
+        [Fact]
+        public void CornerCaseProcessNames()
+        {
+            string path = Constants.GetTestingPerfDumpPath("corner_case_process_names");
+            HeaderTest(path, blockedTime: false,
+                commands: new string[] { "6", "77", "", "k/2", "k/[2]", "k:2"},
+                pids: new int[] { 0, 1, 2, 3, 4, 5 },
+                tids: new int[] { 0, 1, 2, 3, 4, 5 },
+                cpus: new int[] { 0, 0, 0, 0, 0, 0 },
+                times: new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+                timeProperties: new int[] { 1, 1, 1, 1, 1, 1 },
+                events: new string[] { "event_name", "event_name", "event_name", "event_name", "event_name", "event_name" },
+                eventProperties: new string[] { "event_properties", "event_properties", "event_properties", "event_properties", "event_properties", "event_properties" },
+                eventKinds: null,
+                switches: null);
+        }
     }
 }
