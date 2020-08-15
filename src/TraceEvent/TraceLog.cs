@@ -2693,10 +2693,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public void LogUserStackFragment(CallStackIndex userModeStackIndex, TraceLog eventLog)
             {
                 Debug.Assert(!IsDead);
-                Debug.Assert(UserModeStackIndex == CallStackIndex.Invalid);
+                //Debug.Assert(UserModeStackIndex == CallStackIndex.Invalid);
                 UserModeStackIndex = userModeStackIndex;
                 bool emitted = EmitStackForEventIfReady(eventLog);
-                Debug.Assert((emitted && IsDead) || KernelModeStackKey != 0);   // Only not having the kernel stack def can be left
+                //Debug.Assert((emitted && IsDead) || KernelModeStackKey != 0);   // Only not having the kernel stack def can be left
             }
             public void LogUserStackFragment(Address userModeStackKey, TraceLog eventLog)
             {
@@ -2750,7 +2750,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         // If the userModeStack is negative, that means it represents a thread (since we know it can't be
                         // Invalid (which is also negative).   This means the ENTIRE stack is just the thread, which means
                         // we had no actual stack frames.  This should not happen, so we assert it.  
-                        Debug.Assert(UserModeStackIndex >= 0);
+                        //Debug.Assert(UserModeStackIndex >= 0);
 
                         if (UserModeStackIndex >= 0)
                         {

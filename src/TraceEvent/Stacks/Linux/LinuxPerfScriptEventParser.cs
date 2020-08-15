@@ -550,11 +550,18 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     }
                     else if (!char.IsDigit((char)val))
                     {
-                        if(source.Peek(idx+1) == '[')
+                        if (source.Peek(idx + 1) == '[')
                         {
                             return firstSpaceIdx;
                         }
-                        goto startOver;
+                        else if (char.IsWhiteSpace((char)val))
+                        {
+                            firstSpaceIdx = (int)idx;
+                        }
+                        else
+                        {
+                            goto startOver;
+                        }
                     }
                 }
             }
