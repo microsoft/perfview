@@ -35,6 +35,7 @@ export class EventViewer extends React.Component<Props, State> {
     static displayName = EventViewer.name;
 
     myRef: React.RefObject<any>;
+    static windowCurrentScrollY: number = 0;
 
     constructor(props: Props) {
         super(props);
@@ -60,6 +61,8 @@ export class EventViewer extends React.Component<Props, State> {
             .then(data => {
                 this.setState({ eventTypes: data, loading: false });
             });
+
+        window.addEventListener('scroll', (e) => { EventViewer.windowCurrentScrollY = window.scrollY; });
     }
 
     handleOnClick(e: any) {
@@ -113,7 +116,7 @@ export class EventViewer extends React.Component<Props, State> {
     }
 
     static renderEventListTable(events: Event[], obj: EventViewer, eventNameFilter: string) {
-        return (<React.Fragment>{<select multiple size={events.length} onChange={obj.handleChange}>{events.filter(function f(e) { if (eventNameFilter === '') { return true; } else { return e.eventName.toLowerCase().includes(eventNameFilter.toLowerCase()) } }).map(event => (<option key={event.eventId} value={event.eventId}>{event.eventName}</option>))}</select>}</React.Fragment>);
+        return (<React.Fragment>{<select multiple size={events.length} onChange={obj.handleChange} onFocus={(e) => { window.scrollTo(0, EventViewer.windowCurrentScrollY); }}>{events.filter(function f(e) { if (eventNameFilter === '') { return true; } else { return e.eventName.toLowerCase().includes(eventNameFilter.toLowerCase()) } }).map(event => (<option key={event.eventId} value={event.eventId}>{event.eventName}</option>))}</select>}</React.Fragment>);
     }
 
     render() {

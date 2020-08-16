@@ -14,6 +14,7 @@ interface State {
     incPats: string;
     excPats: string;
     foldPct: string;
+    drillIntoKey: string;
     minCount: number;
     symbolLookupStatus: string;
     symbolLog: string;
@@ -26,7 +27,7 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
     constructor(props: Props) {
         super(props);
         var data = JSON.parse(base64url.decode(this.props.routeKey, "utf8"));
-        this.state = { symbolLog: '', symbolLookupStatus: '', minCount: 50, newRouteKey: this.props.routeKey, start: data.d, end: data.e, groupPats: data.f, foldPats: data.g, incPats: data.h, excPats: data.i, foldPct: data.j };
+        this.state = { symbolLog: '', symbolLookupStatus: '', minCount: 50, newRouteKey: this.props.routeKey, start: data.d, end: data.e, groupPats: data.f, foldPats: data.g, incPats: data.h, excPats: data.i, foldPct: data.j, drillIntoKey: data.k };
 
         this.handleGroupPatsChange = this.handleGroupPatsChange.bind(this);
         this.handleFoldPatsChange = this.handleFoldPatsChange.bind(this);
@@ -68,7 +69,7 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
         e.preventDefault();
 
         var oldRouteKey = JSON.parse(base64url.decode(this.props.routeKey, "utf8"));
-        var newRouteKeyJsonString = JSON.stringify({ a: oldRouteKey.a, b: oldRouteKey.b, c: -1, d: this.state.start, e: this.state.end || '', f: this.state.groupPats || '', g: this.state.foldPats || '', h: this.state.incPats || '', i: this.state.excPats || '', j: this.state.foldPct || '', l: oldRouteKey.l });
+        var newRouteKeyJsonString = JSON.stringify({ a: oldRouteKey.a, b: oldRouteKey.b, c: -1, d: this.state.start, e: this.state.end || '', f: this.state.groupPats || '', g: this.state.foldPats || '', h: this.state.incPats || '', i: this.state.excPats || '', j: this.state.foldPct || '', k: this.state.drillIntoKey, l: oldRouteKey.l });
 
         if (JSON.stringify(oldRouteKey) !== newRouteKeyJsonString) {
             window.location.href = '/ui/stackviewer/hotspots/' + base64url.encode(newRouteKeyJsonString, "utf8"); // HACK: But the "react" way is annoying. Any ideas?
@@ -134,11 +135,11 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
                             <tr><td>Pattern</td><td>Comment</td></tr>
                         </thead>
                         <tbody>
-                            <tr><td>{`{`}%&rbrace;!-&gt;module $1</td><td><strong>Group Modules - Provides high-level overview (i.e. per dll/module cost)</strong></td></tr>
-                            <tr><td>{`{`}*&rbrace;!=&gt;module $1</td><td>Group Full Path Module Entries</td></tr>
-                            <tr><td>{`{`}%&rbrace;!=&gt;module $1</td><td>Group Module Entries</td></tr>
-                            <tr><td>{`{`}%!*&rbrace;.%(-&gt;class $1;{`{`}%!*&rbrace;::-&gt;class $1</td><td>Group Classes</td></tr>
-                            <tr><td>{`{`}%!*&rbrace;.%(=&gt;class $1;{`{`}%!*&rbrace;::=&gt;class $1</td><td>Group Class Entries</td></tr>
+                            <tr><td>{`{`}%&#125;!-&gt;module $1</td><td><strong>Group Modules - Provides high-level overview (i.e. per dll/module cost)</strong></td></tr>
+                            <tr><td>{`{`}*&#125;!=&gt;module $1</td><td>Group Full Path Module Entries</td></tr>
+                            <tr><td>{`{`}%&#125;!=&gt;module $1</td><td>Group Module Entries</td></tr>
+                            <tr><td>{`{`}%!*&#125;.%(-&gt;class $1;{`{`}%!*&#125;::-&gt;class $1</td><td>Group Classes</td></tr>
+                            <tr><td>{`{`}%!*&#125;.%(=&gt;class $1;{`{`}%!*&#125;::=&gt;class $1</td><td>Group Class Entries</td></tr>
                             <tr><td>Thread -&gt; AllThreads</td><td>Fold Threads</td></tr>
                         </tbody>
                     </table>
