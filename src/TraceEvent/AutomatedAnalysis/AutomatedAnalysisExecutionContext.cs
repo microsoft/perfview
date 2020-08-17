@@ -1,15 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Stacks;
+﻿using Microsoft.Diagnostics.Tracing.Etlx;
 using System.IO;
-using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Symbols;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     public sealed class AutomatedAnalysisExecutionContext
     {
+        internal AutomatedAnalysisExecutionContext(IAutomatedAnalysisTrace trace, TextWriter textLog, AutomatedAnalysisIssueCollection issues)
+        {
+            Trace = trace;
+            TextLog = textLog;
+            Issues = issues;
+
+            AutomatedAnalysisTraceLog traceLog = trace as AutomatedAnalysisTraceLog;
+            if(traceLog != null)
+            {
+                TraceLog = traceLog.TraceLog;
+                SymbolReader = traceLog.SymbolReader;
+            }
+        }
         internal AutomatedAnalysisExecutionContext(TraceLog traceLog, TextWriter textLog, SymbolReader symbolReader, AutomatedAnalysisIssueCollection issues)
         {
             TraceLog = traceLog;
@@ -21,6 +30,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         public SymbolReader SymbolReader { get; }
 
         public TraceLog TraceLog { get; }
+
+        public IAutomatedAnalysisTrace Trace { get; }
 
         public TextWriter TextLog { get; }
 

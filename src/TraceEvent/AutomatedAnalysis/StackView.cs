@@ -25,7 +25,10 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _traceLog = traceLog;
             _rawStackSource = stackSource;
             _symbolReader = symbolReader;
-            LookupWarmNGENSymbols();
+            if (traceLog != null && symbolReader != null)
+            {
+                LookupWarmNGENSymbols();
+            }
         }
 
         public CallTree CallTree
@@ -98,7 +101,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
 
             // Check to see if we should attempt to load symbols.
-            if (!_resolvedSymbolModules.Contains(symbolParts[0]))
+            if (_traceLog != null && _symbolReader != null && !_resolvedSymbolModules.Contains(symbolParts[0]))
             {
                 // Look for an unresolved symbols node for the module.
                 string unresolvedSymbolsNodeName = symbolParts[0] + "!?";

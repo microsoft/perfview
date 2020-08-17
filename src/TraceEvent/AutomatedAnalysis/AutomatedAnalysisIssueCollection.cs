@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisIssueCollection : IEnumerable<KeyValuePair<TraceProcess, List<AutomatedAnalysisIssue>>>
+    public sealed class AutomatedAnalysisIssueCollection : IEnumerable<KeyValuePair<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>>>
     {
-        private Dictionary<TraceProcess, List<AutomatedAnalysisIssue>> _issues = new Dictionary<TraceProcess, List<AutomatedAnalysisIssue>>();
+        private Dictionary<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>> _issues = new Dictionary<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>>();
 
-        public List<AutomatedAnalysisIssue> this[TraceProcess process]
+        public List<AutomatedAnalysisIssue> this[AutomatedAnalysisTraceProcess process]
         {
             get
             {
@@ -28,14 +28,31 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
+        // Keep this for now because GLAD depends on it.
+        public List<AutomatedAnalysisIssue> this[TraceProcess process]
+        {
+            get
+            {
+                AutomatedAnalysisTraceProcess traceProcess = new AutomatedAnalysisTraceProcess((int)process.ProcessIndex, process.ProcessID, process.CommandLine, process.ManagedProcess());
+                List<AutomatedAnalysisIssue> issues;
+                if (!_issues.TryGetValue(traceProcess, out issues))
+                {
+                    issues = new List<AutomatedAnalysisIssue>();
+                    _issues.Add(traceProcess, issues);
+                }
+
+                return issues;
+            }
+        }
+
         public IEnumerator GetEnumerator()
         {
             return ((IEnumerable)_issues).GetEnumerator();
         }
 
-        IEnumerator<KeyValuePair<TraceProcess, List<AutomatedAnalysisIssue>>> IEnumerable<KeyValuePair<TraceProcess, List<AutomatedAnalysisIssue>>>.GetEnumerator()
+        IEnumerator<KeyValuePair<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>>> IEnumerable<KeyValuePair<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>>>.GetEnumerator()
         {
-            return ((IEnumerable<KeyValuePair<TraceProcess, List<AutomatedAnalysisIssue>>>)_issues).GetEnumerator();
+            return ((IEnumerable<KeyValuePair<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>>>)_issues).GetEnumerator();
         }
     }
 }

@@ -41,9 +41,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _writer.WriteLine("</html>");
         }
 
-        public void WriteIssuesForProcess(TraceProcess process, List<AutomatedAnalysisIssue> issues)
+        public void WriteIssuesForProcess(AutomatedAnalysisTraceProcess process, List<AutomatedAnalysisIssue> issues)
         {
-            _writer.WriteLine($"<H3>Process {process.ProcessID}: {process.CommandLine}</H3>");
+            _writer.WriteLine($"<H3>Process {process.DisplayID}: {process.Description}</H3>");
             _writer.WriteLine("<Table Border=\"1\">");
             _writer.WriteLine("<TR><TH>Issue Title</TH><TH>Notes</TH></TR>");
             foreach(AutomatedAnalysisIssue issue in issues)
