@@ -392,7 +392,7 @@ namespace Microsoft.Diagnostics.Tracing
         [MethodImpl(MethodImplOptions.NoInlining)]
         private unsafe void ParseBPerfManagedSymbol(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            var bperfLogLocation = Path.Combine(Path.GetDirectoryName(this.btlFilePath), Path.GetFileName(Marshal.PtrToStringAnsi(eventRecord->UserData)));
+            var bperfLogLocation = Path.Combine(Path.GetDirectoryName(this.btlFilePath), Path.GetFileName(Marshal.PtrToStringUni(eventRecord->UserData)));
 
             if (!File.Exists(bperfLogLocation))
             {
