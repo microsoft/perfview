@@ -3770,6 +3770,11 @@ table {
                     // For .NET, we are looking for a Gen 2 GC Start that is induced that has GCBulkNodes after it.   
                     var lastGCStartsRelMSec = new Dictionary<int, double>();
 
+                    source.Clr.GCGenAwareStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GenAwareBeginTraceData data)
+                    {
+                        lastGCStartsRelMSec[data.ProcessID] = data.TimeStampRelativeMSec;
+                    };
+
                     source.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
                     {
                         // Look for induced GCs.  and remember their when it happened.    
