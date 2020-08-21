@@ -353,6 +353,13 @@ namespace PerfView
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.DisableInlining;
             }
 
+            if (parsedArgs.RuntimeLoading)
+            {
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.CompilationDiagnostic;
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.MethodDiagnostic;
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.TypeDiagnostic;
+            }
+
             if (profilerKeywords != 0)
             {
                 InstallETWClrProfiler(LogFile, (int)profilerKeywords);
@@ -3019,6 +3026,11 @@ namespace PerfView
             if (parsedArgs.CCWRefCount)
             {
                 cmdLineArgs += " /CCWRefCount";
+            }
+
+            if (parsedArgs.RuntimeLoading)
+            {
+                cmdLineArgs += " /RuntimeLoading";
             }
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 

@@ -202,6 +202,11 @@ namespace PerfView
                 CCWRefCountCheckBox.IsChecked = true;
             }
 
+            if (args.RuntimeLoading)
+            {
+                RuntimeLoadingCheckBox.IsChecked = true;
+            }
+
             if (args.DumpHeap)
             {
                 HeapSnapshotCheckBox.IsChecked = true;
@@ -774,6 +779,8 @@ namespace PerfView
                 }
 
                 m_args.CCWRefCount = CCWRefCountCheckBox.IsChecked ?? false;
+                m_args.RuntimeLoading = RuntimeLoadingCheckBox.IsChecked ?? false;
+
                 m_args.DumpHeap = HeapSnapshotCheckBox.IsChecked ?? false;
 
                 if (providers.Length > 0)

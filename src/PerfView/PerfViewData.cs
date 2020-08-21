@@ -1061,6 +1061,11 @@ namespace PerfView
             return DoCommand(command, worker);
         }
 
+        protected virtual string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
+        {
+            return DoCommand(commandUri.LocalPath, worker, out continuation);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter)
         {
             if (Viewer == null)
@@ -1087,7 +1092,7 @@ namespace PerfView
                                 Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                                 {
                                     Action continuation;
-                                    var message = DoCommand(e.Uri.LocalPath, Viewer.StatusBar, out continuation);
+                                    var message = DoCommand(e.Uri, Viewer.StatusBar, out continuation);
                                     Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
@@ -3529,6 +3534,82 @@ table {
         }
 
         private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
+    }
+
+    public class PerfViewRuntimeLoaderStats : PerfViewHtmlReport
+    {
+        public PerfViewRuntimeLoaderStats(PerfViewFile dataFile) : base(dataFile, "Runtime Loader") { }
+        protected override string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
+        {
+            continuation = null;
+
+            string command = commandUri.LocalPath;
+            string textStr = "txt/";
+            string csvStr = "csv/";
+            bool text = command.StartsWith(textStr);
+            bool csv = command.StartsWith(csvStr);
+
+            if (text || csv)
+            {
+                var rest = command.Substring(textStr.Length);
+
+
+                bool tree = true;
+                List<string> filters = null;
+                if (!String.IsNullOrEmpty(commandUri.Query))
+                {
+                    filters = new List<string>();
+                    tree = commandUri.Query.Contains("TreeView");
+                    if (commandUri.Query.Contains("JIT"))
+                        filters.Add("JIT");
+                    if (commandUri.Query.Contains("R2R_Found"))
+                        filters.Add("R2R_Found");
+                    if (commandUri.Query.Contains("R2R_Failed"))
+                        filters.Add("R2R_Failed");
+                    if (commandUri.Query.Contains("TypeLoad"))
+                        filters.Add("TypeLoad");
+                    if (commandUri.Query.Contains("AssemblyLoad"))
+                        filters.Add("AssemblyLoad");
+                }
+                string identifier = $"{(tree?"Tree":"Flat")}_";
+                if (filters != null)
+                {
+                    foreach (var filter in filters)
+                    {
+                        identifier = identifier + "_" + filter;
+                    }
+                }
+
+                var startMSec = double.Parse(rest.Substring(rest.IndexOf(',') + 1));
+                var processId = int.Parse(rest.Substring(0, rest.IndexOf(',')));
+                var processData = m_runtimeData.GetProcessDataFromProcessIDAndTimestamp(processId, startMSec);
+
+                var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + ((long)startMSec).ToString() + "_" + identifier + (csv ? ".csv" : ".txt"));
+                if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                    File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
+                {
+                    Stats.RuntimeLoaderStats.ToTxt(txtFile, processData, filters.ToArray(), tree);
+                }
+                Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                return "Opening Txt " + txtFile;
+            }
+            return "Unknown command " + command;
+        }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        {
+            using (var source = dataFile.Events.GetSource())
+            {
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
+                source.Process();
+                m_runtimeData = runtimeLoaderComputer.RuntimeLoaderData;
+                Stats.ClrStats.ToHtml(writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source).ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats : m_runtimeData);
+            }
+        }
+
+        private RuntimeLoaderStatsData m_runtimeData;
     }
 
     public class PerfViewJitStats : PerfViewHtmlReport
@@ -6921,6 +7002,9 @@ table {
             bool hasGCEvents = false;
             bool hasProjectNExecutionTracingEvents = false;
             bool hasDefenderEvents = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
+            bool hasJIT = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -6979,6 +7063,19 @@ table {
                 if (counts.ProviderGuid == MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid)
                 {
                     hasDefenderEvents = true;
+                }
+
+                if (name.StartsWith("Method/JittingStarted"))
+                {
+                    hasJIT = true;
+                }
+                if (name.StartsWith("TypeLoad/Start"))
+                {
+                    hasTypeLoad = true;
+                }
+                if (name.StartsWith("Loader/AssemblyLoad"))
+                {
+                    hasAssemblyLoad = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -7287,6 +7384,11 @@ table {
             }
 
             advanced.Children.Add(new PerfViewJitStats(this));
+
+            if (hasJIT || hasAssemblyLoad || hasTypeLoad)
+            {
+                advanced.Children.Add(new PerfViewRuntimeLoaderStats(this));
+            }
 
             advanced.Children.Add(new PerfViewEventStats(this));
 
@@ -8420,6 +8522,8 @@ table {
 
             bool hasGC = false;
             bool hasJIT = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8431,6 +8535,14 @@ table {
                     else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
                     {
                         hasJIT = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("TypeLoad/Start"))
+                    {
+                        hasTypeLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
+                    {
+                        hasAssemblyLoad = true;
                     }
                 }
             }
@@ -8465,6 +8577,11 @@ table {
                 if (hasJIT)
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
+                }
+
+                if (hasJIT || hasTypeLoad || hasAssemblyLoad)
+                {
+                    advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
                 }
             }
 
@@ -8633,6 +8750,8 @@ table {
             bool hasGCAllocationTicks = false;
             bool hasObjectUpdate = false;
             bool hasMemAllocStacks = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8665,6 +8784,14 @@ table {
                     if (eventStats.EventName.StartsWith("GC/SampledObjectAllocation"))
                     {
                         hasMemAllocStacks = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("TypeLoad/Start"))
+                    {
+                        hasTypeLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
+                    {
+                        hasAssemblyLoad = true;
                     }
                 }
             }
@@ -8711,6 +8838,11 @@ table {
                 if (hasJIT)
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
+                }
+
+                if (hasJIT || hasTypeLoad || hasAssemblyLoad)
+                {
+                    advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
                 }
             }
 

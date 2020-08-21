@@ -1873,6 +1873,7 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
+
     public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);

@@ -320,7 +320,11 @@
                     </TextBlock>                    
                     <CheckBox Grid.Row="0" Grid.Column="11" Name="CCWRefCountCheckBox" VerticalAlignment="Center"/>
 
-                    <CheckBox Grid.Row="0" Grid.Column="13" Name="Unused2" Visibility="Hidden" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="0" Grid.Column="12" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2" 
+                               ToolTip="Log extended information about .NET Runtime loading including R2R and type load events." >
+                    <Hyperlink Command="Help" CommandParameter="RuntimeLoadingCheckBox">.NET Loader:</Hyperlink>
+                    </TextBlock>
+                    <CheckBox Grid.Row="0" Grid.Column="13" Name="RuntimeLoadingCheckBox" VerticalAlignment="Center" />
                 </Grid>
 
                 <!-- Check boxes for more clr events (GC Heap related) -->
