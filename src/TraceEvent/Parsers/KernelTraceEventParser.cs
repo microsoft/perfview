@@ -6473,7 +6473,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// </summary>
         // _FLT_IO_PARAMETER_BLOCK.Create.Options
         // 8 higher bits are the Disposition as passed to IoCreateFileSpecifyDeviceObjectHint
-        public CreateDisposition CreateDispostion { get { return (CreateDisposition)(GetByteAt(LayoutVersion <= 2 ? HostOffset(15, 3) : HostOffset(15, 2))); } }
+        public CreateDisposition CreateDisposition { get { return (CreateDisposition)(GetByteAt(LayoutVersion <= 2 ? HostOffset(15, 3) : HostOffset(15, 2))); } }
         /// <summary>
         /// See Windows CreateFile API ShareMode parameter
         /// </summary>
@@ -6545,7 +6545,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "IrpPtr", IrpPtr);
             XmlAttribHex(sb, "FileObject", FileObject);
             XmlAttrib(sb, "CreateOptions", CreateOptions);
-            XmlAttrib(sb, "CreateDispostion", CreateDispostion);
+            XmlAttrib(sb, "CreateDisposition", CreateDisposition);
             XmlAttrib(sb, "FileAttributes", FileAttributes);
             XmlAttrib(sb, "ShareAccess", ShareAccess);
             XmlAttrib(sb, "FileName", FileName);
@@ -6559,7 +6559,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "CreateDispostion", "FileAttributes", "ShareAccess", "FileName" };
+                    payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "CreateDisposition", "FileAttributes", "ShareAccess", "FileName" };
                 }
 
                 return payloadNames;
@@ -6577,7 +6577,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 2:
                     return CreateOptions;
                 case 3:
-                    return CreateDispostion;
+                    return CreateDisposition;
                 case 4:
                     return FileAttributes;
                 case 5:
@@ -6617,7 +6617,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         SUPERSEDE = 0,          // FILE_SUPERSEDE - if the file exists, replace a file with another file.
         CREATE_NEW = 2,         // FILE_OPEN - Must NOT exist previously, otherwise fails
         CREATE_ALWAYS = 5,      // FILE_OVERWRITE_IF - Creates if necessary, trucates
-        OPEN_EXISING = 1,       // FILE_OPEN - Must exist previously otherwise fails.
+        OPEN_EXISTING = 1,       // FILE_OPEN - Must exist previously otherwise fails.
         OPEN_ALWAYS = 3,        // FILE_OPEN_IF - Create if necessary, leaves data.
         TRUNCATE_EXISTING = 4,  // FILE_OVERWRITE - Must Exist previously, otherwise fails, truncates.  MOST WRITE OPENS USE THIS!
     }
