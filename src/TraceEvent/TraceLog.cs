@@ -8499,7 +8499,28 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     pdbFileName = symReader.FindSymbolFilePathForModule(moduleFile.FilePath);
                 }
             }
+            if(pdbFileName == null)
+            {
+                // Check to see if the file is inside of an existing Windows container.
+                string volumePath = WindowsDeviceToVolumeMap.Instance.ConvertDevicePathToVolumePath(moduleFile.FilePath);
+                symReader.m_log.WriteLine("Attempting to convert {0} to a volume-based path in case the file inside of a container.", moduleFile.FilePath);
+                if (!moduleFile.FilePath.Equals(volumePath))
+                {
+                    symReader.m_log.WriteLine("Successfully converted to {0}.", volumePath);
 
+                    // Confirm that the path from the trace points at a file that is the same (checksums match).
+                    // It will log messages if it does not match.
+                    if (TraceModuleUnchanged(moduleFile, symReader.m_log, volumePath))
+                    {
+                        pdbFileName = symReader.FindSymbolFilePathForModule(volumePath);
+                    }
+                }
+                else
+                {
+                    symReader.m_log.WriteLine("Unable to convert {0} to a volume-based path.", moduleFile.FilePath);
+                }
+
+            }
             if (pdbFileName == null)
             {
                 if (UnsafePDBMatching)
@@ -8563,13 +8584,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Returns true if 'moduleFile' seems to be unchanged from the time the information about it
         /// was generated.  Logs messages to 'log' if it fails.  
+        /// Specify overrideModuleFilePath if the path needs to be converted to a different format in order to be accessed (e.g. from device path to volume path).
         /// </summary>
-        private bool TraceModuleUnchanged(TraceModuleFile moduleFile, TextWriter log)
+        private bool TraceModuleUnchanged(TraceModuleFile moduleFile, TextWriter log, string overrideModuleFilePath = null)
         {
-            string moduleFilePath = SymbolReader.BypassSystem32FileRedirection(moduleFile.FilePath);
+            string moduleFilePath = SymbolReader.BypassSystem32FileRedirection(overrideModuleFilePath != null ? overrideModuleFilePath : moduleFile.FilePath);
             if (!File.Exists(moduleFilePath))
             {
-                log.WriteLine("The file {0} does not exist on the local machine", moduleFile.FilePath);
+                log.WriteLine("The file {0} does not exist on the local machine", moduleFilePath);
                 return false;
             }
 
@@ -8577,17 +8599,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (file.Header.CheckSum != (uint)moduleFile.ImageChecksum)
                 {
-                    log.WriteLine("The local file {0} has a mismatched checksum found {1} != expected {2}", moduleFile.FilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
+                    log.WriteLine("The local file {0} has a mismatched checksum found {1} != expected {2}", moduleFilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
                     return false;
                 }
                 if (moduleFile.ImageId != 0 && file.Header.TimeDateStampSec != moduleFile.ImageId)
                 {
-                    log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFile.FilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
+                    log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
                     return false;
                 }
                 if (file.Header.SizeOfImage != (uint)moduleFile.ImageSize)
                 {
-                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFile.FilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
+                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
                     return false;
                 }
             }
