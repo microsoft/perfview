@@ -9,8 +9,6 @@ namespace Microsoft.Diagnostics.Utilities
 {
     public sealed class WindowsDeviceToVolumeMap
     {
-        public static WindowsDeviceToVolumeMap Instance = new WindowsDeviceToVolumeMap();
-
         private static bool s_LegacyPathHandlingDisabled = false;
 
         private const string VolumeNamePrefix = @"\\?\";
@@ -23,7 +21,7 @@ namespace Microsoft.Diagnostics.Utilities
 
         private Dictionary<string, string> _deviceNameToVolumeNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        private WindowsDeviceToVolumeMap()
+        public WindowsDeviceToVolumeMap()
         {
             Initialize();
         }

@@ -8563,7 +8563,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if(pdbFileName == null)
             {
                 // Check to see if the file is inside of an existing Windows container.
-                string volumePath = WindowsDeviceToVolumeMap.Instance.ConvertDevicePathToVolumePath(moduleFile.FilePath);
+                // Create a new instance of WindowsDeviceToVolumeMap to avoid situations where the mappings have changed but we haven't noticed.
+                string volumePath = new WindowsDeviceToVolumeMap().ConvertDevicePathToVolumePath(moduleFile.FilePath);
                 symReader.m_log.WriteLine("Attempting to convert {0} to a volume-based path in case the file inside of a container.", moduleFile.FilePath);
                 if (!moduleFile.FilePath.Equals(volumePath))
                 {
