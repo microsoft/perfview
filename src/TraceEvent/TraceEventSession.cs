@@ -1394,6 +1394,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 flags |= EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
             }
 
+            // Clear all other flags and only specify IMAGEID.
+            if((options == TraceEventMergeOptions.ImageIDsOnly))
+            {
+                flags = EVENT_TRACE_MERGE_EXTENDED_DATA.IMAGEID;
+            }
+
             ETWKernelControl.Merge(inputETLFileNames, outputETLFileName, flags);
         }
 
@@ -2269,6 +2275,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Compress the resulting file.  
         /// </summary>
         Compress = 1,
+        /// <summary>
+        /// Only perform image ID injection.
+        /// </summary>
+        ImageIDsOnly = 2,
     }
 
     /// <summary>
