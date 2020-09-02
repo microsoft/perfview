@@ -549,6 +549,15 @@ namespace PerfView
                         }
                     }
 
+                    if(parsedArgs.EnableEventsInSilos)
+                    {
+                        options.EnableInSilos = true;
+                    }
+                    if(parsedArgs.EnableSourceContainerTracking)
+                    {
+                        options.EnableSourceContainerTracking = true;
+                    }
+
                     var stacksEnabled = options.Clone();
                     stacksEnabled.StacksEnabled = true;
 
@@ -2816,6 +2825,16 @@ namespace PerfView
             if (parsedArgs.StopCommand != null)
             {
                 cmdLineArgs += " /StopCommand:" + Command.Quote(parsedArgs.StopCommand);
+            }
+
+            if(parsedArgs.EnableEventsInSilos)
+            {
+                cmdLineArgs += " /EnableEventsInSilos";
+            }
+
+            if(parsedArgs.EnableSourceContainerTracking)
+            {
+                cmdLineArgs += " /EnableSourceContainerTracking";
             }
 
             if (parsedArgs.ClrEventLevel != Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose)

@@ -424,6 +424,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
                         }
+                        if(options.EnableInSilos)
+                        {
+                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_ENABLE_SILOS;
+                        }
+                        if(options.EnableSourceContainerTracking)
+                        {
+                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING;
+                        }
 
                         if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.  
                         {
@@ -2351,6 +2359,15 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Has no effect unless StacksEnabled is also set (since otherwise stack collection is off).   
         /// </summary>
         public IList<int> EventIDStacksToDisable { get; set; }
+        /// <summary>
+        /// Setting this to true will cause this provider to be enabled inside of any silos (containers) running on the machine.
+        /// </summary>
+        public bool EnableInSilos { get; set; }
+        /// <summary>
+        /// Setting this to true will cause all events emitted inside of a silo to contain the container ID in its payload.
+        /// Has no effect if <code>EnableInSilos == false</code>.
+        /// </summary>
+        public bool EnableSourceContainerTracking { get; set; }
 
         /// <summary>
         /// Make a deep copy of options and return it.  
@@ -2405,6 +2422,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
             if (EventIDStacksToDisable != null)
             {
                 ret.EventIDStacksToDisable = new List<int>(EventIDStacksToDisable);
+            }
+            if(EnableInSilos)
+            {
+                ret.EnableInSilos = true;
+            }
+            if(EnableSourceContainerTracking)
+            {
+                ret.EnableSourceContainerTracking = true;
             }
 
             return ret;

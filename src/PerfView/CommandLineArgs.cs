@@ -103,6 +103,8 @@ namespace PerfView
         public int StopOnAppFabricOverMsec;
         public int DelayAfterTriggerSec = 5;    // Number of seconds to wait after a trigger  
         public string[] MonitorPerfCounter;     // logs perf counters to the ETL file.  
+        public bool EnableEventsInSilos;             // Enable user-mode events inside of silos (e.g. containers).
+        public bool EnableSourceContainerTracking;   // Enable inclusion of container id in each event.
 
         // Start options.
         public bool StackCompression = true;    // Use compresses stacks when collecting traces. 
@@ -550,6 +552,10 @@ namespace PerfView
                 "The maximum number of objects (in K or thousands) that will even be examined when dumping the heap.  Avoids memory use at collection time.  " +
                  "This is useful if heap dumping causes out of memory exceptions.");
 
+            parser.DefineOptionalQualifier("EnableEventsInSilos", ref EnableEventsInSilos,
+                "Enable user mode events inside of silos (containers).");
+            parser.DefineOptionalQualifier("EnableSourceContainerTracking", ref EnableSourceContainerTracking,
+                "Emit the container ID as part of the payload of each usermode event emitted inside of a silo (container).");
 
             /* end of qualifier that apply to more than one parameter set (command) */
             /****************************************************************************************/

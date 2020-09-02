@@ -631,6 +631,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             GC.SuppressFinalize(toSend);    // Tell the finalizer you don't need it because I will do the cleanup
             // Do the cleanup, but also keep toSend alive during the dispatch and until finalization was suppressed.  
             System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);
+            toSend.instanceContainerID = null;
         }
 
         /// <summary>
@@ -978,6 +979,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             }
             return Guid.Empty;
+        }
+
+        internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        {
+            if(eventRecord->UserContext != IntPtr.Zero)
+            {
+                int index = (int)eventRecord->UserContext;
+                if((uint)index < (uint)containerIDs.Count)
+                {
+                    return containerIDs[index];
+                }
+            }
+            return null;
         }
 
         internal override unsafe int LastChanceGetThreadID(TraceEvent data)
@@ -2929,6 +2943,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var extendedData = data.eventRecord->ExtendedData;
             Debug.Assert(extendedData != null && extendedDataCount != 0);
             Guid* relatedActivityIDPtr = null;
+            string containerID = null;
             for (int i = 0; i < extendedDataCount; i++)
             {
                 if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64 ||
@@ -3015,6 +3030,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
                 }
+                else if(extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                {
+                    containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
+                }
             }
 
             if (relatedActivityIDPtr != null)
@@ -3030,6 +3049,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 data.eventRecord->ExtendedDataCount = 0;
                 data.eventRecord->ExtendedData = null;
             }
+
+            if(containerID != null)
+            {
+                Debug.Assert(data.eventRecord->UserContext == null);
+                if(containerIDs.Count == 0)
+                {
+                    // Insert a synthetic value since 0 represents "no container ID".
+                    containerIDs.Add(null);
+                }
+                data.eventRecord->UserContext = (IntPtr)containerIDs.Count;
+                containerIDs.Add(containerID);
+            }
+            else
+            {
+                data.eventRecord->UserContext = IntPtr.Zero;
+            }
+
             return isBookkeepingEvent;
         }
 
@@ -3582,6 +3618,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 serializer.Write(relatedActivityIDs[i]);
             }
 
+            serializer.Log("<WriteCollection name=\"containerIDs\" count=\"" + containerIDs.Count + "\">\r\n");
+            serializer.Write(containerIDs.Count);
+            for(int i=0; i<containerIDs.Count; i++)
+            {
+                serializer.Write(containerIDs[i]);
+            }
+
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
@@ -3740,12 +3783,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 deserializer.Read(out guid);
                 relatedActivityIDs.Add(guid);
             }
+            containerIDs.Clear();
+            count = deserializer.ReadInt();
+            string containerID;
+            for(int i=0; i<count; i++)
+            {
+                deserializer.Read(out containerID);
+                containerIDs.Add(containerID);
+            }
             deserializer.Read(out truncated);
             firstTimeInversion = (EventIndex) (uint) deserializer.ReadInt();
         }
         int IFastSerializableVersion.Version
         {
-            get { return 72; }
+            get { return 73; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -3821,6 +3872,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // In a TraceLog, we store all the GUIDS of RelatedActivityIDs here.  When then 'point'
         // at them with the index into this array.  (see TraceLog.GetRelatedActivityID).
         internal GrowableArray<Guid> relatedActivityIDs;
+
+        // In a TraceLog, we store all of the container IDs here and then 'point'
+        // at them with the index into this array.  This is just like relatedActivityIDs above.
+        // See TraceLog.GetContainerID.
+        internal GrowableArray<string> containerIDs;
 
         #region EventPages
         internal const int eventsPerPage = 1024;    // We keep track of  where events are in 'pages' of this size.
@@ -4344,6 +4400,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             return TraceLog.GetRelatedActivityID(eventRecord);
+        }
+
+        internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        {
+            return TraceLog.GetContainerID(eventRecord);
         }
 
         internal TraceLogEventSource(TraceEvents events, bool ownsItsTraceLog = false)
