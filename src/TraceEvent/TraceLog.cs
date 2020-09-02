@@ -3052,7 +3052,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if(containerID != null)
             {
-                Debug.Assert(data.eventRecord->UserContext == null);
+                Debug.Assert(data.eventRecord->UserContext == IntPtr.Zero);
                 if(containerIDs.Count == 0)
                 {
                     // Insert a synthetic value since 0 represents "no container ID".
