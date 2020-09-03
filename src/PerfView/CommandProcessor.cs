@@ -549,9 +549,9 @@ namespace PerfView
                         }
                     }
 
-                    if(parsedArgs.EnableEventsInSilos)
+                    if(parsedArgs.EnableEventsInContainers)
                     {
-                        options.EnableInSilos = true;
+                        options.EnableInContainers = true;
                     }
                     if(parsedArgs.EnableSourceContainerTracking)
                     {
@@ -2896,9 +2896,9 @@ namespace PerfView
                 cmdLineArgs += " /StopCommand:" + Command.Quote(parsedArgs.StopCommand);
             }
 
-            if(parsedArgs.EnableEventsInSilos)
+            if(parsedArgs.EnableEventsInContainers)
             {
-                cmdLineArgs += " /EnableEventsInSilos";
+                cmdLineArgs += " /EnableEventsInContainers";
             }
 
             if(parsedArgs.EnableSourceContainerTracking)

@@ -424,7 +424,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
                         }
-                        if(options.EnableInSilos)
+                        if(options.EnableInContainers)
                         {
                             parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_ENABLE_SILOS;
                         }
@@ -2372,10 +2372,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// Setting this to true will cause this provider to be enabled inside of any silos (containers) running on the machine.
         /// </summary>
-        public bool EnableInSilos { get; set; }
+        public bool EnableInContainers { get; set; }
         /// <summary>
-        /// Setting this to true will cause all events emitted inside of a silo to contain the container ID in its payload.
-        /// Has no effect if <code>EnableInSilos == false</code>.
+        /// Setting this to true will cause all events emitted inside of a container to contain the container ID in its payload.
+        /// Has no effect if <code>EnableInContainers == false</code>.
         /// </summary>
         public bool EnableSourceContainerTracking { get; set; }
 
@@ -2433,9 +2433,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
             {
                 ret.EventIDStacksToDisable = new List<int>(EventIDStacksToDisable);
             }
-            if(EnableInSilos)
+            if(EnableInContainers)
             {
-                ret.EnableInSilos = true;
+                ret.EnableInContainers = true;
             }
             if(EnableSourceContainerTracking)
             {
