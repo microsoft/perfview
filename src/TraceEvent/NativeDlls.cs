@@ -34,6 +34,7 @@ internal class NativeDlls
         var thisDllDir = Path.GetDirectoryName(assemblyLocation);
 
         // Try next to the current DLL
+        SetDllDirectory(thisDllDir);
         var dllName = Path.Combine(thisDllDir, simpleName);
         var ret = LoadLibrary(dllName);
         if (ret != IntPtr.Zero)
@@ -42,6 +43,7 @@ internal class NativeDlls
         }
 
         // Try in <arch> directory
+        SetDllDirectory(Path.Combine(thisDllDir, ProcessArchitectureDirectory));
         dllName = Path.Combine(thisDllDir, ProcessArchitectureDirectory, simpleName);
         ret = LoadLibrary(dllName);
         if (ret != IntPtr.Zero)
@@ -50,6 +52,7 @@ internal class NativeDlls
         }
 
         // Try in ../native/<arch>.  This is where it will be in a nuget package. 
+        SetDllDirectory(Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory));
         dllName = Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory, simpleName);
         ret = LoadLibrary(dllName);
         if (ret != IntPtr.Zero)
@@ -93,4 +96,10 @@ internal class NativeDlls
 
     [System.Runtime.InteropServices.DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr LoadLibrary(string lpFileName);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetDllDirectory(string lpPathName);
+
+
 }
