@@ -3420,6 +3420,23 @@ namespace PerfView
                         }
                     }
 
+                    if(parsedArgs.EnableEventsInContainers || parsedArgs.EnableSourceContainerTracking)
+                    {
+                        if(options == null)
+                        {
+                            options = new TraceEventProviderOptions();
+                        }
+
+                        if(parsedArgs.EnableEventsInContainers)
+                        {
+                            options.EnableInContainers = true;
+                        }
+                        if(parsedArgs.EnableSourceContainerTracking)
+                        {
+                            options.EnableSourceContainerTracking = true;
+                        }
+                    }
+
                     EnableUserProvider(clrRundownSession, "PerfViewLogger", PerfViewLogger.Log.Guid,
                         TraceEventLevel.Verbose, ulong.MaxValue, options);
                     Thread.Sleep(20);       // Give it time to startup 
