@@ -34,27 +34,24 @@ internal class NativeDlls
         var thisDllDir = Path.GetDirectoryName(assemblyLocation);
 
         // Try next to the current DLL
-        SetDllDirectory(thisDllDir);
         var dllName = Path.Combine(thisDllDir, simpleName);
-        var ret = LoadLibrary(dllName);
+        var ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)
         {
             return;
         }
 
         // Try in <arch> directory
-        SetDllDirectory(Path.Combine(thisDllDir, ProcessArchitectureDirectory));
         dllName = Path.Combine(thisDllDir, ProcessArchitectureDirectory, simpleName);
-        ret = LoadLibrary(dllName);
+        ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)
         {
             return;
         }
 
         // Try in ../native/<arch>.  This is where it will be in a nuget package. 
-        SetDllDirectory(Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory));
         dllName = Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory, simpleName);
-        ret = LoadLibrary(dllName);
+        ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)
         {
             return;
@@ -94,12 +91,13 @@ internal class NativeDlls
     private static string s_ProcessArchDirectory;
 
 
-    [System.Runtime.InteropServices.DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr LoadLibrary(string lpFileName);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, LoadLibraryFlags dwFlags);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetDllDirectory(string lpPathName);
+    private enum LoadLibraryFlags : uint
+    {
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100
+    }
 
 
 }
