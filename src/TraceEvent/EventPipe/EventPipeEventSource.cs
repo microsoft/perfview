@@ -887,7 +887,8 @@ namespace Microsoft.Diagnostics.Tracing
     internal enum EventBlockFlags : short
     {
         Uncompressed = 0,
-        HeaderCompression = 1
+        HeaderCompression = 1,
+        EventBlockULZCompression = 2
     }
 
     /// <summary>
