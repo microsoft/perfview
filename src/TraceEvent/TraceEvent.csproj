@@ -122,6 +122,16 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
+      <Link>amd64\msvcp140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
+      <Link>amd64\vcruntime140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
     <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Link>x86\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -134,6 +144,16 @@
     </None>
     <None Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
       <Link>x86\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
+      <Link>x86\msvcp140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
+      <Link>x86\vcruntime140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
