@@ -46,6 +46,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\native\amd64\vcruntime140_1.dll')" Include="$(MSBuildThisFileDirectory)..\lib\native\amd64\vcruntime140_1.dll">
+      <Link>amd64\vcruntime140_1.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
 
     <!-- There are no static references to these so I need to copy them explicitly.  
          The first two COM interop assemblies so they are the same for all targets, I pick netstandard1.6 pretty arbitraily 

@@ -48,6 +48,7 @@
     <file src="$OutDir$netstandard2.0\amd64\msdia140.dll" target="lib\native\amd64\msdia140.dll" />
     <file src="$OutDir$netstandard2.0\amd64\msvcp140.dll" target="lib\native\amd64\msvcp140.dll" />
     <file src="$OutDir$netstandard2.0\amd64\vcruntime140.dll" target="lib\native\amd64\vcruntime140.dll" />
+    <file src="$OutDir$netstandard2.0\amd64\vcruntime140_1.dll" target="lib\native\amd64\vcruntime140_1.dll" />
 
     <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.dll" target="lib\native\x86\KernelTraceControl.dll" />
     <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.Win61.dll" target="lib\native\x86\KernelTraceControl.Win61.dll" />
