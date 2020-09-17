@@ -33,20 +33,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // ensure there are base processes
             source.NeedProcesses();
 
-            if (m_currentSource != source)
+            if(m_weakCurrentSource.Target != source)
             {
                 TraceLoadedDotNetRuntime.SetupCallbacks(source);
             }
 
             source.UserData["Computers/LoadedDotNetRuntimes"] = new Dictionary<ProcessIndex, DotNetRuntime>();
 
-            m_currentSource = source;
+            m_weakCurrentSource.Target = source;
         }
 
         public static TraceLoadedDotNetRuntime LoadedDotNetRuntime(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = process.Source.UserData["Computers/LoadedDotNetRuntimes"] as Dictionary<ProcessIndex, DotNetRuntime>;
             if (map.ContainsKey(process.ProcessIndex))
             {
@@ -61,7 +61,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void AddCallbackOnDotNetRuntimeLoad(this TraceProcess process, Action<TraceLoadedDotNetRuntime> OnDotNetRuntimeLoaded)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
             if (!map.ContainsKey(process.ProcessIndex))
             {
@@ -74,7 +74,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void SetMutableTraceEventStackSource(this TraceProcess process, MutableTraceEventStackSource stackSource)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
             if (!map.ContainsKey(process.ProcessIndex))
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static MutableTraceEventStackSource MutableTraceEventStackSource(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
             if (map.ContainsKey(process.ProcessIndex))
             {
@@ -105,7 +105,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return map.Any(kv => kv.Value.StackSource != null);
         }
 
-        #region private
+#region private
         public class DotNetRuntime
         {
             public Action<TraceLoadedDotNetRuntime> OnLoaded;
@@ -140,8 +140,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
         }
 
-        private static TraceEventDispatcher m_currentSource; // used to ensure non-concurrent usage
-        #endregion
+        private static WeakReference m_weakCurrentSource = new WeakReference(null); // used to ensure non-concurrent usage
+#endregion
     }
 
     /// <summary>
@@ -217,7 +217,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return xml.Replace("/>", sb.ToString());
         }
 
-        #region private
+#region private
 
         internal TraceLoadedDotNetRuntime(TraceProcess proc)
         {
@@ -1471,7 +1471,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         private Version runtimeVersion;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1493,7 +1493,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// </summary>
         public List<TraceGC> GCs { get { return m_gcs; } }
 
-        #region private
+#region private
         internal static TraceGC GetCurrentGC(TraceLoadedDotNetRuntime proc)
         {
             if (proc.GC.GCs.Count > 0)
@@ -1654,7 +1654,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 m_prvcount = m_gcs.Count;
             }
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1671,14 +1671,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// </summary>
         public List<TraceJittedMethod> Methods { get { return m_methods; } }
 
-        #region private
+#region private
         internal JITStats m_stats = new JITStats();
         internal List<TraceJittedMethod> m_methods = new List<TraceJittedMethod>();
         internal double NextRelativeTimeStampMsec;
-        #endregion
+#endregion
     }
 
-    #region internal classes 
+#region internal classes 
     internal class CircularBuffer<T> : IEnumerable<T>
         where T : class
     {
@@ -1726,7 +1726,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return GetEnumerator();
         }
     }
-    #endregion // internal classes
+#endregion // internal classes
 }
 
 namespace Microsoft.Diagnostics.Tracing.Analysis.GC
@@ -2454,7 +2454,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double PauseTimePercentageSinceLastGC;
 
-        #region private
+#region private
         internal void OnEnd(TraceGarbageCollector details)
         {
             IsComplete = true;
@@ -3113,7 +3113,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         private float[] GCCpuServerGCThreads = null;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -3393,7 +3393,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        #region private
+#region private
         // These values right now are the same as the first 4 in CondemnedReasonGroup.
         private enum Condemned_Reason_Generation
         {
@@ -3465,7 +3465,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return ConditionIsSet;
         }
 
-        #endregion 
+#endregion
     }
 
     /// <summary>
@@ -3605,7 +3605,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public List<GcWorkSpan> SampleSpans = new List<GcWorkSpan>();
         public List<GcJoin> GcJoins = new List<GcJoin>();
 
-        #region private 
+#region private 
         //list of times in msc starting from GC start when GCJoin events were fired for this heap
 
         internal void AddSampleEvent(ThreadWorkSpan sample, double pauseStartRelativeMSec)
@@ -3700,7 +3700,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 JoinID = data.GCID,
             });
         }
-        #endregion
+#endregion
     }
 
     [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
@@ -3865,7 +3865,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             }
         }
 
-        #region private
+#region private
         /// <summary>
         /// Legacgy
         /// </summary>
@@ -4067,7 +4067,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         internal Dictionary<MethodKey, TraceJittedMethod> backgroundJitEvents = new Dictionary<MethodKey, TraceJittedMethod>();
         internal Dictionary<long, string> moduleNamesFromID = new Dictionary<long, string>();
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -4201,7 +4201,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
         public bool IsDefaultVersion { get { return VersionID == 0; } }
 
-        #region private
+#region private
         internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
         {
             if (optimizationTier != OptimizationTier.Unknown)
@@ -4218,7 +4218,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         internal string _blockedReason;
         internal int Completed = 0;
         internal long ModuleID = 0;
-        #endregion
+#endregion
     }
 }
 
@@ -4351,7 +4351,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         public bool HasDetailedGCInfo;
 
-        #region private
+#region private
 
         // This is the last GC in progress. We need this for server Background GC.
         // See comments for lastCompletedGC.
@@ -4601,6 +4601,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        #endregion
+#endregion
     }
 }
