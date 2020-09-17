@@ -132,6 +132,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
+      <Link>amd64\vcruntime140_1.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
     <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Link>x86\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
