@@ -213,7 +213,7 @@ namespace PerfView
         public string Message;
 
         // Merge options.
-        public bool SharedKernelContainer;
+        public bool ImageIDsOnly;
 
         // Viewer options
         public bool UnsafePDBMatch;
@@ -590,8 +590,8 @@ namespace PerfView
             parser.DefineParameterSet("merge", ref DoCommand, App.CommandProcessor.Merge,
                 "Combine separate ETL files into a single ETL file (that can be decoded on another machine).");
             parser.DefineOptionalParameter("DataFile", ref DataFile, "ETL file containing profile data.");
-            parser.DefineOptionalQualifier("SharedKernelContainer", ref SharedKernelContainer,
-                "States whether this merge operation takes place inside a shared kernel container.");
+            parser.DefineOptionalQualifier("ImageIDsOnly", ref ImageIDsOnly,
+                "Only perform image ID injection during the merge operation.");
 
             parser.DefineParameterSet("unzip", ref DoCommand, App.CommandProcessor.Unzip,
                 "Unpack a ZIP file into its ETL file (and possibly its NGEN PDBS) /WPR option can be specified.");

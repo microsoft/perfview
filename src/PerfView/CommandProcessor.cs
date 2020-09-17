@@ -1464,7 +1464,7 @@ namespace PerfView
             // Save the original path so that if necessary, we can write the resulting file to it.
             string originalArchivePath = parsedArgs.DataFile;
 
-            if (parsedArgs.SharedKernelContainer)
+            if (parsedArgs.ImageIDsOnly)
             {
                 // Make a directory to put the symbols in.
                 // We may need to unzip the file if this is the second merge (e.g. for container scenarios where we must merge on the host and inside the container).
@@ -1507,12 +1507,12 @@ namespace PerfView
                 etlWriter.CompressETL = true;
             }
 
-            if(parsedArgs.SharedKernelContainer)
+            if(parsedArgs.ImageIDsOnly)
             {
-                // If this is the shared kernel container merge step, make sure to keep any PDBs that were generated on the host.
-                // Also, only re-merge with the IMAGEIDS flag.
-                etlWriter.IncludeExistingPDBs = true;
                 etlWriter.MergeImageIDsOnly = true;
+
+                // If we're only performing image ID injection, make sure to keep any PDBs that were generated in previous merge steps.
+                etlWriter.IncludeExistingPDBs = true;
             }
 
             etlWriter.DeleteInputFile = false;
@@ -1530,9 +1530,9 @@ namespace PerfView
             // Actually create the archive.  
             var success = etlWriter.WriteArchive();
 
-            // Shared kernel merge operations are done in a separate temp directory, so the resulting file
+            // ImageID only merge operations are done in a separate temp directory, so the resulting file
             // must be copied back to the original location so the user can find it.
-            if(parsedArgs.SharedKernelContainer)
+            if(parsedArgs.ImageIDsOnly)
             {
                 // Generate the full path to the destination file.
                 string destDir = Path.GetDirectoryName(originalArchivePath);
@@ -1544,7 +1544,7 @@ namespace PerfView
                 LogFile.WriteLine("Final archive copied to " + destPath);
             }
 
-            if (parsedArgs.ShouldZip && !parsedArgs.SharedKernelContainer)
+            if (parsedArgs.ShouldZip && !parsedArgs.ImageIDsOnly)
             {
                 // The rest of this is an optimization.   If we have ETL or ETLX
                 // files for the file we just ZIPPed then set it up so that if
@@ -3121,9 +3121,9 @@ namespace PerfView
                 cmdLineArgs += " /RuntimeLoading";
             }
 
-            if(parsedArgs.SharedKernelContainer)
+            if(parsedArgs.ImageIDsOnly)
             {
-                cmdLineArgs += " /SharedKernelContainer";
+                cmdLineArgs += " /ImageIDsOnly";
             }
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
