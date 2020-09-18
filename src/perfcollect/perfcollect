@@ -654,7 +654,7 @@ handlerInvoked=0
 # Log file
 declare logFile
 logFilePrefix='/tmp/perfcollect'
-logEnabled=1
+logEnabled=0
 
 # Collect info to pass between processes
 collectInfoFile=$(dirname `mktemp -u`)/'perfcollect.sessioninfo'
@@ -690,6 +690,9 @@ InitializeLog()
     do
         logFile="$logFilePrefix.$RANDOM.log"
     done
+
+    # Mark the log as enabled.
+    logEnabled=1
 
     # Start the log
     date=`date`
@@ -845,6 +848,45 @@ DiscoverCommands()
             fi
         fi
     fi
+
+    # Check to see if perf is installed, but doesn't exactly match the current kernel version.
+    # This happens when the kernel gets upgraded, or when running inside of a container where the
+    # host and container OS versions don't match.
+    perfoutput=$($perfcmd 2>&1)
+    if [ $? -eq 2 ]
+    then
+        # Check the beginning of the output to see if it matches the kernel warning.
+        warningText="WARNING: perf not found for kernel"
+        if [[ "$perfoutput" == "$warningText"* ]]
+        then
+            foundWorkingPerf=0
+            WriteWarning "Perf is installed, but does not exactly match the version of the running kernel."
+            WriteWarning "This is often OK, and we'll try to workaround this."
+            WriteStatus "Attempting to find a working copy of perf."
+            # Attempt to find an existing version of perf to use.
+            # Order the search by newest directory first.
+            baseDir="/usr/lib/linux-tools"
+            searchPath="$baseDir/*/"
+            for dirName in $(ls -d --sort=time $searchPath)
+            do
+                candidatePerfPath="$dirName""perf"
+                $($candidatePerfPath > /dev/null 2>&1)
+                if [ $? -eq 1 ]
+                then
+                    # If $? == 1, then use this copy of perf.
+                    perfcmd=$candidatePerfPath
+                    foundWorkingPerf=1
+                    break;
+                fi
+            done
+            if [ $foundWorkingPerf -eq 0 ]
+            then
+                FatalError "Unable to find a working copy of perf.  Try re-installing via ./perfcollect install."
+            fi
+            WriteStatus "...FINISHED"
+        fi
+    fi
+
     lttngcmd=`GetCommandFullPath "lttng"`
     zipcmd=`GetCommandFullPath "zip"`
     unzipcmd=`GetCommandFullPath "unzip"`
