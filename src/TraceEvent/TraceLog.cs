@@ -970,7 +970,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // See TraceLog.ProcessExtendedData for more on our use of ExtendedData to hold a index.   
-            if (eventRecord->ExtendedDataCount == 1)
+            if (eventRecord->ExtendedData != null)
             {
                 int idIndex = (int)eventRecord->ExtendedData;
                 if ((uint)idIndex < (uint)relatedActivityIDs.Count)
@@ -983,10 +983,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            if(eventRecord->UserContext != IntPtr.Zero)
+            if(eventRecord->ExtendedDataCount > 0)
             {
-                int index = (int)eventRecord->UserContext;
-                if((uint)index < (uint)containerIDs.Count)
+                int index = eventRecord->ExtendedDataCount;
+                if(index < containerIDs.Count)
                 {
                     return containerIDs[index];
                 }
@@ -3038,32 +3038,53 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (relatedActivityIDPtr != null)
             {
-                // TODO This is a bit of a hack.   We wack these fields in place 
+                if(relatedActivityIDs.Count == 0)
+                {
+                    // Insert a synthetic value since 0 represents "no related activity ID".
+                    relatedActivityIDs.Add(Guid.Empty);
+                }
+
+                // TODO This is a bit of a hack.   We wack this field in place.
                 // We encode this as index into the relatedActivityID GrowableArray.
-                data.eventRecord->ExtendedDataCount = 1;
                 data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
                 relatedActivityIDs.Add(*relatedActivityIDPtr);
             }
             else
             {
-                data.eventRecord->ExtendedDataCount = 0;
                 data.eventRecord->ExtendedData = null;
             }
 
             if(containerID != null)
             {
-                Debug.Assert(data.eventRecord->UserContext == IntPtr.Zero);
-                if(containerIDs.Count == 0)
+                // TODO This is a bit of a hack.   We wack this field in place.
+                // We encode this as index into the containerIDs GrowableArray.
+                if (containerIDs.Count == 0)
                 {
                     // Insert a synthetic value since 0 represents "no container ID".
                     containerIDs.Add(null);
                 }
-                data.eventRecord->UserContext = (IntPtr)containerIDs.Count;
-                containerIDs.Add(containerID);
+
+                // Look for the container ID.
+                bool found = false;
+                for(int i=0; i<containerIDs.Count; i++)
+                {
+                    if(containerIDs[i] == containerID)
+                    {
+                        data.eventRecord->ExtendedDataCount = (ushort)i;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    data.eventRecord->ExtendedDataCount = (ushort)containerIDs.Count;
+                    containerIDs.Add(containerID);
+                }
             }
             else
             {
-                data.eventRecord->UserContext = IntPtr.Zero;
+                data.eventRecord->ExtendedDataCount = 0;
             }
 
             return isBookkeepingEvent;
