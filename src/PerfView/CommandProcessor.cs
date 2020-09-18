@@ -549,6 +549,15 @@ namespace PerfView
                         }
                     }
 
+                    if(parsedArgs.EnableEventsInContainers)
+                    {
+                        options.EnableInContainers = true;
+                    }
+                    if(parsedArgs.EnableSourceContainerTracking)
+                    {
+                        options.EnableSourceContainerTracking = true;
+                    }
+
                     var stacksEnabled = options.Clone();
                     stacksEnabled.StacksEnabled = true;
 
@@ -1452,6 +1461,17 @@ namespace PerfView
                 parsedArgs.DataFile = "PerfViewData.etl";
             }
 
+            // Save the original path so that if necessary, we can write the resulting file to it.
+            string originalArchivePath = parsedArgs.DataFile;
+
+            if (parsedArgs.ImageIDsOnly)
+            {
+                // Make a directory to put the symbols in.
+                // We may need to unzip the file if this is the second merge (e.g. for container scenarios where we must merge on the host and inside the container).
+                UnZipIfNecessary(ref parsedArgs.DataFile, LogFile, unpackInCache: false, wprConventions: false, unpackInSeparateDirectory: true);
+                LogFile.WriteLine("Pre-merge file extracted to " + parsedArgs.DataFile);
+            }
+
             LogFile.WriteLine("[Merging data files to " + Path.GetFileName(parsedArgs.DataFile) + ".  Can take 10s of seconds... (can skip if data analyzed on same machine with PerfView)]");
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -1487,6 +1507,14 @@ namespace PerfView
                 etlWriter.CompressETL = true;
             }
 
+            if(parsedArgs.ImageIDsOnly)
+            {
+                etlWriter.MergeImageIDsOnly = true;
+
+                // If we're only performing image ID injection, make sure to keep any PDBs that were generated in previous merge steps.
+                etlWriter.IncludeExistingPDBs = true;
+            }
+
             etlWriter.DeleteInputFile = false;
             if (File.Exists(App.LogFileName))
             {
@@ -1501,7 +1529,22 @@ namespace PerfView
 
             // Actually create the archive.  
             var success = etlWriter.WriteArchive();
-            if (parsedArgs.ShouldZip)
+
+            // ImageID only merge operations are done in a separate temp directory, so the resulting file
+            // must be copied back to the original location so the user can find it.
+            if(parsedArgs.ImageIDsOnly)
+            {
+                // Generate the full path to the destination file.
+                string destDir = Path.GetDirectoryName(originalArchivePath);
+                string srcFileName = Path.GetFileName(etlWriter.ZipArchivePath);
+                string destPath = Path.Combine(destDir, srcFileName);
+
+                // Copy the file from the temp location back to the original file location.
+                File.Copy(etlWriter.ZipArchivePath, destPath, overwrite: true);
+                LogFile.WriteLine("Final archive copied to " + destPath);
+            }
+
+            if (parsedArgs.ShouldZip && !parsedArgs.ImageIDsOnly)
             {
                 // The rest of this is an optimization.   If we have ETL or ETLX
                 // files for the file we just ZIPPed then set it up so that if
@@ -1532,7 +1575,7 @@ namespace PerfView
             LogFile.WriteLine("[Unpacked ETL file {0}", parsedArgs.DataFile);
         }
 
-        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false)
+        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false, bool unpackInSeparateDirectory = false)
         {
             if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
             {
@@ -1553,6 +1596,27 @@ namespace PerfView
                         log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
                         inputFileName = unzipedEtlFile;
                         return;
+                    }
+                }
+                else if (unpackInSeparateDirectory)
+                {
+                    // Compute the separate directory name.
+                    unzipedEtlFile = CacheFiles.FindFile(inputFileName);
+                    
+                    // Delete the directory if it exists.
+                    if (Directory.Exists(unzipedEtlFile))
+                    {
+                        Directory.Delete(unzipedEtlFile, true);
+                    }
+
+                    // Create the new directory.
+                    Directory.CreateDirectory(unzipedEtlFile);
+
+                    // Add the ETL file name to the destination path.
+                    if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string fileName = Path.GetFileName(inputFileName.Substring(0, inputFileName.Length - 4));
+                        unzipedEtlFile = Path.Combine(unzipedEtlFile, fileName);
                     }
                 }
                 else
@@ -1578,6 +1642,20 @@ namespace PerfView
                 if (wprConventions)
                 {
                     etlReader.SymbolDirectory = Path.ChangeExtension(inputFileName, ".ngenpdb");
+                }
+                else if(unpackInSeparateDirectory)
+                {
+                    // Get the target directory name for the ETL file.
+                    string destDirectory = Path.GetDirectoryName(unzipedEtlFile);
+
+                    // Append a new symbols directory.
+                    destDirectory = Path.Combine(destDirectory, "symbols");
+
+                    // Create the directory.
+                    Directory.CreateDirectory(destDirectory);
+
+                    // Set the destination symbols directory.
+                    etlReader.SymbolDirectory = destDirectory;
                 }
                 else
                 {
@@ -2818,6 +2896,16 @@ namespace PerfView
                 cmdLineArgs += " /StopCommand:" + Command.Quote(parsedArgs.StopCommand);
             }
 
+            if(parsedArgs.EnableEventsInContainers)
+            {
+                cmdLineArgs += " /EnableEventsInContainers";
+            }
+
+            if(parsedArgs.EnableSourceContainerTracking)
+            {
+                cmdLineArgs += " /EnableSourceContainerTracking";
+            }
+
             if (parsedArgs.ClrEventLevel != Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose)
             {
                 cmdLineArgs += " /ClrEventLevel:" + parsedArgs.ClrEventLevel.ToString();
@@ -3031,6 +3119,11 @@ namespace PerfView
             if (parsedArgs.RuntimeLoading)
             {
                 cmdLineArgs += " /RuntimeLoading";
+            }
+
+            if(parsedArgs.ImageIDsOnly)
+            {
+                cmdLineArgs += " /ImageIDsOnly";
             }
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
@@ -3324,6 +3417,23 @@ namespace PerfView
 
                             LogFile.WriteLine("**** /FocusProcess specified LIMITING RUNDOWN to process with name {0}", parsedArgs.FocusProcess);
                             options.ProcessNameFilter = new List<string>() { parsedArgs.FocusProcess };
+                        }
+                    }
+
+                    if(parsedArgs.EnableEventsInContainers || parsedArgs.EnableSourceContainerTracking)
+                    {
+                        if(options == null)
+                        {
+                            options = new TraceEventProviderOptions();
+                        }
+
+                        if(parsedArgs.EnableEventsInContainers)
+                        {
+                            options.EnableInContainers = true;
+                        }
+                        if(parsedArgs.EnableSourceContainerTracking)
+                        {
+                            options.EnableSourceContainerTracking = true;
                         }
                     }
 

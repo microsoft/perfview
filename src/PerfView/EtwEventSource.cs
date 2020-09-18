@@ -488,6 +488,7 @@ namespace PerfView
             columnsForSelectedEvents["HasBlockedStack"] = "HasBlockedStack";
             columnsForSelectedEvents["DURATION_MSEC"] = "DURATION_MSEC";
             columnsForSelectedEvents["FormattedMessage"] = "FormattedMessage";
+            columnsForSelectedEvents["ContainerID"] = "ContainerID";
             return columnsForSelectedEvents.Keys;
         }
         public override EventSource Clone()
@@ -633,6 +634,11 @@ namespace PerfView
                 if (relatedActivityID != Guid.Empty)
                 {
                     AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
+                }
+
+                if(data.ContainerID != null)
+                {
+                    AddField("ContainerID", data.ContainerID, columnOrder, restString);
                 }
 
                 m_asText = restString.ToString();

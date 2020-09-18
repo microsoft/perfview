@@ -161,7 +161,8 @@ namespace TraceEventTests
                         data.ProviderName != "Microsoft-Windows-DNS-Client" &&
                         eventName != "KernelTraceControl/ImageID/Opcode(34)" &&
                         eventName != "Windows Kernel/DiskIO/Opcode(16)" &&
-                        eventName != "Windows Kernel/SysConfig/Opcode(37)")
+                        eventName != "Windows Kernel/SysConfig/Opcode(37)" &&
+                        eventName != "KernelTraceControl/ImageID/Opcode(41)")
                     {
                         Output.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
                             etlFilePath, eventName, data.TimeStampRelativeMSec));
@@ -280,6 +281,11 @@ namespace TraceEventTests
                 valueStr = valueStr.Replace("\n", "\\n").Replace("\r", "\\r");
 
                 sb.Append(payloadNames[i]).Append('=').Append(valueStr).Append("; ");
+            }
+
+            if(data.ContainerID != null)
+            {
+                sb.Append("ContainerID=").Append(data.ContainerID).Append("; ");
             }
 
             return sb.ToString();

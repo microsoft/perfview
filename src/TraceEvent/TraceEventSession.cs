@@ -424,6 +424,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
                         }
+                        if(options.EnableInContainers)
+                        {
+                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_ENABLE_SILOS;
+                        }
+                        if(options.EnableSourceContainerTracking)
+                        {
+                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING;
+                        }
 
                         if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.  
                         {
@@ -1386,6 +1394,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 flags |= EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
             }
 
+            // Clear all other flags and only specify IMAGEID.
+            if((options == TraceEventMergeOptions.ImageIDsOnly))
+            {
+                flags = EVENT_TRACE_MERGE_EXTENDED_DATA.IMAGEID;
+            }
+
             ETWKernelControl.Merge(inputETLFileNames, outputETLFileName, flags);
         }
 
@@ -2261,6 +2275,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Compress the resulting file.  
         /// </summary>
         Compress = 1,
+        /// <summary>
+        /// Only perform image ID injection.
+        /// </summary>
+        ImageIDsOnly = 2,
     }
 
     /// <summary>
@@ -2351,6 +2369,15 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Has no effect unless StacksEnabled is also set (since otherwise stack collection is off).   
         /// </summary>
         public IList<int> EventIDStacksToDisable { get; set; }
+        /// <summary>
+        /// Setting this to true will cause this provider to be enabled inside of any silos (containers) running on the machine.
+        /// </summary>
+        public bool EnableInContainers { get; set; }
+        /// <summary>
+        /// Setting this to true will cause all events emitted inside of a container to contain the container ID in its payload.
+        /// Has no effect if <code>EnableInContainers == false</code>.
+        /// </summary>
+        public bool EnableSourceContainerTracking { get; set; }
 
         /// <summary>
         /// Make a deep copy of options and return it.  
@@ -2405,6 +2432,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
             if (EventIDStacksToDisable != null)
             {
                 ret.EventIDStacksToDisable = new List<int>(EventIDStacksToDisable);
+            }
+            if(EnableInContainers)
+            {
+                ret.EnableInContainers = true;
+            }
+            if(EnableSourceContainerTracking)
+            {
+                ret.EnableSourceContainerTracking = true;
             }
 
             return ret;

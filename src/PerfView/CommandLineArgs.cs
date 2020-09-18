@@ -103,6 +103,8 @@ namespace PerfView
         public int StopOnAppFabricOverMsec;
         public int DelayAfterTriggerSec = 5;    // Number of seconds to wait after a trigger  
         public string[] MonitorPerfCounter;     // logs perf counters to the ETL file.  
+        public bool EnableEventsInContainers;        // Enable user-mode events inside of containers.
+        public bool EnableSourceContainerTracking;   // Enable inclusion of container id in each event.
 
         // Start options.
         public bool StackCompression = true;    // Use compresses stacks when collecting traces. 
@@ -209,6 +211,9 @@ namespace PerfView
 
         // Mark options
         public string Message;
+
+        // Merge options.
+        public bool ImageIDsOnly;
 
         // Viewer options
         public bool UnsafePDBMatch;
@@ -550,6 +555,10 @@ namespace PerfView
                 "The maximum number of objects (in K or thousands) that will even be examined when dumping the heap.  Avoids memory use at collection time.  " +
                  "This is useful if heap dumping causes out of memory exceptions.");
 
+            parser.DefineOptionalQualifier("EnableEventsInContainers", ref EnableEventsInContainers,
+                "Enable user mode events inside of containers to flow back to the host for collection.");
+            parser.DefineOptionalQualifier("EnableSourceContainerTracking", ref EnableSourceContainerTracking,
+                "Emit the container ID as part of the payload of each usermode event emitted inside of a container.");
 
             /* end of qualifier that apply to more than one parameter set (command) */
             /****************************************************************************************/
@@ -581,6 +590,8 @@ namespace PerfView
             parser.DefineParameterSet("merge", ref DoCommand, App.CommandProcessor.Merge,
                 "Combine separate ETL files into a single ETL file (that can be decoded on another machine).");
             parser.DefineOptionalParameter("DataFile", ref DataFile, "ETL file containing profile data.");
+            parser.DefineOptionalQualifier("ImageIDsOnly", ref ImageIDsOnly,
+                "Only perform image ID injection during the merge operation.");
 
             parser.DefineParameterSet("unzip", ref DoCommand, App.CommandProcessor.Unzip,
                 "Unpack a ZIP file into its ETL file (and possibly its NGEN PDBS) /WPR option can be specified.");
