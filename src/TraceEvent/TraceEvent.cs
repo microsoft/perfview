@@ -194,6 +194,23 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+        /// <summary>
+        /// For convenience, we provide a property returns a ProcessMetadataTraceEventParser that knows 
+        /// how to parse all the Process Metadata events into callbacks.
+        /// </summary>
+        public ProcessMetadataEventSourceTraceEventParser ProcessMetadata
+        {
+            get
+            {
+                if (_ProcessMetadata == null)
+                {
+                    _ProcessMetadata = new ProcessMetadataEventSourceTraceEventParser(this);
+                }
+
+                return _ProcessMetadata;
+            }
+        }
+
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
         /// <summary>
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
@@ -422,6 +439,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ bool useClassicETW;
         internal /*protected*/ ClrTraceEventParser _CLR;
         internal /*protected*/ KernelTraceEventParser _Kernel;
+        internal /*protected*/ ProcessMetadataEventSourceTraceEventParser _ProcessMetadata;
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;

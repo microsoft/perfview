@@ -30,6 +30,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Diagnostics.Tracing.Parsers.ProcessMetadataEventSource;
 using Address = System.UInt64;
 
 
@@ -899,6 +900,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var dynamicParser = source.Dynamic;
                 var clrParser = source.Clr;
                 var kernelParser = source.Kernel;
+                var processMetadataParser = source.ProcessMetadata;
 
                 // Get all the users data from the original source.   Note that this happens by reference, which means
                 // that even though we have not built up the state yet (since we have not scanned the data yet), it will
@@ -1135,13 +1137,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Process level events. 
             kernelParser.ProcessStartGroup += delegate (ProcessTraceData data)
             {
-                processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start).ProcessStart(data);
+                processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start).ProcessStart(data, data.CommandLine, data.ImageFileName, data.ParentID);
                 // Don't filter them out (not that many, useful for finding command line)
             };
 
             kernelParser.ProcessEndGroup += delegate (ProcessTraceData data)
             {
-                processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).ProcessEnd(data);
+                processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).ProcessEnd(data, data.CommandLine, data.ImageFileName, data.ParentID, data.ExitStatus);
                 // Don't filter them out (not that many, useful for finding command line)
             };
             // Thread level events
@@ -1234,7 +1236,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
 
-                var moduleFile = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, isLoad, fileName);
+                var moduleFile = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, data.ImageBase, data.ImageSize, isLoad, fileName);
                 // TODO review:  is using the timestamp the best way to make the association
                 if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC)
                 {
@@ -1785,6 +1787,95 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     sampleProfileInterval100ns = data.OldInterval;
                 }
+            };
+
+            var processMetadataParser = rawEvents.ProcessMetadata;
+
+            processMetadataParser.ProcessStart += delegate(ProcessStartArgsTraceData data)
+            {
+                Processes.GetOrCreateProcess((int)data.ProcessId, data.TimeStampQPC, isProcessStartEvent: true).ProcessStart(data, data.CommandLine, data.Executable, (int)data.ParentProcessId);
+            };
+
+            processMetadataParser.ProcessStop += delegate (ProcessExitArgsTraceData data)
+            {
+                Processes.GetOrCreateProcess((int)data.ProcessId, data.TimeStampQPC).ProcessEnd(data, data.CommandLine, data.Executable, (int)data.ParentProcessId, data.ExitCode);
+            };
+
+            processMetadataParser.ThreadStart += delegate (ThreadCreateArgsTraceData data)
+            {
+                TraceProcess process = processes.GetOrCreateProcess((int)data.ProcessId, data.TimeStampQPC);
+                thread = Threads.GetOrCreateThread((int)data.ThreadId, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
+                thread.startTimeQPC = data.TimeStampQPC;
+                thread.userStackBase = (Address)data.StackBaseAddress;
+                if (data.Opcode == TraceEventOpcode.DataCollectionStart)
+                {
+                    bookKeepingEvent = true;
+                    thread.startTimeQPC = sessionStartTimeQPC;
+                }
+                else if (data.Opcode == TraceEventOpcode.Start)
+                {
+                    var threadProc = thread.Process;
+                    if (!threadProc.anyThreads)
+                    {
+                        // We saw a real process start (not a DCStart or a non at all)
+                        if (sessionStartTimeQPC < threadProc.startTimeQPC && threadProc.startTimeQPC < data.TimeStampQPC)
+                        {
+                            thread.threadInfo = "Startup Thread";
+                        }
+
+                        threadProc.anyThreads = true;
+                    }
+                }
+            };
+
+            processMetadataParser.ThreadStop += delegate (ThreadDestroyArgsTraceData data)
+            {
+                TraceProcess process = processes.GetOrCreateProcess((int)data.ProcessId, data.TimeStampQPC);
+                thread = Threads.GetOrCreateThread((int)data.ThreadId, data.TimeStampQPC, process);
+                if (thread.process == null)
+                {
+                    thread.process = process;
+                }
+
+                if (data.ThreadName.Length > 0)
+                {
+                    CategorizeThread(data, data.ThreadName);
+                }
+
+                Debug.Assert(thread.process == process, "Different events disagree on the process object!");
+                DebugWarn(thread.endTimeQPC == long.MaxValue || thread.ThreadID == 0, "Thread end on a terminated thread " + data.ThreadId + " that ended at " + QPCTimeToRelMSec(thread.endTimeQPC), data);
+                DebugWarn(thread.Process.endTimeQPC == long.MaxValue, "Thread ending on ended process", data);
+                thread.endTimeQPC = data.TimeStampQPC;
+                thread.userStackBase = (Address)data.StackBaseAddress;
+                if (data.Opcode == TraceEventOpcode.DataCollectionStop)
+                {
+                    thread.endTimeQPC = sessionEndTimeQPC;
+                    bookKeepingEvent = true;
+                    bookeepingEventThatMayHaveStack = true;
+                }
+
+                // Keep threadIDtoThread table under control by removing old entries.  
+                if (IsRealTime)
+                {
+                    Threads.threadIDtoThread.Remove((Address)data.ThreadId);
+                }
+            };
+
+            processMetadataParser.ModuleStart += delegate(ModuleLoadArgsTraceData data)
+            {
+                var isLoad = (data.Opcode == (TraceEventOpcode)10) || (data.Opcode == TraceEventOpcode.DataCollectionStart);
+
+                var moduleFile = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, (ulong)data.LoadAddress, (int)data.ModuleSize, isLoad, data.ModuleFilePath);
+                moduleFile.pdbName = data.DebugModuleFileName;
+                moduleFile.pdbSignature = data.DebugGuid;
+                moduleFile.pdbAge = data.DebugAge;
+                hasPdbInfo = true;
+            };
+
+            processMetadataParser.ModuleStop += delegate (ModuleUnloadArgsTraceData data)
+            {
+                var isLoad = (data.Opcode == (TraceEventOpcode)10) || (data.Opcode == TraceEventOpcode.DataCollectionStart);
+                var moduleFile = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, (ulong)data.LoadAddress, (int)data.ModuleSize, isLoad, data.ModuleFilePath);
             };
         }
 
@@ -5566,7 +5657,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // #ProcessHandlersCalledFromTraceLog
         // 
         // called from TraceLog.CopyRawEvents
-        internal void ProcessStart(ProcessTraceData data)
+        internal void ProcessStart(TraceEvent data, string cmdLine, string moduleFileName, int parentId)
         {
             Log.DebugWarn(parentID == 0, "Events for process happen before process start.  PrevEventTime: " + StartTimeRelativeMsec.ToString("f4"), data);
 
@@ -5580,21 +5671,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Debug.Assert(endTimeQPC == long.MaxValue); // We would create a new Process record otherwise 
                 startTimeQPC = data.TimeStampQPC;
             }
-            commandLine = data.CommandLine;
-            imageFileName = data.ImageFileName;
-            parentID = data.ParentID;
+            commandLine = cmdLine;
+            imageFileName = moduleFileName;
+            parentID = parentId;
         }
-        internal void ProcessEnd(ProcessTraceData data)
+        internal void ProcessEnd(TraceEvent data, string cmdLine, string moduleFileName, int parentId, int exitCode)
         {
             if (commandLine.Length == 0)
             {
-                commandLine = data.CommandLine;
+                commandLine = cmdLine;
             }
 
-            imageFileName = data.ImageFileName;        // Always overwrite as we might have guessed via the image loads
-            if (parentID == 0 && data.ParentID != 0)
+            imageFileName = moduleFileName;        // Always overwrite as we might have guessed via the image loads
+            if (parentID == 0 && parentId != 0)
             {
-                parentID = data.ParentID;
+                parentID = parentId;
             }
 
             if (data.Opcode != TraceEventOpcode.DataCollectionStop)
@@ -5603,7 +5694,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Only set the exit code if it really is a process exit (not a DCStop). 
                 if (data.Opcode == TraceEventOpcode.Stop)
                 {
-                    exitStatus = data.ExitStatus;
+                    exitStatus = exitCode;
                 }
 
                 endTimeQPC = data.TimeStampQPC;
@@ -6523,26 +6614,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         // #ModuleHandlersCalledFromTraceLog
-        internal TraceModuleFile ImageLoadOrUnload(ImageLoadTraceData data, bool isLoad, string dataFileName = null)
+        internal TraceModuleFile ImageLoadOrUnload(TraceEvent data, Address imageBase, int imageSize, bool isLoad, string dataFileName)
         {
             int index;
-            if (dataFileName == null)
-            {
-                dataFileName = data.FileName;
-            }
 
-            TraceLoadedModule module = FindModuleAndIndexContainingAddress(data.ImageBase, data.TimeStampQPC, out index);
+            TraceLoadedModule module = FindModuleAndIndexContainingAddress(imageBase, data.TimeStampQPC, out index);
             if (module == null)
             {
                 // We need to make a new module 
-                TraceModuleFile newModuleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(dataFileName, data.ImageBase);
-                newModuleFile.imageSize = data.ImageSize;
-                module = new TraceLoadedModule(process, newModuleFile, data.ImageBase);
+                TraceModuleFile newModuleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(dataFileName, imageBase);
+                newModuleFile.imageSize = imageSize;
+                module = new TraceLoadedModule(process, newModuleFile, imageBase);
                 InsertAndSetOverlap(index + 1, module);
             }
 
             // If we load a module higher than 32 bits can do, then we must be a 64 bit process.  
-            if (!process.loadedAModuleHigh && (ulong)data.ImageBase >= 0x100000000L)
+            if (!process.loadedAModuleHigh && (ulong)imageBase >= 0x100000000L)
             {
                 //  On win8 ntdll gets loaded into 32 bit processes so ignore it
                 if (!dataFileName.EndsWith("ntdll.dll", StringComparison.OrdinalIgnoreCase))
@@ -6569,14 +6656,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             int start2 = dataFileName.Length - len;
             process.Log.DebugWarn(string.Compare(module.ModuleFile.FilePath, start1, dataFileName, start2, len, StringComparison.OrdinalIgnoreCase) == 0,
                 "Filename Load/Unload mismatch.\r\n    FILE1: " + module.ModuleFile.FilePath, data);
-            process.Log.DebugWarn(module.ModuleFile.ImageSize == 0 || module.ModuleFile.ImageSize == data.ImageSize,
+            process.Log.DebugWarn(module.ModuleFile.ImageSize == 0 || module.ModuleFile.ImageSize == imageSize,
                 "ImageSize not consistent over all Loads Size 0x" + module.ModuleFile.ImageSize.ToString("x"), data);
             /* TODO this one fails.  decide what to do about it. 
             process.Log.DebugWarn(module.ModuleFile.DefaultBase == 0 || module.ModuleFile.DefaultBase == data.DefaultBase,
                 "DefaultBase not consistent over all Loads Size 0x" + module.ModuleFile.DefaultBase.ToString("x"), data);
              ***/
 
-            moduleFile.imageSize = data.ImageSize;
+            moduleFile.imageSize = imageSize;
             if (isLoad)
             {
                 process.Log.DebugWarn(module.loadTimeQPC == 0 || data.Opcode == TraceEventOpcode.DataCollectionStart, "Events for module happened before load.  PrevEventTime: " + module.LoadTimeRelativeMSec.ToString("f4"), data);
@@ -6610,7 +6697,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 // Look for all code addresses those that don't have modules that are in my range are assumed to be mine.  
-                Process.Log.CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, data.ImageBase, data.ImageSize, false,
+                Process.Log.CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, imageBase, imageSize, false,
                     delegate (ref Microsoft.Diagnostics.Tracing.Etlx.TraceCodeAddresses.CodeAddressInfo info)
                     {
                         info.SetModuleFileIndex(moduleFile);
