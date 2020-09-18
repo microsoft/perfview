@@ -1029,7 +1029,7 @@ InstallPerf_Ubuntu()
 
     # Handle Azure instances.
     release=`uname -r`
-    if [ "-azure" == "${release:-6:6}" ]
+    if [[ "$release" == *"-azure" ]]
     then
         apt-get install -y linux-tools-azure zip software-properties-common
     else
