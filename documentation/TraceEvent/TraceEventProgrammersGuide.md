@@ -401,7 +401,7 @@ Capabilities include:
 * The ability to capture stack traces when events are being logged.
 * The ability to convert the stacks to symbolic form both for .NET, Jscript, as well as native code.
 * The ability to store events in a new format (ETLX) that allows the events to be accessed efficiently in a random fashion as well as to enumerate the events backwards as well as forwards, and to efficiently represent the stack information.
-* The ability to make generate C# code that implements a strongly typed parsers for any ETW provider with a manifest (**TraceParserGen**).
+* The ability to generate C# code that implements a strongly typed parsers for any ETW provider with a manifest (**TraceParserGen**).
 * The ability to read events written with the [WPP Tracing](http://msdn.microsoft.com/en-us/library/windows/hardware/ff556204.aspx) system.
 * The ability to access 'Activity IDs' that allow you to track causality across asynchronous operations (if all components emits the right events).
 * Access Kernel events (along with stack traces), including:
