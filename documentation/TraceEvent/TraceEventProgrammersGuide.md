@@ -394,7 +394,7 @@ Capabilities include:
 
 * The ability to monitor ETW events, sending them either to a file or directly to a programmatic callback in 'real time'.
 * The ability for those real time events to be passed to the [`IObservable<T>`](http://msdn.microsoft.com/en-us/library/dd990377.aspx) interface and thus be used by the [Reactive Extensions](http://msdn.microsoft.com/en-us/data/gg577609.aspx).
-* The ability turn on event providers selectively using ETW 'Keywords' and verbosity 'Levels'. You can also pass additional arguments to your provider which `EventSource` sources can pick up. In that way you can create very sophisticated filtering specification as well as execute simple commands (e.g. force a GC, flush the working set, and etc.).
+* The ability to turn on event providers selectively using ETW 'Keywords' and verbosity 'Levels'. You can also pass additional arguments to your provider which `EventSource` sources can pick up. In that way you can create very sophisticated filtering specification as well as execute simple commands (e.g. force a GC, flush the working set, and etc.).
 * The ability to enumerate the ETW providers on the system as well as in a particular process, and the ability to determine what ETW groups (Keywords) you can turn on.
 * Ability to take ETL files and merge them together into a single file.
 * Ability to read an ETL file or real time session and write an ETL file from it, filtering it or adding new events (Windows 8 only).
