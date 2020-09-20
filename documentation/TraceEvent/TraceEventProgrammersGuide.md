@@ -457,7 +457,7 @@ The best way to take the next step in learning about the TraceEvent library is t
 
 1. Create a new Console program project.
 1. Right click on the 'References' icon under the new project's XXXX.*Proj file. In solution explorer.
-1. Select 'Managed NuGet Pacakges'.
+1. Select 'Managed NuGet Packages'.
 1. Search for 'TraceEvent' in the dialog that comes up.
 1. Select 'TraceEvent Library Samples'.
 
