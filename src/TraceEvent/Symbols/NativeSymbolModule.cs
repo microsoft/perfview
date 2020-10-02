@@ -430,7 +430,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// TODO We don't need this subclass.   We can have SourceFile simply a container
         /// that holds the BuildTimePath, hashType and hashValue.    The lookup of the
         /// source can then be put on NativeSymbolModule and called from SourceFile generically.  
-        /// This makes the different symbol files more simmilar and is a nice simplification.  
+        /// This makes the different symbol files more similar and is a nice simplification.  
         /// </summary>
         public class MicrosoftPdbSourceFile : SourceFile
         {
@@ -1040,10 +1040,10 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             if (m.Success)
             {
                 string ret = m.Groups[1].Value;
-                m_reader.m_log.WriteLine("Found SourceLink Infomation for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
+                m_reader.m_log.WriteLine("Found SourceLink Information for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
                 return ret;
             }
-            m_reader.m_log.WriteLine("Failed to look up SourceLink Infomation for {0}.", SymbolFilePath);
+            m_reader.m_log.WriteLine("Failed to look up SourceLink Information for {0}.", SymbolFilePath);
             return null;
         }
 

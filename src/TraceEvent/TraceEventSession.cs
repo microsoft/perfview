@@ -2851,7 +2851,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             if (!OperatingSystemVersion.AtLeast(62))
             {
-                throw new ApplicationException("Profile source only availabe on Win8 and beyond.");
+                throw new ApplicationException("Profile source only available on Win8 and beyond.");
             }
 
             var ret = new Dictionary<string, ProfileSourceInfo>(StringComparer.OrdinalIgnoreCase);

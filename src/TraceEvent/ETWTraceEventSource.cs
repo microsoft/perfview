@@ -220,7 +220,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             /// <summary>
             /// This is the default, where only NGEN images are included (since these are the only images whose PDBS typically
-            /// need to be resolved agressively AT COLLECTION TIME)
+            /// need to be resolved aggressively AT COLLECTION TIME)
             /// </summary>
             OnlyNGENImages = 0,
             /// <summary>
@@ -231,7 +231,7 @@ namespace Microsoft.Diagnostics.Tracing
             /// Normally only modules what have a CPU or stack sample are included in the list of assemblies (thus you don't 
             /// unnecessarily have to generate NGEN PDBS for modules that will never be looked up).  However if there are 
             /// events that have addresses that need resolving that this routine does not recognise, this option can be
-            /// set to insure that any module that was event LOADED is included.   This is inefficient, but guarenteed to
+            /// set to insure that any module that was event LOADED is included.   This is inefficient, but guaranteed to
             /// be complete
             /// </summary>
             IncludeModulesWithOutSamples = 2

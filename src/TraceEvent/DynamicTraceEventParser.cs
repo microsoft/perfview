@@ -1320,7 +1320,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // These are special sizes 
         // sizes from 0xFFF0 through 0xFFFF are variations of VAR_SIZE
-        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceeded the data, bits above tell more.   
+        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceded the data, bits above tell more.   
 
         // Size 0xFFEF is NULL_TERMINATED | IS_ANSI
         internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.   

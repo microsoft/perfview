@@ -1626,7 +1626,7 @@ namespace Microsoft.Diagnostics.Symbols
         public virtual int PdbAge { get { return 1; } }
 
         /// <summary>
-        ///  Fetches the SymbolReader assoicated with this SymbolModule.  This is where shared
+        ///  Fetches the SymbolReader associated with this SymbolModule.  This is where shared
         ///  attributes (like SourcePath, SymbolPath etc) are found.  
         /// </summary>
         public SymbolReader SymbolReader { get { return _reader; } }

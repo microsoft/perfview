@@ -1799,7 +1799,7 @@ namespace PerfView
                     var selectionLen = focusTextBox.SelectionLength;
                     var text = focusTextBox.Text;
 
-                    // If you accidently select the space before the selection, skip it
+                    // If you accidentally select the space before the selection, skip it
                     if (0 <= selectionStartIndex && selectionStartIndex < text.Length && text[selectionStartIndex] == ' ')
                     {
                         selectionStartIndex++;
@@ -2738,7 +2738,7 @@ namespace PerfView
 
             Update();
         }
-        // turns off menus for options that only make sence in the callTree view.  
+        // turns off menus for options that only make sense in the callTree view.  
         private void InCallTree(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = CallTreeTab.IsSelected;
@@ -3482,7 +3482,7 @@ namespace PerfView
                         menuItem = temp.First().Item2;
                     }
 
-                    // Attach Click handler to collapse if unchecked, and make it visable when checked.
+                    // Attach Click handler to collapse if unchecked, and make it visible when checked.
                     menuItem.Click += delegate (object sender, RoutedEventArgs e)
                     {
                         MenuItem source = sender as MenuItem;

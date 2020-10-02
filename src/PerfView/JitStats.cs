@@ -231,7 +231,7 @@ namespace Stats
             }
             writer.Write(
                 "<TH>Method Name</TH>" +
-                "<TH Title=\"Is Jit compilation occuring in the background for Multicore JIT (MC), in the background for tiered compilation (TC), or in the foreground on first execution of a method (FG).\">Trigger</TH>" +
+                "<TH Title=\"Is Jit compilation occurring in the background for Multicore JIT (MC), in the background for tiered compilation (TC), or in the foreground on first execution of a method (FG).\">Trigger</TH>" +
                 "<TH>Module</TH>");
             if (backgroundJitEnabled)
             {

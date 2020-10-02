@@ -3557,7 +3557,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
     /// <summary>
     /// Approximations we do in this function for V4_5 and prior:
-    /// On 4.0 we didn't seperate free list from free obj, so we just use fragmentation (which is the sum)
+    /// On 4.0 we didn't separate free list from free obj, so we just use fragmentation (which is the sum)
     /// as an approximation. This makes the efficiency value a bit larger than it actually is.
     /// We don't actually update in for the older gen - this means we only know the out for the younger 
     /// gen which isn't necessarily all allocated into the older gen. So we could see cases where the 
@@ -4372,7 +4372,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         //
-        // candiate to be made private/ex
+        // candidate to be made private/ex
         //
         // The amount of memory allocated by the user threads. So they are divided up into gen0 and LOH allocations.
         internal double[] allocTickCurrentMB = { 0.0, 0.0 };

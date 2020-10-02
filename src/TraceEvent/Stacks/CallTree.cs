@@ -611,7 +611,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public float ExclusiveMetric { get { return m_exclusiveMetric; } }
         /// <summary>
-        /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveMetric.  
+        /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is always less than or equal to ExclusiveMetric.  
         /// </summary>
         public float ExclusiveFoldedMetric { get { return m_exclusiveFoldedMetric; } }
         /// <summary>
@@ -623,7 +623,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public float ExclusiveCount { get { return m_exclusiveCount; } }
         /// <summary>
-        /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveCount.  
+        /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is always less than or equal to ExclusiveCount.  
         /// </summary>
         public float ExclusiveFoldedCount { get { return m_exclusiveFoldedCount; } }
 
@@ -2182,7 +2182,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// and subtracting out any nodes that match 'idToExclude'.   
         /// 
         /// As an optimization this routine also sets the m_recurision bit 'statsRet' if anywhere in 'treeCallee' we do find an id to 
-        /// exclude.  That way in a common case (where there is no instances of 'idToExclude') we don't have to actualy walk the
+        /// exclude.  That way in a common case (where there is no instances of 'idToExclude') we don't have to actually walk the
         /// tree the second time (we simply know that there is no adjustment necessary.   
         /// </summary>
         private static void SubtractOutTrees(CallTreeNode treeCallee, StackSourceFrameIndex idToExclude, AggregateCallTreeNode statsRet)
