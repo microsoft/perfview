@@ -522,7 +522,7 @@ namespace Microsoft.Diagnostics.Tracing
                             {
                                 // .diagsession files (created by the Visual Studio Diagnostic Hub) put PDBs in a path like
                                 // 194BAE98-C4ED-470E-9204-1F9389FC9DC1\symcache\xyz.pdb
-                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\symcache\\(.*)", RegexOptions.IgnoreCase);
+                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\(?:sym|pdb)cache\\(.*)", RegexOptions.IgnoreCase);
                                 if (m.Success)
                                 {
                                     pdbRelativePath = m.Groups[1].Value;
