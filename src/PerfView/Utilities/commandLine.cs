@@ -800,7 +800,7 @@ class CommandLine
             return sb.ToString();
         }
         #region private
-        // Phase 1 parsing a string into words (space saparated values with double quote escaping)
+        // Phase 1 parsing a string into words (space separated values with double quote escaping)
         /// <summary>
         /// Parses 'commandLine' into words (space separated items).  Handles quoting (using double quotes)
         /// and handles escapes of double quotes and backslashes with the \" and \\ syntax.  
