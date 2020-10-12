@@ -1301,6 +1301,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
+                clrPrivate.LoaderHeapAllocRequest += delegate(LoaderHeapAllocRequestTraceData data)
+                {
+                    var process = data.Process();
+                    var stats = currentManagedProcess(data);
+                    var _method = JITStats.JitAllocComplete(stats, data);
+                    //TODO: What to do here of _method??
+
+                };
+
                 clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
                 {
                     var process = data.Process();
@@ -3776,6 +3785,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long TotalNativeSize;
         /// <summary>
+        /// Total allocated heap size for all JITT'd methods
+        /// </summary>
+        public long TotalAllocatedHeapSize;
+        /// <summary>
         /// Indication if this is running on .NET 4.x+
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
@@ -3848,6 +3861,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TotalCpuTimeMSec += method.CompileCpuTimeMSec;
             TotalILSize += method.ILSize;
             TotalNativeSize += method.NativeSize;
+            TotalAllocatedHeapSize += method.AllocatedHeapSize;
             if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
             {
                 CountBackgroundMultiCoreJit++;
@@ -3867,7 +3881,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
 #region private
         /// <summary>
-        /// Legacgy
+        /// Legacy
         /// </summary>
         internal static TraceJittedMethod MethodComplete(TraceLoadedDotNetRuntime stats, MethodLoadUnloadTraceDataBase data, string methodName, int rejitID, out bool createdNewMethod)
         {
@@ -3909,6 +3923,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             _method.Completed++;
             stats.JIT.m_stats.AddMethodToStatistics(_method);
 
+            return _method;
+        }
+
+        /// <summary>
+        /// Handles AllocRequest event for JIT
+        /// </summary>
+        internal static TraceJittedMethod JitAllocComplete(TraceLoadedDotNetRuntime stats, LoaderHeapAllocRequestTraceData data)
+        {
+            TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
+            if (_method != null)
+            {
+                _method.AllocatedHeapSize = data.RequestSize;
+            }
+
+            stats.JIT.m_stats.TotalAllocatedHeapSize += data.RequestSize;
             return _method;
         }
 
@@ -4115,6 +4144,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// Native code size of method
         /// </summary>
         public int NativeSize;
+        /// <summary>
+        /// Heap size allocated for JIT code of method
+        /// </summary>
+        public int AllocatedHeapSize;
         /// <summary>
         /// Relative start time of JIT'd method
         /// </summary>
