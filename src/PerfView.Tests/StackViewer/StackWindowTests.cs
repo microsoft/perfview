@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Utilities;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
 using PerfView.TestUtilities;
@@ -362,7 +363,7 @@ namespace PerfViewTests.StackViewer
             var end = 234567.890;
             var finalStartText = start.ToString("n3", CultureInfo.CurrentCulture);
             var finalEndtText = end.ToString("n3", CultureInfo.CurrentCulture);
-            var initialStartText = finalStartText + " " + finalEndtText;
+            var initialStartText = RangeUtilities.ToString(finalStartText, finalEndtText);
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
                 initialStartText,
@@ -378,7 +379,7 @@ namespace PerfViewTests.StackViewer
         public Task TestSetTimeRangeInStartTextBoxEnUs04Async()
         {
             var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture) + " not_a_number";
+            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "not_a_number");
             var endStartText = "0";
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
@@ -412,7 +413,7 @@ namespace PerfViewTests.StackViewer
         public Task TestSetTimeRangeInStartTextBoxEnUs06Async()
         {
             var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture) + " 1.2,3.4,5.6,7.8,9.0";
+            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "1.2,3.4,5.6,7.8,9.0");
             var endStartText = "0";
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
@@ -429,7 +430,7 @@ namespace PerfViewTests.StackViewer
         public Task TestSetTimeRangeInStartTextBoxEnUs07Async()
         {
             var start = 123456.789;
-            var initialStartText = "1.2,3.4,5.6,7.8,9.0 " + start.ToString("n3", CultureInfo.CurrentCulture);
+            var initialStartText = RangeUtilities.ToString("1.2,3.4,5.6,7.8,9.0", start.ToString("n3", CultureInfo.CurrentCulture));
             var endStartText = "0";
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
@@ -475,7 +476,7 @@ namespace PerfViewTests.StackViewer
                 CultureInfo.CurrentCulture);
         }
 
-        [WpfFact(Skip = "BUG")]
+        [WpfFact]
         [UseCulture("ru-RU")]
         public Task TestSetTimeRangeInStartTextBoxRuRu03Async()
         {
@@ -483,7 +484,7 @@ namespace PerfViewTests.StackViewer
             var end = 234567.890;
             var finalStartText = start.ToString("n3", CultureInfo.CurrentCulture);
             var finalEndtText = end.ToString("n3", CultureInfo.CurrentCulture);
-            var initialStartText = finalStartText + " " + finalEndtText;
+            var initialStartText = RangeUtilities.ToString(finalStartText, finalEndtText);
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
                 initialStartText,
@@ -499,7 +500,7 @@ namespace PerfViewTests.StackViewer
         public Task TestSetTimeRangeInStartTextBoxRuRu04Async()
         {
             var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture) + " not_a_number";
+            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "not_a_number");
             var endStartText = "0";
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
@@ -533,7 +534,7 @@ namespace PerfViewTests.StackViewer
         public Task TestSetTimeRangeInStartTextBoxRuRu06Async()
         {
             var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture) + " 1.2,3.4,5.6,7.8,9.0";
+            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "1.2,3.4,5.6,7.8,9.0");
             var endStartText = "0";
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
@@ -550,7 +551,7 @@ namespace PerfViewTests.StackViewer
         public Task TestSetTimeRangeInStartTextBoxRuRu07Async()
         {
             var start = 123456.789;
-            var initialStartText = "1.2,3.4,5.6,7.8,9.0 " + start.ToString("n3", CultureInfo.CurrentCulture);
+            var initialStartText = RangeUtilities.ToString("1.2,3.4,5.6,7.8,9.0", start.ToString("n3", CultureInfo.CurrentCulture));
             var endStartText = "0";
 
             return TestSetTimeRangeInStartTextBoxImplAsync(
