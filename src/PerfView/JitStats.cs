@@ -160,7 +160,7 @@ namespace Stats
                     "<TH Title=\"The number of times the JIT was invoked for methods in this module\">Num Compilations</TH>" +
                     "<TH Title=\"The total amount of IL processed by the JIT for all methods in this module\">IL Size</TH>" +
                     "<TH Title=\"The total amount of native code produced by the JIT for all methods in this module\">Native Size</TH>" +
-                    "<TH Title=\"The total amount of heap memory allocated for the code produced by the JIT for all methods in this module\">LoaderHeap Allocation Size</TH>" +
+                    "<TH Title=\"The total amount of loader heap memory allocated for the code produced by the JIT for all methods in this module. Only available when 'LoaderHeap' on private CLR provider is enabled.  \">LoaderHeap Allocation Size</TH>" +
                     "<TH Title=\"Time spent jitting synchronously to produce code for methods that were just invoked. These compilations often consume time at startup.\">" + GetLongNameForThreadClassification(CompilationThreadKind.Foreground) + "<BR/>msec</TH>" +
                     "<TH Title=\"Time spent jitting asynchronously to produce code for methods the runtime speculates will be invoked in the future.\">" + GetLongNameForThreadClassification(CompilationThreadKind.MulticoreJitBackground) + "<BR/>msec</TH>" +
                     "<TH Title=\"Time spent jitting asynchronously to produce code for methods that is more optimized than their initial code.\">" + GetLongNameForThreadClassification(CompilationThreadKind.TieredCompilationBackground) + "<BR/>msec</TH>" +
@@ -183,7 +183,7 @@ namespace Stats
                     runtime.JIT.Stats().Count,
                     runtime.JIT.Stats().TotalILSize,
                     runtime.JIT.Stats().TotalNativeSize,
-                    runtime.JIT.Stats().TotalLoaderHeapAllocSize,
+                    runtime.JIT.Stats().TotalLoaderHeapAllocSizeIfAvailable,
                     runtime.JIT.Stats().TotalForegroundCpuTimeMSec,
                     runtime.JIT.Stats().TotalBackgroundMultiCoreJitCpuTimeMSec,
                     runtime.JIT.Stats().TotalBackgroundTieredCompilationCpuTimeMSec);
@@ -196,7 +196,7 @@ namespace Stats
                         info.Count,
                         info.TotalILSize,
                         info.TotalNativeSize,
-                        info.TotalLoaderHeapAllocSize,
+                        info.TotalLoaderHeapAllocSizeIfAvailable,
                         info.TotalForegroundCpuTimeMSec,
                         info.TotalBackgroundMultiCoreJitCpuTimeMSec,
                         info.TotalBackgroundTieredCompilationCpuTimeMSec);
@@ -259,7 +259,7 @@ namespace Stats
                     _event.CompileCpuTimeMSec,
                     _event.ILSize,
                     _event.NativeSize,
-                    _event.LoaderHeapAllocSize);
+                    _event.LoaderHeapAllocSizeIfAvailable);
                 if (showOptimizationTiers)
                 {
                     writer.Write(
@@ -404,7 +404,7 @@ namespace Stats
                         _event.ThreadID,
                         _event.ILSize,
                         _event.NativeSize,
-                        _event.LoaderHeapAllocSize);
+                        _event.LoaderHeapAllocSizeIfAvailable);
                     if (showOptimizationTiers)
                     {
                         writer.Write(
@@ -486,8 +486,8 @@ namespace Stats
             JITStatsEx statsEx = JITStatsEx.Create(runtime);
 
             // TODO pay attention to indent;
-            writer.Write(" <JitProcess Process=\"{0}\" ProcessID=\"{1}\" JitTimeMSec=\"{2:n3}\" Count=\"{3}\" ILSize=\"{4}\" NativeSize=\"{5}\" AllocatedHeapSize=\"{6}\"",
-                stats.Name, stats.ProcessID, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize, runtime.JIT.Stats().TotalLoaderHeapAllocSize);
+            writer.Write(" <JitProcess Process=\"{0}\" ProcessID=\"{1}\" JitTimeMSec=\"{2:n3}\" Count=\"{3}\" ILSize=\"{4}\" NativeSize=\"{5}\" LoaderHeapAllocSize=\"{6}\"",
+                stats.Name, stats.ProcessID, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize, runtime.JIT.Stats().TotalLoaderHeapAllocSizeIfAvailable);
             if (stats.CPUMSec != 0)
             {
                 writer.Write(" ProcessCpuTimeMsec=\"{0}\"", stats.CPUMSec);
@@ -508,8 +508,8 @@ namespace Stats
 
             writer.WriteLine("  </JitEvents>");
 
-            writer.WriteLine(" <ModuleStats Count=\"{0}\" TotalCount=\"{1}\" TotalJitTimeMSec=\"{2:n3}\" TotalILSize=\"{3}\" TotalNativeSize=\"{4}\" TotalAllocatedHeapSize=\"{5}\">",
-                statsEx.TotalModuleStats.Count, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize, runtime.JIT.Stats().TotalLoaderHeapAllocSize);
+            writer.WriteLine(" <ModuleStats Count=\"{0}\" TotalCount=\"{1}\" TotalJitTimeMSec=\"{2:n3}\" TotalILSize=\"{3}\" TotalNativeSize=\"{4}\" TotalLoaderHeapAllocSize=\"{5}\">",
+                statsEx.TotalModuleStats.Count, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize, runtime.JIT.Stats().TotalLoaderHeapAllocSizeIfAvailable);
 
             // Sort the module list by Jit Time;
             List<string> moduleNames = new List<string>(statsEx.TotalModuleStats.Keys);
@@ -536,7 +536,7 @@ namespace Stats
                 writer.Write(" Count={0}", StringUtilities.QuotePadLeft(info.Count.ToString(), 7));
                 writer.Write(" ILSize={0}", StringUtilities.QuotePadLeft(info.TotalILSize.ToString(), 9));
                 writer.Write(" NativeSize={0}", StringUtilities.QuotePadLeft(info.TotalNativeSize.ToString(), 9));
-                writer.Write(" AllocatedHeapSize={0}", StringUtilities.QuotePadLeft(info.TotalLoaderHeapAllocSize.ToString(), 9));
+                writer.Write(" LoaderHeapAllocSize={0}", StringUtilities.QuotePadLeft(info.TotalLoaderHeapAllocSizeIfAvailable, 9));
                 writer.Write(" Name=\"{0}\"", moduleName);
                 writer.WriteLine("/>");
             }
@@ -552,7 +552,7 @@ namespace Stats
             writer.Write(" JitTimeMSec={0}", StringUtilities.QuotePadLeft(info.CompileCpuTimeMSec.ToString("n3"), 8));
             writer.Write(" ILSize={0}", StringUtilities.QuotePadLeft(info.ILSize.ToString(), 10));
             writer.Write(" NativeSize={0}", StringUtilities.QuotePadLeft(info.NativeSize.ToString(), 10));
-            writer.Write(" AllocatedHeapSize={0}", StringUtilities.QuotePadLeft(info.LoaderHeapAllocSize.ToString(), 10));
+            writer.Write(" LoaderHeapAllocSize={0}", StringUtilities.QuotePadLeft(info.LoaderHeapAllocSizeIfAvailable, 10));
             if (showOptimizationTiers)
             {
                 writer.Write(

@@ -3849,6 +3849,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public HashSet<string> SymbolsMissing = new HashSet<string>();
 
+        public string TotalLoaderHeapAllocSizeIfAvailable => TotalLoaderHeapAllocSize > 0 ? TotalLoaderHeapAllocSize.ToString() : "N/A";
+
         /// <summary>
         /// Aggregate a method to be included in the statistics
         /// </summary>
@@ -3933,6 +3935,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
             if (_method != null)
             {
+                _method.IsLoaderHeapAllocSizePresent = true;
                 _method.LoaderHeapAllocSize += data.RequestSize;
                 stats.JIT.m_stats.TotalLoaderHeapAllocSize += data.RequestSize;
             }
@@ -4230,6 +4233,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public int VersionID;
 
         public bool IsDefaultVersion { get { return VersionID == 0; } }
+
+        internal bool IsLoaderHeapAllocSizePresent
+        {
+            get;
+            set;
+        }
+
+        public string LoaderHeapAllocSizeIfAvailable => IsLoaderHeapAllocSizePresent ? LoaderHeapAllocSize.ToString() : "N/A";
 
 #region private
         internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
