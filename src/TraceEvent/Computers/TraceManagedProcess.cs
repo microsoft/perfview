@@ -3934,10 +3934,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
             if (_method != null)
             {
-                _method.AllocatedHeapSize = data.RequestSize;
+                _method.AllocatedHeapSize += data.RequestSize;
+                stats.JIT.m_stats.TotalAllocatedHeapSize += data.RequestSize;
             }
 
-            stats.JIT.m_stats.TotalAllocatedHeapSize += data.RequestSize;
             return _method;
         }
 
