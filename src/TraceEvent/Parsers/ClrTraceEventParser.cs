@@ -1510,7 +1510,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 38, MethodTaskGuid);
             }
         }
-
+        public event Action<MethodJitMemoryAllocatedForCodeTraceData> MethodMemoryAllocatedForJitCode
+        {
+            add
+            {
+                RegisterTemplate(new MethodJitMemoryAllocatedForCodeTraceData(value, 146, 9, "Method", MethodTaskGuid, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 146, MethodTaskGuid);
+            }
+        }
         public event Action<R2RGetEntryPointTraceData> MethodR2RGetEntryPoint
         {
             add
@@ -1983,7 +1993,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
-
+        static private MethodJitMemoryAllocatedForCodeTraceData MethodMemoryAllocatedForJitCodeTemplate(Action<MethodJitMemoryAllocatedForCodeTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new MethodJitMemoryAllocatedForCodeTraceData(action, 146, 9, "Method", Guid.Empty, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName);
+        }
         static private R2RGetEntryPointStartTraceData R2RGetEntryPointStartTemplate(Action<R2RGetEntryPointStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new R2RGetEntryPointStartTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStart", ProviderGuid, ProviderName);
@@ -8789,6 +8802,95 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<R2RGetEntryPointStartTraceData> m_target;
+        #endregion
+    }
+
+    public sealed class MethodJitMemoryAllocatedForCodeTraceData : TraceEvent
+    {
+        public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
+        public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
+        public string MethodBeingCompiledNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0))); } }
+        public long HotCodeSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
+        public long RODataSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 8); } }
+        public long TotalRequestSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 16); } }
+        public int CorJitAllocMemFlag { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 24); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 28); } }
+
+        #region Private
+        internal MethodJitMemoryAllocatedForCodeTraceData(Action<MethodJitMemoryAllocatedForCodeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 30));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 30));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MethodJitMemoryAllocatedForCodeTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodBeingCompiledNamespace", MethodBeingCompiledNamespace);
+            XmlAttrib(sb, "MethodBeingCompiledName", MethodBeingCompiledName);
+            XmlAttrib(sb, "MethodBeingCompiledNameSignature", MethodBeingCompiledNameSignature);
+            XmlAttrib(sb, "HotCodeSize", HotCodeSize);
+            XmlAttrib(sb, "RODataSize", RODataSize);
+            XmlAttrib(sb, "TotalRequestSize", TotalRequestSize);
+            XmlAttrib(sb, "CorJitAllocMemFlag", CorJitAllocMemFlag);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodBeingCompiledNamespace", "MethodBeingCompiledName", "MethodBeingCompiledNameSignature", "HotCodeSize", "RODataSize", "TotalRequestSize", "CorJitAllocMemFlag", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodBeingCompiledNamespace;
+                case 1:
+                    return MethodBeingCompiledName;
+                case 2:
+                    return MethodBeingCompiledNameSignature;
+                case 3:
+                    return HotCodeSize;
+                case 4:
+                    return RODataSize;
+                case 5:
+                    return TotalRequestSize;
+                case 6:
+                    return CorJitAllocMemFlag;
+                case 7:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 16; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<MethodJitMemoryAllocatedForCodeTraceData> Action;
         #endregion
     }
 

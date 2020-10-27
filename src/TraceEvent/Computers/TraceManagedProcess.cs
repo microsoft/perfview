@@ -1301,7 +1301,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
-                clrPrivate.LoaderHeapAllocRequest += delegate(LoaderHeapAllocRequestTraceData data)
+                source.Clr.MethodMemoryAllocatedForJitCode += delegate(MethodJitMemoryAllocatedForCodeTraceData data)
                 {
                     var process = data.Process();
                     var stats = currentManagedProcess(data);
@@ -3783,9 +3783,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long TotalNativeSize;
         /// <summary>
-        /// Total allocated heap size for all JITT'd methods
+        /// Total hot code size allocated for all JITT'd methods
         /// </summary>
-        public long TotalLoaderHeapAllocSize;
+        public long TotalHotCodeAllocSize;
+        /// <summary>
+        /// Total read-only data size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalRODataAllocSize;
+        /// <summary>
+        /// Total size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalAllocSizeForJitCode;
+        /// <summary>
+        /// If data from alloc size for JIT event present
+        /// </summary>
+        public bool IsJitAllocSizePresent = false;
         /// <summary>
         /// Indication if this is running on .NET 4.x+
         /// </summary>
@@ -3849,8 +3861,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public HashSet<string> SymbolsMissing = new HashSet<string>();
 
-        public string TotalLoaderHeapAllocSizeIfAvailable => TotalLoaderHeapAllocSize > 0 ? TotalLoaderHeapAllocSize.ToString() : "N/A";
-
         /// <summary>
         /// Aggregate a method to be included in the statistics
         /// </summary>
@@ -3861,7 +3871,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TotalCpuTimeMSec += method.CompileCpuTimeMSec;
             TotalILSize += method.ILSize;
             TotalNativeSize += method.NativeSize;
-            TotalLoaderHeapAllocSize += method.LoaderHeapAllocSize;
+            TotalHotCodeAllocSize += method.HotCodeAllocSize;
+            TotalRODataAllocSize += method.RODataAllocSize;
+            TotalAllocSizeForJitCode += method.RequestedAllocSizeForJitCode;
             if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
             {
                 CountBackgroundMultiCoreJit++;
@@ -3930,14 +3942,23 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// <summary>
         /// Handles AllocRequest event for JIT
         /// </summary>
-        internal static void LogJitMethodAllocation(TraceLoadedDotNetRuntime stats, LoaderHeapAllocRequestTraceData data)
+        internal static void LogJitMethodAllocation(TraceLoadedDotNetRuntime stats, MethodJitMemoryAllocatedForCodeTraceData data)
         {
             TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
             if (_method != null)
             {
-                _method.IsLoaderHeapAllocSizePresent = true;
-                _method.LoaderHeapAllocSize += data.RequestSize;
-                stats.JIT.m_stats.TotalLoaderHeapAllocSize += data.RequestSize;
+                Debug.Assert(_method.HotCodeAllocSize == 0);
+
+                _method.IsJitAllocSizePresent = true;
+                _method.HotCodeAllocSize = data.HotCodeSize;
+                _method.RODataAllocSize = data.RODataSize;
+                _method.RequestedAllocSizeForJitCode = data.TotalRequestSize;
+                _method.JitAllocFlag = data.CorJitAllocMemFlag;
+
+                stats.JIT.m_stats.IsJitAllocSizePresent = true;
+                stats.JIT.m_stats.TotalHotCodeAllocSize += data.HotCodeSize;
+                stats.JIT.m_stats.TotalRODataAllocSize += data.RODataSize;
+                stats.JIT.m_stats.TotalAllocSizeForJitCode += data.TotalRequestSize;
             }
         }
 
@@ -4145,9 +4166,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public int NativeSize;
         /// <summary>
-        /// Heap size allocated for JIT code of method
+        /// Hot code size allocated for JIT code of method
         /// </summary>
-        public int LoaderHeapAllocSize;
+        public long HotCodeAllocSize;
+        /// <summary>
+        /// Read-only data size allocated for JIT code of method
+        /// </summary>
+        public long RODataAllocSize;
+        /// <summary>
+        /// Total size allocated for JIT code of method
+        /// </summary>
+        public long RequestedAllocSizeForJitCode;
+        /// <summary>
+        /// Jit allocation flag
+        /// </summary>
+        public int JitAllocFlag;
         /// <summary>
         /// Relative start time of JIT'd method
         /// </summary>
@@ -4234,13 +4267,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
         public bool IsDefaultVersion { get { return VersionID == 0; } }
 
-        internal bool IsLoaderHeapAllocSizePresent
+        public bool IsJitAllocSizePresent
         {
             get;
             set;
         }
-
-        public string LoaderHeapAllocSizeIfAvailable => IsLoaderHeapAllocSizePresent ? LoaderHeapAllocSize.ToString() : "N/A";
 
 #region private
         internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
