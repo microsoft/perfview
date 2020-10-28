@@ -54,6 +54,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Initialize(fileOrSessionName, type);
         }
+
         /// <summary>
         /// Process all the files in 'fileNames' in order (that is all the events in the first
         /// file are processed, then the second ...).   Intended for parsing the 'Multi-File' collection mode. 
