@@ -54,6 +54,18 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Initialize(fileOrSessionName, type);
         }
+        /// <summary>
+        /// Open multiple ETL files for processing.
+        /// </summary>
+        /// <param name="fileNames">
+        /// If type == MultiFile, use only supplied files.
+        /// If type == MergeAll, for each file find related files in same directory.
+        /// <param name="type"></param>
+        // [SecuritySafeCritical]
+        public ETWTraceEventSource(IEnumerable<string> fileNames, TraceEventSourceType type)
+        {
+            Initialize(fileNames, type);
+        }
 
         /// <summary>
         /// Process all the files in 'fileNames' in order (that is all the events in the first
@@ -383,6 +395,30 @@ namespace Microsoft.Diagnostics.Tracing
             public int Size;
         }
 
+        private void Initialize(IEnumerable<string> fileNames, TraceEventSourceType type)
+        {
+            List<string> allLogFiles = new List<string>();
+            if (type == TraceEventSourceType.MergeAll)
+            {
+                foreach(var file in fileNames)
+                {
+                    allLogFiles.AddRange(GetMergeAllLogFiles(file));
+                }
+            }
+            else if (type == TraceEventSourceType.MultiFile)
+            {
+                allLogFiles = new List<string>(fileNames);
+            }
+
+            logFiles = new TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[allLogFiles.Count];
+            for (int i = 0; i < allLogFiles.Count; i++)
+            {
+                logFiles[i].LogFileName = allLogFiles[i];
+            }
+
+            InitializeFiles();
+        }
+
         private void Initialize(string fileOrSessionName, TraceEventSourceType type)
         {
 
@@ -413,6 +449,12 @@ namespace Microsoft.Diagnostics.Tracing
                     IsRealTime = true;
                 }
             }
+
+            InitializeFiles();
+        }
+
+        private void InitializeFiles()
+        {
             handles = new ulong[logFiles.Length];
 
             // Fill  out the first log file information (we will clone it later if we have multiple files). 
@@ -930,5 +972,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// Use a real time session as the event data source.
         /// </summary>
         Session,
+        /// <summary>
+        /// Use a list of unmerged ETL files
+        /// </summary>
+        MultiFile,
     };
 }
