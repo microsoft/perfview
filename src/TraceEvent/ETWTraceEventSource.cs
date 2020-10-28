@@ -55,19 +55,6 @@ namespace Microsoft.Diagnostics.Tracing
             Initialize(fileOrSessionName, type);
         }
         /// <summary>
-        /// Open multiple ETL files for processing.
-        /// </summary>
-        /// <param name="fileNames">
-        /// If type == MultiFile, use only supplied files.
-        /// If type == MergeAll, for each file find related files in same directory.
-        /// <param name="type"></param>
-        // [SecuritySafeCritical]
-        public ETWTraceEventSource(IEnumerable<string> fileNames, TraceEventSourceType type)
-        {
-            Initialize(fileNames, type);
-        }
-
-        /// <summary>
         /// Process all the files in 'fileNames' in order (that is all the events in the first
         /// file are processed, then the second ...).   Intended for parsing the 'Multi-File' collection mode. 
         /// </summary>
@@ -75,6 +62,7 @@ namespace Microsoft.Diagnostics.Tracing
         public ETWTraceEventSource(IEnumerable<string> fileNames)
         {
             this.fileNames = fileNames;
+            Initialize(fileNames);
         }
 
         // Process is called after all desired subscriptions have been registered.  
@@ -395,21 +383,9 @@ namespace Microsoft.Diagnostics.Tracing
             public int Size;
         }
 
-        private void Initialize(IEnumerable<string> fileNames, TraceEventSourceType type)
+        private void Initialize(IEnumerable<string> fileNames)
         {
-            List<string> allLogFiles = new List<string>();
-            if (type == TraceEventSourceType.MergeAll)
-            {
-                foreach(var file in fileNames)
-                {
-                    allLogFiles.AddRange(GetMergeAllLogFiles(file));
-                }
-            }
-            else if (type == TraceEventSourceType.MultiFile)
-            {
-                allLogFiles = new List<string>(fileNames);
-            }
-
+            List<string> allLogFiles = new List<string>(fileNames);
             logFiles = new TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[allLogFiles.Count];
             for (int i = 0; i < allLogFiles.Count; i++)
             {
@@ -972,9 +948,5 @@ namespace Microsoft.Diagnostics.Tracing
         /// Use a real time session as the event data source.
         /// </summary>
         Session,
-        /// <summary>
-        /// Use a list of unmerged ETL files
-        /// </summary>
-        MultiFile,
     };
 }

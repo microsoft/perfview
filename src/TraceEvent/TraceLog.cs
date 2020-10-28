@@ -52,18 +52,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     public sealed class TraceLog : TraceEventSource, IDisposable, IFastSerializable, IFastSerializableVersion
     {
         /// <summary>
-        /// Given an array of files, create an ETLX file for the data. 
-        /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
-        /// <returns>The name of the ETLX file that was generated.</returns>
-        /// </summary>
-        public static string CreateFromEventTraceLogFiles(IEnumerable<string> fileNames, string etlxFilePath = null, TraceLogOptions options = null, TraceEventDispatcherOptions traceEventDispatcherOptions = null)
-        {
-            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromMultiEventTraceLogFiles(fileNames, traceEventDispatcherOptions))
-            {
-                return CreateFromEventTraceLogFile(source, etlxFilePath, options);
-            }
-        }
-        /// <summary>
         /// Given the path to an ETW trace log file (ETL) file, create an ETLX file for the data. 
         /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
         /// <returns>The name of the ETLX file that was generated.</returns>
