@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public static string CreateFromEventTraceLogFiles(IEnumerable<string> fileNames, string etlxFilePath = null, TraceLogOptions options = null, TraceEventDispatcherOptions traceEventDispatcherOptions = null)
         {
-            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromMultiFile(fileNames, traceEventDispatcherOptions))
+            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromMultiEventTraceLogFiles(fileNames, traceEventDispatcherOptions))
             {
                 return CreateFromEventTraceLogFile(source, etlxFilePath, options);
             }

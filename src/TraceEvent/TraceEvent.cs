@@ -3150,7 +3150,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         /// <param name="fileNames">A list of paths to trace files.</param>
         /// <returns>A TraceEventDispatcher for the given trace files.</returns>
-        public static TraceEventDispatcher GetDispatcherFromMultiFile(IEnumerable<string> fileNames, TraceEventDispatcherOptions options = null)
+        public static TraceEventDispatcher GetDispatcherFromMultiEventTraceLogFiles(IEnumerable<string> fileNames, TraceEventDispatcherOptions options = null)
         {
             return new ETWTraceEventSource(fileNames, TraceEventSourceType.MultiFile);
         }
