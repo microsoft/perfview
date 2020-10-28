@@ -3146,7 +3146,7 @@ namespace Microsoft.Diagnostics.Tracing
     public abstract unsafe class TraceEventDispatcher : TraceEventSource
     {
         /// <summary>
-        /// Obtains the correct TraceEventDispatcher for multi file.
+        /// Obtains the correct TraceEventDispatcher for multiple ETW files.
         /// </summary>
         /// <param name="fileNames">A list of paths to trace files.</param>
         /// <returns>A TraceEventDispatcher for the given trace files.</returns>
