@@ -154,7 +154,7 @@ namespace Stats
                 writer.WriteLine("<LI> Summary of jitting time by module:</P>");
                 writer.WriteLine("<Center>");
                 writer.WriteLine("<Table Border=\"1\">");
-                writer.WriteLine("<TR>" +
+                writer.Write("<TR>" +
                     "<TH Title=\"The name of the module\">Name</TH>" +
                     "<TH Title=\"The total CPU time spent jitting for all methods in this module\">JitTime<BR/>msec</TH>" +
                     "<TH Title=\"The number of times the JIT was invoked for methods in this module\">Num Compilations</TH>" +
@@ -166,9 +166,9 @@ namespace Stats
 
                 if (runtime.JIT.Stats().IsJitAllocSizePresent)
                 {
-                    writer.WriteLine("<TH Title=\"The total amount of heap memory requested for the code produced by the JIT for all methods in this module.  \">Allocation Size for Hotcode</TH>");
-                    writer.WriteLine("<TH Title=\"The total amount of heap memory requested for the read-only data of code produced by the JIT for all methods in this module.  \">Allocation Size for ROData</TH>");
-                    writer.WriteLine("<TH Title=\"The total amount of heap memory allocated for the code produced by the JIT for all methods in this module. \">Allocated size</TH>");
+                    writer.Write("<TH Title=\"The total amount of heap memory requested for the code produced by the JIT for all methods in this module.  \">Allocation Size for Hotcode</TH>");
+                    writer.Write("<TH Title=\"The total amount of heap memory requested for the read-only data of code produced by the JIT for all methods in this module.  \">Allocation Size for ROData</TH>");
+                    writer.Write("<TH Title=\"The total amount of heap memory allocated for the code produced by the JIT for all methods in this module. \">Allocated size</TH>");
                 }
 
                 writer.WriteLine("</TR>");
@@ -181,8 +181,7 @@ namespace Stats
                     "<TD Align=\"Center\">{4:n0}</TD>" +
                     "<TD Align=\"Center\">{5:n1}</TD>" +
                     "<TD Align=\"Center\">{6:n1}</TD>" +
-                    "<TD Align=\"Center\">{7:n1}</TD>" +
-                    "</TR>";
+                    "<TD Align=\"Center\">{7:n1}</TD>";
                 
                 writer.Write(moduleTableRow,
                     "TOTAL",
@@ -200,8 +199,7 @@ namespace Stats
                     allocSizeColumns +=
                        "<TD Align=\"Center\">{0:n0}</TD>" +
                        "<TD Align=\"Center\">{1:n0}</TD>" +
-                       "<TD Align=\"Center\">{2:n0}</TD>" +
-                       "<TD Align=\"Center\">N/A</TD>"; //TODO: See if this is needed.
+                       "<TD Align=\"Center\">{2:n0}</TD>";
 
                     writer.Write(allocSizeColumns,
                         runtime.JIT.Stats().TotalHotCodeAllocSize,
@@ -231,7 +229,7 @@ namespace Stats
                             info.TotalAllocSizeForJitCode);
                     }
 
-                    writer.WriteLine();
+                    writer.WriteLine("</TR>");
 
                 }
                 writer.WriteLine("</Table>");
@@ -305,10 +303,10 @@ namespace Stats
                 if (_event.IsJitAllocSizePresent)
                 {
                     writer.Write(
-                        "<TD Align=\"Center\">{0:n0}</TD>",
-                        "<TD Align=\"Center\">{1:n0}</TD>",
-                        "<TD Align=\"Center\">{2:n0}</TD>",
-                        "<TD Align=\"Center\">{3:n0}</TD>",
+                        "<TD Align=\"Center\">{0}</TD>" +
+                        "<TD Align=\"Center\">{1}</TD>" +
+                        "<TD Align=\"Center\">{2}</TD>" +
+                        "<TD Align=\"Center\">{3}</TD>",
                         _event.HotCodeAllocSize,
                         _event.RODataAllocSize,
                         _event.RequestedAllocSizeForJitCode,
@@ -440,7 +438,11 @@ namespace Stats
             bool showOptimizationTiers = ShouldShowOptimizationTiers(runtime);
             using (var writer = File.CreateText(filePath))
             {
-                writer.Write("Start MSec{0}JitTime MSec{0}ThreadID{0}IL Size{0}Native Size{0}LoaderHeap Allocation Size", listSeparator);
+                writer.Write("Start MSec{0}JitTime MSec{0}ThreadID{0}IL Size{0}Native Size", listSeparator);
+                if (runtime.JIT.Stats().IsJitAllocSizePresent)
+                {
+                    writer.Write("HotCode Size{0}RO data Size{0}Allocated Heap Size{0}JIT Allocation Flag", listSeparator);
+                }
                 if (showOptimizationTiers)
                 {
                     writer.Write("{0}OptimizationTier", listSeparator);

@@ -2015,7 +2015,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[134];
+                var templates = new TraceEvent[135];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2157,6 +2157,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[131]  = R2RGetEntryPointStartTemplate(null);
                 templates[132]  = TypeLoadStartTemplate(null);
                 templates[133]  = TypeLoadStopTemplate(null);
+                templates[134]  = MethodMemoryAllocatedForJitCodeTemplate(null);
 
                 s_templates = templates;
             }
