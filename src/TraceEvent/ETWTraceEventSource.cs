@@ -42,6 +42,7 @@ namespace Microsoft.Diagnostics.Tracing
             : this(fileName, TraceEventSourceType.MergeAll)
         {
         }
+
         /// <summary>
         /// Open a ETW event source for processing.  This can either be a moduleFile or a real time ETW session
         /// </summary>
@@ -56,6 +57,21 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// Open multiple etl files as one trace for processing.
+        /// </summary>
+        /// <param name="fileOrSessionName">
+        /// If type == MergeAll, call Initialize
+        /// <param name="type"></param>
+        // [SecuritySafeCritical]
+        public ETWTraceEventSource(IEnumerable<string> fileNames, TraceEventSourceType type)
+        {
+            if (type == TraceEventSourceType.MergeAll)
+            {
+                Initialize(fileNames);
+            }
+        }
+
+        /// <summary>
         /// Process all the files in 'fileNames' in order (that is all the events in the first
         /// file are processed, then the second ...).   Intended for parsing the 'Multi-File' collection mode. 
         /// </summary>
@@ -63,7 +79,6 @@ namespace Microsoft.Diagnostics.Tracing
         public ETWTraceEventSource(IEnumerable<string> fileNames)
         {
             this.fileNames = fileNames;
-            Initialize(fileNames);
         }
 
         // Process is called after all desired subscriptions have been registered.  
