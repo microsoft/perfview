@@ -8811,10 +8811,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
         public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
         public string MethodBeingCompiledNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0))); } }
-        public long HotCodeSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
-        public long RODataSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 8); } }
-        public long TotalRequestSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 16); } }
-        public int CorJitAllocMemFlag { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 24); } }
+        public long JitHotCodeRequestSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
+        public long JitRODataRequestSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 8); } }
+        public long AllocatedSizeForJitCode { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 16); } }
+        public int JitAllocFlag { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 24); } }
         public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 28); } }
 
         #region Private
@@ -8843,10 +8843,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "MethodBeingCompiledNamespace", MethodBeingCompiledNamespace);
             XmlAttrib(sb, "MethodBeingCompiledName", MethodBeingCompiledName);
             XmlAttrib(sb, "MethodBeingCompiledNameSignature", MethodBeingCompiledNameSignature);
-            XmlAttrib(sb, "HotCodeSize", HotCodeSize);
-            XmlAttrib(sb, "RODataSize", RODataSize);
-            XmlAttrib(sb, "TotalRequestSize", TotalRequestSize);
-            XmlAttrib(sb, "CorJitAllocMemFlag", CorJitAllocMemFlag);
+            XmlAttrib(sb, "JitHotCodeRequestSize", JitHotCodeRequestSize);
+            XmlAttrib(sb, "JitRODataRequestSize", JitRODataRequestSize);
+            XmlAttrib(sb, "AllocatedSizeForJitCode", AllocatedSizeForJitCode);
+            XmlAttrib(sb, "JitAllocFlag", JitAllocFlag);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
             sb.Append("/>");
             return sb;
@@ -8857,7 +8857,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodBeingCompiledNamespace", "MethodBeingCompiledName", "MethodBeingCompiledNameSignature", "HotCodeSize", "RODataSize", "TotalRequestSize", "CorJitAllocMemFlag", "ClrInstanceID" };
+                    payloadNames = new string[] { "MethodBeingCompiledNamespace", "MethodBeingCompiledName", "MethodBeingCompiledNameSignature", "JitHotCodeRequestSize", "JitRODataRequestSize", "AllocatedSizeForJitCode", "JitAllocFlag", "ClrInstanceID" };
                 return payloadNames;
             }
         }
@@ -8873,13 +8873,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 case 2:
                     return MethodBeingCompiledNameSignature;
                 case 3:
-                    return HotCodeSize;
+                    return JitHotCodeRequestSize;
                 case 4:
-                    return RODataSize;
+                    return JitRODataRequestSize;
                 case 5:
-                    return TotalRequestSize;
+                    return AllocatedSizeForJitCode;
                 case 6:
-                    return CorJitAllocMemFlag;
+                    return JitAllocFlag;
                 case 7:
                     return ClrInstanceID;
                 default:

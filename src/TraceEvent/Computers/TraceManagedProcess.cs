@@ -3871,10 +3871,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TotalCpuTimeMSec += method.CompileCpuTimeMSec;
             TotalILSize += method.ILSize;
             TotalNativeSize += method.NativeSize;
-            TotalHotCodeAllocSize += method.HotCodeAllocSize;
-            TotalRODataAllocSize += method.RODataAllocSize;
+            TotalHotCodeAllocSize += method.JitHotCodeRequestSize;
+            TotalRODataAllocSize += method.JitRODataRequestSize;
             IsJitAllocSizePresent |= method.IsJitAllocSizePresent;
-            TotalAllocSizeForJitCode += method.RequestedAllocSizeForJitCode;
+            TotalAllocSizeForJitCode += method.AllocatedSizeForJitCode;
             if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
             {
                 CountBackgroundMultiCoreJit++;
@@ -3949,13 +3949,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             if (_method != null)
             {
                 // If we already counted alloc size for a method, don't count it again.
-                if (_method.HotCodeAllocSize == 0)
+                if (_method.JitHotCodeRequestSize == 0)
                 {
                     _method.IsJitAllocSizePresent = true;
-                    _method.HotCodeAllocSize = data.HotCodeSize;
-                    _method.RODataAllocSize = data.RODataSize;
-                    _method.RequestedAllocSizeForJitCode = data.TotalRequestSize;
-                    _method.JitAllocFlag = data.CorJitAllocMemFlag;
+                    _method.JitHotCodeRequestSize = data.JitHotCodeRequestSize;
+                    _method.JitRODataRequestSize = data.JitRODataRequestSize;
+                    _method.AllocatedSizeForJitCode = data.AllocatedSizeForJitCode;
+                    _method.JitAllocFlag = data.JitAllocFlag;
                 }
             }
         }
@@ -4166,15 +4166,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// <summary>
         /// Hot code size allocated for JIT code of method
         /// </summary>
-        public long HotCodeAllocSize;
+        public long JitHotCodeRequestSize;
         /// <summary>
         /// Read-only data size allocated for JIT code of method
         /// </summary>
-        public long RODataAllocSize;
+        public long JitRODataRequestSize;
         /// <summary>
         /// Total size allocated for JIT code of method
         /// </summary>
-        public long RequestedAllocSizeForJitCode;
+        public long AllocatedSizeForJitCode;
         /// <summary>
         /// Jit allocation flag
         /// </summary>

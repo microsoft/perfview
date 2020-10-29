@@ -166,9 +166,9 @@ namespace Stats
 
                 if (runtime.JIT.Stats().IsJitAllocSizePresent)
                 {
-                    writer.Write("<TH Title=\"The total amount of heap memory requested for the code produced by the JIT for all methods in this module.  \">Allocation Size for Hotcode</TH>");
-                    writer.Write("<TH Title=\"The total amount of heap memory requested for the read-only data of code produced by the JIT for all methods in this module.  \">Allocation Size for ROData</TH>");
-                    writer.Write("<TH Title=\"The total amount of heap memory allocated for the code produced by the JIT for all methods in this module. \">Allocated size</TH>");
+                    writer.Write("<TH Title=\"The total amount of heap memory requested for the code produced by the JIT for all methods in this module.  \">JIT Hotcode request size</TH>");
+                    writer.Write("<TH Title=\"The total amount of heap memory requested for the read-only data of code produced by the JIT for all methods in this module.  \">JIT RO-data request size</TH>");
+                    writer.Write("<TH Title=\"The total amount of heap memory allocated for the code produced by the JIT for all methods in this module. \">Allocated size for JIT code</TH>");
                 }
 
                 writer.WriteLine("</TR>");
@@ -264,10 +264,10 @@ namespace Stats
             if (runtime.JIT.Stats().IsJitAllocSizePresent)
             {
                 writer.Write(
-                    "<TH>HotCode<BR/>Size</TH>" +
-                    "<TH>RO data<BR/>Size</TH>" +
-                    "<TH>Allocated<BR/>Heap Size</TH>" +
-                    "<TH>JIT Allocation<BR/>Flag</TH>"
+                    "<TH>JIT Hotcode<BR/>request size</TH>" +
+                    "<TH>JIT RO-data<BR/>request size</TH>" +
+                    "<TH>Allocated size<BR/>for JIT code</TH>" +
+                    "<TH>JIT Allocation<BR/>Flags</TH>"
                     );
             }
 
@@ -307,9 +307,9 @@ namespace Stats
                         "<TD Align=\"Center\">{1}</TD>" +
                         "<TD Align=\"Center\">{2}</TD>" +
                         "<TD Align=\"Center\">{3}</TD>",
-                        _event.HotCodeAllocSize,
-                        _event.RODataAllocSize,
-                        _event.RequestedAllocSizeForJitCode,
+                        _event.JitHotCodeRequestSize,
+                        _event.JitRODataRequestSize,
+                        _event.AllocatedSizeForJitCode,
                         _event.JitAllocFlag
                         );
                 }
@@ -441,7 +441,7 @@ namespace Stats
                 writer.Write("Start MSec{0}JitTime MSec{0}ThreadID{0}IL Size{0}Native Size", listSeparator);
                 if (runtime.JIT.Stats().IsJitAllocSizePresent)
                 {
-                    writer.Write("{0}HotCode Size{0}RO data Size{0}Allocated Heap Size{0}JIT Allocation Flag", listSeparator);
+                    writer.Write("{0}JIT HotCode request size{0}JIT RO-data request size{0}Allocated size for JIT code{0}JIT Allocation Flag", listSeparator);
                 }
                 if (showOptimizationTiers)
                 {
@@ -467,9 +467,9 @@ namespace Stats
                     {
                         writer.Write("{0}{1}{0}{2}{0}{3}{0}{4}",
                             listSeparator,
-                            _event.HotCodeAllocSize,
-                            _event.RODataAllocSize,
-                            _event.RequestedAllocSizeForJitCode,
+                            _event.JitHotCodeRequestSize,
+                            _event.JitRODataRequestSize,
+                            _event.AllocatedSizeForJitCode,
                             _event.JitAllocFlag);
                     }
 
@@ -632,9 +632,9 @@ namespace Stats
 
             if (info.IsJitAllocSizePresent)
             {
-                writer.Write(" HotCodeAllocSize={0}", StringUtilities.QuotePadLeft(info.HotCodeAllocSize.ToString(), 10));
-                writer.Write(" RODataAllocSize={0}", StringUtilities.QuotePadLeft(info.RODataAllocSize.ToString(), 10));
-                writer.Write(" RequestedAllocSizeForJitCode={0}", StringUtilities.QuotePadLeft(info.RequestedAllocSizeForJitCode.ToString(), 10));
+                writer.Write(" JITHotCodeRequestSize={0}", StringUtilities.QuotePadLeft(info.JitHotCodeRequestSize.ToString(), 10));
+                writer.Write(" JITRODataRequestSize={0}", StringUtilities.QuotePadLeft(info.JitRODataRequestSize.ToString(), 10));
+                writer.Write(" AllocSizeForJitCode={0}", StringUtilities.QuotePadLeft(info.AllocatedSizeForJitCode.ToString(), 10));
                 writer.Write(" JitAllocFlag={0}", StringUtilities.QuotePadLeft(info.JitAllocFlag.ToString(), 10));
             }
             if (showOptimizationTiers)
