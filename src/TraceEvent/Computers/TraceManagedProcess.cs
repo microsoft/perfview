@@ -3873,6 +3873,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TotalNativeSize += method.NativeSize;
             TotalHotCodeAllocSize += method.HotCodeAllocSize;
             TotalRODataAllocSize += method.RODataAllocSize;
+            IsJitAllocSizePresent |= method.IsJitAllocSizePresent;
             TotalAllocSizeForJitCode += method.RequestedAllocSizeForJitCode;
             if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
             {
@@ -3947,18 +3948,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
             if (_method != null)
             {
-                Debug.Assert(_method.HotCodeAllocSize == 0);
-
-                _method.IsJitAllocSizePresent = true;
-                _method.HotCodeAllocSize = data.HotCodeSize;
-                _method.RODataAllocSize = data.RODataSize;
-                _method.RequestedAllocSizeForJitCode = data.TotalRequestSize;
-                _method.JitAllocFlag = data.CorJitAllocMemFlag;
-
-                stats.JIT.m_stats.IsJitAllocSizePresent = true;
-                stats.JIT.m_stats.TotalHotCodeAllocSize += data.HotCodeSize;
-                stats.JIT.m_stats.TotalRODataAllocSize += data.RODataSize;
-                stats.JIT.m_stats.TotalAllocSizeForJitCode += data.TotalRequestSize;
+                // If we already counted alloc size for a method, don't count it again.
+                if (_method.HotCodeAllocSize == 0)
+                {
+                    _method.IsJitAllocSizePresent = true;
+                    _method.HotCodeAllocSize = data.HotCodeSize;
+                    _method.RODataAllocSize = data.RODataSize;
+                    _method.RequestedAllocSizeForJitCode = data.TotalRequestSize;
+                    _method.JitAllocFlag = data.CorJitAllocMemFlag;
+                }
             }
         }
 

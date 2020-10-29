@@ -441,7 +441,7 @@ namespace Stats
                 writer.Write("Start MSec{0}JitTime MSec{0}ThreadID{0}IL Size{0}Native Size", listSeparator);
                 if (runtime.JIT.Stats().IsJitAllocSizePresent)
                 {
-                    writer.Write("HotCode Size{0}RO data Size{0}Allocated Heap Size{0}JIT Allocation Flag", listSeparator);
+                    writer.Write("{0}HotCode Size{0}RO data Size{0}Allocated Heap Size{0}JIT Allocation Flag", listSeparator);
                 }
                 if (showOptimizationTiers)
                 {
@@ -465,7 +465,7 @@ namespace Stats
 
                     if (_event.IsJitAllocSizePresent)
                     {
-                        writer.Write("{1}{0}{2}{0}{3}{0}{4}",
+                        writer.Write("{0}{1}{0}{2}{0}{3}{0}{4}",
                             listSeparator,
                             _event.HotCodeAllocSize,
                             _event.RODataAllocSize,
@@ -554,8 +554,11 @@ namespace Stats
             JITStatsEx statsEx = JITStatsEx.Create(runtime);
 
             // TODO pay attention to indent;
-            writer.Write(" <JitProcess Process=\"{0}\" ProcessID=\"{1}\" JitTimeMSec=\"{2:n3}\" Count=\"{3}\" ILSize=\"{4}\" NativeSize=\"{5}\" HotCodeAllocSize=\"{6}\" RODataAllocSize=\"{7}\" AllocSizeForJitCode=\"{8}\"",
-                stats.Name, stats.ProcessID, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize, runtime.JIT.Stats().TotalHotCodeAllocSize, runtime.JIT.Stats().TotalRODataAllocSize, runtime.JIT.Stats().TotalAllocSizeForJitCode);
+            writer.Write(" <JitProcess Process=\"{0}\" ProcessID=\"{1}\" JitTimeMSec=\"{2:n3}\" Count=\"{3}\" ILSize=\"{4}\" NativeSize=\"{5}\"", stats.Name, stats.ProcessID, runtime.JIT.Stats().TotalCpuTimeMSec, runtime.JIT.Stats().Count, runtime.JIT.Stats().TotalILSize, runtime.JIT.Stats().TotalNativeSize);
+            if (runtime.JIT.Stats().IsJitAllocSizePresent)
+            {
+                writer.Write("HotCodeAllocSize=\"{0}\" RODataAllocSize=\"{1}\" AllocSizeForJitCode=\"{2}\"", runtime.JIT.Stats().TotalHotCodeAllocSize, runtime.JIT.Stats().TotalRODataAllocSize, runtime.JIT.Stats().TotalAllocSizeForJitCode);
+            }
             if (stats.CPUMSec != 0)
             {
                 writer.Write(" ProcessCpuTimeMsec=\"{0}\"", stats.CPUMSec);
