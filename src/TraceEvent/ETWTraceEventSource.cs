@@ -69,6 +69,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Initialize(fileNames);
             }
+            else
+            {
+                this.fileNames = fileNames;
+            }
         }
 
         /// <summary>

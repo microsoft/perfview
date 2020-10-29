@@ -58,11 +58,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public static string CreateFromEventTraceLogFile(string filePath, string etlxFilePath = null, TraceLogOptions options = null, TraceEventDispatcherOptions traceEventDispatcherOptions = null)
         {
+            if (etlxFilePath == null)
+            {
+                etlxFilePath = Path.ChangeExtension(filePath, ".etlx");
+            }
+
             using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath, traceEventDispatcherOptions))
             {
                 return CreateFromEventTraceLogFile(source, etlxFilePath, options);
             }
         }
+
         /// <summary>
         /// Given a <see cref="TraceEventDispatcher"/> that can be created from data source, create an ETLX file for the data. 
         /// </summary>
