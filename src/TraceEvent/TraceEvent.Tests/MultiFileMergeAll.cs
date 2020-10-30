@@ -29,36 +29,12 @@ namespace TraceEventTests
             var fileNames = Directory.EnumerateFiles(UnZippedDataDir + "\\diaghub-etls", "*.etl");
             Output.WriteLine($"In {nameof(ETW_MultiFileMergeAll_Basic)}(\"{string.Join(", ", fileNames)}\")");
 
-            string etlFilePath = "diaghub";
+            string etlFilePath = "diaghub-etls";
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", etlFilePath));
             string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
-            // See if we have a cooresponding baseline file 
-            string baselineName = Path.Combine(TestDataDir,
-                Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
-
-            string newBaselineName = Path.Combine(NewBaselineDir,
-                Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
-            string outputName = Path.Combine(OutputDir,
-                Path.GetFileNameWithoutExtension(etlFilePath) + ".txt");
-            TextWriter outputFile = File.CreateText(outputName);
-
-            StreamReader baselineFile = null;
-            if (File.Exists(baselineName))
-            {
-                baselineFile = File.OpenText(baselineName);
-            }
-            else
-            {
-                Output.WriteLine("WARNING: No baseline file");
-                Output.WriteLine(string.Format("    ETL FILE: {0}", etlFilePath));
-                Output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
-                Output.WriteLine("To Create a baseline file");
-                Output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"", newBaselineName, baselineName));
-            }
-
-            // TraceLog traceLog = TraceLog.OpenOrConvert(etlFilePath);    // This one can be used during development of test itself
-            TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(new ETWTraceEventSource(fileNames, TraceEventSourceType.MergeAll), eltxFilePath));
+            TraceEventDispatcher source = new ETWTraceEventSource(fileNames, TraceEventSourceType.MergeAll);
+            TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(source, eltxFilePath));
 
             var traceSource = traceLog.Events.GetSource();
 
