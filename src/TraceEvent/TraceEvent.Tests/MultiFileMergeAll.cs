@@ -18,9 +18,8 @@ namespace TraceEventTests
         }
 
         /// <summary>
-        /// This test simply scans all the events in the ETL.ZIP files in TestDataDir
-        /// and scans them (so you should get asserts if there is parsing problem)
-        /// and insures that no more than .1% of the events are 
+        /// This test unzips a zip file containing 4 etls files, open them as 1 trace
+        /// and asserts the correct TraceLog size and event count
         /// </summary>
         [Fact]
         public void ETW_MultiFileMergeAll_Basic()
