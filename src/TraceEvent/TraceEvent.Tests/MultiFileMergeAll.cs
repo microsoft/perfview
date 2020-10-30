@@ -37,7 +37,6 @@ namespace TraceEventTests
 
             var traceSource = traceLog.Events.GetSource();
 
-            Assert.Equal(25898695, traceLog.Size);
             Assert.Equal(95506, traceLog.EventCount);
         }
     }
