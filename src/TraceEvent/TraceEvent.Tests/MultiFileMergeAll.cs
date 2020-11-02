@@ -39,9 +39,7 @@ namespace TraceEventTests
             Assert.Equal(55, stopEvents.Count());
             Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
 
-            IEnumerable<string> dbEvents = traceLog.Events
-                .Filter(e => e.EventName.Contains("Activity"))
-                .Select(e => e.ToString());
+            IEnumerable<string> dbEvents = traceLog.Events.Select(e => e.ToString());
 
             using (StreamReader file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.events.txt"))
             {
