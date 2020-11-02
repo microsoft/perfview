@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -35,9 +34,23 @@ namespace TraceEventTests
             TraceEventDispatcher source = new ETWTraceEventSource(fileNames, TraceEventSourceType.MergeAll);
             TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(source, eltxFilePath));
 
-            var traceSource = traceLog.Events.GetSource();
-
             Assert.Equal(95506, traceLog.EventCount);
+            var stopEvents = traceLog.Events.Filter(e => e.EventName == "Activity2Stop/Stop");
+            Assert.Equal(55, stopEvents.Count());
+            Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
+
+            IEnumerable<string> dbEvents = traceLog.Events
+                .Filter(e => e.EventName.Contains("Activity"))
+                .Select(e => e.ToString());
+
+            using (StreamReader file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.events.txt"))
+            {
+                foreach (var evt in dbEvents)
+                {
+                    var line = file.ReadLine();
+                    Assert.Equal(line, evt.Replace(Environment.NewLine, "\\n"));
+                }
+            }
         }
     }
 }

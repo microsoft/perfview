@@ -60,8 +60,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Open multiple etl files as one trace for processing.
         /// </summary>
         /// <param name="fileOrSessionName">
-        /// If type == MergeAll, call Initialize
-        /// <param name="type"></param>
+        /// <param name="type">If type == MergeAll, call Initialize.</param>
         // [SecuritySafeCritical]
         public ETWTraceEventSource(IEnumerable<string> fileNames, TraceEventSourceType type)
         {
