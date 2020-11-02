@@ -23,7 +23,7 @@ namespace TraceEventTests
         public void ETW_MultiFileMergeAll_Basic()
         {
             PrepareTestData();
-            var fileNames = Directory.EnumerateFiles(UnZippedDataDir + "\\diaghub-etls", "*.etl");
+            IEnumerable<string> fileNames = Directory.EnumerateFiles(UnZippedDataDir + "\\diaghub-etls", "*.etl");
             Output.WriteLine($"In {nameof(ETW_MultiFileMergeAll_Basic)}(\"{string.Join(", ", fileNames)}\")");
 
             string etlFilePath = "diaghub-etls";
@@ -38,9 +38,9 @@ namespace TraceEventTests
             Assert.Equal(55, stopEvents.Count());
             Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
 
-            IEnumerable<string> dbEvents = traceLog.Events.Select(e => e.EventName);
+            IEnumerable<string> dbEvents = traceLog.Events.Filter(e => e.EventName.Contains("Activity")).Select(e => e.EventName);
 
-            using (StreamReader file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.txt"))
+            using (var file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.txt"))
             {
                 foreach (var evt in dbEvents)
                 {
