@@ -1,9 +1,8 @@
-﻿using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -39,14 +38,14 @@ namespace TraceEventTests
             Assert.Equal(55, stopEvents.Count());
             Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
 
-            IEnumerable<string> dbEvents = traceLog.Events.Select(e => e.ToString());
+            IEnumerable<string> dbEvents = traceLog.Events.Select(e => e.EventName);
 
-            using (StreamReader file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.events.txt"))
+            using (StreamReader file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.txt"))
             {
                 foreach (var evt in dbEvents)
                 {
                     var line = file.ReadLine();
-                    Assert.Equal(line, evt.Replace(Environment.NewLine, "\\n"));
+                    Assert.Equal(line, evt);
                 }
             }
         }
