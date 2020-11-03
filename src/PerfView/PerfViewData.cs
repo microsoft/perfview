@@ -2760,7 +2760,7 @@ table {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
                 {
-                    var totalSize = data.GenerationSize0 + data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3;
+                    var totalSize = data.GenerationSize0 + data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3 + data.GenerationSize4;
                     byTimeStats[idx].GCHeapSizeMB = Math.Max(byTimeStats[idx].GCHeapSizeMB, totalSize / 1000000.0F);
                 }
             };
