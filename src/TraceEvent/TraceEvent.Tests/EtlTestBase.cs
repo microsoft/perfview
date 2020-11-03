@@ -64,7 +64,7 @@ namespace TraceEventTests
                 Assert.True(File.Exists(etlFilePath));
             }
 
-            foreach (var folderZip in Directory.EnumerateFiles(TestDataDir, "*-etls.zip"))
+            foreach (var folderZip in Directory.EnumerateFiles(TestDataDir, "*-diagsession.zip"))
             {
                 var zipFile = ZipFile.OpenRead(folderZip);
                 var dir = Path.Combine(UnZippedDataDir, Path.GetFileNameWithoutExtension(folderZip));

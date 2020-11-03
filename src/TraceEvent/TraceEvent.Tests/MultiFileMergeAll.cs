@@ -25,10 +25,10 @@ namespace TraceEventTests
         public void ETW_MultiFileMergeAll_Basic()
         {
             PrepareTestData();
-            IEnumerable<string> fileNames = Directory.EnumerateFiles(UnZippedDataDir + "\\diaghub-etls", "*.etl");
+            IEnumerable<string> fileNames = Directory.EnumerateFiles(UnZippedDataDir + "\\diaghub-dotnetcore3.1-win-x64-diagsession", "*.etl");
             Output.WriteLine($"In {nameof(ETW_MultiFileMergeAll_Basic)}(\"{string.Join(", ", fileNames)}\")");
 
-            string etlFilePath = "diaghub-etls";
+            string etlFilePath = "diaghub-dotnetcore3.1-win-x64-diagsession";
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", etlFilePath));
             string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
@@ -40,8 +40,7 @@ namespace TraceEventTests
             Assert.Equal(55, stopEvents.Count());
             Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
 
-            using (var file = new StreamReader(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.txt"))
-            //using (var file = new StreamWriter(UnZippedDataDir + "\\diaghub-etls\\diaghub-etls.txt"))
+            using (var file = new StreamReader($"{TestDataDir}\\diaghub-dotnetcore3.1-win-x64-diagsession.baseline.txt"))
             {
                 var traceSource = traceLog.Events.GetSource();
                 traceSource.AllEvents += delegate (TraceEvent data)
@@ -88,7 +87,6 @@ namespace TraceEventTests
 
                     var evt = GeneralParsing.Parse(data);
 
-                    //file.WriteLine(evt);
                     var line = file.ReadLine();
                     Assert.Equal(evt, line);
                 };
