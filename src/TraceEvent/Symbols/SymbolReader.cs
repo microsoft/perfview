@@ -2027,7 +2027,7 @@ namespace Microsoft.Diagnostics.Symbols
         // Should be in the framework, but I could  not find it quickly.  
         private static bool ArrayEquals(byte[] bytes1, byte[] bytes2)
         {
-            if (bytes1.Length != bytes1.Length)
+            if (bytes1.Length != bytes2.Length)
             {
                 return false;
             }
