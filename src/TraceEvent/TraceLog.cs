@@ -65,13 +65,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath, traceEventDispatcherOptions))
             {
-                if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
-                {
-                    options.OnLostEvents(false, source.EventsLost, 0);
-                }
-
-                CreateFromTraceEventSource(source, etlxFilePath, options);
+                return CreateFromEventTraceLogFile(source, etlxFilePath, options);
             }
+        }
+
+        /// <summary>
+        /// Given a <see cref="TraceEventDispatcher"/> that can be created from data source, create an ETLX file for the data. 
+        /// </summary>
+        /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
+        /// <returns>The name of the ETLX file that was generated.</returns>
+        public static string CreateFromEventTraceLogFile(TraceEventDispatcher source, string etlxFilePath, TraceLogOptions options = null)
+        {
+            if (etlxFilePath == null)
+            {
+                throw new ArgumentNullException(nameof(etlxFilePath));
+            }
+
+            if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
+            {
+                options.OnLostEvents(false, source.EventsLost, 0);
+            }
+
+            CreateFromTraceEventSource(source, etlxFilePath, options);
+
             return etlxFilePath;
         }
 
