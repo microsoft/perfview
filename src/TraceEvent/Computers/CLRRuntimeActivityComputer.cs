@@ -23,7 +23,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (_finalTimestamp.HasValue)
                     return _finalTimestamp.Value;
-                
+
                 throw new Exception();
             }
         }
@@ -284,10 +284,12 @@ namespace Microsoft.Diagnostics.Tracing
                 _processSpecificDataInProgress[processID] = processData;
             }
 
-            if (!processData.StartStopEvents.ContainsKey(threadId))
-                processData.StartStopEvents[threadId] = new List<StartStopThreadEventData>();
+            if (!processData.StartStopEvents.TryGetValue(threadId, out var startStopData))
+            {
+                startStopData = new List<StartStopThreadEventData>();
+                processData.StartStopEvents[threadId] = startStopData;
+            }
 
-            List<StartStopThreadEventData> startStopData = processData.StartStopEvents[threadId];
             startStopData.Add(new StartStopThreadEventData(start, end, name));
         }
 

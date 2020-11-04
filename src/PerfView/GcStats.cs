@@ -491,10 +491,8 @@ namespace Stats
                     writer.Write(" GenWithTimeTuning=\"{0}\"", gc.perHeapHistory.GenWithTimeTuning);
                     writer.Write(" GenCondemnedReasons=\"{0}\"", gc.perHeapHistory.GenCondemnedReasons);
 #endif
-                    if ((gc.PerHeapMarkTimes != null) && (gc.PerHeapMarkTimes.ContainsKey(HeapNum)))
+                    if (gc.PerHeapMarkTimes != null && gc.PerHeapMarkTimes.TryGetValue(HeapNum, out var mt))
                     {
-                        MarkInfo mt = gc.PerHeapMarkTimes[HeapNum];
-
                         if (mt != null)
                         {
                             writer.Write(" MarkStack =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkStack]);
@@ -1347,9 +1345,8 @@ namespace Stats
             }
             else
             {
-                if (info.otherThreadsRunningTime.ContainsKey(span.ProcessId))
+                if (info.otherThreadsRunningTime.TryGetValue(span.ProcessId, out var other))
                 {
-                    OtherThreadInfo other = info.otherThreadsRunningTime[span.ProcessId];
                     if (!other.processName.Contains(span.ProcessName))
                     {
                         other.processName += ";" + span.ProcessName;

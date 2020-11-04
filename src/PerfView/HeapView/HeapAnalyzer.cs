@@ -716,9 +716,8 @@ namespace PerfView
         {
             if (data.ProcessID == m_procID)
             {
-                if (m_process == null && m_processLookup.ContainsKey(data.ProcessID))
+                if (m_process == null && m_processLookup.TryGetValue(data.ProcessID, out m_process))
                 {
-                    m_process = m_processLookup[data.ProcessID];
                     m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_process);
                 }
 
@@ -933,12 +932,11 @@ namespace PerfView
             }
 
             // Get the process we want
-            if (!m_processLookup.ContainsKey(procID))
+            if (!m_processLookup.TryGetValue(procID, out m_process))
             {
                 return false;
             }
 
-            m_process = m_processLookup[procID];
             m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_process);
             return true;
         }

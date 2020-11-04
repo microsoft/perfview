@@ -109,12 +109,13 @@ namespace PerfView
                 for (int i = 0; i < ColumnsToDisplay.Count;)
                 {
                     // Discard duplicate columns
-                    if (columnOrder.ContainsKey(ColumnsToDisplay[i]))
+                    var column = ColumnsToDisplay[i];
+                    if (columnOrder.ContainsKey(column))
                     {
                         ColumnsToDisplay.RemoveAt(i);
                         continue;
                     }
-                    columnOrder.Add(ColumnsToDisplay[i], i);
+                    columnOrder.Add(column, i);
                     i++;
                 }
 

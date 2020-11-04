@@ -1568,13 +1568,9 @@ table {
 
             iis.IISGeneralGeneralChildRequestStart += delegate (W3GeneralChildRequestStart traceEvent)
             {
-                int childRequestRecurseLevel = 0;
-                if (childRequests.ContainsKey(traceEvent.ContextId))
+                if (childRequests.TryGetValue(traceEvent.ContextId, out int childRequestRecurseLevel))
                 {
-                    if (childRequests.TryGetValue(traceEvent.ContextId, out childRequestRecurseLevel))
-                    {
-                        childRequests[traceEvent.ContextId] = childRequestRecurseLevel + 1;
-                    }
+                    childRequests[traceEvent.ContextId] = childRequestRecurseLevel + 1;
                 }
                 else
                 {
@@ -1585,13 +1581,9 @@ table {
 
             iis.IISGeneralGeneralChildRequestEnd += delegate (W3GeneralChildRequestEnd traceEvent)
             {
-                int childRequestRecurseLevel = 0;
-                if (childRequests.ContainsKey(traceEvent.ContextId))
+                if (childRequests.TryGetValue(traceEvent.ContextId, out int childRequestRecurseLevel))
                 {
-                    if (childRequests.TryGetValue(traceEvent.ContextId, out childRequestRecurseLevel))
-                    {
-                        childRequests[traceEvent.ContextId] = childRequestRecurseLevel - 1;
-                    }
+                    childRequests[traceEvent.ContextId] = childRequestRecurseLevel - 1;
                 }
             };
 
@@ -2217,11 +2209,7 @@ table {
 
         private int GetChildEventRecurseLevel(Guid contextId, Dictionary<Guid, int> childRequests)
         {
-            int childRequestRecurseLevel = 0;
-            if (childRequests.ContainsKey(contextId))
-            {
-                childRequests.TryGetValue(contextId, out childRequestRecurseLevel);
-            }
+            childRequests.TryGetValue(contextId, out int childRequestRecurseLevel);
             return childRequestRecurseLevel;
         }
 
@@ -2257,14 +2245,7 @@ table {
                 {
                     exceptionMessage = ex.ExceptionType + ":" + ex.ExceptionMessage;
 
-                    if (exceptionsList.ContainsKey(exceptionMessage))
-                    {
-                        exceptionsList[exceptionMessage] = exceptionsList[exceptionMessage] + 1;
-                    }
-                    else
-                    {
-                        exceptionsList.Add(exceptionMessage, 1);
-                    }
+                    exceptionsList[exceptionMessage] = exceptionsList.TryGetValue(exceptionMessage, out var number) ? number + 1 : 1;
                 }
             }
 
@@ -3436,9 +3417,8 @@ table {
                     rest = rest.Substring(14);
                 }
                 var processId = int.Parse(rest);
-                if (m_gcStats.ContainsKey(processId))
+                if (m_gcStats.TryGetValue(processId, out var gcProc))
                 {
-                    var gcProc = m_gcStats[processId];
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + raw + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
@@ -3461,9 +3441,8 @@ table {
             else if (command.StartsWith("excelFinalization/"))
             {
                 var processId = int.Parse(command.Substring(18));
-                if (m_gcStats.ContainsKey(processId))
+                if (m_gcStats.TryGetValue(processId, out var gcProc))
                 {
-                    var gcProc = m_gcStats[processId];
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats.Finalization." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
@@ -3479,9 +3458,8 @@ table {
             else if (command.StartsWith("xml/"))
             {
                 var processId = int.Parse(command.Substring(4));
-                if (m_gcStats.ContainsKey(processId) && Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_gcStats[processId]).GC.Stats().HasDetailedGCInfo)
+                if (m_gcStats.TryGetValue(processId, out var gcProc) && Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_gcStats[processId]).GC.Stats().HasDetailedGCInfo)
                 {
-                    var gcProc = m_gcStats[processId];
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var xmlOutputName = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + ".xml");
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + ".csv");
@@ -3571,7 +3549,7 @@ table {
                     if (commandUri.Query.Contains("AssemblyLoad"))
                         filters.Add("AssemblyLoad");
                 }
-                string identifier = $"{(tree?"Tree":"Flat")}_";
+                string identifier = $"{(tree ? "Tree" : "Flat")}_";
                 if (filters != null)
                 {
                     foreach (var filter in filters)
@@ -3605,7 +3583,7 @@ table {
                 CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
                 source.Process();
                 m_runtimeData = runtimeLoaderComputer.RuntimeLoaderData;
-                Stats.ClrStats.ToHtml(writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source).ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats : m_runtimeData);
+                Stats.ClrStats.ToHtml(writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source).ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats: m_runtimeData);
             }
         }
 
@@ -3621,9 +3599,8 @@ table {
             {
                 var rest = command.Substring(6);
                 var processId = int.Parse(rest);
-                if (m_jitStats.ContainsKey(processId))
+                if (m_jitStats.TryGetValue(processId, out var jitProc))
                 {
-                    var jitProc = m_jitStats[processId];
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
@@ -3641,9 +3618,8 @@ table {
             {
                 var rest = command.Substring(14);
                 var processId = int.Parse(rest);
-                if (m_jitStats.ContainsKey(processId))
+                if (m_jitStats.TryGetValue(processId, out var jitProc))
                 {
-                    var jitProc = m_jitStats[processId];
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitInliningStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
@@ -3661,9 +3637,8 @@ table {
             {
                 var rest = command.Substring(20);
                 var processId = int.Parse(rest);
-                if (m_jitStats.ContainsKey(processId))
+                if (m_jitStats.TryGetValue(processId, out var jitProc))
                 {
-                    var jitProc = m_jitStats[processId];
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     List<object> events = m_bgJitEvents[processId];
                     var csvFile = CacheFiles.FindFile(FilePath, ".BGjitStats." + processId.ToString() + ".csv");
@@ -3693,21 +3668,23 @@ table {
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
             {
-                if (!m_bgJitEvents.ContainsKey(data.ProcessID))
+                if (!m_bgJitEvents.TryGetValue(data.ProcessID, out var eventList))
                 {
-                    m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                    eventList = new List<object>();
+                    m_bgJitEvents.Add(data.ProcessID, eventList);
                 }
 
-                m_bgJitEvents[data.ProcessID].Add(data.Clone());
+                eventList.Add(data.Clone());
             };
             source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
             {
-                if (!m_bgJitEvents.ContainsKey(data.ProcessID))
+                if (!m_bgJitEvents.TryGetValue(data.ProcessID, out var eventList))
                 {
-                    m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                    eventList = new List<object>();
+                    m_bgJitEvents.Add(data.ProcessID, eventList);
                 }
 
-                m_bgJitEvents[data.ProcessID].Add(data.Clone());
+                eventList.Add(data.Clone());
             };
 
             // process the model
@@ -5498,11 +5475,11 @@ table {
                         }
                     }
 
-                ADD_EVENT_FRAME:
+                    ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                ADD_SAMPLE:
+                    ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -6128,7 +6105,7 @@ table {
                 eventSource.Process();
                 return stackSource;
             }
-            else if(streamName == "Anti-Malware Real-Time Scan")
+            else if (streamName == "Anti-Malware Real-Time Scan")
             {
                 RealtimeAntimalwareComputer computer = new RealtimeAntimalwareComputer(eventSource, stackSource);
                 computer.Execute();
@@ -7365,7 +7342,7 @@ table {
                 advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
 
-            if(hasDefenderEvents)
+            if (hasDefenderEvents)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "Anti-Malware Real-Time Scan"));
             }
@@ -8595,7 +8572,7 @@ table {
                 m_Children.Add(advanced);
             }
 
-            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            if (AppLog.InternalUser && experimental.Children.Count > 0)
             {
                 m_Children.Add(experimental);
             }
@@ -8918,8 +8895,8 @@ table {
                                     goto ADD_EVENT_FRAME;
                                 }
 
-                            // Tack on event nam
-                            ADD_EVENT_FRAME:
+                                // Tack on event nam
+                                ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
                                 // Add sample

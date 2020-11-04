@@ -2117,12 +2117,11 @@ namespace PerfView
                 var name = m.Groups[1].Value;
                 var count = int.Parse(m.Groups[2].Value);
 
-                if (!sourceInfos.ContainsKey(name))
+                if (!sourceInfos.TryGetValue(name, out var sourceInfo))
                 {
                     throw new ApplicationException("Cpu Counter " + name + " does not exist.  Use ListCpuCounters for valid values.");
                 }
 
-                var sourceInfo = sourceInfos[name];
                 if (count < sourceInfo.MinInterval)
                 {
                     throw new ApplicationException("Cpu Counter " + name + " has a count that is below the minimum of " + sourceInfo.MinInterval);
@@ -3940,9 +3939,9 @@ namespace PerfView
             foreach (string keyString in keyStrings)
             {
                 ulong numberForToken;
-                if (keys.ContainsKey(keyString))
+                if (keys.TryGetValue(keyString, out var keyword))
                 {
-                    numberForToken = keys[keyString].Value;
+                    numberForToken = keyword.Value;
                 }
                 else
                 {

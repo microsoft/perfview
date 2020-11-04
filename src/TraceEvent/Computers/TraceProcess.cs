@@ -37,14 +37,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
-            if (source.UserData.ContainsKey("Computers/Processes"))
-            {
-                return source.UserData["Computers/Processes"] as TraceProcesses;
-            }
-            else
-            {
-                return null;
-            }
+            return source.UserData.TryGetValue("Computers/Processes", out var processes)
+                ? processes as TraceProcesses : null;
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
@@ -78,12 +72,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         public static void SetSampleIntervalMSec(this TraceProcess process, float sampleIntervalMSec)
         {
-            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec"))
+            if (!process.Source.UserData.TryGetValue("Computers/Processes/SampleIntervalMSec", out var data))
             {
-                process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
+                data = new Dictionary<ProcessIndex, float>();
+                process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", data);
             }
 
-            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            var map = (Dictionary<ProcessIndex, float>)data;
             if (!map.ContainsKey(process.ProcessIndex))
             {
                 map[process.ProcessIndex] = sampleIntervalMSec;
@@ -92,20 +87,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         public static float SampleIntervalMSec(this TraceProcess process)
         {
-            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec"))
+            if (!process.Source.UserData.TryGetValue("Computers/Processes/SampleIntervalMSec", out var data))
             {
-                process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
+                data = new Dictionary<ProcessIndex, float>();
+                process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", data);
             }
 
-            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
-            if (map.ContainsKey(process.ProcessIndex))
-            {
-                return map[process.ProcessIndex];
-            }
-            else
-            {
-                return 1; // defualt 1 ms
-            }
+            var map = (Dictionary<ProcessIndex, float>)data;
+            return map.TryGetValue(process.ProcessIndex, out var interval)
+                ? interval
+                : 1; // default 1 ms
         }
 
         #region private

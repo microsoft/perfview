@@ -966,7 +966,7 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 // Handle the cloned case.
-                if(instanceContainerID != null)
+                if (instanceContainerID != null)
                 {
                     return instanceContainerID;
                 }
@@ -1150,9 +1150,9 @@ namespace Microsoft.Diagnostics.Tracing
                         first = false;
 
                         var asStruct = elem as IDictionary<string, object>;
-                        if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
+                        if (asStruct != null && asStruct.Count == 2 && asStruct.TryGetValue("Key", out var key) && asStruct.TryGetValue("Value", out var val))
                         {
-                            sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
+                            sb.Append(key).Append("->\"").Append(val).Append("\"");
                         }
                         else
                         {
@@ -3455,42 +3455,42 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-            {
-                anEvent.Dispatch();
-            }
-
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (; ; )
+                if (anEvent.Target != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                    {
-                        break;
-                    }
-
-                    if (nextEvent.Target != null)
-                    {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;
-                    }
-                }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                {
-                    unhandledEventTemplate.PrepForCallback();
+                    anEvent.Dispatch();
                 }
 
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;
+                if (anEvent.next != null)
+                {
+                    TraceEvent nextEvent = anEvent;
+                    for (; ; )
+                    {
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                        {
+                            break;
+                        }
+
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;
+                        }
+                    }
+                }
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                    {
+                        unhandledEventTemplate.PrepForCallback();
+                    }
+
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)

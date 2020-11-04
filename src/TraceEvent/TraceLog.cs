@@ -195,7 +195,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             using (var source = new EventPipeEventSource(filePath))
             {
                 CreateFromEventPipeEventSources(source, etlxFilePath, options);
-                
+
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                 {
                     options.OnLostEvents(false, source.EventsLost, 0);
@@ -999,10 +999,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            if(eventRecord->ExtendedDataCount > 0)
+            if (eventRecord->ExtendedDataCount > 0)
             {
                 int index = eventRecord->ExtendedDataCount;
-                if(index < containerIDs.Count)
+                if (index < containerIDs.Count)
                 {
                     return containerIDs[index];
                 }
@@ -1712,9 +1712,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     process.isServerGC = true;
                     foreach (var curThread in process.Threads)
                     {
-                        if (thread.threadInfo == null && process.markThreadsInGC.ContainsKey(curThread.ThreadID))
+                        if (thread.threadInfo == null && process.markThreadsInGC.TryGetValue(curThread.ThreadID, out var heapNum))
                         {
-                            curThread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[curThread.ThreadID] + ")";
+                            curThread.threadInfo = ".NET Server GC Thread(" + heapNum + ")";
                         }
                     }
                 }
@@ -1965,7 +1965,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     options.ConversionLog.WriteLine("WARNING, events out of order! This breaks event search.  Jumping from {0:n3} back to {1:n3} for {2} EventID {3} Thread {4}",
                         QPCTimeToRelMSec(lastQPCEventTime), data.TimeStampRelativeMSec, data.ProviderName, data.ID, data.ThreadID);
-                    firstTimeInversion = (EventIndex) (uint) eventCount;
+                    firstTimeInversion = (EventIndex)(uint)eventCount;
                 }
 
                 lastQPCEventTime = data.TimeStampQPC;
@@ -2094,7 +2094,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
 
             // EventPipe doesn't set EventsLost until after Process is called.
-            if(rawEvents is EventPipeEventSource)
+            if (rawEvents is EventPipeEventSource)
             {
                 eventsLost = rawEvents.EventsLost;
             }
@@ -2920,7 +2920,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Put the thread that owns 'data' in to the category 'category.  
         /// </summary>
-        private void CategorizeThread(TraceEvent data, string category, bool overwrite=false)
+        private void CategorizeThread(TraceEvent data, string category, bool overwrite = false)
         {
             if (string.IsNullOrWhiteSpace(category))
             {
@@ -3046,7 +3046,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
                 }
-                else if(extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
                 {
                     containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
                 }
@@ -3054,7 +3054,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (relatedActivityIDPtr != null)
             {
-                if(relatedActivityIDs.Count == 0)
+                if (relatedActivityIDs.Count == 0)
                 {
                     // Insert a synthetic value since 0 represents "no related activity ID".
                     relatedActivityIDs.Add(Guid.Empty);
@@ -3070,7 +3070,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 data.eventRecord->ExtendedData = null;
             }
 
-            if(containerID != null)
+            if (containerID != null)
             {
                 // TODO This is a bit of a hack.   We wack this field in place.
                 // We encode this as index into the containerIDs GrowableArray.
@@ -3082,9 +3082,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 // Look for the container ID.
                 bool found = false;
-                for(int i=0; i<containerIDs.Count; i++)
+                for (int i = 0; i < containerIDs.Count; i++)
                 {
-                    if(containerIDs[i] == containerID)
+                    if (containerIDs[i] == containerID)
                     {
                         data.eventRecord->ExtendedDataCount = (ushort)i;
                         found = true;
@@ -3657,7 +3657,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             serializer.Log("<WriteCollection name=\"containerIDs\" count=\"" + containerIDs.Count + "\">\r\n");
             serializer.Write(containerIDs.Count);
-            for(int i=0; i<containerIDs.Count; i++)
+            for (int i = 0; i < containerIDs.Count; i++)
             {
                 serializer.Write(containerIDs[i]);
             }
@@ -3665,7 +3665,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
-            serializer.Write((int) firstTimeInversion);
+            serializer.Write((int)firstTimeInversion);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -3823,13 +3823,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             containerIDs.Clear();
             count = deserializer.ReadInt();
             string containerID;
-            for(int i=0; i<count; i++)
+            for (int i = 0; i < count; i++)
             {
                 deserializer.Read(out containerID);
                 containerIDs.Add(containerID);
             }
             deserializer.Read(out truncated);
-            firstTimeInversion = (EventIndex) (uint) deserializer.ReadInt();
+            firstTimeInversion = (EventIndex)(uint)deserializer.ReadInt();
         }
         int IFastSerializableVersion.Version
         {
@@ -8597,7 +8597,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     pdbFileName = symReader.FindSymbolFilePathForModule(moduleFile.FilePath);
                 }
             }
-            if(pdbFileName == null)
+            if (pdbFileName == null)
             {
                 // Check to see if the file is inside of an existing Windows container.
                 // Create a new instance of WindowsDeviceToVolumeMap to avoid situations where the mappings have changed but we haven't noticed.

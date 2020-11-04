@@ -165,13 +165,12 @@ namespace PerfView
             foreach (var key in d1.Keys)
             {
                 // skip symbols that are not in both traces
-                if (!d2.ContainsKey(key))
+                if (!d2.TryGetValue(key, out var v2))
                 {
                     continue;
                 }
 
                 var v1 = d1[key];
-                var v2 = d2[key];
                 var r = new Result();
                 r.name = key;
                 r.before = v1;

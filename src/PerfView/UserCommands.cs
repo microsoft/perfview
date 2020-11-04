@@ -142,21 +142,23 @@ namespace PerfViewExtensibility
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                if (!bgJitEvents.TryGetValue(data.ProcessID, out var eventList))
                 {
-                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                    eventList = new List<object>();
+                    bgJitEvents.Add(data.ProcessID, eventList);
                 }
 
-                bgJitEvents[data.ProcessID].Add(data.Clone());
+                eventList.Add(data.Clone());
             };
             source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
             {
-                if (!bgJitEvents.ContainsKey(data.ProcessID))
+                if (!bgJitEvents.TryGetValue(data.ProcessID, out var eventList))
                 {
-                    bgJitEvents.Add(data.ProcessID, new List<object>());
+                    eventList = new List<object>();
+                    bgJitEvents.Add(data.ProcessID, eventList);
                 }
 
-                bgJitEvents[data.ProcessID].Add(data.Clone());
+                eventList.Add(data.Clone());
             };
 
             // process the model

@@ -591,11 +591,11 @@ namespace Stats
             {
                 if (_method.ModuleILPath != null)
                 {
-                    if (!stats.TotalModuleStats.ContainsKey(_method.ModuleILPath))
+                    if (!stats.TotalModuleStats.TryGetValue(_method.ModuleILPath, out var moduleStats))
                     {
-                        stats.TotalModuleStats.Add(_method.ModuleILPath, new JITStats());
+                        moduleStats = new JITStats();
+                        stats.TotalModuleStats.Add(_method.ModuleILPath, moduleStats);
                     }
-                    JITStats moduleStats = stats.TotalModuleStats[_method.ModuleILPath];
                     moduleStats.AddMethodToStatistics(_method);
                 }
             }

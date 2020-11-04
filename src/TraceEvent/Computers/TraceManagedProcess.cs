@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // ensure there are base processes
             source.NeedProcesses();
 
-            if(m_weakCurrentSource.Target != source)
+            if (m_weakCurrentSource.Target != source)
             {
                 TraceLoadedDotNetRuntime.SetupCallbacks(source);
             }
@@ -48,14 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Debug.Assert(process.Source != null);
             Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = process.Source.UserData["Computers/LoadedDotNetRuntimes"] as Dictionary<ProcessIndex, DotNetRuntime>;
-            if (map.ContainsKey(process.ProcessIndex))
-            {
-                return map[process.ProcessIndex].Runtime;
-            }
-            else
-            {
-                return null;
-            }
+            return map.TryGetValue(process.ProcessIndex, out var runtime) ? runtime.Runtime : null;
         }
 
         public static void AddCallbackOnDotNetRuntimeLoad(this TraceProcess process, Action<TraceLoadedDotNetRuntime> OnDotNetRuntimeLoaded)
@@ -63,12 +56,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Debug.Assert(process.Source != null);
             Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (!map.ContainsKey(process.ProcessIndex))
+            if (!map.TryGetValue(process.ProcessIndex, out var runtime))
             {
-                map.Add(process.ProcessIndex, new DotNetRuntime());
+                runtime = new DotNetRuntime();
+                map.Add(process.ProcessIndex, runtime);
             }
 
-            map[process.ProcessIndex].OnLoaded += OnDotNetRuntimeLoaded;
+            runtime.OnLoaded += OnDotNetRuntimeLoaded;
         }
 
         public static void SetMutableTraceEventStackSource(this TraceProcess process, MutableTraceEventStackSource stackSource)
@@ -76,12 +70,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Debug.Assert(process.Source != null);
             Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (!map.ContainsKey(process.ProcessIndex))
+            if (!map.TryGetValue(process.ProcessIndex, out var runtime))
             {
-                map.Add(process.ProcessIndex, new DotNetRuntime());
+                runtime = new DotNetRuntime();
+                map.Add(process.ProcessIndex, runtime);
             }
 
-            map[process.ProcessIndex].StackSource = stackSource;
+            runtime.StackSource = stackSource;
         }
 
         public static MutableTraceEventStackSource MutableTraceEventStackSource(this TraceProcess process)
@@ -89,14 +84,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Debug.Assert(process.Source != null);
             Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (map.ContainsKey(process.ProcessIndex))
-            {
-                return map[process.ProcessIndex].StackSource;
-            }
-            else
-            {
-                return null;
-            }
+            return map.TryGetValue(process.ProcessIndex, out var runtime) ? runtime.StackSource : null;
         }
 
         public static bool HasMutableTraceEventStackSource(this TraceEventDispatcher source)
@@ -105,7 +93,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return map.Any(kv => kv.Value.StackSource != null);
         }
 
-#region private
+        #region private
         public class DotNetRuntime
         {
             public Action<TraceLoadedDotNetRuntime> OnLoaded;
@@ -117,16 +105,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         {
             Debug.Assert(process.Source != null);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (!map.ContainsKey(process.ProcessIndex))
+            if (!map.TryGetValue(process.ProcessIndex, out var dotnetRuntime))
             {
-                map.Add(process.ProcessIndex, new DotNetRuntime());
+                dotnetRuntime = new DotNetRuntime();
+                map.Add(process.ProcessIndex, dotnetRuntime);
             }
 
-            map[process.ProcessIndex].Runtime = runtime;
-            if (map[process.ProcessIndex].OnLoaded != null)
-            {
-                map[process.ProcessIndex].OnLoaded(runtime);
-            }
+            dotnetRuntime.Runtime = runtime;
+            dotnetRuntime.OnLoaded?.Invoke(runtime);
         }
 
         internal static void OnDotNetRuntimeUnloaded(this TraceProcess process)
@@ -141,7 +127,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
 
         private static WeakReference m_weakCurrentSource = new WeakReference(null); // used to ensure non-concurrent usage
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -217,7 +203,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return xml.Replace("/>", sb.ToString());
         }
 
-#region private
+        #region private
 
         internal TraceLoadedDotNetRuntime(TraceProcess proc)
         {
@@ -584,7 +570,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var mang = currentManagedProcess(data);
 
-                    if(!(data.ThreadID == mang.GC.m_stats.suspendThreadIDBGC || data.ThreadID == mang.GC.m_stats.suspendThreadIDGC))
+                    if (!(data.ThreadID == mang.GC.m_stats.suspendThreadIDBGC || data.ThreadID == mang.GC.m_stats.suspendThreadIDGC))
                     {
                         // We only care about SuspendStop events that correspond to GC or PrepForGC reasons
                         // If we had initiated one of those then we set the corresponding threadid field in
@@ -606,7 +592,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     var process = data.Process();
                     var stats = currentManagedProcess(data);
 
-                    if(data.ThreadID == stats.GC.m_stats.suspendThreadIDOther)
+                    if (data.ThreadID == stats.GC.m_stats.suspendThreadIDOther)
                     {
                         stats.GC.m_stats.suspendThreadIDOther = -1;
                     }
@@ -849,13 +835,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             _gc.PerHeapMarkTimes = new Dictionary<int, MarkInfo>();
                         }
 
-                        if (!_gc.PerHeapMarkTimes.ContainsKey(data.HeapNum))
+                        if (!_gc.PerHeapMarkTimes.TryGetValue(data.HeapNum, out var markInfo))
                         {
-                            _gc.PerHeapMarkTimes.Add(data.HeapNum, new MarkInfo());
+                            markInfo = new MarkInfo();
+                            _gc.PerHeapMarkTimes.Add(data.HeapNum, markInfo);
                         }
 
-                        _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)data.Type] = data.TimeStampRelativeMSec;
-                        _gc.PerHeapMarkTimes[data.HeapNum].MarkPromoted[(int)data.Type] = data.Promoted;
+                        markInfo.MarkTimes[data.Type] = data.TimeStampRelativeMSec;
+                        markInfo.MarkPromoted[data.Type] = data.Promoted;
                     }
                 };
 
@@ -913,12 +900,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             _gc.PerHeapMarkTimes = new Dictionary<int, MarkInfo>();
                         }
 
-                        if (!_gc.PerHeapMarkTimes.ContainsKey(data.HeapNum))
+                        if (!_gc.PerHeapMarkTimes.TryGetValue(data.HeapNum, out var markInfo))
                         {
-                            _gc.PerHeapMarkTimes.Add(data.HeapNum, new MarkInfo(false));
+                            markInfo = new MarkInfo(false);
+                            _gc.PerHeapMarkTimes.Add(data.HeapNum, markInfo);
                         }
 
-                        _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)MarkRootType.MarkStack] = data.TimeStampRelativeMSec;
+                        markInfo.MarkTimes[(int)MarkRootType.MarkStack] = data.TimeStampRelativeMSec;
                     }
                 };
 
@@ -928,10 +916,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
-                        if ((_gc.PerHeapMarkTimes != null) && _gc.PerHeapMarkTimes.ContainsKey(data.HeapNum))
+                        if ((_gc.PerHeapMarkTimes != null) && _gc.PerHeapMarkTimes.TryGetValue(data.HeapNum, out var markInfo))
                         {
-                            _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)MarkRootType.MarkFQ] =
-                                data.TimeStampRelativeMSec;
+                            markInfo.MarkTimes[(int)MarkRootType.MarkFQ] = data.TimeStampRelativeMSec;
                         }
                     }
                 };
@@ -942,10 +929,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
-                        if ((_gc.PerHeapMarkTimes != null) && _gc.PerHeapMarkTimes.ContainsKey(data.HeapNum))
+                        if ((_gc.PerHeapMarkTimes != null) && _gc.PerHeapMarkTimes.TryGetValue(data.HeapNum, out var markInfo))
                         {
-                            _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)MarkRootType.MarkHandles] =
-                               data.TimeStampRelativeMSec;
+                            markInfo.MarkTimes[(int)MarkRootType.MarkHandles] = data.TimeStampRelativeMSec;
                         }
                     }
                 };
@@ -956,10 +942,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
-                        if ((_gc.PerHeapMarkTimes != null) && _gc.PerHeapMarkTimes.ContainsKey(data.HeapNum))
+                        if ((_gc.PerHeapMarkTimes != null) && _gc.PerHeapMarkTimes.TryGetValue(data.HeapNum, out var markInfo))
                         {
-                            _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)MarkRootType.MarkOlder] =
-                                data.TimeStampRelativeMSec;
+                            markInfo.MarkTimes[(int)MarkRootType.MarkOlder] = data.TimeStampRelativeMSec;
                         }
                     }
                 };
@@ -1475,7 +1460,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         private Version runtimeVersion;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1497,7 +1482,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// </summary>
         public List<TraceGC> GCs { get { return m_gcs; } }
 
-#region private
+        #region private
         internal static TraceGC GetCurrentGC(TraceLoadedDotNetRuntime proc)
         {
             if (proc.GC.GCs.Count > 0)
@@ -1658,7 +1643,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 m_prvcount = m_gcs.Count;
             }
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1675,14 +1660,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// </summary>
         public List<TraceJittedMethod> Methods { get { return m_methods; } }
 
-#region private
+        #region private
         internal JITStats m_stats = new JITStats();
         internal List<TraceJittedMethod> m_methods = new List<TraceJittedMethod>();
         internal double NextRelativeTimeStampMsec;
-#endregion
+        #endregion
     }
 
-#region internal classes 
+    #region internal classes 
     internal class CircularBuffer<T> : IEnumerable<T>
         where T : class
     {
@@ -1730,7 +1715,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return GetEnumerator();
         }
     }
-#endregion // internal classes
+    #endregion // internal classes
 }
 
 namespace Microsoft.Diagnostics.Tracing.Analysis.GC
@@ -2468,7 +2453,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double PauseTimePercentageSinceLastGC;
 
-#region private
+        #region private
         internal void OnEnd(TraceGarbageCollector details)
         {
             IsComplete = true;
@@ -3140,7 +3125,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         private float[] GCCpuServerGCThreads = null;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -3420,7 +3405,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-#region private
+        #region private
         // These values right now are the same as the first 4 in CondemnedReasonGroup.
         private enum Condemned_Reason_Generation
         {
@@ -3492,7 +3477,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return ConditionIsSet;
         }
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -3634,7 +3619,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public List<GcWorkSpan> SampleSpans = new List<GcWorkSpan>();
         public List<GcJoin> GcJoins = new List<GcJoin>();
 
-#region private 
+        #region private 
         //list of times in msc starting from GC start when GCJoin events were fired for this heap
 
         internal void AddSampleEvent(ThreadWorkSpan sample, double pauseStartRelativeMSec)
@@ -3729,7 +3714,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 JoinID = data.GCID,
             });
         }
-#endregion
+        #endregion
     }
 
     [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
@@ -3894,7 +3879,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             }
         }
 
-#region private
+        #region private
         /// <summary>
         /// Legacgy
         /// </summary>
@@ -4004,9 +3989,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             else if (BackgroundJitThread != 0)
             {
                 // Get the module name.
-                if (moduleNamesFromID.ContainsKey(moduleID))
+                if (moduleNamesFromID.TryGetValue(moduleID, out var moduleName))
                 {
-                    string moduleName = moduleNamesFromID[moduleID];
                     if (!string.IsNullOrEmpty(moduleName))
                     {
                         moduleName = System.IO.Path.GetFileNameWithoutExtension(moduleName);
@@ -4096,7 +4080,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         internal Dictionary<MethodKey, TraceJittedMethod> backgroundJitEvents = new Dictionary<MethodKey, TraceJittedMethod>();
         internal Dictionary<long, string> moduleNamesFromID = new Dictionary<long, string>();
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -4230,7 +4214,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
         public bool IsDefaultVersion { get { return VersionID == 0; } }
 
-#region private
+        #region private
         internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
         {
             if (optimizationTier != OptimizationTier.Unknown)
@@ -4247,7 +4231,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         internal string _blockedReason;
         internal int Completed = 0;
         internal long ModuleID = 0;
-#endregion
+        #endregion
     }
 }
 
@@ -4380,7 +4364,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         public bool HasDetailedGCInfo;
 
-#region private
+        #region private
 
         // This is the last GC in progress. We need this for server Background GC.
         // See comments for lastCompletedGC.
@@ -4630,6 +4614,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-#endregion
+        #endregion
     }
 }

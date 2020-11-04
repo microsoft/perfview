@@ -26,7 +26,7 @@ namespace TraceEventTests
             : base(output)
         {
         }
-        
+
         [Theory()]
         [MemberData(nameof(TestEventPipeFiles))]
         public void Basic(string eventPipeFileName)
@@ -48,13 +48,13 @@ namespace TraceEventTests
                 {
                     string eventName = data.ProviderName + "/" + data.EventName;
 
-                    if (eventStatistics.ContainsKey(eventName))
+                    if (eventStatistics.TryGetValue(eventName, out var record))
                     {
-                        eventStatistics[eventName].TotalCount++;
+                        record.TotalCount++;
                     }
                     else
                     {
-                        eventStatistics[eventName] = new EventRecord()
+                        eventStatistics[eventName] = new EventRecord
                         {
                             TotalCount = 1,
                             FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
@@ -107,13 +107,13 @@ namespace TraceEventTests
                             eventName == "Microsoft-Windows-DotNETRuntime/Method")
                             return;
 
-                        if (eventStatistics.ContainsKey(eventName))
+                        if (eventStatistics.TryGetValue(eventName, out var record))
                         {
-                            eventStatistics[eventName].TotalCount++;
+                            record.TotalCount++;
                         }
                         else
                         {
-                            eventStatistics[eventName] = new EventRecord()
+                            eventStatistics[eventName] = new EventRecord
                             {
                                 TotalCount = 1,
                                 FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
@@ -247,7 +247,7 @@ namespace TraceEventTests
                 // Process
                 traceSource.Process();
 
-                for(int i = 0; i < traceSource.NumberOfProcessors; i++)
+                for (int i = 0; i < traceSource.NumberOfProcessors; i++)
                 {
                     Assert.NotEqual(0, counts[i]);
                 }
@@ -551,7 +551,7 @@ namespace TraceEventTests
         {
             _innerStream = innerStream;
         }
-        public long TestOnlyPosition {  get { return _innerStream.Position; } }
+        public long TestOnlyPosition { get { return _innerStream.Position; } }
 
         public override bool CanRead => true;
         public override bool CanSeek => false;
@@ -610,7 +610,7 @@ namespace TraceEventTests
         public void WriteArray<T>(T[] elements, Action<T> writeElement)
         {
             WriteArrayLength(elements.Length);
-            for(int i = 0; i < elements.Length; i++)
+            for (int i = 0; i < elements.Length; i++)
             {
                 writeElement(elements[i]);
             }
@@ -727,7 +727,7 @@ namespace TraceEventTests
             }
         }
 
-        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData, 
+        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData,
             long previousBytesWritten = 0)
         {
             Debug.WriteLine($"Starting block {name} position: {writer.BaseStream.Position + previousBytesWritten}");
@@ -879,7 +879,7 @@ namespace TraceEventTests
             EventPipeWriter.WriteNetTraceHeader(writer);
             EventPipeWriter.WriteFastSerializationHeader(writer);
             EventPipeWriter.WriteTraceObject(writer);
-            EventPipeWriter.WriteMetadataBlock(writer, 
+            EventPipeWriter.WriteMetadataBlock(writer,
                 new EventMetadata(1, "Provider", "Event", 1));
             ms.Position = 0;
             return ms;
@@ -898,16 +898,16 @@ namespace TraceEventTests
             else
             {
                 // 20 blocks, each with 20 events in them
-                for(int i = 0; i < 20; i++)
+                for (int i = 0; i < 20; i++)
                 {
-                    EventPipeWriter.WriteEventBlock(writer, 
+                    EventPipeWriter.WriteEventBlock(writer,
                         w =>
                         {
                             for (int j = 0; j < 20; j++)
                             {
                                 EventPipeWriter.WriteEventBlob(w, 1, _sequenceNumber++, payloadSize, WriteEventPayload);
                             }
-                        }, 
+                        },
                         _bytesWritten);
                 }
             }
@@ -935,7 +935,7 @@ namespace TraceEventTests
         public override int Read(byte[] buffer, int offset, int count)
         {
             int ret = _currentChunk.Read(buffer, offset, count);
-            if(ret == 0)
+            if (ret == 0)
             {
                 _currentChunk = GetNextChunk();
                 _bytesWritten += _currentChunk.Length;
