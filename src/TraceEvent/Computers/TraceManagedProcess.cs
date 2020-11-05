@@ -3918,7 +3918,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
                 }
             }
             _method.NativeSize = data.MethodSize;
-            Console.WriteLine("MethodName= {0}, Size= {1}", methodName, data.MethodSize);
             _method.CompileCpuTimeMSec = data.TimeStampRelativeMSec - _method.StartTimeMSec;
             _method.SetOptimizationTier(data.OptimizationTier, stats);
             _method.VersionID = rejitID;

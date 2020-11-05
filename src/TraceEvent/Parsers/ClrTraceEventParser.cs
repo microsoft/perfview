@@ -8808,14 +8808,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     public sealed class MethodJitMemoryAllocatedForCodeTraceData : TraceEvent
     {
-        public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
-        public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
-        public string MethodBeingCompiledNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0))); } }
-        public long JitHotCodeRequestSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
-        public long JitRODataRequestSize { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 8); } }
-        public long AllocatedSizeForJitCode { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 16); } }
-        public int JitAllocFlag { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 24); } }
-        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 28); } }
+        public long MethodID { get { return GetInt64At(0); } }
+        public long ModuleID { get { return GetInt64At(8); } }
+        public long JitHotCodeRequestSize { get { return GetInt64At(16); } }
+        public long JitRODataRequestSize { get { return GetInt64At(24); } }
+        public long AllocatedSizeForJitCode { get { return GetInt64At(32); } }
+        public int JitAllocFlag { get { return GetInt32At(40); } }
+        public int ClrInstanceID { get { return GetInt16At(44); } }
 
         #region Private
         internal MethodJitMemoryAllocatedForCodeTraceData(Action<MethodJitMemoryAllocatedForCodeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8829,8 +8828,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 30));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))) + 30));
+            Debug.Assert(!(Version == 0 && EventDataLength != 46));
+            Debug.Assert(!(Version > 0 && EventDataLength < 46));
         }
         protected internal override Delegate Target
         {
@@ -8840,9 +8839,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "MethodBeingCompiledNamespace", MethodBeingCompiledNamespace);
-            XmlAttrib(sb, "MethodBeingCompiledName", MethodBeingCompiledName);
-            XmlAttrib(sb, "MethodBeingCompiledNameSignature", MethodBeingCompiledNameSignature);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "ModuleID", ModuleID);
             XmlAttrib(sb, "JitHotCodeRequestSize", JitHotCodeRequestSize);
             XmlAttrib(sb, "JitRODataRequestSize", JitRODataRequestSize);
             XmlAttrib(sb, "AllocatedSizeForJitCode", AllocatedSizeForJitCode);
@@ -8857,7 +8855,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodBeingCompiledNamespace", "MethodBeingCompiledName", "MethodBeingCompiledNameSignature", "JitHotCodeRequestSize", "JitRODataRequestSize", "AllocatedSizeForJitCode", "JitAllocFlag", "ClrInstanceID" };
+                    payloadNames = new string[] { "MethodID", "ModuleID", "JitHotCodeRequestSize", "JitRODataRequestSize", "AllocatedSizeForJitCode", "JitAllocFlag", "ClrInstanceID" };
                 return payloadNames;
             }
         }
@@ -8867,20 +8865,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             switch (index)
             {
                 case 0:
-                    return MethodBeingCompiledNamespace;
+                    return MethodID;
                 case 1:
-                    return MethodBeingCompiledName;
+                    return ModuleID;
                 case 2:
-                    return MethodBeingCompiledNameSignature;
-                case 3:
                     return JitHotCodeRequestSize;
-                case 4:
+                case 3:
                     return JitRODataRequestSize;
-                case 5:
+                case 4:
                     return AllocatedSizeForJitCode;
-                case 6:
+                case 5:
                     return JitAllocFlag;
-                case 7:
+                case 6:
                     return ClrInstanceID;
                 default:
                     Debug.Assert(false, "Bad field index");
