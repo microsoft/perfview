@@ -61,7 +61,7 @@ namespace Graphs
         }
         public override long SizeOfGraphDescription()
         {
-            return base.SizeOfGraphDescription() + 8 * m_nodeAddresses.Count;
+            return base.SizeOfGraphDescription() + 8 * (long)m_nodeAddresses.Count;
         }
         /// <summary>
         /// Returns the number of distinct references in the graph so far (the size of the interning table).  

@@ -1313,11 +1313,11 @@ public class GCHeapDumper
             m_maxNodeCount *= 3;                // We have 4GB instead of 2GB, so we 3GB instead of 1GB available for us to use in 32 bit processes = 60Meg objects
         }
 
-        // On 64 bit process we are limited by the fact that the graph node is in a MemoryStream and its byte array is limited to 2 gig.  Most objects will
-        // be represented by 10 bytes in this array and we round this up to 16 = 128Meg
+        // On 64 bit process we are limited by the fact that the graph node is in a MemoryStream and its byte array is limited to 8 gig.  Most objects will
+        // be represented by 10 bytes in this array and we round this up to 16 = 512Meg
         if (EnvironmentUtilities.Is64BitProcess)
         {
-            m_maxNodeCount = int.MaxValue / 16 - 11;      // Limited to 128Meg objects.  (We are limited by the size of the stream)
+            m_maxNodeCount = int.MaxValue / 4 - 11;      // Limited to 512Meg objects.  (We are limited by the size of the stream)
             m_log.WriteLine("In a 64 bit process.  Increasing the max node count to {0:f1} Meg", m_maxNodeCount / 1000000.0);
         }
         m_log.WriteLine("Implicitly limit the number of nodes to {0:f1} Meg to avoid arrays that are too large", m_maxNodeCount / 1000000.0);

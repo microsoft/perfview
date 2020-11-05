@@ -462,7 +462,7 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             if (m_writer == null)
             {
-                m_writer = new MemoryMappedFileStreamWriter(m_expectedNodeCount * 8);
+                m_writer = new MemoryMappedFileStreamWriter((long)m_expectedNodeCount * 8);
             }
 
             m_totalSize = 0;
