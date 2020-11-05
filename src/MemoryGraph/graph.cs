@@ -543,22 +543,22 @@ namespace Graphs
                 if (((long)m_nodes[i] & 0x1) != 0)
                     throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
 
-                int currentLabel = (int)m_nodes[i];
+                int currentLabel = unchecked((int)((long)m_nodes[i] >> 1));
                 int difference = unchecked(currentLabel - previousLabel);
                 Node.WriteCompressedInt(serializer.Writer, difference);
                 previousLabel = currentLabel;
             }
 
             // Write out the Blob stream.
-            int readerLen = (int)m_reader.Length;
+            long readerLen = m_reader.Length;
             serializer.Write(readerLen);
             m_reader.Goto((StreamLabel)0);
 
             const int BlockCopyCapacity = 0x4000;
             byte[] data = new byte[BlockCopyCapacity];
-            for (int i = 0; i < readerLen; i += BlockCopyCapacity)
+            for (long i = 0; i < readerLen; i += BlockCopyCapacity)
             {
-                int chunkSize = Math.Min(readerLen - i, BlockCopyCapacity);
+                int chunkSize = (int)Math.Min(readerLen - i, BlockCopyCapacity);
                 m_reader.Read(data, 0, chunkSize);
                 serializer.Write(data, 0, chunkSize);
             }
@@ -619,26 +619,26 @@ namespace Graphs
             int nodeCount = deserializer.ReadInt();
             m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
 
-            int previousLabel = 0;
+            uint previousLabel = 0;
             for (int i = 0; i < nodeCount; i++)
             {
                 // Read the label as a compressed differential integer
-                int difference = Node.ReadCompressedInt(deserializer.Reader);
-                int currentLabel = unchecked(previousLabel + difference);
-                m_nodes.Add((StreamLabel)currentLabel);
+                uint difference = unchecked((uint)Node.ReadCompressedInt(deserializer.Reader));
+                uint currentLabel = unchecked(previousLabel + difference);
+                m_nodes.Add((StreamLabel)((long)currentLabel << 1));
                 previousLabel = currentLabel;
             }
 
             // Read in the Blob stream.  
             // TODO be lazy about reading in the blobs.  
-            int blobCount = deserializer.ReadInt();
+            long blobCount = deserializer.ReadInt64();
             const int BlockCopyCapacity = 0x4000;
             byte[] data = new byte[BlockCopyCapacity];
 
             MemoryMappedFileStreamWriter writer = new MemoryMappedFileStreamWriter(blobCount);
-            for (int i = 0; i < blobCount; i += BlockCopyCapacity)
+            for (long i = 0; i < blobCount; i += BlockCopyCapacity)
             {
-                int chunkSize = Math.Min(blobCount - i, BlockCopyCapacity);
+                int chunkSize = (int)Math.Min(blobCount - i, BlockCopyCapacity);
                 deserializer.Read(data, 0, chunkSize);
                 writer.Write(data, 0, chunkSize);
             }

@@ -122,11 +122,10 @@ namespace FastSerialization
             }
 
             // see if we can just change the offset
-            Debug.Assert((long)label <= int.MaxValue);
-            int absoluteOffset = (int)label;
+            long absoluteOffset = (long)label;
             if (absoluteOffset >= _viewOffset && absoluteOffset < _viewOffset + _capacity)
             {
-                _offset = (int)(absoluteOffset - _viewOffset);
+                _offset = absoluteOffset - _viewOffset;
                 return;
             }
 
@@ -264,7 +263,7 @@ namespace FastSerialization
 
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)unchecked((uint)ReadInt32());
+            return (StreamLabel)((ulong)unchecked((uint)ReadInt32()) << 1);
         }
 
         public unsafe string ReadString()

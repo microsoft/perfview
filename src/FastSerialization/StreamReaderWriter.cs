@@ -153,7 +153,7 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)unchecked((uint)ReadInt32());
+            return (StreamLabel)((ulong)unchecked((uint)ReadInt32()) << 1);
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -333,7 +333,8 @@ namespace FastSerialization
             if (((long)value & 0x1) != 0)
                 throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
 
-            Write(unchecked((int)value));
+            uint packedLabel = (uint)((long)value >> 1);
+            Write(unchecked((int)packedLabel));
         }
         /// <summary>
         /// Implementation of IStreamWriter
@@ -1112,9 +1113,9 @@ namespace FastSerialization
         public override StreamLabel GetLabel(bool allowPadding)
         {
             long len = Length;
-            if (len != (uint)len)
+            if ((len >> 1) != (uint)(len >> 1))
             {
-                throw new NotSupportedException("Streams larger than 4 GB.  You need to use /MaxEventCount to limit the size.");
+                throw new NotSupportedException("Streams larger than 8 GB.  You need to use /MaxEventCount to limit the size.");
             }
 
             if ((len & 0x1) != 0)
