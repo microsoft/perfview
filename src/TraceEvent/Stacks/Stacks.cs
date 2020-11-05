@@ -1130,7 +1130,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             public override int GetHashCode()
             {
-                return (int)callerIndex + (int)frameIndex * 0x10000;
+                return unchecked((int)callerIndex + (int)frameIndex * 0x10000);
             }
             public override bool Equals(object obj) { throw new NotImplementedException(); }
             public bool Equals(CallStackInfo other)
@@ -1266,7 +1266,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             private static int BucketNumberFromValue(T value, int bucketCount)
             {
                 int hashCode = value.GetHashCode();
-                uint targetBucket = (uint)hashCode % (uint)bucketCount;
+                uint targetBucket = unchecked((uint)hashCode) % (uint)bucketCount;
                 return (int)targetBucket;
             }
 

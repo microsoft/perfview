@@ -213,7 +213,7 @@ namespace FastSerialization
             if (((long)value & 0x1) != 0)
                 throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
 
-            Write((int)value);
+            Write(unchecked((int)value));
         }
 
         public unsafe void Write(string value)

@@ -16,6 +16,10 @@
     <FileVersion>$(PerfViewVersion)</FileVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+  </PropertyGroup>
+
   <ItemGroup>
     <AssemblyAttribute Include="PerfView.Properties.BuildDateAttribute">
       <_Parameter1>$([System.DateTime]::Now.ToString(`r`))</_Parameter1>

@@ -3563,8 +3563,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(cpuSpeedMHz);
             serializer.Write((byte)osVersion.Major);
             serializer.Write((byte)osVersion.Minor);
-            serializer.Write((byte)osVersion.MajorRevision);
-            serializer.Write((byte)osVersion.MinorRevision);
+            serializer.Write(unchecked((byte)osVersion.MajorRevision));
+            serializer.Write(unchecked((byte)osVersion.MinorRevision));
             serializer.Write(QPCFreq);
             serializer.Write(sessionStartTimeQPC);
             serializer.Write(sessionEndTimeQPC);
@@ -3672,7 +3672,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
-            serializer.Write((int) firstTimeInversion);
+            serializer.Write(unchecked((int)firstTimeInversion));
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {

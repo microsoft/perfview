@@ -265,7 +265,7 @@ namespace FastSerialization
 
         public DeferedStreamLabel ReadLabel()
         {
-            return (DeferedStreamLabel)ReadInt32();
+            return (DeferedStreamLabel)unchecked((uint)ReadInt32());
         }
 
         public unsafe string ReadString()

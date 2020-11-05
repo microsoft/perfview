@@ -2084,7 +2084,7 @@ public class GCHeapDumper
                 sw.Write(addr.ToString("x").PadLeft(8, '0') + ": ");
             }
 
-            int val = (int)FetchIntPtrAt(heap, addr);
+            int val = FetchInt32At(heap, addr);
             sw.Write(val.ToString("x").PadLeft(8, '0') + " ");
             for (int j = 0; j < 4; j++)
             {
@@ -2107,7 +2107,7 @@ public class GCHeapDumper
         return sw.ToString();
     }
 
-    public virtual unsafe Address FetchIntPtrAt(ClrHeap heap, Address address)
+    public unsafe Address FetchIntPtrAt(ClrHeap heap, Address address)
     {
         var buff = new byte[8];
         heap.ReadMemory(address, buff, 0, 8);
@@ -2119,6 +2119,16 @@ public class GCHeapDumper
             }
 
             return *((Address*)ptr);
+        }
+    }
+
+    public unsafe int FetchInt32At(ClrHeap heap, Address address)
+    {
+        var buff = new byte[4];
+        heap.ReadMemory(address, buff, 0, 4);
+        fixed (byte* ptr = buff)
+        {
+            return *(int*)ptr;
         }
     }
 

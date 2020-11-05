@@ -154,7 +154,7 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)(uint)ReadInt32();
+            return (StreamLabel)unchecked((uint)ReadInt32());
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -334,7 +334,7 @@ namespace FastSerialization
             if (((long)value & 0x1) != 0)
                 throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
 
-            Write((int)value);
+            Write(unchecked((int)value));
         }
         /// <summary>
         /// Implementation of IStreamWriter

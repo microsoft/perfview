@@ -16,6 +16,10 @@
     <Copyright>Copyright © Microsoft 2011</Copyright>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- NuGet won't know to restore the x64 build unless we add it explicitly -->
     <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>

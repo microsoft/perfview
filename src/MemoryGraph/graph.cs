@@ -946,15 +946,15 @@ namespace Graphs
                 goto fourBytes;
             }
 
-            writer.Write((byte)((value >> 28) | 0x80));
+            writer.Write(unchecked((byte)((value >> 28) | 0x80)));
             fourBytes:
-            writer.Write((byte)((value >> 21) | 0x80));
+            writer.Write(unchecked((byte)((value >> 21) | 0x80)));
             threeBytes:
-            writer.Write((byte)((value >> 14) | 0x80));
+            writer.Write(unchecked((byte)((value >> 14) | 0x80)));
             twoBytes:
-            writer.Write((byte)((value >> 7) | 0x80));
+            writer.Write(unchecked((byte)((value >> 7) | 0x80)));
             oneByte:
-            writer.Write((byte)(value & 0x7F));
+            writer.Write(unchecked((byte)(value & 0x7F)));
         }
 
         internal NodeIndex m_index;
