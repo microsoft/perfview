@@ -1663,7 +1663,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// Get a DumpPointer for the given stream. That can then be used to further decode the stream.
         /// </summary>
         /// <param name="type">type of stream to lookup</param>
-        /// <returns>DumpPointer refering into the stream. </returns>
+        /// <returns>DumpPointer referring into the stream. </returns>
         private DumpPointer GetStream(NativeMethods.MINIDUMP_STREAM_TYPE type)
         {
             EnsureValid();
