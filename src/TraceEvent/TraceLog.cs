@@ -1700,11 +1700,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 AddMarkThread(data.ThreadID, data.TimeStampQPC, data.HeapNum);
             };
-            rawEvents.Clr.GCBulkMovedObjectRanges += delegate (GCBulkMovedObjectRangesTraceData data)
-            {
-                // These events are large and not currently used for anything
-                removeFromStream = true;
-            };
 
             var aspNetParser = new AspNetTraceEventParser(rawEvents);
             aspNetParser.AspNetReqStart += delegate (AspNetStartTraceData data) { CategorizeThread(data, "Incoming Request Thread"); };
