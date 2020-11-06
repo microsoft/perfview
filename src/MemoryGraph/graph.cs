@@ -2619,7 +2619,7 @@ public class GraphSampler
 
     /// <summary>
     /// This value goes in the m_newIndex[].   If we accept the node into the sampled graph, we put the node
-    /// index in the NET graph in m_newIndex.   If we reject the node we use the special RegjectedNode value
+    /// index in the NET graph in m_newIndex.   If we reject the node we use the special RejectedNode value
     /// below
     /// </summary>
     private const NodeIndex RejectedNode = (NodeIndex)(-2);

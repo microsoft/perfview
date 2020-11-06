@@ -42,6 +42,7 @@ namespace Microsoft.Diagnostics.Tracing
             : this(fileName, TraceEventSourceType.MergeAll)
         {
         }
+
         /// <summary>
         /// Open a ETW event source for processing.  This can either be a moduleFile or a real time ETW session
         /// </summary>
@@ -53,6 +54,24 @@ namespace Microsoft.Diagnostics.Tracing
         public ETWTraceEventSource(string fileOrSessionName, TraceEventSourceType type)
         {
             Initialize(fileOrSessionName, type);
+        }
+
+        /// <summary>
+        /// Open multiple etl files as one trace for processing.
+        /// </summary>
+        /// <param name="fileOrSessionName">
+        /// <param name="type">If type == MergeAll, call Initialize.</param>
+        // [SecuritySafeCritical]
+        public ETWTraceEventSource(IEnumerable<string> fileNames, TraceEventSourceType type)
+        {
+            if (type == TraceEventSourceType.MergeAll)
+            {
+                Initialize(fileNames);
+            }
+            else
+            {
+                this.fileNames = fileNames;
+            }
         }
 
         /// <summary>
@@ -383,6 +402,18 @@ namespace Microsoft.Diagnostics.Tracing
             public int Size;
         }
 
+        private void Initialize(IEnumerable<string> fileNames)
+        {
+            List<string> allLogFiles = new List<string>(fileNames);
+            logFiles = new TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[allLogFiles.Count];
+            for (int i = 0; i < allLogFiles.Count; i++)
+            {
+                logFiles[i].LogFileName = allLogFiles[i];
+            }
+
+            InitializeFiles();
+        }
+
         private void Initialize(string fileOrSessionName, TraceEventSourceType type)
         {
 
@@ -413,6 +444,12 @@ namespace Microsoft.Diagnostics.Tracing
                     IsRealTime = true;
                 }
             }
+
+            InitializeFiles();
+        }
+
+        private void InitializeFiles()
+        {
             handles = new ulong[logFiles.Length];
 
             // Fill  out the first log file information (we will clone it later if we have multiple files). 

@@ -2447,8 +2447,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         // The sizes INCLUDE fragmentation (holes in the segement)
 
         // The TotalPromotedSize0 is the amount that SURVIVED Gen0 (thus it is now in Gen1, thus TotalPromoted0 <= GenerationSize1)
-        public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3; } }
-        public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3; } }
+        public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3 + GenerationSize4; } }
+        public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3 + TotalPromotedSize4; } }
         /// <summary>
         /// Note that this field is derived from the TotalPromotedSize* fields.  If nothing was promoted, it is possible
         /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
@@ -2485,6 +2485,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int SinkBlockCount { get { return GetInt32At(84); } }
         public int GCHandleCount { get { return GetInt32At(88); } }
         public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(92); } return 0; } }
+        public long GenerationSize4 { get { if (Version >= 2) { return GetInt64At(94); } return 0; } }
+        public long TotalPromotedSize4 { get { if (Version >= 2) { return GetInt64At(102); } return 0; } }
 
         #region Private
         internal GCHeapStatsTraceData(Action<GCHeapStatsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -2505,7 +2507,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 96));          // HAND_MODIFIED C++ pads to 96
             Debug.Assert(!(Version == 1 && EventDataLength != 94));
-            Debug.Assert(!(Version > 1 && EventDataLength < 94));
+            Debug.Assert(!(Version == 2 && EventDataLength != 110));
+            Debug.Assert(!(Version > 2 && EventDataLength < 110));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -2521,6 +2524,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttribHex(sb, "TotalPromotedSize2", TotalPromotedSize2);
             XmlAttribHex(sb, "GenerationSize3", GenerationSize3);
             XmlAttribHex(sb, "TotalPromotedSize3", TotalPromotedSize3);
+            XmlAttribHex(sb, "GenerationSize4", GenerationSize4);
+            XmlAttribHex(sb, "TotalPromotedSize4", TotalPromotedSize4);
             XmlAttribHex(sb, "FinalizationPromotedSize", FinalizationPromotedSize);
             XmlAttrib(sb, "FinalizationPromotedCount", FinalizationPromotedCount);
             XmlAttrib(sb, "PinnedObjectCount", PinnedObjectCount);
@@ -2537,7 +2542,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "TotalHeapSize", "TotalPromoted", "Depth", "GenerationSize0", "TotalPromotedSize0", "GenerationSize1", "TotalPromotedSize1", "GenerationSize2", "TotalPromotedSize2", "GenerationSize3", "TotalPromotedSize3", "FinalizationPromotedSize", "FinalizationPromotedCount", "PinnedObjectCount", "SinkBlockCount", "GCHandleCount", "ClrInstanceID" };
+                    payloadNames = new string[] { "TotalHeapSize", "TotalPromoted", "Depth", "GenerationSize0", "TotalPromotedSize0", "GenerationSize1", "TotalPromotedSize1", "GenerationSize2", "TotalPromotedSize2", "GenerationSize3", "TotalPromotedSize3", "FinalizationPromotedSize", "FinalizationPromotedCount", "PinnedObjectCount", "SinkBlockCount", "GCHandleCount", "ClrInstanceID", "GenerationSize4", "TotalPromotedSize4" };
                 }
 
                 return payloadNames;
@@ -2582,6 +2587,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return GCHandleCount;
                 case 16:
                     return ClrInstanceID;
+                case 17:
+                    return GenerationSize4;
+                case 18:
+                    return TotalPromotedSize4;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -4563,6 +4572,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Gen2,
         GenLargeObj,
         Gen0After,
+        GenPinObj,
     }
 
     /// <summary>

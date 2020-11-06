@@ -449,6 +449,8 @@ namespace Stats
                 writer.Write(" TotalPromotedSize2=\"{0:n0}\"", gc.HeapStats.TotalPromotedSize2);
                 writer.Write(" GenerationSize3=\"{0:n0}\"", gc.HeapStats.GenerationSize3);
                 writer.Write(" TotalPromotedSize3=\"{0:n0}\"", gc.HeapStats.TotalPromotedSize3);
+                writer.Write(" GenerationSize4=\"{0:n0}\"", gc.HeapStats.GenerationSize4);
+                writer.Write(" TotalPromotedSize4=\"{0:n0}\"", gc.HeapStats.TotalPromotedSize4);
                 writer.Write(" FinalizationPromotedSize=\"{0:n0}\"", gc.HeapStats.FinalizationPromotedSize);
                 writer.Write(" FinalizationPromotedCount=\"{0:n0}\"", gc.HeapStats.FinalizationPromotedCount);
                 writer.Write(" PinnedObjectCount=\"{0:n0}\"", gc.HeapStats.PinnedObjectCount);

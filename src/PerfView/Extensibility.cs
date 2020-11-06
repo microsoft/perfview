@@ -1750,7 +1750,7 @@ namespace PerfViewExtensibility
 // 
 // StackSource - represents the raw data.   No dependencies, Can do filtering. - Clean for Model
 // CallTree - Depends on StackSource, model for treeview,  - Clean for Model
-// AgreegateCallTree - callers view and callees view - Clean for Model
+// AggregateCallTree - callers view and callees view - Clean for Model
 // EventSource - eventView - Clean for Model.  
 // 
 // MutableTraceEventStackSource - Sources for ETL file - Clean for Model 

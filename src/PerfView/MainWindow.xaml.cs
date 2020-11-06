@@ -596,7 +596,7 @@ using Utilities;
 // Move rundown waiting logic into TraceEvent.  
 // For merged files, the session end time is no longer the max, compute this max while translating to fix.  
 // Annotate whether the thing being pinned is in GEN2 or not in the pinning view.  
-// Make dependent handles work like a GC reference traversial
+// Make dependent handles work like a GC reference traversal
 // Add the incomming reference count to the items in the memory view.  
 // Allow you to see source even when checksum fails.  
 // Merging from the command line does not work.  

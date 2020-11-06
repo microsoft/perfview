@@ -240,7 +240,7 @@ namespace TraceEventTests
 
         // Create 1 line that embodies the data in event 'data'
 
-        private static string Parse(TraceEvent data)
+        internal static string Parse(TraceEvent data)
         {
             StringBuilder sb = new StringBuilder();
 

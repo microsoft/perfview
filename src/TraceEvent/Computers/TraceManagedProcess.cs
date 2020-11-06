@@ -1055,7 +1055,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     var stats = currentManagedProcess(data);
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
 
-                    var sizeAfterMB = (data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3) / 1000000.0;
+                    var sizeAfterMB = (data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3 + data.GenerationSize4) / 1000000.0;
                     if (_gc != null)
                     {
                         _gc.HeapStats = new GCHeapStats()
@@ -1076,6 +1076,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             ,
                             GenerationSize3 = data.GenerationSize3
                             ,
+                            GenerationSize4 = data.GenerationSize4
+                            ,
                             PinnedObjectCount = data.PinnedObjectCount
                             ,
                             SinkBlockCount = data.SinkBlockCount
@@ -1091,6 +1093,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             TotalPromotedSize2 = data.TotalPromotedSize2
                             ,
                             TotalPromotedSize3 = data.TotalPromotedSize3
+                            ,
+                            TotalPromotedSize4 = data.TotalPromotedSize4
                         };
 
                         if (_gc.Type == GCType.BackgroundGC)
@@ -1998,7 +2002,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 if (null != HeapStats)
                 {
-                    return (HeapStats.GenerationSize0 + HeapStats.GenerationSize1 + HeapStats.GenerationSize2 + HeapStats.GenerationSize3) / 1000000.0;
+                    return (HeapStats.GenerationSize0 + HeapStats.GenerationSize1 + HeapStats.GenerationSize2 + HeapStats.GenerationSize3 + HeapStats.GenerationSize4) / 1000000.0;
                 }
                 else
                 {
@@ -2017,7 +2021,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (null != HeapStats)
                 {
                     return (HeapStats.TotalPromotedSize0 + HeapStats.TotalPromotedSize1 +
-                       HeapStats.TotalPromotedSize2 + HeapStats.TotalPromotedSize3) / 1000000.0;
+                       HeapStats.TotalPromotedSize2 + HeapStats.TotalPromotedSize3 + HeapStats.TotalPromotedSize4) / 1000000.0;
                 }
                 else
                 {
@@ -2071,6 +2075,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenSizeAfterMB(Gens gen)
         {
+            if (gen == Gens.GenPinObj)
+            {
+                return HeapStats.GenerationSize4 / 1000000.0;
+            }
+
             if (gen == Gens.GenLargeObj)
             {
                 return HeapStats.GenerationSize3 / 1000000.0;
@@ -2179,6 +2188,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenPromotedMB(Gens gen)
         {
+            if (gen == Gens.GenPinObj)
+            {
+                return HeapStats.TotalPromotedSize4 / 1000000.0;
+            }
+
             if (gen == Gens.GenLargeObj)
             {
                 return HeapStats.TotalPromotedSize3 / 1000000.0;
@@ -2790,16 +2804,29 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return heapStats.GenerationSize2 / 1000000.0;
             }
 
-            Debug.Assert(gen == Gens.GenLargeObj);
+            if (gen == Gens.GenLargeObj)
+            {
+                if (gc.HeapStats != null)
+                {
+                    return Math.Max(heapStats.GenerationSize3, gc.HeapStats.GenerationSize3) / 1000000.0;
+                }
+                else
+                {
+                    return heapStats.GenerationSize3 / 1000000.0;
+                }
+            }
+
+            Debug.Assert(gen == Gens.GenPinObj);
 
             if (gc.HeapStats != null)
             {
-                return Math.Max(heapStats.GenerationSize3, gc.HeapStats.GenerationSize3) / 1000000.0;
+                return Math.Max(heapStats.GenerationSize4, gc.HeapStats.GenerationSize4) / 1000000.0;
             }
             else
             {
-                return heapStats.GenerationSize3 / 1000000.0;
+                return heapStats.GenerationSize4 / 1000000.0;
             }
+
         }
 
         /// <summary>
@@ -3548,6 +3575,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public long TotalPromotedSize2;
         public long GenerationSize3;
         public long TotalPromotedSize3;
+        public long GenerationSize4;
+        public long TotalPromotedSize4;
         public long FinalizationPromotedSize;
         public long FinalizationPromotedCount;
         public int PinnedObjectCount;
