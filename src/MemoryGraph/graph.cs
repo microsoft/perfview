@@ -500,13 +500,38 @@ namespace Graphs
         {
             serializer.Write(m_totalSize);
             serializer.Write((int)RootIndex);
-            // Write out the Types 
+
+            // Write out the module names for types
+            var moduleNames = new Dictionary<string, int>();
+            foreach (var type in m_types)
+            {
+                if (type.ModuleName is null)
+                    continue;
+
+                if (!moduleNames.ContainsKey(type.ModuleName))
+                {
+                    // Index 0 is implicitly null, so start with 1 for the first non-null value
+                    moduleNames.Add(type.ModuleName, moduleNames.Count + 1);
+                }
+            }
+
+            serializer.Write(moduleNames.Count);
+            foreach (var pair in moduleNames)
+            {
+                // Dictionary<TKey, TValue> iterates in insertion order
+                serializer.Write(pair.Key);
+            }
+
+            // Write out the Types
             serializer.Write(m_types.Count);
             for (int i = 0; i < m_types.Count; i++)
             {
                 serializer.Write(m_types[i].Name);
                 serializer.Write(m_types[i].Size);
-                serializer.Write(m_types[i].ModuleName);
+                if (m_types[i].ModuleName is null)
+                    serializer.Write(0);
+                else
+                    serializer.Write(moduleNames[m_types[i].ModuleName]);
             }
 
             // Write out the Nodes 
@@ -558,6 +583,14 @@ namespace Graphs
             deserializer.Read(out m_totalSize);
             RootIndex = (NodeIndex)deserializer.ReadInt();
 
+            // Read in the module names
+            var moduleNamesCount = deserializer.ReadInt();
+            var moduleNames = new string[moduleNamesCount + 1];
+            for (int i = 0; i < moduleNamesCount; i++)
+            {
+                moduleNames[i + 1] = deserializer.ReadString();
+            }
+
             // Read in the Types 
             TypeInfo info = new TypeInfo();
             int typeCount = deserializer.ReadInt();
@@ -566,7 +599,7 @@ namespace Graphs
             {
                 deserializer.Read(out info.Name);
                 deserializer.Read(out info.Size);
-                deserializer.Read(out info.ModuleName);
+                info.ModuleName = moduleNames[deserializer.ReadInt()];
                 m_types.Add(info);
             }
 
