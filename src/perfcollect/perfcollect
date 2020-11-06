@@ -60,7 +60,7 @@ collect_offcpu=0
 ######################################
 
 # Separate GCCollectOnly list because our LTTng implementation doesn't set tracepoint verbosity.
-# Once tracepoint verbosity is set, we can set verbosity and collapse this wtih DotNETRuntime_GCKeyword.
+# Once tracepoint verbosity is set, we can set verbosity and collapse this with DotNETRuntime_GCKeyword.
 declare -a DotNETRuntime_GCKeyword_GCCollectOnly=(
     DotNETRuntime:GCStart
     DotNETRuntime:GCStart_V1
@@ -358,7 +358,7 @@ declare -a DotNETRuntime_CompilationKeyword=(
 )
 
 # Separate GCCollectOnly list because our LTTng implementation doesn't set tracepoint verbosity.
-# Once tracepoint verbosity is set, we can set verbosity and collapse this wtih DotNETRuntimePrivate_GCPrivateKeyword.
+# Once tracepoint verbosity is set, we can set verbosity and collapse this with DotNETRuntimePrivate_GCPrivateKeyword.
 declare -a DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly=(
     DotNETRuntimePrivate:GCDecision
     DotNETRuntimePrivate:GCDecision_V1

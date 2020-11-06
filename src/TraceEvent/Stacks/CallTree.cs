@@ -611,7 +611,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public float ExclusiveMetric { get { return m_exclusiveMetric; } }
         /// <summary>
-        /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveMetric.  
+        /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is always less than or equal to ExclusiveMetric.  
         /// </summary>
         public float ExclusiveFoldedMetric { get { return m_exclusiveFoldedMetric; } }
         /// <summary>
@@ -623,7 +623,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public float ExclusiveCount { get { return m_exclusiveCount; } }
         /// <summary>
-        /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveCount.  
+        /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is always less than or equal to ExclusiveCount.  
         /// </summary>
         public float ExclusiveFoldedCount { get { return m_exclusiveFoldedCount; } }
 

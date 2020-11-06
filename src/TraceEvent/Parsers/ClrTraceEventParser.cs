@@ -229,7 +229,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Fetch the state object associated with this parser and cast it to
         /// the ClrTraceEventParserState type.   This state object contains any
-        /// informtion that you need from one event to another to decode events.
+        /// information that you need from one event to another to decode events.
         /// (typically ID->Name tables).  
         /// </summary>
         internal ClrTraceEventParserState State
@@ -2450,7 +2450,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3 + GenerationSize4; } }
         public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3 + TotalPromotedSize4; } }
         /// <summary>
-        /// Note that this field is derived from teh TotalPromotedSize* fields.  If nothing was promoted, it is possible
+        /// Note that this field is derived from the TotalPromotedSize* fields.  If nothing was promoted, it is possible
         /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
         /// </summary>
         public int Depth
@@ -12250,7 +12250,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             JittedMethodILToNativeMap = 0x20000,
             /// <summary>
-            /// This supresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
+            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
             /// bit and also does not have NGEN PDBS).  
             /// </summary>
             SupressNGen = 0x40000,

@@ -93,7 +93,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 
                         writer.Write($"{{ \"type\": \"{(frameEvent.Type == ProfileEventType.Open ? "O" : "C")}\", ");
                         writer.Write($"\"frame\": {frameEvent.FrameId}, ");
-                        // "R" is crucial here!!! we can't loose precision becasue it can affect the sort order!!!!
+                        // "R" is crucial here!!! we can't loose precision because it can affect the sort order!!!!
                         writer.Write($"\"at\": {frameEvent.RelativeTime.ToString("R", CultureInfo.InvariantCulture)} }}");
 
                         if (i != sortedProfileEvents.Count - 1)
