@@ -449,6 +449,8 @@ namespace Stats
                 writer.Write(" TotalPromotedSize2=\"{0:n0}\"", gc.HeapStats.TotalPromotedSize2);
                 writer.Write(" GenerationSize3=\"{0:n0}\"", gc.HeapStats.GenerationSize3);
                 writer.Write(" TotalPromotedSize3=\"{0:n0}\"", gc.HeapStats.TotalPromotedSize3);
+                writer.Write(" GenerationSize4=\"{0:n0}\"", gc.HeapStats.GenerationSize4);
+                writer.Write(" TotalPromotedSize4=\"{0:n0}\"", gc.HeapStats.TotalPromotedSize4);
                 writer.Write(" FinalizationPromotedSize=\"{0:n0}\"", gc.HeapStats.FinalizationPromotedSize);
                 writer.Write(" FinalizationPromotedCount=\"{0:n0}\"", gc.HeapStats.FinalizationPromotedCount);
                 writer.Write(" PinnedObjectCount=\"{0:n0}\"", gc.HeapStats.PinnedObjectCount);
@@ -856,18 +858,15 @@ namespace Stats
 
             bool hasAnyContent = false;
             bool[] columnHasContent = new bool[CondemnedReasonsHtmlHeader.Length];
-            foreach (byte[] condemnedReasonRow in condemnedReasonRows)
+            for (int j = 0; j < CondemnedReasonsHtmlHeader.Length; j++)
             {
-                for (int j = 0; j < CondemnedReasonsHtmlHeader.Length; j++)
+                foreach (byte[] condemnedReasonRow in condemnedReasonRows)
                 {
-                    if (columnHasContent[j])
-                    {
-                        break;
-                    }
                     if (condemnedReasonRow[j] != 0)
                     {
                         hasAnyContent = true;
                         columnHasContent[j] = true;
+                        break;
                     }
                 }
             }
@@ -1063,7 +1062,7 @@ namespace Stats
         {
             for (CondemnedReasonGroup i = 0; i < CondemnedReasonGroup.Max; i++)
             {
-                result[(int)i] = reasons.CondemnedReasonGroups[(int)i];
+                result[(int)i] |= reasons.CondemnedReasonGroups[(int)i];
             }
         }
 

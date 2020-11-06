@@ -22,6 +22,13 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <ItemGroup>
+    <SuggestedBindingRedirects Include="Microsoft.Diagnostics.Tracing.TraceEvent, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <MaxVersion>$(TraceEventVersion).0</MaxVersion>
+      <Visible>false</Visible>
+    </SuggestedBindingRedirects>
+  </ItemGroup>
+
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);PERFVIEW</DefineConstants>
     <NoWarn>$(NoWarn),0436,0618</NoWarn>
@@ -49,6 +56,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisRulesVersion)" PrivateAssets="all"/>
 
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
@@ -60,6 +68,14 @@
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
+
+  <!-- Copy AutomatedAnalysis rules to the target directory. -->
+  <ItemGroup>
+    <AutomatedAnalysisRules Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
+  </ItemGroup>
+  <Target Name="CopyRulesToTarget" AfterTargets="Build">
+    <Copy SourceFiles="@(AutomatedAnalysisRules)" DestinationFolder="$(TargetDir)Rules" />
+  </Target>
 
   <ItemGroup>
     <Compile Include="..\heapDump\GCHeapDump.cs">
@@ -132,6 +148,20 @@
       <Link>x86\msdia140.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\msvcp140.dll</LogicalName>
+      <Link>x86\msvcp140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\vcruntime140.dll</LogicalName>
+      <Link>x86\vcruntime140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -169,11 +199,39 @@
       <Link>amd64\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</LogicalName>
+      <Link>Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
       <Link>amd64\msdia140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\msvcp140.dll</LogicalName>
+      <Link>amd64\msvcp140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\vcruntime140.dll</LogicalName>
+      <Link>amd64\vcruntime140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\vcruntime140_1.dll</LogicalName>
+      <Link>amd64\vcruntime140_1.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net45\HeapDump.exe">

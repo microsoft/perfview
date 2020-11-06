@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>PerfView</RootNamespace>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -40,6 +41,7 @@
     <Compile Include="..\PerfView\ClrStats.cs" />
     <Compile Include="..\PerfView\GcStats.cs" />
     <Compile Include="..\PerfView\JitStats.cs" />
+    <Compile Include="..\PerfView\RuntimeLoaderStats.cs" />
   </ItemGroup>
 
   <ItemGroup>

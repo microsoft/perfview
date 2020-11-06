@@ -65,13 +65,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath, traceEventDispatcherOptions))
             {
-                if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
-                {
-                    options.OnLostEvents(false, source.EventsLost, 0);
-                }
-
-                CreateFromTraceEventSource(source, etlxFilePath, options);
+                return CreateFromEventTraceLogFile(source, etlxFilePath, options);
             }
+        }
+
+        /// <summary>
+        /// Given a <see cref="TraceEventDispatcher"/> that can be created from data source, create an ETLX file for the data. 
+        /// </summary>
+        /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
+        /// <returns>The name of the ETLX file that was generated.</returns>
+        public static string CreateFromEventTraceLogFile(TraceEventDispatcher source, string etlxFilePath, TraceLogOptions options = null)
+        {
+            if (etlxFilePath == null)
+            {
+                throw new ArgumentNullException(nameof(etlxFilePath));
+            }
+
+            if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
+            {
+                options.OnLostEvents(false, source.EventsLost, 0);
+            }
+
+            CreateFromTraceEventSource(source, etlxFilePath, options);
+
             return etlxFilePath;
         }
 
@@ -631,6 +647,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             GC.SuppressFinalize(toSend);    // Tell the finalizer you don't need it because I will do the cleanup
             // Do the cleanup, but also keep toSend alive during the dispatch and until finalization was suppressed.  
             System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);
+            toSend.instanceContainerID = null;
         }
 
         /// <summary>
@@ -969,7 +986,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // See TraceLog.ProcessExtendedData for more on our use of ExtendedData to hold a index.   
-            if (eventRecord->ExtendedDataCount == 1)
+            if (eventRecord->ExtendedData != null)
             {
                 int idIndex = (int)eventRecord->ExtendedData;
                 if ((uint)idIndex < (uint)relatedActivityIDs.Count)
@@ -978,6 +995,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             }
             return Guid.Empty;
+        }
+
+        internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        {
+            if(eventRecord->ExtendedDataCount > 0)
+            {
+                int index = eventRecord->ExtendedDataCount;
+                if(index < containerIDs.Count)
+                {
+                    return containerIDs[index];
+                }
+            }
+            return null;
         }
 
         internal override unsafe int LastChanceGetThreadID(TraceEvent data)
@@ -2757,7 +2787,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         // If the userModeStack is negative, that means it represents a thread (since we know it can't be
                         // Invalid (which is also negative).   This means the ENTIRE stack is just the thread, which means
                         // we had no actual stack frames.  This should not happen, so we assert it.  
-                        Debug.Assert(UserModeStackIndex >= 0);
+                        //Debug.Assert(UserModeStackIndex >= 0);
 
                         if (UserModeStackIndex >= 0)
                         {
@@ -2936,6 +2966,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var extendedData = data.eventRecord->ExtendedData;
             Debug.Assert(extendedData != null && extendedDataCount != 0);
             Guid* relatedActivityIDPtr = null;
+            string containerID = null;
             for (int i = 0; i < extendedDataCount; i++)
             {
                 if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64 ||
@@ -3022,21 +3053,63 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
                 }
+                else if(extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                {
+                    containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
+                }
             }
 
             if (relatedActivityIDPtr != null)
             {
-                // TODO This is a bit of a hack.   We wack these fields in place 
+                if(relatedActivityIDs.Count == 0)
+                {
+                    // Insert a synthetic value since 0 represents "no related activity ID".
+                    relatedActivityIDs.Add(Guid.Empty);
+                }
+
+                // TODO This is a bit of a hack.   We wack this field in place.
                 // We encode this as index into the relatedActivityID GrowableArray.
-                data.eventRecord->ExtendedDataCount = 1;
                 data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
                 relatedActivityIDs.Add(*relatedActivityIDPtr);
             }
             else
             {
-                data.eventRecord->ExtendedDataCount = 0;
                 data.eventRecord->ExtendedData = null;
             }
+
+            if(containerID != null)
+            {
+                // TODO This is a bit of a hack.   We wack this field in place.
+                // We encode this as index into the containerIDs GrowableArray.
+                if (containerIDs.Count == 0)
+                {
+                    // Insert a synthetic value since 0 represents "no container ID".
+                    containerIDs.Add(null);
+                }
+
+                // Look for the container ID.
+                bool found = false;
+                for(int i=0; i<containerIDs.Count; i++)
+                {
+                    if(containerIDs[i] == containerID)
+                    {
+                        data.eventRecord->ExtendedDataCount = (ushort)i;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    data.eventRecord->ExtendedDataCount = (ushort)containerIDs.Count;
+                    containerIDs.Add(containerID);
+                }
+            }
+            else
+            {
+                data.eventRecord->ExtendedDataCount = 0;
+            }
+
             return isBookkeepingEvent;
         }
 
@@ -3589,6 +3662,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 serializer.Write(relatedActivityIDs[i]);
             }
 
+            serializer.Log("<WriteCollection name=\"containerIDs\" count=\"" + containerIDs.Count + "\">\r\n");
+            serializer.Write(containerIDs.Count);
+            for(int i=0; i<containerIDs.Count; i++)
+            {
+                serializer.Write(containerIDs[i]);
+            }
+
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
@@ -3747,12 +3827,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 deserializer.Read(out guid);
                 relatedActivityIDs.Add(guid);
             }
+            containerIDs.Clear();
+            count = deserializer.ReadInt();
+            string containerID;
+            for(int i=0; i<count; i++)
+            {
+                deserializer.Read(out containerID);
+                containerIDs.Add(containerID);
+            }
             deserializer.Read(out truncated);
             firstTimeInversion = (EventIndex) (uint) deserializer.ReadInt();
         }
         int IFastSerializableVersion.Version
         {
-            get { return 72; }
+            get { return 73; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -3828,6 +3916,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // In a TraceLog, we store all the GUIDS of RelatedActivityIDs here.  When then 'point'
         // at them with the index into this array.  (see TraceLog.GetRelatedActivityID).
         internal GrowableArray<Guid> relatedActivityIDs;
+
+        // In a TraceLog, we store all of the container IDs here and then 'point'
+        // at them with the index into this array.  This is just like relatedActivityIDs above.
+        // See TraceLog.GetContainerID.
+        internal GrowableArray<string> containerIDs;
 
         #region EventPages
         internal const int eventsPerPage = 1024;    // We keep track of  where events are in 'pages' of this size.
@@ -4351,6 +4444,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             return TraceLog.GetRelatedActivityID(eventRecord);
+        }
+
+        internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        {
+            return TraceLog.GetContainerID(eventRecord);
         }
 
         internal TraceLogEventSource(TraceEvents events, bool ownsItsTraceLog = false)
@@ -8506,7 +8604,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     pdbFileName = symReader.FindSymbolFilePathForModule(moduleFile.FilePath);
                 }
             }
+            if(pdbFileName == null)
+            {
+                // Check to see if the file is inside of an existing Windows container.
+                // Create a new instance of WindowsDeviceToVolumeMap to avoid situations where the mappings have changed but we haven't noticed.
+                string volumePath = new WindowsDeviceToVolumeMap().ConvertDevicePathToVolumePath(moduleFile.FilePath);
+                symReader.m_log.WriteLine("Attempting to convert {0} to a volume-based path in case the file inside of a container.", moduleFile.FilePath);
+                if (!moduleFile.FilePath.Equals(volumePath))
+                {
+                    symReader.m_log.WriteLine("Successfully converted to {0}.", volumePath);
 
+                    // Confirm that the path from the trace points at a file that is the same (checksums match).
+                    // It will log messages if it does not match.
+                    if (TraceModuleUnchanged(moduleFile, symReader.m_log, volumePath))
+                    {
+                        pdbFileName = symReader.FindSymbolFilePathForModule(volumePath);
+                    }
+                }
+                else
+                {
+                    symReader.m_log.WriteLine("Unable to convert {0} to a volume-based path.", moduleFile.FilePath);
+                }
+
+            }
             if (pdbFileName == null)
             {
                 if (UnsafePDBMatching)
@@ -8570,13 +8690,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Returns true if 'moduleFile' seems to be unchanged from the time the information about it
         /// was generated.  Logs messages to 'log' if it fails.  
+        /// Specify overrideModuleFilePath if the path needs to be converted to a different format in order to be accessed (e.g. from device path to volume path).
         /// </summary>
-        private bool TraceModuleUnchanged(TraceModuleFile moduleFile, TextWriter log)
+        private bool TraceModuleUnchanged(TraceModuleFile moduleFile, TextWriter log, string overrideModuleFilePath = null)
         {
-            string moduleFilePath = SymbolReader.BypassSystem32FileRedirection(moduleFile.FilePath);
+            string moduleFilePath = SymbolReader.BypassSystem32FileRedirection(overrideModuleFilePath != null ? overrideModuleFilePath : moduleFile.FilePath);
             if (!File.Exists(moduleFilePath))
             {
-                log.WriteLine("The file {0} does not exist on the local machine", moduleFile.FilePath);
+                log.WriteLine("The file {0} does not exist on the local machine", moduleFilePath);
                 return false;
             }
 
@@ -8584,17 +8705,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (file.Header.CheckSum != (uint)moduleFile.ImageChecksum)
                 {
-                    log.WriteLine("The local file {0} has a mismatched checksum found {1} != expected {2}", moduleFile.FilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
+                    log.WriteLine("The local file {0} has a mismatched checksum found {1} != expected {2}", moduleFilePath, file.Header.CheckSum, moduleFile.ImageChecksum);
                     return false;
                 }
                 if (moduleFile.ImageId != 0 && file.Header.TimeDateStampSec != moduleFile.ImageId)
                 {
-                    log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFile.FilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
+                    log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
                     return false;
                 }
                 if (file.Header.SizeOfImage != (uint)moduleFile.ImageSize)
                 {
-                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFile.FilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
+                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
                     return false;
                 }
             }

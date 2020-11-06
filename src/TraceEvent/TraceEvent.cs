@@ -532,6 +532,28 @@ namespace Microsoft.Diagnostics.Tracing
 
             return Guid.Empty;
         }
+
+        internal virtual unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        {
+            string id = null;
+            if (eventRecord->ExtendedDataCount != 0)
+            {
+                var ptr = eventRecord->ExtendedData;
+                var end = &eventRecord->ExtendedData[eventRecord->ExtendedDataCount];
+                while (ptr < end)
+                {
+                    if (ptr->ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                    {
+                        id = Marshal.PtrToStringAnsi((IntPtr)ptr->DataPtr, (int)ptr->DataSize);
+                        break;
+                    }
+
+                    ptr++;
+                }
+            }
+
+            return id;
+        }
         #endregion
     }
 
@@ -936,6 +958,24 @@ namespace Microsoft.Diagnostics.Tracing
             get { return (eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER) != 0; }
         }
 
+        /// <summary>
+        /// The ID of the container that emitted the event, if available.
+        /// </summary>
+        public string ContainerID
+        {
+            get
+            {
+                // Handle the cloned case.
+                if(instanceContainerID != null)
+                {
+                    return instanceContainerID;
+                }
+
+                // Non-cloned case.
+                return traceEventSource.GetContainerID(eventRecord);
+            }
+        }
+
 #if !NETSTANDARD1_6
         // These overloads allow integration with the DLR (Dynamic Language Runtime). That
         // enables getting at payload data in a more convenient fashion, directly by name.
@@ -1257,6 +1297,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 ret.myBuffer = extendedDataBuffer;
+                ret.instanceContainerID = ContainerID;
 
                 CopyBlob((IntPtr)eventRecord, eventRecordBuffer, sizeof(TraceEventNativeMethods.EVENT_RECORD));
                 ret.eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)eventRecordBuffer;
@@ -2199,6 +2240,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEventSource traceEventSource;
         internal EventIndex eventIndex;               // something that uniquely identifies this event in the stream.  
         internal IntPtr myBuffer;                     // If the raw data is owned by this instance, this points at it.  Normally null.
+        internal string instanceContainerID;          // If the raw data is owned by this instance (e.g. the event has been cloned), then if there is a container ID it will be saved here.  Normally null.
         #endregion
     }
 
@@ -2756,6 +2798,12 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO FIX NOW currently we have a hack where we know we are not correct 
             // for JScriptTraceEventParser.  
             if (GetType().Name == "JScriptTraceEventParser")
+            {
+                return;
+            }
+
+            // Antimalware events do heavy sharing of templates.
+            if (GetType().Name == "MicrosoftAntimalwareEngineTraceEventParser" || GetType().Name == "MicrosoftAntimalwareAMFilterTraceEventParser")
             {
                 return;
             }

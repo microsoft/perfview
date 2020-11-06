@@ -202,6 +202,11 @@ namespace PerfView
                 CCWRefCountCheckBox.IsChecked = true;
             }
 
+            if (args.RuntimeLoading)
+            {
+                RuntimeLoadingCheckBox.IsChecked = true;
+            }
+
             if (args.DumpHeap)
             {
                 HeapSnapshotCheckBox.IsChecked = true;
@@ -696,11 +701,8 @@ namespace PerfView
                 {
                     m_args.GCCollectOnly = true;
 
-                    // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
-                    m_args.KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
-                    m_args.ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapAndTypeNames | ClrTraceEventParser.Keywords.Exception;
-                    m_args.ClrEventLevel = TraceEventLevel.Informational;
-                    m_args.NoRundown = true;
+                    CommandLineArgs.ConfigureForGCCollectOnly(m_args);
+
                     if (!m_args.Merge.HasValue)
                     {
                         m_args.Merge = false;
@@ -777,6 +779,8 @@ namespace PerfView
                 }
 
                 m_args.CCWRefCount = CCWRefCountCheckBox.IsChecked ?? false;
+                m_args.RuntimeLoading = RuntimeLoadingCheckBox.IsChecked ?? false;
+
                 m_args.DumpHeap = HeapSnapshotCheckBox.IsChecked ?? false;
 
                 if (providers.Length > 0)

@@ -22,4 +22,20 @@
     <None Remove="@(Compile)" />
   </ItemGroup>
 
+  <!-- ******************* Signing Support *********************** -->
+  <!-- We don't need to actually sign this official, but we do need
+       to use the right key because TraceEvent (which is signed)
+       needs to give this DLL 'InternalVisibleTo' and signed DLLs
+       can only give this to other signed DLLs.  But since we run
+       on dev machines with signing validation skipped, we can
+       public sign it and never real sign it. -->
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
 </Project>

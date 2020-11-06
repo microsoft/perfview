@@ -180,6 +180,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             CompilationDiagnostic = 0x2000000000,
 
             /// <summary>
+            /// Diagnostic events for capturing token information for events that express MethodID
+            /// </summary>
+            MethodDiagnostic = 0x4000000000,
+
+            /// <summary>
+            /// Diagnostic events for diagnosing issues involving the type loader.
+            /// </summary>
+            TypeDiagnostic = 0x8000000000,
+
+            /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
@@ -1515,6 +1525,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        public event Action<R2RGetEntryPointStartTraceData> MethodR2RGetEntryPointStart
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(R2RGetEntryPointStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 160, ProviderGuid);
+                source.UnregisterEventTemplate(value, 33, MethodTaskGuid);
+            }
+        }
+
         public event Action<MethodJittingStartedTraceData> MethodJittingStarted
         {
             add
@@ -1528,6 +1552,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 42, MethodTaskGuid);
             }
         }
+
+        public event Action<TypeLoadStartTraceData> TypeLoadStart
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(TypeLoadStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 73, ProviderGuid);
+                source.UnregisterEventTemplate(value, 1, LoaderTaskGuid);
+            }
+        }
+
+        public event Action<TypeLoadStopTraceData> TypeLoadStop
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(TypeLoadStopTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 74, ProviderGuid);
+                source.UnregisterEventTemplate(value, 2, LoaderTaskGuid);
+            }
+        }
+
         public event Action<ModuleLoadUnloadTraceData> LoaderModuleDCStartV2
         {
             add
@@ -1931,12 +1984,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
 
+        static private R2RGetEntryPointStartTraceData R2RGetEntryPointStartTemplate(Action<R2RGetEntryPointStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new R2RGetEntryPointStartTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStart", ProviderGuid, ProviderName);
+        }
+        static private TypeLoadStartTraceData TypeLoadStartTemplate(Action<TypeLoadStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TypeLoadStartTraceData(action, 73, 33, "TypeLoad", LoaderTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private TypeLoadStopTraceData TypeLoadStopTemplate(Action<TypeLoadStopTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new TypeLoadStopTraceData(action, 74, 33, "TypeLoad", LoaderTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
+        }
+
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[131];
+                var templates = new TraceEvent[134];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2075,6 +2141,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[129] = TieredCompilationBackgroundJitStartTemplate(null);
                 templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
 
+                templates[131]  = R2RGetEntryPointStartTemplate(null);
+                templates[132]  = TypeLoadStartTemplate(null);
+                templates[133]  = TypeLoadStopTemplate(null);
+
                 s_templates = templates;
             }
 
@@ -2139,6 +2209,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
         private static readonly Guid AssemblyLoaderTaskGuid = new Guid(unchecked((int)0xbcf2339e), unchecked((short)0xb0a6), unchecked((short)0x452d), 0x96, 0x6c, 0x33, 0xac, 0x9d, 0xd8, 0x25, 0x73);
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
+        private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -2376,8 +2447,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         // The sizes INCLUDE fragmentation (holes in the segement)
 
         // The TotalPromotedSize0 is the amount that SURVIVED Gen0 (thus it is now in Gen1, thus TotalPromoted0 <= GenerationSize1)
-        public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3; } }
-        public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3; } }
+        public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3 + GenerationSize4; } }
+        public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3 + TotalPromotedSize4; } }
         /// <summary>
         /// Note that this field is derived from teh TotalPromotedSize* fields.  If nothing was promoted, it is possible
         /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
@@ -2414,6 +2485,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int SinkBlockCount { get { return GetInt32At(84); } }
         public int GCHandleCount { get { return GetInt32At(88); } }
         public int ClrInstanceID { get { if (Version >= 1) { return GetInt16At(92); } return 0; } }
+        public long GenerationSize4 { get { if (Version >= 2) { return GetInt64At(94); } return 0; } }
+        public long TotalPromotedSize4 { get { if (Version >= 2) { return GetInt64At(102); } return 0; } }
 
         #region Private
         internal GCHeapStatsTraceData(Action<GCHeapStatsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -2434,7 +2507,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 96));          // HAND_MODIFIED C++ pads to 96
             Debug.Assert(!(Version == 1 && EventDataLength != 94));
-            Debug.Assert(!(Version > 1 && EventDataLength < 94));
+            Debug.Assert(!(Version == 2 && EventDataLength != 110));
+            Debug.Assert(!(Version > 2 && EventDataLength < 110));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -2450,6 +2524,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttribHex(sb, "TotalPromotedSize2", TotalPromotedSize2);
             XmlAttribHex(sb, "GenerationSize3", GenerationSize3);
             XmlAttribHex(sb, "TotalPromotedSize3", TotalPromotedSize3);
+            XmlAttribHex(sb, "GenerationSize4", GenerationSize4);
+            XmlAttribHex(sb, "TotalPromotedSize4", TotalPromotedSize4);
             XmlAttribHex(sb, "FinalizationPromotedSize", FinalizationPromotedSize);
             XmlAttrib(sb, "FinalizationPromotedCount", FinalizationPromotedCount);
             XmlAttrib(sb, "PinnedObjectCount", PinnedObjectCount);
@@ -2466,7 +2542,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "TotalHeapSize", "TotalPromoted", "Depth", "GenerationSize0", "TotalPromotedSize0", "GenerationSize1", "TotalPromotedSize1", "GenerationSize2", "TotalPromotedSize2", "GenerationSize3", "TotalPromotedSize3", "FinalizationPromotedSize", "FinalizationPromotedCount", "PinnedObjectCount", "SinkBlockCount", "GCHandleCount", "ClrInstanceID" };
+                    payloadNames = new string[] { "TotalHeapSize", "TotalPromoted", "Depth", "GenerationSize0", "TotalPromotedSize0", "GenerationSize1", "TotalPromotedSize1", "GenerationSize2", "TotalPromotedSize2", "GenerationSize3", "TotalPromotedSize3", "FinalizationPromotedSize", "FinalizationPromotedCount", "PinnedObjectCount", "SinkBlockCount", "GCHandleCount", "ClrInstanceID", "GenerationSize4", "TotalPromotedSize4" };
                 }
 
                 return payloadNames;
@@ -2511,6 +2587,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return GCHandleCount;
                 case 16:
                     return ClrInstanceID;
+                case 17:
+                    return GenerationSize4;
+                case 18:
+                    return TotalPromotedSize4;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -4492,6 +4572,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Gen2,
         GenLargeObj,
         Gen0After,
+        GenPinObj,
     }
 
     /// <summary>
@@ -8659,6 +8740,196 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<R2RGetEntryPointTraceData> m_target;
         #endregion
     }
+
+    public sealed class R2RGetEntryPointStartTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(8); } }
+
+        #region Private
+        internal R2RGetEntryPointStartTraceData(Action<R2RGetEntryPointStartTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 10));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<R2RGetEntryPointStartTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<R2RGetEntryPointStartTraceData> m_target;
+        #endregion
+    }
+
+    public sealed class TypeLoadStartTraceData : TraceEvent
+    {
+        public int TypeLoadStartID { get { return GetInt32At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+
+        #region Private
+        internal TypeLoadStartTraceData(Action<TypeLoadStartTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<TypeLoadStartTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "TypeLoadStartID", TypeLoadStartID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "TypeLoadStartID", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return TypeLoadStartID;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<TypeLoadStartTraceData> m_target;
+        #endregion
+    }
+
+    public sealed class TypeLoadStopTraceData : TraceEvent
+    {
+        public int TypeLoadStartID { get { return GetInt32At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+        public int LoadLevel { get { return GetInt16At(6); } }
+        public long TypeID { get { return GetInt64At(8); } }
+        public string TypeName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal TypeLoadStopTraceData(Action<TypeLoadStopTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != (16 + SkipUnicodeString(16))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<TypeLoadStopTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "TypeLoadStartID", TypeLoadStartID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "LoadLevel", LoadLevel);
+            XmlAttrib(sb, "TypeID", TypeID);
+            XmlAttrib(sb, "TypeName", TypeName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "TypeLoadStartID", "ClrInstanceID", "LoadLevel", "TypeID", "TypeName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return TypeLoadStartID;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<TypeLoadStopTraceData> m_target;
+        #endregion
+    }
+
     public sealed class MethodILToNativeMapTraceData : TraceEvent
     {
         private const int ILProlog = -2;    // Returned by ILOffset to represent the prologue of the method
@@ -11680,6 +11951,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         // Pregenerated code, not sent by the runtime
         ReadyToRun,
+
+        // This value is not sent by the runtime through this parser, but
+        // does get sent through Linux traces.  Set the value to byte.MaxValue
+        // to avoid clobbering a real value.
+        PreJIT = byte.MaxValue
     }
     [Flags]
     public enum StartupMode

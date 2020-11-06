@@ -103,6 +103,8 @@ namespace PerfView
         public int StopOnAppFabricOverMsec;
         public int DelayAfterTriggerSec = 5;    // Number of seconds to wait after a trigger  
         public string[] MonitorPerfCounter;     // logs perf counters to the ETL file.  
+        public bool EnableEventsInContainers;        // Enable user-mode events inside of containers.
+        public bool EnableSourceContainerTracking;   // Enable inclusion of container id in each event.
 
         // Start options.
         public bool StackCompression = true;    // Use compresses stacks when collecting traces. 
@@ -129,6 +131,7 @@ namespace PerfView
         public bool NetworkCapture;         // Capture the full packets of every incoming and outgoing  packet
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
         public bool CCWRefCount;            // Capture CCW references count increasing and decreasing
+        public bool RuntimeLoading;         // Capture information about runtime loading such as R2R and type load events
 
         public bool Wpr;                    // Collect like WPR (no zip, puts NGEN pdbs in a .ngenpdbs directory).  
 
@@ -209,6 +212,9 @@ namespace PerfView
         // Mark options
         public string Message;
 
+        // Merge options.
+        public bool ImageIDsOnly;
+
         // Viewer options
         public bool UnsafePDBMatch;
         public bool ShowUnknownAddresses;
@@ -227,6 +233,21 @@ namespace PerfView
             SetupCommandLine(parser);
             helpString = parser.GetHelp(maxLineWidth, null);
         }
+
+        /// <summary>
+        /// Shared logic to configure CommandLineArgs for GCCollectOnly mode
+        /// </summary>
+        /// <param name="commandLineArgs"></param>
+        internal static void ConfigureForGCCollectOnly(CommandLineArgs commandLineArgs)
+        {
+            // The process events are so we get process names. The ImageLoad events are so that we get version information about the DLLs.
+            commandLineArgs.KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
+            commandLineArgs.ClrEvents = ClrTraceEventParser.Keywords.GC;
+            commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
+            commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
+            commandLineArgs.NoRundown = true;
+        }
+
         private void SetupCommandLine(CommandLineParser parser)
         {
             // #CommandLineDefinitions
@@ -353,7 +374,7 @@ namespace PerfView
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
             parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
-            parser.DefineOptionalQualifier("FocusProcess", ref FocusProcess, "Either a decimal process ID or a process name (exe name without path but WITH extension) to focus ETW commands." + 
+            parser.DefineOptionalQualifier("FocusProcess", ref FocusProcess, "Either a decimal process ID or a process name (exe name without path but WITH extension) to focus ETW commands." +
                 "All NON-KERNEL providers are only send to this process (and rundown is only done on this process) which can cut overhead significantly in some cases.");
 
             parser.DefineOptionalQualifier("NoNGenPdbs", ref NoNGenPdbs, "Don't generate NGEN Pdbs");
@@ -460,13 +481,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("GCCollectOnly", ref GCCollectOnly, "Turns on GC collections (no allocation sampling).");
             if (GCCollectOnly)
             {
-                // TODO this logic is cloned.  We need it in only one place.  If you update it do the other location as well
-                // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
-                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
-                ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapAndTypeNames | ClrTraceEventParser.Keywords.Exception;
-                ClrEventLevel = TraceEventLevel.Informational;
-                TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
-                NoRundown = true;
+                ConfigureForGCCollectOnly(this);
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCCollectOnly.etl";
             }
@@ -496,6 +511,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("DisableInlining", ref DisableInlining, "Turns off inlining (but only affects processes that start after trace start.");
             parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
             parser.DefineOptionalQualifier("CCWRefCount", ref CCWRefCount, "Turns on logging of information about .NET Native CCW reference counting.");
+            parser.DefineOptionalQualifier("RuntimeLoading", ref RuntimeLoading, "Turn on logging of runtime loading operations.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
 
@@ -539,6 +555,10 @@ namespace PerfView
                 "The maximum number of objects (in K or thousands) that will even be examined when dumping the heap.  Avoids memory use at collection time.  " +
                  "This is useful if heap dumping causes out of memory exceptions.");
 
+            parser.DefineOptionalQualifier("EnableEventsInContainers", ref EnableEventsInContainers,
+                "Enable user mode events inside of containers to flow back to the host for collection.");
+            parser.DefineOptionalQualifier("EnableSourceContainerTracking", ref EnableSourceContainerTracking,
+                "Emit the container ID as part of the payload of each usermode event emitted inside of a container.");
 
             /* end of qualifier that apply to more than one parameter set (command) */
             /****************************************************************************************/
@@ -570,6 +590,8 @@ namespace PerfView
             parser.DefineParameterSet("merge", ref DoCommand, App.CommandProcessor.Merge,
                 "Combine separate ETL files into a single ETL file (that can be decoded on another machine).");
             parser.DefineOptionalParameter("DataFile", ref DataFile, "ETL file containing profile data.");
+            parser.DefineOptionalQualifier("ImageIDsOnly", ref ImageIDsOnly,
+                "Only perform image ID injection during the merge operation.");
 
             parser.DefineParameterSet("unzip", ref DoCommand, App.CommandProcessor.Unzip,
                 "Unpack a ZIP file into its ETL file (and possibly its NGEN PDBS) /WPR option can be specified.");

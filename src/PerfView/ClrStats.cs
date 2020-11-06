@@ -1,4 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Utilities;
 using System.Collections.Generic;
@@ -9,9 +10,9 @@ namespace Stats
 {
     internal static class ClrStats
     {
-        public enum ReportType { JIT, GC };
+        public enum ReportType { JIT, GC, RuntimeLoader };
 
-        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false)
+        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, RuntimeLoaderStatsData runtimeOpsStats = null)
         {
             if (!justBody)
             {
@@ -33,6 +34,10 @@ namespace Stats
             {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB.CompareTo(p2.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB); });
             }
+            else if (type == ReportType.RuntimeLoader)
+            {
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -RuntimeLoaderStats.TotalCPUMSec(p1, runtimeOpsStats).CompareTo(RuntimeLoaderStats.TotalCPUMSec(p2, runtimeOpsStats)); });
+            }
 
             int count = sortedProcs.Count;
 
@@ -49,6 +54,11 @@ namespace Stats
                     }
 
                     if (type == ReportType.JIT && !mang.JIT.Stats().Interesting)
+                    {
+                        continue;
+                    }
+
+                    if (type == ReportType.RuntimeLoader && !RuntimeLoaderStats.IsInteresting(data, runtimeOpsStats))
                     {
                         continue;
                     }
@@ -80,6 +90,11 @@ namespace Stats
                 if (type == ReportType.JIT && mang.JIT.Stats().Interesting)
                 {
                     Stats.JitStats.ToHtml(writer, stats, mang, fileName);
+                }
+
+                if (type == ReportType.RuntimeLoader && RuntimeLoaderStats.IsInteresting(stats, runtimeOpsStats))
+                {
+                    Stats.RuntimeLoaderStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
                 }
             }
 

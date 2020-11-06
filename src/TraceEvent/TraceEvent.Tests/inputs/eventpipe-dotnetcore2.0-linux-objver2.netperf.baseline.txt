@@ -28,5 +28,5 @@ System.Threading.Tasks.TplEventSource/TaskScheduled/Send, 82, <Event MSec=  "447
 System.Threading.Tasks.TplEventSource/TaskWait/Send, 106, <Event MSec=  "4446.0311" PID=   "0" PName=        "" TID="12701" EventName="TaskWait/Send" OriginatingTaskSchedulerID="1" OriginatingTaskID="0" TaskID="3" Behavior="Asynchronous" ContinueWithTaskID="0"/>
 System.Threading.Tasks.TplEventSource/TaskWait/Stop, 96, <Event MSec=  "4534.8792" PID=   "0" PName=        "" TID="12824" EventName="TaskWait/Stop" OriginatingTaskSchedulerID="1" OriginatingTaskID="0" TaskID="13"/>
 System.Threading.Tasks.TplEventSource/TaskWaitContinuationComplete, 96, <Event MSec=  "4535.1539" PID=   "0" PName=        "" TID="12824" EventName="TaskWaitContinuationComplete" TaskID="17"/>
-TestEventSource/RequestStart/Start, 28, <Event MSec=  "4479.3677" PID=   "0" PName=        "" TID="12815" ActivityID="0000001100000000000000003da89d59" EventName="RequestStart/Start" ProviderName="TestEventSource" url="/"/>
-TestEventSource/RequestStop/Stop, 28, <Event MSec=   "159.4038" PID=   "0" PName=        "" TID="12691" EventName="RequestStop/Stop" ProviderName="TestEventSource"/>
+TestEventSource/Request/Start, 28, <Event MSec=  "4479.3677" PID=   "0" PName=        "" TID="12815" ActivityID="0000001100000000000000003da89d59" EventName="Request/Start" ProviderName="TestEventSource" url="/"/>
+TestEventSource/Request/Stop, 28, <Event MSec=   "159.4038" PID=   "0" PName=        "" TID="12691" EventName="Request/Stop" ProviderName="TestEventSource"/>

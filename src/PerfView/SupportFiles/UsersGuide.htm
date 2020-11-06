@@ -2296,6 +2296,10 @@
                     wall clock time, and memory investigations.
                     <ul>
                         <li>
+                            <strong><a id="ProcessorStacks">Processor Stacks</a></strong> - Shows what every
+                            processor is doing, including at what priority. Use GroupPats to focus on Processor or Priority.
+                        </li>
+                        <li>
                             <strong><a id="ThreadTimeStacks">Thread Time Stacks</a></strong> - Shows what every
                             thread is doing whether it is consuming CPU, disk, network or blocked on something
                             else.  It does not include the 'ReadyThread' information.
@@ -2486,7 +2490,12 @@
                             view is mostly for PerfView diagnostic purposes when other views are not working
                             properly.&nbsp; It lets you quickly determine what is in the ETL file so you can
                             determine if it is a problem with data collection (the needed events are not present),
-                            or presentation.&nbsp;&nbsp;&nbsp;
+                            or presentation.
+                        </li>
+                        <li>
+                            <strong><a id="Anti-MalwareReal-TimeScanStacks">Anti-Malware Realtime Scan Stacks</a></strong> - This view
+                            shows the latency impact of realtime scan requests made by Windows Defender when an application does I/O.
+                            &nbsp;&nbsp;&nbsp;
                         </li>
                     </ul>  <!-- END OF ADVANCED GROUP -->
                 </li>

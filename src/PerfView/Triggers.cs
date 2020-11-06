@@ -1410,7 +1410,7 @@ namespace Triggers
                         var expressionValue = Convert.ToInt64(Value);
                         result = -expressionValue.CompareTo(longValue);     // negated because the x and y arguments are swapped.  
                     }
-                    else if (double.TryParse(fieldValue, System.Globalization.NumberStyles.Integer | System.Globalization.NumberStyles.AllowDecimalPoint, null, out double doubleValue))
+                    else if (double.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out double doubleValue))
                     {
                         var expressionValue = Convert.ToDouble(Value);
                         result = -expressionValue.CompareTo(doubleValue);   // negated because the x and y arguments are swapped.

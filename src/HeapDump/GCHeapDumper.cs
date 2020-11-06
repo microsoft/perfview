@@ -589,7 +589,7 @@ public class GCHeapDumper
                         {
                             dotNetGCCount++;
                             lastDotNetSurvived = curDotNetSurvived;
-                            curDotNetSurvived = data.TotalPromotedSize0 + data.TotalPromotedSize1 + data.TotalPromotedSize2 + data.TotalPromotedSize3;
+                            curDotNetSurvived = data.TotalPromotedSize0 + data.TotalPromotedSize1 + data.TotalPromotedSize2 + data.TotalPromotedSize3 + data.TotalPromotedSize4;
                             m_log.WriteLine("{0,5:n1}s: .NET GC stats, at {1:n2}s Survived {2}.", sw.Elapsed.TotalSeconds, (data.TimeStamp - startTime).TotalSeconds, curDotNetSurvived);
                         }
                     };

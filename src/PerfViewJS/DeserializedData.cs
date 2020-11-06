@@ -4,6 +4,7 @@
 
 namespace PerfViewJS
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -18,6 +19,8 @@ namespace PerfViewJS
         private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         private readonly Dictionary<StackViewerModel, ICallTreeData> callTreeDataCache = new Dictionary<StackViewerModel, ICallTreeData>();
+
+        private readonly Dictionary<StackSourceCacheKey, StackSource> stackSourceCache = new Dictionary<StackSourceCacheKey, StackSource>();
 
         private int initialized;
 
@@ -61,7 +64,25 @@ namespace PerfViewJS
                     double start = string.IsNullOrEmpty(model.Start) ? 0.0 : double.Parse(model.Start);
                     double end = string.IsNullOrEmpty(model.End) ? 0.0 : double.Parse(model.End);
 
-                    value = new CallTreeData(stackSource ?? this.deserializer.GetStackSource((ProcessIndex)int.Parse(model.Pid), int.Parse(model.StackType), start, end), model);
+                    var key = new StackSourceCacheKey((ProcessIndex)int.Parse(model.Pid), int.Parse(model.StackType), start, end, model.DrillIntoKey);
+                    if (!this.stackSourceCache.TryGetValue(key, out var ss))
+                    {
+                        ss = stackSource ?? this.deserializer.GetStackSource((ProcessIndex)int.Parse(model.Pid), int.Parse(model.StackType), start, end);
+                        this.stackSourceCache.Add(key, ss);
+                    }
+                    else
+                    {
+                        var drillIntoStackSource = new CopyStackSource(GetTraceEventStackSource(ss));
+
+                        ss.ForEach(delegate(StackSourceSample sample)
+                        {
+                            drillIntoStackSource.AddSample(sample);
+                        });
+
+                        ss = drillIntoStackSource;
+                    }
+
+                    value = new CallTreeData(stackSource ?? ss, model);
                     this.callTreeDataCache.Add(model, value);
                 }
 
@@ -123,6 +144,32 @@ namespace PerfViewJS
             }
 
             return retVal;
+        }
+
+        private static TraceEventStackSource GetTraceEventStackSource(StackSource source)
+        {
+            StackSourceStacks rawSource = source;
+            while (true)
+            {
+                if (rawSource is TraceEventStackSource asTraceEventStackSource)
+                {
+                    return asTraceEventStackSource;
+                }
+
+                if (rawSource is CopyStackSource asCopyStackSource)
+                {
+                    rawSource = asCopyStackSource.SourceStacks;
+                    continue;
+                }
+
+                if (rawSource is StackSource asStackSource && asStackSource != asStackSource.BaseStackSource)
+                {
+                    rawSource = asStackSource.BaseStackSource;
+                    continue;
+                }
+
+                return null;
+            }
         }
 
         private async Task EnsureInitialized()
@@ -213,6 +260,40 @@ namespace PerfViewJS
             finally
             {
                 this.semaphoreSlim.Release();
+            }
+        }
+
+        private readonly struct StackSourceCacheKey : IEquatable<StackSourceCacheKey>
+        {
+            private const double TOLERANCE = 0.1;
+
+            private readonly ProcessIndex processIndex;
+
+            private readonly int stackType;
+
+            private readonly double start;
+
+            private readonly double end;
+
+            private readonly string drillIntoKey;
+
+            public StackSourceCacheKey(ProcessIndex processIndex, int stackType, double start, double end, string drillIntoKey)
+            {
+                this.processIndex = processIndex;
+                this.stackType = stackType;
+                this.start = start;
+                this.end = end;
+                this.drillIntoKey = drillIntoKey;
+            }
+
+            public bool Equals(StackSourceCacheKey other)
+            {
+                return this.processIndex == other.processIndex && this.stackType == other.stackType && this.drillIntoKey == other.drillIntoKey && Math.Abs(this.start - other.start) < TOLERANCE && Math.Abs(this.end - other.end) < TOLERANCE;
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(this.processIndex, this.stackType, this.start, this.end, this.drillIntoKey);
             }
         }
     }

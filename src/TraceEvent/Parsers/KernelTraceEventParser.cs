@@ -6455,27 +6455,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
 
     public sealed class FileIOCreateTraceData : TraceEvent
     {
+        // Pointer to fltmgr!_FLT_CALLBACK_DATA
         public Address IrpPtr { get { return GetAddressAt(0); } }
+        // Pointer to nt!_FILE_OBJECT
         public Address FileObject { get { return GetAddressAt(LayoutVersion <= 2 ? HostOffset(8, 2) : HostOffset(4, 1)); } }
         // public Address TTID { get { return GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(8, 2)); } }
 
         /// <summary>
         /// See the Windows CreateFile API CreateOptions for this 
         /// </summary>
+        // _FLT_IO_PARAMETER_BLOCK.Create.Options
+        // 24 lower bits are the Create Options
         public CreateOptions CreateOptions { get { return (CreateOptions)((GetInt32At(LayoutVersion <= 2 ? HostOffset(12, 3) : HostOffset(12, 2))) & 0xFFFFFF); } }
 
         /// <summary>
         /// See Windows CreateFile API CreateDisposition for this.  
         /// </summary>
-        public CreateDisposition CreateDispostion { get { return (CreateDisposition)(GetByteAt(LayoutVersion <= 2 ? HostOffset(15, 3) : HostOffset(15, 2))); } }
+        // _FLT_IO_PARAMETER_BLOCK.Create.Options
+        // 8 higher bits are the Disposition as passed to IoCreateFileSpecifyDeviceObjectHint
+        public CreateDisposition CreateDisposition { get { return (CreateDisposition)(GetByteAt(LayoutVersion <= 2 ? HostOffset(15, 3) : HostOffset(15, 2))); } }
         /// <summary>
         /// See Windows CreateFile API ShareMode parameter
         /// </summary>
+        // _FLT_IO_PARAMETER_BLOCK.Create.FileAttributes
         public FileAttributes FileAttributes { get { return (FileAttributes)(GetInt32At(LayoutVersion <= 2 ? HostOffset(16, 3) : HostOffset(16, 2))); } }
 
         /// <summary>
         /// See windows CreateFile API ShareMode parameter
         /// </summary>
+        // _FLT_IO_PARAMETER_BLOCK.Create.ShareAccess
         public FileShare ShareAccess { get { return (FileShare)(GetInt32At(LayoutVersion <= 2 ? HostOffset(20, 3) : HostOffset(20, 2))); } }
         public string FileName { get { return state.KernelToUser(GetUnicodeStringAt(LayoutVersion <= 2 ? HostOffset(24, 3) : HostOffset(24, 2))); } }
         public override unsafe int ProcessID
@@ -6537,7 +6545,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "IrpPtr", IrpPtr);
             XmlAttribHex(sb, "FileObject", FileObject);
             XmlAttrib(sb, "CreateOptions", CreateOptions);
-            XmlAttrib(sb, "CreateDispostion", CreateDispostion);
+            XmlAttrib(sb, "CreateDisposition", CreateDisposition);
             XmlAttrib(sb, "FileAttributes", FileAttributes);
             XmlAttrib(sb, "ShareAccess", ShareAccess);
             XmlAttrib(sb, "FileName", FileName);
@@ -6551,7 +6559,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "CreateDispostion", "FileAttributes", "ShareAccess", "FileName" };
+                    payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "CreateDisposition", "FileAttributes", "ShareAccess", "FileName" };
                 }
 
                 return payloadNames;
@@ -6569,7 +6577,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 2:
                     return CreateOptions;
                 case 3:
-                    return CreateDispostion;
+                    return CreateDisposition;
                 case 4:
                     return FileAttributes;
                 case 5:
@@ -6601,15 +6609,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
 
     /// <summary>
-    /// See Windows CreateFile function CreateDispostion parameter.  
+    /// See Windows CreateFile function CreateDispostion parameter.
+    /// The enum written to the ETW trace is the Disposition parameter passed to IoCreateFileSpecifyDeviceObjectHint.
     /// </summary>
     public enum CreateDisposition
     {
-        CREATE_NEW = 1,         // Must NOT exist previously, otherwise fails 
-        CREATE_ALWAYS = 2,      // Creates if necessary, trucates 
-        OPEN_EXISING = 3,       // Must exist previously otherwise fails. 
-        OPEN_ALWAYS = 4,        // Create if necessary, leaves data.  
-        TRUNCATE_EXISTING = 5,  // Must Exist previously, otherwise fails, truncates.  MOST WRITE OPENS USE THIS!
+        SUPERSEDE = 0,          // FILE_SUPERSEDE - if the file exists, replace a file with another file.
+        CREATE_NEW = 2,         // FILE_OPEN - Must NOT exist previously, otherwise fails
+        CREATE_ALWAYS = 5,      // FILE_OVERWRITE_IF - Creates if necessary, trucates
+        OPEN_EXISTING = 1,       // FILE_OPEN - Must exist previously otherwise fails.
+        OPEN_ALWAYS = 3,        // FILE_OPEN_IF - Create if necessary, leaves data.
+        TRUNCATE_EXISTING = 4,  // FILE_OVERWRITE - Must Exist previously, otherwise fails, truncates.  MOST WRITE OPENS USE THIS!
     }
 
     /// <summary>
@@ -7202,9 +7212,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 20));
-            Debug.Assert(!(Version == 1 && EventDataLength < HostOffset(28, 1)));   // TODO fixed by hand
-            Debug.Assert(!(Version > 1 && EventDataLength < HostOffset(28, 1)));
+            //Debug.Assert(!(Version == 0 && EventDataLength != 20));
+            //Debug.Assert(!(Version == 1 && EventDataLength < HostOffset(28, 1)));   // TODO fixed by hand
+            //Debug.Assert(!(Version > 1 && EventDataLength < HostOffset(28, 1)));
             Action(this);
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -7373,8 +7383,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(36, 1)));
-            Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(36, 1)));
+            //Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(36, 1)));
+            //Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(36, 1)));
             Action(this);
         }
 
@@ -7481,8 +7491,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(44, 1)));
-            Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(44, 1)));
+            //Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(44, 1)));
+            //Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(44, 1)));
             Action(this);
         }
         public override StringBuilder ToXml(StringBuilder sb)

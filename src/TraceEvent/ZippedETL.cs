@@ -94,6 +94,13 @@ namespace Microsoft.Diagnostics.Tracing
                 return true;
             }
 
+            // Any generated PDBs were written alongside the existing PDBs, so if existing PDBs are requested, produce the combined list, and overwrite the generated list.
+            if (IncludeExistingPDBs)
+            {
+                string[] existingPDBs = Directory.GetFiles(Path.GetDirectoryName(m_etlFilePath), "*.ni.pdb", SearchOption.AllDirectories);
+                pdbFileList = new List<string>(existingPDBs);
+            }
+
             bool success = false;
             var sw = Stopwatch.StartNew();
             if (ZipArchivePath == null)
@@ -201,6 +208,12 @@ namespace Microsoft.Diagnostics.Tracing
         public bool Merge { get; set; }
 
         /// <summary>
+        /// By default there are a number of steps to merging an ETL file.  Sometimes,
+        /// it is desirable to only perform ImageID merging.  If desired, set this to true.
+        /// </summary>
+        public bool MergeImageIDsOnly { get; set; }
+
+        /// <summary>
         /// Uses a compressed format for the ETL file.   Normally off.  
         /// </summary>
         public bool CompressETL { get; set; }
@@ -227,6 +240,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// Normally if you ZIP you will delete the original ETL file.  Setting this to false overrides this.  
         /// </summary>
         public bool DeleteInputFile { get; set; }
+
+        /// <summary>
+        /// When merging an ETL for the first time, we might generate some NGEN PDBs and save them as part of the archive.
+        /// When merging the second time, use this option to make sure that the PDBs that were part of the original archive are included in the new archive.
+        /// </summary>
+        public bool IncludeExistingPDBs { get; set; }
 
         #region private
         private List<string> PrepForWrite()
@@ -277,6 +296,10 @@ namespace Microsoft.Diagnostics.Tracing
                             if (CompressETL)
                             {
                                 options |= Session.TraceEventMergeOptions.Compress;
+                            }
+                            else if(MergeImageIDsOnly)
+                            {
+                                options |= Session.TraceEventMergeOptions.ImageIDsOnly;
                             }
 
                             // Do the merge
@@ -499,7 +522,7 @@ namespace Microsoft.Diagnostics.Tracing
                             {
                                 // .diagsession files (created by the Visual Studio Diagnostic Hub) put PDBs in a path like
                                 // 194BAE98-C4ED-470E-9204-1F9389FC9DC1\symcache\xyz.pdb
-                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\symcache\\(.*)", RegexOptions.IgnoreCase);
+                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\(?:sym|pdb)cache\\(.*)", RegexOptions.IgnoreCase);
                                 if (m.Success)
                                 {
                                     pdbRelativePath = m.Groups[1].Value;

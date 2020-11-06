@@ -21,11 +21,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void NeedProcesses(this TraceEventDispatcher source)
         {
             TraceProcesses processes = source.Processes();
-            if (processes == null || m_currentSource != source)
+            if (processes == null || m_weakCurrentSource.Target != source)
             {
                 processes = new TraceProcesses(null /* TraceLog */, source);
                 // establish listeners
-                if (m_currentSource != source)
+                if (m_weakCurrentSource.Target != source)
                 {
                     SetupCallbacks(source);
                 }
@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 source.UserData["Computers/Processes"] = processes;
             }
 
-            m_currentSource = source;
+            m_weakCurrentSource.Target = source;
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
@@ -169,7 +169,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             });
         }
 
-        private static TraceEventDispatcher m_currentSource; // used to verify non-concurrent usage
+        private static WeakReference m_weakCurrentSource = new WeakReference(null); // used to verify non-concurrent usage
         #endregion
     }
 
