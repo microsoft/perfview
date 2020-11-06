@@ -162,7 +162,7 @@ namespace PerfView
             float totalDelta = total2 - total1;
             float growth = total2 / total1;
 
-            foreach (var key in d1.Keys)
+            foreach (var (key, v1) in d1)
             {
                 // skip symbols that are not in both traces
                 if (!d2.TryGetValue(key, out var v2))
@@ -170,7 +170,6 @@ namespace PerfView
                     continue;
                 }
 
-                var v1 = d1[key];
                 var r = new Result();
                 r.name = key;
                 r.before = v1;
