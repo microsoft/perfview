@@ -536,9 +536,14 @@ namespace Graphs
 
             // Write out the Nodes 
             serializer.Write(m_nodes.Count);
+            int previousLabel = 0;
             for (int i = 0; i < m_nodes.Count; i++)
             {
-                serializer.Write((int)m_nodes[i]);
+                // Apply differential compression to the label, and then write it as a compressed integer
+                int currentLabel = (int)m_nodes[i];
+                int difference = unchecked(currentLabel - previousLabel);
+                Node.WriteCompressedInt(serializer.Writer, difference);
+                previousLabel = currentLabel;
             }
 
             // Write out the Blob stream.  
@@ -607,9 +612,14 @@ namespace Graphs
             int nodeCount = deserializer.ReadInt();
             m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
 
+            int previousLabel = 0;
             for (int i = 0; i < nodeCount; i++)
             {
-                m_nodes.Add((StreamLabel)(uint)deserializer.ReadInt());
+                // Read the label as a compressed differential integer
+                int difference = Node.ReadCompressedInt(deserializer.Reader);
+                int currentLabel = unchecked(previousLabel + difference);
+                m_nodes.Add((StreamLabel)currentLabel);
+                previousLabel = currentLabel;
             }
 
             // Read in the Blob stream.  
@@ -869,7 +879,8 @@ namespace Graphs
         }
 
         // Node information is stored in a compressed form because we have alot of them. 
-        internal static int ReadCompressedInt(SegmentedMemoryStreamReader reader)
+        internal static int ReadCompressedInt<T>(T reader)
+            where T : IStreamReader
         {
             int ret = 0;
             byte b = reader.ReadByte();
@@ -910,7 +921,8 @@ namespace Graphs
             return ret;
         }
 
-        internal static void WriteCompressedInt(SegmentedMemoryStreamWriter writer, int value)
+        internal static void WriteCompressedInt<T>(T writer, int value)
+            where T : IStreamWriter
         {
             if (value << 25 >> 25 == value)
             {
