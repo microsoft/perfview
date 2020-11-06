@@ -4429,7 +4429,7 @@ table {
 
                     newHeap.OnGC += delegate (double time, int gen)
                     {
-                        sample.Metric = float.Epsilon;
+                        sample.Metric = double.Epsilon;
                         sample.Count = 1;
                         sample.TimeRelativeMSec = time;
                         StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
@@ -4467,7 +4467,7 @@ table {
 
                     newHeap.OnGC += delegate (double time, int gen)
                     {
-                        sample.Metric = float.Epsilon;
+                        sample.Metric = double.Epsilon;
                         sample.Count = 1;
                         sample.TimeRelativeMSec = time;
                         StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
@@ -9010,7 +9010,7 @@ table {
 
                                 newHeap.OnGC += delegate (double time, int gen)
                                 {
-                                    sample.Metric = float.Epsilon;
+                                    sample.Metric = double.Epsilon;
                                     sample.Count = 1;
                                     sample.TimeRelativeMSec = time;
                                     StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
@@ -9048,7 +9048,7 @@ table {
 
                                 newHeap.OnGC += delegate (double time, int gen)
                                 {
-                                    sample.Metric = float.Epsilon;
+                                    sample.Metric = double.Epsilon;
                                     sample.Count = 1;
                                     sample.TimeRelativeMSec = time;
                                     StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
