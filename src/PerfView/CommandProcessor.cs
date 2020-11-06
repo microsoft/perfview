@@ -250,21 +250,23 @@ namespace PerfView
                 DateTime waitStartTime = DateTime.Now;
                 DateTime lastProgressReportTime = waitStartTime;
                 LogFile.WriteLine("[StartOnPerfCounter active waiting for trigger: {0}]", string.Join(",", parsedArgs.StartOnPerfCounter));
-                var startTigggers = new List<Trigger>();
+                var startTriggers = new List<Trigger>();
                 try
                 {
                     // Set up the triggers
                     bool startTriggered = false;
                     foreach (var startTriggerSpec in parsedArgs.StartOnPerfCounter)
                     {
-                        startTigggers.Add(new PerformanceCounterTrigger(startTriggerSpec, 0, LogFile, delegate (PerformanceCounterTrigger startTrigger)
+                        var perfCtrTrigger = new PerformanceCounterTrigger(startTriggerSpec, 0, LogFile, delegate (PerformanceCounterTrigger startTrigger)
                         {
                             LogFile.WriteLine("StartOnPerfCounter " + startTriggerSpec + " Triggered.  Value: " + startTrigger.CurrentValue.ToString("n1"));
                             startTriggered = true;
-                        }));
+                        });
+                        perfCtrTrigger.MinSecForTrigger = parsedArgs.MinSecForTrigger;
+                        startTriggers.Add(perfCtrTrigger);
                     }
 
-                    // Wait for the triggers to happen.  
+                    // Wait for the triggers to happen.
                     while (!collectionCompleted.WaitOne(200))
                     {
                         if (startTriggered)
@@ -276,7 +278,7 @@ namespace PerfView
                         if ((now - lastProgressReportTime).TotalSeconds > 10)
                         {
                             LogFile.WriteLine("Waiting for start trigger {0} sec.", (int)(now - waitStartTime).TotalSeconds);
-                            foreach (var startTrigger in startTigggers)
+                            foreach (var startTrigger in startTriggers)
                             {
                                 var triggerStatus = startTrigger.Status;
                                 if (triggerStatus.Length != 0)
@@ -290,7 +292,7 @@ namespace PerfView
                 }
                 finally
                 {
-                    foreach (var startTrigger in startTigggers)
+                    foreach (var startTrigger in startTriggers)
                     {
                         startTrigger.Dispose();
                     }
@@ -351,6 +353,13 @@ namespace PerfView
                 profilerKeywords |= ETWClrProfilerTraceEventParser.Keywords.DisableInlining;
             }
 
+            if (parsedArgs.RuntimeLoading)
+            {
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.CompilationDiagnostic;
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.MethodDiagnostic;
+                parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.TypeDiagnostic;
+            }
+
             if (profilerKeywords != 0)
             {
                 InstallETWClrProfiler(LogFile, (int)profilerKeywords);
@@ -366,6 +375,10 @@ namespace PerfView
             if (parsedArgs.DataFile.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
             {
                 parsedArgs.DataFile = parsedArgs.DataFile.Substring(0, parsedArgs.DataFile.Length - 4);
+            }
+            else if(!parsedArgs.DataFile.EndsWith(".etl"))
+            {
+                parsedArgs.DataFile = parsedArgs.DataFile + ".etl";
             }
 
             // Don't clobber the results file if we were told not to.  
@@ -536,6 +549,15 @@ namespace PerfView
                         }
                     }
 
+                    if(parsedArgs.EnableEventsInContainers)
+                    {
+                        options.EnableInContainers = true;
+                    }
+                    if(parsedArgs.EnableSourceContainerTracking)
+                    {
+                        options.EnableSourceContainerTracking = true;
+                    }
+
                     var stacksEnabled = options.Clone();
                     stacksEnabled.StacksEnabled = true;
 
@@ -545,11 +567,13 @@ namespace PerfView
                     {
                         userModeSession.BufferSizeMB = Math.Max(512, parsedArgs.BufferSizeMB * 2);
                     }
-                    // Note that you don't need the rundown 300Meg if you are V4.0.   
+
+                    // Note that you don't need the rundown 300Meg if you are V4.0.
                     if (parsedArgs.CircularMB != 0)
                     {
-                        // Typically you only need less than 1/5 the space + rundown 
-                        userModeSession.CircularBufferMB = Math.Min(parsedArgs.CircularMB, parsedArgs.CircularMB / 5 + 300);
+                        // Typically you only need less than 1/5 the space + rundown. However, some scenarios primarily
+                        // use the user mode session so we keep it the full size.
+                        userModeSession.CircularBufferMB = parsedArgs.CircularMB + 300;
                     }
 
                     // Turn on PerfViewLogger
@@ -746,11 +770,31 @@ namespace PerfView
                             EnableUserProvider(userModeSession, "Microsoft-Windows-PowerCfg",
                                  new Guid("9F0C4EA8-EC01-4200-A00D-B9701CBEA5D8"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
-                            // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
-                            // It does not increase the volume in a significant way and they can be pretty useful.     
+                            // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff and antimalware too.
+                            // It does not increase the volume in a significant way and they can be pretty useful.
                             if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
                                 == (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
                             {
+                                EnableUserProvider(userModeSession, MicrosoftAntimalwareEngineTraceEventParser.ProviderName,
+                                    MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid,
+                                    TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                                EnableUserProvider(userModeSession, MicrosoftAntimalwareAMFilterTraceEventParser.ProviderName,
+                                    MicrosoftAntimalwareAMFilterTraceEventParser.ProviderGuid,
+                                    TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-Service",
+                                    new Guid("751ef305-6c6e-4fed-b847-02ef79d26aef"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-RTP",
+                                    new Guid("8e92deef-5e17-413b-b927-59b2f06a3cfc"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
+                                EnableUserProvider(userModeSession, "Microsoft-Antimalware-Protection",
+                                    new Guid("e4b70372-261f-4c54-8fa6-a5a7914d73da"),
+                                    TraceEventLevel.Verbose, ulong.MaxValue, options);
+
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService",
                                     new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"),
                                     parsedArgs.ClrEventLevel, ulong.MaxValue, stacksEnabled);
@@ -1417,6 +1461,17 @@ namespace PerfView
                 parsedArgs.DataFile = "PerfViewData.etl";
             }
 
+            // Save the original path so that if necessary, we can write the resulting file to it.
+            string originalArchivePath = parsedArgs.DataFile;
+
+            if (parsedArgs.ImageIDsOnly)
+            {
+                // Make a directory to put the symbols in.
+                // We may need to unzip the file if this is the second merge (e.g. for container scenarios where we must merge on the host and inside the container).
+                UnZipIfNecessary(ref parsedArgs.DataFile, LogFile, unpackInCache: false, wprConventions: false, unpackInSeparateDirectory: true);
+                LogFile.WriteLine("Pre-merge file extracted to " + parsedArgs.DataFile);
+            }
+
             LogFile.WriteLine("[Merging data files to " + Path.GetFileName(parsedArgs.DataFile) + ".  Can take 10s of seconds... (can skip if data analyzed on same machine with PerfView)]");
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -1452,6 +1507,14 @@ namespace PerfView
                 etlWriter.CompressETL = true;
             }
 
+            if(parsedArgs.ImageIDsOnly)
+            {
+                etlWriter.MergeImageIDsOnly = true;
+
+                // If we're only performing image ID injection, make sure to keep any PDBs that were generated in previous merge steps.
+                etlWriter.IncludeExistingPDBs = true;
+            }
+
             etlWriter.DeleteInputFile = false;
             if (File.Exists(App.LogFileName))
             {
@@ -1466,7 +1529,22 @@ namespace PerfView
 
             // Actually create the archive.  
             var success = etlWriter.WriteArchive();
-            if (parsedArgs.ShouldZip)
+
+            // ImageID only merge operations are done in a separate temp directory, so the resulting file
+            // must be copied back to the original location so the user can find it.
+            if(parsedArgs.ImageIDsOnly)
+            {
+                // Generate the full path to the destination file.
+                string destDir = Path.GetDirectoryName(originalArchivePath);
+                string srcFileName = Path.GetFileName(etlWriter.ZipArchivePath);
+                string destPath = Path.Combine(destDir, srcFileName);
+
+                // Copy the file from the temp location back to the original file location.
+                File.Copy(etlWriter.ZipArchivePath, destPath, overwrite: true);
+                LogFile.WriteLine("Final archive copied to " + destPath);
+            }
+
+            if (parsedArgs.ShouldZip && !parsedArgs.ImageIDsOnly)
             {
                 // The rest of this is an optimization.   If we have ETL or ETLX
                 // files for the file we just ZIPPed then set it up so that if
@@ -1497,7 +1575,7 @@ namespace PerfView
             LogFile.WriteLine("[Unpacked ETL file {0}", parsedArgs.DataFile);
         }
 
-        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false)
+        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false, bool unpackInSeparateDirectory = false)
         {
             if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
             {
@@ -1518,6 +1596,27 @@ namespace PerfView
                         log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
                         inputFileName = unzipedEtlFile;
                         return;
+                    }
+                }
+                else if (unpackInSeparateDirectory)
+                {
+                    // Compute the separate directory name.
+                    unzipedEtlFile = CacheFiles.FindFile(inputFileName);
+                    
+                    // Delete the directory if it exists.
+                    if (Directory.Exists(unzipedEtlFile))
+                    {
+                        Directory.Delete(unzipedEtlFile, true);
+                    }
+
+                    // Create the new directory.
+                    Directory.CreateDirectory(unzipedEtlFile);
+
+                    // Add the ETL file name to the destination path.
+                    if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string fileName = Path.GetFileName(inputFileName.Substring(0, inputFileName.Length - 4));
+                        unzipedEtlFile = Path.Combine(unzipedEtlFile, fileName);
                     }
                 }
                 else
@@ -1543,6 +1642,20 @@ namespace PerfView
                 if (wprConventions)
                 {
                     etlReader.SymbolDirectory = Path.ChangeExtension(inputFileName, ".ngenpdb");
+                }
+                else if(unpackInSeparateDirectory)
+                {
+                    // Get the target directory name for the ETL file.
+                    string destDirectory = Path.GetDirectoryName(unzipedEtlFile);
+
+                    // Append a new symbols directory.
+                    destDirectory = Path.Combine(destDirectory, "symbols");
+
+                    // Create the directory.
+                    Directory.CreateDirectory(destDirectory);
+
+                    // Set the destination symbols directory.
+                    etlReader.SymbolDirectory = destDirectory;
                 }
                 else
                 {
@@ -2783,6 +2896,16 @@ namespace PerfView
                 cmdLineArgs += " /StopCommand:" + Command.Quote(parsedArgs.StopCommand);
             }
 
+            if(parsedArgs.EnableEventsInContainers)
+            {
+                cmdLineArgs += " /EnableEventsInContainers";
+            }
+
+            if(parsedArgs.EnableSourceContainerTracking)
+            {
+                cmdLineArgs += " /EnableSourceContainerTracking";
+            }
+
             if (parsedArgs.ClrEventLevel != Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose)
             {
                 cmdLineArgs += " /ClrEventLevel:" + parsedArgs.ClrEventLevel.ToString();
@@ -2811,6 +2934,11 @@ namespace PerfView
             if (parsedArgs.ShowUnknownAddresses)
             {
                 cmdLineArgs += " /ShowUnknownAddresses";
+            }
+
+            if (parsedArgs.ShowOptimizationTiers)
+            {
+                cmdLineArgs += " /ShowOptimizationTiers";
             }
 
             if (parsedArgs.ContinueOnError)
@@ -2986,6 +3114,16 @@ namespace PerfView
             if (parsedArgs.CCWRefCount)
             {
                 cmdLineArgs += " /CCWRefCount";
+            }
+
+            if (parsedArgs.RuntimeLoading)
+            {
+                cmdLineArgs += " /RuntimeLoading";
+            }
+
+            if(parsedArgs.ImageIDsOnly)
+            {
+                cmdLineArgs += " /ImageIDsOnly";
             }
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
@@ -3279,6 +3417,23 @@ namespace PerfView
 
                             LogFile.WriteLine("**** /FocusProcess specified LIMITING RUNDOWN to process with name {0}", parsedArgs.FocusProcess);
                             options.ProcessNameFilter = new List<string>() { parsedArgs.FocusProcess };
+                        }
+                    }
+
+                    if(parsedArgs.EnableEventsInContainers || parsedArgs.EnableSourceContainerTracking)
+                    {
+                        if(options == null)
+                        {
+                            options = new TraceEventProviderOptions();
+                        }
+
+                        if(parsedArgs.EnableEventsInContainers)
+                        {
+                            options.EnableInContainers = true;
+                        }
+                        if(parsedArgs.EnableSourceContainerTracking)
+                        {
+                            options.EnableSourceContainerTracking = true;
                         }
                     }
 

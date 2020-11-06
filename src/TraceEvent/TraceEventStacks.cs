@@ -72,6 +72,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// to see the actual address as a hexadecimal number.  Setting this will do that.  
         /// </summary>
         public bool ShowUnknownAddresses { get; set; }
+
+        /// <summary>
+        /// Displays the optimization tier of each code version executed for the method.
+        /// </summary>
+        public bool ShowOptimizationTiers { get; set; }
+
         /// <summary>
         /// Looks up symbols for all modules that have an inclusive count >= minCount. 
         /// stackSource, if given, can be used to be the filter.  If null, 'this' is used.
@@ -348,6 +354,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         methodName = "0x" + m_log.CallStacks.CodeAddresses.Address(codeAddressIndex).ToString("x");
                     }
                 }
+
+                if (ShowOptimizationTiers)
+                {
+                    methodName =
+                        TraceMethod.PrefixOptimizationTier(
+                            methodName,
+                            m_log.CodeAddresses.OptimizationTier(codeAddressIndex));
+                }
+
                 moduleFileIdx = m_log.CodeAddresses.ModuleFileIndex(codeAddressIndex);
             }
             else

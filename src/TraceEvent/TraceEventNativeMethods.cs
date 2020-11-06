@@ -394,6 +394,10 @@ namespace Microsoft.Diagnostics.Tracing
         internal const ushort EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL = 0x000B;
         internal const ushort EVENT_HEADER_EXT_TYPE_PROV_TRAITS = 0x000C;
         internal const ushort EVENT_HEADER_EXT_TYPE_PROCESS_START_KEY = 0x000D;
+        internal const ushort EVENT_HEADER_EXT_TYPE_CONTROL_GUID = 0x000E;
+        internal const ushort EVENT_HEADER_EXT_TYPE_QPC_DELTA = 0x000F;
+        internal const ushort EVENT_HEADER_EXT_TYPE_CONTAINER_ID = 0x0010;
+        internal const ushort EVENT_HEADER_EXT_TYPE_MAX = 0x0011;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct EVENT_HEADER_EXTENDED_DATA_ITEM
@@ -542,6 +546,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal const uint EVENT_ENABLE_PROPERTY_PROCESS_START_KEY = 0x00000080;
         internal const uint EVENT_ENABLE_PROPERTY_EVENT_KEY = 0x00000100;
         internal const uint EVENT_ENABLE_PROPERTY_EXCLUDE_INPRIVATE = 0x00000200;
+        internal const uint EVENT_ENABLE_PROPERTY_ENABLE_SILOS = 0x00000400;
+        internal const uint EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING = 0x00000800;
 
         internal const uint EVENT_CONTROL_CODE_DISABLE_PROVIDER = 0;
         internal const uint EVENT_CONTROL_CODE_ENABLE_PROVIDER = 1;

@@ -3,6 +3,7 @@ using global::DiagnosticsHub.Packaging.Interop;
 using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -14,7 +15,10 @@ using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
 using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareAMFilter;
+using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareEngine;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.DiagnosticsHub.Packaging.InteropEx;
 using PerfView.GuiUtilities;
@@ -722,7 +726,7 @@ namespace PerfView
 
         protected internal virtual void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow) { }
         /// <summary>
-        /// Allows you to do a firt action after everything is done.  
+        /// Allows you to do a first action after everything is done.  
         /// </summary>
         protected internal virtual void FirstAction(StackWindow stackWindow) { }
         protected internal virtual StackSource OpenStackSourceImpl(
@@ -733,7 +737,6 @@ namespace PerfView
         /// <summary>
         /// Simplified form, you should implement one overload or the other.  
         /// </summary>
-        /// <returns></returns>
         protected internal virtual StackSource OpenStackSourceImpl(TextWriter log) { return null; }
         protected internal virtual EventSource OpenEventSourceImpl(TextWriter log) { return null; }
 
@@ -893,7 +896,7 @@ namespace PerfView
             if (caller == StackSourceCallStackIndex.Invalid)
             {
                 string topCallStackStr = stackSource.GetFrameName(stackSource.GetFrameIndex(callStack), true);
-                
+
                 if (GetProcessForStackSourceFromTopCallStackFrame(topCallStackStr, out ret))
                 {
                     processes.Add(ret);
@@ -1058,84 +1061,20 @@ namespace PerfView
             return DoCommand(command, worker);
         }
 
+        protected virtual string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
+        {
+            return DoCommand(commandUri.LocalPath, worker, out continuation);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter)
         {
             if (Viewer == null)
             {
-                var etlDataFile = DataFile as ETLPerfViewData;
-                TraceLog trace = null;
-                if (etlDataFile != null)
-                {
-                    trace = etlDataFile.GetTraceLog(worker.LogWriter);
-                }
-                else
-                {
-                    var linuxDataFile = DataFile as LinuxPerfViewData;
-                    if (linuxDataFile != null)
-                    {
-                        trace = linuxDataFile.GetTraceLog(worker.LogWriter);
-                    }
-                    else
-                    {
-                        var eventPipeDataFile = DataFile as EventPipePerfViewData;
-                        if (eventPipeDataFile != null)
-                        {
-                            trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
-                        }
-                    }
-                }
+                TraceLog trace = GetTrace(worker);
 
                 worker.StartWork("Opening " + Name, delegate ()
                 {
-                    var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
-                    using (var writer = File.CreateText(reportFileName))
-                    {
-                        writer.WriteLine("<html>");
-                        writer.WriteLine("<head>");
-                        writer.WriteLine("<title>{0}</title>", Title);
-                        writer.WriteLine("<meta charset=\"UTF-8\"/>");
-                        writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
-
-                        // Add basic styling to the generated HTML
-                        writer.WriteLine(@"
-<style>
-body {
-    font-family: Segoe UI Light, Helvetica, sans-serif;
-}
-
-tr:hover {
-    background-color: #eeeeee;
-}
-
-th {
-    background-color: #eeeeee;
-    font-family: Helvetica;
-    padding: 4px;
-    font-size: small;
-    font-weight: normal;
-}
-
-td {
-    font-family: Consolas, monospace;
-    font-size: small;
-    padding: 3px;
-    padding-bottom: 5px;
-}
-
-table {
-    border-collapse: collapse;
-}
-</style>
-");
-
-                        writer.WriteLine("</head>");
-                        writer.WriteLine("<body>");
-                        WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
-                        writer.WriteLine("</body>");
-                        writer.WriteLine("</html>");
-
-
-                    }
+                    string reportFileName = GenerateReportFile(worker, trace);
 
                     worker.EndWork(delegate ()
                     {
@@ -1153,7 +1092,7 @@ table {
                                 Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                                 {
                                     Action continuation;
-                                    var message = DoCommand(e.Uri.LocalPath, Viewer.StatusBar, out continuation);
+                                    var message = DoCommand(e.Uri, Viewer.StatusBar, out continuation);
                                     Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
@@ -1184,8 +1123,110 @@ table {
             }
         }
 
+        /// <summary>
+        /// Generates an HTML report and opens it using the machine's default handler .html file paths.
+        /// </summary>
+        /// <param name="worker">The StatusBar that should be updated with progress.</param>
+        public void OpenInExternalBrowser(StatusBar worker)
+        {
+            TraceLog trace = GetTrace(worker);
+
+            worker.StartWork("Opening in external browser " + Name, delegate ()
+            {
+                string reportFileName = GenerateReportFile(worker, trace);
+
+                worker.EndWork(delegate ()
+                {
+                    Process.Start(reportFileName);
+                });
+            });
+        }
+
         public override void Close() { }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["HtmlReportBitmapImage"] as ImageSource; } }
+
+        private TraceLog GetTrace(StatusBar worker)
+        {
+            var etlDataFile = DataFile as ETLPerfViewData;
+            TraceLog trace = null;
+            if (etlDataFile != null)
+            {
+                trace = etlDataFile.GetTraceLog(worker.LogWriter);
+            }
+            else
+            {
+                var linuxDataFile = DataFile as LinuxPerfViewData;
+                if (linuxDataFile != null)
+                {
+                    trace = linuxDataFile.GetTraceLog(worker.LogWriter);
+                }
+                else
+                {
+                    var eventPipeDataFile = DataFile as EventPipePerfViewData;
+                    if (eventPipeDataFile != null)
+                    {
+                        trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
+                    }
+                }
+            }
+
+            return trace;
+        }
+
+        private string GenerateReportFile(StatusBar worker, TraceLog trace)
+        {
+            var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
+            using (var writer = File.CreateText(reportFileName))
+            {
+                writer.WriteLine("<html>");
+                writer.WriteLine("<head>");
+                writer.WriteLine("<title>{0}</title>", Title);
+                writer.WriteLine("<meta charset=\"UTF-8\"/>");
+                writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+
+                // Add basic styling to the generated HTML
+                writer.WriteLine(@"
+<style>
+body {
+    font-family: Segoe UI Light, Helvetica, sans-serif;
+}
+
+tr:hover {
+    background-color: #eeeeee;
+}
+
+th {
+    background-color: #eeeeee;
+    font-family: Helvetica;
+    padding: 4px;
+    font-size: small;
+    font-weight: normal;
+}
+
+td {
+    font-family: Consolas, monospace;
+    font-size: small;
+    padding: 3px;
+    padding-bottom: 5px;
+}
+
+table {
+    border-collapse: collapse;
+}
+</style>
+");
+
+                writer.WriteLine("</head>");
+                writer.WriteLine("<body>");
+                WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
+                writer.WriteLine("</body>");
+                writer.WriteLine("</html>");
+
+
+            }
+
+            return reportFileName;
+        }
     }
 
     public class PerfViewTraceInfo : PerfViewHtmlReport
@@ -1480,6 +1521,17 @@ table {
         /// </summary>
         private List<TraceProcess> m_processes;
         #endregion
+    }
+
+    public class AutomatedAnalysisReport : PerfViewHtmlReport
+    {
+        public AutomatedAnalysisReport(PerfViewFile dataFile) : base(dataFile, "Automatic CPU Analysis") { }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        {
+            AutomatedAnalysisManager manager = new AutomatedAnalysisManager(dataFile, log, App.GetSymbolReader(dataFile.FilePath));
+            manager.GenerateReport(writer);
+        }
     }
 
     public class PerfViewIisStats : PerfViewHtmlReport
@@ -2668,7 +2720,7 @@ table {
                 }
             };
 
-            dispatcher.Clr.ContentionStart += delegate (ContentionTraceData data)
+            dispatcher.Clr.ContentionStart += delegate (ContentionStartTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
@@ -2708,7 +2760,7 @@ table {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
                 {
-                    var totalSize = data.GenerationSize0 + data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3;
+                    var totalSize = data.GenerationSize0 + data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3 + data.GenerationSize4;
                     byTimeStats[idx].GCHeapSizeMB = Math.Max(byTimeStats[idx].GCHeapSizeMB, totalSize / 1000000.0F);
                 }
             };
@@ -3311,7 +3363,7 @@ table {
             writer.WriteLine("<UL>");
             writer.WriteLine("<LI> <A HREF=\"command:excel\">View Event Statistics in Excel</A></LI>");
             writer.WriteLine("<LI>Total Event Count = {0:n0}</LI>", dataFile.EventCount);
-            writer.WriteLine("<LI>Total Lost Events = {0}</LI>", dataFile.EventsLost);
+            writer.WriteLine("<LI>Total Lost Events = {0:n0}</LI>", dataFile.EventsLost);
             writer.WriteLine("</UL>");
 
             writer.WriteLine("<Table Border=\"1\">");
@@ -3482,6 +3534,82 @@ table {
         }
 
         private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
+    }
+
+    public class PerfViewRuntimeLoaderStats : PerfViewHtmlReport
+    {
+        public PerfViewRuntimeLoaderStats(PerfViewFile dataFile) : base(dataFile, "Runtime Loader") { }
+        protected override string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
+        {
+            continuation = null;
+
+            string command = commandUri.LocalPath;
+            string textStr = "txt/";
+            string csvStr = "csv/";
+            bool text = command.StartsWith(textStr);
+            bool csv = command.StartsWith(csvStr);
+
+            if (text || csv)
+            {
+                var rest = command.Substring(textStr.Length);
+
+
+                bool tree = true;
+                List<string> filters = null;
+                if (!String.IsNullOrEmpty(commandUri.Query))
+                {
+                    filters = new List<string>();
+                    tree = commandUri.Query.Contains("TreeView");
+                    if (commandUri.Query.Contains("JIT"))
+                        filters.Add("JIT");
+                    if (commandUri.Query.Contains("R2R_Found"))
+                        filters.Add("R2R_Found");
+                    if (commandUri.Query.Contains("R2R_Failed"))
+                        filters.Add("R2R_Failed");
+                    if (commandUri.Query.Contains("TypeLoad"))
+                        filters.Add("TypeLoad");
+                    if (commandUri.Query.Contains("AssemblyLoad"))
+                        filters.Add("AssemblyLoad");
+                }
+                string identifier = $"{(tree?"Tree":"Flat")}_";
+                if (filters != null)
+                {
+                    foreach (var filter in filters)
+                    {
+                        identifier = identifier + "_" + filter;
+                    }
+                }
+
+                var startMSec = double.Parse(rest.Substring(rest.IndexOf(',') + 1));
+                var processId = int.Parse(rest.Substring(0, rest.IndexOf(',')));
+                var processData = m_runtimeData.GetProcessDataFromProcessIDAndTimestamp(processId, startMSec);
+
+                var txtFile = CacheFiles.FindFile(FilePath, ".runtimeLoaderstats." + processId.ToString() + "_" + ((long)startMSec).ToString() + "_" + identifier + (csv ? ".csv" : ".txt"));
+                if (!File.Exists(txtFile) || File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                    File.GetLastWriteTimeUtc(txtFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
+                {
+                    Stats.RuntimeLoaderStats.ToTxt(txtFile, processData, filters.ToArray(), tree);
+                }
+                Command.Run(Command.Quote(txtFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                return "Opening Txt " + txtFile;
+            }
+            return "Unknown command " + command;
+        }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        {
+            using (var source = dataFile.Events.GetSource())
+            {
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                CLRRuntimeActivityComputer runtimeLoaderComputer = new CLRRuntimeActivityComputer(source);
+                source.Process();
+                m_runtimeData = runtimeLoaderComputer.RuntimeLoaderData;
+                Stats.ClrStats.ToHtml(writer, Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source).ToList(), fileName, "Runtime Loader", Stats.ClrStats.ReportType.RuntimeLoader, true, runtimeOpsStats : m_runtimeData);
+            }
+        }
+
+        private RuntimeLoaderStatsData m_runtimeData;
     }
 
     public class PerfViewJitStats : PerfViewHtmlReport
@@ -4177,15 +4305,18 @@ table {
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
             var eventLog = GetTraceLog(log);
-            if (streamName == "CPU")
+            bool showOptimizationTiers =
+                App.CommandLineArgs.ShowOptimizationTiers || streamName.Contains("(with Optimization Tiers)");
+            if (streamName.StartsWith("CPU"))
             {
-                return eventLog.CPUStacks(null, App.CommandLineArgs.ShowUnknownAddresses, predicate);
+                return eventLog.CPUStacks(null, App.CommandLineArgs, showOptimizationTiers, predicate);
             }
 
             // var stackSource = new InternTraceEventStackSource(eventLog);
             var stackSource = new MutableTraceEventStackSource(eventLog);
 
             stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+            stackSource.ShowOptimizationTiers = showOptimizationTiers;
 
             TraceEvents events = eventLog.Events;
             if (!streamName.Contains("TaskTree") && !streamName.Contains("Tasks)"))
@@ -5049,6 +5180,29 @@ table {
                 eventSource.Kernel.AddCallbackForEvents<ObjectDuplicateHandleTraceData>(data => onHandleEvent(data.ObjectTypeName, data.Object, data.TargetHandle, data.TargetProcessID, data));
                 eventSource.Process();
             }
+            else if (streamName.StartsWith("Processor"))
+            {
+                eventSource.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
+                {
+                    StackSourceCallStackIndex stackIndex;
+                    var callStackIdx = data.CallStackIndex();
+                    if (callStackIdx == CallStackIndex.Invalid)
+                    {
+                        return;
+                    }
+
+                    stackIndex = stackSource.GetCallStack(callStackIdx, data);
+
+                    var processorPriority = "Processor (" + data.ProcessorNumber + ") Priority (" + data.Priority + ")";
+                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(processorPriority), stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = 1;
+                    stackSource.AddSample(sample);
+                };
+                eventSource.Process();
+            }
             else if (streamName.StartsWith("Any"))
             {
                 ActivityComputer activityComputer = null;
@@ -5785,7 +5939,7 @@ table {
                     sample.Metric = data.AllocSize;
                     sample.StackIndex = stackSource.GetCallStack(callStackIndex, data);
 
-                    // Add the 'Alloc < XXX' psuedo node. 
+                    // Add the 'Alloc < XXX' pseudo node. 
                     var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
                     sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
 
@@ -5972,6 +6126,13 @@ table {
                     Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.SetMutableTraceEventStackSource(proc, stackSource);
                 });
                 eventSource.Process();
+                return stackSource;
+            }
+            else if(streamName == "Anti-Malware Real-Time Scan")
+            {
+                RealtimeAntimalwareComputer computer = new RealtimeAntimalwareComputer(eventSource, stackSource);
+                computer.Execute();
+
                 return stackSource;
             }
             else
@@ -6575,7 +6736,7 @@ table {
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
-            ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
+            ConfigureAsEtwStackWindow(stackWindow, stackSourceName.StartsWith("CPU"));
 
             if (stackSourceName == "Processes / Files / Registry")
             {
@@ -6608,7 +6769,7 @@ table {
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 
-            if (stackSourceName == "CPU" || stackSourceName.Contains("Thread Time"))
+            if (stackSourceName.StartsWith("CPU") || stackSourceName.Contains("Thread Time"))
             {
                 if (m_traceLog != null)
                 {
@@ -6620,6 +6781,12 @@ table {
                 {
                     stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
                 }
+            }
+
+            if (stackSourceName.StartsWith("Processor"))
+            {
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Priority ($2)");
+                stackWindow.GroupRegExTextBox.Items.Insert(0, "Processor ({%}) Priority ({%})->Processor ($1)");
             }
 
             if (stackSourceName == "Net OS Heap Alloc" || stackSourceName == "Image Load" || stackSourceName == "Disk I/O" ||
@@ -6701,7 +6868,7 @@ table {
             {
                 if (App.ConfigData["WarnedAboutOsHeapAllocTypes"] == null)
                 {
-                    MessageBox.Show(stackWindow, 
+                    MessageBox.Show(stackWindow,
                         "Warning: Allocation type resolution only happens on window launch.\r\n" +
                         "Thus if you manually lookup symbols in this view you will get method\r\n" +
                         "names of allocations sites, but to get the type name associated the \r\n" +
@@ -6803,6 +6970,7 @@ table {
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
             var obsolete = new PerfViewTreeGroup("Old Group");
+            var experimental = new PerfViewTreeGroup("Experimental Group");
             m_Children = new List<PerfViewTreeItem>();
 
             bool hasCPUStacks = false;
@@ -6833,6 +7001,10 @@ table {
             bool hasObjectUpdate = false;
             bool hasGCEvents = false;
             bool hasProjectNExecutionTracingEvents = false;
+            bool hasDefenderEvents = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
+            bool hasJIT = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -6886,6 +7058,24 @@ table {
                 if (counts.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                 {
                     hasTpl = true;
+                }
+
+                if (counts.ProviderGuid == MicrosoftAntimalwareEngineTraceEventParser.ProviderGuid)
+                {
+                    hasDefenderEvents = true;
+                }
+
+                if (name.StartsWith("Method/JittingStarted"))
+                {
+                    hasJIT = true;
+                }
+                if (name.StartsWith("TypeLoad/Start"))
+                {
+                    hasTypeLoad = true;
+                }
+                if (name.StartsWith("Loader/AssemblyLoad"))
+                {
+                    hasAssemblyLoad = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -6991,6 +7181,14 @@ table {
             if (hasCPUStacks)
             {
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
+                experimental.Children.Add(new AutomatedAnalysisReport(this));
+                if (!App.CommandLineArgs.ShowOptimizationTiers &&
+                    tracelog.Events.Any(
+                        e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
+                {
+                    advanced.Children.Add(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
+                }
+                advanced.Children.Add(new PerfViewStackSource(this, "Processor"));
             }
 
             if (hasCSwitchStacks)
@@ -7167,6 +7365,11 @@ table {
                 advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
 
+            if(hasDefenderEvents)
+            {
+                advanced.Children.Add(new PerfViewStackSource(this, "Anti-Malware Real-Time Scan"));
+            }
+
             memory.Children.Add(new PerfViewGCStats(this));
 
             // TODO currently this is experimental enough that we don't show it publicly.  
@@ -7181,6 +7384,11 @@ table {
             }
 
             advanced.Children.Add(new PerfViewJitStats(this));
+
+            if (hasJIT || hasAssemblyLoad || hasTypeLoad)
+            {
+                advanced.Children.Add(new PerfViewRuntimeLoaderStats(this));
+            }
 
             advanced.Children.Add(new PerfViewEventStats(this));
 
@@ -7199,6 +7407,11 @@ table {
             if (0 < obsolete.Children.Count)
             {
                 m_Children.Add(obsolete);
+            }
+
+            if (AppLog.InternalUser && 0 < experimental.Children.Count)
+            {
+                m_Children.Add(experimental);
             }
 
             return null;
@@ -8254,30 +8467,15 @@ table {
         private string[] PerfScriptStreams = new string[]
         {
             "CPU",
-            "Thread Time (experimental)"
+            "CPU (with Optimization Tiers)",
+            "Thread Time"
         };
 
-        public override string FormatName { get { return "LTTng"; } }
+        public override string FormatName { get { return "Perf"; } }
 
-        public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".trace.zip", "perf.data.txt" }; } }
 
         public override bool SupportsProcesses => true;
-
-        internal override string GetProcessIncPat(IProcess process) => process.Name;
-
-        internal override string FindExeName(string incPat) => string.IsNullOrEmpty(incPat) ? incPat : incPat.Split('|').FirstOrDefault();
-
-        internal override bool GetProcessForStackSourceFromTopCallStackFrame(string topCallStackStr, out IProcessForStackSource result)
-        {
-            if (!string.IsNullOrEmpty(topCallStackStr))
-            {
-                // the top call stack is always process name, the process ID is missing as of today (a perf_events limitation)
-                result = new IProcessForStackSource(topCallStackStr);
-                return true;
-            }
-            result = null;
-            return false;
-        }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
@@ -8291,7 +8489,7 @@ table {
                 string xmlPath;
                 bool doThreadTime = false;
 
-                if (streamName == "Thread Time (experimental)")
+                if (streamName == "Thread Time")
                 {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.threadtime.xml.zip");
                     doThreadTime = true;
@@ -8301,13 +8499,17 @@ table {
                     xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.cpu.xml.zip");
                 }
 
+#if !DEBUG
                 if (!CacheFiles.UpToDate(xmlPath, FilePath))
+#endif
                 {
                     XmlStackSourceWriter.WriteStackViewAsZippedXml(
-                        new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
+                        new LinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
-                return new XmlStackSource(xmlPath);
+                bool showOptimizationTiers =
+                    App.CommandLineArgs.ShowOptimizationTiers || streamName.Contains("(with Optimization Tiers)");
+                return new XmlStackSource(xmlPath, null, showOptimizationTiers);
             }
 
             return null;
@@ -8320,6 +8522,8 @@ table {
 
             bool hasGC = false;
             bool hasJIT = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8332,18 +8536,33 @@ table {
                     {
                         hasJIT = true;
                     }
+                    else if (eventStats.EventName.StartsWith("TypeLoad/Start"))
+                    {
+                        hasTypeLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
+                    {
+                        hasAssemblyLoad = true;
+                    }
                 }
             }
 
             m_Children = new List<PerfViewTreeItem>();
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
+            var experimental = new PerfViewTreeGroup("Experimental Group");
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
-            if (AppLog.InternalUser)
+
+            if (!App.CommandLineArgs.ShowOptimizationTiers &&
+                m_traceLog != null &&
+                m_traceLog.Events.Any(
+                    e => e is MethodLoadUnloadTraceDataBase td && td.OptimizationTier != OptimizationTier.Unknown))
             {
-                advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
+                advanced.AddChild(new PerfViewStackSource(this, "CPU (with Optimization Tiers)"));
             }
+
+            experimental.AddChild(new PerfViewStackSource(this, "Thread Time"));
 
             if (m_traceLog != null)
             {
@@ -8359,6 +8578,11 @@ table {
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
+
+                if (hasJIT || hasTypeLoad || hasAssemblyLoad)
+                {
+                    advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
             }
 
             if (memory.Children.Count > 0)
@@ -8369,6 +8593,11 @@ table {
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
+            }
+
+            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            {
+                m_Children.Add(experimental);
             }
 
             return null;
@@ -8505,7 +8734,14 @@ table {
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
             // Open the file.
-            m_traceLog = GetTraceLog(worker.LogWriter);
+            m_traceLog = GetTraceLog(worker.LogWriter, delegate (bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
+            {
+                if (!m_notifiedAboutLostEvents)
+                {
+                    HandleLostEvents(parentWindow, truncated, numberOfLostEvents, eventCountAtTrucation, worker);
+                    m_notifiedAboutLostEvents = true;
+                }
+            });
 
             bool hasGC = false;
             bool hasJIT = false;
@@ -8514,6 +8750,8 @@ table {
             bool hasGCAllocationTicks = false;
             bool hasObjectUpdate = false;
             bool hasMemAllocStacks = false;
+            bool hasTypeLoad = false;
+            bool hasAssemblyLoad = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8546,6 +8784,14 @@ table {
                     if (eventStats.EventName.StartsWith("GC/SampledObjectAllocation"))
                     {
                         hasMemAllocStacks = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("TypeLoad/Start"))
+                    {
+                        hasTypeLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
+                    {
+                        hasAssemblyLoad = true;
                     }
                 }
             }
@@ -8593,6 +8839,11 @@ table {
                 {
                     advanced.AddChild(new PerfViewJitStats(this));
                 }
+
+                if (hasJIT || hasTypeLoad || hasAssemblyLoad)
+                {
+                    advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
             }
 
             if (memory.Children.Count > 0)
@@ -8621,6 +8872,7 @@ table {
                         stackSource.OnlyManagedCodeStacks = true;
 
                         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
                         TraceEvents events = eventLog.Events;
 
@@ -8742,18 +8994,18 @@ table {
                                 {
                                     sample.Metric = objInfo.RepresentativeSize;
                                     sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
-                                sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
-                                stackSource.AddSample(sample);
+                                    stackSource.AddSample(sample);
                                     return true;
                                 };
                                 newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                                 {
                                     sample.Metric = -objInfo.RepresentativeSize;
                                     sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
-                                sample.TimeRelativeMSec = time;
+                                    sample.TimeRelativeMSec = time;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
-                                stackSource.AddSample(sample);
+                                    stackSource.AddSample(sample);
                                 };
 
                                 newHeap.OnGC += delegate (double time, int gen)
@@ -8788,7 +9040,7 @@ table {
                                     {
                                         sample.Metric = objInfo.RepresentativeSize;
                                         sample.Count = (objInfo.RepresentativeSize / objInfo.Size);                                         // We guess a count from the size.  
-                                    sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
+                                        sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);
                                         stackSource.AddSample(sample);
                                     }
@@ -8824,12 +9076,12 @@ table {
                                 var typeName = data.TypeName;
                                 if (string.IsNullOrEmpty(typeName))
                                 {
-                                // Attempt to resolve the type name.
-                                TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                                    // Attempt to resolve the type name.
+                                    TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
                                     if (module != null)
                                     {
-                                    // Resolve the type name.
-                                    typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                                        // Resolve the type name.
+                                        typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
                                     }
                                 }
 
@@ -8888,7 +9140,7 @@ table {
                 stackWindow.ComputeMaxInTopStats = true;
             }
 
-            if(m_extraTopStats != null)
+            if (m_extraTopStats != null)
             {
                 stackWindow.ExtraTopStats += " " + m_extraTopStats;
             }
@@ -8904,7 +9156,7 @@ table {
             base.Close();
         }
 
-        public TraceLog GetTraceLog(TextWriter log)
+        public TraceLog GetTraceLog(TextWriter log, Action<bool, int, int> onLostEvents = null)
         {
             if (m_traceLog != null)
             {
@@ -8934,7 +9186,7 @@ table {
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            //options.OnLostEvents = onLostEvents;
+            options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
 
@@ -8985,7 +9237,7 @@ table {
                     FileUtilities.ForceDelete(etlxFile);
                     if (!File.Exists(etlxFile))
                     {
-                        return GetTraceLog(log);
+                        return GetTraceLog(log, onLostEvents);
                     }
                 }
                 throw;
@@ -9044,8 +9296,38 @@ table {
         public TraceLog TryGetTraceLog() { return m_traceLog; }
 
         #region Private
+
+        private void HandleLostEvents(Window parentWindow, bool truncated, int numberOfLostEvents, int eventCountAtTrucation, StatusBar worker)
+        {
+            string warning;
+            if (!truncated)
+            {
+                warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
+                    "Some analysis might be invalid.";
+            }
+            else
+            {
+                warning = "WARNING: The ETLX file was truncated at " + eventCountAtTrucation + " events.\r\n" +
+                    "This is to keep the ETLX file size under 4GB, however all rundown events are processed.\r\n" +
+                    "Use /SkipMSec:XXX after clearing the cache (File->Clear Temp Files) to see the later parts of the file.\r\n" +
+                    "See log for more details.";
+            }
+
+            MessageBoxResult result = MessageBoxResult.None;
+            parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+            {
+                result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
+                worker.LogWriter.WriteLine(warning);
+                if (result != MessageBoxResult.OK)
+                {
+                    worker.AbortWork();
+                }
+            });
+        }
+
         private TraceLog m_traceLog;
         private bool m_noTraceLogInfo;
+        private bool m_notifiedAboutLostEvents;
         #endregion
     }
 

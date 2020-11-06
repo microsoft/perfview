@@ -15,12 +15,6 @@ namespace TraceEventTests
     [UseCulture("en-US")]
     public sealed class BPerfTest : TestBase
     {
-        private class EventRecord
-        {
-            public int TotalCount;
-            public string FirstSeriazliedSample;
-        }
-
         public BPerfTest(ITestOutputHelper output)
             : base(output)
         {
@@ -29,7 +23,7 @@ namespace TraceEventTests
         public static IEnumerable<object[]> TestBPerfFiles => Directory.EnumerateFiles(TestDataDir, "*.btl").Select(file => new[] { file });
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        protected void PrepareTestData()
+        private void PrepareTestData()
         {
             Assert.True(Directory.Exists(TestDataDir));
             TestDataDir = Path.GetFullPath(TestDataDir);
@@ -65,13 +59,18 @@ namespace TraceEventTests
             var sb = new StringBuilder(1024 * 1024);
             var traceEventDispatcherOptions = new TraceEventDispatcherOptions();
 
+            Guid systemTrace = new Guid("9e814aad-3204-11d2-9a82-006008a86939");
+
             using (var traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(Path.GetFullPath(bperfFileName), traceEventDispatcherOptions: traceEventDispatcherOptions)))
             {
                 var traceSource = traceLog.Events.GetSource();
 
                 traceSource.AllEvents += delegate (TraceEvent data)
                 {
-                    sb.AppendLine(Parse(data));
+                    if (data.ProviderGuid != systemTrace || (int)data.Opcode != 80)
+                    {
+                        sb.AppendLine(Parse(data));
+                    }
                 };
 
                 // Process

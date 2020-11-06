@@ -70,10 +70,10 @@ namespace Stats
                         }
                     }
 
-                    if (runtime.JIT.Stats().CountBackgroundTieredCompilation == 0)
+                    if (!runtime.IsTieredCompilationEnabled)
                     {
                         writer.WriteLine("<LI>Tiered compilation not in use - <A HREF=\"{0}#UnderstandingTieredCompilation\">Guide</A></LI>", usersGuideFile);
-                        writer.WriteLine("<UL><LI>On .Net Core enabling this may improve both startup and steady-state application performance</LI></UL>");
+                        writer.WriteLine("<UL><LI>On .Net Core, enabling this may improve application performance</LI></UL>");
                     }
                     else
                     {
@@ -216,25 +216,63 @@ namespace Stats
                 writer.WriteLine("<p><Font color=\"red\">Warning: Truncating JIT events to " + maxEvents + ".  <A HREF=\"command:excel/{0}\">View in excel</A> to look all of them.</font></p>", stats.ProcessID);
             }
 
+            bool showOptimizationTiers = ShouldShowOptimizationTiers(runtime);
             writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
-            writer.Write("<TR><TH>Start (msec)</TH><TH>JitTime</BR>msec</TH><TH>IL Size</TH><TH>Native Size</TH><TH>Method Name</TH>" +
-                "<TH Title=\"Is Jit compilation occuring in the background for Multicore JIT (MC), in the background for tiered compilation (TC), or in the foreground on first execution of a method (FG).\">Trigger</TH><TH>Module</TH>");
+            writer.Write(
+                "<TR>" +
+                "<TH>Start<BR/>(msec)</TH>" +
+                "<TH>Jit Time<BR/>(msec)</TH>" +
+                "<TH>IL<BR/>Size</TH>" +
+                "<TH>Native<BR/>Size</TH>");
+            if (showOptimizationTiers)
+            {
+                writer.Write("<TH Title=\"The optimization tier at which the method was jitted.\">Optimization<BR/>Tier</TH>");
+            }
+            writer.Write(
+                "<TH>Method Name</TH>" +
+                "<TH Title=\"Is Jit compilation occuring in the background for Multicore JIT (MC), in the background for tiered compilation (TC), or in the foreground on first execution of a method (FG).\">Trigger</TH>" +
+                "<TH>Module</TH>");
             if (backgroundJitEnabled)
             {
-                writer.Write("<TH Title=\"How far ahead of the method usage was relative to the background JIT operation.\">Distance Ahead</TH><TH Title=\"Why the method was not JITTed in the background.\">Background JIT Blocking Reason</TH>");
+                writer.Write(
+                    "<TH Title=\"How far ahead of the method usage was relative to the background JIT operation.\">Distance Ahead</TH>" +
+                    "<TH Title=\"Why the method was not JITTed in the background.\">Background JIT Blocking Reason</TH>");
             }
             writer.WriteLine("</TR>");
             int eventCount = 0;
             foreach (TraceJittedMethod _event in runtime.JIT.Methods)
             {
-                writer.Write("<TR><TD Align=\"Center\">{0:n3}</TD><TD Align=\"Center\">{1:n1}</TD><TD Align=\"Center\">{2:n0}</TD><TD Align=\"Center\">{3:n0}</TD><TD Align=Left>{4}</TD><TD Align=\"Center\">{5}</TD><TD Align=\"Center\">{6}</TD>",
-                    _event.StartTimeMSec, _event.CompileCpuTimeMSec, _event.ILSize, _event.NativeSize, _event.MethodName ?? "&nbsp;", GetShortNameForThreadClassification(_event.CompilationThreadKind),
+                writer.Write(
+                    "<TR>" +
+                    "<TD Align=\"Center\">{0:n3}</TD>" +
+                    "<TD Align=\"Center\">{1:n1}</TD>" +
+                    "<TD Align=\"Center\">{2:n0}</TD>" +
+                    "<TD Align=\"Center\">{3:n0}</TD>",
+                    _event.StartTimeMSec,
+                    _event.CompileCpuTimeMSec,
+                    _event.ILSize,
+                    _event.NativeSize);
+                if (showOptimizationTiers)
+                {
+                    writer.Write(
+                        "<TD Align=\"Center\">{0}</TD>",
+                        _event.OptimizationTier == OptimizationTier.Unknown ? string.Empty : _event.OptimizationTier.ToString());
+                }
+                writer.Write(
+                    "<TD Align=Left>{0}</TD>" +
+                    "<TD Align=\"Center\">{1}</TD>" +
+                    "<TD Align=\"Center\">{2}</TD>",
+                    _event.MethodName ?? "&nbsp;",
+                    GetShortNameForThreadClassification(_event.CompilationThreadKind),
                     _event.ModuleILPath.Length != 0 ? Path.GetFileName(_event.ModuleILPath) : "&lt;UNKNOWN&gt;");
                 if (backgroundJitEnabled)
                 {
-                    writer.Write("<TD Align=\"Center\">{0:n3}</TD><TD Align=\"Left\">{1}</TD>",
-                        _event.DistanceAhead, _event.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground ? "Not blocked" : _event.BlockedReason);
+                    writer.Write(
+                        "<TD Align=\"Center\">{0:n3}</TD>" +
+                        "<TD Align=\"Left\">{1}</TD>",
+                        _event.DistanceAhead,
+                        _event.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground ? "Not blocked" : _event.BlockedReason);
                 }
                 writer.WriteLine("</TR>");
                 eventCount++;
@@ -328,19 +366,54 @@ namespace Stats
             }
         }
 
+        private static bool ShouldShowOptimizationTiers(TraceLoadedDotNetRuntime runtime)
+        {
+            return PerfView.App.CommandLineArgs.ShowOptimizationTiers && runtime.HasAnyKnownOptimizationTier;
+        }
+
         public static void ToCsv(string filePath, TraceLoadedDotNetRuntime runtime)
         {
             var listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
+            bool showOptimizationTiers = ShouldShowOptimizationTiers(runtime);
             using (var writer = File.CreateText(filePath))
             {
-                writer.WriteLine("Start MSec{0}JitTime MSec{0}ThreadID{0}IL Size{0}Native Size{0}MethodName{0}Trigger{0}Module{0}DistanceAhead{0}BlockedReason", listSeparator);
+                writer.Write("Start MSec{0}JitTime MSec{0}ThreadID{0}IL Size{0}Native Size", listSeparator);
+                if (showOptimizationTiers)
+                {
+                    writer.Write("{0}OptimizationTier", listSeparator);
+                }
+                writer.WriteLine("{0}MethodName{0}Trigger{0}Module{0}DistanceAhead{0}BlockedReason", listSeparator);
+
                 for (int i = 0; i < runtime.JIT.Methods.Count; i++)
                 {
                     var _event = runtime.JIT.Methods[i];
                     var csvMethodName = _event.MethodName.Replace(",", " ");    // Insure there are no , in the name 
-                    writer.WriteLine("{1:f3}{0}{2:f3}{0}{3}{0}{4}{0}{5}{0}{6}{0}{7}{0}{8}{0}{9}{0}{10}", listSeparator,
-                        _event.StartTimeMSec, _event.CompileCpuTimeMSec, _event.ThreadID, _event.ILSize,
-                        _event.NativeSize, csvMethodName, GetShortNameForThreadClassification(_event.CompilationThreadKind), _event.ModuleILPath, _event.DistanceAhead, _event.BlockedReason);
+
+                    writer.Write(
+                        "{1:f3}{0}{2:f3}{0}{3}{0}{4}{0}{5}",
+                        listSeparator,
+                        _event.StartTimeMSec,
+                        _event.CompileCpuTimeMSec,
+                        _event.ThreadID,
+                        _event.ILSize,
+                        _event.NativeSize);
+                    if (showOptimizationTiers)
+                    {
+                        writer.Write(
+                            "{0}{1}",
+                            listSeparator,
+                            _event.OptimizationTier == OptimizationTier.Unknown
+                                ? string.Empty
+                                : _event.OptimizationTier.ToString());
+                    }
+                    writer.WriteLine(
+                        "{0}{1}{0}{2}{0}{3}{0}{4}{0}{5}",
+                        listSeparator,
+                        csvMethodName,
+                        GetShortNameForThreadClassification(_event.CompilationThreadKind),
+                        _event.ModuleILPath,
+                        _event.DistanceAhead,
+                        _event.BlockedReason);
                 }
             }
         }
@@ -419,9 +492,10 @@ namespace Stats
 
             writer.WriteLine(">");
             writer.WriteLine("  <JitEvents>");
+            bool showOptimizationTiers = ShouldShowOptimizationTiers(runtime);
             foreach (TraceJittedMethod _event in runtime.JIT.Methods)
             {
-                ToXml(writer, _event);
+                ToXml(writer, _event, showOptimizationTiers);
             }
 
             writer.WriteLine("  </JitEvents>");
@@ -462,17 +536,27 @@ namespace Stats
             writer.WriteLine(" </JitProcess>");
         }
 
-        public static void ToXml(TextWriter writer, TraceJittedMethod info)
+        private static void ToXml(TextWriter writer, TraceJittedMethod info, bool showOptimizationTiers)
         {
             writer.Write("   <JitEvent");
             writer.Write(" StartMSec={0}", StringUtilities.QuotePadLeft(info.StartTimeMSec.ToString("n3"), 10));
             writer.Write(" JitTimeMSec={0}", StringUtilities.QuotePadLeft(info.CompileCpuTimeMSec.ToString("n3"), 8));
             writer.Write(" ILSize={0}", StringUtilities.QuotePadLeft(info.ILSize.ToString(), 10));
             writer.Write(" NativeSize={0}", StringUtilities.QuotePadLeft(info.NativeSize.ToString(), 10));
+            if (showOptimizationTiers)
+            {
+                writer.Write(
+                    " OptimizationTier={0}",
+                    XmlUtilities.XmlQuote(
+                        info.OptimizationTier == OptimizationTier.Unknown ? string.Empty : info.OptimizationTier.ToString()));
+            }
             if (info.MethodName != null)
             {
                 writer.Write(" MethodName="); writer.Write(XmlUtilities.XmlQuote(info.MethodName));
             }
+            writer.Write(
+                " Trigger={0}",
+                XmlUtilities.XmlQuote(GetShortNameForThreadClassification(info.CompilationThreadKind)));
             if (info.ModuleILPath != null)
             {
                 writer.Write(" ModuleILPath="); writer.Write(XmlUtilities.XmlQuote(info.ModuleILPath));

@@ -109,6 +109,8 @@ namespace Triggers
 
             m_task = Task.Factory.StartNew(delegate
             {
+                var desiredDirection = IsGreaterThan ? "above" : "below";
+                var otherDirection = IsGreaterThan ? "below" : "above";
                 while (!m_monitoringDone)
                 {
                     var isTriggered = IsCurrentlyTrue();
@@ -116,8 +118,8 @@ namespace Triggers
                     {
                         if (m_wasUntriggered)
                         {
-                            m_log.WriteLine("[Counter is at " + CurrentValue.ToString("f1") + " which is above the trigger for " + m_count + " sec.  Need " + MinSecForTrigger + " sec to trigger.]");
-                            // Perf counters are noisy, only trigger if we get 3 consecutive counts that trigger.  
+                            m_log.WriteLine($"[Counter is at {CurrentValue:n1} which is {desiredDirection} the threshold for {m_count} sec.  Need {MinSecForTrigger} sec to trigger.]");
+                            // Perf counters are noisy, only trigger if we get MinSecForTrigger consecutive counts that are above/below the threshold.
                             m_count++;
                             if (m_count > MinSecForTrigger)
                             {
@@ -128,8 +130,8 @@ namespace Triggers
                         {
                             if (!m_warnedAboutUntriggered)
                             {
-                                m_log.WriteLine("[WARNING: {0}: Counter is above the trigger level already!]", Status);
-                                m_log.WriteLine("[WARNING: PerfView will not trigger until the counter drops below the trigger level.]");
+                                m_log.WriteLine($"[WARNING: {Status}: Counter is {desiredDirection} the trigger level initially!]");
+                                m_log.WriteLine($"[WARNING: PerfView will not trigger until the counter moves from {otherDirection} the trigger level to {desiredDirection} the level.]");
                                 m_warnedAboutUntriggered = true;
                             }
                             m_count = 0;
@@ -144,7 +146,7 @@ namespace Triggers
                             {
                                 m_count = 0;
                                 m_wasUntriggered = true;
-                                m_log.WriteLine("[{0}: Waiting for trigger of {1}, CurVal {2:n1}]", Status, EffectiveThreshold, CurrentValue);
+                                m_log.WriteLine($"[{Status}: Waiting for trigger of {EffectiveThreshold}, CurVal {CurrentValue:n1}]");
                             }
                         }
                         else
@@ -565,8 +567,12 @@ namespace Triggers
                         }
                         else
                         {
-                            m_processID = WaitingForProcessID;              // This is an illegal process ID 
-                            m_session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process);
+                            m_processID = WaitingForProcessID; // WaitingForProcessID is an illegal process ID
+                            // monitor kernel process events to late bind the process name
+                            if (ProviderGuid != KernelTraceEventParser.ProviderGuid)
+                            {
+                                m_session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process);
+                            }
                             m_log.WriteLine("[Only allowing process with Name {0} to stop the trace.]", ProcessFilter);
                         }
                     }
@@ -653,6 +659,9 @@ namespace Triggers
                             {
                                 if (m_startEvent.Matches(data))
                                 {
+                                    // Track that we got an event of interest. Helps to debug why a trigger may not be firing.
+                                    m_requestCount++;
+
                                     // Check field filters
                                     if (!PassesFieldFilters(data))
                                     {
@@ -806,7 +815,26 @@ namespace Triggers
                         m_log.WriteLine("[Enabling ETW session for monitoring requests.]");
                         m_log.WriteLine("In Trigger session {0} enabling Provider {1} ({2}) Level {3} Keywords 0x{4:x}",
                             sessionName, ProviderName, ProviderGuid, ProviderLevel, ProviderKeywords);
-                        m_session.EnableProvider(ProviderGuid, ProviderLevel, ProviderKeywords);
+
+                        // Windows Kernel Trace has to be enabled via EnableKernelProvider
+                        if (ProviderGuid == KernelTraceEventParser.ProviderGuid)
+                        {
+                            var kernelKeywords = KernelTraceEventParser.Keywords.Default & ~KernelTraceEventParser.Keywords.Profile;
+                            if (ProviderKeywords != ulong.MaxValue)
+                            {
+                                kernelKeywords = (KernelTraceEventParser.Keywords)ProviderKeywords;
+                            }
+                            if (m_processID == WaitingForProcessID) // need to add process events to late bind ProcessFilter
+                            {
+                                kernelKeywords |= KernelTraceEventParser.Keywords.Process;
+                            }
+                            m_session.EnableKernelProvider(kernelKeywords);
+                        }
+                        else
+                        {
+                            m_session.EnableProvider(ProviderGuid, ProviderLevel, ProviderKeywords);
+                        }
+
                         LogVerbose(DateTime.Now, "Starting Provider " + ProviderName + " GUID " + ProviderGuid);
 
                         listening = true;
@@ -823,8 +851,6 @@ namespace Triggers
         /// <summary>
         /// Returns true of 'data' passes any field filters we might have.  
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private unsafe bool PassesFieldFilters(TraceEvent data)
         {
             // Do we have any field filters?
@@ -1096,13 +1122,17 @@ namespace Triggers
                         Value = filterMatch.Groups[3].Value
                     };
 
-                    // Try to convert it to an integer value if possible.  
+                    // Try to convert it to an integer or double value if possible.
                     if (newFilter.Op != "~")
                     {
                         long longValue;
                         if (long.TryParse((string)newFilter.Value, out longValue))
                         {
                             newFilter.Value = longValue;
+                        }
+                        else if (double.TryParse((string)newFilter.Value, out double doubleValue))
+                        {
+                            newFilter.Value = doubleValue;
                         }
                     }
                     if (FieldFilters == null)
@@ -1372,12 +1402,18 @@ namespace Triggers
             else
             {
                 int result = int.MinValue;
-                if (Value is long)
+                if (Value is long || Value is double)
                 {
-                    long longValue = 0;
-                    if (long.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out longValue))
+                    // if it's a number, try to parse a long first, then as a double
+                    if (long.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out long longValue))
                     {
-                        result = -((long)Value).CompareTo(longValue);       // negated because the x and y arguments are swapped.  
+                        var expressionValue = Convert.ToInt64(Value);
+                        result = -expressionValue.CompareTo(longValue);     // negated because the x and y arguments are swapped.  
+                    }
+                    else if (double.TryParse(fieldValue, System.Globalization.NumberStyles.Number, null, out double doubleValue))
+                    {
+                        var expressionValue = Convert.ToDouble(Value);
+                        result = -expressionValue.CompareTo(doubleValue);   // negated because the x and y arguments are swapped.
                     }
                 }
 

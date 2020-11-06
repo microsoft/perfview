@@ -96,8 +96,23 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             CtfStruct eventContext = _streamDefinition.EventContext;
             if (eventContext != null)
             {
-                pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
-                tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+
+                if (_metadata.Environment.Domain == "kernel")
+                {
+                    pid = (CtfInteger)eventContext.GetField("_pid")?.Type;
+                    tid = (CtfInteger)eventContext.GetField("_tid")?.Type;
+                }
+                else if (_metadata.Environment.Domain == "ust")
+                {
+                    pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
+                    tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+                }
+                else
+                {
+                    Debug.Fail("Other domains not supported.");
+                }
+
+
                 processName = (CtfArray)eventContext.GetField("_procname")?.Type;
 
                 // We only handle ascii process names, which seems to be the only thing lttng provides.

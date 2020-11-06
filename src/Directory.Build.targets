@@ -6,12 +6,4 @@
     <None Include="$(AppDesignerFolder)\launchSettings.json" Condition="Exists('$(AppDesignerFolder)\launchSettings.json')" />
   </ItemGroup>
 
-  <!-- This is a patch for the Microsoft.SourceLink.GitHub package.   If you have an old MSBuild 
-       then SourceControlInformationFeatureSupported is not true, but because it sets SourceLink the C# 
-       compiler looks for the *.sourcelink.json and fails.   This patches this until all MSBuilds support
-       source control Information or we fix the sourcelink package -->
-  <PropertyGroup Condition="'$(SourceControlInformationFeatureSupported)' != 'true'">
-    <SourceLink></SourceLink>
-  </PropertyGroup>
-
 </Project>

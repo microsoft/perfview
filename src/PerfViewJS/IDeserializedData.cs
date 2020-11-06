@@ -1,19 +1,33 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// <copyright file="IDeserializedData.cs" company="Microsoft">
+// Copyright (c) Microsoft. All rights reserved.
+// </copyright>
 
 namespace PerfViewJS
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Diagnostics.Tracing.Stacks;
 
     public interface IDeserializedData
     {
-        ValueTask<List<StackEventTypeInfo>> GetStackEventTypesAsync();
+        ValueTask<StackEventTypeInfo[]> GetStackEventTypesAsyncOrderedByName();
 
-        ValueTask<List<ProcessInfo>> GetProcessListAsync();
+        ValueTask<StackEventTypeInfo[]> GetStackEventTypesAsyncOrderedByStackCount();
 
-        ValueTask<ICallTreeData> GetCallTreeAsync(StackViewerModel model, GenericStackSource stackSource = null);
+        ValueTask<ProcessInfo[]> GetProcessChooserAsync();
+
+        ValueTask<DetailedProcessInfo> GetDetailedProcessInfoAsync(int processIndex);
+
+        ValueTask<ICallTreeData> GetCallTreeAsync(StackViewerModel model, StackSource stackSource = null);
 
         ValueTask<List<EventData>> GetEvents(EventViewerModel model);
+
+        ValueTask<ModuleInfo[]> GetModulesAsync();
+
+        ValueTask<TraceInfo> GetTraceInfoAsync();
+
+        ValueTask<string> LookupSymbolAsync(int moduleIndex);
+
+        ValueTask<string> LookupSymbolsAsync(int[] moduleIndices);
     }
 }

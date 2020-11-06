@@ -1468,6 +1468,7 @@ namespace PerfView
             m_sample = new StackSourceSample(m_stackSource);
 
             m_stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+            m_stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
         }
 
         internal StackSource Stacks

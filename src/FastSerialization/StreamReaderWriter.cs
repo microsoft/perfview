@@ -666,7 +666,7 @@ namespace FastSerialization
             // The base class is constrained to only handle reads that are <= size of the cache
             // For larger reads we can take what is available in the cache and satisfy the
             // remainder from the stream
-            if (length > bytes.Length)
+            if (length > (bytes.Length - align))
             {
                 int positionAlignmentOffset = position % align;
                 int alignedLength = (length & ~(align - 1)) - positionAlignmentOffset;
@@ -734,6 +734,7 @@ namespace FastSerialization
         /// <param name="minimum"></param>
         internal /*protected*/  override void Fill(int minimum)
         {
+            Debug.Assert(minimum <= (bytes.Length - align));
             if (endPosition > position)
             {
                 int slideAmount = position & ~(align - 1);             // round down to stay aligned.  

@@ -486,7 +486,7 @@ public class GCHeapDumper
                         {
                             dotNetGCCount++;
                             lastDotNetSurvived = curDotNetSurvived;
-                            curDotNetSurvived = data.TotalPromotedSize0 + data.TotalPromotedSize1 + data.TotalPromotedSize2 + data.TotalPromotedSize3;
+                            curDotNetSurvived = data.TotalPromotedSize0 + data.TotalPromotedSize1 + data.TotalPromotedSize2 + data.TotalPromotedSize3 + data.TotalPromotedSize4;
                             m_log.WriteLine("{0,5:n1}s: .NET GC stats, at {1:n2}s Survived {2}.", sw.Elapsed.TotalSeconds, (data.TimeStamp - startTime).TotalSeconds, curDotNetSurvived);
                         }
                     };
@@ -1461,7 +1461,7 @@ public class GCHeapDumper
             var rootDuration = m_sw.Elapsed.TotalMilliseconds - rootsStartTimeMSec;
             m_log.WriteLine("Scanning UNNAMED GC roots took {0:n1} msec", rootDuration);
         }
-        catch (Exception e)
+        catch (Exception e) when (!(e is OutOfMemoryException))
         {
             m_log.WriteLine("[ERROR while processing roots: {0}", e.Message);
             m_log.WriteLine("Continuing without complete root information");
@@ -2501,7 +2501,7 @@ public class GCHeapDumper
         }
         else
         {
-            ret = GetTypeIndexForName(name, type.Module.FileName, 0);
+            ret = GetTypeIndexForName(name ?? "<Unnamed "+ type.MetadataToken.ToString("x8") + ">", type.Module.FileName, 0);
             m_typeIdxToGraphIdx[idx] = (int)ret + 1;
         }
         return ret;

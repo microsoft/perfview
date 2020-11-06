@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->
@@ -42,8 +42,9 @@
 
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 

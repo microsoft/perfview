@@ -98,7 +98,7 @@ Notice that the method definitions provide all the information needed to generat
 In a more perfect world, humans would only author the declarations of an EventSource class since it is these declarations that specify the programmer's intent. However to make these methods actually log events, the user need to define a 'boiler plate' body for each event that does two things
 
 1. Defines a numeric value associated with the event. This is the first parameter to the `WriteEvent` method call and is used to identify the event in all further processing (the event name is only used to generate the manifest). These event numbers start at 1 (0 is reserved) and by default needs to be the ordinal number of the method in the class. Thus it would be an error to reverse the order of the `MyFirstEvent` and `MySecondEvent` declarations above without also changing the first parameter to `WriteEvent` to match the order in the class. If this restriction bugs you we will see how to avoid it later, but it will mean more typing on your part.
-2. Passes along all the arguments from the method to the `WriteEvent` method. Because the arguments to the event method are used to generate the manifest, and the manifest is supposed to accurately describe the event, it would be an error to more or fewer arguments to `WriteEvent`. Thus the `WriteEvent` method is intended to be used only in this very particular way illustrated above.
+2. Passes along all the arguments from the method to the `WriteEvent` method. Because the arguments to the event method are used to generate the manifest, and the manifest is supposed to accurately describe the event, it would be an error to pass more or fewer arguments to `WriteEvent`. Thus the `WriteEvent` method is intended to be used only in this very particular way illustrated above.
 
 The `Logger` class also has an attribute that defines the name for this provider to be **Microsoft-Demos-MySource**. If this attribute had not been provided the name of the provider would have been the name of the class without any namespace (e.g. **Logger**). If your provider is for more than ad-hoc logging, it is **STRONGLY** encouraged that you define a 'real' name for it that avoids collisions and helps your users understand what information your provider will log. We should follow the 'best practices' which the Windows Operation system group uses by making our name:
 
@@ -113,7 +113,7 @@ Once we have our `Logger` event source defined, we simply call the event methods
 
 ### Component 2: The Event Session (`TraceEventSession`)
 
-To turn on events we need an Event Session, which is defined by the `TraceEventSession` class. Typically this session will be in another process (typically some data-collection service or program but it can even by the process logging the event). Here is code that does that. (Again you can cut and paste this into a console application which has referenced the [TraceEvent Nuget Library](http://www.nuget.org/packages/Microsoft.Diagnostics.Tracing.TraceEvent) to have a complete program)
+To turn on events we need an Event Session, which is defined by the `TraceEventSession` class. Typically this session will be in another process (typically some data-collection service or program but it can even be in the process logging the event). Here is code that does that. (Again you can cut and paste this into a console application which has referenced the [TraceEvent Nuget Library](http://www.nuget.org/packages/Microsoft.Diagnostics.Tracing.TraceEvent) to have a complete program)
 
 ```csharp
 using Microsoft.Diagnostics.Tracing.Session;
@@ -187,7 +187,7 @@ Some useful things to call out about the output:
 
 In this example we simply use the `ToString` method to print an XML representation of the event, however there are APIs for getting at all the data items above (including the payload values) in a convenient programmatic way. This is the real 'value add' of strongly typed logging.
 
-At this point we have constructed an end-to-end example, creating a controller (`TraceEventSession`) that activated a ETW provider (our `Logger` implementation of `EventSource`) and send the data to a file which we then read with a consumer (`ETWTraceEventSource`) to pretty print the resulting events.
+At this point we have constructed an end-to-end example, creating a controller (`TraceEventSession`) that activated an ETW provider (our `Logger` implementation of `EventSource`) and send the data to a file which we then read with a consumer (`ETWTraceEventSource`) to pretty print the resulting events.
 
 ## Event Parsing 'Magic' (`TraceEventParser` and derived types)
 
@@ -394,14 +394,14 @@ Capabilities include:
 
 * The ability to monitor ETW events, sending them either to a file or directly to a programmatic callback in 'real time'.
 * The ability for those real time events to be passed to the [`IObservable<T>`](http://msdn.microsoft.com/en-us/library/dd990377.aspx) interface and thus be used by the [Reactive Extensions](http://msdn.microsoft.com/en-us/data/gg577609.aspx).
-* The ability turn on event providers selectively using ETW 'Keywords' and verbosity 'Levels'. You can also pass additional arguments to your provider which `EventSource` sources can pick up. In that way you can create very sophisticated filtering specification as well as execute simple commands (e.g. force a GC, flush the working set, and etc.).
+* The ability to turn on event providers selectively using ETW 'Keywords' and verbosity 'Levels'. You can also pass additional arguments to your provider which `EventSource` sources can pick up. In that way you can create very sophisticated filtering specification as well as execute simple commands (e.g. force a GC, flush the working set, and etc.).
 * The ability to enumerate the ETW providers on the system as well as in a particular process, and the ability to determine what ETW groups (Keywords) you can turn on.
 * Ability to take ETL files and merge them together into a single file.
 * Ability to read an ETL file or real time session and write an ETL file from it, filtering it or adding new events (Windows 8 only).
 * The ability to capture stack traces when events are being logged.
 * The ability to convert the stacks to symbolic form both for .NET, Jscript, as well as native code.
 * The ability to store events in a new format (ETLX) that allows the events to be accessed efficiently in a random fashion as well as to enumerate the events backwards as well as forwards, and to efficiently represent the stack information.
-* The ability to make generate C# code that implements a strongly typed parsers for any ETW provider with a manifest (**TraceParserGen**).
+* The ability to generate C# code that implements a strongly typed parsers for any ETW provider with a manifest (**TraceParserGen**).
 * The ability to read events written with the [WPP Tracing](http://msdn.microsoft.com/en-us/library/windows/hardware/ff556204.aspx) system.
 * The ability to access 'Activity IDs' that allow you to track causality across asynchronous operations (if all components emits the right events).
 * Access Kernel events (along with stack traces), including:
@@ -457,7 +457,7 @@ The best way to take the next step in learning about the TraceEvent library is t
 
 1. Create a new Console program project.
 1. Right click on the 'References' icon under the new project's XXXX.*Proj file. In solution explorer.
-1. Select 'Managed NuGet Pacakges'.
+1. Select 'Managed NuGet Packages'.
 1. Search for 'TraceEvent' in the dialog that comes up.
 1. Select 'TraceEvent Library Samples'.
 
@@ -802,7 +802,7 @@ Below are the steps in converting logging an event with a stack to a resolved sy
 3. For JIT compiled code, we are mostly done, however for native code, the symbolic name has only been resolved to the DLL level. To go further you need to get the mapping from DLL address to symbolic name. This is what the debugger PDB (program database) files do. For this you need to be able to find these PDB files. There are a number of things that can go wrong.
 
     1. You must set your `_NT_SYMBOL_PATH` environment variable to locations where to search for the PDBS. If you do not you will only know the module and hex address.
-    2. For operating system DLLs, the PDBS live on what is called a symbol server. To find these your `_NT_SYMBOL_PATH` must include the name for these symbol servers (the public Microsoft symbol server is `SRV*http://msdl.microsoft.com/download/symbols`). However to look up a DLL in the symbol server **you need a special GUID associated with the DLL, and a RAW ETL file does NOT INCLUDE this GUID**!. If you try to look up the DLL's PDB on the machine where the DLL exists, `TraceEvent` can fetch the necessary GUID from the DLL itself, but if the ETL file was copied to another machine this will not work and the PDB cannot be fetched. Running the `TraceEventSource.MergeInPlace` operation rewrites the raw ETL file so that it includes the necessary DLL GUIDs and thus is a requirement if you move the data off the collection machine (and you want symbolic information for native code stacks).
+    2. For operating system DLLs, the PDBS live on what is called a symbol server. To find these your `_NT_SYMBOL_PATH` must include the name for these symbol servers (the public Microsoft symbol server is `SRV*https://msdl.microsoft.com/download/symbols`). However to look up a DLL in the symbol server **you need a special GUID associated with the DLL, and a RAW ETL file does NOT INCLUDE this GUID**!. If you try to look up the DLL's PDB on the machine where the DLL exists, `TraceEvent` can fetch the necessary GUID from the DLL itself, but if the ETL file was copied to another machine this will not work and the PDB cannot be fetched. Running the `TraceEventSource.MergeInPlace` operation rewrites the raw ETL file so that it includes the necessary DLL GUIDs and thus is a requirement if you move the data off the collection machine (and you want symbolic information for native code stacks).
     3. For .NET code all the library code is precompiled (NGENed) and so is looked up using a PDB like the native case. However unlike native DLLs, the PDBs for the NGEN images are typically not saved on the Microsoft symbol server. Instead you must generate the PDBs for the NGEN images from the IL images as you need them. Again if you resolve the symbols on the machine where the collection happened, at the time you resolve the symbols `TraceEvent`'s `SymbolReader` class will automatically generate the NGEN image for you and cache it, however if you move the ETL file off the machine, you need to generate the NGEN PDBs as well as merge the ETL file to get the symbolic information for the .NET code in NGEN images. This is what the `SymbolReader.GenerateNGenSymbolsForModule` method can help you do. TODO MORE
 
 So in summary to get good stacks and have them work on any machine for any code you need to:

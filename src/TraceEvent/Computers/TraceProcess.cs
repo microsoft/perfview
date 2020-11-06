@@ -21,11 +21,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void NeedProcesses(this TraceEventDispatcher source)
         {
             TraceProcesses processes = source.Processes();
-            if (processes == null || m_currentSource != source)
+            if (processes == null || m_weakCurrentSource.Target != source)
             {
                 processes = new TraceProcesses(null /* TraceLog */, source);
                 // establish listeners
-                if (m_currentSource != source)
+                if (m_weakCurrentSource.Target != source)
                 {
                     SetupCallbacks(source);
                 }
@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 source.UserData["Computers/Processes"] = processes;
             }
 
-            m_currentSource = source;
+            m_weakCurrentSource.Target = source;
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
@@ -48,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
-            var process = _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
+            var process = _event.traceEventSource.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
             if (process.StartTimeRelativeMsec == -1 || process.StartTimeRelativeMsec > _event.TimeStampRelativeMSec)
             {
                 process.StartTimeRelativeMsec = _event.TimeStampRelativeMSec;
@@ -123,7 +123,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             {
                 // do not use .Process() to retrive the process, since you need to pass in a special flag indicating that 
                 //  this is a process start event
-                var process = data.source.Processes().GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start);
+                var process = data.traceEventSource.Processes().GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start);
 
                 process.ProcessStart(data);
                 // Don't filter them out (not that many, useful for finding command line)
@@ -131,7 +131,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
             kernelParser.ProcessEndGroup += delegate (ProcessTraceData data)
             {
-                data.source.Processes().ProcessStop(data);
+                data.traceEventSource.Processes().ProcessStop(data);
                 // Don't filter them out (not that many, useful for finding command line) unless a lifetime is being applied
             };
             // Thread level events
@@ -169,7 +169,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             });
         }
 
-        private static TraceEventDispatcher m_currentSource; // used to verify non-concurrent usage
+        private static WeakReference m_weakCurrentSource = new WeakReference(null); // used to verify non-concurrent usage
         #endregion
     }
 

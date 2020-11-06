@@ -1,4 +1,5 @@
 ﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -1839,7 +1840,7 @@ namespace PerfViewExtensibility
 // TODO FIX NOW decide where to put these.
 public static class TraceEventStackSourceExtensions
 {
-    public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+    public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, CommandLineArgs commandLineArgs = null, bool showOptimizationTiers = false, Predicate<TraceEvent> predicate = null)
     {
         TraceEvents events;
         if (process == null)
@@ -1852,14 +1853,19 @@ public static class TraceEventStackSourceExtensions
         }
 
         var traceStackSource = new TraceEventStackSource(events);
-        traceStackSource.ShowUnknownAddresses = showUnknownAddresses;
+        if (commandLineArgs != null)
+        {
+            traceStackSource.ShowUnknownAddresses = commandLineArgs.ShowUnknownAddresses;
+            traceStackSource.ShowOptimizationTiers = showOptimizationTiers || commandLineArgs.ShowOptimizationTiers;
+        }
         // We clone the samples so that we don't have to go back to the ETL file from here on.  
         return CopyStackSource.Clone(traceStackSource);
     }
-    public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.ExcludeReadyThread = true;
@@ -1867,21 +1873,24 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+
+    public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.GenerateThreadTimeStacks(stackSource);
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeWithTasksStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeWithTasksStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         // Use MutableTraceEventStackSource to disable activity tracing support
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.UseTasks = true;
         computer.ExcludeReadyThread = true;
@@ -1889,10 +1898,11 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeWithTasksAspNetStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeWithTasksAspNetStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.UseTasks = true;
@@ -1902,10 +1912,11 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeAspNetStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeAspNetStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.ExcludeReadyThread = true;

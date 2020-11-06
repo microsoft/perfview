@@ -32,8 +32,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Create a new ServerRequest Computer.
         /// </summary>
-        public StartStopActivityComputer(TraceLogEventSource source, ActivityComputer taskComputer)
+        public StartStopActivityComputer(TraceLogEventSource source, ActivityComputer taskComputer, bool ignoreApplicationInsightsRequestsWithRelatedActivityId = true)
         {
+            m_ignoreApplicationInsightsRequestsWithRelatedActivityId = ignoreApplicationInsightsRequestsWithRelatedActivityId;
             taskComputer.NoCache = true;            // Can't cache start-stops (at the moment)
             m_source = source;
             m_activeStartStopActivities = new Dictionary<StartStopKey, StartStopActivity>();
@@ -1141,7 +1142,7 @@ namespace Microsoft.Diagnostics.Tracing
                     // If we have a related activity ID, then this start event
                     // is already being tracked by an outer activity (e.g. an
                     // ASP.Net request). Do not process it.
-                    if (!IsTrivialActivityId(data.RelatedActivityID))
+                    if (!IsTrivialActivityId(data.RelatedActivityID) && m_ignoreApplicationInsightsRequestsWithRelatedActivityId)
                     {
                         return;
                     }
@@ -1366,6 +1367,7 @@ namespace Microsoft.Diagnostics.Tracing
         private Dictionary<StartStopKey, StartStopActivity> m_activeStartStopActivities;     // Lookup activities by activityID&ProcessID (we call the start-stop key) at the current time
         private int m_nextIndex;                                                             // Used to create unique indexes for StartStopActivity.Index.  
         private StartStopActivity m_deferredStop;                                            // We defer doing the stop action until the next event.  This is what remembers to do this.  
+        private bool m_ignoreApplicationInsightsRequestsWithRelatedActivityId;               // Until .NET Core 3.0, Application Insights events uses this activity id to de-dupe the rest of the nested activities.
         #endregion
     }
 

@@ -31,6 +31,17 @@
                 </FlowDocument>
             </RichTextBox.Document>
         </RichTextBox>
+        <Grid DockPanel.Dock="Top" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="100*"/>
+            </Grid.ColumnDefinitions>
+            <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="#FFD1D1D1"/>
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only processes that match this filter pattern are displayed.">
+                    <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox">Filter:</Hyperlink>
+            </TextBlock>
+            <TextBox Name="ProcessFilterTextBox" TextChanged="FilterTextChanged" Grid.Column="1" Margin="5,2,2,2" />
+        </Grid>
         <Grid DockPanel.Dock="Bottom" Background="#FFB0B0B0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -47,8 +58,8 @@
                     ToolTip="Investigate all processes"/>
             <Button Margin="5,4" Grid.Column="5" Width="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
         </Grid>
-        <Grid PreviewKeyDown="KeyDownHander">
-            <WPFToolKit:DataGrid Name="Grid" 
+        <Grid PreviewKeyDown="GridKeyDownHander">
+            <WPFToolKit:DataGrid Name="Grid"
               AlternatingRowBackground="#FFF2F1A4"
               AutoGenerateColumns="False" 
               MouseDoubleClick="OKClicked"

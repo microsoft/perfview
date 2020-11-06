@@ -64,13 +64,17 @@
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard1.6'">
+    <DefineConstants>$(DefineConstants);AUTOANALYSIS_EXTENSIBILITY;SYNC_SYMBOLREADER_LOG</DefineConstants>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.2" />
 
   <!-- *** SourceLink Support *** -->
-  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
+  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -102,6 +106,11 @@
     <Compile Remove="Samples/**/*.*" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
+    <Compile Remove="Utilities/FastStream.cs" />
+    <Compile Remove="Stacks/Linux/*.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
       <Link>amd64\KernelTraceControl.dll</Link>
@@ -110,6 +119,21 @@
     </None>
     <None Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
       <Link>amd64\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
+      <Link>amd64\msvcp140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
+      <Link>amd64\vcruntime140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
+      <Link>amd64\vcruntime140_1.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
@@ -128,8 +152,19 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
+      <Link>x86\msvcp140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
+      <Link>x86\vcruntime140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
     <None Include="EventPipe\EventPipeFormat.md" />
     <None Include="EventPipe\EventSerialization.md" />
+    <None Include="EventPipe\NetPerfFormat.md" />
   </ItemGroup>
 
     <!-- *********************************************************** -->
@@ -173,9 +208,10 @@
 
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
-    <DefineConstants Condition="'$(SIGNING_BUILD)'!=''">$(DefineConstants);SIGNING_BUILD</DefineConstants>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
+    <DefineConstants>$(DefineConstants);SIGNING_BUILD</DefineConstants>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 </Project>

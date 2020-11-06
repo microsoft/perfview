@@ -52,7 +52,7 @@ so by visiting the [PerfView GitHub Releases](https://github.com/Microsoft/perfv
 
 
 ## Microsoft Download Site
-The [Microsoft Download Site for PerfView](https://www.microsoft.com/en-us/download/details.aspx?id=28567) has
+The Microsoft Download Site for PerfView has
 been retired as the official download site for PerfView.  It has been replaced by
 [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases) referenced above. 
 

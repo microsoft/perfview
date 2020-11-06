@@ -488,6 +488,7 @@ namespace PerfView
             columnsForSelectedEvents["HasBlockedStack"] = "HasBlockedStack";
             columnsForSelectedEvents["DURATION_MSEC"] = "DURATION_MSEC";
             columnsForSelectedEvents["FormattedMessage"] = "FormattedMessage";
+            columnsForSelectedEvents["ContainerID"] = "ContainerID";
             return columnsForSelectedEvents.Keys;
         }
         public override EventSource Clone()
@@ -635,6 +636,11 @@ namespace PerfView
                     AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
                 }
 
+                if(data.ContainerID != null)
+                {
+                    AddField("ContainerID", data.ContainerID, columnOrder, restString);
+                }
+
                 m_asText = restString.ToString();
             }
 
@@ -645,6 +651,8 @@ namespace PerfView
             public EventIndex Index { get { return m_idx; } }
 
             #region private
+
+            private static readonly Regex specialCharRemover = new Regex(" *[\r\n\t]+ *", RegexOptions.Compiled);
 
             /// <summary>
             /// Adds 'fieldName' with value 'fieldValue' to the output.  It either goes into a column (based on columnOrder) or it goes into
@@ -658,7 +666,7 @@ namespace PerfView
                 }
                 // If the field value has to many newlines in it, the GUI gets confused because the text block is larger than
                 // the vertical size.   WPF may fix this at some point, but in the mean time this is a work around. 
-                fieldValue = Regex.Replace(fieldValue, " *[\r\n\t]+ *", " ");
+                fieldValue = specialCharRemover.Replace(fieldValue, " ");
 
                 var putInRest = true;
                 if (columnOrder != null)

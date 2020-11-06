@@ -374,7 +374,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     /// StackSource.ProductSamples push these.  
     /// 
     /// In general StackSourceSample are NOT immutable but expected to be overwritted frequently.  Thus you need to copy 
-    /// the sample if you want to keep a refernece to it.    
+    /// the sample if you want to keep a reference to it.      
     /// </summary>
     public class StackSourceSample
     {

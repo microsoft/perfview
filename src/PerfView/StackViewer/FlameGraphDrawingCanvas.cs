@@ -14,7 +14,7 @@ namespace PerfView
     {
         private static readonly Typeface Typeface = new Typeface("Consolas");
 
-        private static readonly Brush[] Brushes = GenerateBrushes(new Random(12345));
+        private static readonly Brush[][] Brushes = GenerateBrushes(new Random(12345));
 
         public event EventHandler<string> CurrentFlameBoxChanged;
 
@@ -56,7 +56,7 @@ namespace PerfView
 
                 foreach (var box in boxes)
                 {
-                    var brush = Brushes[index++ % Brushes.Length];
+                    var brush = Brushes[box.Node.InclusiveMetric < 0 ? 1 : 0][index++ % Brushes.Length]; // use second brush set (aqua theme) for negative metrics
 
                     drawingContext.DrawRectangle(
                         brush,
@@ -162,7 +162,7 @@ namespace PerfView
                 return;
             }
 
-            switch(e.Key)
+            switch (e.Key)
             {
                 case Key.Left:
                     MoveZoomingCenterPoint(scaleTransform.CenterX * 0.9, scaleTransform.CenterY);
@@ -237,19 +237,32 @@ namespace PerfView
 
         private void ResetCursor() => Mouse.OverrideCursor = cursor;
 
-        private static Brush[] GenerateBrushes(Random random)
+        private static Brush[][] GenerateBrushes(Random random)
         {
-            var brushes = Enumerable.Range(0, 100)
+            var brushes = new Brush[][]
+            {
+                Enumerable.Range(0, 100)
                     .Select(_ => (Brush)new SolidColorBrush(
                         Color.FromRgb(
                             (byte)(205.0 + 50.0 * random.NextDouble()),
                             (byte)(230.0 * random.NextDouble()),
                             (byte)(55.0 * random.NextDouble()))))
-                    .ToArray();
+                    .ToArray(),
+                Enumerable.Range(0, 100)
+                    .Select(_ => (Brush)new SolidColorBrush(
+                        Color.FromRgb(
+                            (byte)(50 + 60.0 * random.NextDouble()),
+                            (byte)(165 + 55.0 * random.NextDouble()),
+                            (byte)(165.0 + 55.0 * random.NextDouble()))))
+                    .ToArray()
+            };
 
-            foreach (var brush in brushes)
+            foreach (var brushArray in brushes)
             {
-                brush.Freeze(); // this is crucial for performance
+                foreach (var brush in brushArray)
+                {
+                    brush.Freeze(); // this is crucial for performance
+                }
             }
 
             return brushes;

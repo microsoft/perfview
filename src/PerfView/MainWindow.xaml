@@ -17,6 +17,7 @@
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static src:MainWindow.ItemHelpCommand}" Executed="DoItemHelp" CanExecute="CanDoItemHelp"/>
+        <CommandBinding Command="{x:Static src:MainWindow.OpenInBrowserCommand}" Executed="OpenInBrowser" CanExecute="CanOpenInBrowser"/>
         <CommandBinding Command="{x:Static src:MainWindow.RunCommand}" Executed="DoRun"/>
         <CommandBinding Command="{x:Static src:MainWindow.CollectCommand}" Executed="DoCollect"/>
         <CommandBinding Command="{x:Static src:MainWindow.AbortCommand}" Executed="DoAbort"/>
@@ -73,6 +74,7 @@
                     <MenuItem Header="_Collect" Command="{x:Static src:MainWindow.CollectCommand}" ToolTip="Collect data machine wide with explicit start and stop."/>
                     <MenuItem Header="_Abort" Command="{x:Static src:MainWindow.AbortCommand}" ToolTip="Abort any collection in progress."/>
                     <MenuItem Header="_Merge" Command="{x:Static src:MainWindow.MergeCommand}" ToolTip="Prepare files for analysis on another computer."/>
+                    <MenuItem Header="Merge and Zip All" Click="DoMergeAndZipAll" ToolTip="Merge and zip all unmerged traces in the current folder."/>
                 </MenuItem>
                 <MenuItem Header="_Memory">
                     <MenuItem Header="_Take Heap Snapshot" Command="{x:Static src:MainWindow.HeapSnapshotCommand}" ToolTip="Take a snapshot of of the CLR GC Heap."/>
@@ -158,7 +160,7 @@
                     </TextBlock>
                     <TextBox Name="FileFilterTextBox" TextChanged="FilterTextChanged" KeyDown="FilterKeyDown" Grid.Column="1" Margin="5,2,2,2" />
                 </Grid>
-                <TreeView x:Name="TreeView" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView"
+                <TreeView x:Name="TreeView" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView" PreviewMouseRightButtonDown="TreeView_PreviewMouseRightButtonDown"
                           ToolTip="Double Click to open.  Right click contains additional help and additional options."
                           IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" AllowDrop="True" Drop="DoDrop">
                     <TreeView.ItemContainerStyle>
@@ -173,6 +175,7 @@
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Command="{x:Static src:MainWindow.ItemHelpCommand}"/>
+                                        <MenuItem Command="{x:Static src:MainWindow.OpenInBrowserCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.RefreshDirCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.OpenCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.CloseCommand}"/>
