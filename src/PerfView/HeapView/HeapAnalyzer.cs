@@ -932,11 +932,12 @@ namespace PerfView
             }
 
             // Get the process we want
-            if (!m_processLookup.TryGetValue(procID, out m_process))
+            if (!m_processLookup.TryGetValue(procID, out var process))
             {
                 return false;
             }
 
+            m_process = process;
             m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_process);
             return true;
         }
