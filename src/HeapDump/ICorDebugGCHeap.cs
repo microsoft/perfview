@@ -28,13 +28,13 @@ namespace ClrMemory
             m_typeTable = new Dictionary<COR_TYPEID, ICorDebugGCHeapType>();
             m_types = new List<ICorDebugGCHeapType>();
 
-            // Type index 0 is reserverd for the 'Bad Type' 
+            // Type index 0 is reserved for the 'Bad Type' 
             var badType = new ICorDebugGCHeapType(this, "!BAD_TYPE!", "");
             badType.m_size = 4;     // We use the bad type as a way of filling holes in the heap, 
 
             // Setting these fields marks this as the 'live heap' case.  
             // GCHeapSegment is 'smart' and only fetches the information it 
-            // needs from the big blob of data in the segement.   
+            // needs from the big blob of data in the segment.   
             m_process = process;
             m_process5 = process as ICorDebugProcess5;
             if (m_process5 == null)

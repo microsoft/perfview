@@ -3065,7 +3065,7 @@ namespace PerfView
 
                 ret.FocusName = FocusName;
 
-                var columns = new List<string>();
+                var columns = new List<string>(ByNameDataGrid.Grid.Columns.Count);
                 foreach (var column in ByNameDataGrid.Grid.Columns)
                 {
                     var name = ((TextBlock)column.Header).Name;
@@ -3311,7 +3311,7 @@ namespace PerfView
             m_callersView = new CallTreeView(CallersDataGrid, template);
             m_calleesView = new CallTreeView(CalleesDataGrid, template);
 
-            List<PerfDataGrid> perfDataGrids = new List<PerfDataGrid>()
+            List<PerfDataGrid> perfDataGrids = new List<PerfDataGrid>(4)
             {
                 ByNameDataGrid,
                 CallTreeDataGrid,

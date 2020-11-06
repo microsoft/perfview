@@ -844,7 +844,7 @@ namespace PerfView
         }
 
         // This is the global list of all known file types.  
-        private static List<PerfViewFile> Formats = new List<PerfViewFile>()
+        private static List<PerfViewFile> Formats = new List<PerfViewFile>(18)
         {
             new CSVPerfViewData(),
             new ETLPerfViewData(),
@@ -5498,11 +5498,11 @@ table {
                         }
                     }
 
-                ADD_EVENT_FRAME:
+                    ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                ADD_SAMPLE:
+                    ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -6315,9 +6315,8 @@ table {
 
         public override List<IProcess> GetProcesses(TextWriter log)
         {
-            var processes = new List<IProcess>();
-
             var eventLog = GetTraceLog(log);
+            var processes = new List<IProcess>(eventLog.Processes.Count);
             foreach (var process in eventLog.Processes)
             {
                 var iprocess = new IProcessForStackSource(process.Name);
@@ -8918,8 +8917,8 @@ table {
                                     goto ADD_EVENT_FRAME;
                                 }
 
-                            // Tack on event nam
-                            ADD_EVENT_FRAME:
+                                // Tack on event nam
+                                ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
                                 // Add sample
