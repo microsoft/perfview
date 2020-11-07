@@ -436,7 +436,7 @@ namespace PerfView
                         TimeHistogramController controller = histogram.Controller as TimeHistogramController;
 
                         double cum = 0;
-                        double cumMax = float.MinValue;
+                        double cumMax = double.MinValue;
                         int cumMaxIdx = -1;
                         for (int i = 0; i < histogram.Count; i++)
                         {

@@ -81,7 +81,7 @@ namespace Microsoft.Diagnostics.Tracing
                 m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
                 {
                     var sample = m_sample;
-                    sample.Metric = (float)(activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec);
+                    sample.Metric = activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec;
                     sample.TimeRelativeMSec = activity.CreationTimeRelativeMSec;
 
                     // The stack at the Unblock, is the stack at the time the task was created (when blocking started).  
@@ -384,7 +384,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Add a sample with the amount of unknown duration.  
             var sample = new StackSourceSample(m_outputStackSource);
-            sample.Metric = (float)delta;
+            sample.Metric = delta;
             sample.TimeRelativeMSec = unknownStartTimeMSec;
 
             StackSourceCallStackIndex stackIndex = m_startStopActivities.GetStartStopActivityStack(m_outputStackSource, startStopActivity, data.Process());
@@ -515,7 +515,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (LastCPUStackRelativeMSec > 0)
                 {
                     var sample = computer.m_sample;
-                    sample.Metric = (float)(timeRelativeMSec - LastCPUStackRelativeMSec);
+                    sample.Metric = timeRelativeMSec - LastCPUStackRelativeMSec;
                     sample.TimeRelativeMSec = LastCPUStackRelativeMSec;
 
                     var nodeIndex = computer.m_cpuFrameIndex;
@@ -532,7 +532,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (LastBlockStackRelativeMSec > 0)
                 {
                     var sample = computer.m_sample;
-                    sample.Metric = (float)(timeRelativeMSec - LastBlockStackRelativeMSec);
+                    sample.Metric = timeRelativeMSec - LastBlockStackRelativeMSec;
                     sample.TimeRelativeMSec = LastBlockStackRelativeMSec;
 
                     var nodeIndex = computer.m_ExternalFrameIndex;       // BLOCKED_TIME
