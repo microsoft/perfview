@@ -586,6 +586,14 @@ namespace FastSerialization
             writer.Write(value);
         }
         /// <summary>
+        /// Write a <see cref="ushort"/> to a stream.
+        /// </summary>
+        public void Write(ushort value)
+        {
+            Log("<Write Type=\"ushort\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            writer.Write(unchecked((short)value));
+        }
+        /// <summary>
         /// Write an int to a stream
         /// </summary>
         public void Write(int value)
@@ -594,12 +602,28 @@ namespace FastSerialization
             writer.Write(value);
         }
         /// <summary>
+        /// Write a <see cref="uint"/> to a stream
+        /// </summary>
+        public void Write(uint value)
+        {
+            Log("<Write Type=\"uint\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            writer.Write(unchecked((int)value));
+        }
+        /// <summary>
         /// Write a long to a stream
         /// </summary>
         public void Write(long value)
         {
             Log("<Write Type=\"long\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
             writer.Write(value);
+        }
+        /// <summary>
+        /// Write a <see cref="ulong"/> to a stream
+        /// </summary>
+        public void Write(ulong value)
+        {
+            Log("<Write Type=\"ulong\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            writer.Write(unchecked((long)value));
         }
         /// <summary>
         /// Write a Guid to a stream
@@ -1204,6 +1228,19 @@ namespace FastSerialization
 #endif
         }
         /// <summary>
+        /// Read a <see cref="uint"/> from the stream
+        /// </summary>
+        public void Read(out uint ret)
+        {
+#if DEBUG
+            StreamLabel label = reader.Current;
+#endif
+            ret = unchecked((uint)reader.ReadInt32());
+#if DEBUG
+            Log("<ReadInt32 Value=\"" + ret.ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
+#endif
+        }
+        /// <summary>
         /// Read a long from the stream
         /// </summary>
         public void Read(out long ret)
@@ -1212,6 +1249,19 @@ namespace FastSerialization
             StreamLabel label = reader.Current;
 #endif
             ret = reader.ReadInt64();
+#if DEBUG
+            Log("<ReadInt64 Value=\"" + ret.ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
+#endif
+        }
+        /// <summary>
+        /// Read a <see cref="ulong"/> from the stream
+        /// </summary>
+        public void Read(out ulong ret)
+        {
+#if DEBUG
+            StreamLabel label = reader.Current;
+#endif
+            ret = unchecked((ulong)reader.ReadInt64());
 #if DEBUG
             Log("<ReadInt64 Value=\"" + ret.ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
 #endif
@@ -1424,6 +1474,15 @@ namespace FastSerialization
 #endif
             return ret;
         }
+
+        /// <summary>
+        /// Read a <see cref="uint"/> from the stream and return it
+        /// </summary>
+        public uint ReadUInt32()
+        {
+            return unchecked((uint)ReadInt());
+        }
+
         /// <summary>
         /// Read a long from the stream and return it
         /// </summary>
@@ -1438,6 +1497,15 @@ namespace FastSerialization
 #endif
             return ret;
         }
+
+        /// <summary>
+        /// Read a <see cref="ulong"/> from the stream and return it
+        /// </summary>
+        public ulong ReadUInt64()
+        {
+            return unchecked((ulong)ReadInt64());
+        }
+
         /// <summary>
         /// Read a float from the stream and return it
         /// </summary>

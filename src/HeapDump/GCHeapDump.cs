@@ -330,8 +330,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         TotalProcessCommit = deserializer.ReadInt64();
         TotalProcessWorkingSet = deserializer.ReadInt64();
 
-        int count;
-        deserializer.Read(out count);
+        int count = deserializer.ReadInt();
         if (count != 0)
         {
             var a = new double[count];
@@ -586,9 +585,9 @@ public class InteropInfo : IFastSerializable
         {
             serializer.Write((int)m_listRCWInfo[i].node);
             serializer.Write(m_listRCWInfo[i].refCount);
-            serializer.Write((long)m_listRCWInfo[i].addrIUnknown);
-            serializer.Write((long)m_listRCWInfo[i].addrJupiter);
-            serializer.Write((long)m_listRCWInfo[i].addrVTable);
+            serializer.Write(m_listRCWInfo[i].addrIUnknown);
+            serializer.Write(m_listRCWInfo[i].addrJupiter);
+            serializer.Write(m_listRCWInfo[i].addrVTable);
             serializer.Write(m_listRCWInfo[i].firstComInf);
             serializer.Write(m_listRCWInfo[i].countComInf);
         }
@@ -597,8 +596,8 @@ public class InteropInfo : IFastSerializable
         {
             serializer.Write((int)m_listCCWInfo[i].node);
             serializer.Write(m_listCCWInfo[i].refCount);
-            serializer.Write((long)m_listCCWInfo[i].addrIUnknown);
-            serializer.Write((long)m_listCCWInfo[i].addrHandle);
+            serializer.Write(m_listCCWInfo[i].addrIUnknown);
+            serializer.Write(m_listCCWInfo[i].addrHandle);
             serializer.Write(m_listCCWInfo[i].firstComInf);
             serializer.Write(m_listCCWInfo[i].countComInf);
         }
@@ -608,16 +607,16 @@ public class InteropInfo : IFastSerializable
             serializer.Write(m_listComInterfaceInfo[i].fRCW ? (byte)1 : (byte)0);
             serializer.Write(m_listComInterfaceInfo[i].owner);
             serializer.Write((int)m_listComInterfaceInfo[i].typeID);
-            serializer.Write((long)m_listComInterfaceInfo[i].addrInterface);
-            serializer.Write((long)m_listComInterfaceInfo[i].addrFirstVTable);
-            serializer.Write((long)m_listComInterfaceInfo[i].addrFirstFunc);
+            serializer.Write(m_listComInterfaceInfo[i].addrInterface);
+            serializer.Write(m_listComInterfaceInfo[i].addrFirstVTable);
+            serializer.Write(m_listComInterfaceInfo[i].addrFirstFunc);
         }
 
         for (int i = 0; i < m_listModules.Count; i++)
         {
-            serializer.Write((long)m_listModules[i].baseAddress);
-            serializer.Write((int)m_listModules[i].fileSize);
-            serializer.Write((int)m_listModules[i].timeStamp);
+            serializer.Write(m_listModules[i].baseAddress);
+            serializer.Write(m_listModules[i].fileSize);
+            serializer.Write(m_listModules[i].timeStamp);
             serializer.Write(m_listModules[i].fileName);
         }
     }
@@ -647,9 +646,9 @@ public class InteropInfo : IFastSerializable
             RCWInfo infoRCW = new RCWInfo();
             infoRCW.node = (NodeIndex)deserializer.ReadInt();
             infoRCW.refCount = deserializer.ReadInt();
-            infoRCW.addrIUnknown = (Address)deserializer.ReadInt64();
-            infoRCW.addrJupiter = (Address)deserializer.ReadInt64();
-            infoRCW.addrVTable = (Address)deserializer.ReadInt64();
+            infoRCW.addrIUnknown = deserializer.ReadUInt64();
+            infoRCW.addrJupiter = deserializer.ReadUInt64();
+            infoRCW.addrVTable = deserializer.ReadUInt64();
             infoRCW.firstComInf = deserializer.ReadInt();
             infoRCW.countComInf = deserializer.ReadInt();
             m_listRCWInfo.Add(infoRCW);
@@ -661,8 +660,8 @@ public class InteropInfo : IFastSerializable
             CCWInfo infoCCW = new CCWInfo();
             infoCCW.node = (NodeIndex)deserializer.ReadInt();
             infoCCW.refCount = deserializer.ReadInt();
-            infoCCW.addrIUnknown = (Address)deserializer.ReadInt64();
-            infoCCW.addrHandle = (Address)deserializer.ReadInt64();
+            infoCCW.addrIUnknown = deserializer.ReadUInt64();
+            infoCCW.addrHandle = deserializer.ReadUInt64();
             infoCCW.firstComInf = deserializer.ReadInt();
             infoCCW.countComInf = deserializer.ReadInt();
             m_listCCWInfo.Add(infoCCW);
@@ -674,18 +673,18 @@ public class InteropInfo : IFastSerializable
             infoInterface.fRCW = ((deserializer.ReadByte() == 1) ? true : false);
             infoInterface.owner = deserializer.ReadInt();
             infoInterface.typeID = (NodeTypeIndex)deserializer.ReadInt();
-            infoInterface.addrInterface = (Address)deserializer.ReadInt64();
-            infoInterface.addrFirstVTable = (Address)deserializer.ReadInt64();
-            infoInterface.addrFirstFunc = (Address)deserializer.ReadInt64();
+            infoInterface.addrInterface = deserializer.ReadUInt64();
+            infoInterface.addrFirstVTable = deserializer.ReadUInt64();
+            infoInterface.addrFirstFunc = deserializer.ReadUInt64();
             m_listComInterfaceInfo.Add(infoInterface);
         }
 
         for (int i = 0; i < m_countModules; i++)
         {
             InteropModuleInfo infoModule = new InteropModuleInfo();
-            infoModule.baseAddress = (Address)deserializer.ReadInt64();
-            infoModule.fileSize = (uint)deserializer.ReadInt();
-            infoModule.timeStamp = (uint)deserializer.ReadInt();
+            infoModule.baseAddress = deserializer.ReadUInt64();
+            infoModule.fileSize = deserializer.ReadUInt32();
+            infoModule.timeStamp = deserializer.ReadUInt32();
             deserializer.Read(out infoModule.fileName);
             infoModule.loadOrder = i;
             m_listModules.Add(infoModule);

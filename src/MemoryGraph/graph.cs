@@ -1125,7 +1125,7 @@ namespace Graphs
         public void ToStream(Serializer serializer)
         {
             serializer.Write(Path);
-            serializer.Write((long)ImageBase);
+            serializer.Write(ImageBase);
             serializer.Write(Size);
             serializer.Write(BuildTime.Ticks);
             serializer.Write(PdbName);
@@ -1138,7 +1138,7 @@ namespace Graphs
         public void FromStream(Deserializer deserializer)
         {
             deserializer.Read(out Path);
-            ImageBase = (Address)deserializer.ReadInt64();
+            ImageBase = deserializer.ReadUInt64();
             deserializer.Read(out Size);
             BuildTime = new DateTime(deserializer.ReadInt64());
             deserializer.Read(out PdbName);

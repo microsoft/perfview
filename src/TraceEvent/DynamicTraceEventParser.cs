@@ -316,8 +316,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     goto Fail;
                 }
 
-                ushort totalChunks = (ushort)data.GetInt16At(4);
-                ushort chunkNum = (ushort)data.GetInt16At(6);
+                ushort totalChunks = data.GetUInt16At(4);
+                ushort chunkNum = data.GetUInt16At(6);
                 if (chunkNum >= totalChunks || totalChunks == 0)
                 {
                     goto Fail;
@@ -332,8 +332,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     format = (ManifestEnvelope.ManifestFormats)data.GetByteAt(0);
-                    majorVersion = (byte)data.GetByteAt(1);
-                    minorVersion = (byte)data.GetByteAt(2);
+                    majorVersion = data.GetByteAt(1);
+                    minorVersion = data.GetByteAt(2);
                     ChunksLeft = totalChunks;
                     Chunks = new byte[ChunksLeft][];
                 }
@@ -690,7 +690,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                                 else
                                 {
-                                    size = (ushort)GetInt16At(offset);
+                                    size = GetUInt16At(offset);
                                     offset += 2;        // skip size;
                                 }
                                 if (unicodeByteCountString)
@@ -720,23 +720,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.Boolean:
                     return GetByteAt(offset) != 0;
                 case TypeCode.Char:
-                    return (Char)GetInt16At(offset);
+                    return (Char)GetUInt16At(offset);
                 case TypeCode.Byte:
                     return (byte)GetByteAt(offset);
                 case TypeCode.SByte:
-                    return (SByte)GetByteAt(offset);
+                    return (SByte)GetSByteAt(offset);
                 case TypeCode.Int16:
                     return GetInt16At(offset);
                 case TypeCode.UInt16:
-                    return (UInt16)GetInt16At(offset);
+                    return (UInt16)GetUInt16At(offset);
                 case TypeCode.Int32:
                     return GetInt32At(offset);
                 case TypeCode.UInt32:
-                    return (UInt32)GetInt32At(offset);
+                    return (UInt32)GetUInt32At(offset);
                 case TypeCode.Int64:
                     return GetInt64At(offset);
                 case TypeCode.UInt64:
-                    return (UInt64)GetInt64At(offset);
+                    return (UInt64)GetUInt64At(offset);
                 case TypeCode.Single:
                     return GetSingleAt(offset);
                 case TypeCode.Double:
@@ -746,11 +746,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         if (PointerSize == 4)
                         {
-                            return (Address)GetInt32At(offset);
+                            return (Address)GetUInt32At(offset);
                         }
                         else
                         {
-                            return (Address)GetInt64At(offset);
+                            return (Address)GetUInt64At(offset);
                         }
                     }
                     else if (type == typeof(Guid))
@@ -1574,8 +1574,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             public void ToStream(Serializer serializer)
             {
-                serializer.Write((short)Offset);
-                serializer.Write((short)Size);
+                serializer.Write(Offset);
+                serializer.Write(Size);
                 if (Type == null)
                 {
                     serializer.Write((string)null);
@@ -1763,15 +1763,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             deserializer.Read(out lookupAsClassic);
             deserializer.Read(out lookupAsWPP);
             deserializer.Read(out containsSelfDescribingMetadata);
-            int count;
-            deserializer.Read(out count);
+            int count = deserializer.ReadInt();
             payloadNames = new string[count];
             for (int i = 0; i < count; i++)
             {
                 deserializer.Read(out payloadNames[i]);
             }
 
-            deserializer.Read(out count);
+            count = deserializer.ReadInt();
             payloadFetches = new PayloadFetch[count];
             for (int i = 0; i < count; i++)
             {
@@ -1886,8 +1885,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
-            int count;
-            deserializer.Read(out count);
+            int count = deserializer.ReadInt();
             for (int i = 0; i < count; i++)
             {
                 ProviderManifest provider;

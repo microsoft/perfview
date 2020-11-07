@@ -314,7 +314,7 @@ namespace Graphs
             serializer.Write(m_nodeAddresses.Count);
             for (int i = 0; i < m_nodeAddresses.Count; i++)
             {
-                serializer.Write((long)m_nodeAddresses[i]);
+                serializer.Write(m_nodeAddresses[i]);
             }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)

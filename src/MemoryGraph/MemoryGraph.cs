@@ -141,7 +141,7 @@ namespace Graphs
                 //    a. 0, if the nth element of the group has the address 0
                 //    b. Otherwise, the offset of the nth relative to the address of the first element in the group
                 serializer.Write(pair.Value);
-                serializer.Write((long)pair.Key);
+                serializer.Write(pair.Key);
                 Debug.Assert(pair.Key == m_nodeAddresses[offset]);
 
                 for (int i = 1; i < pair.Value; i++)
@@ -154,7 +154,7 @@ namespace Graphs
                     }
 
                     ushort relativeAddress = (ushort)(current - pair.Key);
-                    serializer.Write(unchecked((short)relativeAddress));
+                    serializer.Write(relativeAddress);
                 }
 
                 offset += pair.Value;
@@ -205,11 +205,11 @@ namespace Graphs
             while (offset < addressCount)
             {
                 int groupCount = deserializer.ReadInt();
-                Address baseAddress = (Address)deserializer.ReadInt64();
+                Address baseAddress = deserializer.ReadUInt64();
                 m_nodeAddresses.Add(baseAddress);
                 for (int i = 1; i < groupCount; i++)
                 {
-                    ushort relativeAddress = unchecked((ushort)deserializer.ReadInt16());
+                    ushort relativeAddress = deserializer.ReadUInt16();
                     if (relativeAddress == 0)
                     {
                         m_nodeAddresses.Add(0);
