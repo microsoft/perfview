@@ -6,7 +6,7 @@ using System.Text;
 
 namespace FastSerialization
 {
-    public class SegmentedMemoryStreamWriter
+    public class SegmentedMemoryStreamWriter : IStreamWriter
     {
         public SegmentedMemoryStreamWriter() : this(64) { }
         public SegmentedMemoryStreamWriter(int initialSize)

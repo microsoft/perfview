@@ -120,12 +120,77 @@ namespace Graphs
             base.ToStream(serializer);
             // Write out the Memory addresses of each object 
             serializer.Write(m_nodeAddresses.Count);
-            for (int i = 0; i < m_nodeAddresses.Count; i++)
+
+            // Write m_nodeAddresses as a sequence of groups of addresses near each other. The following assumptions are
+            // made for this process:
+            //
+            // 1. It is common for multiple objects to have addresses within ushort.MaxValue of each other
+            // 2. It is common for an element of m_nodeAddresses to have the address 0
+            // 3. The address at index 'i+1' will never be the same value as index 'i', unless that value is 0
+            //
+            // Assumption (3) allows '0' values in m_nodeAddresses to be written with the differential value '0', which
+            // is efficient and does not interrupt the grouping of a segment of otherwise-similar addresses.
+            int offset = 0;
+            foreach (var pair in GroupNodeAddresses(m_nodeAddresses))
             {
-                serializer.Write((long)m_nodeAddresses[i]);
+                // A group is written as:
+                //
+                // 1. Int32: The number of elements in the group
+                // 2. Int64: The address of the first element in the group
+                // 3. UInt16 (repeat N times, where N = #Group - 1):
+                //    a. 0, if the nth element of the group has the address 0
+                //    b. Otherwise, the offset of the nth relative to the address of the first element in the group
+                serializer.Write(pair.Value);
+                serializer.Write((long)pair.Key);
+                Debug.Assert(pair.Key == m_nodeAddresses[offset]);
+
+                for (int i = 1; i < pair.Value; i++)
+                {
+                    Address current = m_nodeAddresses[i + offset];
+                    if (current == 0)
+                    {
+                        serializer.Write((short)0);
+                        continue;
+                    }
+
+                    ushort relativeAddress = (ushort)(current - pair.Key);
+                    serializer.Write(unchecked((short)relativeAddress));
+                }
+
+                offset += pair.Value;
             }
 
             serializer.WriteTagged(Is64Bit);
+
+            IEnumerable<KeyValuePair<Address, int>> GroupNodeAddresses(SegmentedList<Address> nodeAddresses)
+            {
+                if (nodeAddresses.Count == 0)
+                    yield break;
+
+                var baseAddress = nodeAddresses[0];
+                var startIndex = 0;
+                for (int i = 1; i < nodeAddresses.Count; i++)
+                {
+                    var current = nodeAddresses[i];
+                    if (current == 0)
+                    {
+                        continue;
+                    }
+
+                    if (unchecked(current - baseAddress) <= ushort.MaxValue)
+                    {
+                        continue;
+                    }
+
+                    var count = i - startIndex;
+                    yield return new KeyValuePair<Address, int>(baseAddress, count);
+
+                    baseAddress = current;
+                    startIndex = i;
+                }
+
+                yield return new KeyValuePair<Address, int>(baseAddress, nodeAddresses.Count - startIndex);
+            }
         }
 
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -135,9 +200,27 @@ namespace Graphs
             int addressCount = deserializer.ReadInt();
             m_nodeAddresses = new SegmentedList<Address>(SegmentSize, addressCount);
 
-            for (int i = 0; i < addressCount; i++)
+            // See ToStream above for a description of the differential compression process
+            int offset = 0;
+            while (offset < addressCount)
             {
-                m_nodeAddresses.Add((Address)deserializer.ReadInt64());
+                int groupCount = deserializer.ReadInt();
+                Address baseAddress = (Address)deserializer.ReadInt64();
+                m_nodeAddresses.Add(baseAddress);
+                for (int i = 1; i < groupCount; i++)
+                {
+                    ushort relativeAddress = unchecked((ushort)deserializer.ReadInt16());
+                    if (relativeAddress == 0)
+                    {
+                        m_nodeAddresses.Add(0);
+                    }
+                    else
+                    {
+                        m_nodeAddresses.Add(baseAddress + relativeAddress);
+                    }
+                }
+
+                offset += groupCount;
             }
 
             bool is64bit = false;

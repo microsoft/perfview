@@ -500,20 +500,50 @@ namespace Graphs
         {
             serializer.Write(m_totalSize);
             serializer.Write((int)RootIndex);
-            // Write out the Types 
+
+            // Write out the module names for types
+            var moduleNames = new Dictionary<string, int>();
+            foreach (var type in m_types)
+            {
+                if (type.ModuleName is null)
+                    continue;
+
+                if (!moduleNames.ContainsKey(type.ModuleName))
+                {
+                    // Index 0 is implicitly null, so start with 1 for the first non-null value
+                    moduleNames.Add(type.ModuleName, moduleNames.Count + 1);
+                }
+            }
+
+            serializer.Write(moduleNames.Count);
+            foreach (var pair in moduleNames)
+            {
+                // Dictionary<TKey, TValue> iterates in insertion order
+                serializer.Write(pair.Key);
+            }
+
+            // Write out the Types
             serializer.Write(m_types.Count);
             for (int i = 0; i < m_types.Count; i++)
             {
                 serializer.Write(m_types[i].Name);
                 serializer.Write(m_types[i].Size);
-                serializer.Write(m_types[i].ModuleName);
+                if (m_types[i].ModuleName is null)
+                    serializer.Write(0);
+                else
+                    serializer.Write(moduleNames[m_types[i].ModuleName]);
             }
 
             // Write out the Nodes 
             serializer.Write(m_nodes.Count);
+            int previousLabel = 0;
             for (int i = 0; i < m_nodes.Count; i++)
             {
-                serializer.Write((int)m_nodes[i]);
+                // Apply differential compression to the label, and then write it as a compressed integer
+                int currentLabel = (int)m_nodes[i];
+                int difference = unchecked(currentLabel - previousLabel);
+                Node.WriteCompressedInt(serializer.Writer, difference);
+                previousLabel = currentLabel;
             }
 
             // Write out the Blob stream.  
@@ -558,6 +588,14 @@ namespace Graphs
             deserializer.Read(out m_totalSize);
             RootIndex = (NodeIndex)deserializer.ReadInt();
 
+            // Read in the module names
+            var moduleNamesCount = deserializer.ReadInt();
+            var moduleNames = new string[moduleNamesCount + 1];
+            for (int i = 0; i < moduleNamesCount; i++)
+            {
+                moduleNames[i + 1] = deserializer.ReadString();
+            }
+
             // Read in the Types 
             TypeInfo info = new TypeInfo();
             int typeCount = deserializer.ReadInt();
@@ -566,7 +604,7 @@ namespace Graphs
             {
                 deserializer.Read(out info.Name);
                 deserializer.Read(out info.Size);
-                deserializer.Read(out info.ModuleName);
+                info.ModuleName = moduleNames[deserializer.ReadInt()];
                 m_types.Add(info);
             }
 
@@ -574,9 +612,14 @@ namespace Graphs
             int nodeCount = deserializer.ReadInt();
             m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
 
+            int previousLabel = 0;
             for (int i = 0; i < nodeCount; i++)
             {
-                m_nodes.Add((StreamLabel)(uint)deserializer.ReadInt());
+                // Read the label as a compressed differential integer
+                int difference = Node.ReadCompressedInt(deserializer.Reader);
+                int currentLabel = unchecked(previousLabel + difference);
+                m_nodes.Add((StreamLabel)currentLabel);
+                previousLabel = currentLabel;
             }
 
             // Read in the Blob stream.  
@@ -835,7 +878,8 @@ namespace Graphs
         }
 
         // Node information is stored in a compressed form because we have alot of them. 
-        internal static int ReadCompressedInt(MemoryMappedFileStreamReader reader)
+        internal static int ReadCompressedInt<T>(T reader)
+            where T : IStreamReader
         {
             int ret = 0;
             byte b = reader.ReadByte();
@@ -876,7 +920,8 @@ namespace Graphs
             return ret;
         }
 
-        internal static void WriteCompressedInt(MemoryMappedFileStreamWriter writer, int value)
+        internal static void WriteCompressedInt<T>(T writer, int value)
+            where T : IStreamWriter
         {
             if (value << 25 >> 25 == value)
             {
