@@ -1391,13 +1391,6 @@ namespace PerfView
 
         private void DoMergeAndZipAll(object sender, RoutedEventArgs e)
         {
-            var unmergedFiles = new List<PerfViewFile>();
-            foreach (var file in TreeView.Items.OfType<PerfViewFile>())
-            {
-                if (file.FilePath.EndsWith(".etl"))
-                    unmergedFiles.Add(file);
-            }
-
             List<Action> actions = new List<Action>();
             foreach (var file in TreeView.Items.OfType<PerfViewFile>().Reverse())
             {
