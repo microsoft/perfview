@@ -1837,7 +1837,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             };
 
-            const int defaultMaxEventCount = 20000000;                   // 20M events produces about 3GB of data.  which is close to the limit of ETLX. 
+            const int defaultMaxEventCount = 50000000;                   // 50M events produces about 6GB of data.  which is close to the limit of ETLX. 
             int maxEventCount = defaultMaxEventCount;
             double startMSec = 0;
             if (options != null)
@@ -1878,9 +1878,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Show status every 128K events
                 if ((rawEventCount & 0x1FFFF) == 0)
                 {
-                    var curOutputSizeMB = ((double)(uint)writer.GetLabel()) / 1000000.0;
-                    // Currently ETLX has a size restriction of 4Gig.  Thus if we are getting big, start truncating.  
-                    if (curOutputSizeMB > 3500)
+                    var curOutputSizeMB = (long)writer.GetLabel() / 1000000.0;
+                    // Currently ETLX has a size restriction of 8Gig.  Thus if we are getting big, start truncating.  
+                    if (curOutputSizeMB > 7000)
                     {
                         processingDisabled = true;
                     }
@@ -1910,7 +1910,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             {
                                 message = "  Hit MaxEventCount, truncating.";
                             }
-                            else if (curOutputSizeMB > 3500)
+                            else if (curOutputSizeMB > 7000)
                             {
                                 message = "  Hit File size limit (3.5Gig) truncating.";
                             }
