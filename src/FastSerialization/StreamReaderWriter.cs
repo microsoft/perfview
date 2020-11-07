@@ -11,7 +11,6 @@ using System.Text;      // For StringBuilder.
 using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DeferedStreamLabel = FastSerialization.StreamLabel;
 
 namespace FastSerialization
 {

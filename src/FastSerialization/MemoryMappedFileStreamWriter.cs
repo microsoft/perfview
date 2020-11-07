@@ -12,7 +12,6 @@ using System.Threading;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
-using DeferedStreamLabel = FastSerialization.StreamLabel;
 
 #if !NETSTANDARD1_3
 using System.Runtime.CompilerServices;
@@ -111,7 +110,7 @@ namespace FastSerialization
         public long Length
             => _viewOffset + _offset;
 
-        public DeferedStreamLabel GetLabel(bool allowPadding)
+        public StreamLabel GetLabel(bool allowPadding)
         {
             if ((Length & 0x1) != 0)
             {
@@ -122,7 +121,7 @@ namespace FastSerialization
                 Debug.Assert((Length & 0x1) == 0);
             }
 
-            return checked((DeferedStreamLabel)Length);
+            return checked((StreamLabel)Length);
         }
 
         public void Write(byte[] data, int offset, int length)
@@ -208,7 +207,7 @@ namespace FastSerialization
             _offset += sizeof(long);
         }
 
-        public void Write(DeferedStreamLabel value)
+        public void Write(StreamLabel value)
         {
             if (((long)value & 0x1) != 0)
                 throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
@@ -277,7 +276,7 @@ namespace FastSerialization
             }
         }
 
-        public void WriteSuffixLabel(DeferedStreamLabel value)
+        public void WriteSuffixLabel(StreamLabel value)
         {
             // This is guaranteed to be uncompressed, but since we are not compressing anything, we can
             // simply write the value.  

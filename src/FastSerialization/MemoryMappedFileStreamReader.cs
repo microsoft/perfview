@@ -10,7 +10,6 @@ using System.Text;      // For StringBuilder.
 using System.Threading;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
-using DeferedStreamLabel = FastSerialization.StreamLabel;
 using System.Diagnostics;
 
 namespace FastSerialization
@@ -58,11 +57,11 @@ namespace FastSerialization
             return new MemoryMappedFileStreamReader(file, capacity, leaveOpen: false);
         }
 
-        public DeferedStreamLabel Current
+        public StreamLabel Current
         {
             get
             {
-                return checked((DeferedStreamLabel)(_viewOffset + _offset));
+                return checked((StreamLabel)(_viewOffset + _offset));
             }
         }
 
@@ -115,7 +114,7 @@ namespace FastSerialization
             _offset = offsetInView;
         }
 
-        public void Goto(DeferedStreamLabel label)
+        public void Goto(StreamLabel label)
         {
             if (label < 0)
             {
@@ -147,7 +146,7 @@ namespace FastSerialization
         public void GotoSuffixLabel()
         {
             const int sizeOfSerializedStreamLabel = 4;
-            Goto((DeferedStreamLabel)(Length - sizeOfSerializedStreamLabel));
+            Goto((StreamLabel)(Length - sizeOfSerializedStreamLabel));
             Goto(ReadLabel());
         }
 
@@ -263,9 +262,9 @@ namespace FastSerialization
             return result;
         }
 
-        public DeferedStreamLabel ReadLabel()
+        public StreamLabel ReadLabel()
         {
-            return (DeferedStreamLabel)unchecked((uint)ReadInt32());
+            return (StreamLabel)unchecked((uint)ReadInt32());
         }
 
         public unsafe string ReadString()
