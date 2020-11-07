@@ -131,7 +131,7 @@ namespace FastSerialization
         /// Get the stream label for the current position (points at whatever is written next
         /// </summary>
         /// <returns></returns>
-        StreamLabel GetLabel();
+        StreamLabel GetLabel(bool allowPadding = false);
         /// <summary>
         /// Write a SuffixLabel it must be the last thing written to the stream.   The stream 
         /// guarantees that this value can be efficiently read at any time (probably by seeking
@@ -520,7 +520,7 @@ namespace FastSerialization
                 WriteTag(Tags.EndObject);
 
                 // Write the forward forwardReference table (for random access lookup)  
-                StreamLabel forwardRefsLabel = writer.GetLabel();
+                StreamLabel forwardRefsLabel = writer.GetLabel(allowPadding: true);
                 Log("<ForwardRefTable StreamLabel=\"0x" + forwardRefsLabel.ToString("x") + "\">");
                 if (forwardReferenceDefinitions != null)
                 {
@@ -722,7 +722,7 @@ namespace FastSerialization
         /// <param name="forwardReference"></param>
         public void DefineForwardReference(ForwardReference forwardReference)
         {
-            forwardReferenceDefinitions[(int)forwardReference] = writer.GetLabel();
+            forwardReferenceDefinitions[(int)forwardReference] = writer.GetLabel(allowPadding: true);
         }
 
         // data added after V1 needs to be tagged so that V1 deserializers can skip it. 
@@ -868,7 +868,7 @@ namespace FastSerialization
 
             // At this point we are writing an actual object and not a reference. 
             // 
-            StreamLabel objLabel = writer.GetLabel();
+            StreamLabel objLabel = writer.GetLabel(allowPadding: true);
             Log("<WriteObject obj=\"0x" + obj.GetHashCode().ToString("x") +
                 "\" StreamLabel=\"0x" + objLabel.ToString("x") +
                 "\" type=\"" + obj.GetType().Name + "\">");
@@ -910,6 +910,7 @@ namespace FastSerialization
         }
         private void WriteObjectData(IFastSerializable obj, Tags beginTag)
         {
+            Debug.Assert(writer.GetLabel(allowPadding: false) != StreamLabel.Invalid, "Objects should be pre-aligned to a label.");
             Debug.Assert(beginTag == Tags.BeginObject || beginTag == Tags.BeginPrivateObject);
             WriteTag(beginTag);
             WriteTypeForObject(obj);
@@ -1122,8 +1123,8 @@ namespace FastSerialization
                 {
                     for (; ; )
                     {
-                        StreamLabel objectLabel = reader.Current;
                         Tags tag = ReadTag();
+                        StreamLabel objectLabel = reader.Current - 1;
                         if (tag == Tags.EndObject)
                         {
                             break;
@@ -1296,8 +1297,8 @@ namespace FastSerialization
         {
             Log("<ReadObjectReference StreamLabel=\"0x" + reader.Current.ToString("x") + "\">");
 
-            StreamLabel objectLabel = reader.Current;
             Tags tag = ReadTag();
+            StreamLabel objectLabel = reader.Current - 1;
             IFastSerializable ret;
             if (tag == Tags.ObjectReference)
             {
@@ -1638,6 +1639,7 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged(ref bool ret)
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.Byte)
             {
@@ -1646,7 +1648,7 @@ namespace FastSerialization
                 ret = (data != 0);
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1654,13 +1656,14 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged(ref byte ret)
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.Byte)
             {
                 Read(out ret);
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1668,13 +1671,14 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged(ref short ret)
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.Int16)
             {
                 Read(out ret);
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1682,13 +1686,14 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged(ref int ret)
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.Int32)
             {
                 Read(out ret);
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1696,13 +1701,14 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged(ref long ret)
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.Int64)
             {
                 Read(out ret);
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1710,13 +1716,14 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged(ref string ret)
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.String)
             {
                 Read(out ret);
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1727,13 +1734,14 @@ namespace FastSerialization
         /// </summary>
         public int TryReadTaggedBlobHeader()
         {
+            var originalPosition = reader.Current;
             Tags tag = ReadTag();
             if (tag == Tags.Blob)
             {
                 return reader.ReadInt32();
             }
 
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return 0;
         }
         /// <summary>
@@ -1741,15 +1749,17 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged<T>(ref T ret) where T : IFastSerializable
         {
+            var originalPosition = reader.Current;
             // Tagged objects always start with a SkipRegion so we don't need to know its size.  
             Tags tag = ReadTag();
             if (tag == Tags.SkipRegion)
             {
-                ReadForwardReference();     // Skip the forward reference which is part of SkipRegion 
+                var endRegion = ReadForwardReference();     // Skip the forward reference which is part of SkipRegion 
                 ret = (T)ReadObject();      // Read the real object 
+                reader.Goto(ResolveForwardReference(endRegion));
                 return true;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return false;
         }
         /// <summary>
@@ -1757,14 +1767,17 @@ namespace FastSerialization
         /// </summary>
         public IFastSerializable TryReadTaggedObject()
         {
+            var originalPosition = reader.Current;
             // Tagged objects always start with a SkipRegion so we don't need to know its size.  
             Tags tag = ReadTag();
             if (tag == Tags.SkipRegion)
             {
-                ReadForwardReference();     // Skip the forward reference which is part of SkipRegion 
-                return ReadObject();        // Read the real object 
+                var endRegion = ReadForwardReference();     // Skip the forward reference which is part of SkipRegion 
+                var result = ReadObject();        // Read the real object 
+                reader.Goto(ResolveForwardReference(endRegion));
+                return result;
             }
-            reader.Goto(Current - 1);
+            reader.Goto(originalPosition);
             return null;
         }
 
@@ -1838,8 +1851,8 @@ namespace FastSerialization
 
         private IFastSerializable ReadObjectDefintion()
         {
-            StreamLabel objectLabel = reader.Current;
             Tags tag = ReadTag();
+            StreamLabel objectLabel = reader.Current - 1;
             return ReadObjectDefinition(tag, objectLabel);
         }
         private IFastSerializable ReadObjectDefinition(Tags tag, StreamLabel objectLabel)
@@ -1991,9 +2004,9 @@ namespace FastSerialization
             for (; ; )
             {
                 Debug.Assert(i == 0 || type.Version != 0);
-                StreamLabel objectLabel = reader.Current;
                 // If this fails, the likely culprit is the FromStream of the objectBeingDeserialized. 
                 Tags tag = ReadTag();
+                StreamLabel objectLabel = reader.Current - 1;
 
                 // TODO this is a hack.   The .NET Core Runtime < V2.1 do not emit an EndObject tag
                 // properly for its V1 EventPipeFile object.   The next object is always data that happens
@@ -2095,7 +2108,14 @@ namespace FastSerialization
 #if DEBUG
             StreamLabel label = reader.Current;
 #endif
+
             Tags tag = (Tags)reader.ReadByte();
+            if (tag == Tags.Padding)
+            {
+                tag = (Tags)reader.ReadByte();
+                Debug.Assert(tag != Tags.Padding);
+            }
+
 #if DEBUG
             Log("<ReadTag Type=\"" + tag + "\" Value=\"" + ((int)tag).ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
 #endif
@@ -2513,6 +2533,7 @@ namespace FastSerialization
         SkipRegion,
         String,             // Size of string (in bytes) followed by UTF8 bytes.  
         Blob,
+        Padding,
         Limit,              // Just past the last valid tag, used for asserts.  
     }
     #endregion
