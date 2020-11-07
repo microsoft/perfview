@@ -1,5 +1,6 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Diagnostics;
@@ -12875,7 +12876,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             if (_typeIDToName == null)
             {
-                _typeIDToName = new HistoryDictionary<string>(500);
+                _typeIDToName = new HistoryDictionary<Address, string>(500);
             }
 
             _typeIDToName.Add(typeId + ((ulong)processID << 48), timeQPC, typeName);
@@ -12907,9 +12908,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 }
                 serializer.Log("<WriteCollection name=\"typeIDToName\" count=\"" + _typeIDToName.Count + "\">\r\n");
                 serializer.Write(_typeIDToName.Count);
-                foreach (HistoryDictionary<string>.HistoryValue entry in _typeIDToName.Entries)
+                foreach (HistoryDictionary<Address, string>.HistoryValue entry in _typeIDToName.Entries)
                 {
-                    serializer.Write((long)entry.Key);
+                    serializer.WriteAddress(entry.Key);
                     serializer.Write(entry.StartTime);
                     serializer.Write(entry.Value);
                 }
@@ -12929,22 +12930,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 {
                     if (_typeIDToName == null)
                     {
-                        _typeIDToName = new HistoryDictionary<string>(count);
+                        _typeIDToName = new HistoryDictionary<Address, string>(count);
                     }
 
                     for (int i = 0; i < count; i++)
                     {
-                        long key; deserializer.Read(out key);
+                        Address key; deserializer.ReadAddress(out key);
                         long startTimeQPC; deserializer.Read(out startTimeQPC);
                         string value; deserializer.Read(out value);
-                        _typeIDToName.Add((Address)key, startTimeQPC, value);
+                        _typeIDToName.Add(key, startTimeQPC, value);
                     }
                 }
             });
         }
 
         private DeferedRegion lazyTypeIDToName;
-        private HistoryDictionary<string> _typeIDToName;
+        private HistoryDictionary<Address, string> _typeIDToName;
         #endregion // private 
     }
     #endregion  // private types
