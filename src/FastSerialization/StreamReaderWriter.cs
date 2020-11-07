@@ -370,6 +370,33 @@ namespace FastSerialization
                 }
             }
         }
+        public void Write(byte[] data, int offset, int length)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            if (length > data.Length - offset)
+            {
+                throw new ArgumentNullException(nameof(length));
+            }
+
+            for (int i = 0; i < length; i++)
+            {
+                Write(data[offset + i]);
+            }
+        }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>

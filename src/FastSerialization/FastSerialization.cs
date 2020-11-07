@@ -128,6 +128,10 @@ namespace FastSerialization
         /// </summary>
         void Write(string value);
         /// <summary>
+        /// Write a span of bytes to the stream;
+        /// </summary>
+        void Write(byte[] data, int offset, int length);
+        /// <summary>
         /// Get the stream label for the current position (points at whatever is written next
         /// </summary>
         /// <returns></returns>
@@ -653,6 +657,10 @@ namespace FastSerialization
             }
 #endif
             writer.Write(value);
+        }
+        public void Write(byte[] data, int offset, int length)
+        {
+            writer.Write(data, offset, length);
         }
         /// <summary>
         /// Write a float to a stream

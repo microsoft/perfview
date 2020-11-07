@@ -65,6 +65,12 @@ namespace FastSerialization
                 }
             }
         }
+
+        void IStreamWriter.Write(byte[] data, int offset, int length)
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual StreamLabel GetLabel(bool allowPadding)
         {
             if ((Length & 0x1) != 0)

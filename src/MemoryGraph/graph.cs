@@ -549,14 +549,18 @@ namespace Graphs
                 previousLabel = currentLabel;
             }
 
-            // Write out the Blob stream.  
-            // TODO this is inefficient.  Also think about very large files.  
+            // Write out the Blob stream.
             int readerLen = (int)m_reader.Length;
             serializer.Write(readerLen);
             m_reader.Goto((StreamLabel)0);
-            for (uint i = 0; i < readerLen; i++)
+
+            const int BlockCopyCapacity = 0x4000;
+            byte[] data = new byte[BlockCopyCapacity];
+            for (int i = 0; i < readerLen; i += BlockCopyCapacity)
             {
-                serializer.Write(m_reader.ReadByte());
+                int chunkSize = Math.Min(readerLen - i, BlockCopyCapacity);
+                m_reader.Read(data, 0, chunkSize);
+                serializer.Write(data, 0, chunkSize);
             }
 
             // Are we writing a format for 1 or greater?   If so we can use the new (breaking) format, otherwise
