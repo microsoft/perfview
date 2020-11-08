@@ -42,6 +42,7 @@
   <files>
     <!-- Support for native binaries -->
     <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="build\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
+    <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="buildTransitive\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
 
     <!-- Native binaries -->
     <file src="$OutDir$netstandard2.0\amd64\KernelTraceControl.dll" target="lib\native\amd64\KernelTraceControl.dll" />
