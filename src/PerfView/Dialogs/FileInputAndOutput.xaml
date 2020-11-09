@@ -1,6 +1,7 @@
-﻿<Window x:Class="PerfView.Dialogs.FileInputAndOutput"
+﻿<src:WindowBase x:Class="PerfView.Dialogs.FileInputAndOutput"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:PerfView" 
         xmlns:controls="clr-namespace:Controls" 
         Background="#FFA7A7A7" 
         Title="Enter Input and Output Files" Height="300" Width="669">
@@ -56,5 +57,5 @@
             <Button Margin="10,5,10,5" KeyboardNavigation.IsTabStop="False" Width="80" Content="Cancel" Click="CancelClicked"/>
         </StackPanel>
     </Grid>
-</Window>
+</src:WindowBase>
 

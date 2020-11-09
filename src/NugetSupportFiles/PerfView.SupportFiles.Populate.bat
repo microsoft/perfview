@@ -1,11 +1,19 @@
 REM copies from an existing build to a nuget package creation area (so that *.MakeNuget.bat works)
 REM
 REM *** This is mostly a template for doing the copy.      ****  
-REM *** Most likey you want this to be the current version ****
+REM *** Most likely you want this to be the current version ****
 REM *** PLEASE MODIFY THE VERSION NUMBER TO BE CURRENT!    ****
 REM 
-xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\PerfView.SupportFiles\1.0.5\*.dll PerfView.SupportFiles
-xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\PerfView.SupportFiles\1.0.5\*.exe PerfView.SupportFiles
+@if "%1" == "" (
+    echo Error Must specify the last component of the version number of PerfViewSupportFilesVersion from Directory.Build.props
+	exit /b 1
+)
+xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\PerfView.SupportFiles\1.0.%1\*.dll PerfView.SupportFiles
+@if NOT "%ERRORLEVEL%" == "0" (
+    echo *****  Bad Version Number %1.  ******
+	exit /b 1
+)
+xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\PerfView.SupportFiles\1.0.%1\*.exe PerfView.SupportFiles
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\x86\DiagnosticsHub.Packaging.dll

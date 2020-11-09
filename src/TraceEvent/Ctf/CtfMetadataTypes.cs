@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
-    enum CtfTypes
+    internal enum CtfTypes
     {
         Unknown,
         Unresolved,
@@ -19,8 +18,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         Variant,
         Float
     }
-    
-    static class IntHelpers
+
+    internal static class IntHelpers
     {
         public static int AlignUp(int val, int alignment)
         {
@@ -53,7 +52,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    abstract class CtfMetadataType
+    internal abstract class CtfMetadataType
     {
         public int BitOffset { get; set; }
         public abstract int Align { get; }
@@ -64,7 +63,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             CtfType = type;
         }
-        
+
         internal abstract CtfMetadataType ResolveReference(Dictionary<string, CtfMetadataType> typealias);
         public abstract int GetSize();
 
@@ -74,7 +73,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// Represents a type which has been referenced by name, but has not yet been resolved to a concrete type.
     /// </summary>
-    class CtfUnresolvedType : CtfMetadataType
+    internal class CtfUnresolvedType : CtfMetadataType
     {
         public string Name { get; private set; }
 
@@ -117,7 +116,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfArray : CtfMetadataType
+    internal class CtfArray : CtfMetadataType
     {
         public override int Align
         {
@@ -147,16 +146,20 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Type = Type.ResolveReference(typealias);
             return this;
         }
-        
+
         public override int GetSize()
         {
             int size = Type.GetSize();
             if (size == CtfEvent.SizeIndeterminate)
+            {
                 return CtfEvent.SizeIndeterminate;
+            }
 
             int len;
             if (!int.TryParse(Index, out len) || len < 0)
+            {
                 return CtfEvent.SizeIndeterminate;
+            }
 
             return size * len;
         }
@@ -167,9 +170,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfFloat : CtfMetadataType
+    internal class CtfFloat : CtfMetadataType
     {
-        int _align;
+        private int _align;
         public override int Align
         {
             get
@@ -186,7 +189,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             ByteOrder = bag.GetString("byte_order");
             _align = bag.GetInt("align");
         }
-        
+
         public string ByteOrder { get; private set; }
         public int Exp { get; private set; }
         public int Mant { get; private set; }
@@ -207,9 +210,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfInteger : CtfMetadataType
+    internal class CtfInteger : CtfMetadataType
     {
-        int _align;
+        private int _align;
         public override int Align
         {
             get
@@ -249,11 +252,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return Size;
         }
-        
+
         public static T ReadInt<T>(CtfMetadataType type, byte[] buffer, int bitOffset) where T : IConvertible
         {
             if (type.CtfType == CtfTypes.Enum)
+            {
                 type = ((CtfEnum)type).Type;
+            }
 
             CtfInteger intType = (CtfInteger)type;
             object result = intType.Read(buffer, bitOffset);
@@ -264,7 +269,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public object Read(byte[] buffer, int bitOffset)
         {
             if (Size > 64)
+            {
                 throw new NotImplementedException();
+            }
 
             Debug.Assert((bitOffset % Align) == 0);
             int byteOffset = bitOffset / 8;
@@ -275,7 +282,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 if (Size == 32)
                 {
                     if (Signed)
+                    {
                         return ((IConvertible)BitConverter.ToInt32(buffer, byteOffset));
+                    }
 
                     return BitConverter.ToUInt32(buffer, byteOffset);
                 }
@@ -283,7 +292,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 if (Size == 8)
                 {
                     if (Signed)
+                    {
                         return (sbyte)buffer[byteOffset];
+                    }
 
                     return buffer[byteOffset];
                 }
@@ -291,18 +302,22 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 if (Size == 64)
                 {
                     if (Signed)
+                    {
                         return BitConverter.ToInt64(buffer, byteOffset);
+                    }
 
                     return BitConverter.ToUInt64(buffer, byteOffset);
                 }
 
                 Debug.Assert(Size == 16);
                 if (Signed)
+                {
                     return BitConverter.ToInt16(buffer, byteOffset);
+                }
 
                 return BitConverter.ToUInt16(buffer, byteOffset);
             }
-            
+
 
             // Sloooow path for misaligned integers
             int bits = Size;
@@ -311,7 +326,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             int byteLen = IntHelpers.AlignUp(bits, 8) / 8;
 
             for (int i = 0; i < byteLen; i++)
+            {
                 value = unchecked((value << 8) | buffer[byteOffset + byteLen - i - 1]);
+            }
 
             value >>= bitOffset;
             value &= (ulong)((1 << bits) - 1);
@@ -321,14 +338,18 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 ulong signBit = (1u << (bits - 1));
 
                 if ((value & signBit) != 0)
+                {
                     value |= ulong.MaxValue << bits;
+                }
             }
 
 
             if (Size > 32)
             {
                 if (Signed)
+                {
                     return (long)value;
+                }
 
                 return value;
             }
@@ -336,7 +357,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             if (Size > 16)
             {
                 if (Signed)
+                {
                     return (int)value;
+                }
 
                 return (uint)value;
             }
@@ -344,13 +367,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             if (Size > 8)
             {
                 if (Signed)
+                {
                     return (short)value;
+                }
 
                 return (ushort)value;
             }
 
             if (Signed)
+            {
                 return (sbyte)value;
+            }
 
             return (byte)value;
         }
@@ -361,7 +388,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfString : CtfMetadataType
+    internal class CtfString : CtfMetadataType
     {
         public int Length { get; set; }
         public override int Align
@@ -388,7 +415,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return this;
         }
-        
+
         public override int GetSize()
         {
             return CtfEvent.SizeIndeterminate;
@@ -400,7 +427,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfEnum : CtfMetadataType
+    internal class CtfEnum : CtfMetadataType
     {
         public override int Align
         {
@@ -416,7 +443,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Type = type;
             Values = ranges;
         }
-        
+
         public CtfMetadataType Type { get; private set; }
         public CtfNamedRange[] Values { get; private set; }
 
@@ -425,12 +452,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Type = Type.ResolveReference(typealias);
             return this;
         }
-        
+
         internal string GetName(int value)
         {
             foreach (CtfNamedRange range in Values)
+            {
                 if (range.Begin <= value && value <= range.End)
+                {
                     return range.Name;
+                }
+            }
 
             throw new IndexOutOfRangeException();
         }
@@ -452,9 +483,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfStruct : CtfMetadataType
+    internal class CtfStruct : CtfMetadataType
     {
-        int _align;
+        private int _align;
         public override int Align
         {
             get
@@ -463,17 +494,18 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
+        private bool _resolved = false;
 
-        bool _resolved = false;
-        
         public CtfField[] Fields { get; private set; }
-        
+
         public CtfStruct(CtfPropertyBag props, CtfField[] fields)
             : base(CtfTypes.Struct)
         {
             int alignment = 1;
             if (props != null)
+            {
                 alignment = props.GetIntOrNull("align") ?? 1;
+            }
 
             _align = alignment;
             Fields = fields;
@@ -482,18 +514,26 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         internal override CtfMetadataType ResolveReference(Dictionary<string, CtfMetadataType> typealias)
         {
             if (!_resolved)
+            {
                 foreach (CtfField field in Fields)
+                {
                     field.ResolveReference(typealias);
+                }
+            }
 
             _resolved = true;
             return this;
         }
-        
+
         internal CtfField GetField(string name)
         {
             for (int index = 0; index < Fields.Length; index++)
+            {
                 if (Fields[index].Name == name)
+                {
                     return Fields[index];
+                }
+            }
 
             return null;
         }
@@ -507,25 +547,31 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 size += tmp;
 
                 if (tmp == CtfEvent.SizeIndeterminate)
+                {
                     return CtfEvent.SizeIndeterminate;
+                }
             }
 
             return size;
         }
-        
+
         internal int GetFieldOffset(string name)
         {
             int offset = 0;
             foreach (CtfField field in Fields)
             {
                 if (field.Name == name)
+                {
                     return offset;
+                }
 
                 int tmp = field.Type.GetSize();
                 offset += tmp;
 
                 if (tmp == CtfEvent.SizeIndeterminate)
+                {
                     return CtfEvent.SizeIndeterminate;
+                }
             }
 
             throw new ArgumentException();
@@ -537,7 +583,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfVariant : CtfMetadataType
+    internal class CtfVariant : CtfMetadataType
     {
         public override int Align
         {
@@ -547,22 +593,26 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
-        bool _resolved = false;
+        private bool _resolved = false;
         public CtfVariant(string switchName, CtfField[] union)
             : base(CtfTypes.Variant)
         {
             Switch = switchName;
             Union = union;
         }
-        
+
         public string Switch { get; private set; }
         public CtfField[] Union { get; private set; }
 
         internal override CtfMetadataType ResolveReference(Dictionary<string, CtfMetadataType> typealias)
         {
             if (!_resolved)
+            {
                 foreach (CtfField field in Union)
+                {
                     field.ResolveReference(typealias);
+                }
+            }
 
             _resolved = true;
             return this;
@@ -581,12 +631,18 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             {
                 int curr = field.Type.GetSize();
                 if (curr == CtfEvent.SizeIndeterminate)
+                {
                     return CtfEvent.SizeIndeterminate;
+                }
 
                 if (size == int.MinValue)
+                {
                     size = curr;
+                }
                 else if (size != curr)
+                {
                     return CtfEvent.SizeIndeterminate;
+                }
             }
 
             return size;
@@ -598,7 +654,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    class CtfField
+    internal class CtfField
     {
         public int BitOffset { get; set; }
         public CtfMetadataType Type { get; private set; }
@@ -626,7 +682,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    struct CtfNamedRange
+    internal struct CtfNamedRange
     {
         public string Name;
         public int Begin;
@@ -642,7 +698,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public override string ToString()
         {
             if (Begin == End)
+            {
                 return string.Format("{0} = {1}", Name, Begin);
+            }
 
             return string.Format("{0} = {1} ... {2}", Name, Begin, End);
         }

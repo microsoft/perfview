@@ -1,10 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace PerfView.OtherSources
 {
@@ -14,7 +10,7 @@ namespace PerfView.OtherSources
     /// </summary>
     public class TextStackSource : InternStackSource
     {
-        public TextStackSource() {}
+        public TextStackSource() { }
 
         /// <summary>
         /// Allows more complete control over what gets emitted for a particular line.   You get the line
@@ -25,7 +21,9 @@ namespace PerfView.OtherSources
         public void Read(string fileName)
         {
             using (var file = File.OpenText(fileName))
+            {
                 Read(file);
+            }
         }
 
         public void Read(TextReader reader)
@@ -36,10 +34,14 @@ namespace PerfView.OtherSources
             {
                 var line = reader.ReadLine();
                 if (line == null)
+                {
                     break;
+                }
 
                 if (StackForLine != null)
+                {
                     sample.StackIndex = StackForLine(Interner, line);
+                }
                 else
                 {
                     // Form the stack for this entry (trivial one element stack)
@@ -47,7 +49,9 @@ namespace PerfView.OtherSources
                     sample.StackIndex = Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
                 }
                 if (sample.StackIndex != StackSourceCallStackIndex.Invalid)
+                {
                     AddSample(sample);
+                }
             }
             Interner.DoneInterning();
         }

@@ -7,6 +7,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>true</Prefer32Bit>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <RootNamespace>HeapDump</RootNamespace>
     <AssemblyName>HeapDump</AssemblyName>
@@ -25,10 +26,6 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <DefineConstants>$(DefineConstants);STANDALONE_EXE</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
@@ -38,6 +35,8 @@
   <ItemGroup>
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -74,7 +73,7 @@
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>

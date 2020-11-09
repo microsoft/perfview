@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -28,7 +25,9 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // This method is designed to be inlined and thus have very low overhead for the non-tracelogging case.   
             if (eventRecord->ExtendedDataCount != 0)
+            {
                 TestForTraceLoggingEventAndFixupIfNeededHelper(eventRecord);
+            }
         }
 
         /// <summary>
@@ -37,10 +36,15 @@ namespace Microsoft.Diagnostics.Tracing
         public void Dispose()
         {
             if (m_traceLoggingEventMap == null)
+            {
                 return;
+            }
 
             foreach (var kvp in m_traceLoggingEventMap)
+            {
                 Marshal.FreeHGlobal((IntPtr)kvp.Key.Provider);
+            }
+
             m_traceLoggingEventMap = null;
             m_nextTraceLoggingIDForProvider = null;
         }
@@ -58,7 +62,10 @@ namespace Microsoft.Diagnostics.Tracing
             while (ptr < end)
             {
                 if (ptr->ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
+                {
                     eventRecord->EventHeader.Id = GetEventIDForTraceLoggingEvent(eventRecord, ptr);
+                }
+
                 ptr++;
             }
         }
@@ -82,11 +89,17 @@ namespace Microsoft.Diagnostics.Tracing
             if (!m_traceLoggingEventMap.TryGetValue(key, out ret))
             {
                 // No then get the next ID for this particular provider (and allocate a new one)
-                m_nextTraceLoggingIDForProvider.TryGetValue(eventRecord->EventHeader.ProviderId, out ret);
-                ret++;
+                if (!m_nextTraceLoggingIDForProvider.TryGetValue(eventRecord->EventHeader.ProviderId, out ret))
+                {
+                    ret = 0xFF00;   // We arbitrarily pick the 'high end' of the event ID range to stay way from user-allocated IDs.   However we also avoid the last 256 ID just in case.  
+                }
+
+                --ret;
                 m_nextTraceLoggingIDForProvider[eventRecord->EventHeader.ProviderId] = ret;
                 if (ret == 0) // means we wrapped around.  We have no more!
+                {
                     throw new InvalidOperationException("Error ran out of TraceLogging Event IDs for provider " + eventRecord->EventHeader.ProviderId);
+                }
 
                 // Make a copy of memory the key points at.   Thus the table 'owns' the data the keys point at.   
                 // This is reclaimed in 'Dispose'
@@ -110,7 +123,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// a blob (representing the TraceLogging meta-data for an event) that knows how to 
         /// compare itself so it can be a key to a hash table. 
         /// </summary>
-        struct ProviderMetaDataKey : IEquatable<ProviderMetaDataKey>
+        private struct ProviderMetaDataKey : IEquatable<ProviderMetaDataKey>
         {
             public ProviderMetaDataKey(Guid* provider, byte opcode, byte* data, int dataSize)
             {
@@ -129,27 +142,39 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 int ret = DataSize + Provider->GetHashCode();
                 if (4 <= DataSize)
+                {
                     ret += *((int*)Data);
+                }
+
                 return ret;
             }
 
             public bool Equals(ProviderMetaDataKey other)
             {
                 if (DataSize != other.DataSize)
+                {
                     return false;
+                }
 
                 if (*Provider != *other.Provider)
+                {
                     return false;
+                }
 
                 if (Opcode != other.Opcode)
+                {
                     return false;
+                }
 
                 byte* ptrOther = other.Data;
                 byte* endPtr = Data + DataSize;
                 for (byte* ptr = Data; ptr < endPtr; ptr++)
                 {
                     if (*ptr != *ptrOther)
+                    {
                         return false;
+                    }
+
                     ptrOther++;
                 }
                 return true;
@@ -157,10 +182,10 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // Given partciular provider, opcode and tracelogging meta-data blob, look up the assigned ID
-        Dictionary<ProviderMetaDataKey, ushort> m_traceLoggingEventMap;
+        private Dictionary<ProviderMetaDataKey, ushort> m_traceLoggingEventMap;
 
         // For each provider look up the next unassigned eventID that can be used. 
-        Dictionary<Guid, ushort> m_nextTraceLoggingIDForProvider;
+        private Dictionary<Guid, ushort> m_nextTraceLoggingIDForProvider;
         #endregion 
     }
 }

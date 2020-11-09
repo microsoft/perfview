@@ -7,15 +7,7 @@
 //---------------------------------------------------------------------
 
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
 
-using Microsoft.Samples.Debugging.Native;
-using Microsoft.Samples.Debugging.NativeApi;
-using System.IO;
 
 namespace Microsoft.Samples.Debugging.Native
 {
@@ -40,7 +32,7 @@ namespace Microsoft.Samples.Debugging.Native
         PROCESSOR_ARCHITECTURE_IA32_ON_WIN64 = 10,
     }
 
-#if false 
+#if false
 
     /// <summary>
     /// Abstracts creation on the pipeline.
@@ -74,7 +66,7 @@ namespace Microsoft.Samples.Debugging.Native
             }
         }
 
-        #region KillOnExit
+    #region KillOnExit
         /// <summary>
         /// Do outstanding debuggees get automatically deleted when the debugger exits?
         /// </summary>
@@ -99,10 +91,10 @@ namespace Microsoft.Samples.Debugging.Native
         // Remember value of DebugSetProcessKillOnExit.
         // This defaults to true.
         bool m_KillOnExit = true;
-        #endregion KillOnExit
+    #endregion KillOnExit
 
 
-        #region Thread Safety
+    #region Thread Safety
         // Thread
         int m_Win32EventThreadId = NativeMethods.GetCurrentThreadId();
 
@@ -118,9 +110,9 @@ namespace Microsoft.Samples.Debugging.Native
             }
         }
 
-        #endregion
+    #endregion
 
-        #region track list of processes
+    #region track list of processes
         // Mapping of pids to NativeDbgProcess objects.
         // This lets us hand back rich process objects instead of pids.
         Dictionary<int, NativeDbgProcess> m_processes = new Dictionary<int, NativeDbgProcess>();
@@ -174,10 +166,10 @@ namespace Microsoft.Samples.Debugging.Native
             m_processes.Remove(pid);
         }
 
-        #endregion // track list of processes
+    #endregion // track list of processes
 
 
-        #region Connect
+    #region Connect
 
         /// <summary>
         /// Attach to the given process. Throws on error. 
@@ -221,7 +213,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <seealso cref="Attach"/>
         /// <remarks>Pump the process for debug events by calling WaitForDebugEvent.
         /// Create a process under the debugger
-        /// comandArgs are the arguments to application. Does not need to include arg[0] (the application name).</remarks>
+        /// commandArgs are the arguments to application. Does not need to include arg[0] (the application name).</remarks>
         public NativeDbgProcess CreateProcessDebug(string application, string commandArgs)
         {
             return CreateProcessDebugWorker(application, commandArgs,
@@ -242,7 +234,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <seealso cref="Attach"/>
         /// <remarks>Pump the process for debug events by calling WaitForDebugEvent.
         /// Create a process under the debugger.
-        /// This passes application and comandArgs directly to Passed directly to kernel32!CreateProcess and
+        /// This passes application and commandArgs directly to Passed directly to kernel32!CreateProcess and
         /// does not do any filtering on them.</remarks>
         public NativeDbgProcess CreateProcessDebugRaw(string application, string commandArgs, bool newConsole, bool debugChild)
         {
@@ -352,9 +344,9 @@ namespace Microsoft.Samples.Debugging.Native
         }
 
 
-        #endregion // Connect
+    #endregion // Connect
 
-        #region Stop/Go
+    #region Stop/Go
         /// <summary>
         /// Waits for a debug event from any of the processes in the wait set.
         /// </summary>
@@ -458,9 +450,9 @@ namespace Microsoft.Samples.Debugging.Native
             // Mark as continued so that we don't accidentally continue again.
             nativeEvent.ContinueStatus = NativeMethods.ContinueStatus.CONTINUED;
         }
-        #endregion // Stop/Go
+    #endregion // Stop/Go
 
-        #region Dispose
+    #region Dispose
 
         /// <summary>
         /// Dispose unmanaged resources, which would include process handles. 
@@ -478,10 +470,10 @@ namespace Microsoft.Samples.Debugging.Native
         }
 
 
-        #endregion
+    #endregion
     };
 
-#endif 
+#endif
 
 } // namespace Microsoft.Samples.Debugging.Native
 

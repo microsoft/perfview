@@ -21,11 +21,20 @@ namespace Microsoft.Diagnostics.Symbols
     /// support other formats (e.g. Dwarf).
     /// 
     /// To implmente support for Windows PDBs we use the Debug Interface Access (DIA).  See 
-    /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx for more.   I have only exposed what
+    /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
     public unsafe class NativeSymbolModule : ManagedSymbolModule
     {
+        /// <summary>
+        /// Returns the name of the type allocated for a given relative virtual address.
+        /// Returns null if the given rva does not match a known heap allocation site.
+        /// </summary>
+        public string GetTypeForHeapAllocationSite(uint rva)
+        {
+            return m_heapAllocationSites.Value.TryGetValue(rva, out var name) ? name : null;
+        }
+
         /// <summary>
         /// Finds a (method) symbolic name for a given relative virtual address of some code.  
         /// Returns an empty string if a name could not be found. 
@@ -44,7 +53,10 @@ namespace Microsoft.Diagnostics.Symbols
         {
             System.Threading.Thread.Sleep(0);           // Allow cancellation.  
             if (m_symbolsByAddr == null)
+            {
                 return "";
+            }
+
             IDiaSymbol symbol = m_symbolsByAddr.symbolByRVA(rva);
             if (symbol == null)
             {
@@ -81,12 +93,19 @@ namespace Microsoft.Diagnostics.Symbols
                 string unmangled = null;
                 symbol.get_undecoratedNameEx(0x1000, out unmangled);
                 if (unmangled != null)
+                {
                     ret = unmangled;
+                }
 
                 if (ret.StartsWith("@"))
+                {
                     ret = ret.Substring(1);
+                }
+
                 if (ret.StartsWith("_"))
+                {
                     ret = ret.Substring(1);
+                }
 
 #if false // TODO FIX NOW remove  
                 var m = Regex.Match(ret, @"(.*)@\d+$");
@@ -97,14 +116,18 @@ namespace Microsoft.Diagnostics.Symbols
 #else
                 var atIdx = ret.IndexOf('@');
                 if (0 < atIdx)
+                {
                     ret = ret.Substring(0, atIdx);
+                }
 #endif
             }
 
             // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
             var dollarIdx = ret.LastIndexOf('$');
             if (0 <= dollarIdx && dollarIdx + 2 < ret.Length && ret[dollarIdx + 1] == '#' && 0 <= ret.IndexOf('#', dollarIdx + 2))
+            {
                 ret = ret.Substring(0, dollarIdx);
+            }
 
             // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
             var mergedAssembliesMap = GetMergedAssembliesMap();
@@ -117,24 +140,33 @@ namespace Microsoft.Diagnostics.Symbols
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
                     var moduleIndex = int.Parse(original);
-                    string fullAssemblyName;
-                    if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
-                    {
-                        try
-                        {
-                            var assemblyName = new AssemblyName(fullAssemblyName);
-                            return assemblyName.Name + "!";
-                        }
-                        catch (Exception) { } // Catch all AssemlyName fails with ' in the name.   
-                    }
-                    return original;
+                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
                 });
 
-                // corefx.dll does not have a tag.  TODO this feels like a hack!
+                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                // the assembly containing System.Object - the implicit module number is int.MaxValue
+
                 if (!prefixMatchFound)
-                    ret = "mscorlib!" + ret;
+                {
+                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
+                }
             }
             return ret;
+        }
+
+        private static string GetAssemblyNameFromModuleIndex(Dictionary<int, string> mergedAssembliesMap, int moduleIndex, string defaultValue)
+        {
+            string fullAssemblyName;
+            if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
+            {
+                try
+                {
+                    var assemblyName = new AssemblyName(fullAssemblyName);
+                    return assemblyName.Name + "!";
+                }
+                catch (Exception) { } // Catch all AssemblyName fails with ' in the name.   
+            }
+            return defaultValue;
         }
 
         /// <summary>
@@ -210,10 +242,15 @@ namespace Microsoft.Diagnostics.Symbols
                                 ilAssemblyName = Path.GetFileNameWithoutExtension(SymbolFilePath);
                                 // strip off the .ni if present
                                 if (ilAssemblyName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                                {
                                     ilAssemblyName = ilAssemblyName.Substring(0, ilAssemblyName.Length - 3);
+                                }
                             }
                             else
+                            {
                                 ilAssemblyName = name.Substring(suffixIdx + 2, tokenIdx - (suffixIdx + 2));
+                            }
+
                             methodMetadataToken = (uint)token;
                             ilOffset = 0;           // If we don't find an IL offset, we 'guess' an ILOffset of 0
 
@@ -231,7 +268,10 @@ namespace Microsoft.Diagnostics.Symbols
                                 }
                                 ilOffset = (int)sourceLoc.lineNumber;
                                 if (ilOffset != 0xFEEFEE)
+                                {
                                     break;
+                                }
+
                                 m_reader.m_log.WriteLine("SourceLocationForRva: got illegal offset FEEFEE picking next offset.");
                                 ilOffset = 0;
                             }
@@ -250,7 +290,10 @@ namespace Microsoft.Diagnostics.Symbols
 
             var sourceFile = new MicrosoftPdbSourceFile(this, diaSrcFile);
             if (lineNum == 0xFEEFEE)
+            {
                 lineNum = 0;
+            }
+
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
             m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
             return sourceLocation;
@@ -309,11 +352,16 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 lineNum = (int)sourceLoc.lineNumber;
                 if (lineNum != 0xFEEFEE)
+                {
                     break;
+                }
+
                 lineNum = 0;
                 sourceLocs.Next(1, out sourceLoc, out fetchCount);
                 if (fetchCount == 0)
+                {
                     break;
+                }
             }
 
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
@@ -382,7 +430,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// TODO We don't need this subclass.   We can have SourceFile simply a container
         /// that holds the BuildTimePath, hashType and hashValue.    The lookup of the
         /// source can then be put on NativeSymbolModule and called from SourceFile generically.  
-        /// This makes the different symbol files more simmilar and is a nice simplification.  
+        /// This makes the different symbol files more similar and is a nice simplification.  
         /// </summary>
         public class MicrosoftPdbSourceFile : SourceFile
         {
@@ -397,16 +445,22 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     string target = base.Url; // See if it is in sourceLink information.
                     if (target != null)
+                    {
                         return target;
+                    }
 
                     // Use srcsrv information 
                     string command;
                     GetSourceServerTargetAndCommand(out target, out command);
 
                     if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
+                    {
                         return target;
+                    }
                     else
+                    {
                         return null;
+                    }
                 }
             }
 
@@ -436,7 +490,9 @@ namespace Microsoft.Diagnostics.Symbols
                 // Try getting the source from the source server using SourceLink information.  
                 var ret = base.GetSourceFromSrcServer();
                 if (ret != null)
+                {
                     return ret;
+                }
 
                 var cacheDir = _symbolModule.SymbolReader.SourceCacheDirectory;
 
@@ -454,7 +510,9 @@ namespace Microsoft.Diagnostics.Symbols
                             target = null;
                             var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
                             if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped), uri.AbsolutePath, newTarget))
+                            {
                                 target = newTarget;
+                            }
 
                             if (target == null)
                             {
@@ -480,7 +538,10 @@ namespace Microsoft.Diagnostics.Symbols
                         if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
                         {
                             if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
+                            {
                                 _log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
+                            }
+
                             addToPath = archToolsDir;
                         }
                         else
@@ -507,12 +568,17 @@ namespace Microsoft.Diagnostics.Symbols
                         fetchCmdStr = "cmd /c " + fetchCmdStr;
                         var options = new CommandOptions().AddOutputStream(_log).AddNoThrow();
                         if (addToPath != null)
+                        {
                             options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
+                        }
 
                         _log.WriteLine("Source Server command {0}", fetchCmdStr);
                         var fetchCmd = Command.Run(fetchCmdStr, options);
                         if (fetchCmd.ExitCode != 0)
+                        {
                             _log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
+                        }
+
                         if (File.Exists(target))
                         {
                             // If TF.exe command files it might still create an empty output file.   Fix that 
@@ -523,15 +589,24 @@ namespace Microsoft.Diagnostics.Symbols
                             }
                         }
                         else
+                        {
                             target = null;
+                        }
 
                         if (target == null)
+                        {
                             _log.WriteLine("Source Server command failed to produce the output file.");
+                        }
                         else
+                        {
                             _log.WriteLine("Source Server command succeeded creating {0}", target);
+                        }
                     }
                     else
+                    {
                         _log.WriteLine("Found an existing source server file {0}.", target);
+                    }
+
                     return target;
                 }
 
@@ -541,7 +616,7 @@ namespace Microsoft.Diagnostics.Symbols
 
 
             #region private
-            unsafe internal MicrosoftPdbSourceFile(NativeSymbolModule module, IDiaSourceFile sourceFile) : base(module)
+            internal unsafe MicrosoftPdbSourceFile(NativeSymbolModule module, IDiaSourceFile sourceFile) : base(module)
             {
                 BuildTimeFilePath = sourceFile.fileName;
 
@@ -550,11 +625,17 @@ namespace Microsoft.Diagnostics.Symbols
                 // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
                 // 3 checksum generated with the SHA256 hashing algorithm.
                 if (sourceFile.checksumType == 1)
+                {
                     _hashAlgorithm = System.Security.Cryptography.MD5.Create();
+                }
                 else if (sourceFile.checksumType == 2)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
+                }
                 else if (sourceFile.checksumType == 3)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
+                }
 
                 if (_hashAlgorithm != null)
                 {
@@ -569,7 +650,10 @@ namespace Microsoft.Diagnostics.Symbols
 
                     uint bytesFetched;
                     fixed (byte* bufferPtr = _hash)
+                    {
                         sourceFile.get_checksum((uint)_hash.Length, out bytesFetched, out *bufferPtr);
+                    }
+
                     Debug.Assert(bytesFetched == _hash.Length);
                 }
             }
@@ -659,13 +743,17 @@ namespace Microsoft.Diagnostics.Symbols
                 var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 if (localDirectoryToPlaceSourceFiles != null)
+                {
                     vars.Add("targ", localDirectoryToPlaceSourceFiles);
+                }
 
                 for (; ; )
                 {
                     var line = reader.ReadLine();
                     if (line == null)
+                    {
                         break;
+                    }
 
                     // log.WriteLine("Got srcsrv line {0}", line);
                     if (line.StartsWith("SRCSRV: "))
@@ -685,7 +773,9 @@ namespace Microsoft.Diagnostics.Symbols
                             {
                                 // Create variables for each of the pieces.  
                                 for (int i = 0; i < pieces.Length; i++)
+                                {
                                     vars.Add("var" + (i + 1).ToString(), pieces[i]);
+                                }
 
                                 target = SourceServerFetchVar("SRCSRVTRG", vars);
                                 command = SourceServerFetchVar("SRCSRVCMD", vars);
@@ -699,7 +789,9 @@ namespace Microsoft.Diagnostics.Symbols
                         // Gather up the KEY=VALUE pairs into a dictionary.  
                         var m = Regex.Match(line, @"^(\w+)=(.*?)\s*$");
                         if (m.Success)
+                        {
                             vars[m.Groups[1].Value] = m.Groups[2].Value;
+                        }
                     }
                 }
             }
@@ -713,7 +805,10 @@ namespace Microsoft.Diagnostics.Symbols
                 // If you have VS installed used that TF.exe associated with that.  
                 var progFiles = Environment.GetEnvironmentVariable("ProgramFiles (x86)");
                 if (progFiles == null)
+                {
                     progFiles = Environment.GetEnvironmentVariable("ProgramFiles");
+                }
+
                 if (progFiles != null)
                 {
                     // Find the oldest Visual Studio directory;
@@ -724,7 +819,9 @@ namespace Microsoft.Diagnostics.Symbols
                         var VSDir = Path.Combine(dirs[dirs.Length - 1], @"Common7\IDE");
                         var tfexe = Path.Combine(VSDir, "tf.exe");
                         if (File.Exists(tfexe))
+                        {
                             return tfexe;
+                        }
                     }
                 }
                 return null;
@@ -736,7 +833,10 @@ namespace Microsoft.Diagnostics.Symbols
                 if (vars.TryGetValue(variable, out result))
                 {
                     if (0 <= result.IndexOf('%'))
+                    {
                         _log.WriteLine("SourceServerFetchVar: Before Evaluation {0} = '{1}'", variable, result);
+                    }
+
                     result = SourceServerEvaluate(result, vars);
                 }
                 _log.WriteLine("SourceServerFetchVar: {0} = '{1}'", variable, result);
@@ -831,27 +931,46 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             #endregion
         }
 
-        private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
+        private NativeSymbolModule(SymbolReader reader, string pdbFilePath, Action<IDiaDataSource3> loadData) : base(reader, pdbFilePath)
         {
-            this.m_reader = reader;
+            m_reader = reader;
 
             m_source = DiaLoader.GetDiaSourceObject();
-            loadData();
+            loadData(m_source);
             m_source.openSession(out m_session);
             m_session.getSymbolsByAddr(out m_symbolsByAddr);
+
+            m_heapAllocationSites = new Lazy<IReadOnlyDictionary<uint, string>>(() =>
+            {
+                // Retrieves the S_HEAPALLOCSITE information from the pdb as described here:
+                // https://docs.microsoft.com/visualstudio/profiling/custom-native-etw-heap-events
+                Dictionary<uint, string> result = null;
+                m_session.getHeapAllocationSites(out var diaEnumSymbols);
+                for (; ; )
+                {
+                    diaEnumSymbols.Next(1, out var sym, out var fetchCount);
+                    if (fetchCount == 0)
+                    {
+                        return (IReadOnlyDictionary<uint, string>)result ?? System.Collections.Immutable.ImmutableDictionary<uint, string>.Empty;
+                    }
+
+                    result = result ?? new Dictionary<uint, string>();
+                    m_session.symbolById(sym.typeId, out var typeSym);
+                    result[sym.relativeVirtualAddress + (uint)sym.length] = HeapAllocationTypeInfo.GetTypeName(typeSym);
+                }
+            });
 
             m_reader.m_log.WriteLine("Opening PDB {0} with signature GUID {1} Age {2}", pdbFilePath, PdbGuid, PdbAge);
         }
 
-        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath) : base(reader, pdbFilePath)
+        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath)
+            : this(reader, pdbFilePath, s => s.loadDataFromPdb(pdbFilePath))
         {
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromPdb(pdbFilePath));
         }
 
-        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream) : base(reader, pdbFilePath)
+        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream)
+            : this(reader, pdbFilePath, s => s.loadDataFromIStream(new ComStreamWrapper(pdbStream)))
         {
-            IStream comStream = new ComStreamWrapper(pdbStream);
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromIStream(comStream));
         }
 
         internal void LogManagedInfo(string pdbName, Guid pdbGuid, int pdbAge)
@@ -881,9 +1000,14 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             if (len == 0)
             {
                 if (0 <= SymbolFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase))
+                {
                     log.WriteLine("Error, trying to look up source information on an NGEN file, giving up");
+                }
                 else
+                {
                     log.WriteLine("Pdb {0} does not have source server information (srcsrv stream) in it", SymbolFilePath);
+                }
+
                 return null;
             }
 
@@ -916,10 +1040,10 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             if (m.Success)
             {
                 string ret = m.Groups[1].Value;
-                m_reader.m_log.WriteLine("Found SourceLink Infomation for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
+                m_reader.m_log.WriteLine("Found SourceLink Information for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
                 return ret;
             }
-            m_reader.m_log.WriteLine("Failed to look up SourceLink Infomation for {0}.", SymbolFilePath);
+            m_reader.m_log.WriteLine("Failed to look up SourceLink Information for {0}.", SymbolFilePath);
             return null;
         }
 
@@ -929,7 +1053,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             get
             {
                 if (m_managedPdbName == null)
+                {
                     return this;
+                }
 
                 if (!m_managedPdbAttempted)
                 {
@@ -942,7 +1068,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                         m_managedPdb = m_reader.OpenSymbolFile(managedPdbPath);
                     }
                     else
+                    {
                         m_reader.m_log.WriteLine("Could not find managed PDB {0}", m_managedPdbName);
+                    }
                 }
                 return m_managedPdb;
             }
@@ -951,20 +1079,30 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// <summary>
         /// For Project N modules it returns the list of pre merged IL assemblies and the corresponding mapping.
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public Dictionary<int, string> GetMergedAssembliesMap()
         {
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
                 m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
-                foreach (IDiaInputAssemblyFile inputAssembly in diaMergedAssemblyRecords)
+                for (; ; )
                 {
+                    IDiaInputAssemblyFile inputAssembly;
+                    uint fetchCount;
+                    diaMergedAssemblyRecords.Next(1, out inputAssembly, out fetchCount);
+                    if (fetchCount != 1)
+                    {
+                        break;
+                    }
+
                     int index = (int)inputAssembly.index;
                     string assemblyName = inputAssembly.fileName;
 
                     if (m_mergedAssemblies == null)
+                    {
                         m_mergedAssemblies = new Dictionary<int, string>();
+                    }
+
                     m_mergedAssemblies.Add(index, assemblyName);
                 }
                 m_checkedForMergedAssemblies = true;
@@ -1056,8 +1194,168 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return buf;
         }
 
-        bool m_checkedForMergedAssemblies;
-        Dictionary<int, string> m_mergedAssemblies;
+        /// <summary>
+        /// This static class contains the GetTypeName method for retrieving the type name of 
+        /// a heap allocation site. 
+        /// 
+        /// See https://github.com/KirillOsenkov/Dia2Dump/blob/master/PrintSymbol.cpp for more details
+        /// </summary>
+        private static class HeapAllocationTypeInfo
+        {
+            internal static string GetTypeName(IDiaSymbol symbol)
+            {
+                var name = symbol.name ?? "<unknown>";
+
+                switch ((SymTagEnum)symbol.symTag)
+                {
+                    case SymTagEnum.UDT:
+                    case SymTagEnum.Enum:
+                    case SymTagEnum.Typedef:
+                        return name;
+                    case SymTagEnum.FunctionType:
+                        return "function";
+                    case SymTagEnum.PointerType:
+                        return $"{GetTypeName(symbol.type)} {(symbol.reference != 0 ? "&" : "*") }";
+                    case SymTagEnum.ArrayType:
+                        return "array";
+                    case SymTagEnum.BaseType:
+                        var sb = new StringBuilder();
+                        switch ((BasicType)symbol.baseType)
+                        {
+                            case BasicType.btUInt:
+                                sb.Append("unsigned ");
+                                goto case BasicType.btInt;
+                            case BasicType.btInt:
+                                switch (symbol.length)
+                                {
+                                    case 1:
+                                        sb.Append("char");
+                                        break;
+                                    case 2:
+                                        sb.Append("short");
+                                        break;
+                                    case 4:
+                                        sb.Append("int");
+                                        break;
+                                    case 8:
+                                        sb.Append("long");
+                                        break;
+                                }
+                                return sb.ToString();
+                            case BasicType.btFloat:
+                                return symbol.length == 4 ? "float" : "double";
+                            default:
+                                return BaseTypes[symbol.baseType];
+                        }
+                }
+
+                return $"unhandled symbol tag {symbol.symTag}";
+            }
+
+            private enum SymTagEnum
+            {
+                Null,
+                Exe,
+                Compiland,
+                CompilandDetails,
+                CompilandEnv,
+                Function,
+                Block,
+                Data,
+                Annotation,
+                Label,
+                PublicSymbol,
+                UDT,
+                Enum,
+                FunctionType,
+                PointerType,
+                ArrayType,
+                BaseType,
+                Typedef,
+                BaseClass,
+                Friend,
+                FunctionArgType,
+                FuncDebugStart,
+                FuncDebugEnd,
+                UsingNamespace,
+                VTableShape,
+                VTable,
+                Custom,
+                Thunk,
+                CustomType,
+                ManagedType,
+                Dimension,
+                CallSite,
+                InlineSite,
+                BaseInterface,
+                VectorType,
+                MatrixType,
+                HLSLType
+            };
+
+            private enum BasicType
+            {
+                btNoType = 0,
+                btVoid = 1,
+                btChar = 2,
+                btWChar = 3,
+                btInt = 6,
+                btUInt = 7,
+                btFloat = 8,
+                btBCD = 9,
+                btBool = 10,
+                btLong = 13,
+                btULong = 14,
+                btCurrency = 25,
+                btDate = 26,
+                btVariant = 27,
+                btComplex = 28,
+                btBit = 29,
+                btBSTR = 30,
+                btHresult = 31,
+                btChar16 = 32,  // char16_t
+                btChar32 = 33,  // char32_t
+            };
+
+            private static readonly string[] BaseTypes = new[]
+            {
+                 "<NoType>",                         // btNoType = 0,
+                 "void",                             // btVoid = 1,
+                 "char",                             // btChar = 2,
+                 "wchar_t",                          // btWChar = 3,
+                 "signed char",
+                 "unsigned char",
+                 "int",                              // btInt = 6,
+                 "unsigned int",                     // btUInt = 7,
+                 "float",                            // btFloat = 8,
+                 "<BCD>",                            // btBCD = 9,
+                 "bool",                             // btBool = 10,
+                 "short",
+                 "unsigned short",
+                 "long",                             // btLong = 13,
+                 "unsigned long",                    // btULong = 14,
+                 "__int8",
+                 "__int16",
+                 "__int32",
+                 "__int64",
+                 "__int128",
+                 "unsigned __int8",
+                 "unsigned __int16",
+                 "unsigned __int32",
+                 "unsigned __int64",
+                 "unsigned __int128",
+                 "<currency>",                       // btCurrency = 25,
+                 "<date>",                           // btDate = 26,
+                 "VARIANT",                          // btVariant = 27,
+                 "<complex>",                        // btComplex = 28,
+                 "<bit>",                            // btBit = 29,
+                 "BSTR",                             // btBSTR = 30,
+                 "HRESULT"                           // btHresult = 31
+            };
+        }
+
+        private bool m_checkedForMergedAssemblies;
+        private Dictionary<int, string> m_mergedAssemblies;
 
         private string m_managedPdbName;
         private Guid m_managedPdbGuid;
@@ -1065,10 +1363,11 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         private ManagedSymbolModule m_managedPdb;
         private bool m_managedPdbAttempted;
 
-        internal SymbolReader m_reader;
-        internal IDiaSession m_session;
-        IDiaDataSource3 m_source;
-        IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        internal readonly IDiaSession m_session;
+        private readonly SymbolReader m_reader;
+        private readonly IDiaDataSource3 m_source;
+        private readonly IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        private readonly Lazy<IReadOnlyDictionary<uint, string>> m_heapAllocationSites; // rva => typename
 
         #endregion
     }
@@ -1136,7 +1435,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             IDiaEnumSymbols symEnum = null;
             m_module.m_session.findChildren(m_diaSymbol, tag, null, 0, out symEnum);
             if (symEnum == null)
+            {
                 return null;
+            }
 
             uint fetchCount;
             var ret = new List<Symbol>();
@@ -1145,7 +1446,10 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
                 if (fetchCount == 0)
+                {
                     break;
+                }
+
                 SymTagEnum symTag = (SymTagEnum)sym.symTag;
                 ret.Add(new Symbol(m_module, sym));
             }
@@ -1221,7 +1525,9 @@ internal sealed class ComStreamWrapper : IStream
         fixed (byte* p = &pv)
         {
             for (int i = 0; i < bytesRead; i++)
+            {
                 p[i] = buf[i];
+            }
         }
     }
 
@@ -1346,7 +1652,7 @@ namespace Dia2Lib
         /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
         /// after use.
         /// </summary>
-        static bool s_loadedNativeDll;
+        private static bool s_loadedNativeDll;
         #endregion
     }
 }

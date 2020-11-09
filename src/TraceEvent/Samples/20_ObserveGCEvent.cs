@@ -10,12 +10,12 @@ using System.Reactive.Linq;
 
 namespace TraceEventSamples
 {
-    class ObserveGCEvents
+    internal class ObserveGCEvents
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -63,12 +63,15 @@ namespace TraceEventSamples
 
                 // Print the outgoing stream to the console
                 gcCollectStream.Subscribe(collectData =>
-                    Out.WriteLine("GC Collect:  Proc: {0,10} Gen0: {1,6:f1}M Gen1: {2,6:f1}M Gen2: {3,6:f1}M LargeObj: {4,6:f1}M",
+                    Out.WriteLine("GC Collect:  Proc: {0,10} Gen0: {1,6:f1}M Gen1: {2,6:f1}M Gen2: {3,6:f1}M LargeObj: {4,6:f1}M PinObj {4,6:f1}M",
                          GetProcessName(collectData.ProcessID),
                          collectData.GenerationSize0 / 1000000.0,
                          collectData.GenerationSize1 / 1000000.0,
                          collectData.GenerationSize2 / 1000000.0,
-                         collectData.GenerationSize3 / 1000000.0));
+                         collectData.GenerationSize3 / 1000000.0,
+                         0));
+                // TODO, enable POH display once TraceEvent package is updated
+                // collectData.GenerationSize4 / 1000000.0));
 
                 IObservable<long> timer = Observable.Timer(new TimeSpan(0, 0, monitoringTimeSec));
                 timer.Subscribe(delegate
@@ -91,7 +94,10 @@ namespace TraceEventSamples
             // Only keep the cache for 10 seconds to avoid issues with process ID reuse.  
             var now = DateTime.UtcNow;
             if ((now - s_processNameCacheLastUpdate).TotalSeconds > 10)
+            {
                 s_processNameCache.Clear();
+            }
+
             s_processNameCacheLastUpdate = now;
 
             string ret = null;
@@ -101,9 +107,15 @@ namespace TraceEventSamples
                 try { proc = Process.GetProcessById(processID); }
                 catch (Exception) { }
                 if (proc != null)
+                {
                     ret = proc.ProcessName;
+                }
+
                 if (string.IsNullOrWhiteSpace(ret))
+                {
                     ret = processID.ToString();
+                }
+
                 s_processNameCache.Add(processID, ret);
             }
             return ret;
@@ -125,7 +137,9 @@ namespace TraceEventSamples
             s_bCtrlCExecuted = false;
             // uninstall previous handler
             if (s_CtrlCHandler != null)
+            {
                 Console.CancelKeyPress -= s_CtrlCHandler;
+            }
 
             s_CtrlCHandler =
                 (object sender, ConsoleCancelEventArgs cancelArgs) =>

@@ -24,9 +24,14 @@ namespace PerfView
                 {
                     commandLine = (string)processObj["CommandLine"];
                     if (commandLine == null)
+                    {
                         commandLine = ExecutablePath;
+                    }
+
                     if (commandLine == null)
+                    {
                         commandLine = "";
+                    }
                 }
                 return commandLine;
             }
@@ -36,7 +41,10 @@ namespace PerfView
             get
             {
                 if (executablePath == null)
+                {
                     executablePath = (string)processObj["ExecutablePath"];
+                }
+
                 return executablePath;
             }
         }
@@ -60,7 +68,9 @@ namespace PerfView
                 {
                     string creationDateStr = (string)processObj["CreationDate"];
                     if (creationDateStr != null)
+                    {
                         creationDate = ToDateTime(creationDateStr);
+                    }
                 }
                 return creationDate;
             }
@@ -70,7 +80,10 @@ namespace PerfView
             get
             {
                 if (cpuTime100ns == 0)
+                {
                     cpuTime100ns = (long)((ulong)processObj["KernelModeTime"] + (ulong)processObj["UserModeTime"]);
+                }
+
                 return cpuTime100ns;
             }
         }
@@ -89,9 +102,11 @@ namespace PerfView
             var args = Regex.Replace(CommandLine, "^((\\S+)|(\".*?\"))\\s*", "");
             var shortName = Name;
             if (shortName.Length > 24)
+            {
                 shortName = shortName.Substring(0, 24);
+            }
 
-            return string.Format("{0,-24} | Pid: {1,5} | Alive: {2,6} | Args: {3}", shortName, ProcessID, 
+            return string.Format("{0,-24} | Pid: {1,5} | Alive: {2,6} | Args: {3}", shortName, ProcessID,
                 TimeStr(DateTime.Now - CreationDate), args);
         }
 
@@ -105,19 +120,34 @@ namespace PerfView
         {
             double time = span.TotalMilliseconds;
             if (time < 1000)
+            {
                 return time.ToString("f0") + "ms";
+            }
+
             time = time / 1000;
             if (time < 60)
+            {
                 return time.ToString("f1") + "s";
+            }
+
             time = time / 60;
             if (time < 60)
+            {
                 return time.ToString("f1") + "m";
+            }
+
             time = time / 60;
             if (time < 24)
+            {
                 return time.ToString("f1") + "h";
+            }
+
             time = time / 24;
             if (time < 100)
+            {
                 return time.ToString("f1") + "d";
+            }
+
             return time.ToString("f0") + "d";
         }
 
@@ -126,9 +156,9 @@ namespace PerfView
         internal ProcessInfo(ManagementBaseObject processObj)
         {
             this.processObj = processObj;
-            this.processID = (int)(uint)processObj["ProcessID"];
-            this.parentProcessID = (int)(uint)processObj["ParentProcessID"];
-            this.children = emptyList;
+            processID = (int)(uint)processObj["ProcessID"];
+            parentProcessID = (int)(uint)processObj["ParentProcessID"];
+            children = emptyList;
         }
 
         /// <summary>
@@ -143,7 +173,9 @@ namespace PerfView
                 commandLine = Regex.Replace(commandLine, @"\S+\\", "");
                 commandLine = Regex.Replace(commandLine, @"\s+", " ");
                 if (commandLine.Length > limit)
+                {
                     commandLine = commandLine.Substring(0, limit - 1) + "...";
+                }
             }
             return commandLine;
         }
@@ -259,7 +291,7 @@ namespace PerfView
         private string name;
         private DateTime creationDate;
         private long cpuTime100ns;
-        static List<ProcessInfo> emptyList = new List<ProcessInfo>();
+        private static List<ProcessInfo> emptyList = new List<ProcessInfo>();
         #endregion
     }
 
@@ -284,7 +316,9 @@ namespace PerfView
 
                 // Process ID 0 is a special Peudo-process that is weird (it is its own parent)
                 if (processInfo.ProcessID != 0)
+                {
                     allProcs.Add(processInfo.ProcessID, processInfo);
+                }
             }
 
             // create the lists of children based on the parent information 
@@ -296,12 +330,17 @@ namespace PerfView
                     // All zero element lists are shared, if we are going to add an element we need to
                     // do copy on write. 
                     if (parentProcess.children.Count == 0)
+                    {
                         parentProcess.children = new List<ProcessInfo>();
+                    }
+
                     parentProcess.Children.Add(process);
                     process.parent = parentProcess;
                 }
                 else
+                {
                     topProcs.Add(process);      // It does not have a parent.
+                }
             }
         }
         /// <summary>
@@ -329,7 +368,7 @@ namespace PerfView
         /// Returns a 
         /// </summary>
         /// <returns></returns>
-        override public string ToString()
+        public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("-------------------------------------------------------------------------------");
@@ -339,7 +378,9 @@ namespace PerfView
 
 
             foreach (ProcessInfo process in topProcs)
+            {
                 PrintTree(process, sb, "");
+            }
 
             return sb.ToString();
         }
@@ -349,7 +390,9 @@ namespace PerfView
         {
             sb.AppendLine(process.ToString(indent, 54));
             foreach (ProcessInfo child in process.Children)
+            {
                 PrintTree(child, sb, indent + " ");
+            }
         }
         private List<ProcessInfo> topProcs;             // Processes with no parent (that is alive)
         private Dictionary<int, ProcessInfo> allProcs;

@@ -4,8 +4,8 @@
 //  Copyright (C) Microsoft Corporation.  All rights reserved.
 //---------------------------------------------------------------------
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
 // Implements ICorDebugMetadataLocator interface
@@ -18,9 +18,9 @@ namespace Microsoft.Samples.Debugging.MetaDataLocator
              [In, MarshalAs(UnmanagedType.LPWStr)] string imagePath,
              [In] uint dwImageTimeStamp,
              [In] uint dwImageSize,
-             [In] uint cchPathBuffer, 
+             [In] uint cchPathBuffer,
              [Out] out uint pcchPathBuffer,
-             [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex=3)] char[] wszPathBuffer);
+             [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] char[] wszPathBuffer);
     }
 
     public sealed class CorDebugMetaDataLocator : ICorDebugMetaDataLocator
@@ -29,9 +29,9 @@ namespace Microsoft.Samples.Debugging.MetaDataLocator
         private Guid IID_ICorDebugMetaDataLocator = new Guid("7cef8ba9-2ef7-42bf-973f-4171474f87d9");
         private const uint m_sizeOfWchar = 2;
 
-        struct HResultConsts
+        private struct HResultConsts
         {
-            public const uint S_Ok                    = 0x00000000;
+            public const uint S_Ok = 0x00000000;
             public const uint E_Not_Sufficient_Buffer = 0x8007007A;
             public const uint E_Fail = 0x80004005;
         }

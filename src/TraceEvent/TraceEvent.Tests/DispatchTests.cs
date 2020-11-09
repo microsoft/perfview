@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.Diagnostics.Tracing;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -15,7 +15,7 @@ namespace TraceEventTests
         public static string ProviderName = "TestProvider";
         protected override string GetProviderName() { return ProviderName; }
 
-        static List<TraceEvent> s_templates;
+        private static List<TraceEvent> s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
@@ -63,13 +63,17 @@ namespace TraceEventTests
                 s_templates = templates;
             }
             foreach (var template in s_templates)
+            {
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
+                {
                     callback(template);
+                }
+            }
         }
 
         public static Guid ProviderGuid = new Guid(unchecked((int)0x01020304), 0x0506, 0x0708, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16);
 
-#region events
+        #region events
         public const int Event001Id = 1;
         public event Action<EmptyTraceData> Event001
         {
@@ -580,7 +584,7 @@ namespace TraceEventTests
                 source.UnregisterEventTemplate(value, Event039Id, ProviderGuid);
             }
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -666,7 +670,9 @@ namespace TraceEventTests
                         var newTemplate = new EmptyTraceData(MakeTarget(i), r.Next(256), 0, "MyTask" + i.ToString(), Guid.Empty, 0, "", guid, "Test");
                         m_activeTemplates.Add(newTemplate);
                         if (verbose)
+                        {
                             Trace.WriteLine(string.Format("Adding new event {0} {1} {2}", newTemplate.GetHashCode(), newTemplate.ProviderGuid, newTemplate.eventID));
+                        }
 
                         asParserServices.RegisterEventTemplate(newTemplate);
                         var newCallbackCount = m_dispatcher.DistinctCallbackCount();
@@ -683,7 +689,9 @@ namespace TraceEventTests
                         m_repeatTemplates.Add(newTemplate);
 
                         if (verbose)
+                        {
                             Trace.WriteLine(string.Format("cloning event {0} {1} {2}", newTemplate.GetHashCode(), newTemplate.ProviderGuid, newTemplate.eventID));
+                        }
 
                         asParserServices.RegisterEventTemplate(newTemplate);
                         var newCallbackCount = m_dispatcher.DistinctCallbackCount();
@@ -717,7 +725,10 @@ namespace TraceEventTests
                     }
 
                     if (verbose)
+                    {
                         Trace.WriteLine(string.Format("Removing event {0} {1} {2}", toRemove.GetHashCode(), toRemove.ProviderGuid, toRemove.eventID));
+                    }
+
                     m_inactiveTemplates.Add(toRemove);
                     asParserServices.UnregisterEventTemplate(toRemove.Target, (int)toRemove.eventID, toRemove.ProviderGuid);
 
@@ -727,14 +738,19 @@ namespace TraceEventTests
             }
             // Remove all the rest.  
             foreach (var toRemove in m_activeTemplates)
+            {
                 asParserServices.UnregisterEventTemplate(toRemove.Target, (int)toRemove.eventID, toRemove.ProviderGuid);
+            }
+
             foreach (var toRemove in m_repeatTemplates)
+            {
                 asParserServices.UnregisterEventTemplate(toRemove.Target, (int)toRemove.eventID, toRemove.ProviderGuid);
+            }
 
             Output.WriteLine("Callback Count {0}", m_dispatcher.DistinctCallbackCount());
         }
 
-        unsafe void SendEvent(Guid providerGuid, int eventID, bool isClassic = false)
+        private unsafe void SendEvent(Guid providerGuid, int eventID, bool isClassic = false)
         {
             TraceEventNativeMethods.EVENT_RECORD rawDataStorage;
             TraceEventNativeMethods.EVENT_RECORD* rawData = &rawDataStorage;
@@ -742,7 +758,9 @@ namespace TraceEventTests
             rawData->EventHeader.Id = (ushort)eventID;
             rawData->EventHeader.Flags = 0;
             if (isClassic)
+            {
                 rawData->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER;
+            }
 
             var event_ = m_dispatcher.Lookup(rawData);
             m_dispatcher.Dispatch(event_);
@@ -754,12 +772,18 @@ namespace TraceEventTests
 
             sw.WriteLine("Active");
             foreach (var key in m_activeTemplates)
+            {
                 sw.WriteLine("  {0} {1} {2}", key.GetHashCode(), key.ProviderGuid, key.eventID);
+            }
+
             sw.WriteLine("");
 
             sw.WriteLine("Repeat");
             foreach (var key in m_repeatTemplates)
+            {
                 sw.WriteLine("  {0} {1} {2}", key.GetHashCode(), key.ProviderGuid, key.eventID);
+            }
+
             sw.WriteLine("");
 
             sw.WriteLine("Visited");
@@ -771,54 +795,69 @@ namespace TraceEventTests
             return sw.ToString();
         }
 
-        class MyObserver<T> : IObserver<T>
+        private class MyObserver<T> : IObserver<T>
         {
             public MyObserver(Action<T> action, Action completed = null) { m_action = action; m_completed = completed; }
             public void OnNext(T value) { m_action(value); }
-            public void OnCompleted() { if (m_completed != null) m_completed(); }
+            public void OnCompleted()
+            {
+                if (m_completed != null)
+                {
+                    m_completed();
+                }
+            }
             public void OnError(Exception error) { }
-            Action<T> m_action;
-            Action m_completed;
+
+            private Action<T> m_action;
+            private Action m_completed;
         }
 
-        static IDisposable Subscribe<T>(IObservable<T> observable, Action<T> action, Action completed = null)
+        private static IDisposable Subscribe<T>(IObservable<T> observable, Action<T> action, Action completed = null)
         {
             return observable.Subscribe(new MyObserver<T>(action, completed));
         }
 
-        void RunTest()
+        private void RunTest()
         {
             m_visited.Clear();
 
             // Send an event to every active template
             foreach (var template in m_activeTemplates)
+            {
                 SendEvent(template.ProviderGuid, (int)template.eventID, template.lookupAsClassic);
+            }
 
             foreach (var template in m_inactiveTemplates)
+            {
                 Assert.True(!m_visited.Contains(template));
+            }
 
             foreach (var template in m_activeTemplates)
+            {
                 Assert.Contains(template, m_visited);
+            }
 
             foreach (var template in m_repeatTemplates)
+            {
                 Assert.Contains(template, m_visited);
+            }
         }
 
-        Action<EmptyTraceData> MakeTarget(int i)
+        private Action<EmptyTraceData> MakeTarget(int i)
         {
-            return delegate(EmptyTraceData data) { m_dummy = i; this.Target(data); };
+            return delegate (EmptyTraceData data) { m_dummy = i; Target(data); };
         }
 
-        void Target(EmptyTraceData data)
+        private void Target(EmptyTraceData data)
         {
             Assert.True(m_visited.Add(data));
         }
 
-        int m_dummy;
-        TraceEventDispatcher m_dispatcher;
-        HashSet<EmptyTraceData> m_visited = new HashSet<EmptyTraceData>();
-        List<EmptyTraceData> m_inactiveTemplates = new List<EmptyTraceData>();
-        List<EmptyTraceData> m_activeTemplates = new List<EmptyTraceData>();
-        List<EmptyTraceData> m_repeatTemplates = new List<EmptyTraceData>();
+        private int m_dummy;
+        private TraceEventDispatcher m_dispatcher;
+        private HashSet<EmptyTraceData> m_visited = new HashSet<EmptyTraceData>();
+        private List<EmptyTraceData> m_inactiveTemplates = new List<EmptyTraceData>();
+        private List<EmptyTraceData> m_activeTemplates = new List<EmptyTraceData>();
+        private List<EmptyTraceData> m_repeatTemplates = new List<EmptyTraceData>();
     }
 }

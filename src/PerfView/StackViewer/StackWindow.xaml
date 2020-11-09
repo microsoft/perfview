@@ -1,4 +1,4 @@
-﻿<Window x:Class="PerfView.StackWindow"
+﻿<src:WindowBase x:Class="PerfView.StackWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -199,7 +199,6 @@
                     <MenuItem Header="Parent _Window" Click="DoOpenParent"/>
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
                     <MenuItem Header="Set Source Path" Click="DoSetSourcePath" ToolTip="Sets the locations to look for source code."/>
-                    <MenuItem Header="Set As Default Grouping/Folding" Click="DoSetDefaultGroupingFolding" ToolTip="Sets the default values of Group Patterns and Fold Patterns and % to the current values."/>
                     <MenuItem Header="Save" Command="{x:Static src:StackWindow.SaveCommand}" />
                     <MenuItem Header="Save View As" Command="{x:Static src:StackWindow.SaveAsCommand}" />
                     <MenuItem Header="_Close" Click="DoClose"/>
@@ -208,6 +207,7 @@
                 </MenuItem>
                 <MenuItem Name="DiffMenu" Header="_Diff"/>
                 <MenuItem Name="RegressionMenu" Header="_Regression"/>
+                <MenuItem Name="PresetMenu" Header="_Preset"/>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Stack Viewer" Command="Help" CommandParameter="StackViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:StackWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
@@ -481,13 +481,13 @@
                             Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <Canvas Name="FlameGraphCanvas" Background="Transparent" SizeChanged="FlameGraphCanvas_SizeChanged" MouseMove="FlameGraphCanvas_MouseMove">
+                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged">
                         <Canvas.ContextMenu>
                             <ContextMenu Name="noContextMenu" Visibility="Visible">
                                 <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
                             </ContextMenu>
                         </Canvas.ContextMenu>
-                    </Canvas>
+                    </src:FlameGraphDrawingCanvas>
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">
@@ -523,4 +523,4 @@
             </TextBlock>
         </Grid>
     </DockPanel>
-</Window>
+</src:WindowBase>

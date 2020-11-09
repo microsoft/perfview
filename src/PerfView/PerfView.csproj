@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="MSBuild.Sdk.Extras">
 
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
@@ -7,6 +7,8 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Prefer32Bit>True</Prefer32Bit>
     <StartupObject>PerfView.App</StartupObject>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
@@ -20,9 +22,20 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <ItemGroup>
+    <SuggestedBindingRedirects Include="Microsoft.Diagnostics.Tracing.TraceEvent, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <MaxVersion>$(TraceEventVersion).0</MaxVersion>
+      <Visible>false</Visible>
+    </SuggestedBindingRedirects>
+  </ItemGroup>
+
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <DefineConstants>$(DefineConstants);PERFVIEW</DefineConstants>
     <NoWarn>$(NoWarn),0436,0618</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PUBLIC_BUILD)' == 'true'">
+    <DefineConstants>$(DefineConstants);PUBLIC_BUILD</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -43,15 +56,26 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisRulesVersion)" PrivateAssets="all"/>
+
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
     <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
-    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
+
+  <!-- Copy AutomatedAnalysis rules to the target directory. -->
+  <ItemGroup>
+    <AutomatedAnalysisRules Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
+  </ItemGroup>
+  <Target Name="CopyRulesToTarget" AfterTargets="Build">
+    <Copy SourceFiles="@(AutomatedAnalysisRules)" DestinationFolder="$(TargetDir)Rules" />
+  </Target>
 
   <ItemGroup>
     <Compile Include="..\heapDump\GCHeapDump.cs">
@@ -94,10 +118,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Include="**\*.xaml" SubType="Designer" Generator="MSBuild:Compile" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -126,6 +146,20 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\msdia140.dll</LogicalName>
       <Link>x86\msdia140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\msvcp140.dll</LogicalName>
+      <Link>x86\msvcp140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\vcruntime140.dll</LogicalName>
+      <Link>x86\vcruntime140.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
@@ -165,11 +199,39 @@
       <Link>amd64\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</LogicalName>
+      <Link>Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
       <Link>amd64\msdia140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\msvcp140.dll</LogicalName>
+      <Link>amd64\msvcp140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\vcruntime140.dll</LogicalName>
+      <Link>amd64\vcruntime140.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\vcruntime140_1.dll</LogicalName>
+      <Link>amd64\vcruntime140_1.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net45\HeapDump.exe">
@@ -208,13 +270,13 @@
       <Link>amd64\EtwClrProfiler.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <!--<EmbeddedResource Include="$(OutDir)\PerfView.xml">
+    <EmbeddedResource Include="SupportFiles\PerfView.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\PerfView.xml</LogicalName>
-      <SubType>Designer</SubType>
+      <Link>PerfView.xml</Link>
       <Visible>False</Visible>
-    </EmbeddedResource>-->
+    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -236,6 +298,27 @@
       <Link>System.Runtime.InteropServices.RuntimeInformation.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Collections.Immutable.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Collections.Immutable.dll</LogicalName>
+      <Link>System.Collections.Immutable.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Reflection.Metadata.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Reflection.Metadata.dll</LogicalName>
+      <Link>System.Reflection.Metadata.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.CompilerServices.Unsafe.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+      <Link>System.Runtime.CompilerServices.Unsafe.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -243,7 +326,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net45\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -329,6 +412,11 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportFiles\EventCounterVisualization.html">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\EventCounterVisualization.html</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\PerfViewWebVideos.htm">
       <Type>Non-Resx</Type>
@@ -426,35 +514,10 @@
     <SplashScreen Include="SplashScreen.png" />
   </ItemGroup>
 
-  <!-- CPS doesn't show these items by default, but we want to show them. -->
-  <ItemGroup>
-    <!-- XAML pages and resources -->
-    <None Include="@(Page)" />
-    <None Include="@(Resource)" />
-
-    <!-- Fix nesting of generated source files in the project tree -->
-    <Compile Update="**\*.xaml.cs" SubType="Designer" DependentUpon="%(Filename)" />
-  </ItemGroup>
-
-  <!-- Work around CoreCompile doesn't exist error -->
-  <PropertyGroup>
-    <LanguageTargets>$(MSBuildExtensionsPath)\$(VisualStudioVersion)\Bin\Microsoft.CSharp.targets</LanguageTargets>
-  </PropertyGroup>
-
-  <!--
-     Work around to fix Intellisense file generation for XAML projects
-     https://github.com/dotnet/project-system/issues/2488
-  -->
-  <Target Name="WorkaroundForXAMLIntellisenseBuildIssue" AfterTargets="_CheckCompileDesignTimePrerequisite">
-    <PropertyGroup>
-      <BuildingProject>false</BuildingProject>
-    </PropertyGroup>
-  </Target>
-
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>

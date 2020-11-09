@@ -10,18 +10,12 @@
 //---------------------------------------------------------------------
 
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Runtime.Serialization;
-
-using Microsoft.Samples.Debugging.Native;
 using Microsoft.Samples.Debugging.NativeApi;
 using Microsoft.Win32.SafeHandles;
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Permissions;
-using System.IO;
 
 // Native structures used for the implementation of the pipeline.
 namespace Microsoft.Samples.Debugging.NativeApi
@@ -67,15 +61,15 @@ namespace Microsoft.Samples.Debugging.NativeApi
         public SafeFileHandle hStdInput;
         public SafeFileHandle hStdOutput;
         public SafeFileHandle hStdError;
-        public STARTUPINFO() 
+        public STARTUPINFO()
         {
             // Initialize size field.
-            this.cb = Marshal.SizeOf(this);
+            cb = Marshal.SizeOf(this);
 
             // initialize safe handles 
-            this.hStdInput = new Microsoft.Win32.SafeHandles.SafeFileHandle(new IntPtr(0), false);
-            this.hStdOutput = new Microsoft.Win32.SafeHandles.SafeFileHandle(new IntPtr(0), false);
-            this.hStdError = new Microsoft.Win32.SafeHandles.SafeFileHandle(new IntPtr(0), false);
+            hStdInput = new Microsoft.Win32.SafeHandles.SafeFileHandle(new IntPtr(0), false);
+            hStdOutput = new Microsoft.Win32.SafeHandles.SafeFileHandle(new IntPtr(0), false);
+            hStdError = new Microsoft.Win32.SafeHandles.SafeFileHandle(new IntPtr(0), false);
         }
     }
 
@@ -109,7 +103,7 @@ namespace Microsoft.Samples.Debugging.Native
         }
 
         // Internal helper to get the message string for the ctor.
-        static string MessageHelper(IntPtr address, int countBytes)
+        private static string MessageHelper(IntPtr address, int countBytes)
         {
             return String.Format("Failed to read memory at 0x" + address.ToString("x") + " of " + countBytes + " bytes.");
         }
@@ -136,7 +130,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// </summary>
         /// <param name="message">The message that describes the error.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public ReadMemoryFailureException(string message, Exception innerException) 
+        public ReadMemoryFailureException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
@@ -147,7 +141,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <param name="info">The SerializationInfo that holds the serialized object data about the exception being thrown.</param>
         /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
         protected ReadMemoryFailureException(SerializationInfo info, StreamingContext context)
-            : base(info,context)
+            : base(info, context)
         {
         }
         #endregion
@@ -234,7 +228,7 @@ namespace Microsoft.Samples.Debugging.Native
         ARMContextAll = ARMContext | ARMContextControl | ARMContextInteger | ARMContextDebugRegisters,
     }
 
-    public enum ContextSize: int
+    public enum ContextSize : int
     {
         None = 0,
         X86 = 716,
@@ -259,18 +253,18 @@ namespace Microsoft.Samples.Debugging.Native
         Dr7 = 0x18,
 
         // This section is specified/returned if the
-        // ContextFlags word contians the flag CONTEXT_FLOATING_POINT.
+        // ContextFlags word contains the flag CONTEXT_FLOATING_POINT.
         FloatSave = 0x1C,
 
         // This section is specified/returned if the
-        // ContextFlags word contians the flag CONTEXT_SEGMENTS.
+        // ContextFlags word contains the flag CONTEXT_SEGMENTS.
         SegGs = 0x8C,
         SegFs = 0x90,
         SegEs = 0x94,
         SegDs = 0x98,
 
         // This section is specified/returned if the
-        // ContextFlags word contians the flag CONTEXT_INTEGER.
+        // ContextFlags word contains the flag CONTEXT_INTEGER.
         Edi = 0x9C,
         Esi = 0xA0,
         Ebx = 0xA4,
@@ -279,7 +273,7 @@ namespace Microsoft.Samples.Debugging.Native
         Eax = 0xB0,
 
         // This section is specified/returned if the
-        // ContextFlags word contians the flag CONTEXT_CONTROL.
+        // ContextFlags word contains the flag CONTEXT_CONTROL.
         Ebp = 0xB4,
         Eip = 0xB8,
         SegCs = 0xBC,
@@ -595,7 +589,7 @@ namespace Microsoft.Samples.Debugging.Native
         IntT21 = 0x960,
         IntT22 = 0x968,
         IntNats = 0x970,    //  Nat bits for r1-r31
-                            //  r1-r31 in bits 1 thru 31.
+                            //  r1-r31 in bits 1 through 31.
         Preds = 0x978,      //  predicates = 0x, preserved
 
         BrRp = 0x980,       //  return pointer = 0x, b0 = 0x, preserved
@@ -745,15 +739,15 @@ namespace Microsoft.Samples.Debugging.Native
     public enum NativeDebugEventCode
     {
         None = 0,
-        EXCEPTION_DEBUG_EVENT      = 1,
-        CREATE_THREAD_DEBUG_EVENT  = 2,
+        EXCEPTION_DEBUG_EVENT = 1,
+        CREATE_THREAD_DEBUG_EVENT = 2,
         CREATE_PROCESS_DEBUG_EVENT = 3,
-        EXIT_THREAD_DEBUG_EVENT    = 4,
-        EXIT_PROCESS_DEBUG_EVENT   = 5,
-        LOAD_DLL_DEBUG_EVENT       = 6,
-        UNLOAD_DLL_DEBUG_EVENT     = 7,
-        OUTPUT_DEBUG_STRING_EVENT  = 8,
-        RIP_EVENT                  = 9,
+        EXIT_THREAD_DEBUG_EVENT = 4,
+        EXIT_PROCESS_DEBUG_EVENT = 5,
+        LOAD_DLL_DEBUG_EVENT = 6,
+        UNLOAD_DLL_DEBUG_EVENT = 7,
+        OUTPUT_DEBUG_STRING_EVENT = 8,
+        RIP_EVENT = 9,
     }
 
     // Debug header for debug events.
@@ -848,16 +842,15 @@ namespace Microsoft.Samples.Debugging.Native
         public IntPtr ExceptionRecord;
 
         /// <summary>
-        /// Address in the debuggee that the exception occured at.
+        /// Address in the debuggee that the exception occurred at.
         /// </summary>
         public IntPtr ExceptionAddress;
-        
+
         /// <summary>
         /// Number of parameters used in ExceptionInformation array.
         /// </summary>
         public UInt32 NumberParameters;
-
-        const int EXCEPTION_MAXIMUM_PARAMETERS = 15;
+        private const int EXCEPTION_MAXIMUM_PARAMETERS = 15;
         // We'd like to marshal this as a ByValArray, but that's not supported yet.
         // We get an alignment error  / TypeLoadException for DebugEventUnion
         //[MarshalAs(UnmanagedType.ByValArray, SizeConst = EXCEPTION_MAXIMUM_PARAMETERS)]
@@ -898,7 +891,7 @@ namespace Microsoft.Samples.Debugging.Native
     public struct ModuleInfo
     {
         public IntPtr lpBaseOfDll;
-        public uint SizeOfImage;  
+        public uint SizeOfImage;
         public IntPtr EntryPoint;
     }
 
@@ -949,7 +942,7 @@ namespace Microsoft.Samples.Debugging.Native
 
 
         // Helper to read an IntPtr from the target
-        IntPtr ReadIntPtrFromTarget(IMemoryReader reader, IntPtr ptr)
+        private IntPtr ReadIntPtrFromTarget(IMemoryReader reader, IntPtr ptr)
         {
             // This is not cross-platform: it assumes host and target are the same size.
             byte[] buffer = new byte[IntPtr.Size];
@@ -957,7 +950,7 @@ namespace Microsoft.Samples.Debugging.Native
 
             System.UInt64 val = 0;
             // Note: this is dependent on endienness.
-            for (int i = buffer.Length - 1; i >=0 ; i--)
+            for (int i = buffer.Length - 1; i >= 0; i--)
             {
                 val <<= 8;
                 val += buffer[i];
@@ -1148,7 +1141,7 @@ namespace Microsoft.Samples.Debugging.Native
     /// Matches DEBUG_EVENT layout on 32-bit architecture
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-    public struct DebugEvent32  
+    public struct DebugEvent32
     {
         [FieldOffset(0)]
         public DebugEventHeader header;
@@ -1202,9 +1195,6 @@ namespace Microsoft.Samples.Debugging.Native
         // These should be sharable with other pinvokes
         //
 
-        [DllImportAttribute(Kernel32LibraryName)]
-        internal static extern void RtlMoveMemory(IntPtr destination, IntPtr source, IntPtr numberBytes);
-
         [DllImport(Kernel32LibraryName, SetLastError = true, PreserveSig = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool CloseHandle(IntPtr handle);
@@ -1217,8 +1207,8 @@ namespace Microsoft.Samples.Debugging.Native
         public static extern bool GetThreadContext(IntPtr hThread, IntPtr lpContext);
 
         [DllImport(Kernel32LibraryName)]
-        public static extern IntPtr OpenThread(ThreadAccess dwDesiredAccess, 
-            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, 
+        public static extern IntPtr OpenThread(ThreadAccess dwDesiredAccess,
+            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
             uint dwThreadId);
 
         [DllImport(Kernel32LibraryName)]
@@ -1252,43 +1242,9 @@ namespace Microsoft.Samples.Debugging.Native
             WriteCombine = 0x400,
         }
 
-        // Call CloseHandle to clean up.
-        [DllImport(Kernel32LibraryName, SetLastError = true)]
-        public static extern SafeWin32Handle CreateFileMapping(SafeFileHandle hFile,
-           IntPtr lpFileMappingAttributes, PageProtection flProtect, uint dwMaximumSizeHigh,
-           uint dwMaximumSizeLow, string lpName);
-
-        [DllImport(Kernel32LibraryName, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool UnmapViewOfFile(IntPtr baseAddress);
-
-        // SafeHandle to call UnmapViewOfFile
-        [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
-        public sealed class SafeMapViewHandle : SafeHandleZeroOrMinusOneIsInvalid
-        {
-            private SafeMapViewHandle() : base(true) { }
-
-            protected override bool ReleaseHandle()
-            {
-                return UnmapViewOfFile(handle);
-            }
-
-            // This is technically equivalent to DangerousGetHandle, but it's safer for file
-            // mappings. In file mappings, the "handle" is actually a base address that needs
-            // to be used in computations and RVAs.
-            // So provide a safer accessor method.
-            public IntPtr BaseAddress
-            {
-                get
-                {
-                    return handle;
-                }
-            }
-        }
-
         // Call BOOL UnmapViewOfFile(void*) to clean up. 
         [DllImport(Kernel32LibraryName, SetLastError = true)]
-        public static extern SafeMapViewHandle MapViewOfFile(SafeWin32Handle hFileMappingObject, uint
+        public static extern SafeMemoryMappedViewHandle MapViewOfFile(SafeMemoryMappedFileHandle hFileMappingObject, uint
            dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow,
            IntPtr dwNumberOfBytesToMap);
 
@@ -1348,7 +1304,7 @@ namespace Microsoft.Samples.Debugging.Native
         // (The debug event is sent before the information is initialized)
         [DllImport(PsapiLibraryName, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool GetModuleInformation(IntPtr hProcess, IntPtr hModule,out ModuleInfo lpmodinfo, uint countBytes);
+        public static extern bool GetModuleInformation(IntPtr hProcess, IntPtr hModule, out ModuleInfo lpmodinfo, uint countBytes);
 
 
         // Read memory from live, local process.
@@ -1487,7 +1443,7 @@ namespace Microsoft.Samples.Debugging.Native
             public ushort dwProcessorLevel;
             public ushort dwProcessorRevision;
         }
-        
+
     } // NativeMethods
 
 }

@@ -1,10 +1,7 @@
-﻿using System;
-using System.Text;
-using System.Security;
+﻿using Microsoft.Diagnostics.Runtime.Interop;
+using System;
 using System.Runtime.InteropServices;
-using Microsoft.Diagnostics.Runtime.Interop;
-
-#pragma warning disable 1591
+using System.Text;
 
 namespace Microsoft.Diagnostics.CrossGenerationLiveness
 {

@@ -1,16 +1,14 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using System.Windows.Media;
-using System.Windows.Documents;
 
 namespace PerfView
 {
@@ -46,11 +44,15 @@ namespace PerfView
 
             // Copy over the nodes to the new flattened tree (as best we can)
             if (m_flattenedTree.Count > 0 && m_flattenedTree[0].Data.DisplayName == root.DisplayName)
+            {
                 CallTreeViewNode.CopyExpandedStateForNode(newFlattenedTree, 0, m_flattenedTree, 0);
+            }
 
             // Destroy old nodes (to save memory because GUI keeps references to them)
             foreach (var node in m_flattenedTree)
+            {
                 node.Dispose();
+            }
 
             // Update the whole tree with the new tree. 
             m_flattenedTree.ReplaceRange(0, m_flattenedTree.Count, newFlattenedTree);
@@ -77,7 +79,9 @@ namespace PerfView
 
             int startPos = m_perfGrid.SelectionStartIndex();
             if (m_flattenedTree.Count <= startPos)
+            {
                 return false;
+            }
 
             m_curPosition = m_flattenedTree[startPos].Data;
 
@@ -101,12 +105,16 @@ namespace PerfView
             for (; ; )
             {
                 if (startingNewSearch)
+                {
                     startingNewSearch = false;
+                }
                 else
                 {
                     m_curPosition = NextNode(m_curPosition);
                     if (m_curPosition == null)
+                    {
                         m_curPosition = m_root;
+                    }
 
                     if (m_curPosition == m_endPosition)
                     {
@@ -146,7 +154,10 @@ namespace PerfView
             Debug.Assert(viewNode != null);
             Debug.Assert(m_flattenedTree.IndexOf(viewNode) >= 0);
             if (viewNode == null)
+            {
                 return false;
+            }
+
             m_perfGrid.Select(viewNode);
             return true;
         }
@@ -163,9 +174,13 @@ namespace PerfView
         internal IList<CallTreeNode> DisplayCallees(CallTreeNode node)
         {
             if (DisplayPrimaryOnly)
+            {
                 return node.Callees;
+            }
             else
+            {
                 return node.AllCallees;
+            }
         }
 
 
@@ -213,11 +228,16 @@ namespace PerfView
         private CallTreeViewNode InsureVisible(CallTreeNode treeNode)
         {
             if (treeNode.Caller == null)
+            {
                 return m_flattenedTree[0];
+            }
 
             CallTreeViewNode caller = InsureVisible(treeNode.Caller);
             if (caller == null)         // should never happen, but we can fall back to giving up. 
+            {
                 return null;
+            }
+
             caller.IsExpanded = true;
             caller.ValidateTree();
 
@@ -226,10 +246,14 @@ namespace PerfView
             {
                 var child = m_flattenedTree[callerPos];
                 if (child.m_depth <= caller.m_depth)
+                {
                     break;
+                }
 
                 if (child.Data == treeNode)
+                {
                     return child;
+                }
 
                 callerPos++;
             }
@@ -247,7 +271,9 @@ namespace PerfView
             {
                 var callees = DisplayCallees(node);
                 if (callees != null && callees.Count > 0)
+                {
                     return callees[0];
+                }
             }
 
             // Otherwise it is my next sibling
@@ -255,7 +281,10 @@ namespace PerfView
             {
                 var nextSibling = NextSibling(node);
                 if (nextSibling != null)
+                {
                     return nextSibling;
+                }
+
                 node = node.Caller;
             }
             return null;
@@ -264,12 +293,18 @@ namespace PerfView
         {
             var parent = node.Caller;
             if (parent == null)
+            {
                 return null;
+            }
+
             int nextIndex = IndexInParent(node) + 1;
             var parentCallees = DisplayCallees(parent);
 
             if (nextIndex >= parentCallees.Count)
+            {
                 return null;
+            }
+
             return parentCallees[nextIndex];
         }
         /// <summary>
@@ -286,20 +321,23 @@ namespace PerfView
             {
                 var callee = callerCallees[i];
                 if (callee == node)
+                {
                     break;
+                }
+
                 i++;
             }
             return i;
         }
 
-        CallTreeNode m_root;                                                    // The base of the tree being displayed
+        private CallTreeNode m_root;                                                    // The base of the tree being displayed
         internal PerfDataGrid m_perfGrid;                                       // The GridControl where we display the data (depends on check-boxes)
         internal ObservableCollectionEx<CallTreeViewNode> m_flattenedTree;      // The list that the GridControl displays
 
         // Find Support 
-        Regex m_findPat;                    // The pattern that FindNext will look for
-        CallTreeNode m_curPosition;         // The position the selection (where FindNext starts) 
-        CallTreeNode m_endPosition;         // The position where FindNext will stop searching (it wrapped around).  
+        private Regex m_findPat;                    // The pattern that FindNext will look for
+        private CallTreeNode m_curPosition;         // The position the selection (where FindNext starts) 
+        private CallTreeNode m_endPosition;         // The position where FindNext will stop searching (it wrapped around).  
 
         #endregion
     }
@@ -333,19 +371,27 @@ namespace PerfView
             set
             {
                 if (m_isExpanded == value)
+                {
                     return;
+                }
 
                 if (value == true)
+                {
                     ExpandNode();
+                }
                 else
+                {
                     CollapseNode();
+                }
             }
         }
 
         private void ExpandNode(bool selectExpandedNode = true)
         {
             if (m_isExpanded)
+            {
                 return;
+            }
 
             ValidateTree();
 
@@ -360,10 +406,14 @@ namespace PerfView
             {
                 var onlyChild = children[0];
                 if (onlyChild.HasChildren)
+                {
                     onlyChild.ExpandNode(selectExpandedNode);
+                }
             }
             else if (selectExpandedNode)
+            {
                 m_treeView.m_perfGrid.Select(this);         // We want expanding the node to select the node
+            }
 
             ValidateTree();
         }
@@ -371,7 +421,9 @@ namespace PerfView
         private void CollapseNode()
         {
             if (!m_isExpanded)
+            {
                 return;
+            }
 
             ValidateTree();
 
@@ -381,7 +433,10 @@ namespace PerfView
             while (lastChild < m_treeView.m_flattenedTree.Count)
             {
                 if (m_treeView.m_flattenedTree[lastChild].m_depth <= myDepth)
+                {
                     break;
+                }
+
                 lastChild++;
             }
 
@@ -400,8 +455,8 @@ namespace PerfView
         /// The TreeVieeNode uses the nodes DisplayName (which has a suffix string (surrounded by []) with extra information. 
         /// </summary>
         public string Name { get { return Data.DisplayName; } }        /// <summary>
-        /// This is IndentString followed by the display name.  
-        /// </summary>
+                                                                       /// This is IndentString followed by the display name.  
+                                                                       /// </summary>
         public string IndentedName { get { return (IndentString + " " + Data.DisplayName); } }
         /// <summary>
         /// Creates a string that has spaces | and + signs that represent the indentation level 
@@ -411,7 +466,7 @@ namespace PerfView
         /// <summary>
         /// Does this node have any children (invisible (unexpanded) children count))
         /// </summary>
-        virtual public bool HasChildren
+        public virtual bool HasChildren
         {
             get
             {
@@ -421,7 +476,9 @@ namespace PerfView
                     return callees != null && callees.Count > 0;
                 }
                 else
+                {
                     return Data.HasChildren;
+                }
             }
         }
 
@@ -436,11 +493,27 @@ namespace PerfView
             get
             {
                 if (!m_treeView.DisplayPrimaryOnly && !IsSecondaryChild)
+                {
                     return FontWeights.Bold;
+                }
+
                 return FontWeights.Normal;
             }
         }
-        public Visibility VisibleIfDisplayingSecondary { get { if (m_treeView.DisplayPrimaryOnly) return Visibility.Collapsed; else return Visibility.Visible; } }
+        public Visibility VisibleIfDisplayingSecondary
+        {
+            get
+            {
+                if (m_treeView.DisplayPrimaryOnly)
+                {
+                    return Visibility.Collapsed;
+                }
+                else
+                {
+                    return Visibility.Visible;
+                }
+            }
+        }
 
         // TODO FIX NOW use or remove 
 #if false 
@@ -469,9 +542,15 @@ namespace PerfView
                 {
                     var node = m_treeView.m_flattenedTree[i];
                     if (node.m_depth <= m_depth)
+                    {
                         break;
+                    }
+
                     if (node.m_depth == m_depth + 1)
+                    {
                         ret.Add(node);
+                    }
+
                     i++;
                 }
                 return ret;
@@ -511,14 +590,21 @@ namespace PerfView
         public void ExpandToDepth(int maxDepth, bool expandGraphNodes = false, bool selectExpandedNode = true)
         {
             if (maxDepth == 0)
+            {
                 return;
+            }
+
             if (!expandGraphNodes && Data.IsGraphNode)
+            {
                 return;
+            }
 
             ExpandNode(selectExpandedNode);
 
             foreach (var child in VisibleChildren)
+            {
                 child.ExpandToDepth(maxDepth - 1, expandGraphNodes, selectExpandedNode);
+            }
         }
 
 
@@ -553,7 +639,10 @@ namespace PerfView
             get
             {
                 if (m_treeView.m_flattenedTree.Count <= m_indexGuess || m_treeView.m_flattenedTree[m_indexGuess] != this)
+                {
                     m_indexGuess = m_treeView.m_flattenedTree.IndexOf(this);
+                }
+
                 Debug.Assert(m_indexGuess >= 0);
                 return m_indexGuess;
             }
@@ -573,7 +662,10 @@ namespace PerfView
                 var newNode = new CallTreeViewNode(m_treeView, elem, m_depth + 1);
 
                 if (IsSecondaryChild || elem.IsGraphNode)
+                {
                     newNode.IsSecondaryChild = true;
+                }
+
                 ret.Add(newNode);
             }
             return ret;
@@ -609,7 +701,9 @@ namespace PerfView
                         {
                             int oldChildIndex = FindChild(oldFlattenedTree, oldNode, oldIndex, newChild.Data.DisplayName);
                             if (oldChildIndex >= 0)
+                            {
                                 CopyExpandedStateForNode(newFlattenedTree, newFlattenedTree.Count - 1, oldFlattenedTree, oldChildIndex);
+                            }
                         }
                     }
                 }
@@ -628,19 +722,27 @@ namespace PerfView
             {
                 childIndex++;
                 if (childIndex >= flattenedTree.Count)
+                {
                     break;
+                }
+
                 var child = flattenedTree[childIndex];
                 if (child.m_depth < childDepth)
+                {
                     break;
+                }
+
                 if (child.m_depth == childDepth && child.Data.DisplayName == nameBase)
+                {
                     return childIndex;
+                }
             }
             return -1;
         }
 
-        CallTreeView m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree). 
+        private CallTreeView m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree). 
         internal bool m_isExpanded;                     // Is this node expanded.  
-        int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but wortch checking  
+        private int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but wortch checking  
         internal int m_depth;                           // My nesting level from root.   (root == 0);
         #endregion
     }
@@ -650,7 +752,7 @@ namespace PerfView
     /// An observable colletion with the ability to insert a range of nodes without being super-inefficient.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    class ObservableCollectionEx<T> : ObservableCollection<T>
+    internal class ObservableCollectionEx<T> : ObservableCollection<T>
     {
         public void ReplaceRange(int index, int count, IEnumerable<T> collection)
         {
@@ -674,7 +776,10 @@ namespace PerfView
         public void RemoveRange(int index, int count)
         {
             if (count == 0)
+            {
                 return;
+            }
+
             CheckReentrancy();
             var asList = Items as List<T>;
             asList.RemoveRange(index, count);

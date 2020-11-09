@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 
 namespace Utilities
 {
@@ -30,11 +29,15 @@ namespace Utilities
         public IndexMap(IEnumerable<int> counts)
         {
             if (counts == null)
+            {
                 throw new ArgumentNullException("counts");
-            
+            }
+
             int count = counts.Count();
             if (count == 0)
+            {
                 throw new ArgumentException("Count list cannot be empty.");
+            }
 
             m_lookup = new int[count + 1];
             m_lookup[0] = 0;
@@ -44,7 +47,10 @@ namespace Utilities
             foreach (int c in counts)
             {
                 if (c <= 0)
+                {
                     throw new ArgumentException("All counts must be positive.");
+                }
+
                 m_lookup[i + 1] = m_lookup[i] + c;
                 i++;
             }
@@ -63,7 +69,9 @@ namespace Utilities
             // Optimization.  See if it was the same as the last one we retruned.  
             var last = m_lastSourceLookedUp;
             if (m_lookup[last] <= aggregate && aggregate < m_lookup[last + 1])
+            {
                 return last;
+            }
 
             /*
              * Array.BinarySearch finds the first item in the array that is greater than or 
@@ -80,7 +88,10 @@ namespace Utilities
              */
             int src = Array.BinarySearch(m_lookup, aggregate + 1);
             if (src < 0)
+            {
                 src = ~src;
+            }
+
             src--;
 
             m_lastSourceLookedUp = src;
@@ -97,7 +108,9 @@ namespace Utilities
         {
             Debug.Assert(source >= -1 && source < m_lookup.Length);
             if (source == -1)
+            {
                 return aggregate;
+            }
             else
             {
                 int off = aggregate - m_lookup[source];
@@ -153,7 +166,7 @@ namespace Utilities
         /// <summary>
         /// We remember the last source we looked up and check there first very likely they are next to one another. 
         /// </summary>
-        private int m_lastSourceLookedUp; 
-        #endregion 
+        private int m_lastSourceLookedUp;
+        #endregion
     }
 }

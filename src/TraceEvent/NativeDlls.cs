@@ -1,19 +1,19 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Compatibility;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 
 /// <summary>
 /// Finds native DLLS next to the managed DLL that uses them.   
 /// </summary>
-class NativeDlls
+internal class NativeDlls
 {
     /// <summary>
     /// ManifestModule.FullyQualifiedName returns this as file path if the assembly is loaded as byte array
     /// </summary>
-    const string UnknownLocation = "<Unknown>";
+    private const string UnknownLocation = "<Unknown>";
 
     /// <summary>
     /// Loads a native DLL with a filename-extension of 'simpleName' by adding the path of the currently executing assembly
@@ -27,27 +27,35 @@ class NativeDlls
         // are loaded from byte arrays into the AppDomain to create self contained executables with no other dependent libraries. 
         string assemblyLocation = typeof(NativeDlls).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName;
         if (assemblyLocation == UnknownLocation)
+        {
             assemblyLocation = Process.GetCurrentProcess().MainModule.FileName;
+        }
 
         var thisDllDir = Path.GetDirectoryName(assemblyLocation);
 
         // Try next to the current DLL
         var dllName = Path.Combine(thisDllDir, simpleName);
-        var ret = LoadLibrary(dllName);
+        var ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)
+        {
             return;
+        }
 
         // Try in <arch> directory
         dllName = Path.Combine(thisDllDir, ProcessArchitectureDirectory, simpleName);
-        ret = LoadLibrary(dllName);
+        ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)
+        {
             return;
+        }
 
         // Try in ../native/<arch>.  This is where it will be in a nuget package. 
         dllName = Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory, simpleName);
-        ret = LoadLibrary(dllName);
+        ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)
+        {
             return;
+        }
 
         throw new ApplicationException("Could not load native DLL " + dllName);
     }
@@ -83,6 +91,13 @@ class NativeDlls
     private static string s_ProcessArchDirectory;
 
 
-    [System.Runtime.InteropServices.DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr LoadLibrary(string lpFileName);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, LoadLibraryFlags dwFlags);
+
+    private enum LoadLibraryFlags : uint
+    {
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100
+    }
+
+
 }

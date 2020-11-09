@@ -7,8 +7,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 1591
-
 namespace Microsoft.Diagnostics.Tracing
 {
     internal struct ETWMapping
@@ -29,7 +27,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
     }
 
-    public unsafe sealed class CtfTraceEventSource : TraceEventDispatcher, IDisposable
+    public sealed unsafe class CtfTraceEventSource : TraceEventDispatcher, IDisposable
     {
         private string _filename;
         private ZipArchive _zip;
@@ -83,7 +81,10 @@ namespace Microsoft.Diagnostics.Tracing
 
                 var firstChannel = (new ChannelList(_channels)).FirstOrDefault();
                 if (firstChannel == null)
+                {
                     throw new EndOfStreamException("No CTF Information found in ZIP file.");
+                }
+
                 long firstEventTimestamp = (long)firstChannel.Current.Timestamp;
 
                 _QPCFreq = (long)clock.Frequency;
@@ -102,13 +103,20 @@ namespace Microsoft.Diagnostics.Tracing
             finally
             {
                 if (!success)
+                {
                     Dispose();      // This closes the ZIP file we opened.  We don't want to leave it dangling.  
+                }
             }
         }
 
         private static Dictionary<string, ETWMapping> InitEventMap()
         {
             Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
+
+            // Linux Kernel events 
+            result["sched_process_exec"] = new ETWMapping(Parsers.LinuxKernelEventParser.ProviderGuid, 1, 1, 0);
+            result["sched_process_exit"] = new ETWMapping(Parsers.LinuxKernelEventParser.ProviderGuid, 2, 2, 0);
+            
 
             // Public events
             result["DotNETRuntime:GCStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 1, 0);
@@ -152,6 +160,7 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:ThreadPoolWorkerThreadStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 51, 0);
             result["DotNETRuntime:ThreadPoolWorkerThreadRetirementStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 53, 0);
             result["DotNETRuntime:ContentionStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 91, 0);
+            result["DotNETRuntime:ContentionStop_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 91, 1);
             result["DotNETRuntime:StrongNameVerificationStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 182, 0);
             result["DotNETRuntime:StrongNameVerificationStop_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 182, 1);
             result["DotNETRuntime:AuthenticodeVerificationStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 2, 184, 0);
@@ -282,6 +291,14 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:GCJoin_V2"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 203, 203, 2);
             result["DotNETRuntime:GCBulkSurvivingObjectRanges"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 25, 21, 0);
             result["DotNETRuntime:GCPerHeapHistory_V3_1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 204, 204, 3);
+            result["DotNETRuntime:TieredCompilationSettings"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 11, 280, 0);
+            result["DotNETRuntime:TieredCompilationPause"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 12, 281, 0);
+            result["DotNETRuntime:TieredCompilationResume"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 13, 282, 0);
+            result["DotNETRuntime:TieredCompilationBackgroundJitStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 14, 283, 0);
+            result["DotNETRuntime:TieredCompilationBackgroundJitStop"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 15, 284, 0);
+
+            // Rundown events
+            result["DotNETRuntimeRundown:TieredCompilationSettingsDCStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 11, 280, 0);
 
             // Private events
             result["DotNETRuntimePrivate:ApplyPolicyStart"] = new ETWMapping(Parsers.ClrPrivateTraceEventParser.ProviderGuid, 10, 90, 0);
@@ -487,7 +504,9 @@ namespace Microsoft.Diagnostics.Tracing
             foreach (ChannelEntry entry in list)
             {
                 if (stopProcessing)
+                {
                     break;
+                }
 
                 CtfEventHeader header = entry.Current;
                 CtfEvent evt = header.Event;
@@ -509,10 +528,14 @@ namespace Microsoft.Diagnostics.Tracing
 
                 ETWMapping etw = GetTraceEvent(evt);
                 if (etw.IsNull)
+                {
                     continue;
+                }
 
                 if (!string.IsNullOrWhiteSpace(header.ProcessName))
+                {
                     _processNames[header.Pid] = header.ProcessName;
+                }
 
                 var hdr = InitEventRecord(header, entry.Reader, etw);
                 TraceEvent traceEvent = Lookup(hdr);
@@ -534,7 +557,9 @@ namespace Microsoft.Diagnostics.Tracing
             string result;
 
             if (_processNames.TryGetValue(processID, out result))
+            {
                 return result;
+            }
 
             return base.ProcessName(processID, timeQPC);
         }
@@ -544,9 +569,13 @@ namespace Microsoft.Diagnostics.Tracing
             _header->EventHeader.Size = (ushort)sizeof(TraceEventNativeMethods.EVENT_TRACE_HEADER);
             _header->EventHeader.Flags = 0;
             if (pointerSize == 8)
+            {
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
+            }
             else
+            {
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
+            }
 
             _header->EventHeader.TimeStamp = (long)header.Timestamp;
             _header->EventHeader.ProviderId = etw.Guid;
@@ -619,9 +648,9 @@ namespace Microsoft.Diagnostics.Tracing
         // into one chronological stream of events.
         #region Enumeration Helper
 
-        class ChannelList : IEnumerable<ChannelEntry>
+        private class ChannelList : IEnumerable<ChannelEntry>
         {
-            List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
+            private List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
 
             public ChannelList(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
             {
@@ -639,11 +668,11 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        class ChannelListEnumerator : IEnumerator<ChannelEntry>
+        private class ChannelListEnumerator : IEnumerator<ChannelEntry>
         {
-            bool _first = true;
-            List<ChannelEntry> _channels;
-            int _current;
+            private bool _first = true;
+            private List<ChannelEntry> _channels;
+            private int _current;
 
             public ChannelListEnumerator(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
             {
@@ -654,13 +683,19 @@ namespace Microsoft.Diagnostics.Tracing
             private int GetCurrent()
             {
                 if (_channels.Count == 0)
+                {
                     return -1;
+                }
 
                 int min = 0;
 
                 for (int i = 1; i < _channels.Count; i++)
+                {
                     if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
+                    {
                         min = i;
+                    }
+                }
 
                 return min;
             }
@@ -673,7 +708,9 @@ namespace Microsoft.Diagnostics.Tracing
             public void Dispose()
             {
                 foreach (var channel in _channels)
+                {
                     channel.Dispose();
+                }
 
                 _channels = null;
             }
@@ -686,7 +723,9 @@ namespace Microsoft.Diagnostics.Tracing
             public bool MoveNext()
             {
                 if (_current == -1)
+                {
                     return false;
+                }
 
                 if (_first)
                 {
@@ -711,7 +750,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        class ChannelEntry : IDisposable
+        private class ChannelEntry : IDisposable
         {
             public string FileName { get; private set; }
             public CtfChannel Channel { get; private set; }
@@ -738,7 +777,9 @@ namespace Microsoft.Diagnostics.Tracing
 
                 IDisposable enumerator = _events as IDisposable;
                 if (enumerator != null)
+                {
                     enumerator.Dispose();
+                }
             }
 
             public bool MoveNext()

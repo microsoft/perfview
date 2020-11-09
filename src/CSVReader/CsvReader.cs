@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ETLStackBrowse;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Runtime.Remoting.Contexts;
+﻿using ETLStackBrowse;
 using EventSources;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CSVReader
 {
@@ -54,7 +51,9 @@ namespace CSVReader
                     for (int i = 0; i < m_trace.StackTypes.Length; i++)
                     {
                         if (m_trace.StackTypes[i])
+                        {
                             m_stackEventNames.Add(m_trace.RecordAtoms.MakeString(i));
+                        }
                     }
                     m_stackEventNames.Sort();
                 }
@@ -81,7 +80,9 @@ namespace CSVReader
                     for (int i = 0; i < m_trace.RecordAtoms.Count; i++)
                     {
                         if (m_trace.CommonFieldIds[i].count > 0)
+                        {
                             m_EventNames.Add(m_trace.RecordAtoms.MakeString(i));
+                        }
                     }
                     m_EventNames.Sort();
                 }
@@ -130,7 +131,9 @@ namespace CSVReader
             for (int i = 0; i < ret.Length; i++)
             {
                 if (!m_trace.Processes[i].ProcessName.StartsWith("Idle "))
+                {
                     ret[i] = true;
+                }
             }
             return ret;
         }
@@ -141,7 +144,9 @@ namespace CSVReader
             for (int i = 0; i < ret.Length; i++)
             {
                 if (!m_trace.Threads[i].ProcessName.StartsWith("Idle "))
+                {
                     ret[i] = true;
+                }
             }
             return ret;
         }
@@ -229,17 +234,20 @@ namespace CSVReader
             var ret = new bool[m_trace.RecordAtoms.Count];
             int idSampleProfile = m_trace.RecordAtoms.Lookup(m_stackEventType);
             if (idSampleProfile < 0)
+            {
                 throw new ApplicationException("Could not find StackEventType " + m_stackEventType);
+            }
+
             ret[idSampleProfile] = true;
             return ret;
         }
         #endregion
 
         internal ETLTrace m_trace;
-        List<string> m_stackEventNames;
+        private List<string> m_stackEventNames;
         internal string m_stackEventType;   // typically "SampledProfile", and be any of the StackEventNames
 
-        List<string> m_EventNames;
+        private List<string> m_EventNames;
         #endregion
     }
 
@@ -254,12 +262,14 @@ namespace CSVReader
                 reader.T1 = long.MaxValue - 1000000;
                 double endusec = endRelativeMSec * 1000;
                 if (endusec < reader.T1)
+                {
                     reader.T1 = (long)endusec;
+                }
 
                 reader.m_trace.Parameters.T0 = reader.T0;
                 reader.m_trace.Parameters.T1 = reader.T1;
 
-                var result = reader.m_trace.StackStream(delegate(ETLTrace.Frame frame, ETLTrace.TreeComputer treeComputer, long timeUsec, ulong weight)
+                var result = reader.m_trace.StackStream(delegate (ETLTrace.Frame frame, ETLTrace.TreeComputer treeComputer, long timeUsec, ulong weight)
                 {
                     m_fullModulePaths = treeComputer.fullModuleNames;
                     StackSourceSample sample = new StackSourceSample(this);
@@ -267,10 +277,14 @@ namespace CSVReader
                     sample.Metric = weight;
 
                     if (reader.m_stackEventType == "CSwitch")
+                    {
                         sample.Metric = sample.Metric / 1000.0F;
+                    }
 
                     if (sample.Metric == 0)
+                    {
                         sample.Metric = 1;
+                    }
 
                     // Get rid of quotes.  
                     treeComputer.fullModuleNames["\"Unknown\""] = "UNKNOWN";
@@ -293,7 +307,10 @@ namespace CSVReader
                             moduleName = fullFrameName.Substring(0, index);
                             string fullModuleName;
                             if (treeComputer.fullModuleNames.TryGetValue(moduleName, out fullModuleName))
+                            {
                                 moduleName = fullModuleName;
+                            }
+
                             if (moduleName.Length > 4 && moduleName[moduleName.Length - 4] == '.')
                             {
 #if false // TODO decide if we want to ignore the .NI.DLL and if so do it uniformly.  
@@ -303,7 +320,7 @@ namespace CSVReader
                                     moduleName = moduleName.Substring(0, moduleName.Length - 7);
                                 else 
 #endif
-                                    moduleName = moduleName.Substring(0, moduleName.Length - 4);
+                                moduleName = moduleName.Substring(0, moduleName.Length - 4);
                             }
 
                             // If the thread does not call into ntdll, we consider it broken
@@ -317,12 +334,16 @@ namespace CSVReader
                         {
                             Match m = Regex.Match(frameName, @"^tid *\( *(\d+)\)");
                             if (m.Success)
+                            {
                                 frameName = "Thread (" + m.Groups[1].Value + ")";
+                            }
                             else
                             {
                                 m = Regex.Match(frameName, @"^(.*?)(\.exe)? *\( *(\d+)\) *$");
                                 if (m.Success)
+                                {
                                     frameName = "Process " + m.Groups[1].Value + " (" + m.Groups[3].Value + ")";
+                                }
                             }
                         }
 
@@ -334,18 +355,18 @@ namespace CSVReader
                     }
 
                     sample.StackIndex = stackIndex;
-                    this.AddSample(sample);
+                    AddSample(sample);
                 });
                 Interner.DoneInterning();
             }
         }
 
         #region private
-        Dictionary<string, string> m_fullModulePaths;
+        private Dictionary<string, string> m_fullModulePaths;
         #endregion
     }
 
-    class CsvEventSource : EventSource
+    internal class CsvEventSource : EventSource
     {
         public override ICollection<string> EventNames { get { return m_reader.EventNames; } }
         public override void SetEventFilter(List<string> eventNames) { m_EventFilter = eventNames; }
@@ -355,7 +376,9 @@ namespace CSVReader
             foreach (var ev in Events)
             {
                 if (!callback(ev))
+                {
                     break;
+                }
             }
         }
         private IEnumerable<EventRecord> Events
@@ -381,7 +404,9 @@ namespace CSVReader
                     {
                         columnOrder = new Dictionary<string, int>();
                         for (int i = 0; i < ColumnsToDisplay.Count; i++)
+                        {
                             columnOrder.Add(ColumnsToDisplay[i], i);
+                        }
 
                         ColumnSums = new double[ColumnsToDisplay.Count];
                     }
@@ -389,19 +414,27 @@ namespace CSVReader
                     trace.Parameters.T0 = (long)(StartTimeRelativeMSec * 1000);
                     var time = (EndTimeRelativeMSec * 1000.0);
                     if (time < long.MaxValue)
+                    {
                         trace.Parameters.T1 = (long)time;
+                    }
                     else
+                    {
                         trace.Parameters.T1 = long.MaxValue - 100000;
+                    }
 
                     var l = trace.StandardLineReader();
 
                     Regex processFilter = null;
                     if (!string.IsNullOrEmpty(ProcessFilterRegex))
+                    {
                         processFilter = new Regex(ProcessFilterRegex, RegexOptions.IgnoreCase);
+                    }
 
                     Regex textFilter = null;
                     if (!string.IsNullOrEmpty(TextFilterRegex))
+                    {
                         textFilter = new Regex(TextFilterRegex, RegexOptions.IgnoreCase);
+                    }
 
                     var count = 0;
                     var bTmp = new ByteWindow();
@@ -409,23 +442,31 @@ namespace CSVReader
                     {
                         string[] colNames = filter[l.idType];
                         if (colNames == null)
+                        {
                             continue;
+                        }
 
                         if (processFilter != null)
                         {
                             if (!processFilter.IsMatch(bTmp.Assign(b, 2).Trim().ToString()))
+                            {
                                 continue;
+                            }
                         }
 
                         if (textFilter != null && !textFilter.IsMatch(b.ToString()))
+                        {
                             continue;
+                        }
 
                         var ret = new CsvEventRecord(b, this, colNames, columnOrder, ColumnSums);
 
                         // If we have exceeded MaxRet, then mark that fact TODO inefficient as we parse all other fields too!
                         count++;
                         if (MaxRet < count)
+                        {
                             ret.m_EventName = null;
+                        }
 
                         yield return ret;
                     }
@@ -439,8 +480,12 @@ namespace CSVReader
             {
                 var recordId = m_reader.m_trace.RecordAtoms.Lookup(eventName);
                 foreach (var name in GetColumnNames(recordId))
+                {
                     if (name != null)
+                    {
                         ret.Add(name);
+                    }
+                }
             }
             ret.Sort();
             return ret;
@@ -460,7 +505,10 @@ namespace CSVReader
             var ret = new string[colNames.Count];
 
             for (int i = 3; i < ret.Length; i++)
+            {
                 ret[i] = m_reader.m_trace.FieldAtoms.MakeString(colNames[i]).Replace(" ", "");
+            }
+
             return ret;
         }
 
@@ -472,13 +520,13 @@ namespace CSVReader
             MaxEventTimeRelativeMsec = double.PositiveInfinity;
         }
 
-        CSVReader m_reader;
-        List<string> m_EventFilter;
+        private CSVReader m_reader;
+        private List<string> m_EventFilter;
         internal StringBuilder m_sb;
         #endregion
     }
 
-    class CsvEventRecord : EventRecord
+    internal class CsvEventRecord : EventRecord
     {
         public override string EventName { get { return m_EventName; } }
         public override double TimeStampRelatveMSec { get { return m_TimeStampRelativeMSec; } }
@@ -497,9 +545,14 @@ namespace CSVReader
                 putInRest = true;
                 string name;
                 if (fieldIdx < colNames.Length)
+                {
                     name = colNames[fieldIdx];
+                }
                 else
+                {
                     name = "unknown";
+                }
+
                 string valueStr = null;
                 if (columnOrder != null)
                 {
@@ -517,23 +570,32 @@ namespace CSVReader
                             {
                                 long value;
                                 if (long.TryParse(valueStr.Substring(2), out value))
+                                {
                                     columnSums[val] += value;
+                                }
                             }
                             else
                             {
                                 double numericVal;
                                 if (double.TryParse(valueStr, out numericVal))
+                                {
                                     columnSums[val] += numericVal;
+                                }
                             }
                         }
                         else
+                        {
                             putInRest = true;
+                        }
                     }
                 }
                 if (putInRest)
                 {
                     if (valueStr == null)
+                    {
                         valueStr = window.Field(fieldIdx).Trim().ToString();
+                    }
+
                     source.m_sb.Append(name).Append("=").Append(Quote(valueStr)).Append(' ');
                 }
             }
@@ -544,7 +606,7 @@ namespace CSVReader
             m_ProcessName = window.Field(2).Trim().ToString();
         }
 
-        static public string Quote(string str)
+        public static string Quote(string str)
         {
             if (str.IndexOf('"') < 0)
             {
@@ -555,9 +617,9 @@ namespace CSVReader
         }
 
         internal string m_EventName;
-        double m_TimeStampRelativeMSec;
-        string m_ProcessName;
-        string m_Data;
+        private double m_TimeStampRelativeMSec;
+        private string m_ProcessName;
+        private string m_Data;
         #endregion
     }
 }

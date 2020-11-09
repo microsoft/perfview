@@ -1,20 +1,21 @@
-﻿using System.IO;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
-using Microsoft.Diagnostics.Tracing.Stacks;
+using System.IO;
 
 namespace Diagnostics.Tracing.StackSources
 {
     /// <summary>
     /// A WTReader knows how to read a text file from the cdb (windbg) WT command output
     /// </summary>
-    class OffProfStackSource : InternStackSource
+    internal class OffProfStackSource : InternStackSource
     {
         public OffProfStackSource(string fileName)
         {
             using (var file = File.OpenText(fileName))
+            {
                 Read(file);
+            }
         }
         public OffProfStackSource(TextReader reader)
         {
@@ -22,7 +23,7 @@ namespace Diagnostics.Tracing.StackSources
         }
 
         #region private
-        void Read(TextReader reader)
+        private void Read(TextReader reader)
         {
             var stack = new GrowableArray<StackSourceCallStackIndex>();
 
@@ -33,7 +34,9 @@ namespace Diagnostics.Tracing.StackSources
             {
                 line = reader.ReadLine();
                 if (line == null)
+                {
                     break;
+                }
                 //   0       1           2             3          4       5        6         7          8
                 // Order, # of Calls, % Incl Time, % Excl Time, Depth, Function, Module, Incl Time, Excl Time,% Sw. Out, Incl Switched Out, Type, Comments	Min	Avg	Max	Excl Switched Out
 
@@ -48,7 +51,9 @@ namespace Diagnostics.Tracing.StackSources
                     var newIdx = line.IndexOf('\t', idx);
                     Debug.Assert(0 < newIdx);
                     if (newIdx < 0)
+                    {
                         goto SKIP;
+                    }
 
                     switch (col)
                     {
@@ -63,7 +68,10 @@ namespace Diagnostics.Tracing.StackSources
                             while (idx < newIdx)
                             {
                                 if (line[idx] != ' ')
+                                {
                                     break;
+                                }
+
                                 idx++;
                             }
                             method = line.Substring(idx, newIdx - idx);
@@ -72,7 +80,10 @@ namespace Diagnostics.Tracing.StackSources
                         case 6:
                             module = "";
                             if (depth != 0)
+                            {
                                 module = line.Substring(idx, newIdx - idx);
+                            }
+
                             break;
                         case 8:
                             long.TryParse(line.Substring(idx, newIdx - idx), System.Globalization.NumberStyles.Number, null, out longVal);
@@ -85,16 +96,22 @@ namespace Diagnostics.Tracing.StackSources
                 var frameIdx = Interner.FrameIntern(method, moduleIdx);
                 var prevFrame = StackSourceCallStackIndex.Invalid;
                 if (0 < depth && depth <= stack.Count)
+                {
                     prevFrame = stack[depth - 1];
+                }
+
                 var callStackIdx = Interner.CallStackIntern(frameIdx, prevFrame);
 
                 if (depth < stack.Count)
+                {
                     stack.Count = depth;
+                }
+
                 stack.Add(callStackIdx);
 
                 sample.StackIndex = callStackIdx;
                 AddSample(sample);
-            SKIP: ;
+                SKIP:;
             }
             Interner.DoneInterning();
         }

@@ -1,10 +1,8 @@
-﻿using FastSerialization;
-using Graphs;
+﻿using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using System.Collections.Generic;
 
-
-static class ImageFileMemoryGraph
+internal static class ImageFileMemoryGraph
 {
     public static MemoryGraph Create(string dllPath, SymbolReader symbolReader)
     {
@@ -31,7 +29,7 @@ static class ImageFileMemoryGraph
         foreach (var symbol in symbols)
         {
             var symRVA = symbol.RVA;
-            int lastSize = (int) symRVA - (int) lastRVA;
+            int lastSize = (int)symRVA - (int)lastRVA;
 
             NodeTypeIndex typeIdx = ret.CreateType(lastName, null, lastSize);
             NodeIndex nodeIdx = ret.CreateNode();
@@ -60,7 +58,7 @@ static class ImageFileMemoryGraph
         var children = symbol.GetChildren();
         if (children != null)
         {
-            foreach(Symbol child in children)
+            foreach (Symbol child in children)
             {
                 symbols.Add(child);
                 AddAllChildren(symbols, child);

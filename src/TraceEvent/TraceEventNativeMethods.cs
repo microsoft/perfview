@@ -4,12 +4,11 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 
 // This moduleFile contains Internal PINVOKE declarations and has no public API surface. 
 namespace Microsoft.Diagnostics.Tracing
@@ -22,7 +21,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// to get at the Win32 TraceEvent infrastructure.  It is effectively
     /// a port of evntrace.h to C# declarations.  
     /// </summary>
-    internal unsafe static class TraceEventNativeMethods
+    internal static unsafe class TraceEventNativeMethods
     {
         #region TimeZone type from winbase.h
 
@@ -296,14 +295,14 @@ namespace Microsoft.Diagnostics.Tracing
         };
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static internal extern int TraceSetInformation(
+        internal static extern int TraceSetInformation(
             [In] UInt64 traceHandle,
             [In] TRACE_INFO_CLASS InformationClass,
             [In] void* TraceInformation,
             [In] int InformationLength);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static internal extern int TraceQueryInformation(
+        internal static extern int TraceQueryInformation(
             [In] UInt64 traceHandle,
             [In] TRACE_INFO_CLASS InformationClass,
             [Out] void* TraceInformation,
@@ -395,6 +394,10 @@ namespace Microsoft.Diagnostics.Tracing
         internal const ushort EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL = 0x000B;
         internal const ushort EVENT_HEADER_EXT_TYPE_PROV_TRAITS = 0x000C;
         internal const ushort EVENT_HEADER_EXT_TYPE_PROCESS_START_KEY = 0x000D;
+        internal const ushort EVENT_HEADER_EXT_TYPE_CONTROL_GUID = 0x000E;
+        internal const ushort EVENT_HEADER_EXT_TYPE_QPC_DELTA = 0x000F;
+        internal const ushort EVENT_HEADER_EXT_TYPE_CONTAINER_ID = 0x0010;
+        internal const ushort EVENT_HEADER_EXT_TYPE_MAX = 0x0011;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct EVENT_HEADER_EXTENDED_DATA_ITEM
@@ -443,7 +446,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal const int EVENT_FILTER_TYPE_STACKWALK = unchecked((int)(0x80001000));        // Ptr points at EVENT_FILTER_EVENT_ID
 
         [StructLayout(LayoutKind.Explicit)]
-        unsafe internal struct EVENT_FILTER_DESCRIPTOR
+        internal unsafe struct EVENT_FILTER_DESCRIPTOR
         {
             [FieldOffset(0)]
             public byte* Ptr;          // Data
@@ -455,7 +458,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // Used when Type = EVENT_FILTER_TYPE_EVENT_ID or EVENT_FILTER_TYPE_STACKWALK
         [StructLayout(LayoutKind.Sequential)]
-        unsafe internal struct EVENT_FILTER_EVENT_ID
+        internal unsafe struct EVENT_FILTER_EVENT_ID
         {
             public byte FilterIn;        // Actually a boolean 
             public byte Reserved;
@@ -471,28 +474,28 @@ namespace Microsoft.Diagnostics.Tracing
             EntryPoint = "OpenTraceW",
             CharSet = CharSet.Unicode,
             SetLastError = true)]
-        internal extern static UInt64 OpenTrace(
+        internal static extern UInt64 OpenTrace(
             [In][Out] ref EVENT_TRACE_LOGFILEW logfile);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int ProcessTrace(
+        internal static extern int ProcessTrace(
             [In] UInt64[] handleArray,
             [In] uint handleCount,
             [In] IntPtr StartTime,
             [In] IntPtr EndTime);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int CloseTrace(
+        internal static extern int CloseTrace(
             [In] UInt64 traceHandle);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int QueryAllTraces(
+        internal static extern int QueryAllTraces(
             [In] IntPtr propertyArray,
             [In] int propertyArrayCount,
             [In][Out] ref int sessionCount);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int StartTraceW(
+        internal static extern int StartTraceW(
             [Out] out UInt64 sessionHandle,
             [In] string sessionName,
             EVENT_TRACE_PROPERTIES* properties);
@@ -543,6 +546,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal const uint EVENT_ENABLE_PROPERTY_PROCESS_START_KEY = 0x00000080;
         internal const uint EVENT_ENABLE_PROPERTY_EVENT_KEY = 0x00000100;
         internal const uint EVENT_ENABLE_PROPERTY_EXCLUDE_INPRIVATE = 0x00000200;
+        internal const uint EVENT_ENABLE_PROPERTY_ENABLE_SILOS = 0x00000400;
+        internal const uint EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING = 0x00000800;
 
         internal const uint EVENT_CONTROL_CODE_DISABLE_PROVIDER = 0;
         internal const uint EVENT_CONTROL_CODE_ENABLE_PROVIDER = 1;
@@ -632,7 +637,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool GetTokenInformation(
+        private static extern bool GetTokenInformation(
             IntPtr TokenHandle,
             TOKEN_INFORMATION_CLASS TokenInformationClass,
             IntPtr TokenInformation,
@@ -651,7 +656,7 @@ namespace Microsoft.Diagnostics.Tracing
            [In] IntPtr ReturnLength);
 
         // I explicitly DONT capture GetLastError information on this call because it is often used to
-        // clean up and it is cleaner if GetLastError still points at the orginal error, and not the failure
+        // clean up and it is cleaner if GetLastError still points at the original error, and not the failure
         // in CloseHandle.  If we ever care about exact errors of CloseHandle, we can make another entry
         // point 
         [DllImport("kernel32.dll")]
@@ -689,9 +694,13 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int dwLastError = Marshal.GetLastWin32Error();
             if ((dwLastError & 0x80000000) == 0x80000000)
+            {
                 return dwLastError;
+            }
             else
+            {
                 return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
+            }
         }
 
         internal static void SetPrivilege(uint privilege)
@@ -701,7 +710,10 @@ namespace Microsoft.Diagnostics.Tracing
             IntPtr tokenHandle = IntPtr.Zero;
             bool success = OpenProcessToken(process.GetHandle(), TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
             if (!success)
+            {
                 throw new Win32Exception();
+            }
+
             GC.KeepAlive(process);                      // TODO get on SafeHandles. 
 
             TOKEN_PRIVILEGES privileges = new TOKEN_PRIVILEGES();
@@ -712,7 +724,9 @@ namespace Microsoft.Diagnostics.Tracing
             success = AdjustTokenPrivileges(tokenHandle, false, ref privileges, 0, IntPtr.Zero, IntPtr.Zero);
             CloseHandle(tokenHandle);
             if (!success)
+            {
                 throw new Win32Exception();
+            }
 #endif
         }
 
@@ -723,14 +737,18 @@ namespace Microsoft.Diagnostics.Tracing
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
             if (!OpenProcessToken(process.GetHandle(), TOKEN_QUERY, out tokenHandle))
+            {
                 return null;
+            }
 
             int tokenIsElevated = 0;
             int retSize;
             bool success = GetTokenInformation(tokenHandle, TOKEN_INFORMATION_CLASS.TokenElevation, (IntPtr)(&tokenIsElevated), 4, out retSize);
             CloseHandle(tokenHandle);
             if (!success)
+            {
                 return null;
+            }
 
             GC.KeepAlive(process);                      // TODO get on SafeHandles. 
             return tokenIsElevated != 0;
