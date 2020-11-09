@@ -114,6 +114,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="Properties\PerfView.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -439,6 +440,7 @@
   <!-- Work around CoreCompile doesn't exist error -->
   <PropertyGroup>
     <LanguageTargets>$(MSBuildExtensionsPath)\$(VisualStudioVersion)\Bin\Microsoft.CSharp.targets</LanguageTargets>
+    <ApplicationManifest>Properties\PerfView.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <!--
