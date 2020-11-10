@@ -325,7 +325,7 @@ namespace Graphs
             int addressCount = deserializer.ReadInt();
             for (int i = 0; i < addressCount; i++)
             {
-                m_nodeAddresses.Add((Address)deserializer.ReadInt64());
+                m_nodeAddresses.Add(checked((nuint)deserializer.ReadInt64()));
             }
         }
 

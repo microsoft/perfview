@@ -81,7 +81,7 @@ namespace Graphs
         /// returns true if SetNode has been called on this node (it is not an undefined object).  
         /// TODO FIX NOW used this instead of the weird if node index grows technique. 
         /// </summary>
-        public bool IsDefined(NodeIndex nodeIndex) { return m_nodes[(int)nodeIndex] != m_undefinedObjDef; }
+        public bool IsDefined(NodeIndex nodeIndex) { return (StreamLabel)m_nodes[(int)nodeIndex] != m_undefinedObjDef; }
         /// <summary>
         /// Given an arbitrary code:NodeTypeIndex that identifies the nodeId of the node, Get a code:NodeType object.  
         /// 
@@ -165,7 +165,7 @@ namespace Graphs
         {
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
-            m_nodes = new SegmentedList<StreamLabel>(SegmentSize, m_expectedNodeCount);
+            m_nodes = new SegmentedList<nuint>(SegmentSize, m_expectedNodeCount);
             RootIndex = NodeIndex.Invalid;
             ClearWorker();
         }
@@ -199,7 +199,7 @@ namespace Graphs
         public virtual NodeIndex CreateNode()
         {
             var ret = (NodeIndex)m_nodes.Count;
-            m_nodes.Add(m_undefinedObjDef);
+            m_nodes.Add((nuint)m_undefinedObjDef);
             return ret;
         }
         /// <summary>
@@ -414,8 +414,8 @@ namespace Graphs
 
         internal void SetNodeTypeAndSize(NodeIndex nodeIndex, NodeTypeIndex typeIndex, int sizeInBytes)
         {
-            Debug.Assert(m_nodes[(int)nodeIndex] == m_undefinedObjDef, "Calling SetNode twice for node index " + nodeIndex);
-            m_nodes[(int)nodeIndex] = m_writer.GetLabel(allowPadding: true);
+            Debug.Assert((StreamLabel)m_nodes[(int)nodeIndex] == m_undefinedObjDef, "Calling SetNode twice for node index " + nodeIndex);
+            m_nodes[(int)nodeIndex] = (nuint)m_writer.GetLabel(allowPadding: true);
 
             Debug.Assert(sizeInBytes >= 0);
             // We are going to assume that if this is negative it is because it is a large positive number.  
@@ -474,9 +474,9 @@ namespace Graphs
             // Create an undefined node, kind of gross because SetNode expects to have an entry
             // in the m_nodes table, so we make a fake one and then remove it.  
             m_undefinedObjDef = m_writer.GetLabel(allowPadding: false);
-            m_nodes.Add(m_undefinedObjDef);
+            m_nodes.Add((nuint)m_undefinedObjDef);
             SetNode(0, CreateType("UNDEFINED"), 0, new GrowableArray<NodeIndex>());
-            Debug.Assert(m_nodes[0] == m_undefinedObjDef);
+            Debug.Assert((StreamLabel)m_nodes[0] == m_undefinedObjDef);
             m_nodes.Count = 0;
         }
 
@@ -540,10 +540,10 @@ namespace Graphs
             for (int i = 0; i < m_nodes.Count; i++)
             {
                 // Apply differential compression to the label, and then write it as a compressed integer
-                if (((long)m_nodes[i] & 0x1) != 0)
+                if ((m_nodes[i] & 0x1) != 0)
                     throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
 
-                int currentLabel = unchecked((int)((long)m_nodes[i] >> 1));
+                int currentLabel = unchecked((int)(m_nodes[i] >> 1));
                 int difference = unchecked(currentLabel - previousLabel);
                 Node.WriteCompressedInt(serializer.Writer, difference);
                 previousLabel = currentLabel;
@@ -617,7 +617,7 @@ namespace Graphs
 
             // Read in the Nodes 
             int nodeCount = deserializer.ReadInt();
-            m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
+            m_nodes = new SegmentedList<nuint>(SegmentSize, nodeCount);
 
             uint previousLabel = 0;
             for (int i = 0; i < nodeCount; i++)
@@ -625,7 +625,7 @@ namespace Graphs
                 // Read the label as a compressed differential integer
                 uint difference = unchecked((uint)Node.ReadCompressedInt(deserializer.Reader));
                 uint currentLabel = unchecked(previousLabel + difference);
-                m_nodes.Add((StreamLabel)((long)currentLabel << 1));
+                m_nodes.Add((nuint)(StreamLabel)((long)currentLabel << 1));
                 previousLabel = currentLabel;
             }
 
@@ -695,7 +695,7 @@ namespace Graphs
         internal int m_totalRefs;                       // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
         internal GrowableArray<DeferedTypeInfo> m_deferedTypes; // Types that we only have IDs and module image bases.
-        internal SegmentedList<StreamLabel> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
+        internal SegmentedList<nuint> m_nodes;    // We expect millions of these.  points at a serialize node in m_reader
         internal MemoryMappedFileStreamReader m_reader; // This is the actual data for the nodes.  Can be large 
         internal StreamLabel m_undefinedObjDef;         // a node of nodeId 'Unknown'.   New nodes start out pointing to this
         // and then can be set to another nodeId (needed when there are cycles).
@@ -718,7 +718,7 @@ namespace Graphs
         {
             get
             {
-                m_graph.m_reader.Goto(m_graph.m_nodes[(int)m_index]);
+                m_graph.m_reader.Goto((StreamLabel)m_graph.m_nodes[(int)m_index]);
                 var typeAndSize = ReadCompressedInt(m_graph.m_reader);
                 if ((typeAndSize & 1) != 0)     // low bit indicates if Size is encoded explicitly
                 {
@@ -741,7 +741,7 @@ namespace Graphs
         /// </summary>
         public void ResetChildrenEnumeration()
         {
-            m_graph.m_reader.Goto(m_graph.m_nodes[(int)m_index]);
+            m_graph.m_reader.Goto((StreamLabel)m_graph.m_nodes[(int)m_index]);
             if ((ReadCompressedInt(m_graph.m_reader) & 1) != 0)        // Skip nodeId and Size
             {
                 ReadCompressedInt(m_graph.m_reader);
@@ -785,7 +785,7 @@ namespace Graphs
         {
             get
             {
-                m_graph.m_reader.Goto(m_graph.m_nodes[(int)m_index]);
+                m_graph.m_reader.Goto((StreamLabel)m_graph.m_nodes[(int)m_index]);
                 if ((ReadCompressedInt(m_graph.m_reader) & 1) != 0)        // Skip nodeId and Size
                 {
                     ReadCompressedInt(m_graph.m_reader);
@@ -798,7 +798,7 @@ namespace Graphs
         {
             get
             {
-                m_graph.m_reader.Goto(m_graph.m_nodes[(int)m_index]);
+                m_graph.m_reader.Goto((StreamLabel)m_graph.m_nodes[(int)m_index]);
                 var ret = (NodeTypeIndex)(ReadCompressedInt(m_graph.m_reader) >> 1);
                 return ret;
             }
@@ -835,7 +835,7 @@ namespace Graphs
                 typeStorage = m_graph.AllocTypeNodeStorage();
             }
 
-            if (m_graph.m_nodes[(int)Index] == StreamLabel.Invalid)
+            if ((StreamLabel)m_graph.m_nodes[(int)Index] == StreamLabel.Invalid)
             {
                 writer.WriteLine("{0}<Node Index=\"{1}\" Undefined=\"true\"{2}/>", prefix, (int)Index, additinalAttribs);
                 return;

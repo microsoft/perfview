@@ -10,8 +10,8 @@ namespace Graphs
         public MemoryGraph(int expectedSize)
             : base(expectedSize)
         {
-            m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
-            m_nodeAddresses = new SegmentedList<Address>(SegmentSize, expectedSize);
+            m_addressToNodeIndex = new Dictionary<nuint, NodeIndex>(expectedSize, NativeIntegerEqualityComparer.Instance);
+            m_nodeAddresses = new SegmentedList<nuint>(SegmentSize, expectedSize);
         }
 
         public void WriteAsBinaryFile(string outputFileName)
@@ -46,7 +46,7 @@ namespace Graphs
         public void SetAddress(NodeIndex nodeIndex, Address nodeAddress)
         {
             Debug.Assert(m_nodeAddresses[(int)nodeIndex] == 0, "Calling SetAddress twice for node index " + nodeIndex);
-            m_nodeAddresses[(int)nodeIndex] = nodeAddress;
+            m_nodeAddresses[(int)nodeIndex] = checked((nuint)nodeAddress);
         }
         public override NodeIndex CreateNode()
         {
@@ -91,19 +91,20 @@ namespace Graphs
         /// </summary>
         public NodeIndex GetNodeIndex(Address objectAddress)
         {
+            nuint nativeObjectAddress = checked((nuint)objectAddress);
             NodeIndex nodeIndex;
-            if (!m_addressToNodeIndex.TryGetValue(objectAddress, out nodeIndex))
+            if (!m_addressToNodeIndex.TryGetValue(nativeObjectAddress, out nodeIndex))
             {
                 nodeIndex = CreateNode();
-                m_nodeAddresses[(int)nodeIndex] = objectAddress;
-                m_addressToNodeIndex.Add(objectAddress, nodeIndex);
+                m_nodeAddresses[(int)nodeIndex] = nativeObjectAddress;
+                m_addressToNodeIndex.Add(nativeObjectAddress, nodeIndex);
             }
             Debug.Assert(m_nodeAddresses[(int)nodeIndex] == objectAddress);
             return nodeIndex;
         }
         public bool IsInGraph(Address objectAddress)
         {
-            return m_addressToNodeIndex.ContainsKey(objectAddress);
+            return m_addressToNodeIndex.ContainsKey(checked((nuint)objectAddress));
         }
 
         /// <summary>
@@ -111,7 +112,7 @@ namespace Graphs
         /// THis table maps the ID that CLRProfiler uses (an address), to the NodeIndex we have assigned to it.  
         /// It is only needed while the file is being read in.  
         /// </summary>
-        protected Dictionary<Address, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
+        protected Dictionary<nuint, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
 
         #endregion
         #region private
@@ -162,7 +163,7 @@ namespace Graphs
 
             serializer.WriteTagged(Is64Bit);
 
-            IEnumerable<KeyValuePair<Address, int>> GroupNodeAddresses(SegmentedList<Address> nodeAddresses)
+            IEnumerable<KeyValuePair<Address, int>> GroupNodeAddresses(SegmentedList<nuint> nodeAddresses)
             {
                 if (nodeAddresses.Count == 0)
                     yield break;
@@ -198,14 +199,14 @@ namespace Graphs
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
             int addressCount = deserializer.ReadInt();
-            m_nodeAddresses = new SegmentedList<Address>(SegmentSize, addressCount);
+            m_nodeAddresses = new SegmentedList<nuint>(SegmentSize, addressCount);
 
             // See ToStream above for a description of the differential compression process
             int offset = 0;
             while (offset < addressCount)
             {
                 int groupCount = deserializer.ReadInt();
-                Address baseAddress = deserializer.ReadUInt64();
+                nuint baseAddress = checked((nuint)deserializer.ReadUInt64());
                 m_nodeAddresses.Add(baseAddress);
                 for (int i = 1; i < groupCount; i++)
                 {
@@ -230,8 +231,37 @@ namespace Graphs
 
         // This array survives after the constructor completes
         // TODO Fold this into the existing blob. Currently this dominates the Size cost of the graph!
-        protected SegmentedList<Address> m_nodeAddresses;
+        protected SegmentedList<nuint> m_nodeAddresses;
         #endregion
+    }
+
+    internal sealed class NativeIntegerEqualityComparer : IEqualityComparer<nuint>, IEqualityComparer<nint>
+    {
+        public static readonly NativeIntegerEqualityComparer Instance = new();
+
+        private NativeIntegerEqualityComparer()
+        {
+        }
+
+        public bool Equals(nint x, nint y)
+        {
+            return x == y;
+        }
+
+        public bool Equals(nuint x, nuint y)
+        {
+            return x == y;
+        }
+
+        public int GetHashCode(nint obj)
+        {
+            return obj.GetHashCode();
+        }
+
+        public int GetHashCode(nuint obj)
+        {
+            return obj.GetHashCode();
+        }
     }
 
     /// <summary>
@@ -279,7 +309,7 @@ namespace Graphs
                 Index = m_graph.CreateNode();
             }
 
-            Debug.Assert(m_graph.m_nodes[(int)Index] == m_graph.m_undefinedObjDef, "SetNode cannot be called on the nodeIndex passed");
+            Debug.Assert((StreamLabel)m_graph.m_nodes[(int)Index] == m_graph.m_undefinedObjDef, "SetNode cannot be called on the nodeIndex passed");
             ModuleName = moduleName;
             m_mutableChildren = new List<MemoryNodeBuilder>();
             m_typeIndex = NodeTypeIndex.Invalid;
