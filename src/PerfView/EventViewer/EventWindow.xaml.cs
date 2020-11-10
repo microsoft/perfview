@@ -512,7 +512,7 @@ namespace PerfView
                 return;
             }
             Update();
-            
+
             string templatePath = Path.Combine(SupportFiles.SupportFileDir, "EventCounterVisualization.html");
             string template = File.ReadAllText(templatePath);
 
@@ -764,16 +764,16 @@ namespace PerfView
         }
         private void DoColumnsToDisplayListClick(object sender, RoutedEventArgs e)
         {
-            var eventFilter = new List<string>();
-            foreach (var item in EventTypes.SelectedItems)
-            {
-                eventFilter.Add((string)item);
-            }
-
-            if (eventFilter.Count == 0)
+            if (EventTypes.SelectedItems.Count == 0)
             {
                 StatusBar.LogError("No event types selected.");
                 return;
+            }
+
+            var eventFilter = new List<string>(EventTypes.SelectedItems.Count);
+            foreach (var item in EventTypes.SelectedItems)
+            {
+                eventFilter.Add((string)item);
             }
 
             var columns = m_source.AllColumnNames(eventFilter);
@@ -1205,7 +1205,7 @@ namespace PerfView
                 return;
             }
 
-            var eventFilter = new List<string>();
+            var eventFilter = new List<string>(EventTypes.SelectedItems.Count);
             foreach (var item in EventTypes.SelectedItems)
             {
                 eventFilter.Add((string)item);

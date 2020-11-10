@@ -722,7 +722,7 @@ public class GCHeapDumper
         DataTarget target;
         ClrRuntime runtime;
         InitializeClrRuntime(inputSpec, out target, out runtime);
-        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions(); 
+        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions();
         bool flag7 = serializedExceptions == null || Enumerable.Count<ClrException>(serializedExceptions) == 0;
         if (flag7)
         {
@@ -1260,7 +1260,7 @@ public class GCHeapDumper
 
         m_log.WriteLine("A total of {0} segments.", m_dotNetHeap.Segments.Count);
         // Get the GC Segments to dump
-        var gcHeapDumpSegments = new List<GCHeapDumpSegment>();
+        var gcHeapDumpSegments = new List<GCHeapDumpSegment>(m_dotNetHeap.Segments.Count);
         foreach (var seg in m_dotNetHeap.Segments)
         {
             var gcHeapDumpSegment = new GCHeapDumpSegment();
@@ -2501,7 +2501,7 @@ public class GCHeapDumper
         }
         else
         {
-            ret = GetTypeIndexForName(name ?? "<Unnamed "+ type.MetadataToken.ToString("x8") + ">", type.Module.FileName, 0);
+            ret = GetTypeIndexForName(name ?? "<Unnamed " + type.MetadataToken.ToString("x8") + ">", type.Module.FileName, 0);
             m_typeIdxToGraphIdx[idx] = (int)ret + 1;
         }
         return ret;

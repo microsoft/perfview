@@ -536,7 +536,7 @@ namespace PerfView
                         int processId;
                         if (Int32.TryParse(parsedArgs.FocusProcess, out processId))
                         {
-                            options.ProcessIDFilter = new List<int>() { processId };
+                            options.ProcessIDFilter = new List<int>(1) { processId };
                             LogFile.WriteLine("**** /FocusProcess specified LIMITING user mode events to process with ID {0}", processId);
                         }
                         else
@@ -545,15 +545,15 @@ namespace PerfView
                                 LogFile.WriteLine("**** WARNING: process name does not end in .exe, likely you will exclude processes of interest");
 
                             LogFile.WriteLine("**** /FocusProcess specified LIMITING user mode events to process with name {0}", parsedArgs.FocusProcess);
-                            options.ProcessNameFilter = new List<string>() { parsedArgs.FocusProcess };
+                            options.ProcessNameFilter = new List<string>(1) { parsedArgs.FocusProcess };
                         }
                     }
 
-                    if(parsedArgs.EnableEventsInContainers)
+                    if (parsedArgs.EnableEventsInContainers)
                     {
                         options.EnableInContainers = true;
                     }
-                    if(parsedArgs.EnableSourceContainerTracking)
+                    if (parsedArgs.EnableSourceContainerTracking)
                     {
                         options.EnableSourceContainerTracking = true;
                     }
@@ -691,8 +691,8 @@ namespace PerfView
                                     ClrPrivateTraceEventParser.Keywords.Binding |
                                     ClrPrivateTraceEventParser.Keywords.Fusion |
                                     ClrPrivateTraceEventParser.Keywords.MulticoreJit |   /* only works on verbose */
-                                                                                         // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
-                                                                                         //  ClrPrivateTraceEventParser.Keywords.Startup 
+                                    // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
+                                    //  ClrPrivateTraceEventParser.Keywords.Startup 
                                     ClrPrivateTraceEventParser.Keywords.Stack
                                 ), options);
 
@@ -704,7 +704,7 @@ namespace PerfView
                                 {
                                     // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
                                     netTaskStacks = options.Clone();
-                                    netTaskStacks.EventIDStacksToEnable = new List<int>() { 7, 10, 12 };
+                                    netTaskStacks.EventIDStacksToEnable = new List<int>(3) { 7, 10, 12 };
                                 }
                                 EnableUserProvider(userModeSession, ".NETTasks",
                                     TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
@@ -1602,7 +1602,7 @@ namespace PerfView
                 {
                     // Compute the separate directory name.
                     unzipedEtlFile = CacheFiles.FindFile(inputFileName);
-                    
+
                     // Delete the directory if it exists.
                     if (Directory.Exists(unzipedEtlFile))
                     {
@@ -3407,7 +3407,7 @@ namespace PerfView
                         int processId;
                         if (Int32.TryParse(parsedArgs.FocusProcess, out processId))
                         {
-                            options.ProcessIDFilter = new List<int>() { processId };
+                            options.ProcessIDFilter = new List<int>(1) { processId };
                             LogFile.WriteLine("**** /FocusProcess specified LIMITING RUNDOWN to process with ID {0}", processId);
                         }
                         else
@@ -3416,7 +3416,7 @@ namespace PerfView
                                 LogFile.WriteLine("**** WARNING: process name does not end in .exe, likely you will exclude processes of interest");
 
                             LogFile.WriteLine("**** /FocusProcess specified LIMITING RUNDOWN to process with name {0}", parsedArgs.FocusProcess);
-                            options.ProcessNameFilter = new List<string>() { parsedArgs.FocusProcess };
+                            options.ProcessNameFilter = new List<string>(1) { parsedArgs.FocusProcess };
                         }
                     }
 

@@ -1419,7 +1419,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             int count;
             deserializer.Read(out count);
-            m_templates = new Dictionary<TraceEvent, DynamicTraceEventData>(new TraceEventComparer());
+            m_templates = new Dictionary<TraceEvent, DynamicTraceEventData>(count, new TraceEventComparer());
             for (int i = 0; i < count; i++)
             {
                 DynamicTraceEventData template;
