@@ -1,5 +1,6 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Diagnostics;
@@ -229,7 +230,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Fetch the state object associated with this parser and cast it to
         /// the ClrTraceEventParserState type.   This state object contains any
-        /// informtion that you need from one event to another to decode events.
+        /// information that you need from one event to another to decode events.
         /// (typically ID->Name tables).  
         /// </summary>
         internal ClrTraceEventParserState State
@@ -1510,7 +1511,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 38, MethodTaskGuid);
             }
         }
-
+        public event Action<MethodJitMemoryAllocatedForCodeTraceData> MethodMemoryAllocatedForJitCode
+        {
+            add
+            {
+                RegisterTemplate(new MethodJitMemoryAllocatedForCodeTraceData(value, 146, 9, "Method", MethodTaskGuid, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 146, MethodTaskGuid);
+            }
+        }
         public event Action<R2RGetEntryPointTraceData> MethodR2RGetEntryPoint
         {
             add
@@ -1983,7 +1994,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
-
+        static private MethodJitMemoryAllocatedForCodeTraceData MethodMemoryAllocatedForJitCodeTemplate(Action<MethodJitMemoryAllocatedForCodeTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new MethodJitMemoryAllocatedForCodeTraceData(action, 146, 9, "Method", Guid.Empty, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName);
+        }
         static private R2RGetEntryPointStartTraceData R2RGetEntryPointStartTemplate(Action<R2RGetEntryPointStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new R2RGetEntryPointStartTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStart", ProviderGuid, ProviderName);
@@ -2002,7 +2016,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[134];
+                var templates = new TraceEvent[135];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2144,6 +2158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[131]  = R2RGetEntryPointStartTemplate(null);
                 templates[132]  = TypeLoadStartTemplate(null);
                 templates[133]  = TypeLoadStopTemplate(null);
+                templates[134]  = MethodMemoryAllocatedForJitCodeTemplate(null);
 
                 s_templates = templates;
             }
@@ -2450,7 +2465,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3 + GenerationSize4; } }
         public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3 + TotalPromotedSize4; } }
         /// <summary>
-        /// Note that this field is derived from teh TotalPromotedSize* fields.  If nothing was promoted, it is possible
+        /// Note that this field is derived from the TotalPromotedSize* fields.  If nothing was promoted, it is possible
         /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
         /// </summary>
         public int Depth
@@ -8802,6 +8817,91 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    public sealed class MethodJitMemoryAllocatedForCodeTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public long ModuleID { get { return GetInt64At(8); } }
+        public long JitHotCodeRequestSize { get { return GetInt64At(16); } }
+        public long JitRODataRequestSize { get { return GetInt64At(24); } }
+        public long AllocatedSizeForJitCode { get { return GetInt64At(32); } }
+        public int JitAllocFlag { get { return GetInt32At(40); } }
+        public int ClrInstanceID { get { return GetInt16At(44); } }
+
+        #region Private
+        internal MethodJitMemoryAllocatedForCodeTraceData(Action<MethodJitMemoryAllocatedForCodeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 46));
+            Debug.Assert(!(Version > 0 && EventDataLength < 46));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MethodJitMemoryAllocatedForCodeTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "ModuleID", ModuleID);
+            XmlAttrib(sb, "JitHotCodeRequestSize", JitHotCodeRequestSize);
+            XmlAttrib(sb, "JitRODataRequestSize", JitRODataRequestSize);
+            XmlAttrib(sb, "AllocatedSizeForJitCode", AllocatedSizeForJitCode);
+            XmlAttrib(sb, "JitAllocFlag", JitAllocFlag);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "ModuleID", "JitHotCodeRequestSize", "JitRODataRequestSize", "AllocatedSizeForJitCode", "JitAllocFlag", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return ModuleID;
+                case 2:
+                    return JitHotCodeRequestSize;
+                case 3:
+                    return JitRODataRequestSize;
+                case 4:
+                    return AllocatedSizeForJitCode;
+                case 5:
+                    return JitAllocFlag;
+                case 6:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 16; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<MethodJitMemoryAllocatedForCodeTraceData> Action;
+        #endregion
+    }
+
     public sealed class TypeLoadStartTraceData : TraceEvent
     {
         public int TypeLoadStartID { get { return GetInt32At(0); } }
@@ -12250,7 +12350,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             JittedMethodILToNativeMap = 0x20000,
             /// <summary>
-            /// This supresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
+            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
             /// bit and also does not have NGEN PDBS).  
             /// </summary>
             SupressNGen = 0x40000,
@@ -12875,7 +12975,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             if (_typeIDToName == null)
             {
-                _typeIDToName = new HistoryDictionary<string>(500);
+                _typeIDToName = new HistoryDictionary<Address, string>(500);
             }
 
             _typeIDToName.Add(typeId + ((ulong)processID << 48), timeQPC, typeName);
@@ -12907,9 +13007,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 }
                 serializer.Log("<WriteCollection name=\"typeIDToName\" count=\"" + _typeIDToName.Count + "\">\r\n");
                 serializer.Write(_typeIDToName.Count);
-                foreach (HistoryDictionary<string>.HistoryValue entry in _typeIDToName.Entries)
+                foreach (HistoryDictionary<Address, string>.HistoryValue entry in _typeIDToName.Entries)
                 {
-                    serializer.Write((long)entry.Key);
+                    serializer.WriteAddress(entry.Key);
                     serializer.Write(entry.StartTime);
                     serializer.Write(entry.Value);
                 }
@@ -12929,22 +13029,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 {
                     if (_typeIDToName == null)
                     {
-                        _typeIDToName = new HistoryDictionary<string>(count);
+                        _typeIDToName = new HistoryDictionary<Address, string>(count);
                     }
 
                     for (int i = 0; i < count; i++)
                     {
-                        long key; deserializer.Read(out key);
+                        Address key; deserializer.ReadAddress(out key);
                         long startTimeQPC; deserializer.Read(out startTimeQPC);
                         string value; deserializer.Read(out value);
-                        _typeIDToName.Add((Address)key, startTimeQPC, value);
+                        _typeIDToName.Add(key, startTimeQPC, value);
                     }
                 }
             });
         }
 
         private DeferedRegion lazyTypeIDToName;
-        private HistoryDictionary<string> _typeIDToName;
+        private HistoryDictionary<Address, string> _typeIDToName;
         #endregion // private 
     }
     #endregion  // private types

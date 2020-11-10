@@ -1237,7 +1237,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Keep threadIDtoThread table under control by removing old entries.  
                 if (IsRealTime)
                 {
-                    Threads.threadIDtoThread.Remove((Address)data.ThreadID);
+                    Threads.threadIDtoThread.Remove(data.ThreadID);
                 }
             };
 
@@ -5713,8 +5713,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Sets the 'Parent' field for the process (based on the ParentID).   
         /// 
         /// sentinel is internal to the implementation, external callers should always pass null. 
-        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it woudl form
-        /// a loop in the parent chain, which we definately don't want.  
+        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it would form
+        /// a loop in the parent chain, which we definitely don't want.  
         /// </summary>
         internal void SetParentForProcess(TraceProcess sentinel = null)
         {
@@ -6160,7 +6160,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             long timeQPC = log.RelativeMSecToQPC(timeRelativeMSec);
             InitThread();
             TraceThread ret = null;
-            threadIDtoThread.TryGetValue((Address)threadID, timeQPC, out ret);
+            threadIDtoThread.TryGetValue(threadID, timeQPC, out ret);
             return ret;
         }
         /// <summary>
@@ -6183,7 +6183,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             InitThread();
             TraceThread ret = null;
-            threadIDtoThread.TryGetValue((Address)threadID, timeQPC, out ret);
+            threadIDtoThread.TryGetValue(threadID, timeQPC, out ret);
             return ret;
         }
 
@@ -6200,11 +6200,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Create a cache for this because it can be common
             if (threadIDtoThread == null)
             {
-                threadIDtoThread = new HistoryDictionary<TraceThread>(1000);
+                threadIDtoThread = new HistoryDictionary<int, TraceThread>(1000);
                 for (int i = 0; i < threads.Count; i++)
                 {
                     var thread = threads[i];
-                    threadIDtoThread.Add((Address)thread.ThreadID, thread.startTimeQPC, thread);
+                    threadIDtoThread.Add(thread.ThreadID, thread.startTimeQPC, thread);
                 }
             }
         }
@@ -6249,7 +6249,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 threads.Add(retThread);
-                threadIDtoThread.Add((Address)threadID, timeQPC, retThread);
+                threadIDtoThread.Add(threadID, timeQPC, retThread);
             }
 
             // Set the process if we had to set this threads process ID to the 'unknown' process.  
@@ -6291,7 +6291,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // State variables.  
         private GrowableArray<TraceThread> threads;          // The threads ordered in time. 
         private TraceLog log;
-        internal HistoryDictionary<TraceThread> threadIDtoThread;
+        internal HistoryDictionary<int, TraceThread> threadIDtoThread;
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
@@ -10576,7 +10576,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Sometimes ETL files are too big , and you just want to look at a fraction of it to speed things up
         /// (or to keep file size under control).  The MaxEventCount property allows that.   10M will produce a 3-4GB ETLX file.  
         /// 1M is a good value to keep ETLX file size under control.  Note that that the conversion still scan the entire 
-        /// original ETL file too look for bookkeeping events, however MaxEventCount events will be transfered to the ETLX 
+        /// original ETL file too look for bookkeeping events, however MaxEventCount events will be transferred to the ETLX 
         /// file as events.
         /// <para>
         /// The default is 10M because ETLX has a restriction of 4GB in size.  

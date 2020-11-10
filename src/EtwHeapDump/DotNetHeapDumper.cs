@@ -158,7 +158,7 @@ public class DotNetHeapDumper
             var options = new TraceEventProviderOptions() { ProcessIDFilter = new List<int>(1) { processID } };
 
             // There is a bug in the runtime 4.6.2 and earlier where we only clear the table of types we have already emitted when you ENABLE 
-            // the Clr Provider WITHOUT the ClrTraceEventParser.Keywords.Type keyword.  we achive this by turning on just the GC events, 
+            // the Clr Provider WITHOUT the ClrTraceEventParser.Keywords.Type keyword.  we achieve this by turning on just the GC events, 
             // (which clears the Type table) and then turn all the events we need on.   
             session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational, (ulong)ClrTraceEventParser.Keywords.GC, options);
             System.Threading.Thread.Sleep(50);      // Wait for it to complete (it is async)

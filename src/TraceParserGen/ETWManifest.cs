@@ -616,7 +616,7 @@ namespace ETWManifest
         }
         public string Message { get; internal set; }
 
-        /* These are not guarenteed to be present */
+        /* These are not guaranteed to be present */
         /// <summary>
         /// Technically the Symbol attribute on an event is not part of the model (it is not stored in the binary manifest)
         /// but if it is present, it can be used to create better names.   This value can be null. 

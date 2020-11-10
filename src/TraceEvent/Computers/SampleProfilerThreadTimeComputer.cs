@@ -573,7 +573,7 @@ namespace Microsoft.Diagnostics.Tracing
         private StartStopActivity[] m_threadToStartStopActivity;
 
         /// <summary>
-        /// Sadly, with AWAIT nodes might come into existance AFTER we would have normally identified 
+        /// Sadly, with AWAIT nodes might come into existence AFTER we would have normally identified 
         /// a region as having no thread/await working on it.  Thus you have to be able to 'undo' ASYNC_UNKONWN
         /// nodes.   We solve this by remembering all of our ASYNC_UNKNOWN nodes on a list (basically provisional)
         /// and only add them when the start-stop activity dies (when we know there can't be another AWAIT.  

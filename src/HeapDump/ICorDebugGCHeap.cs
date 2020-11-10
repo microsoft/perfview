@@ -101,7 +101,7 @@ namespace ClrMemory
                 }
 
                 // Return a bad type
-                Debug.WriteLine(string.Format("Error: object ref 0x{0:x} does not point at the begining of an object.", objRef));
+                Debug.WriteLine(string.Format("Error: object ref 0x{0:x} does not point at the beginning of an object.", objRef));
                 Debug.Assert(m_types[0].Name == "!BAD_TYPE!");
                 return m_types[0];
             }
@@ -237,7 +237,7 @@ namespace ClrMemory
         private ICorDebugGCHeapRoot[] m_roots;
 
         internal List<ICorDebugGCHeapType> m_types;
-        internal ICorDebugGCHeapSegment[] m_icorDebugSegments;  // This alwasy points at m_segments, but has the stronger type for the array. 
+        internal ICorDebugGCHeapSegment[] m_icorDebugSegments;  // This always points at m_segments, but has the stronger type for the array. 
 
         // Heap enumeration fields
         #region HeapEnumeration

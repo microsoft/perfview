@@ -273,7 +273,7 @@ internal class Program
             {
                 Match classMatch = classPat.Match(mofFileData, pos);
                 if (!classMatch.Success || classMatch.Index != pos)
-                    throw new ApplicationException("Error parsing class defintion starting at line " + (NewLineCount(mofFileData, 0, pos) + 1));
+                    throw new ApplicationException("Error parsing class definition starting at line " + (NewLineCount(mofFileData, 0, pos) + 1));
 
                 MofClass mofClass = new MofClass();
                 mofClass.attributes = classMatch.Groups[1].Value;
@@ -290,7 +290,7 @@ internal class Program
                 {
                     Match fieldMatch = fieldPat.Match(mofClass.body, fieldPos);
                     if (!fieldMatch.Success || fieldMatch.Index != fieldPos)
-                        throw new ApplicationException("Error parsing field defintion at line " + (NewLineCount(mofFileData, 0, bodyStart + fieldPos) + 1));
+                        throw new ApplicationException("Error parsing field definition at line " + (NewLineCount(mofFileData, 0, bodyStart + fieldPos) + 1));
                     MofField mofField = new MofField();
                     mofField.attributes = fieldMatch.Groups[1].Value;
                     mofField.type = fieldMatch.Groups[2].Value;

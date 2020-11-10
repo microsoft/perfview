@@ -1626,7 +1626,7 @@ namespace Microsoft.Diagnostics.Symbols
         public virtual int PdbAge { get { return 1; } }
 
         /// <summary>
-        ///  Fetches the SymbolReader assoicated with this SymbolModule.  This is where shared
+        ///  Fetches the SymbolReader associated with this SymbolModule.  This is where shared
         ///  attributes (like SourcePath, SymbolPath etc) are found.  
         /// </summary>
         public SymbolReader SymbolReader { get { return _reader; } }
@@ -2027,7 +2027,7 @@ namespace Microsoft.Diagnostics.Symbols
         // Should be in the framework, but I could  not find it quickly.  
         private static bool ArrayEquals(byte[] bytes1, byte[] bytes2)
         {
-            if (bytes1.Length != bytes1.Length)
+            if (bytes1.Length != bytes2.Length)
             {
                 return false;
             }

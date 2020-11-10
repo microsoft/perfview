@@ -656,7 +656,7 @@ namespace Microsoft.Diagnostics.Tracing
            [In] IntPtr ReturnLength);
 
         // I explicitly DONT capture GetLastError information on this call because it is often used to
-        // clean up and it is cleaner if GetLastError still points at the orginal error, and not the failure
+        // clean up and it is cleaner if GetLastError still points at the original error, and not the failure
         // in CloseHandle.  If we ever care about exact errors of CloseHandle, we can make another entry
         // point 
         [DllImport("kernel32.dll")]
