@@ -8,7 +8,6 @@
     <owners>Microsoft</owners>
     <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
     <license type="expression">MIT</license>
-    <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>
       Event Tracing for Windows (ETW) is a powerful logging mechanism built into the Windows OS and is used extensively in Windows. 
