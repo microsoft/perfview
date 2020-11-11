@@ -106,27 +106,27 @@ namespace FastSerialization
         /// <summary>
         /// Write a byte to a stream
         /// </summary>
-        void Write(byte value);
+        void WriteByte(byte value);
         /// <summary>
         /// Write a short to a stream
         /// </summary>
-        void Write(short value);
+        void WriteInt16(short value);
         /// <summary>
         /// Write an int to a stream
         /// </summary>
-        void Write(int value);
+        void WriteInt32(int value);
         /// <summary>
         /// Write a long to a stream
         /// </summary>
-        void Write(long value);
+        void WriteInt64(long value);
         /// <summary>
         /// Write a StreamLabel (a pointer to another part of the stream) to a stream
         /// </summary>
-        void Write(StreamLabel value);
+        void WriteLabel(StreamLabel value);
         /// <summary>
         /// Write a string to a stream (supports null values).  
         /// </summary>
-        void Write(string value);
+        void WriteString(string value);
         /// <summary>
         /// Get the stream label for the current position (points at whatever is written next
         /// </summary>
@@ -226,12 +226,12 @@ namespace FastSerialization
         /// <summary>
         /// Writes a Guid to stream 'writer' as sequence of 8 bytes
         /// </summary>
-        public static void Write(this IStreamWriter writer, Guid guid)
+        public static void WriteGuid(this IStreamWriter writer, Guid guid)
         {
             byte[] bytes = guid.ToByteArray();
             for (int i = 0; i < bytes.Length; i++)
             {
-                writer.Write(bytes[i]);
+                writer.WriteByte(bytes[i]);
             }
         }
         /// <summary>
@@ -508,10 +508,10 @@ namespace FastSerialization
 
                 Log("<Serializer>");
                 // Write the header. 
-                Write("!FastSerialization.1");
+                WriteString("!FastSerialization.1");
 
                 // Write the main object.  This is recursive and does most of the work. 
-                Write(entryObject);
+                WriteObject(entryObject);
 
                 // Write any forward references. 
                 WriteDeferedObjects();
@@ -524,17 +524,17 @@ namespace FastSerialization
                 Log("<ForwardRefTable StreamLabel=\"0x" + forwardRefsLabel.ToString("x") + "\">");
                 if (forwardReferenceDefinitions != null)
                 {
-                    Write(forwardReferenceDefinitions.Count);
+                    WriteInt32(forwardReferenceDefinitions.Count);
                     for (int i = 0; i < forwardReferenceDefinitions.Count; i++)
                     {
                         Debug.Assert(forwardReferenceDefinitions[i] != StreamLabel.Invalid);
                         Log("<ForwardDefEntry index=\"" + i + "\" StreamLabelRef=\"0x" + forwardReferenceDefinitions[i].ToString("x") + "\"/>");
-                        writer.Write(forwardReferenceDefinitions[i]);
+                        writer.WriteLabel(forwardReferenceDefinitions[i]);
                     }
                 }
                 else
                 {
-                    Write(0);
+                    WriteInt32(0);
                 }
 
                 Log("</ForwardRefTable>");
@@ -543,7 +543,7 @@ namespace FastSerialization
                 // items.  
                 StreamLabel trailerLabel = writer.GetLabel();
                 Log("<Trailer StreamLabel=\"0x" + trailerLabel.ToString("x") + "\">");
-                Write(forwardRefsLabel);
+                WriteLabel(forwardRefsLabel);
                 // More stuff goes here in future versions. 
                 Log("</Trailer>");
 
@@ -565,58 +565,58 @@ namespace FastSerialization
         /// <summary>
         /// Write a bool to a stream
         /// </summary>
-        public void Write(bool value)
+        public void WriteBoolean(bool value)
         {
-            Write((byte)(value ? 1 : 0));
+            WriteByte((byte)(value ? 1 : 0));
         }
         /// <summary>
         /// Write a byte to a stream
         /// </summary>
-        public void Write(byte value)
+        public void WriteByte(byte value)
         {
             Log("<Write Type=\"byte\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write(value);
+            writer.WriteByte(value);
         }
         /// <summary>
         /// Write a short to a stream
         /// </summary>
-        public void Write(short value)
+        public void WriteInt16(short value)
         {
             Log("<Write Type=\"short\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write(value);
+            writer.WriteInt16(value);
         }
         /// <summary>
         /// Write an int to a stream
         /// </summary>
-        public void Write(int value)
+        public void WriteInt32(int value)
         {
             Log("<Write Type=\"int\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write(value);
+            writer.WriteInt32(value);
         }
         /// <summary>
         /// Write a long to a stream
         /// </summary>
-        public void Write(long value)
+        public void WriteInt64(long value)
         {
             Log("<Write Type=\"long\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write(value);
+            writer.WriteInt64(value);
         }
         /// <summary>
         /// Write a Guid to a stream
         /// </summary>
-        public void Write(Guid value)
+        public void WriteGuid(Guid value)
         {
             Log("<Write Type=\"Guid\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
             byte[] bytes = value.ToByteArray();
             for (int i = 0; i < bytes.Length; i++)
             {
-                writer.Write(bytes[i]);
+                writer.WriteByte(bytes[i]);
             }
         }
         /// <summary>
         /// Write a string to a stream
         /// </summary>
-        public void Write(string value)
+        public void WriteString(string value)
         {
 #if DEBUG
             if (value == null)
@@ -624,44 +624,44 @@ namespace FastSerialization
             else
                 Log("<Write Type=\"string\" Value=" + value + " StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
 #endif
-            writer.Write(value);
+            writer.WriteString(value);
         }
         /// <summary>
         /// Write a float to a stream
         /// </summary>
-        public unsafe void Write(float value)
+        public unsafe void WriteSingle(float value)
         {
             int* intPtr = (int*)&value;
-            writer.Write(*intPtr);
+            writer.WriteInt32(*intPtr);
         }
         /// <summary>
         /// Write a double to a stream
         /// </summary>
-        public unsafe void Write(double value)
+        public unsafe void WriteDouble(double value)
         {
             long* longPtr = (long*)&value;
-            writer.Write(*longPtr);
+            writer.WriteInt64(*longPtr);
         }
         /// <summary>
         /// Write a StreamLabel (pointer to some other part of the stream whose location is current known) to the stream
         /// </summary>
-        public void Write(StreamLabel value)
+        public void WriteLabel(StreamLabel value)
         {
             Log("<Write Type=\"StreamLabel\" StreamLabelRef=\"0x" + value.ToString("x") + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write(value);
+            writer.WriteLabel(value);
         }
         /// <summary>
         /// Write a ForwardReference (pointer to some other part of the stream that whose location is not currently known) to the stream
         /// </summary>
-        public void Write(ForwardReference value)
+        public void WriteForwardReference(ForwardReference value)
         {
             Log("<Write Type=\"ForwardReference\" indexRef=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write((int)value);
+            writer.WriteInt32((int)value);
         }
         /// <summary>
         /// If the object is potentially aliased (multiple references to it), you should write it with this method.
         /// </summary>
-        public void Write(IFastSerializable obj) { WriteObjectRef(obj, false); }
+        public void WriteObject(IFastSerializable obj) { WriteObjectRef(obj, false); }
         /// <summary>
         /// To tune working set (or disk seeks), or to make the dump of the format more readable, it is
         /// valuable to have control over which of several references to an object will actually cause it to
@@ -672,7 +672,7 @@ namespace FastSerialization
         /// WriteObject() occurs, then the object is serialized automatically before the stream is closed
         /// (thus dangling references are impossible).        
         /// </summary>
-        public void WriteDefered(IFastSerializable obj) { WriteObjectRef(obj, true); }
+        public void WriteDeferredObject(IFastSerializable obj) { WriteObjectRef(obj, true); }
         /// <summary>
         /// This is an optimized version of WriteObjectReference that can be used in some cases.
         /// 
@@ -688,7 +688,7 @@ namespace FastSerialization
         /// 
         /// TODO Need a DEBUG mode where we detect if others besides the owner reference the object.
         /// </summary>
-        public void WritePrivate(IFastSerializable obj)
+        public void WritePrivateObject(IFastSerializable obj)
         {
             Log("<WritePrivateObject obj=\"0x" + obj.GetHashCode().ToString("x") +
                 "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\">");
@@ -726,36 +726,36 @@ namespace FastSerialization
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a byte.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(bool value) { WriteTag(Tags.Byte); Write(value ? (byte)1 : (byte)0); }
+        public void WriteTaggedBoolean(bool value) { WriteTag(Tags.Byte); WriteByte(value ? (byte)1 : (byte)0); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a byte.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(byte value) { WriteTag(Tags.Byte); Write(value); }
+        public void WriteTaggedByte(byte value) { WriteTag(Tags.Byte); WriteByte(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a short.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(short value) { WriteTag(Tags.Int16); Write(value); }
+        public void WriteTaggedInt16(short value) { WriteTag(Tags.Int16); WriteInt16(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a int.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(int value) { WriteTag(Tags.Int32); Write(value); }
+        public void WriteTaggedInt32(int value) { WriteTag(Tags.Int32); WriteInt32(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a long.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(long value) { WriteTag(Tags.Int64); Write(value); }
+        public void WriteTaggedInt64(long value) { WriteTag(Tags.Int64); WriteInt64(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a string.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(string value) { WriteTag(Tags.String); Write(value); }
+        public void WriteTaggedString(string value) { WriteTag(Tags.String); WriteString(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a object.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(IFastSerializable value)
+        public void WriteTaggedObject(IFastSerializable value)
         {
             WriteTag(Tags.SkipRegion);
             ForwardReference endRegion = GetForwardReference();
-            Write(endRegion);        // Allow the reader to skip this. 
-            Write(value);            // Write the data we can skip
+            WriteForwardReference(endRegion);        // Allow the reader to skip this. 
+            WriteObject(value);            // Write the data we can skip
             DefineForwardReference(endRegion);  // This is where the forward reference refers to 
         }
 
@@ -769,7 +769,7 @@ namespace FastSerialization
         public void WriteTaggedBlobHeader(int size)
         {
             WriteTag(Tags.Blob);
-            Write(size);
+            WriteInt32(size);
         }
 
         /// <summary>
@@ -811,7 +811,7 @@ namespace FastSerialization
         private void WriteTag(Tags tag)
         {
             Log("<WriteTag Type=\"" + tag + "\" Value=\"" + ((int)tag).ToString() + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            writer.Write((byte)tag);
+            writer.WriteByte((byte)tag);
         }
         private void WriteObjectRef(IFastSerializable obj, bool defered)
         {
@@ -830,7 +830,7 @@ namespace FastSerialization
                 Log("<WriteReference streamLabelRef=\"0x" + reference.ToString("x") +
                     "\" objRef=\"0x" + obj.GetHashCode().ToString("x") + "\">");
                 WriteTag(Tags.ObjectReference);
-                Write(reference);
+                WriteLabel(reference);
                 Log("</WriteReference>");
                 return;
             }
@@ -855,7 +855,7 @@ namespace FastSerialization
                 WriteTag(Tags.ForwardReference);
 
                 // Write the forward forwardReference index
-                Write((int)forwardReference);
+                WriteInt32((int)forwardReference);
                 // And its type. 
                 WriteTypeForObject(obj);
                 Log("</WriteForwardReference>");
@@ -875,7 +875,7 @@ namespace FastSerialization
                 Log("<WriteForwardReferenceDefinition index=\"0x" + ((int)forwardReference).ToString("x") + "\">");
                 // OK, tag the definition with the forward forwardReference index
                 WriteTag(Tags.ForwardDefinition);
-                Write((int)forwardReference);
+                WriteInt32((int)forwardReference);
 
                 // And also put it in the ForwardReferenceTable.  
                 forwardReferenceDefinitions[(int)forwardReference] = objLabel;
@@ -928,7 +928,7 @@ namespace FastSerialization
                 objs.AddRange(ObjectsWithForwardReferences.Keys);
                 foreach (IFastSerializable obj in objs)
                 {
-                    Write(obj);
+                    WriteObject(obj);
                     Debug.Assert(!ObjectsWithForwardReferences.ContainsKey(obj));
                 }
                 objs.Clear();
@@ -2145,7 +2145,7 @@ namespace FastSerialization
             serializer.Log("<DeferedRegion>\r\n");
             // We actually don't use the this pointer!  We did this for symmetry with Read
             ForwardReference endRegion = serializer.GetForwardReference();
-            serializer.Write(endRegion);        // Allow the reader to skip this. 
+            serializer.WriteForwardReference(endRegion);        // Allow the reader to skip this. 
             toStream();                         // Write the deferred data. 
             serializer.DefineForwardReference(endRegion);
             serializer.Log("</DeferedRegion>\r\n");
@@ -2422,9 +2422,9 @@ namespace FastSerialization
         }
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(version);
-            serializer.Write(minimumReaderVersion);
-            serializer.Write(fullName);
+            serializer.WriteInt32(version);
+            serializer.WriteInt32(minimumReaderVersion);
+            serializer.WriteString(fullName);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {

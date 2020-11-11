@@ -3229,30 +3229,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         #region private
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(driveMapping);
+            serializer.WriteObject(driveMapping);
 
-            serializer.Write(threadIDtoProcessID.Count);
+            serializer.WriteInt32(threadIDtoProcessID.Count);
             serializer.Log("<WriteCollection name=\"ProcessIDForThread\" count=\"" + threadIDtoProcessID.Count + "\">\r\n");
             foreach (HistoryDictionary<int, int>.HistoryValue entry in threadIDtoProcessID.Entries)
             {
-                serializer.Write(entry.Key);
-                serializer.Write(entry.StartTime);
-                serializer.Write(entry.Value);
+                serializer.WriteInt32(entry.Key);
+                serializer.WriteInt64(entry.StartTime);
+                serializer.WriteInt32(entry.Value);
             }
 
             if (threadIDtoProcessIDRundown == null)
             {
-                serializer.Write(0);
+                serializer.WriteInt32(0);
             }
             else
             {
-                serializer.Write(threadIDtoProcessIDRundown.Count);
+                serializer.WriteInt32(threadIDtoProcessIDRundown.Count);
                 serializer.Log("<WriteCollection name=\"ProcessIDForThreadRundown\" count=\"" + threadIDtoProcessIDRundown.Count + "\">\r\n");
                 foreach (HistoryDictionary<int, int>.HistoryValue entry in threadIDtoProcessIDRundown.Entries)
                 {
-                    serializer.Write(entry.Key);
-                    serializer.Write(entry.StartTime);
-                    serializer.Write(entry.Value);
+                    serializer.WriteInt32(entry.Key);
+                    serializer.WriteInt64(entry.StartTime);
+                    serializer.WriteInt32(entry.Value);
                 }
                 serializer.Log("</WriteCollection>\r\n");
             }
@@ -3260,12 +3260,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             lazyFileIDToName.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"fileIDToName\" count=\"" + fileIDToName.Count + "\">\r\n");
-                serializer.Write(fileIDToName.Count);
+                serializer.WriteInt32(fileIDToName.Count);
                 foreach (HistoryDictionary<Address, string>.HistoryValue entry in fileIDToName.Entries)
                 {
                     serializer.WriteAddress(entry.Key);
-                    serializer.Write(entry.StartTime);
-                    serializer.Write(entry.Value);
+                    serializer.WriteInt64(entry.StartTime);
+                    serializer.WriteString(entry.Value);
                 }
                 serializer.Log("</WriteCollection>\r\n");
             });
@@ -3273,12 +3273,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             lazyDiskEventTimeStamp.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"diskEventTimeStamp\" count=\"" + diskEventTimeStamp.Count + "\">\r\n");
-                serializer.Write(diskEventTimeStamp.Count);
+                serializer.WriteInt32(diskEventTimeStamp.Count);
                 for (int i = 0; i < diskEventTimeStamp.Count; i++)
                 {
                     Debug.Assert(i == 0 || diskEventTimeStamp[i - 1].TimeStampRelativeMSec <= diskEventTimeStamp[i].TimeStampRelativeMSec);
-                    serializer.Write(diskEventTimeStamp[i].DiskNum);
-                    serializer.Write(diskEventTimeStamp[i].TimeStampRelativeMSec);
+                    serializer.WriteInt32(diskEventTimeStamp[i].DiskNum);
+                    serializer.WriteDouble(diskEventTimeStamp[i].TimeStampRelativeMSec);
                 }
                 serializer.Log("</WriteCollection>");
             });
@@ -3286,17 +3286,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (_objectTypeToName != null)
             {
                 serializer.Log("<WriteCollection name=\"objectTypeToName\" count=\"" + _objectTypeToName.Count + "\">\r\n");
-                serializer.Write(_objectTypeToName.Count);
+                serializer.WriteInt32(_objectTypeToName.Count);
                 foreach (KeyValuePair<int, string> keyValue in _objectTypeToName)
                 {
-                    serializer.Write(keyValue.Key);
-                    serializer.Write(keyValue.Value);
+                    serializer.WriteInt32(keyValue.Key);
+                    serializer.WriteString(keyValue.Value);
                 }
                 serializer.Log("</WriteCollection>\r\n");
             }
             else
             {
-                serializer.Write(0);
+                serializer.WriteInt32(0);
             }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -3566,15 +3566,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(kernelToDriveMap.Count);
+            serializer.WriteInt32(kernelToDriveMap.Count);
             serializer.Log("<WriteCollection name=\"driveNames\" count=\"" + kernelToDriveMap.Count + "\">\r\n");
             foreach (var keyValue in kernelToDriveMap)
             {
-                serializer.Write(keyValue.Key);
-                serializer.Write(keyValue.Value);
+                serializer.WriteString(keyValue.Key);
+                serializer.WriteString(keyValue.Value);
             }
             serializer.Log("</WriteCollection>\r\n");
-            serializer.Write(systemDrive);
+            serializer.WriteString(systemDrive);
         }
 
         void IFastSerializable.FromStream(Deserializer deserializer)

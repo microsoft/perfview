@@ -13002,16 +13002,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (_typeIDToName == null)
                 {
-                    serializer.Write(0);
+                    serializer.WriteInt32(0);
                     return;
                 }
                 serializer.Log("<WriteCollection name=\"typeIDToName\" count=\"" + _typeIDToName.Count + "\">\r\n");
-                serializer.Write(_typeIDToName.Count);
+                serializer.WriteInt32(_typeIDToName.Count);
                 foreach (HistoryDictionary<Address, string>.HistoryValue entry in _typeIDToName.Entries)
                 {
                     serializer.WriteAddress(entry.Key);
-                    serializer.Write(entry.StartTime);
-                    serializer.Write(entry.Value);
+                    serializer.WriteInt64(entry.StartTime);
+                    serializer.WriteString(entry.Value);
                 }
                 serializer.Log("</WriteCollection>\r\n");
             });

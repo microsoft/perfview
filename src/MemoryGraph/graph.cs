@@ -498,32 +498,32 @@ namespace Graphs
 
         public virtual void ToStream(Serializer serializer)
         {
-            serializer.Write(m_totalSize);
-            serializer.Write((int)RootIndex);
+            serializer.WriteInt64(m_totalSize);
+            serializer.WriteInt32((int)RootIndex);
             // Write out the Types 
-            serializer.Write(m_types.Count);
+            serializer.WriteInt32(m_types.Count);
             for (int i = 0; i < m_types.Count; i++)
             {
-                serializer.Write(m_types[i].Name);
-                serializer.Write(m_types[i].Size);
-                serializer.Write(m_types[i].ModuleName);
+                serializer.WriteString(m_types[i].Name);
+                serializer.WriteInt32(m_types[i].Size);
+                serializer.WriteString(m_types[i].ModuleName);
             }
 
             // Write out the Nodes 
-            serializer.Write(m_nodes.Count);
+            serializer.WriteInt32(m_nodes.Count);
             for (int i = 0; i < m_nodes.Count; i++)
             {
-                serializer.Write((int)m_nodes[i]);
+                serializer.WriteInt32((int)m_nodes[i]);
             }
 
             // Write out the Blob stream.  
             // TODO this is inefficient.  Also think about very large files.  
             int readerLen = (int)m_reader.Length;
-            serializer.Write(readerLen);
+            serializer.WriteInt32(readerLen);
             m_reader.Goto((StreamLabel)0);
             for (uint i = 0; i < readerLen; i++)
             {
-                serializer.Write(m_reader.ReadByte());
+                serializer.WriteByte(m_reader.ReadByte());
             }
 
             // Are we writing a format for 1 or greater?   If so we can use the new (breaking) format, otherwise
@@ -538,12 +538,12 @@ namespace Graphs
                 expansion.Write(serializer, delegate ()
                 {
                     // I don't need to use Tagged types for my 'first' version of this new region 
-                    serializer.Write(m_deferedTypes.Count);
+                    serializer.WriteInt32(m_deferedTypes.Count);
                     for (int i = 0; i < m_deferedTypes.Count; i++)
                     {
-                        serializer.Write(m_deferedTypes[i].TypeID);
-                        serializer.Write(m_deferedTypes[i].Module);
-                        serializer.Write(m_deferedTypes[i].TypeNameSuffix);
+                        serializer.WriteInt32(m_deferedTypes[i].TypeID);
+                        serializer.WriteObject(m_deferedTypes[i].Module);
+                        serializer.WriteString(m_deferedTypes[i].TypeNameSuffix);
                     }
 
                     // You can place tagged values in here always adding right before the WriteTaggedEnd
@@ -1077,13 +1077,13 @@ namespace Graphs
         /// </summary>
         public void ToStream(Serializer serializer)
         {
-            serializer.Write(Path);
-            serializer.Write((long)ImageBase);
-            serializer.Write(Size);
-            serializer.Write(BuildTime.Ticks);
-            serializer.Write(PdbName);
-            serializer.Write(PdbGuid);
-            serializer.Write(PdbAge);
+            serializer.WriteString(Path);
+            serializer.WriteInt64((long)ImageBase);
+            serializer.WriteInt32(Size);
+            serializer.WriteInt64(BuildTime.Ticks);
+            serializer.WriteString(PdbName);
+            serializer.WriteGuid(PdbGuid);
+            serializer.WriteInt32(PdbAge);
         }
         /// <summary>
         /// Implementing IFastSerializable interface.  

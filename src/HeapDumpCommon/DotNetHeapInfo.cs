@@ -78,18 +78,18 @@ public class DotNetHeapInfo : IFastSerializable
     #region private
     void IFastSerializable.ToStream(Serializer serializer)
     {
-        serializer.Write(SizeOfAllSegments);
+        serializer.WriteInt64(SizeOfAllSegments);
         if (Segments != null)
         {
-            serializer.Write(Segments.Count);
+            serializer.WriteInt32(Segments.Count);
             foreach (var segment in Segments)
             {
-                serializer.Write(segment);
+                serializer.WriteObject(segment);
             }
         }
         else
         {
-            serializer.Write(0);
+            serializer.WriteInt32(0);
         }
     }
     void IFastSerializable.FromStream(Deserializer deserializer)
@@ -119,12 +119,12 @@ public class GCHeapDumpSegment : IFastSerializable
     #region private
     void IFastSerializable.ToStream(Serializer serializer)
     {
-        serializer.Write((long)Start);
-        serializer.Write((long)End);
-        serializer.Write((long)Gen0End);
-        serializer.Write((long)Gen1End);
-        serializer.Write((long)Gen2End);
-        serializer.Write((long)Gen3End);
+        serializer.WriteInt64((long)Start);
+        serializer.WriteInt64((long)End);
+        serializer.WriteInt64((long)Gen0End);
+        serializer.WriteInt64((long)Gen1End);
+        serializer.WriteInt64((long)Gen2End);
+        serializer.WriteInt64((long)Gen3End);
     }
 
     void IFastSerializable.FromStream(Deserializer deserializer)

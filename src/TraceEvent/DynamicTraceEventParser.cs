@@ -1574,15 +1574,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             public void ToStream(Serializer serializer)
             {
-                serializer.Write((short)Offset);
-                serializer.Write((short)Size);
+                serializer.WriteInt16((short)Offset);
+                serializer.WriteInt16((short)Size);
                 if (Type == null)
                 {
-                    serializer.Write((string)null);
+                    serializer.WriteString((string)null);
                 }
                 else
                 {
-                    serializer.Write(Type.FullName);
+                    serializer.WriteString(Type.FullName);
                 }
 
                 var map = Map;
@@ -1591,32 +1591,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var asSortedList = map as SortedDictionary<long, string>;
                     if (asSortedList != null)
                     {
-                        serializer.Write((byte)1);
+                        serializer.WriteByte((byte)1);
                     }
                     else
                     {
-                        serializer.Write((byte)2);
+                        serializer.WriteByte((byte)2);
                     }
 
-                    serializer.Write(map.Count);
+                    serializer.WriteInt32(map.Count);
                     foreach (var keyValue in map)
                     {
-                        serializer.Write(keyValue.Key);
-                        serializer.Write(keyValue.Value);
+                        serializer.WriteInt64(keyValue.Key);
+                        serializer.WriteString(keyValue.Value);
                     }
                 }
                 else if (Class != null)
                 {
                     PayloadFetchClassInfo classInfo = Class;
-                    serializer.Write((byte)3);
+                    serializer.WriteByte((byte)3);
 
-                    serializer.Write(classInfo.FieldNames.Length);
+                    serializer.WriteInt32(classInfo.FieldNames.Length);
                     foreach (var name in classInfo.FieldNames)
                     {
-                        serializer.Write(name);
+                        serializer.WriteString(name);
                     }
 
-                    serializer.Write(classInfo.FieldFetches.Length);
+                    serializer.WriteInt32(classInfo.FieldFetches.Length);
                     for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                     {
                         classInfo.FieldFetches[i].ToStream(serializer);
@@ -1625,13 +1625,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 else if (Array != null)
                 {
                     PayloadFetchArrayInfo arrayInfo = Array;
-                    serializer.Write((byte)4);
-                    serializer.Write(arrayInfo.FixedCount);
+                    serializer.WriteByte((byte)4);
+                    serializer.WriteInt32(arrayInfo.FixedCount);
                     arrayInfo.Element.ToStream(serializer);
                 }
                 else
                 {
-                    serializer.Write((byte)0);
+                    serializer.WriteByte((byte)0);
                 }
             }
             public void FromStream(Deserializer deserializer)
@@ -1724,26 +1724,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public void ToStream(Serializer serializer)
         {
-            serializer.Write((int)eventID);
-            serializer.Write((int)task);
-            serializer.Write(taskName);
-            serializer.Write(taskGuid);
-            serializer.Write((int)opcode);
-            serializer.Write(opcodeName);
-            serializer.Write(providerGuid);
-            serializer.Write(providerName);
-            serializer.Write(MessageFormat);
-            serializer.Write(lookupAsClassic);
-            serializer.Write(lookupAsWPP);
-            serializer.Write(containsSelfDescribingMetadata);
+            serializer.WriteInt32((int)eventID);
+            serializer.WriteInt32((int)task);
+            serializer.WriteString(taskName);
+            serializer.WriteGuid(taskGuid);
+            serializer.WriteInt32((int)opcode);
+            serializer.WriteString(opcodeName);
+            serializer.WriteGuid(providerGuid);
+            serializer.WriteString(providerName);
+            serializer.WriteString(MessageFormat);
+            serializer.WriteBoolean(lookupAsClassic);
+            serializer.WriteBoolean(lookupAsWPP);
+            serializer.WriteBoolean(containsSelfDescribingMetadata);
 
-            serializer.Write(payloadNames.Length);
+            serializer.WriteInt32(payloadNames.Length);
             foreach (var payloadName in payloadNames)
             {
-                serializer.Write(payloadName);
+                serializer.WriteString(payloadName);
             }
 
-            serializer.Write(payloadFetches.Length);
+            serializer.WriteInt32(payloadFetches.Length);
             foreach (var payloadFetch in payloadFetches)
             {
                 payloadFetch.ToStream(serializer);
@@ -1877,10 +1877,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(providers.Count);
+            serializer.WriteInt32(providers.Count);
             foreach (ProviderManifest provider in providers.Values)
             {
-                serializer.Write(provider);
+                serializer.WriteObject(provider);
             }
         }
 
@@ -2536,20 +2536,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(majorVersion);
-            serializer.Write(minorVersion);
-            serializer.Write((int)format);
-            serializer.Write(id);
+            serializer.WriteByte(majorVersion);
+            serializer.WriteByte(minorVersion);
+            serializer.WriteInt32((int)format);
+            serializer.WriteString(id);
             int count = 0;
             if (serializedManifest != null)
             {
                 count = serializedManifest.Length;
             }
 
-            serializer.Write(count);
+            serializer.WriteInt32(count);
             for (int i = 0; i < count; i++)
             {
-                serializer.Write(serializedManifest[i]);
+                serializer.WriteByte(serializedManifest[i]);
             }
         }
 

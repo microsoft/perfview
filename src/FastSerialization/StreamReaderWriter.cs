@@ -262,7 +262,7 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(byte value)
+        public void WriteByte(byte value)
         {
             if (endPosition >= bytes.Length)
             {
@@ -274,7 +274,7 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public unsafe void Write(short value)
+        public unsafe void WriteInt16(short value)
         {
             if (endPosition + sizeof(short) > bytes.Length)
             {
@@ -291,7 +291,7 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public unsafe void Write(int value)
+        public unsafe void WriteInt32(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
             {
@@ -308,7 +308,7 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public unsafe void Write(long value)
+        public unsafe void WriteInt64(long value)
         {
             if (endPosition + sizeof(long) > bytes.Length)
             {
@@ -325,42 +325,42 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(StreamLabel value)
+        public void WriteLabel(StreamLabel value)
         {
             Debug.Assert((long)value <= int.MaxValue);
-            Write((int)value);
+            WriteInt32((int)value);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(string value)
+        public void WriteString(string value)
         {
             if (value == null)
             {
-                Write(-1);          // negative charCount means null. 
+                WriteInt32(-1);          // negative charCount means null. 
             }
             else
             {
-                Write(value.Length);
+                WriteInt32(value.Length);
                 for (int i = 0; i < value.Length; i++)
                 {
                     char c = value[i];
                     if (c <= 0x7F)
                     {
-                        Write((byte)value[i]);                 // Only need one byte for UTF8
+                        WriteByte((byte)value[i]);                 // Only need one byte for UTF8
                     }
                     else if (c <= 0x7FF)
                     {
                         // TODO confirm that this is correct!
-                        Write((byte)(0xC0 | (c >> 6)));                // Encode 2 byte UTF8
-                        Write((byte)(0x80 | (c & 0x3F)));
+                        WriteByte((byte)(0xC0 | (c >> 6)));                // Encode 2 byte UTF8
+                        WriteByte((byte)(0x80 | (c & 0x3F)));
                     }
                     else
                     {
                         // TODO confirm that this is correct!
-                        Write((byte)(0xE0 | ((c >> 12) & 0xF)));        // Encode 3 byte UTF8
-                        Write((byte)(0x80 | ((c >> 6) & 0x3F)));
-                        Write((byte)(0x80 | (c & 0x3F)));
+                        WriteByte((byte)(0xE0 | ((c >> 12) & 0xF)));        // Encode 3 byte UTF8
+                        WriteByte((byte)(0x80 | ((c >> 6) & 0x3F)));
+                        WriteByte((byte)(0x80 | (c & 0x3F)));
                     }
                 }
             }
@@ -379,7 +379,7 @@ namespace FastSerialization
         {
             // This is guaranteed to be uncompressed, but since we are not compressing anything, we can
             // simply write the value.  
-            Write(value);
+            WriteLabel(value);
         }
 
         /// <summary>

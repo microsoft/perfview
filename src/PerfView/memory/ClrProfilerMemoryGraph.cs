@@ -311,10 +311,10 @@ namespace Graphs
         {
             base.ToStream(serializer);
             // Write out the Memory addresses of each object 
-            serializer.Write(m_nodeAddresses.Count);
+            serializer.WriteInt32(m_nodeAddresses.Count);
             for (int i = 0; i < m_nodeAddresses.Count; i++)
             {
-                serializer.Write((long)m_nodeAddresses[i]);
+                serializer.WriteInt64((long)m_nodeAddresses[i]);
             }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)

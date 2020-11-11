@@ -258,41 +258,41 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
     void IFastSerializable.ToStream(Serializer serializer)
     {
-        serializer.Write(m_graph);
-        serializer.Write(m_graph.Is64Bit);  // This is redundant but graph did not used to hold this value 
+        serializer.WriteObject(m_graph);
+        serializer.WriteBoolean(m_graph.Is64Bit);  // This is redundant but graph did not used to hold this value 
         // we write the bit here to preserve compatibility. 
-        serializer.Write(AverageCountMultiplier);
-        serializer.Write(AverageSizeMultiplier);
+        serializer.WriteSingle(AverageCountMultiplier);
+        serializer.WriteSingle(AverageSizeMultiplier);
 
-        serializer.Write(JSHeapInfo);
-        serializer.Write(DotNetHeapInfo);
+        serializer.WriteObject(JSHeapInfo);
+        serializer.WriteObject(DotNetHeapInfo);
 
-        serializer.Write(CollectionLog);
-        serializer.Write(TimeCollected.Ticks);
-        serializer.Write(MachineName);
-        serializer.Write(ProcessName);
-        serializer.Write(ProcessID);
-        serializer.Write(TotalProcessCommit);
-        serializer.Write(TotalProcessWorkingSet);
+        serializer.WriteString(CollectionLog);
+        serializer.WriteInt64(TimeCollected.Ticks);
+        serializer.WriteString(MachineName);
+        serializer.WriteString(ProcessName);
+        serializer.WriteInt32(ProcessID);
+        serializer.WriteInt64(TotalProcessCommit);
+        serializer.WriteInt64(TotalProcessWorkingSet);
 
         if (CountMultipliersByType == null)
         {
-            serializer.Write(0);
+            serializer.WriteInt32(0);
         }
         else
         {
-            serializer.Write(CountMultipliersByType.Length);
+            serializer.WriteInt32(CountMultipliersByType.Length);
             for (int i = 0; i < CountMultipliersByType.Length; i++)
             {
-                serializer.Write(CountMultipliersByType[i]);
+                serializer.WriteSingle(CountMultipliersByType[i]);
             }
         }
 
         // All fields after version 8 should go here and should be in
         // the version order (thus always add at the end).  Also use the 
         // WriteTagged variation to write. 
-        serializer.WriteTagged(m_interop);
-        serializer.WriteTagged(CreationTool);
+        serializer.WriteTaggedObject(m_interop);
+        serializer.WriteTaggedString(CreationTool);
     }
 
     void IFastSerializable.FromStream(Deserializer deserializer)
@@ -566,54 +566,54 @@ public class InteropInfo : IFastSerializable
     {
         int countRCWCCW = m_listRCWInfo.Count + m_listCCWInfo.Count;
 
-        serializer.Write(countRCWCCW);
+        serializer.WriteInt32(countRCWCCW);
         if (countRCWCCW == 0)
         {
             return;
         }
 
-        serializer.Write(m_listRCWInfo.Count);
-        serializer.Write(m_listCCWInfo.Count);
-        serializer.Write(m_listComInterfaceInfo.Count);
-        serializer.Write(m_listModules.Count);
+        serializer.WriteInt32(m_listRCWInfo.Count);
+        serializer.WriteInt32(m_listCCWInfo.Count);
+        serializer.WriteInt32(m_listComInterfaceInfo.Count);
+        serializer.WriteInt32(m_listModules.Count);
 
         for (int i = 0; i < m_listRCWInfo.Count; i++)
         {
-            serializer.Write((int)m_listRCWInfo[i].node);
-            serializer.Write(m_listRCWInfo[i].refCount);
-            serializer.Write((long)m_listRCWInfo[i].addrIUnknown);
-            serializer.Write((long)m_listRCWInfo[i].addrJupiter);
-            serializer.Write((long)m_listRCWInfo[i].addrVTable);
-            serializer.Write(m_listRCWInfo[i].firstComInf);
-            serializer.Write(m_listRCWInfo[i].countComInf);
+            serializer.WriteInt32((int)m_listRCWInfo[i].node);
+            serializer.WriteInt32(m_listRCWInfo[i].refCount);
+            serializer.WriteInt64((long)m_listRCWInfo[i].addrIUnknown);
+            serializer.WriteInt64((long)m_listRCWInfo[i].addrJupiter);
+            serializer.WriteInt64((long)m_listRCWInfo[i].addrVTable);
+            serializer.WriteInt32(m_listRCWInfo[i].firstComInf);
+            serializer.WriteInt32(m_listRCWInfo[i].countComInf);
         }
 
         for (int i = 0; i < m_listCCWInfo.Count; i++)
         {
-            serializer.Write((int)m_listCCWInfo[i].node);
-            serializer.Write(m_listCCWInfo[i].refCount);
-            serializer.Write((long)m_listCCWInfo[i].addrIUnknown);
-            serializer.Write((long)m_listCCWInfo[i].addrHandle);
-            serializer.Write(m_listCCWInfo[i].firstComInf);
-            serializer.Write(m_listCCWInfo[i].countComInf);
+            serializer.WriteInt32((int)m_listCCWInfo[i].node);
+            serializer.WriteInt32(m_listCCWInfo[i].refCount);
+            serializer.WriteInt64((long)m_listCCWInfo[i].addrIUnknown);
+            serializer.WriteInt64((long)m_listCCWInfo[i].addrHandle);
+            serializer.WriteInt32(m_listCCWInfo[i].firstComInf);
+            serializer.WriteInt32(m_listCCWInfo[i].countComInf);
         }
 
         for (int i = 0; i < m_listComInterfaceInfo.Count; i++)
         {
-            serializer.Write(m_listComInterfaceInfo[i].fRCW ? (byte)1 : (byte)0);
-            serializer.Write(m_listComInterfaceInfo[i].owner);
-            serializer.Write((int)m_listComInterfaceInfo[i].typeID);
-            serializer.Write((long)m_listComInterfaceInfo[i].addrInterface);
-            serializer.Write((long)m_listComInterfaceInfo[i].addrFirstVTable);
-            serializer.Write((long)m_listComInterfaceInfo[i].addrFirstFunc);
+            serializer.WriteByte(m_listComInterfaceInfo[i].fRCW ? (byte)1 : (byte)0);
+            serializer.WriteInt32(m_listComInterfaceInfo[i].owner);
+            serializer.WriteInt32((int)m_listComInterfaceInfo[i].typeID);
+            serializer.WriteInt64((long)m_listComInterfaceInfo[i].addrInterface);
+            serializer.WriteInt64((long)m_listComInterfaceInfo[i].addrFirstVTable);
+            serializer.WriteInt64((long)m_listComInterfaceInfo[i].addrFirstFunc);
         }
 
         for (int i = 0; i < m_listModules.Count; i++)
         {
-            serializer.Write((long)m_listModules[i].baseAddress);
-            serializer.Write((int)m_listModules[i].fileSize);
-            serializer.Write((int)m_listModules[i].timeStamp);
-            serializer.Write(m_listModules[i].fileName);
+            serializer.WriteInt64((long)m_listModules[i].baseAddress);
+            serializer.WriteInt32((int)m_listModules[i].fileSize);
+            serializer.WriteInt32((int)m_listModules[i].timeStamp);
+            serializer.WriteString(m_listModules[i].fileName);
         }
     }
 

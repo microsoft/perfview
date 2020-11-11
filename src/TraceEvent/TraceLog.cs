@@ -3144,7 +3144,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             int intCount = byteCount >> 2;
             while (intCount > 0)
             {
-                writer.Write(*sourcePtr++);
+                writer.WriteInt32(*sourcePtr++);
                 --intCount;
             }
         }
@@ -3511,10 +3511,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 align = 8 - align;
             }
 
-            serializer.Write((byte)align);
+            serializer.WriteByte((byte)align);
             for (int i = 0; i < align; i++)
             {
-                serializer.Write((byte)0);
+                serializer.WriteByte((byte)0);
             }
 
             Debug.Assert((int)serializer.Writer.GetLabel() % 8 == 0);
@@ -3535,11 +3535,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     if (i == 2)
                     {
-                        serializer.Write(long.MaxValue);
+                        serializer.WriteInt64(long.MaxValue);
                     }
                     else
                     {
-                        serializer.Write((long)0);          // The important field here is the EventDataSize field 
+                        serializer.WriteInt64((long)0);          // The important field here is the EventDataSize field 
                     }
                 }
 
@@ -3550,52 +3550,52 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(_syncTimeUTC.ToFileTimeUtc());
-            serializer.Write(pointerSize);
-            serializer.Write(numberOfProcessors);
-            serializer.Write(cpuSpeedMHz);
-            serializer.Write((byte)osVersion.Major);
-            serializer.Write((byte)osVersion.Minor);
-            serializer.Write((byte)osVersion.MajorRevision);
-            serializer.Write((byte)osVersion.MinorRevision);
-            serializer.Write(QPCFreq);
-            serializer.Write(sessionStartTimeQPC);
-            serializer.Write(sessionEndTimeQPC);
-            serializer.Write(eventsLost);
-            serializer.Write(machineName);
-            serializer.Write(memorySizeMeg);
+            serializer.WriteInt64(_syncTimeUTC.ToFileTimeUtc());
+            serializer.WriteInt32(pointerSize);
+            serializer.WriteInt32(numberOfProcessors);
+            serializer.WriteInt32(cpuSpeedMHz);
+            serializer.WriteByte((byte)osVersion.Major);
+            serializer.WriteByte((byte)osVersion.Minor);
+            serializer.WriteByte((byte)osVersion.MajorRevision);
+            serializer.WriteByte((byte)osVersion.MinorRevision);
+            serializer.WriteInt64(QPCFreq);
+            serializer.WriteInt64(sessionStartTimeQPC);
+            serializer.WriteInt64(sessionEndTimeQPC);
+            serializer.WriteInt32(eventsLost);
+            serializer.WriteString(machineName);
+            serializer.WriteInt32(memorySizeMeg);
 
-            serializer.Write(processes);
-            serializer.Write(threads);
-            serializer.Write(codeAddresses);
-            serializer.Write(stats);
-            serializer.Write(callStacks);
-            serializer.Write(moduleFiles);
+            serializer.WriteObject(processes);
+            serializer.WriteObject(threads);
+            serializer.WriteObject(codeAddresses);
+            serializer.WriteObject(stats);
+            serializer.WriteObject(callStacks);
+            serializer.WriteObject(moduleFiles);
 
             serializer.Log("<WriteCollection name=\"eventPages\" count=\"" + eventPages.Count + "\">\r\n");
-            serializer.Write(eventPages.Count);
+            serializer.WriteInt32(eventPages.Count);
             for (int i = 0; i < eventPages.Count; i++)
             {
-                serializer.Write(eventPages[i].TimeQPC);
-                serializer.Write(eventPages[i].Position);
+                serializer.WriteInt64(eventPages[i].TimeQPC);
+                serializer.WriteLabel(eventPages[i].Position);
             }
-            serializer.Write(eventPages.Count);                 // redundant as a checksum
+            serializer.WriteInt32(eventPages.Count);                 // redundant as a checksum
             serializer.Log("</WriteCollection>\r\n");
-            serializer.Write(eventCount);
+            serializer.WriteInt32(eventCount);
 
             serializer.Log("<Marker Name=\"eventsToStacks\"/>");
             lazyEventsToStacks.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"eventsToStacks\" count=\"" + eventsToStacks.Count + "\">\r\n");
-                serializer.Write(eventsToStacks.Count);
+                serializer.WriteInt32(eventsToStacks.Count);
                 for (int i = 0; i < eventsToStacks.Count; i++)
                 {
                     EventsToStackIndex eventToStack = eventsToStacks[i];
                     Debug.Assert(i == 0 || eventsToStacks[i - 1].EventIndex <= eventsToStacks[i].EventIndex, "event list not sorted");
-                    serializer.Write((int)eventToStack.EventIndex);
-                    serializer.Write((int)eventToStack.CallStackIndex);
+                    serializer.WriteInt32((int)eventToStack.EventIndex);
+                    serializer.WriteInt32((int)eventToStack.CallStackIndex);
                 }
-                serializer.Write(eventsToStacks.Count);             // Redundant as a checksum
+                serializer.WriteInt32(eventsToStacks.Count);             // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
@@ -3603,15 +3603,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyEventsToStacks.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"cswitchBlockingEventsToStacks\" count=\"" + cswitchBlockingEventsToStacks.Count + "\">\r\n");
-                serializer.Write(cswitchBlockingEventsToStacks.Count);
+                serializer.WriteInt32(cswitchBlockingEventsToStacks.Count);
                 for (int i = 0; i < cswitchBlockingEventsToStacks.Count; i++)
                 {
                     EventsToStackIndex eventToStack = cswitchBlockingEventsToStacks[i];
                     Debug.Assert(i == 0 || cswitchBlockingEventsToStacks[i - 1].EventIndex <= cswitchBlockingEventsToStacks[i].EventIndex, "event list not sorted");
-                    serializer.Write((int)eventToStack.EventIndex);
-                    serializer.Write((int)eventToStack.CallStackIndex);
+                    serializer.WriteInt32((int)eventToStack.EventIndex);
+                    serializer.WriteInt32((int)eventToStack.CallStackIndex);
                 }
-                serializer.Write(cswitchBlockingEventsToStacks.Count);             // Redundant as a checksum
+                serializer.WriteInt32(cswitchBlockingEventsToStacks.Count);             // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
@@ -3619,53 +3619,53 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyEventsToCodeAddresses.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"eventsToCodeAddresses\" count=\"" + eventsToCodeAddresses.Count + "\">\r\n");
-                serializer.Write(eventsToCodeAddresses.Count);
+                serializer.WriteInt32(eventsToCodeAddresses.Count);
                 foreach (EventsToCodeAddressIndex eventsToCodeAddress in eventsToCodeAddresses)
                 {
-                    serializer.Write((int)eventsToCodeAddress.EventIndex);
-                    serializer.Write((long)eventsToCodeAddress.Address);
-                    serializer.Write((int)eventsToCodeAddress.CodeAddressIndex);
+                    serializer.WriteInt32((int)eventsToCodeAddress.EventIndex);
+                    serializer.WriteInt64((long)eventsToCodeAddress.Address);
+                    serializer.WriteInt32((int)eventsToCodeAddress.CodeAddressIndex);
                 }
-                serializer.Write(eventsToCodeAddresses.Count);       // Redundant as a checksum
+                serializer.WriteInt32(eventsToCodeAddresses.Count);       // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
             serializer.Log("<WriteCollection name=\"userData\" count=\"" + userData.Count + "\">\r\n");
-            serializer.Write(userData.Count);
+            serializer.WriteInt32(userData.Count);
             foreach (KeyValuePair<string, object> pair in UserData)
             {
-                serializer.Write(pair.Key);
+                serializer.WriteString(pair.Key);
                 IFastSerializable asFastSerializable = (IFastSerializable)pair.Value;
-                serializer.Write(asFastSerializable);
+                serializer.WriteObject(asFastSerializable);
             }
-            serializer.Write(userData.Count);                   // Redundant as a checksum
+            serializer.WriteInt32(userData.Count);                   // Redundant as a checksum
             serializer.Log("</WriteCollection>\r\n");
 
-            serializer.Write(sampleProfileInterval100ns);
-            serializer.Write(osName);
-            serializer.Write(osBuild);
-            serializer.Write(bootTime100ns);
-            serializer.Write(utcOffsetMinutes ?? int.MinValue);
-            serializer.Write(hasPdbInfo);
+            serializer.WriteInt32(sampleProfileInterval100ns);
+            serializer.WriteString(osName);
+            serializer.WriteString(osBuild);
+            serializer.WriteInt64(bootTime100ns);
+            serializer.WriteInt32(utcOffsetMinutes ?? int.MinValue);
+            serializer.WriteBoolean(hasPdbInfo);
 
             serializer.Log("<WriteCollection name=\"m_relatedActivityIds\" count=\"" + relatedActivityIDs.Count + "\">\r\n");
-            serializer.Write(relatedActivityIDs.Count);
+            serializer.WriteInt32(relatedActivityIDs.Count);
             for (int i = 0; i < relatedActivityIDs.Count; i++)
             {
-                serializer.Write(relatedActivityIDs[i]);
+                serializer.WriteGuid(relatedActivityIDs[i]);
             }
 
             serializer.Log("<WriteCollection name=\"containerIDs\" count=\"" + containerIDs.Count + "\">\r\n");
-            serializer.Write(containerIDs.Count);
+            serializer.WriteInt32(containerIDs.Count);
             for(int i=0; i<containerIDs.Count; i++)
             {
-                serializer.Write(containerIDs[i]);
+                serializer.WriteString(containerIDs[i]);
             }
 
             serializer.Log("</WriteCollection>\r\n");
 
-            serializer.Write(truncated);
-            serializer.Write((int) firstTimeInversion);
+            serializer.WriteBoolean(truncated);
+            serializer.WriteInt32((int) firstTimeInversion);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -4527,11 +4527,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(m_log);
-            serializer.Write(m_counts.Count);
+            serializer.WriteObject(m_log);
+            serializer.WriteInt32(m_counts.Count);
             foreach (var counts in m_counts.Values)
             {
-                serializer.Write(counts);
+                serializer.WriteObject(counts);
             }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -4613,9 +4613,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         public void Serialize(Serializer serializer)
         {
-            serializer.Write(m_providerGuid);
-            serializer.Write((int)m_eventId);
-            serializer.Write(m_classicProvider);
+            serializer.WriteGuid(m_providerGuid);
+            serializer.WriteInt32((int)m_eventId);
+            serializer.WriteBoolean(m_classicProvider);
         }
     }
 
@@ -4856,11 +4856,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(m_stats);
+            serializer.WriteObject(m_stats);
             m_key.Serialize(serializer);
-            serializer.Write(m_count);
-            serializer.Write(m_stackCount);
-            serializer.Write(m_eventDataLenTotal);
+            serializer.WriteInt32(m_count);
+            serializer.WriteInt32(m_stackCount);
+            serializer.WriteInt64(m_eventDataLenTotal);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -5441,21 +5441,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(log);
+            serializer.WriteObject(log);
             serializer.Log("<WriteCollection name=\"Processes\" count=\"" + processes.Count + "\">\r\n");
-            serializer.Write(processes.Count);
+            serializer.WriteInt32(processes.Count);
             for (int i = 0; i < processes.Count; i++)
             {
-                serializer.Write(processes[i]);
+                serializer.WriteObject(processes[i]);
             }
 
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Log("<WriteCollection name=\"ProcessesByPID\" count=\"" + processesByPID.Count + "\">\r\n");
-            serializer.Write(processesByPID.Count);
+            serializer.WriteInt32(processesByPID.Count);
             for (int i = 0; i < processesByPID.Count; i++)
             {
-                serializer.Write(processesByPID[i]);
+                serializer.WriteObject(processesByPID[i]);
             }
 
             serializer.Log("</WriteCollection>\r\n");
@@ -5805,26 +5805,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(processID);
-            serializer.Write((int)processIndex);
-            serializer.Write(log);
-            serializer.Write(commandLine);
-            serializer.Write(imageFileName);
-            serializer.Write(firstEventSeenQPC);
-            serializer.Write(startTimeQPC);
-            serializer.Write(endTimeQPC);
-            serializer.Write(exitStatus.HasValue);
+            serializer.WriteInt32(processID);
+            serializer.WriteInt32((int)processIndex);
+            serializer.WriteObject(log);
+            serializer.WriteString(commandLine);
+            serializer.WriteString(imageFileName);
+            serializer.WriteInt64(firstEventSeenQPC);
+            serializer.WriteInt64(startTimeQPC);
+            serializer.WriteInt64(endTimeQPC);
+            serializer.WriteBoolean(exitStatus.HasValue);
             if (exitStatus.HasValue)
             {
-                serializer.Write(exitStatus.Value);
+                serializer.WriteInt32(exitStatus.Value);
             }
 
-            serializer.Write(parentID);
-            serializer.Write(parent);
-            serializer.Write(loadedModules);
-            serializer.Write(cpuSamples);
-            serializer.Write(loadedAModuleHigh);
-            serializer.Write(anyModuleLoaded);
+            serializer.WriteInt32(parentID);
+            serializer.WriteObject(parent);
+            serializer.WriteObject(loadedModules);
+            serializer.WriteInt32(cpuSamples);
+            serializer.WriteBoolean(loadedAModuleHigh);
+            serializer.WriteBoolean(anyModuleLoaded);
         }
 
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -6263,13 +6263,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(log);
+            serializer.WriteObject(log);
 
             serializer.Log("<WriteCollection name=\"threads\" count=\"" + threads.Count + "\">\r\n");
-            serializer.Write(threads.Count);
+            serializer.WriteInt32(threads.Count);
             for (int i = 0; i < threads.Count; i++)
             {
-                serializer.Write(threads[i]);
+                serializer.WriteObject(threads[i]);
             }
 
             serializer.Log("</WriteCollection>\r\n");
@@ -6460,20 +6460,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(threadID);
-            serializer.Write((int)threadIndex);
-            serializer.Write(process);
-            serializer.Write(startTimeQPC);
-            serializer.Write(endTimeQPC);
-            serializer.Write(cpuSamples);
-            serializer.Write(threadInfo);
-            serializer.Write((long)userStackBase);
+            serializer.WriteInt32(threadID);
+            serializer.WriteInt32((int)threadIndex);
+            serializer.WriteObject(process);
+            serializer.WriteInt64(startTimeQPC);
+            serializer.WriteInt64(endTimeQPC);
+            serializer.WriteInt32(cpuSamples);
+            serializer.WriteString(threadInfo);
+            serializer.WriteInt64((long)userStackBase);
 
-            serializer.Write(activityIds.Count);
+            serializer.WriteInt32(activityIds.Count);
             serializer.Log("<WriteCollection name=\"ActivityIDForThread\" count=\"" + activityIds.Count + "\">\r\n");
             foreach (ActivityIndex entry in activityIds)
             {
-                serializer.Write((int)entry);
+                serializer.WriteInt32((int)entry);
             }
 
             serializer.Log("</WriteCollection>\r\n");
@@ -6996,12 +6996,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(process);
+            serializer.WriteObject(process);
             serializer.Log("<WriteCollection count=\"" + modules.Count + "\">\r\n");
-            serializer.Write(modules.Count);
+            serializer.WriteInt32(modules.Count);
             for (int i = 0; i < modules.Count; i++)
             {
-                serializer.Write(modules[i]);
+                serializer.WriteObject(modules[i]);
             }
 
             serializer.Log("</WriteCollection>\r\n");
@@ -7170,13 +7170,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer) { ToStream(serializer); }
         internal void ToStream(Serializer serializer)
         {
-            serializer.Write(loadTimeQPC);
-            serializer.Write(unloadTimeQPC);
-            serializer.Write(managedModule);
-            serializer.Write(process);
-            serializer.Write(moduleFile);
-            serializer.Write((long)key);
-            serializer.Write(overlaps);
+            serializer.WriteInt64(loadTimeQPC);
+            serializer.WriteInt64(unloadTimeQPC);
+            serializer.WriteObject(managedModule);
+            serializer.WriteObject(process);
+            serializer.WriteObject(moduleFile);
+            serializer.WriteInt64((long)key);
+            serializer.WriteBoolean(overlaps);
         }
         /// <summary>
         /// See IFastSerializable.FromStream.
@@ -7267,9 +7267,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);
-            serializer.Write(assemblyID);
-            serializer.Write(nativeModule);
-            serializer.Write((int)flags);
+            serializer.WriteInt64(assemblyID);
+            serializer.WriteObject(nativeModule);
+            serializer.WriteInt32((int)flags);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -7545,16 +7545,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(log);
-            serializer.Write(codeAddresses);
+            serializer.WriteObject(log);
+            serializer.WriteObject(codeAddresses);
             lazyCallStacks.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"callStacks\" count=\"" + callStacks.Count + "\">\r\n");
-                serializer.Write(callStacks.Count);
+                serializer.WriteInt32(callStacks.Count);
                 for (int i = 0; i < callStacks.Count; i++)
                 {
-                    serializer.Write((int)callStacks[i].codeAddressIndex);
-                    serializer.Write((int)callStacks[i].callerIndex);
+                    serializer.WriteInt32((int)callStacks[i].codeAddressIndex);
+                    serializer.WriteInt32((int)callStacks[i].callerIndex);
                 }
                 serializer.Log("</WriteCollection>\r\n");
             });
@@ -8719,30 +8719,30 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             lazyCodeAddresses.Write(serializer, delegate
             {
-                serializer.Write(log);
-                serializer.Write(moduleFiles);
-                serializer.Write(methods);
+                serializer.WriteObject(log);
+                serializer.WriteObject(moduleFiles);
+                serializer.WriteObject(methods);
 
-                serializer.WriteTagged(CodeAddressInfoSerializationVersion);
-                serializer.Write(codeAddresses.Count);
+                serializer.WriteTaggedInt32(CodeAddressInfoSerializationVersion);
+                serializer.WriteInt32(codeAddresses.Count);
                 serializer.Log("<WriteCollection name=\"codeAddresses\" count=\"" + codeAddresses.Count + "\">\r\n");
                 for (int i = 0; i < codeAddresses.Count; i++)
                 {
                     serializer.WriteAddress(codeAddresses[i].Address);
-                    serializer.Write((int)codeAddresses[i].moduleFileIndex);
-                    serializer.Write((int)codeAddresses[i].methodOrProcessOrIlMapIndex);
-                    serializer.Write(codeAddresses[i].InclusiveCount);
+                    serializer.WriteInt32((int)codeAddresses[i].moduleFileIndex);
+                    serializer.WriteInt32((int)codeAddresses[i].methodOrProcessOrIlMapIndex);
+                    serializer.WriteInt32(codeAddresses[i].InclusiveCount);
 
                     // 'CodeAddressInfoSerializationVersion' >= 1
-                    serializer.Write((byte)codeAddresses[i].optimizationTier);
+                    serializer.WriteByte((byte)codeAddresses[i].optimizationTier);
                 }
-                serializer.Write(totalCodeAddresses);
+                serializer.WriteInt32(totalCodeAddresses);
                 serializer.Log("</WriteCollection>\r\n");
 
-                serializer.Write(ILToNativeMaps.Count);
+                serializer.WriteInt32(ILToNativeMaps.Count);
                 for (int i = 0; i < ILToNativeMaps.Count; i++)
                 {
-                    serializer.Write(ILToNativeMaps[i]);
+                    serializer.WriteObject(ILToNativeMaps[i]);
                 }
             });
         }
@@ -9116,8 +9116,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             internal void Serialize(Serializer serializer)
             {
-                serializer.Write(ILOffset);
-                serializer.Write(NativeOffset);
+                serializer.WriteInt32(ILOffset);
+                serializer.WriteInt32(NativeOffset);
             }
         }
 
@@ -9179,11 +9179,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             void IFastSerializable.ToStream(Serializer serializer)
             {
-                serializer.Write((int)MethodIndex);
-                serializer.Write((long)MethodStart);
-                serializer.Write(MethodLength);
+                serializer.WriteInt32((int)MethodIndex);
+                serializer.WriteInt64((long)MethodStart);
+                serializer.WriteInt32(MethodLength);
 
-                serializer.Write(Map.Count);
+                serializer.WriteInt32(Map.Count);
                 for (int i = 0; i < Map.Count; i++)
                 {
                     Map[i].Serialize(serializer);
@@ -9571,14 +9571,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             lazyMethods.Write(serializer, delegate
             {
-                serializer.Write(codeAddresses);
-                serializer.Write(methods.Count);
+                serializer.WriteObject(codeAddresses);
+                serializer.WriteInt32(methods.Count);
                 serializer.Log("<WriteCollection name=\"methods\" count=\"" + methods.Count + "\">\r\n");
                 for (int i = 0; i < methods.Count; i++)
                 {
-                    serializer.Write(methods[i].fullMethodName);
-                    serializer.Write(methods[i].methodDefOrRva);
-                    serializer.Write((int)methods[i].moduleIndex);
+                    serializer.WriteString(methods[i].fullMethodName);
+                    serializer.WriteInt32(methods[i].methodDefOrRva);
+                    serializer.WriteInt32((int)methods[i].moduleIndex);
                 }
                 serializer.Log("</WriteCollection>\r\n");
             });
@@ -9889,11 +9889,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(log);
-            serializer.Write(moduleFiles.Count);
+            serializer.WriteObject(log);
+            serializer.WriteInt32(moduleFiles.Count);
             for (int i = 0; i < moduleFiles.Count; i++)
             {
-                serializer.Write(moduleFiles[i]);
+                serializer.WriteObject(moduleFiles[i]);
             }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -10141,20 +10141,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(fileName);
-            serializer.Write(imageSize);
+            serializer.WriteString(fileName);
+            serializer.WriteInt32(imageSize);
             serializer.WriteAddress(imageBase);
 
-            serializer.Write(pdbName);
-            serializer.Write(pdbSignature);
-            serializer.Write(pdbAge);
-            serializer.Write(fileVersion);
-            serializer.Write(productVersion);
-            serializer.Write(timeDateStamp);
-            serializer.Write(imageChecksum);
-            serializer.Write((int)moduleFileIndex);
-            serializer.Write(codeAddressesInModule);
-            serializer.Write(managedModule);
+            serializer.WriteString(pdbName);
+            serializer.WriteGuid(pdbSignature);
+            serializer.WriteInt32(pdbAge);
+            serializer.WriteString(fileVersion);
+            serializer.WriteString(productVersion);
+            serializer.WriteInt32(timeDateStamp);
+            serializer.WriteInt32(imageChecksum);
+            serializer.WriteInt32((int)moduleFileIndex);
+            serializer.WriteInt32(codeAddressesInModule);
+            serializer.WriteObject(managedModule);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -10457,17 +10457,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write((int)activityIndex);
-            serializer.Write(creator);
-            serializer.Write((int)creationCallStackIndex);
-            serializer.Write(thread);
-            serializer.Write((int)creationEventIndex);
-            serializer.Write(creationTimeQPC);
-            serializer.Write(startTimeQPC);
-            serializer.Write(endTimeQPC);
-            serializer.Write(multiTrigger);
-            serializer.Write(gcBound);
-            serializer.Write((short)kind);
+            serializer.WriteInt32((int)activityIndex);
+            serializer.WriteObject(creator);
+            serializer.WriteInt32((int)creationCallStackIndex);
+            serializer.WriteObject(thread);
+            serializer.WriteInt32((int)creationEventIndex);
+            serializer.WriteInt64(creationTimeQPC);
+            serializer.WriteInt64(startTimeQPC);
+            serializer.WriteInt64(endTimeQPC);
+            serializer.WriteBoolean(multiTrigger);
+            serializer.WriteBoolean(gcBound);
+            serializer.WriteInt16((short)kind);
         }
 
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -10880,7 +10880,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     {
         public static void WriteAddress(this Serializer serializer, Address address)
         {
-            serializer.Write((long)address);
+            serializer.WriteInt64((long)address);
         }
         public static void ReadAddress(this Deserializer deserializer, out Address address)
         {
