@@ -385,13 +385,21 @@ public class GCHeapDumper
         {
             return dataReader.VirtualQuery(addr, out vq);
         }
+    }
 
-        private static ulong SignExtend(ulong address)
+    private static ulong SignExtend(ulong address)
+    {
+        unsafe
         {
-            unsafe
-            {
-                return unchecked((ulong)(long)(IntPtr)(void*)address);
-            }
+            return unchecked((ulong)(long)(nint)address);
+        }
+    }
+
+    private static ulong ZeroExtend(ulong address)
+    {
+        unsafe
+        {
+            return unchecked((nuint)address);
         }
     }
 
@@ -1449,7 +1457,7 @@ public class GCHeapDumper
 
                 MemoryNodeBuilder nodeToAddRootTo = dotNetRoot;
 
-                var type = heap.GetObjectType(root.Object);
+                var type = GetObjectType(heap, root.Object);
                 if (type != null && !getCCWDataNotImplemented)
                 {
                     // TODO FIX NOW, try clause is a hack because ccwInfo.* methods sometime throw.  
@@ -1473,7 +1481,7 @@ public class GCHeapDumper
                             // Create a CCW node that represents the COM object that has one child that points at the managed object.  
                             var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(ccwInfo.Handle);
                             var typeName = "[CCW";
-                            var targetType = m_dotNetHeap.GetObjectType(root.Object);
+                            var targetType = GetObjectType(m_dotNetHeap, root.Object);
                             if (targetType != null)
                             {
                                 typeName += " for " + targetType.Name;
@@ -1622,6 +1630,26 @@ public class GCHeapDumper
         m_log.WriteLine("Number of bad objects during trace {0:n0}", BadObjectCount);
         m_log.WriteLine("{0,5:f1}s: Finished heap dump {1}", m_sw.Elapsed.TotalSeconds, DateTime.Now);
         return;
+    }
+
+    private static ClrType GetObjectType(ClrHeap heap, Address objRef)
+    {
+        if (IntPtr.Size == 8)
+        {
+            return heap.GetObjectType(objRef);
+        }
+        else
+        {
+            var zeroExtended = ZeroExtend(objRef);
+            if (heap.GetObjectType(zeroExtended) is { } type)
+                return type;
+
+            var signExtended = SignExtend(objRef);
+            if (signExtended != zeroExtended)
+                return heap.GetObjectType(signExtended);
+
+            return null;
+        }
     }
 
     /// <summary>
@@ -1842,7 +1870,7 @@ public class GCHeapDumper
 
             if (addr != 0)
             {
-                ClrType type = m_dotNetHeap.GetObjectType(addr);
+                ClrType type = GetObjectType(m_dotNetHeap, addr);
 
                 if (type != null)
                 {
@@ -1854,7 +1882,7 @@ public class GCHeapDumper
                     }
                     else
                     {
-                        CcwData ccw = m_dotNetHeap.GetObjectType(addr).GetCCWData(addr);
+                        CcwData ccw = GetObjectType(m_dotNetHeap, addr).GetCCWData(addr);
 
                         if (ccw != null)
                         {
@@ -1907,7 +1935,7 @@ public class GCHeapDumper
             for (Address objAddr = segment.FirstObject; start <= objAddr && objAddr < end; objAddr = segment.NextObject(objAddr))
             {
                 bool resynced = false;
-                type = m_dotNetHeap.GetObjectType(objAddr);
+                type = GetObjectType(m_dotNetHeap, objAddr);
                 if (type == null)
                 {
                     BadObjectCount++;
@@ -1920,7 +1948,7 @@ public class GCHeapDumper
                             objAddr = end;
                             break;
                         }
-                        type = m_dotNetHeap.GetObjectType(objAddr);
+                        type = GetObjectType(m_dotNetHeap, objAddr);
                     } while (type == null);
 
                     resynced = true;
@@ -2212,7 +2240,7 @@ public class GCHeapDumper
                 // m_log.WriteLine("Trying to resync at {0:x} with value {1:x}", objAddr, val);
 
                 // OK see if we have a valid type. 
-                var type = m_dotNetHeap.GetObjectType(objAddr);
+                var type = GetObjectType(m_dotNetHeap, objAddr);
                 if (type == null)
                 {
                     continue;
@@ -2222,7 +2250,7 @@ public class GCHeapDumper
 
                 // See if the 'next' object has a valid type
                 var objAddr1 = objAddr + type.GetSize(objAddr);
-                var type1 = m_dotNetHeap.GetObjectType(objAddr1);
+                var type1 = GetObjectType(m_dotNetHeap, objAddr1);
                 if (type1 == null)
                 {
                     continue;
@@ -2230,7 +2258,7 @@ public class GCHeapDumper
 
                 // and the object after that.  
                 var objAddr2 = objAddr + type.GetSize(objAddr1);
-                var type2 = m_dotNetHeap.GetObjectType(objAddr2);
+                var type2 = GetObjectType(m_dotNetHeap, objAddr2);
                 if (type2 == null)
                 {
                     continue;

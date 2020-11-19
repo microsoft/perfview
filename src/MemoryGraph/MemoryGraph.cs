@@ -1,4 +1,5 @@
 ﻿using FastSerialization;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Address = System.UInt64;
@@ -91,7 +92,7 @@ namespace Graphs
         /// </summary>
         public NodeIndex GetNodeIndex(Address objectAddress)
         {
-            nuint nativeObjectAddress = checked((nuint)objectAddress);
+            nuint nativeObjectAddress = ToNativeAddress(objectAddress);
             NodeIndex nodeIndex;
             if (!m_addressToNodeIndex.TryGetValue(nativeObjectAddress, out nodeIndex))
             {
@@ -99,12 +100,39 @@ namespace Graphs
                 m_nodeAddresses[(int)nodeIndex] = nativeObjectAddress;
                 m_addressToNodeIndex.Add(nativeObjectAddress, nodeIndex);
             }
-            Debug.Assert(m_nodeAddresses[(int)nodeIndex] == objectAddress);
+            Debug.Assert(m_nodeAddresses[(int)nodeIndex] == ToNativeAddress(objectAddress));
             return nodeIndex;
         }
         public bool IsInGraph(Address objectAddress)
         {
-            return m_addressToNodeIndex.ContainsKey(checked((nuint)objectAddress));
+            return m_addressToNodeIndex.ContainsKey(ToNativeAddress(objectAddress));
+        }
+
+        private static nuint ToNativeAddress(Address objectAddress)
+        {
+            if (IntPtr.Size == 8)
+            {
+                return checked((nuint)objectAddress);
+            }
+            else
+            {
+                const ulong Mask32 = ~(ulong)uint.MaxValue;
+                const ulong Mask33 = Mask32 | 0x80000000;
+                if ((objectAddress & Mask32) == 0)
+                {
+                    // not a sign-extended address
+                    return checked((nuint)objectAddress);
+                }
+                else if ((objectAddress & Mask33) == Mask33)
+                {
+                    // This is an incorrectly sign-extended 32-bit address
+                    return unchecked((nuint)objectAddress);
+                }
+                else
+                {
+                    throw new ArgumentException("Unsupported object address", nameof(objectAddress));
+                }
+            }
         }
 
         /// <summary>
