@@ -1264,8 +1264,7 @@ public class GCHeapDumper
 
                 long beforeGCMemSize = GC.GetTotalMemory(false);
                 m_gcHeapDump.MemoryGraph = null;        // Free most of the memory.  
-                GC.Collect();
-                long afterGCMemSize = GC.GetTotalMemory(false);
+                long afterGCMemSize = GC.GetTotalMemory(true);
                 m_log.WriteLine("{0,5:f1}s: WARNING: Hit and Out of Memory Condition, retrying with a smaller MaxObjectCount", m_sw.Elapsed.TotalSeconds);
                 m_log.WriteLine("Stack: {0}", e.StackTrace);
 
