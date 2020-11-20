@@ -40,7 +40,7 @@
 
   <PropertyGroup>
     <ApplicationIcon>performance.ico</ApplicationIcon>
-    <ApplicationManifest>Properties\PerfView.manifest</ApplicationManifest>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
@@ -135,7 +135,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="app.config" />
-    <None Include="Properties\PerfView.manifest" />
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
