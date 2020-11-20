@@ -506,6 +506,15 @@ public class GCHeapDumper
         {
             throw new HeapDumpException("Could not open DAC", HR.CouldNotAccessDac);
         }
+
+        m_log.WriteLine("Enumerating objects in heap to populate caches...");
+        foreach (var obj in runtime.Heap.EnumerateObjects())
+        {
+            _ = obj.Type;
+            continue;
+        }
+
+        m_log.WriteLine("Done.");
     }
 
     /// <summary>
