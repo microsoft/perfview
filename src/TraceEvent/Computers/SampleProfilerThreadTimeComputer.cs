@@ -478,7 +478,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (onCPU)
                 {
-                    if (ThreadRunning) // continue running 
+                    if (ThreadRunning || ThreadUninitialized) // continue running 
                     {
                         AddCPUSample(timeRelativeMSec, thread, computer);
                     }
