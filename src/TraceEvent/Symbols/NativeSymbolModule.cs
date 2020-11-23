@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -434,33 +435,27 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public class MicrosoftPdbSourceFile : SourceFile
         {
-            /// <summary>
-            /// If the source file is directly available on the web (that is there is a Url that 
-            /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
-            /// point exists this property will return null.   
-            /// </summary>
-            public override string Url
+            /// <inheritdoc/>
+            public override bool GetSourceLinkInfo(out string url, out string relativePath)
             {
-                get
+                // See if it is in sourceLink information.
+                if (base.GetSourceLinkInfo(out url, out relativePath))
                 {
-                    string target = base.Url; // See if it is in sourceLink information.
-                    if (target != null)
-                    {
-                        return target;
-                    }
-
-                    // Use srcsrv information 
-                    string command;
-                    GetSourceServerTargetAndCommand(out target, out command);
+                    return true;
+                }
+                else
+                {
+                    // Try to convert srcsrv information 
+                    GetSourceServerTargetAndCommand(out string target, out _);
 
                     if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
                     {
-                        return target;
+                        url = target;
+                        relativePath = Path.GetFileName(this.BuildTimeFilePath);
+                        return true;
                     }
-                    else
-                    {
-                        return null;
-                    }
+
+                    return false;
                 }
             }
 
@@ -620,7 +615,20 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 BuildTimeFilePath = sourceFile.fileName;
 
-                // 0 No checksum present.
+                if (sourceFile.checksumType == 0)
+                {
+                    // If the checksum type is zero, this means either this is a non-C++ PDB, or there is no checksum info
+                    TryInitializeManagedChecskum(module);
+                }
+                else
+                {
+                    // Otherwise this is a C++ style PDB
+                    TryInitializeCppChecksum(sourceFile);
+                }
+            }
+
+            private void TryInitializeCppChecksum(IDiaSourceFile sourceFile)
+            {
                 // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
                 // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
                 // 3 checksum generated with the SHA256 hashing algorithm.
@@ -655,6 +663,58 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     Debug.Assert(bytesFetched == _hash.Length);
+                }
+            }
+
+            private void TryInitializeManagedChecskum(NativeSymbolModule module)
+            {
+                try
+                {
+                    module.m_session.findInjectedSource(this.BuildTimeFilePath, out IDiaEnumInjectedSources injectedSources);
+                    if (injectedSources == null)
+                    {
+                        return;
+                    }
+
+                    injectedSources.Next(1, out IDiaInjectedSource injectedSource, out uint count);
+                    if (count != 1)
+                    {
+                        return;
+                    }
+
+                    SrcFormat srcFormat = new SrcFormat();
+                    int srcFormatSize = Marshal.SizeOf(typeof(SrcFormat));
+                    int srcFormatHeaderSize = Marshal.SizeOf(typeof(SrcFormatHeader));
+                    byte* pSrcFormat = (byte*)&srcFormat;
+                    injectedSource.get_source((uint)srcFormatSize, out uint sizeAvailable, out *pSrcFormat);
+
+                    if (sizeAvailable < srcFormatHeaderSize || sizeAvailable < srcFormat.Header.checkSumSize + srcFormatHeaderSize || srcFormatSize < srcFormat.Header.checkSumSize + srcFormatHeaderSize)
+                    {
+                        return;
+                    }
+
+                    if (srcFormat.Header.algorithmId == guidMD5)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.MD5.Create();
+                    }
+                    else if (srcFormat.Header.algorithmId == guidSHA1)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
+                    }
+                    else if (srcFormat.Header.algorithmId == guidSHA256)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
+                    }
+
+                    if (_hashAlgorithm != null)
+                    {
+                        _hash = new byte[srcFormat.Header.checkSumSize];
+                        Marshal.Copy((IntPtr)srcFormat.checksumBytes, _hash, startIndex: 0, length: _hash.Length);
+                    }
+                }
+                catch (COMException)
+                {
+                    // DIA API failed. Ignore.
                 }
             }
 
@@ -1011,40 +1071,55 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 return null;
             }
 
+            return GetUTF8PDBStream("srcsrv", len);
+        }
+
+        private string GetUTF8PDBStream(string name, uint len)
+        {
             byte[] buffer = new byte[len];
             fixed (byte* bufferPtr = buffer)
             {
-                m_source.getStreamRawData("srcsrv", len, out *bufferPtr);
+                m_source.getStreamRawData(name, len, out *bufferPtr);
                 var ret = new UTF8Encoding().GetString(buffer);
                 return ret;
             }
         }
 
-        protected override string GetSourceLinkJson()
+        protected override IEnumerable<string> GetSourceLinkJson()
         {
-            // To avoid the expensive match below, don't even try to get SourceLink data if you have srcsrv data.  
-            // This at least avoids the cost on many OS PDBs.  
-            // You can remove this when we can look up SourceLink information easily.  
-            uint len = 0;
-            m_source.getStreamSize("srcsrv", out len);
-            if (len != 0)
-            {
-                m_reader.m_log.WriteLine("Has srcsrv information, skipping looking for SourceLink information for {0}", SymbolFilePath);
-                return null;
-            }
+            // Source Link is stored in windows pdb in *EITHER* the 'sourcelink' stream *OR* 1 or more 'sourcelink$n' streams where n starts at 1.
+            // For multi stream format, we read the streams starting at 1 until we receive a stream size of 0.
 
-            // TODO We should be using msdia APIs to fetch this. 
-            // I don't know exactly which ones.  In the mean time we grep for something in the PDB that looks like the SourceLink json blob. 
-            string allData = File.ReadAllText(SymbolFilePath);
-            Match m = Regex.Match(allData, "({\\s*\"documents\"\\s*:\\s*{[ -~]*?}\\s*})", RegexOptions.Singleline);
-            if (m.Success)
+            const string singleStreamName = "sourcelink";
+            const string multiStreamNameFormat = "sourcelink${0}";
+
+            // first check the single stream
+            m_source.getStreamSize(singleStreamName, out uint streamSize);
+            if (streamSize > 0)
             {
-                string ret = m.Groups[1].Value;
-                m_reader.m_log.WriteLine("Found SourceLink Information for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
-                return ret;
+                string content = GetUTF8PDBStream(singleStreamName, streamSize);
+                return new string[] { content };
             }
-            m_reader.m_log.WriteLine("Failed to look up SourceLink Information for {0}.", SymbolFilePath);
-            return null;
+            else
+            {
+                List<string> result = new List<string>();
+
+                // if there was no single stream, check the multi stream
+                for (int cStream = 1; cStream < int.MaxValue; cStream++)
+                {
+                    string streamName = string.Format(CultureInfo.InvariantCulture, multiStreamNameFormat, cStream);
+                    m_source.getStreamSize(streamName, out streamSize);
+                    if (streamSize == 0)
+                    {
+                        break;
+                    }
+
+                    string content = GetUTF8PDBStream(streamName, streamSize);
+                    result.Add(content);
+                }
+
+                return result;
+            }
         }
 
         // returns the path of the PDB that has source server information in it (which for NGEN images is the PDB for the managed image)
@@ -1368,6 +1443,28 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         private readonly IDiaDataSource3 m_source;
         private readonly IDiaEnumSymbolsByAddr m_symbolsByAddr;
         private readonly Lazy<IReadOnlyDictionary<uint, string>> m_heapAllocationSites; // rva => typename
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SrcFormatHeader
+        {
+            public Guid language;
+            public Guid languageVendor;
+            public Guid documentType;
+            public Guid algorithmId;
+            public UInt32 checkSumSize;
+            public UInt32 sourceSize;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SrcFormat
+        {
+            public SrcFormatHeader Header;
+            public fixed byte checksumBytes[512/8]; // this size of this may be smaller, it is controlled by the size of the `checksumSize` field
+        }
+
+        private static readonly Guid guidMD5 = new Guid("406ea660-64cf-4c82-b6f0-42d48172a799");
+        private static readonly Guid guidSHA1 = new Guid("ff1816ec-aa5e-4d10-87f7-6f4963833460");
+        private static readonly Guid guidSHA256 = new Guid("8829d00f-11b8-4213-878b-770e8597ac16");
 
         #endregion
     }
