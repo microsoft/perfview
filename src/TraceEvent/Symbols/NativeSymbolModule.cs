@@ -25,7 +25,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
-    public unsafe class NativeSymbolModule : ManagedSymbolModule
+    public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable
     {
         /// <summary>
         /// Returns the name of the type allocated for a given relative virtual address.
@@ -33,6 +33,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public string GetTypeForHeapAllocationSite(uint rva)
         {
+            ThrowIfDisposed();
+
             return m_heapAllocationSites.Value.TryGetValue(rva, out var name) ? name : null;
         }
 
@@ -42,6 +44,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public string FindNameForRva(uint rva)
         {
+            ThrowIfDisposed();
+
             uint dummy = 0;
             return FindNameForRva(rva, ref dummy);
         }
@@ -52,6 +56,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public string FindNameForRva(uint rva, ref uint symbolStartRva)
         {
+            ThrowIfDisposed();
+
             System.Threading.Thread.Sleep(0);           // Allow cancellation.  
             if (m_symbolsByAddr == null)
             {
@@ -194,6 +200,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SourceLocation SourceLocationForRva(uint rva, out string ilAssemblyName, out uint methodMetadataToken, out int ilOffset)
         {
+            ThrowIfDisposed();
+
             ilAssemblyName = null;
             methodMetadataToken = 0;
             ilOffset = -1;
@@ -307,6 +315,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public override SourceLocation SourceLocationForManagedCode(uint methodMetadataToken, int ilOffset)
         {
+            ThrowIfDisposed();
+
             m_reader.m_log.WriteLine("SourceLocationForManaged: Looking up method token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
 
             IDiaSymbol methodSym;
@@ -373,7 +383,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// The symbol representing the module as a whole.  All global symbols are children of this symbol 
         /// </summary>
-        public Symbol GlobalSymbol { get { return new Symbol(this, m_session.globalScope); } }
+        public Symbol GlobalSymbol 
+        { 
+            get 
+            {
+                ThrowIfDisposed();
+                return new Symbol(this, m_session.globalScope); 
+            } 
+        }
 
 #if TEST_FIRST
         /// <summary>
@@ -381,6 +398,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public IEnumerable<SourceFile> AllSourceFiles()
         {
+            ThrowIfDisposed();
 
             IDiaEnumTables tables;
             m_session.getEnumTables(out tables);
@@ -414,13 +432,28 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// The a unique identifier that is used to relate the DLL and its PDB.   
         /// </summary>
-        public override Guid PdbGuid { get { return m_session.globalScope.guid; } }
+        public override Guid PdbGuid 
+        { 
+            get 
+            {
+                ThrowIfDisposed();
+                return m_session.globalScope.guid; 
+            } 
+        }
+
         /// <summary>
         /// Along with the PdbGuid, there is a small integer 
         /// call the age is also used to find the PDB (it represents the different 
         /// post link transformations the DLL has undergone).  
         /// </summary>
-        public override int PdbAge { get { return (int)m_session.globalScope.age; } }
+        public override int PdbAge 
+        { 
+            get 
+            {
+                ThrowIfDisposed();
+                return (int)m_session.globalScope.age; 
+            } 
+        }
 
         #region private
         /// <summary>
@@ -1050,6 +1083,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         internal string GetSrcSrvStream()
         {
+            ThrowIfDisposed();
+
             // In order to get the IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
             // dia2_internal.idl file from devdiv to produce the Interop.Dia2Lib.dll 
             // see class DiaLoader for more
@@ -1087,6 +1122,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
 
         protected override IEnumerable<string> GetSourceLinkJson()
         {
+            ThrowIfDisposed();
+
             // Source Link is stored in windows pdb in *EITHER* the 'sourcelink' stream *OR* 1 or more 'sourcelink$n' streams where n starts at 1.
             // For multi stream format, we read the streams starting at 1 until we receive a stream size of 0.
 
@@ -1156,6 +1193,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         public Dictionary<int, string> GetMergedAssembliesMap()
         {
+            ThrowIfDisposed();
+
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
@@ -1190,6 +1229,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         public MemoryStream GetEmbeddedILImage()
         {
+            ThrowIfDisposed();
+
             try
             {
                 uint ilimageSize;
@@ -1214,6 +1255,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// <returns></returns>
         public MemoryStream GetPseudoAssembly()
         {
+            ThrowIfDisposed();
+
             try
             {
                 uint ilimageSize;
@@ -1237,6 +1280,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         public byte[] GetFuncMDTokenMap()
         {
+            ThrowIfDisposed();
+
             uint mapSize;
             m_session.getFuncMDTokenMapSize(out mapSize);
 
@@ -1256,6 +1301,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// <returns></returns>
         public byte[] GetTypeMDTokenMap()
         {
+            ThrowIfDisposed();
+
             uint mapSize;
             m_session.getTypeMDTokenMapSize(out mapSize);
 
@@ -1267,6 +1314,34 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             }
 
             return buf;
+        }
+
+        public void Dispose()
+        {
+            if (!m_isDisposed)
+            {
+                m_isDisposed = true;
+
+                if (m_session is IDiaSession3 diaSession3)
+                {
+                    int hr = diaSession3.dispose();
+                    Debug.Assert(hr == 0, "IDiaSession3.dispose failed");
+                }
+            }
+        }
+
+        /// <summary>
+        /// This function checks if the SymbolModule is disposed before proceeding with the call.
+        /// This is important because DIA doesn't provide any guarantees as to what will happen if 
+        /// one attempts to call after the session is disposed, so this at least ensure that we
+        /// fail cleanly in non-concurrent cases.
+        /// </summary>
+        private void ThrowIfDisposed()
+        {
+            if (m_isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(NativeSymbolModule));
+            }
         }
 
         /// <summary>
@@ -1429,6 +1504,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             };
         }
 
+        private bool m_isDisposed;
         private bool m_checkedForMergedAssemblies;
         private Dictionary<int, string> m_mergedAssemblies;
 
@@ -1752,5 +1828,87 @@ namespace Dia2Lib
         private static bool s_loadedNativeDll;
         #endregion
     }
+
+    [ComVisible(true)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [GuidAttribute("52585014-e2b6-49fe-aa72-3a1e178682ee")]
+    interface IDiaSession3
+    {
+        #region Uncalled methods to declare the VTable correctly
+        void Reserved01(); // get_loadAddress
+        void Reserved02(); // put_loadAddress
+        void Reserved03(); // get_globalScope
+        void Reserved04(); // getEnumTables
+        void Reserved05(); // getSymbolsByAddr
+        void Reserved06(); // findChildren
+        void Reserved07(); // findChildrenEx
+        void Reserved08(); // findChildrenExByAddr
+        void Reserved09(); // findChildrenExByVA
+        void Reserved10(); // findChildrenExByRVA
+        void Reserved11(); // findSymbolByAddr
+        void Reserved12(); // findSymbolByRVA
+        void Reserved13(); // findSymbolByVA
+        void Reserved14(); // findSymbolByToken
+        void Reserved15(); // symsAreEquiv
+        void Reserved16(); // symbolById
+        void Reserved17(); // findSymbolByRVAEx
+        void Reserved18(); // findSymbolByVAEx
+        void Reserved19(); // findFile
+        void Reserved20(); // findFileById
+        void Reserved21(); // findLines
+        void Reserved22(); // findLinesByAddr
+        void Reserved23(); // findLinesByRVA
+        void Reserved24(); // findLinesByVA
+        void Reserved25(); // findLinesByLinenum
+        void Reserved26(); // findInjectedSource
+        void Reserved27(); // getEnumDebugStreams
+        void Reserved28(); // findInlineFramesByAddr
+        void Reserved29(); // findInlineFramesByRVA
+        void Reserved30(); // findInlineFramesByVA
+        void Reserved31(); // findInlineeLines
+        void Reserved32(); // findInlineeLinesByAddr
+        void Reserved33(); // findInlineeLinesByRVA
+        void Reserved34(); // findInlineeLinesByVA
+        void Reserved35(); // findInlineeLinesByLinenum
+        void Reserved36(); // findInlineesByName
+        void Reserved37(); // findAcceleratorInlineeLinesByLinenum
+        void Reserved38(); // findSymbolsForAcceleratorPointerTag
+        void Reserved39(); // findSymbolsByRVAForAcceleratorPointerTag
+        void Reserved40(); // findAcceleratorInlineesByName
+        void Reserved41(); // addressForVA
+        void Reserved42(); // addressForRVA
+        void Reserved43(); // findILOffsetsByAddr
+        void Reserved44(); // findILOffsetsByRVA
+        void Reserved45(); // findILOffsetsByVA
+        void Reserved46(); // findInputAssemblyFiles
+        void Reserved47(); // findInputAssembly
+        void Reserved48(); // findInputAssemblyById
+        void Reserved49(); // getFuncMDTokenMapSize
+        void Reserved50(); // getFuncMDTokenMap
+        void Reserved51(); // getTypeMDTokenMapSize
+        void Reserved52(); // getTypeMDTokenMap
+        void Reserved53(); // getNumberOfFunctionFragments_VA
+        void Reserved54(); // getNumberOfFunctionFragments_RVA
+        void Reserved55(); // getFunctionFragments_VA
+        void Reserved56(); // getFunctionFragments_RVA
+        void Reserved57(); // getExports
+        void Reserved58(); // getHeapAllocationSites
+        void Reserved59(); // findInputAssemblyFile
+        void Reserved60(); // addPublicSymbol
+        void Reserved61(); // addStaticSymbol
+        void Reserved62(); // findSectionAddressByCrc
+        void Reserved63(); // findThunkSymbol
+        void Reserved64(); // makeThunkSymbol
+        void Reserved65(); // mergeObjPDB
+        void Reserved66(); // commitObjPDBMerge
+        void Reserved67(); // cancelObjPDBMerge
+        void Reserved68(); // getLinkInfo
+        void Reserved69(); // isMiniPDB
+        void Reserved70(); // prepareEnCRebuild
+        #endregion
+
+        [PreserveSig] 
+        int dispose();
+    };
 }
 #endregion
