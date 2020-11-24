@@ -618,7 +618,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (sourceFile.checksumType == 0)
                 {
                     // If the checksum type is zero, this means either this is a non-C++ PDB, or there is no checksum info
-                    TryInitializeManagedChecskum(module);
+                    TryInitializeManagedChecksum(module);
                 }
                 else
                 {
@@ -666,7 +666,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            private void TryInitializeManagedChecskum(NativeSymbolModule module)
+            private void TryInitializeManagedChecksum(NativeSymbolModule module)
             {
                 try
                 {

@@ -1939,7 +1939,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 else
                 {
-                    Debug.Fail("Missing case in get_ChecskumAlgorithm");
+                    Debug.Fail("Missing case in get_ChecksumAlgorithm");
                     return null;
                 }
             }
