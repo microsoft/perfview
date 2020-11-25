@@ -478,7 +478,12 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (onCPU)
                 {
-                    if (ThreadRunning) // continue running 
+                    if (ThreadUninitialized) // First event is onCPU
+                    {
+                        AddCPUSample(timeRelativeMSec, thread, computer);
+                        LastBlockStackRelativeMSec = -1; // make ThreadRunning true
+                    }
+                    else if (ThreadRunning) // continue running 
                     {
                         AddCPUSample(timeRelativeMSec, thread, computer);
                     }
@@ -493,7 +498,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 else
                 {
-                    if (ThreadBlocked) // continue blocking
+                    if (ThreadBlocked || ThreadUninitialized) // continue blocking or assume we started blocked
                     {
                         AddBlockTimeSample(timeRelativeMSec, thread, computer);
                     }
