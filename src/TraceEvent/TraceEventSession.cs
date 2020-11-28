@@ -1358,7 +1358,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propetiesArray, MAX_SESSIONS, ref sessionCount);
             Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
 
-            List<string> activeTraceNames = new List<string>();
+            List<string> activeTraceNames = new List<string>(sessionCount);
             for (int i = 0; i < sessionCount; i++)
             {
                 byte* propertiesBlob = (byte*)propetiesArray[i];
@@ -2677,8 +2677,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             Guid* asGuids = (Guid*)buffer;
-            List<Guid> ret = new List<Guid>();
             int guidCount = buffSize / sizeof(Guid);
+            List<Guid> ret = new List<Guid>(guidCount);
             for (int i = 0; i < guidCount; i++)
             {
                 ret.Add(asGuids[i]);
@@ -2851,7 +2851,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             if (!OperatingSystemVersion.AtLeast(62))
             {
-                throw new ApplicationException("Profile source only availabe on Win8 and beyond.");
+                throw new ApplicationException("Profile source only available on Win8 and beyond.");
             }
 
             var ret = new Dictionary<string, ProfileSourceInfo>(StringComparer.OrdinalIgnoreCase);

@@ -370,7 +370,7 @@ internal class TraceParserGen
         {
             var eventName = keyValue.Key;
             var versionsForEvent = keyValue.Value;
-     
+
             // We have to accumulate all the information needed to fetch a field, across all the versions of the event
             // Only then can we emit the code that will work for all fields simultaneously.  
             var fieldVersions = new SortedDictionary<string, List<FieldInfo>>();
@@ -1354,6 +1354,6 @@ internal class TraceParserGen
     /// </summary>
     private SortedDictionary<string, List<Event>> m_eventsByName;
 
-    private static Dictionary<string, string> reservedKeywords = new Dictionary<string, string> { { "object", "Object" }, { "new", "New" }, { "protected", "Protected" } };
+    private static Dictionary<string, string> reservedKeywords = new Dictionary<string, string>(3) { { "object", "Object" }, { "new", "New" }, { "protected", "Protected" } };
     #endregion
 }

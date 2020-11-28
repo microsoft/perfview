@@ -891,7 +891,7 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// An EVentPipeEventBlock represents a block of events.   It basicaly only has
+    /// An EVentPipeEventBlock represents a block of events.   It basically only has
     /// one field, which is the size in bytes of the block.  But when its FromStream
     /// is called, it will perform the callbacks for the events (thus deserializing
     /// it performs dispatch).

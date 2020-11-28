@@ -1533,7 +1533,7 @@ namespace PerfViewExtensibility
         /// <summary>
         /// Fetch all the PDBs files needed for viewing 'etlFileName' locally.   If 'processName'
         /// is present we only fetch PDBs needed for that process.  This can be either a process
-        /// name (exe without extention or path) or a decimal numeric ID.  
+        /// name (exe without extension or path) or a decimal numeric ID.  
         /// </summary>
         public void FetchSymbolsForProcess(string etlFileName, string processName = null)
         {

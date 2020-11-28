@@ -5720,8 +5720,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Sets the 'Parent' field for the process (based on the ParentID).   
         /// 
         /// sentinel is internal to the implementation, external callers should always pass null. 
-        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it woudl form
-        /// a loop in the parent chain, which we definately don't want.  
+        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it would form
+        /// a loop in the parent chain, which we definitely don't want.  
         /// </summary>
         internal void SetParentForProcess(TraceProcess sentinel = null)
         {
@@ -10580,7 +10580,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Sometimes ETL files are too big , and you just want to look at a fraction of it to speed things up
         /// (or to keep file size under control).  The MaxEventCount property allows that.   10M will produce a 3-4GB ETLX file.  
         /// 1M is a good value to keep ETLX file size under control.  Note that that the conversion still scan the entire 
-        /// original ETL file too look for bookkeeping events, however MaxEventCount events will be transfered to the ETLX 
+        /// original ETL file too look for bookkeeping events, however MaxEventCount events will be transferred to the ETLX 
         /// file as events.
         /// <para>
         /// The default is 10M because ETLX has a restriction of 4GB in size.  

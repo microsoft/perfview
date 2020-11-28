@@ -28,13 +28,13 @@ namespace ClrMemory
             m_typeTable = new Dictionary<COR_TYPEID, ICorDebugGCHeapType>();
             m_types = new List<ICorDebugGCHeapType>();
 
-            // Type index 0 is reserverd for the 'Bad Type' 
+            // Type index 0 is reserved for the 'Bad Type' 
             var badType = new ICorDebugGCHeapType(this, "!BAD_TYPE!", "");
             badType.m_size = 4;     // We use the bad type as a way of filling holes in the heap, 
 
             // Setting these fields marks this as the 'live heap' case.  
             // GCHeapSegment is 'smart' and only fetches the information it 
-            // needs from the big blob of data in the segement.   
+            // needs from the big blob of data in the segment.   
             m_process = process;
             m_process5 = process as ICorDebugProcess5;
             if (m_process5 == null)
@@ -101,7 +101,7 @@ namespace ClrMemory
                 }
 
                 // Return a bad type
-                Debug.WriteLine(string.Format("Error: object ref 0x{0:x} does not point at the begining of an object.", objRef));
+                Debug.WriteLine(string.Format("Error: object ref 0x{0:x} does not point at the beginning of an object.", objRef));
                 Debug.Assert(m_types[0].Name == "!BAD_TYPE!");
                 return m_types[0];
             }
@@ -244,7 +244,7 @@ namespace ClrMemory
         private ICorDebugGCHeapRoot[] m_roots;
 
         internal List<ICorDebugGCHeapType> m_types;
-        internal ICorDebugGCHeapSegment[] m_icorDebugSegments;  // This alwasy points at m_segments, but has the stronger type for the array. 
+        internal ICorDebugGCHeapSegment[] m_icorDebugSegments;  // This always points at m_segments, but has the stronger type for the array. 
 
         // Heap enumeration fields
         #region HeapEnumeration

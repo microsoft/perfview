@@ -1305,6 +1305,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
+                source.Clr.MethodMemoryAllocatedForJitCode += delegate(MethodJitMemoryAllocatedForCodeTraceData data)
+                {
+                    var process = data.Process();
+                    var stats = currentManagedProcess(data);
+                    JITStats.LogJitMethodAllocation(stats, data);
+                };
+
                 clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
                 {
                     var process = data.Process();
@@ -3586,7 +3593,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
     /// <summary>
     /// Approximations we do in this function for V4_5 and prior:
-    /// On 4.0 we didn't seperate free list from free obj, so we just use fragmentation (which is the sum)
+    /// On 4.0 we didn't separate free list from free obj, so we just use fragmentation (which is the sum)
     /// as an approximation. This makes the efficiency value a bit larger than it actually is.
     /// We don't actually update in for the older gen - this means we only know the out for the younger 
     /// gen which isn't necessarily all allocated into the older gen. So we could see cases where the 
@@ -3805,6 +3812,22 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long TotalNativeSize;
         /// <summary>
+        /// Total hot code size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalHotCodeAllocSize;
+        /// <summary>
+        /// Total read-only data size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalRODataAllocSize;
+        /// <summary>
+        /// Total size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalAllocSizeForJitCode;
+        /// <summary>
+        /// If data from alloc size for JIT event present
+        /// </summary>
+        public bool IsJitAllocSizePresent = false;
+        /// <summary>
         /// Indication if this is running on .NET 4.x+
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
@@ -3877,6 +3900,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             TotalCpuTimeMSec += method.CompileCpuTimeMSec;
             TotalILSize += method.ILSize;
             TotalNativeSize += method.NativeSize;
+            TotalHotCodeAllocSize += method.JitHotCodeRequestSize;
+            TotalRODataAllocSize += method.JitRODataRequestSize;
+            IsJitAllocSizePresent |= method.IsJitAllocSizePresent;
+            TotalAllocSizeForJitCode += method.AllocatedSizeForJitCode;
             if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
             {
                 CountBackgroundMultiCoreJit++;
@@ -3896,7 +3923,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
 #region private
         /// <summary>
-        /// Legacgy
+        /// Legacy
         /// </summary>
         internal static TraceJittedMethod MethodComplete(TraceLoadedDotNetRuntime stats, MethodLoadUnloadTraceDataBase data, string methodName, int rejitID, out bool createdNewMethod)
         {
@@ -3939,6 +3966,26 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             stats.JIT.m_stats.AddMethodToStatistics(_method);
 
             return _method;
+        }
+
+        /// <summary>
+        /// Handles AllocRequest event for JIT
+        /// </summary>
+        internal static void LogJitMethodAllocation(TraceLoadedDotNetRuntime stats, MethodJitMemoryAllocatedForCodeTraceData data)
+        {
+            TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
+            if (_method != null)
+            {
+                // If we already counted alloc size for a method, don't count it again.
+                if (_method.JitHotCodeRequestSize == 0)
+                {
+                    _method.IsJitAllocSizePresent = true;
+                    _method.JitHotCodeRequestSize = data.JitHotCodeRequestSize;
+                    _method.JitRODataRequestSize = data.JitRODataRequestSize;
+                    _method.AllocatedSizeForJitCode = data.AllocatedSizeForJitCode;
+                    _method.JitAllocFlag = data.JitAllocFlag;
+                }
+            }
         }
 
         /// <summary>
@@ -4145,6 +4192,22 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public int NativeSize;
         /// <summary>
+        /// Hot code size allocated for JIT code of method
+        /// </summary>
+        public long JitHotCodeRequestSize;
+        /// <summary>
+        /// Read-only data size allocated for JIT code of method
+        /// </summary>
+        public long JitRODataRequestSize;
+        /// <summary>
+        /// Total size allocated for JIT code of method
+        /// </summary>
+        public long AllocatedSizeForJitCode;
+        /// <summary>
+        /// Jit allocation flag
+        /// </summary>
+        public int JitAllocFlag;
+        /// <summary>
         /// Relative start time of JIT'd method
         /// </summary>
         public double StartTimeMSec;
@@ -4229,6 +4292,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public int VersionID;
 
         public bool IsDefaultVersion { get { return VersionID == 0; } }
+
+        public bool IsJitAllocSizePresent
+        {
+            get;
+            set;
+        }
 
 #region private
         internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
@@ -4401,7 +4470,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         //
-        // candiate to be made private/ex
+        // candidate to be made private/ex
         //
         // The amount of memory allocated by the user threads. So they are divided up into gen0 and LOH allocations.
         internal double[] allocTickCurrentMB = { 0.0, 0.0 };

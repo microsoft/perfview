@@ -243,7 +243,7 @@ namespace System.Collections.Generic
         /// which has no capacity (and thus will cause growth on the first addition).
         /// This method allows you to lazily set the compacity of your GrowableArray by
         /// testing if it is of EmtpyCapacity, and if so set it to some useful capacity.
-        /// This avoids unecessary reallocs to get to a reasonable capacity.   
+        /// This avoids unnecessary reallocs to get to a reasonable capacity.   
         /// </summary>
         public bool EmptyCapacity { get { return array == null; } }
 

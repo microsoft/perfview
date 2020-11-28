@@ -507,7 +507,7 @@ namespace PerfView
                         int curCount = reqs.Count;
                         RemoveWCFServerRequest(wcfServerRequestKey, request);
 
-                        // This is for robstness it shoudl not happen 
+                        // This is for robustness it should not happen 
                         if (curCount == reqs.Count)
                         {
                             Debug.Assert(false, "failure deleting wcfServer request");

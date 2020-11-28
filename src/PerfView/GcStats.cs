@@ -1246,7 +1246,7 @@ namespace Stats
             }
         }
 
-        private Dictionary<WorkSpanType, string> Type2Color = new Dictionary<WorkSpanType, string>()
+        private Dictionary<WorkSpanType, string> Type2Color = new Dictionary<WorkSpanType, string>(4)
                 {
                     {WorkSpanType.GcThread, "rgb(0,200,0)"},
                     {WorkSpanType.RivalThread, "rgb(250,20,20)"},

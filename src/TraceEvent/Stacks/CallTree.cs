@@ -749,7 +749,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public double ExclusiveMetric { get { return m_exclusiveMetric; } }
         /// <summary>
-        /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveMetric.  
+        /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is always less than or equal to ExclusiveMetric.  
         /// </summary>
         public double ExclusiveFoldedMetric { get { return m_exclusiveFoldedMetric; } }
         /// <summary>
@@ -761,7 +761,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public double ExclusiveCount { get { return m_exclusiveCount; } }
         /// <summary>
-        /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveCount.  
+        /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is always less than or equal to ExclusiveCount.  
         /// </summary>
         public double ExclusiveFoldedCount { get { return m_exclusiveFoldedCount; } }
 
@@ -2342,7 +2342,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// in the subtree's in various places (and thus are counted twice).   We solve this by walking this subtree (in this routine)
         /// and subtracting out any nodes that match 'idToExclude'.   
         /// 
-        /// As an optimization this routine also sets the m_recurision bit 'statsRet' if anywhere in 'treeCallee' we do find an id to 
+        /// As an optimization this routine also sets the m_recursion bit 'statsRet' if anywhere in 'treeCallee' we do find an id to 
         /// exclude.  That way in a common case (where there is no instances of 'idToExclude') we don't have to actualy walk the
         /// tree the second time (we simply know that there is no adjustment necessary.   
         /// </summary>

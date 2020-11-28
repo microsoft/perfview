@@ -39,7 +39,7 @@ namespace FastSerializationTests
             lastSuccesses = TestBinarySearch(testArray);
             Assert.Equal(11, lastSuccesses);
 
-            // We always get the last one when the equality comparision allows multiple items to match.  
+            // We always get the last one when the equality comparison allows multiple items to match.  
             for (double i = 0; i < 11; i += 1)
             {
                 int index;

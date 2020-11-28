@@ -2297,7 +2297,7 @@ namespace FastSerialization
         public bool IsFinished { get { return fromStream == null; } }
 
         /// <summary>
-        /// Get the deserializer assoicated with this DeferredRegion
+        /// Get the deserializer associated with this DeferredRegion
         /// </summary>
         public Deserializer Deserializer { get { return deserializer; } }
         /// <summary>

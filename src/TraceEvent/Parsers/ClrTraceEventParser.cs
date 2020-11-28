@@ -230,7 +230,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Fetch the state object associated with this parser and cast it to
         /// the ClrTraceEventParserState type.   This state object contains any
-        /// informtion that you need from one event to another to decode events.
+        /// information that you need from one event to another to decode events.
         /// (typically ID->Name tables).  
         /// </summary>
         internal ClrTraceEventParserState State
@@ -244,6 +244,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     StateObject = ret;
                 }
                 return ret;
+            }
+        }
+
+        public event Action<GenAwareBeginTraceData> GCGenAwareStart
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(GenAwareBeginTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 206, ProviderGuid);
+                source.UnregisterEventTemplate(value, 206, GCTaskGuid);
+            }
+        }
+
+        public event Action<GenAwareEndTraceData> GCGenAwareEnd
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(GenAwareEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 207, ProviderGuid);
+                source.UnregisterEventTemplate(value, 207, GCTaskGuid);
             }
         }
 
@@ -1511,7 +1539,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 38, MethodTaskGuid);
             }
         }
-
+        public event Action<MethodJitMemoryAllocatedForCodeTraceData> MethodMemoryAllocatedForJitCode
+        {
+            add
+            {
+                RegisterTemplate(new MethodJitMemoryAllocatedForCodeTraceData(value, 146, 9, "Method", MethodTaskGuid, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 146, MethodTaskGuid);
+            }
+        }
         public event Action<R2RGetEntryPointTraceData> MethodR2RGetEntryPoint
         {
             add
@@ -1984,7 +2022,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TieredCompilationBackgroundJitStopTraceData(action, 284, 31, "TieredCompilation", TieredCompilationTaskGuid, 2, "BackgroundJitStop", ProviderGuid, ProviderName);
         }
-
+        static private MethodJitMemoryAllocatedForCodeTraceData MethodMemoryAllocatedForJitCodeTemplate(Action<MethodJitMemoryAllocatedForCodeTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new MethodJitMemoryAllocatedForCodeTraceData(action, 146, 9, "Method", Guid.Empty, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName);
+        }
+        static private GenAwareBeginTraceData GenAwareBeginTemplate(Action<GenAwareBeginTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new GenAwareBeginTraceData(action, 206, 1, "GC", GCTaskGuid, 1, "GenAwareStart", ProviderGuid, ProviderName);
+        }
+        static private GenAwareEndTraceData GenAwareEndTemplate(Action<GenAwareEndTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new GenAwareEndTraceData(action, 207, 1, "GC", GCTaskGuid, 2, "GenAwareEnd", ProviderGuid, ProviderName);
+        }
         static private R2RGetEntryPointStartTraceData R2RGetEntryPointStartTemplate(Action<R2RGetEntryPointStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new R2RGetEntryPointStartTraceData(action, 160, 9, "Method", MethodTaskGuid, 33, "R2RGetEntryPointStart", ProviderGuid, ProviderName);
@@ -2003,7 +2052,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[134];
+                var templates = new TraceEvent[137];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2145,6 +2194,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[131]  = R2RGetEntryPointStartTemplate(null);
                 templates[132]  = TypeLoadStartTemplate(null);
                 templates[133]  = TypeLoadStopTemplate(null);
+                templates[134]  = MethodMemoryAllocatedForJitCodeTemplate(null);
+                templates[135] = GenAwareBeginTemplate(null);
+                templates[136] = GenAwareEndTemplate(null);
 
                 s_templates = templates;
             }
@@ -2231,6 +2283,126 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 {
+    public sealed class GenAwareBeginTraceData : TraceEvent
+    {
+        public int Count { get { return GetInt32At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+
+        #region Private
+        internal GenAwareBeginTraceData(Action<GenAwareBeginTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<GenAwareBeginTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "Count", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Count;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<GenAwareBeginTraceData> m_target;
+        #endregion
+    }
+    public sealed class GenAwareEndTraceData : TraceEvent
+    {
+        public int Count { get { return GetInt32At(0); } }
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+
+        #region Private
+        internal GenAwareEndTraceData(Action<GenAwareEndTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<GenAwareEndTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Count", Count);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "Count", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Count;
+                case 1:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<GenAwareEndTraceData> m_target;
+        #endregion
+    }
     public sealed class GCStartTraceData : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
@@ -2451,7 +2623,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3 + GenerationSize4; } }
         public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3 + TotalPromotedSize4; } }
         /// <summary>
-        /// Note that this field is derived from teh TotalPromotedSize* fields.  If nothing was promoted, it is possible
+        /// Note that this field is derived from the TotalPromotedSize* fields.  If nothing was promoted, it is possible
         /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
         /// </summary>
         public int Depth
@@ -8803,6 +8975,91 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    public sealed class MethodJitMemoryAllocatedForCodeTraceData : TraceEvent
+    {
+        public long MethodID { get { return GetInt64At(0); } }
+        public long ModuleID { get { return GetInt64At(8); } }
+        public long JitHotCodeRequestSize { get { return GetInt64At(16); } }
+        public long JitRODataRequestSize { get { return GetInt64At(24); } }
+        public long AllocatedSizeForJitCode { get { return GetInt64At(32); } }
+        public int JitAllocFlag { get { return GetInt32At(40); } }
+        public int ClrInstanceID { get { return GetInt16At(44); } }
+
+        #region Private
+        internal MethodJitMemoryAllocatedForCodeTraceData(Action<MethodJitMemoryAllocatedForCodeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 46));
+            Debug.Assert(!(Version > 0 && EventDataLength < 46));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MethodJitMemoryAllocatedForCodeTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "ModuleID", ModuleID);
+            XmlAttrib(sb, "JitHotCodeRequestSize", JitHotCodeRequestSize);
+            XmlAttrib(sb, "JitRODataRequestSize", JitRODataRequestSize);
+            XmlAttrib(sb, "AllocatedSizeForJitCode", AllocatedSizeForJitCode);
+            XmlAttrib(sb, "JitAllocFlag", JitAllocFlag);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodID", "ModuleID", "JitHotCodeRequestSize", "JitRODataRequestSize", "AllocatedSizeForJitCode", "JitAllocFlag", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodID;
+                case 1:
+                    return ModuleID;
+                case 2:
+                    return JitHotCodeRequestSize;
+                case 3:
+                    return JitRODataRequestSize;
+                case 4:
+                    return AllocatedSizeForJitCode;
+                case 5:
+                    return JitAllocFlag;
+                case 6:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 16; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<MethodJitMemoryAllocatedForCodeTraceData> Action;
+        #endregion
+    }
+
     public sealed class TypeLoadStartTraceData : TraceEvent
     {
         public int TypeLoadStartID { get { return GetInt32At(0); } }
@@ -12251,7 +12508,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             JittedMethodILToNativeMap = 0x20000,
             /// <summary>
-            /// This supresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
+            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
             /// bit and also does not have NGEN PDBS).  
             /// </summary>
             SupressNGen = 0x40000,

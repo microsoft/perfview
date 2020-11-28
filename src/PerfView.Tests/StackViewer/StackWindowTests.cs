@@ -372,7 +372,7 @@ namespace PerfViewTests.StackViewer
 
             public TimeRangeStackSource()
             {
-                _samples = new List<StackSourceSample>
+                _samples = new List<StackSourceSample>(4)
                 {
                     new StackSourceSample(this)
                     {

@@ -835,7 +835,7 @@ namespace PerfView
         }
 
         // This is the global list of all known file types.  
-        private static List<PerfViewFile> Formats = new List<PerfViewFile>()
+        private static List<PerfViewFile> Formats = new List<PerfViewFile>(18)
         {
             new CSVPerfViewData(),
             new ETLPerfViewData(),
@@ -1968,7 +1968,7 @@ table {
 
                 request.EndTimeRelativeMSec = dataFile.SessionEndTimeRelativeMSec;
 
-                // Also, for this request, lets first try to find a pipeline start event which doesnt have a pipeline                
+                // Also, for this request, lets first try to find a pipeline start event which does not have a pipeline                
                 // stop event next to it. If we find, we just set the EndTimeRelativeMSec to the end of the trace
                 var incompletePipeLineEvents = request.PipelineEvents.Where(m => m.EndTimeRelativeMSec == 0);
 
@@ -2070,7 +2070,7 @@ table {
 
 
             writer.WriteLine("<H3>Top 100 Slowest Request Statistics</H3>");
-            writer.WriteLine("The below table shows the top 100 slowest requests in this trace. Requests completing within 100 milliseconds are ignored. Hover over column headings for explaination of columns. <BR/><BR/>");
+            writer.WriteLine("The below table shows the top 100 slowest requests in this trace. Requests completing within 100 milliseconds are ignored. Hover over column headings for explanation of columns. <BR/><BR/>");
 
             writer.WriteLine("<Table Border=\"1\">");
             writer.Write("<TR>");
@@ -2108,7 +2108,7 @@ table {
 
                 string requestPath = request.Path;
 
-                // limit display of URL to specific charachter length only otherwise the table is expanding crazily
+                // limit display of URL to specific character length only otherwise the table is expanding crazily
                 if (requestPath.Length > 85)
                 {
                     requestPath = requestPath.Substring(0, 80) + "...";
@@ -2117,7 +2117,7 @@ table {
                 string threadTimeStacks = "";
                 string activityStacks = "";
 
-                // limit display of even the module names to specific charachter length only otherwise the table is expanding crazily
+                // limit display of even the module names to specific character length only otherwise the table is expanding crazily
                 string slowestPipelineEventDisplay = slowestPipelineEvent.ToString();
                 if (slowestPipelineEventDisplay.Length > 55)
                 {
@@ -2163,7 +2163,7 @@ table {
                 writer.Write("<TH Align='Center' Title='A user-friendly description of the error code sent by the server'>Reason</TH>");
                 writer.Write("<TH Align='Center' Title='This is the actual HTTP Status which the server sent for this request irrespective of the failure'>Final Status</TH>");
                 writer.Write("<TH Align='Center' Title='Additional error code that IIS generated for the failed request'>ErrorCode</TH>");
-                writer.Write("<TH Align='Center' Title='The module reponsible for setting the failed HTTP Status' >FailingModuleName</TH>");
+                writer.Write("<TH Align='Center' Title='The module responsible for setting the failed HTTP Status' >FailingModuleName</TH>");
                 writer.Write("<TH Align='Center' Title='The total time it took to execute the request on the server'>Duration(ms)</TH>");
                 writer.Write("<TH Align='Center' Title='Any CLR Exceptions that happened on this thread'>Exceptions</TH>");
                 writer.WriteLine("</TR>");
@@ -2177,7 +2177,7 @@ table {
 
                     string requestPath = request.Path;
 
-                    // limit display of URL to 100 charachters only
+                    // limit display of URL to 100 characters only
                     // otherwise the table is expanding crazily
                     if (requestPath.Length > 100)
                     {
@@ -2993,7 +2993,7 @@ table {
             writer.WriteLine("<LI> Trace Duration (Sec): {0:n1} </LI>", dataFile.SessionDuration.TotalSeconds);
             writer.WriteLine("<LI> Average Request/Sec: {0:n2} </LI>", m_requests.Count / dataFile.SessionDuration.TotalSeconds);
             writer.WriteLine("<LI> Number of CPUs: {0}</LI>", dataFile.NumberOfProcessors);
-            writer.WriteLine("<LI> Maximum Number of requests recieved but not replied to: {0}</LI>", globalMaxRequestsReceived);
+            writer.WriteLine("<LI> Maximum Number of requests received but not replied to: {0}</LI>", globalMaxRequestsReceived);
             writer.WriteLine("<LI> Maximum Number of requests queued waiting for processing: {0}</LI>", globalMaxRequestsQueued);
             writer.WriteLine("<LI> Maximum Number of requests concurrently being worked on: {0}</LI>", globalMaxRequestsProcessing);
             writer.WriteLine("<LI> Total Memory (Meg): {0:n0}</LI>", dataFile.MemorySizeMeg);
@@ -3003,17 +3003,17 @@ table {
             writer.WriteLine("<LI> <A HREF=\"command:excel/requests\">View ALL individual requests in Excel</A></LI>");
             writer.WriteLine("</UL>");
 
-            writer.Write("<P><A ID=\"rollupPerTime\">Statistics over time.  Hover over column headings for explaination of columns.</A></P>");
+            writer.Write("<P><A ID=\"rollupPerTime\">Statistics over time.  Hover over column headings for explanation of columns.</A></P>");
             writer.WriteLine("<Table Border=\"1\">");
             writer.Write("<TR>");
             writer.Write("<TH Align=\"Center\">Time Interval MSec</TH>");
             writer.Write("<TH Align=\"Center\">Req/Sec</TH>");
             writer.Write("<TH Align=\"Center\">Max Resp<BR/>MSec</TH>");
-            writer.Write("<TH Align=\"Center\" Title=\"The start time of the maximum response (may preceed bucket start)\">Start of<BR/>Max</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The start time of the maximum response (may precede bucket start)\">Start of<BR/>Max</TH>");
             writer.Write("<TH Align=\"Center\">Thread of<BR/>Max</TH>");
             writer.Write("<TH Align=\"Center\" Title=\"The time from when the response is read from the OS until we have written a reply.\">Mean Resp<BR/>MSec</TH>");
             writer.Write("<TH Align=\"Center\" Title=\"The time a request waits before processing begins.\">Mean Queue<BR/>MSec</TH>");
-            writer.Write("<TH Align=\"Center\" Title=\"The minium number of requests that have been recieved but not yet processed.\">Min<BR>Queued</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The minium number of requests that have been received but not yet processed.\">Min<BR>Queued</TH>");
             writer.Write("<TH Align=\"Center\" Title=\"The average number of requests that are actively being processed simultaneously.\">Mean<BR>Proc</TH>");
             writer.Write("<TH Align=\"Center\">CPU %</TH>");
             writer.Write("<TH Align=\"Center\" Title=\"The number of context switches per second.\">CSwitch / Sec</TH>");
@@ -3761,6 +3761,11 @@ table {
                     // For .NET, we are looking for a Gen 2 GC Start that is induced that has GCBulkNodes after it.   
                     var lastGCStartsRelMSec = new Dictionary<int, double>();
 
+                    source.Clr.GCGenAwareStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GenAwareBeginTraceData data)
+                    {
+                        lastGCStartsRelMSec[data.ProcessID] = data.TimeStampRelativeMSec;
+                    };
+
                     source.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
                     {
                         // Look for induced GCs.  and remember their when it happened.    
@@ -4424,7 +4429,7 @@ table {
                         sample.Count = 1;
                         sample.TimeRelativeMSec = time;
                         StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
-                        StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                        StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occurred Gen(" + gen + ")");
                         sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
                         stackSource.AddSample(sample);
                     };
@@ -4462,7 +4467,7 @@ table {
                         sample.Count = 1;
                         sample.TimeRelativeMSec = time;
                         StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
-                        StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                        StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occurred Gen(" + gen + ")");
                         sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
                         stackSource.AddSample(sample);
                     };
@@ -5006,7 +5011,7 @@ table {
             else if (streamName == ".NET Native CCW Ref Count")
             {
                 // TODO FIX NOW, investigate the missing events.  All we know is that incs and dec are not
-                // consistant with the RefCount value that is in the events.
+                // consistent with the RefCount value that is in the events.
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     MessageBox.Show(GuiApp.MainWindow,
@@ -5489,11 +5494,11 @@ table {
                         }
                     }
 
-                ADD_EVENT_FRAME:
+                    ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                ADD_SAMPLE:
+                    ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -6306,9 +6311,8 @@ table {
 
         public override List<IProcess> GetProcesses(TextWriter log)
         {
-            var processes = new List<IProcess>();
-
             var eventLog = GetTraceLog(log);
+            var processes = new List<IProcess>(eventLog.Processes.Count);
             foreach (var process in eventLog.Processes)
             {
                 var iprocess = new IProcessForStackSource(process.Name);
@@ -8861,8 +8865,8 @@ table {
                                     goto ADD_EVENT_FRAME;
                                 }
 
-                            // Tack on event nam
-                            ADD_EVENT_FRAME:
+                                // Tack on event nam
+                                ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
                                 // Add sample
@@ -8957,7 +8961,7 @@ table {
                                     sample.Count = 1;
                                     sample.TimeRelativeMSec = time;
                                     StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
-                                    StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                                    StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occurred Gen(" + gen + ")");
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
                                     stackSource.AddSample(sample);
                                 };
@@ -8995,7 +8999,7 @@ table {
                                     sample.Count = 1;
                                     sample.TimeRelativeMSec = time;
                                     StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
-                                    StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                                    StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occurred Gen(" + gen + ")");
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
                                     stackSource.AddSample(sample);
                                 };
@@ -9903,7 +9907,7 @@ table {
             var newResources = new List<PerfViewFile>();
             foreach (var resource in resources)
             {
-                // If the standard collector auxillary file is present, the standard collection (Diagnostics Hub)
+                // If the standard collector auxiliary file is present, the standard collection (Diagnostics Hub)
                 // created this DiagSession which means we should process the ETL files in bulk.
                 if (resource.Name.Equals("sc.user_aux.etl", StringComparison.OrdinalIgnoreCase))
                 {
@@ -9926,7 +9930,7 @@ table {
 
             if (auxStandardCollectorEtlFile != null)
             {
-                Debug.Assert(File.Exists(auxStandardCollectorEtlFile), "Standard Collector auxillary file must exist to properly handle bulk processing");
+                Debug.Assert(File.Exists(auxStandardCollectorEtlFile), "Standard Collector auxiliary file must exist to properly handle bulk processing");
                 var mergedEtlFilename = Path.GetFileNameWithoutExtension(FilePath);
 
                 var file = ETLPerfViewData.Get(auxStandardCollectorEtlFile);

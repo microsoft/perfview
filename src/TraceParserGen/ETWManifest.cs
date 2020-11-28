@@ -616,7 +616,7 @@ namespace ETWManifest
         }
         public string Message { get; internal set; }
 
-        /* These are not guarenteed to be present */
+        /* These are not guaranteed to be present */
         /// <summary>
         /// Technically the Symbol attribute on an event is not part of the model (it is not stored in the binary manifest)
         /// but if it is present, it can be used to create better names.   This value can be null. 
@@ -919,8 +919,7 @@ namespace ETWManifest
             }
 
             m_stringsLookedUp = true;
-            List<int> keys = new List<int>(m_values.Keys);
-            foreach (var key in keys)
+            foreach (var key in m_values.Keys)
             {
                 var value = m_values[key];
                 if (Provider.Replace(ref value, stringMap))
