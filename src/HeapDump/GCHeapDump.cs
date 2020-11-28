@@ -992,7 +992,7 @@ internal class XmlGcHeapDump
         var inputDepth = reader.Depth;
         reader.Read();      // Advance to children 
 
-        var children = new GrowableArray<NodeIndex>(1000);
+        var children = new HashSet<NodeIndex>();
         var typeStorage = graph.AllocTypeNodeStorage();
         while (inputDepth < reader.Depth)
         {

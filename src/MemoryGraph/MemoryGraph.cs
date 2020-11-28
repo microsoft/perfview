@@ -340,6 +340,7 @@ namespace Graphs
             Debug.Assert((StreamLabel)m_graph.m_nodes[(int)Index] == m_graph.m_undefinedObjDef, "SetNode cannot be called on the nodeIndex passed");
             ModuleName = moduleName;
             m_mutableChildren = new List<MemoryNodeBuilder>();
+            m_unmutableChildren = new HashSet<NodeIndex>();
             m_typeIndex = NodeTypeIndex.Invalid;
         }
 
@@ -426,7 +427,7 @@ namespace Graphs
 
         private NodeTypeIndex m_typeIndex;
         private List<MemoryNodeBuilder> m_mutableChildren;
-        private GrowableArray<NodeIndex> m_unmutableChildren;
+        private HashSet<NodeIndex> m_unmutableChildren;
         private MemoryGraph m_graph;
         #endregion
     }

@@ -1288,7 +1288,7 @@ public class GCHeapDumper
 #if DEPENDENT_HANDLE
         m_handles = new Dictionary<Address, NodeIndex>(100);
 #endif
-        m_children = new GrowableArray<NodeIndex>(2000);
+        m_children = new HashSet<NodeIndex>();
         m_graphTypeIdxForArrayType = new Dictionary<string, NodeTypeIndex>(100);
         m_typeIdxToGraphIdx = new GrowableArray<int>();
         m_typeMayHaveHandles = new GrowableArray<bool>();
@@ -1376,7 +1376,7 @@ public class GCHeapDumper
         var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[.NET Roots]");
 
         ulong total = 0;
-        var ccwChildren = new GrowableArray<NodeIndex>();
+        var ccwChildren = new HashSet<NodeIndex>();
         m_log.WriteLine("DumpDotNetHeapDataWorker: Heap Size of dumper {0:n0} MB", GC.GetTotalMemory(false) / 1000000.0);
 
         m_log.WriteLine("A total of {0} segments.", m_dotNetHeap.Segments.Count);
@@ -1969,7 +1969,17 @@ public class GCHeapDumper
                     }
                 }
 
-                m_children.Clear();
+                if (m_children.Count > 32)
+                {
+                    // HashSet<T>.Clear() is not efficient for large-capacity sets. Rather than reusing a large set,
+                    // reset it by creating a new one.
+                    m_children = new HashSet<NodeIndex>();
+                }
+                else
+                {
+                    m_children.Clear();
+                }
+
                 type.EnumerateRefsOfObjectCarefully(objAddr, delegate (Address childObj, int fieldOffset)
                 {
                     m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(childObj));
@@ -2066,7 +2076,7 @@ public class GCHeapDumper
                     List<NodeIndex> dependentHandles;
                     if (m_dependentHandles.TryGetValue(objNodeIdx, out dependentHandles))
                     {
-                        m_children.AddRange(dependentHandles);
+                        m_children.UnionWith(dependentHandles);
                     }
                 }
 
@@ -2820,7 +2830,7 @@ public class GCHeapDumper
 
     private ClrHeap m_dotNetHeap;                  // The .NET GC Heap 
 
-    private GrowableArray<NodeIndex> m_children;
+    private HashSet<NodeIndex> m_children;
     private Dictionary<ClrType, int> m_typeTable = new Dictionary<ClrType, int>();
     private GrowableArray<int> m_typeIdxToGraphIdx;
 

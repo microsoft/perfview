@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Address = System.UInt64;
@@ -206,14 +207,14 @@ namespace Graphs
         /// Sets the information associated with the node at 'nodeIndex' (which was created via code:CreateNode).  Nodes
         /// have a nodeId, Size and children.  (TODO: should Size be here?)
         /// </summary>
-        public void SetNode(NodeIndex nodeIndex, NodeTypeIndex typeIndex, int sizeInBytes, GrowableArray<NodeIndex> children)
+        public void SetNode(NodeIndex nodeIndex, NodeTypeIndex typeIndex, int sizeInBytes, HashSet<NodeIndex> children)
         {
             SetNodeTypeAndSize(nodeIndex, typeIndex, sizeInBytes);
 
             Node.WriteCompressedInt(m_writer, children.Count);
-            for (int i = 0; i < children.Count; i++)
+            foreach (var child in children.OrderBy(static nodeIndex => (int)nodeIndex))
             {
-                Node.WriteCompressedInt(m_writer, (int)children[i] - (int)nodeIndex);
+                Node.WriteCompressedInt(m_writer, (int)child - (int)nodeIndex);
             }
             m_totalRefs += children.Count;
         }
@@ -475,7 +476,7 @@ namespace Graphs
             // in the m_nodes table, so we make a fake one and then remove it.  
             m_undefinedObjDef = m_writer.GetLabel(allowPadding: false);
             m_nodes.Add((nuint)m_undefinedObjDef);
-            SetNode(0, CreateType("UNDEFINED"), 0, new GrowableArray<NodeIndex>());
+            SetNode(0, CreateType("UNDEFINED"), 0, new HashSet<NodeIndex>());
             Debug.Assert((StreamLabel)m_nodes[0] == m_undefinedObjDef);
             m_nodes.Count = 0;
         }
@@ -2285,7 +2286,7 @@ public class GraphSampler
             m_newTypeIndexes[i] = NodeTypeIndex.Invalid;
         }
 
-        GrowableArray<NodeIndex> children = new GrowableArray<NodeIndex>(100);
+        HashSet<NodeIndex> children = new HashSet<NodeIndex>();
         for (NodeIndex nodeIdx = 0; nodeIdx < (NodeIndex)m_newIndex.Length; nodeIdx++)
         {
             // Add all sampled nodes to the new graph.  

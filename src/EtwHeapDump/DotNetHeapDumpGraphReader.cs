@@ -86,6 +86,7 @@ public class DotNetHeapDumpGraphReader
         m_staticVarBlocks = new Queue<GCBulkRootStaticVarTraceData>();
         m_ccwBlocks = new Queue<GCBulkRootCCWTraceData>();
         m_typeIntern = new Dictionary<string, NodeTypeIndex>();
+        m_children = new HashSet<NodeIndex>();
         m_root = new MemoryNodeBuilder(m_graph, "[.NET Roots]");
         m_typeStorage = m_graph.AllocTypeNodeStorage();
 
@@ -584,7 +585,7 @@ public class DotNetHeapDumpGraphReader
         while (m_ccwBlocks.Count > 0)
         {
             GCBulkRootCCWTraceData data = m_ccwBlocks.Dequeue();
-            GrowableArray<NodeIndex> ccwChildren = new GrowableArray<NodeIndex>(1);
+            HashSet<NodeIndex> ccwChildren = new HashSet<NodeIndex>();
             for (int i = 0; i < data.Count; i++)
             {
                 unsafe
@@ -956,7 +957,7 @@ public class DotNetHeapDumpGraphReader
     private Dictionary<string, NodeTypeIndex> m_typeIntern;
 
     // scratch location for creating nodes. 
-    private GrowableArray<NodeIndex> m_children;
+    private HashSet<NodeIndex> m_children;
 
     // This is a 'scratch location' we use to fetch type information. 
     private NodeType m_typeStorage;
