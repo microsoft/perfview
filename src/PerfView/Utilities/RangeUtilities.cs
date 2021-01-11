@@ -25,14 +25,7 @@ namespace Microsoft.Diagnostics.Utilities
             if (string.IsNullOrWhiteSpace(CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator)
                 || string.IsNullOrWhiteSpace(CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator))
             {
-                listSeparator = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
-
-                if (string.IsNullOrWhiteSpace(listSeparator)
-                    || CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator == listSeparator
-                    || CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator == listSeparator)
-                {
-                    listSeparator = "|";
-                }
+                listSeparator = "|";
             }
 
             return new string[] { listSeparator };
