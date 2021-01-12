@@ -3946,7 +3946,7 @@ namespace PerfView
             string groupPat = GroupRegExTextBox.Text.Trim();
             string nameCandidate = "Preset " + (m_presets.Count + 1).ToString();
             // Try to extract pattern name as a [Name] prefix
-            if (groupPat[0] == '[')
+            if (groupPat.Length > 0 && groupPat[0] == '[')
             {
                 int closingBracketIndex = groupPat.IndexOf(']');
                 if (closingBracketIndex > 0)
