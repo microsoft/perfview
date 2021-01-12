@@ -1,5 +1,4 @@
 ﻿#define DEPENDENT_HANDLE
-using ClrMemory;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -1009,31 +1008,9 @@ public class GCHeapDumper
                 }
                 else
                 {
-                    // Could not get ClrMD, try to get a ICorDebug for Silverlight.  
+                    // Could not get ClrMD
                     m_log.WriteLine("Could not get Desktop .NET Runtime in process with ID {0}", processID);
-                    m_log.WriteLine("Checking if there is a silverlight runtime.");
-
-                    ICorDebug iCorDebug = null;
-                    try { iCorDebug = Silverlight.DebugActiveSilverlightProcess(processID); }
-                    catch (Exception) { }
-                    if (iCorDebug != null)
-                    {
-                        m_log.WriteLine("Attaching to silverlight process {0} from a {1} process.", processID,
-                            Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86);
-                        iCorDebug.DebugActiveProcess((uint)processID, 0, out proc);
-                    }
-                    if (proc == null)
-                    {
-                        m_log.WriteLine("Could not get a ICorDebugProcess from a Silverlight runtime.");
-                        m_log.WriteLine("You must install Silverlight tools for developers.  See http://go.microsoft.com/fwlink/?LinkId=229324.");
-                        m_log.WriteLine("Could not find a desktop or Silveright runtime in the process {0}.", processID);
-                        return false;   // Last chance to dump a .NET heap.  
-                    }
-
-                    Freeze = true;     // TODO  a hack, we tell it not to freeze because we have already done it.  
-                    m_log.WriteLine("freezing process.");
-                    proc.Stop(5000);
-                    gcHeap = new ICorDebugGCHeap(proc);
+                    return false;
                 }
 
                 DumpDotNetHeapData(gcHeap, ref proc, false);
