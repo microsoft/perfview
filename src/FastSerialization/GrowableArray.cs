@@ -399,15 +399,21 @@ namespace System.Collections.Generic
             }
             else
             {
-                int expandSize = array.Length * 3 / 2 + 8;
-                if (minSize < expandSize)
+                long expandSize = (long)array.Length * 3 / 2 + 8;
+                if (expandSize > int.MaxValue)
                 {
-                    minSize = expandSize;
+                    if (array.Length == int.MaxValue)
+                        throw new NotSupportedException("Array cannot have more than int.MaxValue elements.");
+
+                    expandSize = int.MaxValue;
                 }
 
-                T[] newArray = new T[minSize];
-                Array.Copy(array, newArray, arrayLength);
-                array = newArray;
+                if (minSize < expandSize)
+                {
+                    minSize = (int)expandSize;
+                }
+
+                Array.Resize(ref array, minSize);
             }
         }
 
