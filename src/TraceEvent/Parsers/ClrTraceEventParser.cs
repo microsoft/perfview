@@ -1938,6 +1938,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 15, TieredCompilationTaskGuid);
             }
         }
+        public event Action<JitInstrumentationDataTraceData> JitInstrumentationData
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(JitInstrumentationDataTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 297, ProviderGuid);
+                source.UnregisterEventTemplate(value, 11, JitInstrumentationDataTaskGuid);
+            }
+        }
+        public event Action<JitInstrumentationDataVerboseTraceData> JitInstrumentationDataVerbose
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(JitInstrumentationDataVerboseTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 298, ProviderGuid);
+                source.UnregisterEventTemplate(value, 12, JitInstrumentationDataTaskGuid);
+            }
+        }
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
@@ -2046,13 +2072,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TypeLoadStopTraceData(action, 74, 33, "TypeLoad", LoaderTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
         }
+        static private JitInstrumentationDataTraceData JitInstrumentationDataTemplate(Action<JitInstrumentationDataTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new JitInstrumentationDataTraceData(action, 297, 34, "JitInstrumentationData", JitInstrumentationDataTaskGuid, 11, "InstrumentationData", ProviderGuid, ProviderName);
+        }
+        static private JitInstrumentationDataVerboseTraceData JitInstrumentationDataVerboseTemplate(Action<JitInstrumentationDataVerboseTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new JitInstrumentationDataVerboseTraceData(action, 298, 34, "JitInstrumentationData", JitInstrumentationDataTaskGuid, 12, "InstrumentationDataVerbose", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[137];
+                var templates = new TraceEvent[139];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2197,6 +2231,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[134]  = MethodMemoryAllocatedForJitCodeTemplate(null);
                 templates[135] = GenAwareBeginTemplate(null);
                 templates[136] = GenAwareEndTemplate(null);
+                templates[137] = JitInstrumentationDataTemplate(null);
+                templates[138] = JitInstrumentationDataVerboseTemplate(null);
 
                 s_templates = templates;
             }
@@ -2263,6 +2299,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid AssemblyLoaderTaskGuid = new Guid(unchecked((int)0xbcf2339e), unchecked((short)0xb0a6), unchecked((short)0x452d), 0x96, 0x6c, 0x33, 0xac, 0x9d, 0xd8, 0x25, 0x73);
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
         private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
+        private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -2283,6 +2320,166 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 {
+    public sealed class JitInstrumentationDataTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public int MethodFlags { get { return GetInt32At(2); } }
+        public int DataSize { get { return GetInt32At(6); } }
+        public long MethodID { get { return GetInt64At(10); } }
+        public byte[] Data { get { return GetByteArrayAt(18, DataSize); } }
+
+        #region Private
+        internal JitInstrumentationDataTraceData(Action<JitInstrumentationDataTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<JitInstrumentationDataTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "MethodFlags", MethodFlags);
+            XmlAttrib(sb, "DataSize", MethodFlags);
+            XmlAttrib(sb, "MethodID", MethodFlags);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "MethodFlags", "DataSize", "MethodID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return MethodFlags;
+                case 2:
+                    return DataSize;
+                case 3:
+                    return MethodID;
+                case 4:
+                    return Data;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<JitInstrumentationDataTraceData> m_target;
+        #endregion
+    }
+    public sealed class JitInstrumentationDataVerboseTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public int MethodFlags { get { return GetInt32At(2); } }
+        public int DataSize { get { return GetInt32At(6); } }
+        public long MethodID { get { return GetInt64At(10); } }
+        public long ModuleID { get { return GetInt64At(18); } }
+        public int MethodToken { get { return GetInt32At(24); } }
+        public string MethodNamespace { get { return GetUnicodeStringAt(28); } }
+        public string MethodName { get { return GetUnicodeStringAt(SkipUnicodeString(28)); } }
+        public string MethodSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(28))); } }
+        public byte[] Data { get { return GetByteArrayAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(28))), DataSize); } }
+
+        #region Private
+        internal JitInstrumentationDataVerboseTraceData(Action<JitInstrumentationDataVerboseTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<JitInstrumentationDataVerboseTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "MethodFlags", MethodFlags);
+            XmlAttrib(sb, "DataSize", MethodFlags);
+            XmlAttrib(sb, "MethodID", MethodFlags);
+            XmlAttribHex(sb, "ModuleID", ModuleID);
+            XmlAttribHex(sb, "MethodToken", MethodToken);
+            XmlAttrib(sb, "MethodNamespace", MethodNamespace);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttrib(sb, "MethodSignature", MethodSignature);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "MethodFlags", "DataSize", "MethodID", "ModuleID", "MethodToken", "MethodNamespace", "MethodName", "MethodSignature" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return MethodFlags;
+                case 2:
+                    return DataSize;
+                case 3:
+                    return MethodID;
+                case 4:
+                    return ModuleID;
+                case 5:
+                    return MethodToken;
+                case 6:
+                    return MethodNamespace;
+                case 7:
+                    return MethodName;
+                case 8:
+                    return MethodSignature;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<JitInstrumentationDataVerboseTraceData> m_target;
+        #endregion
+    }
     public sealed class GenAwareBeginTraceData : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
