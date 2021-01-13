@@ -1938,7 +1938,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 15, TieredCompilationTaskGuid);
             }
         }
-        public event Action<JitInstrumentationDataTraceData> JitInstrumentationData
+        public event Action<JitInstrumentationDataTraceData> JitInstrumentationDataInstrumentationData
         {
             add
             {
@@ -1951,7 +1951,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 11, JitInstrumentationDataTaskGuid);
             }
         }
-        public event Action<JitInstrumentationDataVerboseTraceData> JitInstrumentationDataVerbose
+        public event Action<JitInstrumentationDataVerboseTraceData> JitInstrumentationDataVerboseInstrumentationData
         {
             add
             {
@@ -2078,7 +2078,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         static private JitInstrumentationDataVerboseTraceData JitInstrumentationDataVerboseTemplate(Action<JitInstrumentationDataVerboseTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new JitInstrumentationDataVerboseTraceData(action, 298, 34, "JitInstrumentationData", JitInstrumentationDataTaskGuid, 12, "InstrumentationDataVerbose", ProviderGuid, ProviderName);
+            return new JitInstrumentationDataVerboseTraceData(action, 298, 34, "JitInstrumentationDataVerbose", JitInstrumentationDataTaskGuid, 12, "InstrumentationData", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
