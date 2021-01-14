@@ -986,9 +986,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // See TraceLog.ProcessExtendedData for more on our use of ExtendedData to hold a index.   
-            if (eventRecord->ExtendedData != null)
+            if ((ulong)eventRecord->ExtendedData > 0)
             {
-                int idIndex = (int)eventRecord->ExtendedData;
+                int idIndex;
+                if(IntPtr.Size == 8)
+                {
+                    idIndex = (int)((ulong)eventRecord->ExtendedData >> 4);
+                }
+                else
+                {
+                    idIndex = (int)eventRecord->ExtendedData;
+                }
                 if ((uint)idIndex < (uint)relatedActivityIDs.Count)
                 {
                     return relatedActivityIDs[idIndex];
@@ -3062,7 +3070,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 // TODO This is a bit of a hack.   We wack this field in place.
                 // We encode this as index into the relatedActivityID GrowableArray.
-                data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
+                if (IntPtr.Size == 8)
+                {
+                    data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)(relatedActivityIDs.Count << 4);
+                }
+                else
+                {
+                    data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
+                }
                 relatedActivityIDs.Add(*relatedActivityIDPtr);
             }
             else
