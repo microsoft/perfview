@@ -329,7 +329,7 @@ namespace ETWManifest
                                 ReadMap(reader, false);
                                 break;
                             default:
-                                Debug.WriteLine("Skipping unknown element {0}", reader.Name);
+                                Debug.WriteLine("Skipping unknown element: {0}", (object)reader.Name);
                                 reader.Read();
                                 break;
                         }
