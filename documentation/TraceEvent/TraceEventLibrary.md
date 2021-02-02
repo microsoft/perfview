@@ -57,7 +57,7 @@ is a trivial example that logs all the kernel, clr and dynamic events in an ETL 
 To see more complete samples that use the APIs in more sophisticated (but not too
 sophisticated ways).   In the directory 
 
-* https://github.com/Microsoft/perfview/tree/master/src/TraceEvent/Samples
+* https://github.com/Microsoft/perfview/tree/main/src/TraceEvent/Samples
 
 There are one or two page samples doing interesting things (collecting data, parsing from files or
 in real time, transforming one ETL file to another etc).    Each sample is independent of the others.
