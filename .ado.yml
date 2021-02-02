@@ -4,9 +4,11 @@ name: "$(date:yyyyMMdd)$(rev:.r)"
 
 trigger:
   - master
+  - main
 
 pr:
   - master
+  - main
 
 jobs:
   - job: PerfView_Debug
