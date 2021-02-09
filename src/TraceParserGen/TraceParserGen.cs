@@ -289,7 +289,7 @@ internal class TraceParserGen
 
         output.WriteLine();
         output.WriteLine("        static private volatile TraceEvent[] s_templates;");
-        output.WriteLine("        protected internal {0}override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)", internalOpt);
+        output.WriteLine("        protected {0}override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)", internalOpt);
         output.WriteLine("        {");
         output.WriteLine("            if (s_templates == null)");
         output.WriteLine("            {");
@@ -506,19 +506,19 @@ internal class TraceParserGen
             }
 
             // Write out the dispatch method
-            output.WriteLine("        protected internal {0}override void Dispatch()", internalOpt);
+            output.WriteLine("        protected {0}override void Dispatch()", internalOpt);
             output.WriteLine("        {");
             output.WriteLine("            Action(this);");
             output.WriteLine("        }");
 
             // And the debugging logic
-            output.WriteLine("        protected internal {0}override void Validate()", internalOpt);
+            output.WriteLine("        protected {0}override void Validate()", internalOpt);
             output.WriteLine("        {");
             output.Write(lengthAssert);
             output.WriteLine("        }");
 
             // And for setting and inspecting the callback delegate
-            output.WriteLine("        protected internal {0}override Delegate Target", internalOpt);
+            output.WriteLine("        protected {0}override Delegate Target", internalOpt);
             output.WriteLine("        {");
             output.WriteLine("            get { return Action; }");
             output.WriteLine("            set { Action = (Action<" + templateClassName + ">) value; }");
