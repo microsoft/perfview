@@ -2916,6 +2916,11 @@ namespace PerfView
                 cmdLineArgs += " /ClrEvents:" + parsedArgs.ClrEvents.ToString().Replace(" ", "");
             }
 
+            if(parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
+            {
+                cmdLineArgs += " /TplEvents:" + parsedArgs.TplEvents.ToString().Replace(" ", "");
+            }
+
             if (parsedArgs.Providers != null)
             {
                 cmdLineArgs += " /Providers:" + Command.Quote(string.Join(",", parsedArgs.Providers));
