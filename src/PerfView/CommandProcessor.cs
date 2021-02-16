@@ -2753,7 +2753,7 @@ namespace PerfView
 #endif
         }
 
-        private static string ParsedArgsAsString(string command, CommandLineArgs parsedArgs)
+        public static string ParsedArgsAsString(string command, CommandLineArgs parsedArgs)
         {
             var cmdLineArgs = "";
             if (parsedArgs.DataFile != null)
