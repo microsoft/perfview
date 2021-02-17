@@ -2128,7 +2128,7 @@ table {
 
                 // limit display of even the module names to specific character length only otherwise the table is expanding crazily
                 string slowestPipelineEventDisplay = slowestPipelineEvent.ToString();
-                if (slowestPipelineEventDisplay.Length > 55)
+                if (slowestPipelineEventDisplay != null && slowestPipelineEventDisplay.Length > 55)
                 {
                     slowestPipelineEventDisplay = slowestPipelineEventDisplay.Substring(0, 50) + "...";
                 }
@@ -2490,7 +2490,7 @@ table {
         }
         private IisPipelineEvent GetSlowestEvent(IisRequest request)
         {
-            IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();
+            IisPipelineEvent slowestPipelineEvent = null;
             double slowestTime = 0;
 
             foreach (var pipeLineEvent in request.PipelineEvents)
@@ -2520,7 +2520,7 @@ table {
 
             }
 
-            var timeInSlowestEvent = slowestPipelineEvent.EndTimeRelativeMSec - slowestPipelineEvent.StartTimeRelativeMSec;
+            var timeInSlowestEvent = slowestPipelineEvent == null ? 0D : slowestPipelineEvent.EndTimeRelativeMSec - slowestPipelineEvent.StartTimeRelativeMSec;
             var requestExecutionTime = request.EndTimeRelativeMSec - request.StartTimeRelativeMSec;
 
             if (timeInSlowestEvent > 0 && requestExecutionTime > 500)
@@ -2540,7 +2540,7 @@ table {
                 }
             }
 
-            return slowestPipelineEvent;
+            return slowestPipelineEvent ?? new IisPipelineEvent();
         }
 
         private IisPipelineEvent CheckForDelayInUnknownEvents(IisRequest request, double timeInSlowestEvent)
