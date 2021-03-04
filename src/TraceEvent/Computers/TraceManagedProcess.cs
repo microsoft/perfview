@@ -2458,7 +2458,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Per generation view of user allocated data
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public double[] UserAllocated = new double[(int)Gens.Gen0After];
+        public double[] UserAllocated = new double[(int)Gens.GenCount];
         /// <summary>
         /// Heap size before gc (mb)
         /// </summary>
@@ -2468,7 +2468,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Per generation view of heap sizes before GC (mb)
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public double[] GenSizeBeforeMB = new double[(int)Gens.Gen0After];
+        public double[] GenSizeBeforeMB = new double[(int)Gens.GenCount];
         /// <summary>
         /// This represents the percentage time spent paused for this GC since the last GC completed. 
         /// </summary>
@@ -4595,6 +4595,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
+                int numGenerations = data.HasCount ? data.Count : 4;
                 var hist = new GCPerHeapHistory()
                 {
                     FreeListAllocated = (data.HasFreeListAllocated) ? data.FreeListAllocated : -1,
@@ -4604,7 +4605,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     MemoryPressure = (data.HasMemoryPressure) ? data.MemoryPressure : -1,
                     HasMemoryPressure = data.HasMemoryPressure,
                     VersionRecognized = data.VersionRecognized,
-                    GenData = new GCPerHeapHistoryGenData[(int)Gens.GenLargeObj + 1],
+                    GenData = new GCPerHeapHistoryGenData[numGenerations],
                     CondemnReasons0 = data.CondemnReasons0,
                     CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
@@ -4615,7 +4616,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     Version = data.Version
                 };
 
-                for (Gens GenIndex = Gens.Gen0; GenIndex <= Gens.GenLargeObj; GenIndex++)
+                for (Gens GenIndex = Gens.Gen0; GenIndex < (Gens)numGenerations; GenIndex++)
                 {
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
