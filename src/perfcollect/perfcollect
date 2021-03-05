@@ -688,6 +688,7 @@ RunSilentBackground()
     then
         echo "Running \"$*\"" >> $logFile
         $* >> $logFile 2>&1  & sleep 1
+        echo "" >> $logFile
     else
         $* > /dev/null 2>&1  & sleep 1
     fi
@@ -2029,7 +2030,12 @@ DoCollect()
     else
         if [ "$usePerf" == "1" ]
         then
-            RunSilentBackground $perfcmd $collectionArgs
+            if [ ! -z ${duration} ]
+            then
+                RunSilent $perfcmd $collectionArgs
+            else
+                RunSilentBackground $perfcmd $collectionArgs
+            fi
         else
             # Wait here until CTRL+C handler gets called when user types CTRL+C.
             LogAppend "Waiting for CTRL+C handler to get called."
