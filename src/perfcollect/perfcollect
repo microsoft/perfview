@@ -682,6 +682,30 @@ RunSilent()
     fi
 }
 
+RunSilentBackground()
+{
+    if (( $logEnabled == 1 ))
+    then
+        echo "Running \"$*\"" >> $logFile
+        $* >> $logFile 2>&1  & sleep 1
+    else
+        $* > /dev/null 2>&1  & sleep 1
+    fi
+
+    # When handler is invoked, kill the process.
+    pid=$!
+    for (( ; ; ))
+    do
+        if [ "$handlerInvoked" == "1" ]
+        then
+            kill -INT $pid
+            break;
+        else
+            sleep 1
+    fi
+    done
+}
+
 InitializeLog()
 {
     # Pick the log file name.
@@ -2005,7 +2029,7 @@ DoCollect()
     else
         if [ "$usePerf" == "1" ]
         then
-            RunSilent $perfcmd $collectionArgs
+            RunSilentBackground $perfcmd $collectionArgs
         else
             # Wait here until CTRL+C handler gets called when user types CTRL+C.
             LogAppend "Waiting for CTRL+C handler to get called."
