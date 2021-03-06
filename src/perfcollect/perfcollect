@@ -703,8 +703,11 @@ RunSilentBackground()
             break;
         else
             sleep 1
-    fi
+        fi	
     done
+
+    # Wait for the process to exit.
+    wait $pid
 }
 
 InitializeLog()
