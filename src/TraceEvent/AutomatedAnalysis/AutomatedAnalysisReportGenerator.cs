@@ -53,21 +53,21 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _writer.WriteLine("</Table>");
         }
 
-        public void WriteExecutedRulesList(List<AutomatedAnalysisRule> rules)
+        public void WriteExecutedAnalyzerList(List<AutomatedAnalysisAnalyzer> analyzers)
         {
-            if(rules.Count > 0)
+            if(analyzers.Count > 0)
             {
-                _writer.WriteLine("<H3>Rules Executed:</H3>");
+                _writer.WriteLine("<H3>Analyzers Executed:</H3>");
                 _writer.WriteLine("<ul style=\"list-style-type:circle\">");
-                foreach (AutomatedAnalysisRule rule in rules)
+                foreach (AutomatedAnalysisAnalyzer analyzer in analyzers)
                 {
-                    _writer.WriteLine($"<li>{rule.GetType().AssemblyQualifiedName}</li>");
+                    _writer.WriteLine($"<li>{analyzer.GetType().AssemblyQualifiedName}</li>");
                 }
                 _writer.WriteLine("</ul>");
             }
             else
             {
-                _writer.WriteLine($"<H3>No rules were executed.  Check '{AutomatedAnalysisRuleResolver.RulesDirectory}' for DLLs containing rules.</H3>");
+                _writer.WriteLine($"<H3>No analyzers were executed.  Check '{AutomatedAnalysisAnalyzerResolver.AnalyzersDirectory}' for DLLs containing analyzers.</H3>");
             }
         }
     }

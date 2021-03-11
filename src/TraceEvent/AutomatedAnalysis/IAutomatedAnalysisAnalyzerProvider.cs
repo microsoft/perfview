@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
-    public sealed class AutomatedAnalysisRuleProviderAttribute : Attribute
+    public sealed class AutomatedAnalysisAnalyzerProviderAttribute : Attribute
     {
-        public AutomatedAnalysisRuleProviderAttribute(Type providerType)
+        public AutomatedAnalysisAnalyzerProviderAttribute(Type providerType)
         {
             ProviderType = providerType;
         }
@@ -17,8 +17,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         public Type ProviderType { get; }
     }
 
-    public interface IAutomatedAnalysisRuleProvider
+    public interface IAutomatedAnalysisAnalyzerProvider
     {
-        IEnumerable<AutomatedAnalysisRule> GetRules();
+        IEnumerable<AutomatedAnalysisAnalyzer> GetAnalyzers();
     }
 }
