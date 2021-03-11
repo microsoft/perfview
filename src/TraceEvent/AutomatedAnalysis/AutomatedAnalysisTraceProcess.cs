@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisTraceProcess
+    public class AutomatedAnalysisTraceProcess
     {
+        public AutomatedAnalysisTraceProcess()
+        {
+
+        }
+
         public AutomatedAnalysisTraceProcess(int uniqueID, int displayID, string description, bool containsManagedCode)
         {
             UniqueID = uniqueID;
@@ -17,13 +22,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             ContainsManagedCode = containsManagedCode;
         }
 
-        public int UniqueID { get; }
+        public int UniqueID { get; set; }
 
-        public int DisplayID { get; }
+        public int DisplayID { get; set; }
 
-        public string Description { get; }
+        public string Description { get; set; }
 
-        public bool ContainsManagedCode { get; }
+        public virtual bool ContainsManagedCode { get; }
 
         public override int GetHashCode()
         {
