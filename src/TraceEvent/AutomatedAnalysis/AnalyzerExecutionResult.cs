@@ -1,6 +1,6 @@
 ﻿namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public enum ExecutionResult
+    public enum AnalyzerExecutionResult
     {
         Success,
         Fail,

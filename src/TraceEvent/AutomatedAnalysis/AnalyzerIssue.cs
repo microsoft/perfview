@@ -2,9 +2,9 @@
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisIssue
+    public sealed class AnalyzerIssue
     {
-        public AutomatedAnalysisIssue(
+        public AnalyzerIssue(
             string title,
             string description,
             string url)

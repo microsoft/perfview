@@ -4,9 +4,9 @@ using Microsoft.Diagnostics.Symbols;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisExecutionContext
+    public sealed class AnalyzerExecutionContext
     {
-        internal AutomatedAnalysisExecutionContext(IAutomatedAnalysisTrace trace, TextWriter textLog, AutomatedAnalysisIssueCollection issues)
+        internal AnalyzerExecutionContext(ITrace trace, TextWriter textLog, AnalyzerIssueCollection issues)
         {
             Trace = trace;
             TextLog = textLog;
@@ -19,7 +19,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 SymbolReader = traceLog.SymbolReader;
             }
         }
-        internal AutomatedAnalysisExecutionContext(TraceLog traceLog, TextWriter textLog, SymbolReader symbolReader, AutomatedAnalysisIssueCollection issues)
+        internal AnalyzerExecutionContext(TraceLog traceLog, TextWriter textLog, SymbolReader symbolReader, AnalyzerIssueCollection issues)
         {
             TraceLog = traceLog;
             TextLog = textLog;
@@ -31,10 +31,10 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public TraceLog TraceLog { get; }
 
-        public IAutomatedAnalysisTrace Trace { get; }
+        public ITrace Trace { get; }
 
         public TextWriter TextLog { get; }
 
-        public AutomatedAnalysisIssueCollection Issues { get; }
+        public AnalyzerIssueCollection Issues { get; }
     }
 }

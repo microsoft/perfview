@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    internal sealed class AutomatedAnalysisAnalyzerResolver
+    internal sealed class AnalyzerResolver
     {
         private const string AnalyzersDirectoryName = "Analyzers";
         private static string s_analyzersDirectory;
@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     // Assume plugins sit in a plugins directory next to the current assembly.
 #if AUTOANALYSIS_EXTENSIBILITY
                     s_analyzersDirectory = Path.Combine(
-                        Path.GetDirectoryName(typeof(AutomatedAnalysisAnalyzerResolver).Assembly.Location),
+                        Path.GetDirectoryName(typeof(AnalyzerResolver).Assembly.Location),
                         AnalyzersDirectoryName);
 #endif
                 }
@@ -28,7 +28,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
-        internal static IEnumerable<AutomatedAnalysisAnalyzer> GetAnalyzers()
+        internal static IEnumerable<Analyzer> GetAnalyzers()
         {
 #if AUTOANALYSIS_EXTENSIBILITY
             // Iterate through all assemblies in the analyzers directory.
@@ -43,15 +43,15 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 Assembly assembly = Assembly.LoadFrom(candidateAssembly);
                 if(assembly != null)
                 {
-                    AutomatedAnalysisAnalyzerProviderAttribute attr = 
-                        (AutomatedAnalysisAnalyzerProviderAttribute)assembly.GetCustomAttribute(typeof(AutomatedAnalysisAnalyzerProviderAttribute));
+                    AnalyzerProviderAttribute attr = 
+                        (AnalyzerProviderAttribute)assembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute));
                     if(attr != null && attr.ProviderType != null)
                     {
                         // Create an instance of the provider.
-                        IAutomatedAnalysisAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAutomatedAnalysisAnalyzerProvider;
+                        IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
                         if (analyzerProvider != null)
                         {
-                            foreach (AutomatedAnalysisAnalyzer analyzer in analyzerProvider.GetAnalyzers())
+                            foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
                             {
                                 yield return analyzer;
                             }

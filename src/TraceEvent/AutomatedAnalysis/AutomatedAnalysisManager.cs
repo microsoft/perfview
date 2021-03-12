@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     public sealed class AutomatedAnalysisManager
     {
-        private IAutomatedAnalysisTrace _trace;
+        private ITrace _trace;
         private TextWriter _textLog;
 
         public AutomatedAnalysisManager(TraceLog traceLog, TextWriter textLog, SymbolReader symbolReader)
@@ -17,32 +17,32 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _textLog = textLog;
         }
 
-        public AutomatedAnalysisManager(IAutomatedAnalysisTrace trace, TextWriter textLog)
+        public AutomatedAnalysisManager(ITrace trace, TextWriter textLog)
         {
             _trace = trace;
             _textLog = textLog;
         }
 
-        public AutomatedAnalysisIssueCollection Issues { get; private set; }
+        public AnalyzerIssueCollection Issues { get; private set; }
 
-        public List<AutomatedAnalysisAnalyzer> ExecuteAnalyzers()
+        public List<Analyzer> ExecuteAnalyzers()
         {
-            Issues = new AutomatedAnalysisIssueCollection();
+            Issues = new AnalyzerIssueCollection();
 
-            List<AutomatedAnalysisAnalyzer> allAnalyzers = new List<AutomatedAnalysisAnalyzer>();
-            List<AutomatedAnalysisPerProcessAnalyzer> perProcessAnalyzers = new List<AutomatedAnalysisPerProcessAnalyzer>();
+            List<Analyzer> allAnalyzers = new List<Analyzer>();
+            List<PerProcessAnalyzer> perProcessAnalyzers = new List<PerProcessAnalyzer>();
 
             // Run global analyzers, deferring per-process analyzers.
-            AutomatedAnalysisExecutionContext executionContext = new AutomatedAnalysisExecutionContext(_trace, _textLog, Issues);
-            foreach (AutomatedAnalysisAnalyzer analyzer in AutomatedAnalysisAnalyzerResolver.GetAnalyzers())
+            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_trace, _textLog, Issues);
+            foreach (Analyzer analyzer in AnalyzerResolver.GetAnalyzers())
             {
                 // Create a list of all executed analyzers so that they can be written into the report.
                 allAnalyzers.Add(analyzer);
 
-                if (analyzer is AutomatedAnalysisPerProcessAnalyzer)
+                if (analyzer is PerProcessAnalyzer)
                 {
                     // Defer per-process analyzers.
-                    perProcessAnalyzers.Add((AutomatedAnalysisPerProcessAnalyzer)analyzer);
+                    perProcessAnalyzers.Add((PerProcessAnalyzer)analyzer);
                 }
                 else
                 {
@@ -59,14 +59,14 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
 
             // Run per-process analyzers.
-            foreach (AutomatedAnalysisTraceProcess process in executionContext.Trace.Processes)
+            foreach (AnalyzerTraceProcess process in executionContext.Trace.Processes)
             {
                 if (process.ContainsManagedCode)
                 {
                     // Create the process context.
                     ProcessContext processContext = new ProcessContext(executionContext, process);
 
-                    foreach (AutomatedAnalysisPerProcessAnalyzer analyzer in perProcessAnalyzers)
+                    foreach (PerProcessAnalyzer analyzer in perProcessAnalyzers)
                     {
                         try
                         {
@@ -88,10 +88,10 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
             {
                 // Execute analyzers.
-                List<AutomatedAnalysisAnalyzer> allAnalyzers = ExecuteAnalyzers();
+                List<Analyzer> allAnalyzers = ExecuteAnalyzers();
 
                 // Write out issues.
-                foreach (KeyValuePair<AutomatedAnalysisTraceProcess, List<AutomatedAnalysisIssue>> pair in Issues)
+                foreach (KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>> pair in Issues)
                 {
                     if (pair.Value.Count > 0)
                     {

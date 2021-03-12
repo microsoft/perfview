@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public class AutomatedAnalysisTraceProcess
+    public class AnalyzerTraceProcess
     {
-        public AutomatedAnalysisTraceProcess()
+        public AnalyzerTraceProcess()
         {
 
         }
 
-        public AutomatedAnalysisTraceProcess(int uniqueID, int displayID, string description, bool containsManagedCode)
+        public AnalyzerTraceProcess(int uniqueID, int displayID, string description, bool containsManagedCode)
         {
             UniqueID = uniqueID;
             DisplayID = displayID;
@@ -37,9 +37,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public override bool Equals(object obj)
         {
-            if(obj is AutomatedAnalysisTraceProcess)
+            if(obj is AnalyzerTraceProcess)
             {
-                return UniqueID == ((AutomatedAnalysisTraceProcess)obj).UniqueID;
+                return UniqueID == ((AnalyzerTraceProcess)obj).UniqueID;
             }
 
             return false;
