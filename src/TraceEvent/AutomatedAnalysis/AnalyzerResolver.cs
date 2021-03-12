@@ -1,5 +1,4 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -63,6 +62,25 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             yield break;
 #endif
 
+        }
+
+        internal static Configuration GetConfiguration()
+        {
+            Configuration configuration = new Configuration();
+
+#if AUTOANALYSIS_EXTENSIBILITY
+            // Iterate through all configuration files in the analyzers directory.
+            if (Directory.Exists(AnalyzersDirectory))
+            {
+                string[] filePaths = Directory.GetFiles(AnalyzersDirectory, "*.config.xml");
+                foreach(string filePath in filePaths)
+                {
+                    configuration.AddConfigurationFile(filePath);
+                }
+            }
+#endif
+
+            return configuration;
         }
     }
 }

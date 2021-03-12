@@ -53,9 +53,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _writer.WriteLine("</Table>");
         }
 
-        public void WriteExecutedAnalyzerList(List<Analyzer> analyzers)
+        public void WriteExecutedAnalyzerList(IEnumerable<Analyzer> analyzers)
         {
-            if(analyzers.Count > 0)
+            if(analyzers.Count() > 0)
             {
                 _writer.WriteLine("<H3>Analyzers Executed:</H3>");
                 _writer.WriteLine("<ul style=\"list-style-type:circle\">");

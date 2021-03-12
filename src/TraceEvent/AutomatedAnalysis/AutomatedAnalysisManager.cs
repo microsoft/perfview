@@ -1,44 +1,29 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Symbols;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     public sealed class AutomatedAnalysisManager
     {
-        private ITrace _trace;
-        private TextWriter _textLog;
+        private IEnumerable<Analyzer> _analyzers;
+        private Configuration _configuration;
 
-        public AutomatedAnalysisManager(TraceLog traceLog, TextWriter textLog, SymbolReader symbolReader)
+        public AutomatedAnalysisManager()
         {
-            _trace = new AutomatedAnalysisTraceLog(traceLog, symbolReader);
-            _textLog = textLog;
+            _analyzers = AnalyzerResolver.GetAnalyzers();
+            _configuration = AnalyzerResolver.GetConfiguration();
+
         }
 
-        public AutomatedAnalysisManager(ITrace trace, TextWriter textLog)
+        public AutomatedAnalysisResult ProcessTrace(ITrace trace, TextWriter textLog)
         {
-            _trace = trace;
-            _textLog = textLog;
-        }
-
-        public AnalyzerIssueCollection Issues { get; private set; }
-
-        public List<Analyzer> ExecuteAnalyzers()
-        {
-            Issues = new AnalyzerIssueCollection();
-
-            List<Analyzer> allAnalyzers = new List<Analyzer>();
             List<PerProcessAnalyzer> perProcessAnalyzers = new List<PerProcessAnalyzer>();
 
             // Run global analyzers, deferring per-process analyzers.
-            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_trace, _textLog, Issues);
-            foreach (Analyzer analyzer in AnalyzerResolver.GetAnalyzers())
+            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_configuration, trace, textLog);
+            foreach (Analyzer analyzer in _analyzers)
             {
-                // Create a list of all executed analyzers so that they can be written into the report.
-                allAnalyzers.Add(analyzer);
-
                 if (analyzer is PerProcessAnalyzer)
                 {
                     // Defer per-process analyzers.
@@ -53,7 +38,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     }
                     catch (Exception ex)
                     {
-                        _textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                        textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                     }
                 }
             }
@@ -74,34 +59,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                         }
                         catch (Exception ex)
                         {
-                            _textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                            textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                         }
                     }
                 }
             }
 
-            return allAnalyzers;
-        }
-
-        public void GenerateReport(TextWriter writer)
-        {
-            using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
-            {
-                // Execute analyzers.
-                List<Analyzer> allAnalyzers = ExecuteAnalyzers();
-
-                // Write out issues.
-                foreach (KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>> pair in Issues)
-                {
-                    if (pair.Value.Count > 0)
-                    {
-                        reportGenerator.WriteIssuesForProcess(pair.Key, pair.Value);
-                    }
-                }
-
-                // Write the list of executed analyzers.
-               reportGenerator.WriteExecutedAnalyzerList(allAnalyzers);
-            }
+            return new AutomatedAnalysisResult(_analyzers, executionContext);
         }
     }
 }

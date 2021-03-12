@@ -6,11 +6,11 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     public sealed class AnalyzerExecutionContext
     {
-        internal AnalyzerExecutionContext(ITrace trace, TextWriter textLog, AnalyzerIssueCollection issues)
+        internal AnalyzerExecutionContext(Configuration configuration, ITrace trace, TextWriter textLog)
         {
+            Configuration = configuration;
             Trace = trace;
             TextLog = textLog;
-            Issues = issues;
 
             AutomatedAnalysisTraceLog traceLog = trace as AutomatedAnalysisTraceLog;
             if(traceLog != null)
@@ -19,13 +19,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 SymbolReader = traceLog.SymbolReader;
             }
         }
-        internal AnalyzerExecutionContext(TraceLog traceLog, TextWriter textLog, SymbolReader symbolReader, AnalyzerIssueCollection issues)
-        {
-            TraceLog = traceLog;
-            TextLog = textLog;
-            SymbolReader = symbolReader;
-            Issues = issues;
-        }
+
+        public Configuration Configuration { get; }
 
         public SymbolReader SymbolReader { get; }
 
@@ -35,6 +30,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public TextWriter TextLog { get; }
 
-        public AnalyzerIssueCollection Issues { get; }
+        public AnalyzerIssueCollection Issues { get; } = new AnalyzerIssueCollection();
     }
 }

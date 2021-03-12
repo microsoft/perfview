@@ -5,9 +5,9 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    internal sealed class AutomatedAnalysisTraceLog : ITrace
+    public sealed class AutomatedAnalysisTraceLog : ITrace
     {
-        internal AutomatedAnalysisTraceLog(TraceLog traceLog, SymbolReader symbolReader)
+        public AutomatedAnalysisTraceLog(TraceLog traceLog, SymbolReader symbolReader)
         {
             TraceLog = traceLog;
             SymbolReader = symbolReader;
