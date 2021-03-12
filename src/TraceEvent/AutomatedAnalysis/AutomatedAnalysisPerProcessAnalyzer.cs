@@ -6,14 +6,14 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     public abstract class AutomatedAnalysisPerProcessAnalyzer : AutomatedAnalysisAnalyzer
     {
-        protected abstract void Execute(AutomatedAnalysisExecutionContext executionContext, ProcessContext processContext);
+        protected abstract ExecutionResult Execute(AutomatedAnalysisExecutionContext executionContext, ProcessContext processContext);
 
-        internal override void RunAnalyzer(AutomatedAnalysisExecutionContext executionContext, ProcessContext processContext)
+        internal override ExecutionResult RunAnalyzer(AutomatedAnalysisExecutionContext executionContext, ProcessContext processContext)
         {
-            Execute(executionContext, processContext);
+            return Execute(executionContext, processContext);
         }
 
-        protected override void Execute(AutomatedAnalysisExecutionContext executionContext)
+        protected override ExecutionResult Execute(AutomatedAnalysisExecutionContext executionContext)
         {
             throw new InvalidOperationException();
         }

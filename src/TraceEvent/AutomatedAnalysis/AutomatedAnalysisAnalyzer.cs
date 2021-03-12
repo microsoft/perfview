@@ -2,11 +2,11 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     public abstract class AutomatedAnalysisAnalyzer
     {
-        protected abstract void Execute(AutomatedAnalysisExecutionContext executionContext);
+        protected abstract ExecutionResult Execute(AutomatedAnalysisExecutionContext executionContext);
 
-        internal virtual void RunAnalyzer(AutomatedAnalysisExecutionContext executionContext, ProcessContext processContext)
+        internal virtual ExecutionResult RunAnalyzer(AutomatedAnalysisExecutionContext executionContext, ProcessContext processContext)
         {
-            Execute(executionContext);
+            return Execute(executionContext);
         }
     }
 }
