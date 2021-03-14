@@ -56,7 +56,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisRulesVersion)" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all"/>
 
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
@@ -71,7 +71,7 @@
 
   <!-- Copy AutomatedAnalysis analyzers to the target directory. -->
   <ItemGroup>
-    <AutomatedAnalysisAnalyzers Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll" />
+    <AutomatedAnalysisAnalyzers Include="$(TraceEventAutomatedAnalysisAnalyzersBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers.dll;$(TraceEventAutomatedAnalysisAnalyzersBase)TraceEvent.Analyzers.config.xml" />
   </ItemGroup>
   <Target Name="CopyAnalyzersToTarget" AfterTargets="Build">
     <Copy SourceFiles="@(AutomatedAnalysisAnalyzers)" DestinationFolder="$(TargetDir)Analyzers" />
@@ -199,11 +199,18 @@
       <Link>amd64\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisRulesBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll">
+    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisAnalyzersBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</LogicalName>
-      <Link>Rules\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Rules.dll</Link>
+      <LogicalName>.\Analyzers\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers.dll</LogicalName>
+      <Link>Analyzers\Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(TraceEventAutomatedAnalysisAnalyzersBase)TraceEvent.Analyzers.config.xml">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Analyzers\TraceEvent.Analyzers.config.xml</LogicalName>
+      <Link>Analyzers\TraceEvent.Analyzers.config.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
