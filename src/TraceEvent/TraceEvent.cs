@@ -892,7 +892,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 else
                 {
-                    if (eventRecord->ExtendedDataCount > 0)
+                    if (eventRecord->ExtendedData != null)
                     {
                         return traceEventSource.GetRelatedActivityID(eventRecord);
                     }

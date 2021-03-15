@@ -895,7 +895,7 @@ namespace PerfView
         }
         private void DoCopyTimeRange(object sender, ExecutedRoutedEventArgs e)
         {
-            Clipboard.SetText(StartTextBox.Text + " " + EndTextBox.Text);
+            Clipboard.SetText(RangeUtilities.ToString(StartTextBox.Text, EndTextBox.Text));
         }
         private void DoHistogramSelectionChanged(object sender, RoutedEventArgs e)
         {
@@ -1154,14 +1154,10 @@ namespace PerfView
             }
             else
             {
-                var match = Regex.Match(StartTextBox.Text, @"^\s*([\d\.,]+)\s+([\d\.,]+)\s*$");
-                if (match.Success)
+                if (RangeUtilities.TryParse(StartTextBox.Text, out var startTimeRelativeMSec, out var endTimeRelativeMSec))
                 {
-                    m_source.StartTimeRelativeMSec = 0;
-                    double.TryParse(match.Groups[1].Value, out m_source.StartTimeRelativeMSec);
-
-                    m_source.EndTimeRelativeMSec = m_source.MaxEventTimeRelativeMsec;
-                    double.TryParse(match.Groups[2].Value, out m_source.EndTimeRelativeMSec);
+                    m_source.StartTimeRelativeMSec = startTimeRelativeMSec;
+                    m_source.EndTimeRelativeMSec = endTimeRelativeMSec;
                 }
                 else
                 {

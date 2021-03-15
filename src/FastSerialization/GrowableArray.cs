@@ -400,11 +400,7 @@ namespace System.Collections.Generic
             else
             {
                 long expandSize = (long)array.Length * 3 / 2 + 8;
-                if (minSize > expandSize)
-                {
-                    expandSize = minSize;
-                }
-                else if (expandSize > int.MaxValue)
+                if (expandSize > int.MaxValue)
                 {
                     if (array.Length == int.MaxValue)
                         throw new NotSupportedException("Array cannot have more than int.MaxValue elements.");
@@ -412,7 +408,12 @@ namespace System.Collections.Generic
                     expandSize = int.MaxValue;
                 }
 
-                Array.Resize(ref array, (int)expandSize);
+                if (minSize < expandSize)
+                {
+                    minSize = (int)expandSize;
+                }
+
+                Array.Resize(ref array, minSize);
             }
         }
 

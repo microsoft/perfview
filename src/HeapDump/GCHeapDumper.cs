@@ -1,5 +1,4 @@
 ﻿#define DEPENDENT_HANDLE
-using ClrMemory;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -837,73 +836,6 @@ public class GCHeapDumper
     /// </summary>
     public int BadObjectCount { get; private set; }
 
-    internal void DumpSerializedExceptionFromProcessDump(string inputSpec, string outputFile)
-    {
-        DataTarget target;
-        ClrRuntime runtime;
-        InitializeClrRuntime(inputSpec, out target, out runtime);
-        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions();
-        bool flag7 = serializedExceptions == null || Enumerable.Count<ClrException>(serializedExceptions) == 0;
-        if (flag7)
-        {
-            Console.WriteLine("No exceptions");
-        }
-        int num2 = 0;
-        foreach (ClrException current3 in serializedExceptions)
-        {
-            Console.WriteLine(string.Format("Exception #{0}", ++num2));
-            Console.WriteLine(FormatException(current3, 0));
-        }
-    }
-
-    private static string FormatException(ClrException ex, int indentLevel)
-    {
-        StringBuilder stringBuilder = new StringBuilder();
-        StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("Type: {0}", ex.Type), indentLevel);
-        StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("Address: {0:X}", ex.Address), indentLevel);
-        StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("HResult: {0:X}", ex.HResult), indentLevel);
-        bool flag = ex.StackTrace != null;
-        if (flag)
-        {
-            stringBuilder.AppendLine();
-            StringBuilderIndentExtension.AppendLine(stringBuilder, "Stacktrace", indentLevel);
-            StringBuilderIndentExtension.AppendLine(stringBuilder, "------------------------", indentLevel);
-            foreach (ClrStackFrame current in ex.StackTrace)
-            {
-                StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("[{0:X}] {1}", current.InstructionPointer, current.DisplayString), indentLevel);
-            }
-            stringBuilder.AppendLine();
-        }
-        bool flag2 = ex.Inner != null;
-        if (flag2)
-        {
-            StringBuilderIndentExtension.AppendLine(stringBuilder, "Inner Exception", indentLevel);
-            StringBuilderIndentExtension.AppendLine(stringBuilder, "------------------------", indentLevel);
-            stringBuilder.AppendLine(string.Format("{0}", FormatException(ex.Inner, indentLevel + 1)));
-        }
-        return stringBuilder.ToString();
-    }
-    public static class StringBuilderIndentExtension
-    {
-        public static void Append(StringBuilder sb, string str, int indentLevel)
-        {
-            sb.Append(string.Format("{0}{1}", StringBuilderIndentExtension.getIndent(indentLevel), str));
-        }
-        public static void AppendLine(StringBuilder sb, string str, int indentLevel)
-        {
-            sb.AppendLine(string.Format("{0}{1}", StringBuilderIndentExtension.getIndent(indentLevel), str));
-        }
-        private static string getIndent(int indentLevel)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (int i = 0; i < indentLevel; i++)
-            {
-                stringBuilder.Append("\t");
-            }
-            return stringBuilder.ToString();
-        }
-    }
-
     #region private
 
     /// <summary>
@@ -1198,31 +1130,9 @@ public class GCHeapDumper
                 }
                 else
                 {
-                    // Could not get ClrMD, try to get a ICorDebug for Silverlight.  
+                    // Could not get ClrMD
                     m_log.WriteLine("Could not get Desktop .NET Runtime in process with ID {0}", processID);
-                    m_log.WriteLine("Checking if there is a silverlight runtime.");
-
-                    ICorDebug iCorDebug = null;
-                    try { iCorDebug = Silverlight.DebugActiveSilverlightProcess(processID); }
-                    catch (Exception) { }
-                    if (iCorDebug != null)
-                    {
-                        m_log.WriteLine("Attaching to silverlight process {0} from a {1} process.", processID,
-                            Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86);
-                        iCorDebug.DebugActiveProcess((uint)processID, 0, out proc);
-                    }
-                    if (proc == null)
-                    {
-                        m_log.WriteLine("Could not get a ICorDebugProcess from a Silverlight runtime.");
-                        m_log.WriteLine("You must install Silverlight tools for developers.  See http://go.microsoft.com/fwlink/?LinkId=229324.");
-                        m_log.WriteLine("Could not find a desktop or Silveright runtime in the process {0}.", processID);
-                        return false;   // Last chance to dump a .NET heap.  
-                    }
-
-                    Freeze = true;     // TODO  a hack, we tell it not to freeze because we have already done it.  
-                    m_log.WriteLine("freezing process.");
-                    proc.Stop(5000);
-                    gcHeap = new ICorDebugGCHeap(proc);
+                    return false;
                 }
 
                 DumpDotNetHeapData(gcHeap, ref proc, false);

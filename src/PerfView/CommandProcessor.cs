@@ -2753,7 +2753,7 @@ namespace PerfView
 #endif
         }
 
-        private static string ParsedArgsAsString(string command, CommandLineArgs parsedArgs)
+        public static string ParsedArgsAsString(string command, CommandLineArgs parsedArgs)
         {
             var cmdLineArgs = "";
             if (parsedArgs.DataFile != null)
@@ -2914,6 +2914,11 @@ namespace PerfView
             if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.Default)
             {
                 cmdLineArgs += " /ClrEvents:" + parsedArgs.ClrEvents.ToString().Replace(" ", "");
+            }
+
+            if(parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
+            {
+                cmdLineArgs += " /TplEvents:" + parsedArgs.TplEvents.ToString().Replace(" ", "");
             }
 
             if (parsedArgs.Providers != null)

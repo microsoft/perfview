@@ -1,4 +1,4 @@
-﻿using Controls;
+using Controls;
 using Diagnostics.Tracing.StackSources;
 using Graphs;
 using Microsoft.Diagnostics.Symbols;
@@ -1722,7 +1722,7 @@ namespace PerfView
         }
         private void DoCopyTimeRange(object sender, ExecutedRoutedEventArgs e)
         {
-            Clipboard.SetText(StartTextBox.Text + " " + EndTextBox.Text);
+            Clipboard.SetText(RangeUtilities.ToString(StartTextBox.Text, EndTextBox.Text));
         }
         private void CanDoOpenEvents(object sender, CanExecuteRoutedEventArgs e)
         {
@@ -3584,7 +3584,7 @@ namespace PerfView
 
         private bool ValidateStartAndEnd(StackSource newSource)
         {
-            double val1 = 0, val2 = double.PositiveInfinity;
+            double start = 0, end = double.PositiveInfinity;
             // Set the end text box.
             if (string.IsNullOrWhiteSpace(EndTextBox.Text))
             {
@@ -3594,7 +3594,7 @@ namespace PerfView
                     EndTextBox.Text = (newSource.SampleTimeRelativeMSecLimit).ToString("n3");
                 }
             }
-            else if (!double.TryParse(EndTextBox.Text, out val2))
+            else if (!double.TryParse(EndTextBox.Text, out end))
             {
                 StatusBar.LogError("Invalid number " + EndTextBox.Text);
                 EndTextBox.Text = "Infinity";
@@ -3602,13 +3602,13 @@ namespace PerfView
             }
             else
             {
-                EndTextBox.Text = val2.ToString("n3");
+                EndTextBox.Text = end.ToString("n3");
             }
 
             // See if we are pasting a range into the start text box
-            if (double.TryParse(StartTextBox.Text, out val1))
+            if (double.TryParse(StartTextBox.Text, out start))
             {
-                StartTextBox.Text = val1.ToString("n3");
+                StartTextBox.Text = start.ToString("n3");
             }
             else if (string.IsNullOrWhiteSpace(StartTextBox.Text))
             {
@@ -3616,22 +3616,10 @@ namespace PerfView
             }
             else
             {
-                // TODO: This only works for cultures where a space is not the numeric group separator
-                var match = Regex.Match(StartTextBox.Text, @"^\s*([\d\.,]+)\s+([\d\.,]+)\s*$");
-                if (match.Success)
+                if (RangeUtilities.TryParse(StartTextBox.Text, out start, out end))
                 {
-                    if (double.TryParse(match.Groups[1].Value, out val1) &&
-                        double.TryParse(match.Groups[2].Value, out val2))
-                    {
-                        StartTextBox.Text = val1.ToString("n3");
-                        EndTextBox.Text = val2.ToString("n3");
-                    }
-                    else
-                    {
-                        StatusBar.LogError("Invalid number " + StartTextBox.Text);
-                        StartTextBox.Text = "0";
-                        return false;
-                    }
+                    StartTextBox.Text = start.ToString("n3");
+                    EndTextBox.Text = end.ToString("n3");
                 }
                 else
                 {
@@ -3641,7 +3629,7 @@ namespace PerfView
                 }
             }
 
-            if (val2 < val1)
+            if (end < start)
             {
                 var str = StartTextBox.Text;
                 StartTextBox.Text = EndTextBox.Text;
@@ -3937,7 +3925,7 @@ namespace PerfView
             string groupPat = GroupRegExTextBox.Text.Trim();
             string nameCandidate = "Preset " + (m_presets.Count + 1).ToString();
             // Try to extract pattern name as a [Name] prefix
-            if (groupPat[0] == '[')
+            if (groupPat.Length > 0 && groupPat[0] == '[')
             {
                 int closingBracketIndex = groupPat.IndexOf(']');
                 if (closingBracketIndex > 0)
