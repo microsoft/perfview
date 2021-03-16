@@ -4942,7 +4942,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Gen2,
         GenLargeObj,
         GenPinObj,
-        GenCount, 
+        MaxGenCount, 
     }
 
     /// <summary>
@@ -5560,6 +5560,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
         public bool HasCount { get { return Version >= 3; } }
+        public int NumGenerations { get { return HasCount ? Count : 4; } }
         public int MemoryPressure
         {
             get
@@ -5727,7 +5728,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return arr;
         }
 
-        private const int maxGenData = (int)Gens.GenCount;
+        private const int maxGenData = 5;
 
         internal GCPerHeapHistoryTraceData(Delegate action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -5833,8 +5834,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
 
             sb.Append("/>");
-            int numGenerations = this.HasCount ? this.Count : 4;
-            for (var gens = Gens.Gen0; gens < (Gens)numGenerations; gens++)
+            for (var gens = Gens.Gen0; gens < (Gens)NumGenerations; gens++)
             {
                 GenData(gens).ToXml(gens, sb).AppendLine();
             }

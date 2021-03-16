@@ -2458,7 +2458,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Per generation view of user allocated data
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public double[] UserAllocated = new double[(int)Gens.GenCount];
+        public double[] UserAllocated = new double[(int)Gens.MaxGenCount];
         /// <summary>
         /// Heap size before gc (mb)
         /// </summary>
@@ -2468,7 +2468,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Per generation view of heap sizes before GC (mb)
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public double[] GenSizeBeforeMB = new double[(int)Gens.GenCount];
+        public double[] GenSizeBeforeMB = new double[(int)Gens.MaxGenCount];
         /// <summary>
         /// This represents the percentage time spent paused for this GC since the last GC completed. 
         /// </summary>
@@ -4595,7 +4595,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                int numGenerations = data.HasCount ? data.Count : 4;
+                int numGenerations = data.NumGenerations;
                 var hist = new GCPerHeapHistory()
                 {
                     FreeListAllocated = (data.HasFreeListAllocated) ? data.FreeListAllocated : -1,
