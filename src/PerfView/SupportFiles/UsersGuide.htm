@@ -4747,9 +4747,9 @@
     </p>
     <p>
         This is the problem entry groups solve.&nbsp;&nbsp; They are just like normal groups
-        but use the =&gt; instead of -&gt; to indicate they are entry.&nbsp;&nbsp; An entry
+        but use the =&gt; instead of -&gt; to indicate they are entry groups.&nbsp;&nbsp; An entry
         group creates the same group as a normal group but it instructs the parsing logic
-        to the caller into account.&nbsp; Effectively a group is formed for each &#39;entry
+        to take the caller into account.&nbsp; Effectively a group is formed for each &#39;entry
         point into the group.&nbsp;&nbsp; If a call is made from outside the group to inside
         the group, the name of the entry point is used as the name of the group.&nbsp;&nbsp;
         As long as that method calls other methods within the group, the stack frame is
@@ -4989,10 +4989,10 @@
     </p>
     <p>
         <strong>Blocked time investigations are inherently harder than CPU investigations</strong>.&nbsp;
-        CPU investigations are reasonably straightforward because in most scenarios any CPU use is &#39;interesting&#39;to
+        CPU investigations are reasonably straightforward because in most scenarios any CPU usage is &#39;interesting&#39; to
         investigate regardless of where it happens.&nbsp; Thus the trivial algorithm of attaching the
         same weight to every msec of CPU regardless of where it happened is appropriate.&nbsp;&nbsp;
-        This is actually not true in some scenarios.&nbsp; For example if there well background CPU-bound
+        This is actually not true in some scenarios.&nbsp; For example, if there was a background CPU-bound
         task on a multi-processor machine, the CPU associated with that background task is likely not very
         interesting because it is not consuming &#39;precious&#39; resources and is not on the critical path
         of some user operation.&nbsp;&nbsp; Thus if you were investigating CPU on such an application you
@@ -5136,7 +5136,7 @@
         However in other scenarios the issue is understanding why delays is as long&nbsp; as it is.&nbsp;
         For example, if a thread is blocked waiting on a lock, the interesting question is why
         was some other thread holding the lock so long?&nbsp; To answer this question you need
-        to determine that thread that was holding the lock.&nbsp;&nbsp; Questions like this are
+        to determine which thread was holding the lock.&nbsp;&nbsp; Questions like this are
         what the ReadyThread event helps answer.
     </p>
     <p>
