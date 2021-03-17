@@ -735,31 +735,6 @@ namespace PerfView
                                 new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x79),
                                 TraceEventLevel.Verbose, ulong.MaxValue, options);
 
-                            // TODO should we have stacks on for everything?
-                            var diagSourceOptions = stacksEnabled.Clone();
-                            // The removal of IgnoreShortCutKeywords turns on HTTP incoming and SQL events
-                            // The spec below turns on outgoing Http requests.  
-                            string filterSpec =
-                                "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
-                                "Request.RequestUri" +
-                                "\n" +
-                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
-                                "Response.StatusCode";
-                            diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
-                            const ulong IgnoreShortCutKeywords = 0x0800;    // Turing this OFF enables all the shortcut keywords (ASP.NET and Entity Framework).  
-                            EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
-                                new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
-                                TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
-
-                            // This is likely redundant with the diagnosticSource above, but is simpler to parse on the reader side.
-
-                            EnableUserProvider(userModeSession, "Microsoft-AspNetCore-Hosting",
-                                new Guid("9e620d2a-55d4-5ade-deb7-c26046d245a8"), TraceEventLevel.Verbose, ulong.MaxValue, options);
-
-                            EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
-                                new Guid("74af9f20-af6a-5582-9382-f21f674fb271"),
-                                TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
-
                             // Turn on Power stuff
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Power",
                                 new Guid("331C3B3A-2005-44C2-AC5E-77220C37D6B4"), TraceEventLevel.Informational, 0xFFB, options);
@@ -913,6 +888,29 @@ namespace PerfView
                         LogFile.WriteLine("Enabling CLR Events: {0}", parsedArgs.ClrEvents);
                         EnableUserProvider(userModeSession, "CLR", ClrTraceEventParser.ProviderGuid,
                             parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents, options);
+                    }
+
+                    // Turn on ASP.NET DiagnosticSource events if requested, or if /threadtime specified and /AspNetCoreStartStop:false isn't specified.
+                    if (((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
+                                == (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch) &&
+                        (!parsedArgs.AspNetCoreStartStop.HasValue || parsedArgs.AspNetCoreStartStop.Value)) ||
+                        (bool)parsedArgs.AspNetCoreStartStop)
+                    {
+                        // TODO should we have stacks on for everything?
+                        var diagSourceOptions = stacksEnabled.Clone();
+                        // The removal of IgnoreShortCutKeywords turns on HTTP incoming and SQL events
+                        // The spec below turns on outgoing Http requests.  
+                        string filterSpec =
+                            "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
+                            "Request.RequestUri" +
+                            "\n" +
+                            "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
+                            "Response.StatusCode";
+                        diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
+                        const ulong IgnoreShortCutKeywords = 0x0800;    // Turing this OFF enables all the shortcut keywords (ASP.NET and Entity Framework).  
+                        EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
+                            new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
+                            TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
                     }
 
                     // Start network monitoring capture if needed
@@ -3059,6 +3057,18 @@ namespace PerfView
             if (parsedArgs.JITInlining)
             {
                 cmdLineArgs += " /JITInlining";
+            }
+
+            if (parsedArgs.AspNetCoreStartStop != null)
+            {
+                if (parsedArgs.AspNetCoreStartStop.Value)
+                {
+                    cmdLineArgs += " /AspNetCoreStartStop";
+                }
+                else
+                {
+                    cmdLineArgs += " /AspNetCoreStartStop:false";
+                }
             }
 
             if (parsedArgs.OSHeapExe != null)
