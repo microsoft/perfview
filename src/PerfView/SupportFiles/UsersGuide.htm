@@ -8989,50 +8989,31 @@
                 <li>
                     Added Support for .perfView.json and perfView.json.zip files.  You can give it a JSON file like the following which
                     has two samples in it.
-                    <ul>
-                        <li>
-                            {
-                            <ul>
-
-                                <li>
-                                    "StackSource" :  {
-                                    <ul>
-                                        <li>
-                                            "Samples" : [
-                                            <ul>
-                                                <li> { "Time" : "10.1",</li>
-                                                <li>
-                                                    &nbsp; &nbsp; "Stack": [
-                                                    <ul>
-                                                        <li>"Executing Func for Sample 1",</li>
-                                                        <li>"Calling Func",</li>
-                                                        <li>"Main"</li>
-                                                    </ul>
-                                                </li>
-                                                <li>},</li>
-                                                <li> { "Time" : "10.1",</li>
-                                                <li>
-                                                    &nbsp; &nbsp; "Stack": [
-                                                    <ul>
-                                                        <li>"Executing Func for Sample 2",</li>
-                                                        <li>"Calling Func",</li>
-                                                        <li>"Main"</li>
-                                                    </ul>
-                                                </li>
-                                                <li>}</li>
-                                            </ul>
-                                        </li>
-                                        <li>]</li>
-                                    </ul>
-                                </li>
-                                <li>}</li>
-                            </ul>
-                        </li>
-                        <li>}</li>
-                    </ul>
-                </li>
-            </ul>
-        </li>
+                    <pre>                    
+{
+    "StackSource": {
+        "Samples": [
+            {
+                "Time": "10.1",
+                "Stack": [
+                    "Executing Func for Sample 1",
+                    "Calling Func",
+                    "Main"
+                ]
+            },
+            {
+                "Time": "10.1",
+                "Stack": [
+                    "Executing Func for Sample 2",
+                    "Calling Func",
+                    "Main"
+                ]
+            }
+        ]
+    }
+}
+                </pre>
+            </li>
         <li>
             Version 1.8.28 2/4/16
             <ul>
@@ -9089,25 +9070,24 @@
                     Extended perfView.xml file format so that it can more easily consume 'ad hoc' creation of stacks.
                     It still accepts the 'interned' scheme where you give IDs to each frame and stack and use those
                     to create samples, but now you can specify the samples inline with the sample like this
-                    <ul>
-                        <li> &lt;StackWindow&gt; &lt;StackSource&gt; &lt;Samples&gt; </li>
-                        <li>
-                            &lt;Sample Time="10"&gt;
-                            <ul>
-                                <li>Executing Func for Sample 1</li>
-                                <li>Calling Func</li>
-                                <li>Main</li>
-                            </ul>
-                        <li>
-                            &lt;Sample Time="20"&gt;
-                            <ul>
-                                <li>Executing Func for Sample 1</li>
-                                <li>Calling Func</li>
-                                <li>Main</li>
-                            </ul>
-                        </li>
-                        <li> &lt;/Samples&gt; &lt;/StackSource&gt; &lt;/StackWindow&gt; </li>
-                    </ul>
+                        <pre>
+&lt;StackWindow&gt;
+    &lt;StackSource&gt;
+        &lt;Samples&gt;
+            &lt;Sample Time="10"&gt;
+                Executing Func for Sample 1
+                Calling Func
+                Main
+            &lt;/Sample&gt;
+            &lt;Sample Time="20"&gt;
+                Executing Func for Sample 2
+                Calling Func
+                Main
+            &lt;/Sample&gt;
+        &lt;/Samples&gt;
+    &lt;/StackSource&gt; 
+&lt;/StackWindow&gt;
+                    </pre>
                     While this format is inefficient (you repeat many strings in many stacks), it is sometimes
                     convenient, and it is easy enough to support.   There are more details which I will blog about in
                     the near future.
