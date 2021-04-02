@@ -1792,7 +1792,7 @@ public class GCHeapDumper
 
                 if (type != null)
                 {
-                    RcwData rcw = type.GetRCWData(addr);
+                    RcwData rcw = type.IsRCW(addr) ? type.GetRCWData(addr) : null;
 
                     if (rcw != null)
                     {
@@ -1926,7 +1926,7 @@ public class GCHeapDumper
                 var memoryGraphTypeIdx = GetTypeIndexForClrType(type, objSizeAsInt);
 
                 // TODO this seems inefficient, can we get a list of RCWs? 
-                RcwData rcwData = type.GetRCWData(objAddr);
+                RcwData rcwData = type.IsRCW(objAddr) ? type.GetRCWData(objAddr) : null;
                 if (rcwData != null)
                 {
                     // Add the COM object this RCW points at as a child of this node.  
