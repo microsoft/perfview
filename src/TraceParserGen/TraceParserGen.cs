@@ -124,7 +124,7 @@ internal class TraceParserGen
         string stateClassName = ClassNamePrefix + "State";
 
         output.WriteLine("    [System.CodeDom.Compiler.GeneratedCode(\"traceparsergen\", \"2.0\")]");
-        output.WriteLine("    public sealed class " + ClassNamePrefix + "TraceEventParser : TraceEventParser ");
+        output.WriteLine("    public sealed partial class " + ClassNamePrefix + "TraceEventParser : TraceEventParser ");
         output.WriteLine("    {");
         output.WriteLine("        public static string ProviderName = \"" + m_provider.Name + "\";");
         output.WriteLine("        public static Guid ProviderGuid = " + CodeForGuidLiteral(m_provider.Id) + ";");
@@ -167,7 +167,7 @@ internal class TraceParserGen
         if (NeedsParserState)
         {
             output.WriteLine("    #region private types");
-            output.WriteLine("    internal class " + stateClassName + " : IFastSerializable");
+            output.WriteLine("    internal partial class " + stateClassName + " : IFastSerializable");
             output.WriteLine("    {");
             output.WriteLine("        //TODO: Fill in");
             output.WriteLine("        void IFastSerializable.ToStream(Serializer serializer)");
@@ -195,6 +195,7 @@ internal class TraceParserGen
 
     private void GenerateKeywords(TextWriter output)
     {
+        output.WriteLine("        [Flags]");
         output.WriteLine("        public enum Keywords : long");
         output.WriteLine("        {");
         ulong keyword = 1;
@@ -221,6 +222,11 @@ internal class TraceParserGen
         if (0 <= keywordIdx)
         {
             keywordName = keywordName.Substring(keywordIdx + 8);
+        }
+
+        if (keywordName.StartsWith(@"Keyword", StringComparison.Ordinal))
+        {
+            keywordName = keywordName.Substring(7);
         }
 
         if (keywordName.IndexOf('_') < 0)
@@ -298,8 +304,10 @@ internal class TraceParserGen
                 state = ", state";
             }
 
-            output.WriteLine("            return new {0}(action, {1}, {2}, \"{3}\", Guid.Empty, {4}, \"{5}\", ProviderGuid, ProviderName {6});",
-                templateClassName, evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName), state);
+            var taskGuid = string.IsNullOrEmpty(evnt.TaskName) ? "Guid.Empty" : ToCSharpName(evnt.TaskName) + "TaskGuid";
+
+            output.WriteLine("            return new {0}(action, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName {7});",
+                templateClassName, evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), taskGuid, evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName), state);
             output.WriteLine("        }");
         }
 
@@ -361,16 +369,11 @@ internal class TraceParserGen
             output.WriteLine("        {");
             output.WriteLine("            add");
             output.WriteLine("            {");
-            var taskGuid = (string.IsNullOrEmpty(evnt.TaskName))
-                ? "Guid.Empty"
-                : evnt.TaskName + "TaskGuid";
+            var taskGuid = string.IsNullOrEmpty(evnt.TaskName) ? "Guid.Empty" : ToCSharpName(evnt.TaskName) + "TaskGuid";
             var taskName = TraceParserGen.ToCSharpName(evnt.TaskName);
             if (string.IsNullOrEmpty(taskName)) taskName = evntName;
             // Call the *Template() function that does the work
-            output.WriteLine("                source.RegisterEventTemplate(new {0}(value, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName));",
-                                              templateClassName, evnt.Id, evnt.Task, taskName, taskGuid,
-                                              evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
-                                              );
+            output.WriteLine($"                source.RegisterEventTemplate({ToCSharpName(evntName)}Template(value));");
             output.WriteLine("            }");
             output.WriteLine("            remove");
             output.WriteLine("            {");
@@ -417,7 +420,7 @@ internal class TraceParserGen
             classesEmitted.Add(templateClassName, null);
 
             // OK we are ready to write it all out.
-            output.WriteLine("    public sealed class " + templateClassName + " : TraceEvent");
+            output.WriteLine("    public sealed partial class " + templateClassName + " : TraceEvent");
             output.WriteLine("    {");
 
             // Write out all the getters.
