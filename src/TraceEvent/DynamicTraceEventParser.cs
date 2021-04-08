@@ -2060,7 +2060,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 settings.IgnoreComments = true;
                 settings.IgnoreWhitespace = true;
 
-                System.IO.MemoryStream stream = new System.IO.MemoryStream(serializedManifest);
+                // Workaround for corrupt manifest produced by
+                // https://github.com/dotnet/roslyn/commit/b7025ccf594d75c98b2aa50f0800fd5ef1135ccc prior to
+                // https://github.com/dotnet/roslyn/pull/52479.
+                var manifest = Manifest.Replace("<OnEventCommand>", "&lt;OnEventCommand&gt;");
+                var bytes = Encoding.UTF8.GetBytes(manifest);
+
+                System.IO.MemoryStream stream = new System.IO.MemoryStream(bytes);
                 return XmlReader.Create(stream, settings);
             }
         }
