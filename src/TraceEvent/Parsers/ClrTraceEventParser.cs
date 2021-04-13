@@ -5728,6 +5728,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return arr;
         }
 
+        // This is used only for traces obtained prior to GCPerHeapHistory_V3. These traces are expected to begin with exactly 5 gen_data.
+        // Please refer to the beginning of this class for the exact layout of these traces.
         private const int maxGenData = 5;
 
         internal GCPerHeapHistoryTraceData(Delegate action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
