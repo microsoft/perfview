@@ -1338,7 +1338,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <returns>A enumeration of strings, each of which is a name of a session</returns>
         public static unsafe List<string> GetActiveSessionNames()
         {
-            const int MAX_SESSIONS = 64;
+            int MAX_SESSIONS = GetETWMaxLoggers();
             int sizeOfProperties = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) +
                                    sizeof(char) * TraceEventSession.MaxNameSize +     // For log moduleFile name 
                                    sizeof(char) * TraceEventSession.MaxNameSize;      // For session name
@@ -1366,6 +1366,35 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 activeTraceNames.Add(sessionName);
             }
             return activeTraceNames;
+        }
+
+        /// <summary>
+        /// Get the maximum number of ETW loggers supported by the current machine
+        /// </summary>
+        /// <returns>The maximum number of supported ETW loggers</returns>
+        private static int GetETWMaxLoggers()
+        {
+            const string MaxEtwRegistryKey = "SYSTEM\\CurrentControlSet\\Control\\WMI";
+            const string MaxEtwPropertyName = "EtwMaxLoggers";
+            const int DefaultMaxETWLoggers = 64;
+
+            try
+            {
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(MaxEtwRegistryKey))
+                {
+                    if (key != null)
+                    {
+                        if (int.TryParse(key.GetValue(MaxEtwPropertyName).ToString(), out int maxEtwLoggers))
+                        {
+                            return maxEtwLoggers;
+                        }
+                    }
+                }
+            }
+            // If the value does not exist or cannot be ready from the registry, return the default value
+            catch (Exception) { }
+
+            return DefaultMaxETWLoggers;
         }
 
         // Post processing (static methods)
