@@ -44,6 +44,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
     public sealed unsafe class TraceEventSession : IDisposable
     {
         /// <summary>
+        /// Maximum Number of MaxEtwLoggers the system supports
+        /// </summary>
+        private static int? MaxEtwLoggers = null;
+
+        /// <summary>
         /// Create a new logging session sending the output to a given file.  
         /// </summary>
         /// <param name="sessionName">
@@ -1378,23 +1383,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
             const string MaxEtwPropertyName = "EtwMaxLoggers";
             const int DefaultMaxETWLoggers = 64;
 
-            try
+            if (MaxEtwLoggers == null)
             {
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(MaxEtwRegistryKey))
+                try
                 {
-                    if (key != null)
+                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey(MaxEtwRegistryKey))
                     {
-                        if (int.TryParse(key.GetValue(MaxEtwPropertyName).ToString(), out int maxEtwLoggers))
+                        if (key != null && key.GetValue(MaxEtwPropertyName) != null)
                         {
-                            return maxEtwLoggers;
+                            if (int.TryParse(key.GetValue(MaxEtwPropertyName).ToString(), out int propertyValue))
+                            {
+                                // Ensure registry was set within permissable range as defined by
+                                // https://docs.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-starttracew
+                                if (propertyValue >= 32 && propertyValue <= 256)
+                                {
+                                    MaxEtwLoggers = propertyValue;
+                                }
+                            }
                         }
                     }
                 }
-            }
-            // If the value does not exist or cannot be ready from the registry, return the default value
-            catch (Exception) { }
+                catch (Exception) { }
 
-            return DefaultMaxETWLoggers;
+                // If the value does not exist or cannot be read from the registry, return the default value
+                MaxEtwLoggers = MaxEtwLoggers ?? DefaultMaxETWLoggers;
+            }
+
+            return (int)MaxEtwLoggers;
         }
 
         // Post processing (static methods)
