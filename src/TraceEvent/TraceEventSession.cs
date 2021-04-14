@@ -44,11 +44,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
     public sealed unsafe class TraceEventSession : IDisposable
     {
         /// <summary>
-        /// Maximum Number of MaxEtwLoggers the system supports
-        /// </summary>
-        private static int? MaxEtwLoggers = null;
-
-        /// <summary>
         /// Create a new logging session sending the output to a given file.  
         /// </summary>
         /// <param name="sessionName">
@@ -1372,6 +1367,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             return activeTraceNames;
         }
+
+        /// <summary>
+        /// Maximum Number of MaxEtwLoggers the system supports
+        /// </summary>
+        private static int? MaxEtwLoggers = null;
 
         /// <summary>
         /// Get the maximum number of ETW loggers supported by the current machine
