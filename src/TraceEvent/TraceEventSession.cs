@@ -1338,7 +1338,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <returns>A enumeration of strings, each of which is a name of a session</returns>
         public static unsafe List<string> GetActiveSessionNames()
         {
-            const int MAX_SESSIONS = 64;
+            int MAX_SESSIONS = GetETWMaxLoggers();
             int sizeOfProperties = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) +
                                    sizeof(char) * TraceEventSession.MaxNameSize +     // For log moduleFile name 
                                    sizeof(char) * TraceEventSession.MaxNameSize;      // For session name
@@ -1366,6 +1366,54 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 activeTraceNames.Add(sessionName);
             }
             return activeTraceNames;
+        }
+
+        /// <summary>
+        /// Maximum Number of MaxEtwLoggers the system supports
+        /// </summary>
+        private static int? MaxEtwLoggers = null;
+
+        /// <summary>
+        /// Get the maximum number of ETW loggers supported by the current machine
+        /// </summary>
+        /// <returns>The maximum number of supported ETW loggers</returns>
+        private static int GetETWMaxLoggers()
+        {
+            const string MaxEtwRegistryKey = "SYSTEM\\CurrentControlSet\\Control\\WMI";
+            const string MaxEtwPropertyName = "EtwMaxLoggers";
+            const int DefaultMaxETWLoggers = 64;
+
+            if (MaxEtwLoggers == null)
+            {
+                try
+                {
+                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey(MaxEtwRegistryKey))
+                    {
+                        if (key != null)
+                        {
+                            var property = key.GetValue(MaxEtwPropertyName);
+                            if (property != null)
+                            {
+                                if (int.TryParse(property.ToString(), out int propertyValue))
+                                {
+                                    // Ensure registry was set within permissable range as defined by
+                                    // https://docs.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-starttracew
+                                    if (propertyValue >= 32 && propertyValue <= 256)
+                                    {
+                                        MaxEtwLoggers = propertyValue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception) { }
+
+                // If the value does not exist or cannot be read from the registry, return the default value
+                MaxEtwLoggers = MaxEtwLoggers ?? DefaultMaxETWLoggers;
+            }
+
+            return (int)MaxEtwLoggers;
         }
 
         // Post processing (static methods)
