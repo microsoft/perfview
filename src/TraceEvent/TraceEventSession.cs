@@ -1389,15 +1389,19 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     using (RegistryKey key = Registry.LocalMachine.OpenSubKey(MaxEtwRegistryKey))
                     {
-                        if (key != null && key.GetValue(MaxEtwPropertyName) != null)
+                        if (key != null)
                         {
-                            if (int.TryParse(key.GetValue(MaxEtwPropertyName).ToString(), out int propertyValue))
+                            var property = key.GetValue(MaxEtwPropertyName);
+                            if (property != null)
                             {
-                                // Ensure registry was set within permissable range as defined by
-                                // https://docs.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-starttracew
-                                if (propertyValue >= 32 && propertyValue <= 256)
+                                if (int.TryParse(property.ToString(), out int propertyValue))
                                 {
-                                    MaxEtwLoggers = propertyValue;
+                                    // Ensure registry was set within permissable range as defined by
+                                    // https://docs.microsoft.com/en-us/windows/win32/api/evntrace/nf-evntrace-starttracew
+                                    if (propertyValue >= 32 && propertyValue <= 256)
+                                    {
+                                        MaxEtwLoggers = propertyValue;
+                                    }
                                 }
                             }
                         }
