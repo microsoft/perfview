@@ -4941,8 +4941,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Gen1,
         Gen2,
         GenLargeObj,
-        Gen0After,
         GenPinObj,
+        MaxGenCount, 
     }
 
     /// <summary>
@@ -5560,6 +5560,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
         public bool HasCount { get { return Version >= 3; } }
+        public int NumGenerations { get { return HasCount ? Count : 4; } }
         public int MemoryPressure
         {
             get
@@ -5727,7 +5728,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return arr;
         }
 
-        private const int maxGenData = (int)Gens.Gen0After + 1;
+        // This is used only for traces obtained prior to GCPerHeapHistory_V3. These traces are expected to begin with exactly 5 gen_data.
+        // Please refer to the beginning of this class for the exact layout of these traces.
+        private const int maxGenData = 5;
 
         internal GCPerHeapHistoryTraceData(Delegate action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -5833,8 +5836,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
 
             sb.Append("/>");
-            // @TODO the upper bound is not right for >= 3
-            for (var gens = Gens.Gen0; gens <= Gens.GenLargeObj; gens++)
+            for (var gens = Gens.Gen0; gens < (Gens)NumGenerations; gens++)
             {
                 GenData(gens).ToXml(gens, sb).AppendLine();
             }

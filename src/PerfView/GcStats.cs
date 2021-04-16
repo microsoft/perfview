@@ -543,14 +543,14 @@ namespace Stats
                     writer.WriteLine(">");
 
                     var sb = new System.Text.StringBuilder();
-                    for (var gens = Gens.Gen0; gens <= Gens.GenLargeObj; gens++)
+                    for (int gens = 0; gens < perHeapHistory.GenData.Length; gens++)
                     {
                         sb.Clear();
                         sb.Append("        ");
-                        writer.Write(perHeapHistory.GenData[(int)gens].ToXml(gens, sb).AppendLine().ToString());
+                        writer.Write(perHeapHistory.GenData[(int)gens].ToXml((Gens)gens, sb).AppendLine().ToString());
                     }
 
-                    writer.Write("      </PerHeapHistory>");
+                    writer.WriteLine("      </PerHeapHistory>");
                     HeapNum++;
                 }
                 writer.WriteLine("      </PerHeapHistories>");
