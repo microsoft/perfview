@@ -68,6 +68,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             m_SessionName = sessionName;
             m_Create = true;
             m_ResartIfExist = (options & TraceEventSessionOptions.NoRestartOnCreate) == 0;
+            m_NoPerProcessBuffering = (options & TraceEventSessionOptions.NoPerProcessorBuffering) != 0;
             m_CpuSampleIntervalMSec = 1.0F;
             m_SessionId = -1;
             m_StopOnDispose = true;
@@ -134,6 +135,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     m_FileName = null;
                     m_CircularBufferMB = m_BufferSizeMB;
                 }
+                if ((properties->LogFileMode & TraceEventNativeMethods.EVENT_TRACE_NO_PER_PROCESSOR_BUFFERING) != 0)
+                {
+                    m_NoPerProcessBuffering = true;
+                }
             }
             else
             {
@@ -142,6 +147,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 m_FileName = null;               // filename = null means real time session
                 m_Create = true;
                 m_ResartIfExist = (options & TraceEventSessionOptions.NoRestartOnCreate) == 0;
+                m_NoPerProcessBuffering = (options & TraceEventSessionOptions.NoPerProcessorBuffering) != 0;
             }
         }
         /// <summary>
@@ -2252,7 +2258,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
             properties->MaximumBuffers = properties->MinimumBuffers * 5 / 4 + 10;
 
-            properties->Wnode.ClientContext = 1;    // set Timer resolution to 100ns.  
+            properties->Wnode.ClientContext = 1;    // set Timer resolution to 100ns.
+
+            if (m_NoPerProcessBuffering)
+            {
+                properties->LogFileMode |= TraceEventNativeMethods.EVENT_TRACE_NO_PER_PROCESSOR_BUFFERING;
+            }
             return properties;
         }
 
@@ -2291,6 +2302,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // Internal state
         private bool m_Create;                    // Should create if it does not exist.
         private bool m_ResartIfExist;             // Try to restart if it exists
+        private bool m_NoPerProcessBuffering;     // Don't use per-processor buffers.  Use a single buffer.
         private bool m_IsActive;                  // Session is active (InsureSession has been called)
         private bool m_Stopped;                   // The Stop() method was called (avoids reentrant)
         private bool m_StopOnDispose;             // Should we Stop() when the object is destroyed?
@@ -2562,6 +2574,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// monitoring process is intended. 
         /// </summary>
         NoRestartOnCreate = 2,
+        /// <summary>
+        /// Write events that were logged on different processors to a common buffer.  This is useful when
+        /// it is important to capture the events in the order in which they were logged.  This is not recommended
+        /// for sessions that expect more than 1K events per second.
+        /// </summary>
+        NoPerProcessorBuffering = 3,
     }
 
     /// <summary>
