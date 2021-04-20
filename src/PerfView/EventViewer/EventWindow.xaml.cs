@@ -481,9 +481,6 @@ namespace PerfView
                         dataSource.ConfigureStackWindow(stackWindow);
                         stackWindow.StartTextBox.Text = startTimeRelativeMSec.ToString();
                         stackWindow.EndTextBox.Text = endTimeRelativeMSec.ToString();
-                        stackWindow.GroupRegExTextBox.Text = "";
-                        stackWindow.FoldPercentTextBox.Text = "";
-                        stackWindow.CallTreeTab.IsSelected = true;
                         stackWindow.Show();
                         stackWindow.SetStackSource(stackSource);
                     });
