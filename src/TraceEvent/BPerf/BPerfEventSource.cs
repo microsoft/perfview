@@ -634,7 +634,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// The delegate function to decompress by using ULZ777 algorithm
         /// </summary>
         /// <returns></returns>
-        public unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
+        private unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
         {
             fixed (byte* uncompressedBufferPtr = &output[0])
             fixed (byte* compressedBufferPtr = &input[inputOffset])
