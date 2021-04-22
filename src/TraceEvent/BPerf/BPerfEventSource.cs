@@ -540,7 +540,6 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 fixed (byte* uncompressedBufferPtr = &this.uncompressedBuffer[0])
-                fixed (byte* compressedBufferPtr = &this.compressedBuffer[offset])
                 {
                     var finalUncompressedSize = this.DecompressDelegate(this.compressedBuffer, offset,  compressedBufferSize, this.uncompressedBuffer, BufferSize);
                     if (finalUncompressedSize != uncompressedBufferSize)
