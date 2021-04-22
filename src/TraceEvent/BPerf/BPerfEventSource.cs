@@ -96,24 +96,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private BPerfEventSourceDecompress DecompressDelegate;
 
-        /// <summary>
-        /// The dictionary of file extention and decompress delegate
-        /// </summary>
-        public static readonly Dictionary<string, BPerfEventSourceDecompress> BPerfDecompressDelegateDictionary = new Dictionary<string, BPerfEventSourceDecompress>(StringComparer.OrdinalIgnoreCase) 
-        { 
-            {".btl", BPerfEventSource.ULZ777Decompress},
-        };
-
-        /// <summary>
-        /// Register file extention and corresponding decompress delegate
-        /// </summary>
-        /// <param name="fileExtention">file extention</param>
-        /// <param name="decompressDelegate">corresponding decompress delegate</param>
-        public static void RegisterBPerfDecompressDelegate(string fileExtention, BPerfEventSourceDecompress decompressDelegate)
-        {
-            BPerfDecompressDelegateDictionary.Add(fileExtention, decompressDelegate);
-        }
-
         public BPerfEventSource(string btlFilePath)
             : this(btlFilePath, new TraceEventDispatcherOptions())
         {
@@ -150,14 +132,7 @@ namespace Microsoft.Diagnostics.Tracing
             this.DecompressDelegate = decompressDelegate;
             if(this.DecompressDelegate == null)
             {
-                foreach(var key in BPerfEventSource.BPerfDecompressDelegateDictionary.Keys)
-                {
-                    if(this.btlFilePath.EndsWith(key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.DecompressDelegate = BPerfEventSource.BPerfDecompressDelegateDictionary[key];
-                        break;
-                    }
-                }
+                this.DecompressDelegate = BPerfEventSource.ULZ777Decompress;
             }
 
             string indexFile = this.btlFilePath + ".id";
