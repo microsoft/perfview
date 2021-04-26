@@ -2563,23 +2563,23 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// Create a new session, stop and recreated it if it already exists.  This is the default.  
         /// </summary>
-        Create = 0,
+        Create = 1,
         /// <summary>
         /// Attach to an existing session, fail if the session does NOT already exist.  
         /// </summary>
-        Attach = 1,
+        Attach = 2,
         /// <summary>
         /// Normally if you create a session it will stop and restart it if it exists already.  Setting
         /// this flat will disable the 'stop and restart' behavior.   This is useful if only a single
         /// monitoring process is intended. 
         /// </summary>
-        NoRestartOnCreate = 2,
+        NoRestartOnCreate = 4,
         /// <summary>
         /// Write events that were logged on different processors to a common buffer.  This is useful when
         /// it is important to capture the events in the order in which they were logged.  This is not recommended
         /// for sessions that expect more than 1K events per second.
         /// </summary>
-        NoPerProcessorBuffering = 3,
+        NoPerProcessorBuffering = 8,
     }
 
     /// <summary>
