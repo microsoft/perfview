@@ -183,14 +183,35 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <returns>true if the session already existed and needed to be restarted.</returns>
         public bool EnableProvider(string providerName, TraceEventLevel providerLevel = TraceEventLevel.Verbose, ulong matchAnyKeywords = ulong.MaxValue, TraceEventProviderOptions options = null)
         {
+            return EnableProvider(providerName, (byte) providerLevel, matchAnyKeywords, options);
+        }
+
+        /// <summary>
+        /// Enable a NON-KERNEL provider (see also EnableKernelProvider) which has a given provider name.  
+        /// This API first checks if a published provider exists by that name, otherwise it 
+        /// assumes it is an EventSouce and determines the provider Guid by hashing the name according to a
+        /// well known algorithm.  Thus it will never return a failure for a incorrect spelling of the name.  
+        /// </summary>
+        /// <param name="providerName">
+        /// The name of the provider.  It must either be registered with the operating system (logman query providers returns it)
+        /// or it must be an EventSource (see GetEventSourceGuidFromName)</param>
+        /// <param name="providerLevel">The verbosity to turn on</param>
+        /// <param name="matchAnyKeywords">A bitvector representing the areas to turn on. Only the
+        /// low 32 bits are used by classic providers and passed as the 'flags' value.  Zero
+        /// is a special value which is a provider defined default, which is usually 'everything'</param>
+        /// <param name="options">Additional options for the provider (e.g. taking a stack trace), arguments ... </param>
+        /// <returns>true if the session already existed and needed to be restarted.</returns>
+        public bool EnableProvider(string providerName, byte providerLevel = (byte) TraceEventLevel.Verbose, ulong matchAnyKeywords = ulong.MaxValue, TraceEventProviderOptions options = null)
+        {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
             {
                 providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerName);
             }
 
-            return EnableProvider(providerGuid, providerLevel, matchAnyKeywords, options);
+            return EnableProvider(providerGuid, (byte)providerLevel, matchAnyKeywords, options);
         }
+
         /// <summary>
         /// Enable a NON-KERNEL provider (see also EnableKernelProvider) which has a given provider Guid.  
         /// </summary>
@@ -203,6 +224,22 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="options">Additional options for the provider (e.g. taking a stack trace), arguments ... </param>
         /// <returns>true if the session already existed and needed to be restarted.</returns>
         public bool EnableProvider(Guid providerGuid, TraceEventLevel providerLevel = TraceEventLevel.Verbose, ulong matchAnyKeywords = ulong.MaxValue, TraceEventProviderOptions options = null)
+        {
+            return EnableProvider(providerGuid, (byte)providerLevel, matchAnyKeywords, options);
+        }
+
+        /// <summary>
+        /// Enable a NON-KERNEL provider (see also EnableKernelProvider) which has a given provider Guid.  
+        /// </summary>
+        /// <param name="providerGuid">
+        /// The Guid that represents the event provider enable. </param>
+        /// <param name="providerLevel">The verbosity to turn on</param>
+        /// <param name="matchAnyKeywords">A bitvector representing the areas to turn on. Only the
+        /// low 32 bits are used by classic providers and passed as the 'flags' value.  Zero
+        /// is a special value which is a provider defined default, which is usually 'everything'</param>
+        /// <param name="options">Additional options for the provider (e.g. taking a stack trace), arguments ... </param>
+        /// <returns>true if the session already existed and needed to be restarted.</returns>
+        public bool EnableProvider(Guid providerGuid, byte providerLevel = (byte) TraceEventLevel.Verbose, ulong matchAnyKeywords = ulong.MaxValue, TraceEventProviderOptions options = null)
         {
             lock (this)
             {
@@ -453,14 +490,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                                      ? TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
                         hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, ref providerGuid,
-                            eventControlCode, (byte)providerLevel,
+                            eventControlCode, providerLevel,
                             matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (TypeLoadException)
                     {
                         // OK that did not work, try the VISTA API
                         hr = TraceEventNativeMethods.EnableTraceEx(ref providerGuid, null, m_SessionHandle, 1,
-                            (byte)providerLevel, matchAnyKeywords, matchAllKeywords, 0, filterDescrPtr);
+                            providerLevel, matchAnyKeywords, matchAllKeywords, 0, filterDescrPtr);
                     }
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
@@ -533,7 +570,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 args.StacksEnabled = true;
             }
 
-            return EnableProvider(providerGuid, providerLevel, matchAnyKeywords, args);
+            return EnableProvider(providerGuid, (byte) providerLevel, matchAnyKeywords, args);
         }
         /// <summary>
         /// Enable an ETW provider, passing a raw blob of data to the provider as a Filter specification.   
@@ -557,7 +594,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 args.StacksEnabled = true;
             }
 
-            EnableProvider(providerGuid, providerLevel, matchAnyKeywords, args);
+            EnableProvider(providerGuid, (byte) providerLevel, matchAnyKeywords, args);
         }
         /// <summary>
         /// Helper function that is useful when using EnableProvider with key value pairs. 
