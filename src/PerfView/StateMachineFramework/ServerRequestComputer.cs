@@ -65,7 +65,7 @@ namespace PerfView
         /// <summary>
         /// Execute the server request computer.
         /// </summary>
-        internal override void RegisterEventHandlers(TraceEventDispatcher eventDispatcher)
+        public override void RegisterEventHandlers(TraceEventDispatcher eventDispatcher)
         {
             var aspNetParser = new AspNetTraceEventParser(eventDispatcher);
             var WCFParser = new ApplicationServerTraceEventParser(eventDispatcher);
