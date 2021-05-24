@@ -2285,6 +2285,17 @@ namespace PerfView
 
             StatusBar.StartWork("Fetching Source code for " + cellText, delegate ()
             {
+                // Try to default to TLS1.2
+                try
+                {
+                    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+                }
+                catch(NotSupportedException ex)
+                {
+                    StatusBar.Log($"Failed to set security protocol to TLS1.2: {ex}");
+                    throw;
+                }
+
                 SortedDictionary<int, float> metricOnLine;
                 var sourceLocation = GetSourceLocation(asCallTreeNodeBase, cellText, out metricOnLine);
 
