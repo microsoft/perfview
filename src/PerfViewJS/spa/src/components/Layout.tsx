@@ -1,15 +1,25 @@
-import './Layout.css';
+import "./Layout.css";
+import { Container, Row, Col } from 'react-grid-system';
+import React from "react";
+import NavMenu from "./NavMenu";
 
-import React, { Component } from 'react';
-
-export class Layout extends Component {
-    static displayName = Layout.name;
-
-    render() {
-        return (
-            <div>
-                {this.props.children}
-            </div>
-        );
-    }
+interface ILayoutProps {
+  children: React.ReactNode;
 }
+
+const Layout = (props: ILayoutProps) => {
+  const { children } = props;
+  return (
+    <Container fluid style={{ margin: 0 }}>
+      <Row>
+        <Col xs={3}>
+          <NavMenu />
+        </Col>
+        <Col xs={9}>
+          {children}
+        </Col>
+      </Row>
+    </Container>)
+}
+
+export default Layout;

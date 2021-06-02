@@ -1,85 +1,104 @@
-import React from 'react';
-import { Redirect } from 'react-router';
-import base64url from 'base64url'
+import React, { useEffect, useState } from "react";
+import { useHistory } from "react-router";
+import base64url from "base64url";
+import {
+  DetailsList, DetailsListLayoutMode, IColumn, Selection, IStackProps,
+  PrimaryButton, SelectionMode, Stack, TextField, Text, Link
+} from "@fluentui/react";
+import { Container, Row } from "react-grid-system";
+import { useTranslation } from "react-i18next";
 
-export interface Props {
-    match: any;
+const stackTokens = { childrenGap: 50 };
+const columnProps: Partial<IStackProps> = {
+  tokens: { childrenGap: 5 },
+};
+
+const columns: IColumn[] = [
+  {
+    key: 'column1',
+    name: 'Trace files',
+    fieldName: 'name',
+    minWidth: 510,
+    isRowHeader: true,
+    data: 'string'
+  }
+];
+
+const Home = () => {
+  const history = useHistory();
+  const { t } = useTranslation();
+  const [files, setFiles] = useState<string[]>([]);
+  const [dataFile, setDataFile] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/datadirectorylisting", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setFiles(data);
+      });
+  }, []);
+
+  const handleOnClick = () => {
+    const pushTo = base64url.encode(dataFile + "*" + "" + "*" + "", "utf8");
+    history.push("/ui/eventviewer/" + pushTo, { dataFile: pushTo });
+  }
+
+  const transformToDetailListItems = (items: string[]) => {
+    return items.map((item, i) => {
+      return {
+        key: i,
+        name: item,
+        value: item
+      }
+    });
+  }
+
+  const selection = new Selection({
+    onSelectionChanged: () => {
+      if (selection.getSelection().length > 0) {
+        //?workaround for Fluent-UI, since it's always an array
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        const f = selection.getSelection()[0].value;
+        setDataFile(f)
+      }
+    },
+    selectionMode: SelectionMode.single,
+  });
+  return (
+    <Container>
+      <Row>
+        <Stack>
+          <Text variant={'xLarge'} block>{t('home.title')}</Text>
+          <Text variant={'large'}>
+            {t('home.intro1')}{' '}
+            <Link to={"https://github.com/microsoft/perfview/tree/main/src/PerfViewJS"} underline>{t('home.githubtext')}</Link>
+          </Text>
+          <Text variant={'large'}>
+            {t('home.bugreporting')}{' '}
+            <Link to={"https://github.com/microsoft/perfview/issues"} underline>{t('home.bugreportingtext')}</Link>
+          </Text>
+        </Stack>
+      </Row>
+      <Row>
+        <Stack horizontal tokens={stackTokens} >
+          <Stack {...columnProps}>
+            <TextField label={'Input file'} value={dataFile} readOnly />
+            <PrimaryButton text="Analyze" onClick={handleOnClick} disabled={dataFile === ''} />
+            <DetailsList
+              items={files ? transformToDetailListItems(files) : []}
+              columns={columns}
+              selection={selection}
+              selectionMode={SelectionMode.single}
+              layoutMode={DetailsListLayoutMode.justified}
+            />
+          </Stack>
+        </Stack>
+      </Row>
+    </Container>
+  );
 }
-
-interface State {
-    dataFile: string;
-    startTime: string;
-    endTime: string;
-    redirect: boolean;
-    files: string[];
-}
-
-export class Home extends React.Component<Props, State> {
-
-    static displayName = Home.name;
-
-    constructor(props: any) {
-        super(props);
-        this.state = { files: [], dataFile: "", startTime: "", endTime: "", redirect: false };
-        this.handleDataFileChange = this.handleDataFileChange.bind(this);
-        this.handleStartTimeChange = this.handleStartTimeChange.bind(this);
-        this.handleEndTimeChange = this.handleEndTimeChange.bind(this);
-        this.handleOnClick = this.handleOnClick.bind(this);
-
-        fetch('/api/datadirectorylisting', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
-            .then(res => res.json())
-            .then(data => {
-                this.setState({ files: data });
-            });
-    }
-
-    handleDataFileChange(e: string) {
-        this.setState({ dataFile: e });
-    }
-
-    handleStartTimeChange(e: any) {
-        this.setState({ startTime: e.target.value });
-    }
-
-    handleEndTimeChange(e: any) {
-        this.setState({ endTime: e.target.value });
-    }
-
-    handleOnClick() {
-        this.setState({ redirect: true });
-    }
-
-    render() {
-
-        if (this.state.redirect) {
-            var encoded = base64url.encode(this.state.dataFile + "*" + this.state.startTime + "*" + this.state.endTime, "utf8");
-            return <Redirect push to={`/ui/eventviewer/${(encoded)}`} />;
-        }
-
-        return (
-            <div>
-                <h1>PerfViewJS</h1>
-
-                File Path: <input type="dataFile" value={this.state.dataFile} readOnly />
-                Start Time: <input type="startTime" onChange={this.handleStartTimeChange} />
-                End Time: <input type="endTime" onChange={this.handleEndTimeChange} />
-
-                <button className="btn btn-secondary" onClick={this.handleOnClick}>Analyze</button>
-
-                <table className="table table-striped table-bordered" id="pd">
-                    <thead>
-                        <tr>
-                            <td><h5>Choose a File (it populates the above form)</h5></td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {this.state.files.map(file =>
-                            <tr key={`${file}`}>
-                                <td><button className="btn btn-secondary btn-sm" onClick={() => this.handleDataFileChange(file)}>{file}</button></td>
-                            </tr>)}
-                    </tbody>
-                </table>
-            </div>
-        );
-    }
-}
+export default Home;
