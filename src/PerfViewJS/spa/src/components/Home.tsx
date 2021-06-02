@@ -75,11 +75,17 @@ const Home = () => {
           <Text variant={'xLarge'} block>{t('home.title')}</Text>
           <Text variant={'large'}>
             {t('home.intro1')}{' '}
-            <Link to={"https://github.com/microsoft/perfview/tree/main/src/PerfViewJS"} underline>{t('home.githubtext')}</Link>
+            <Link target="_blank" href={"https://github.com/microsoft/perfview/tree/main/src/PerfViewJS"} underline>{t('home.githubtext')}</Link>
+          </Text>
+          <Text>
+            {t('home.intro2')}
+            <Link target="_blank" href={"https://github.com/dotnet/diagnostics/blob/main/documentation/dotnet-trace-instructions.md"} underline>
+              {t('home.tracedocs')}
+            </Link>
           </Text>
           <Text variant={'large'}>
             {t('home.bugreporting')}{' '}
-            <Link to={"https://github.com/microsoft/perfview/issues"} underline>{t('home.bugreportingtext')}</Link>
+            <Link target="_blank" href={"https://github.com/microsoft/perfview/issues"} underline>{t('home.bugreportingtext')}</Link>
           </Text>
         </Stack>
       </Row>
