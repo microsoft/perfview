@@ -1,5 +1,5 @@
 import App from "./App";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter as Router } from "react-router-dom";
 import React from "react";
 import ReactDOM from "react-dom";
 import { initializeIcons } from '@fluentui/react/lib/Icons';
@@ -9,8 +9,8 @@ const rootElement = document.getElementById("root");
 initializeIcons();
 
 ReactDOM.render(
-  <BrowserRouter basename={baseUrl === null ? "BrokenUrl" : baseUrl}>
+  <Router basename={baseUrl === null ? "BrokenUrl" : baseUrl}>
     <App />
-  </BrowserRouter>,
+  </Router>,
   rootElement
 );

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router";
-import base64url from "base64url";
 import {
   DetailsList, DetailsListLayoutMode, IColumn, Selection, IStackProps,
-  PrimaryButton, SelectionMode, Stack, TextField, Text, Link
+  SelectionMode, Stack, Text, Link
 } from "@fluentui/react";
 import { Container, Row } from "react-grid-system";
 import { useTranslation } from "react-i18next";
+import { useDataFileContext } from '../context/DataFileContext';
 
 const stackTokens = { childrenGap: 50 };
 const columnProps: Partial<IStackProps> = {
@@ -25,10 +24,9 @@ const columns: IColumn[] = [
 ];
 
 const Home = () => {
-  const history = useHistory();
   const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>([]);
-  const [dataFile, setDataFile] = useState<string>("");
+  const { setDataFile, } = useDataFileContext();
 
   useEffect(() => {
     fetch("/api/datadirectorylisting", {
@@ -40,11 +38,6 @@ const Home = () => {
         setFiles(data);
       });
   }, []);
-
-  const handleOnClick = () => {
-    const pushTo = base64url.encode(dataFile + "*" + "" + "*" + "", "utf8");
-    history.push("/ui/eventviewer/" + pushTo, { dataFile: pushTo });
-  }
 
   const transformToDetailListItems = (items: string[]) => {
     return items.map((item, i) => {
@@ -62,8 +55,8 @@ const Home = () => {
         //?workaround for Fluent-UI, since it's always an array
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         //@ts-ignore
-        const f = selection.getSelection()[0].value;
-        setDataFile(f)
+        const selectedFile = selection.getSelection()[0].value;
+        setDataFile(selectedFile);
       }
     },
     selectionMode: SelectionMode.single,
@@ -92,8 +85,7 @@ const Home = () => {
       <Row>
         <Stack horizontal tokens={stackTokens} >
           <Stack {...columnProps}>
-            <TextField label={'Input file'} value={dataFile} readOnly />
-            <PrimaryButton text="Analyze" onClick={handleOnClick} disabled={dataFile === ''} />
+            {/* <TextField label={'Input file'} value={dataFileName} readOnly /> */}
             <DetailsList
               items={files ? transformToDetailListItems(files) : []}
               columns={columns}

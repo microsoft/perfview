@@ -19,9 +19,9 @@ import {
   AzureThemeLight
 } from '@fluentui/azure-themes';
 import { Col, Row } from "react-grid-system";
-import { BrowserRouter, Switch } from "react-router-dom";
 import './i18n/i18n';
 import { useTranslation } from 'react-i18next';
+import { DataFileContextProvider } from './context/DataFileContext';
 
 const darkTheme = AzureThemeDark;
 const lightTheme = AzureThemeLight;
@@ -31,45 +31,44 @@ const App: React.FC = () => {
   const { t } = useTranslation();
   return (
     <ThemeProvider applyTo="body" theme={useDarkMode ? darkTheme : lightTheme}>
-      <BrowserRouter>
-        <Switch>
-          <Layout>
-            <Row justify='end' align="center">
-              <Col xs={10}><h2>{t('brand')}</h2></Col>
-              <Col xs={2}>
-                <Toggle onText="dark" offText="light" onChange={() => setUseDarkMode(!useDarkMode)} />
-              </Col>
-            </Row>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/ui" component={Home} />
-            <Route
-              path="/ui/processInfo/:dataFile/:processIndex"
-              component={ProcessInfo}
-            />
-            <Route path="/ui/traceInfo/:dataFile" component={TraceInfo} />
-            <Route path="/ui/processList/:dataFile" component={ProcessList} />
-            <Route path="/ui/moduleList/:dataFile" component={ModuleList} />
-            <Route path="/ui/eventviewer/:dataFile" component={EventViewer} />
-            <Route
-              path="/ui/stackviewer/eventlist/:dataFile"
-              component={EventList}
-            />
-            <Route
-              path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName"
-              component={ProcessChooser}
-            />
-            <Route path="/ui/stackviewer/hotspots/:routeKey" component={Hotspots} />
-            <Route
-              path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId"
-              component={Callers}
-            />
-            <Route
-              path="/ui/sourceviewer/:routeKey/:callTreeNodeId"
-              component={SourceViewer}
-            />
-          </Layout>
-        </Switch>
-      </BrowserRouter>
+      <DataFileContextProvider>
+        <Layout>
+          <Row justify='end' align="center">
+            <Col xs={10}><h2>{t('brand')}</h2></Col>
+            <Col xs={2}>
+              <Toggle onText="dark" offText="light" onChange={() => setUseDarkMode(!useDarkMode)} />
+            </Col>
+          </Row>
+          <Route exact path="/index.html" component={Home} />
+          <Route exact path="/" component={Home} />
+          <Route exact path="/ui" component={Home} />
+          <Route
+            path="/ui/processInfo/:dataFile/:processIndex"
+            component={ProcessInfo}
+          />
+          <Route path="/ui/traceInfo/:dataFile" component={TraceInfo} />
+          <Route path="/ui/processList/:dataFile" component={ProcessList} />
+          <Route path="/ui/moduleList/:dataFile" component={ModuleList} />
+          <Route path="/ui/eventviewer/:dataFile" component={EventViewer} />
+          <Route
+            path="/ui/stackviewer/eventlist/:dataFile"
+            component={EventList}
+          />
+          <Route
+            path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName"
+            component={ProcessChooser}
+          />
+          <Route path="/ui/stackviewer/hotspots/:routeKey" component={Hotspots} />
+          <Route
+            path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId"
+            component={Callers}
+          />
+          <Route
+            path="/ui/sourceviewer/:routeKey/:callTreeNodeId"
+            component={SourceViewer}
+          />
+        </Layout>
+      </DataFileContextProvider>
     </ThemeProvider>
   );
 }
