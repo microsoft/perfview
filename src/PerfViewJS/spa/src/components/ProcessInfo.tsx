@@ -8,8 +8,7 @@ interface MatchParams {
   processIndex: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
-
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   processInfo: DetailedProcessInfo | null;
@@ -53,13 +52,7 @@ export class ProcessInfo extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { processInfo: null, loading: true };
-    fetch(
-      "/api/processinfo?filename=" +
-      this.props.match.params.dataFile +
-      "&processIndex=" +
-      this.props.match.params.processIndex,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch("/api/processinfo?filename=" + this.props.match.params.dataFile + "&processIndex=" + this.props.match.params.processIndex, { method: "GET", headers: { "Content-Type": "application/json" } })
       .then((res) => res.json())
       .then((data) => {
         this.setState({ processInfo: data, loading: false });
@@ -69,10 +62,7 @@ export class ProcessInfo extends React.Component<Props, State> {
   static render(processInfo: DetailedProcessInfo | null, dataFile: string) {
     return (
       <div>
-        {processInfo && ProcessList.renderProcessListTable(
-          [processInfo.processInfo],
-          dataFile
-        )}
+        {processInfo && ProcessList.renderProcessListTable([processInfo.processInfo], dataFile)}
         {processInfo && ModuleList.renderModuleListTable(processInfo.modules, dataFile)}
         <table className="table table-striped">
           <thead>
@@ -86,16 +76,17 @@ export class ProcessInfo extends React.Component<Props, State> {
             </tr>
           </thead>
           <tbody>
-            {processInfo && processInfo.threads.map((thread) => (
-              <tr key={`${thread.threadIndex}`}>
-                <td>{thread.threadId}</td>
-                <td>{thread.startTime}</td>
-                <td>{thread.startTimeRelativeMSec}</td>
-                <td>{thread.endTime}</td>
-                <td>{thread.endTimeRelativeMSec}</td>
-                <td>{thread.cpumSec}</td>
-              </tr>
-            ))}
+            {processInfo &&
+              processInfo.threads.map((thread) => (
+                <tr key={`${thread.threadIndex}`}>
+                  <td>{thread.threadId}</td>
+                  <td>{thread.startTime}</td>
+                  <td>{thread.startTimeRelativeMSec}</td>
+                  <td>{thread.endTime}</td>
+                  <td>{thread.endTimeRelativeMSec}</td>
+                  <td>{thread.cpumSec}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
@@ -108,16 +99,9 @@ export class ProcessInfo extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      ProcessInfo.render(
-        this.state.processInfo,
-        this.props.match.params.dataFile
-      )
+      ProcessInfo.render(this.state.processInfo, this.props.match.params.dataFile)
     );
 
-    return (
-      <div>
-        {contents}
-      </div>
-    );
+    return <div>{contents}</div>;
   }
 }

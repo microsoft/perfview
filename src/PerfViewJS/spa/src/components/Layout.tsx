@@ -1,5 +1,5 @@
 import "./Layout.css";
-import { Container, Row, Col } from 'react-grid-system';
+import { Container, Row, Col } from "react-grid-system";
 import React from "react";
 import NavMenu from "./NavMenu";
 
@@ -15,11 +15,10 @@ const Layout = (props: ILayoutProps) => {
         <Col xs={3}>
           <NavMenu />
         </Col>
-        <Col xs={9}>
-          {children}
-        </Col>
+        <Col xs={9}>{children}</Col>
       </Row>
-    </Container>)
-}
+    </Container>
+  );
+};
 
 export default Layout;

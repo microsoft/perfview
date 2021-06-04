@@ -7,8 +7,7 @@ interface MatchParams {
   dataFile: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
-
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   events: Event[];
@@ -92,17 +91,17 @@ export class EventViewer extends React.Component<Props, State> {
 
     fetch(
       "/api/eventdata?filename=" +
-      this.props.match.params.dataFile +
-      "&maxEventCount=" +
-      this.state.maxEventCount +
-      "&start=" +
-      this.state.start +
-      "&end=" +
-      this.state.end +
-      "&filter=" +
-      base64url.encode(this.state.textFilter, "utf8") +
-      "&eventTypes=" +
-      this.state.selectedEvents,
+        this.props.match.params.dataFile +
+        "&maxEventCount=" +
+        this.state.maxEventCount +
+        "&start=" +
+        this.state.start +
+        "&end=" +
+        this.state.end +
+        "&filter=" +
+        base64url.encode(this.state.textFilter, "utf8") +
+        "&eventTypes=" +
+        this.state.selectedEvents,
       { method: "GET", headers: { "Content-Type": "application/json" } }
     )
       .then((res) => res.json())
@@ -149,11 +148,7 @@ export class EventViewer extends React.Component<Props, State> {
     this.setState({ eventNameFilter: e.target.value });
   }
 
-  static renderEventListTable(
-    events: Event[],
-    obj: EventViewer,
-    eventNameFilter: string
-  ) {
+  static renderEventListTable(events: Event[], obj: EventViewer, eventNameFilter: string) {
     return (
       <React.Fragment>
         {
@@ -170,9 +165,7 @@ export class EventViewer extends React.Component<Props, State> {
                 if (eventNameFilter === "") {
                   return true;
                 } else {
-                  return e.eventName
-                    .toLowerCase()
-                    .includes(eventNameFilter.toLowerCase());
+                  return e.eventName.toLowerCase().includes(eventNameFilter.toLowerCase());
                 }
               })
               .map((event) => (
@@ -192,11 +185,7 @@ export class EventViewer extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      EventViewer.renderEventListTable(
-        this.state.eventTypes,
-        this,
-        this.state.eventNameFilter
-      )
+      EventViewer.renderEventListTable(this.state.eventTypes, this, this.state.eventNameFilter)
     );
 
     return (
@@ -204,60 +193,26 @@ export class EventViewer extends React.Component<Props, State> {
         <div style={{ paddingLeft: 3 + "px" }}>
           <h1>Event Viewer</h1>
           <div>
-            <form
-              style={{ fontSize: 9 + "pt" }}
-              method="get"
-              className="form-inline"
-            >
+            <form style={{ fontSize: 9 + "pt" }} method="get" className="form-inline">
               <div>
                 <label htmlFor="StartBox">Start Time (Relative MSec)</label>
-                <input
-                  type="text"
-                  name="start"
-                  id="StartBox"
-                  value={`${this.state.start}`}
-                  onChange={this.handleStartChange}
-                />
+                <input type="text" name="start" id="StartBox" value={`${this.state.start}`} onChange={this.handleStartChange} />
                 <label htmlFor="TextFilterBox">Text Filter (.NET Regex)</label>
-                <input
-                  type="text"
-                  name="textfilter"
-                  id="TextFilterBox"
-                  value={`${this.state.textFilter}`}
-                  onChange={this.handleTextFilterChange}
-                />
+                <input type="text" name="textfilter" id="TextFilterBox" value={`${this.state.textFilter}`} onChange={this.handleTextFilterChange} />
               </div>
               <div style={{ marginLeft: 10 + "px" }}>
                 <label htmlFor="EndBox">End Time (Relative MSec)</label>
-                <input
-                  type="text"
-                  name="end"
-                  id="EndBox"
-                  value={`${this.state.end}`}
-                  onChange={this.handleEndChange}
-                />
+                <input type="text" name="end" id="EndBox" value={`${this.state.end}`} onChange={this.handleEndChange} />
                 <label htmlFor="MaxEventCountBox">Maximum Event Count</label>
-                <input
-                  type="text"
-                  name="maxEventCount"
-                  id="MaxEventCountBox"
-                  value={`${this.state.maxEventCount}`}
-                  onChange={this.handleMaxEventCountChange}
-                />
+                <input type="text" name="maxEventCount" id="MaxEventCountBox" value={`${this.state.maxEventCount}`} onChange={this.handleMaxEventCountChange} />
               </div>
               <div style={{ marginLeft: 10 + "px" }}>
-                <PrimaryButton onClick={this.handleOnClick}>
-                  Update
-                </PrimaryButton>
+                <PrimaryButton onClick={this.handleOnClick}>Update</PrimaryButton>
               </div>
             </form>
           </div>
           <div style={{ paddingTop: 10 + "px" }}>
-            Event Type Filter:{" "}
-            <input
-              type="text"
-              onChange={this.handleEventTypeFilterList}
-            ></input>
+            Event Type Filter: <input type="text" onChange={this.handleEventTypeFilterList}></input>
           </div>
           <div
             style={{
@@ -292,34 +247,22 @@ export class EventViewer extends React.Component<Props, State> {
                             rel="noopener noreferrer"
                             href={`/ui/stackviewer/hotspots/
                                                     ${base64url.encode(
-                              JSON.stringify({
-                                a: this.props.match
-                                  .params.dataFile,
-                                b: "-1",
-                                c: "-1",
-                                d: (
-                                  parseFloat(
-                                    event.timestamp
-                                  ) - 0.001
-                                ).toFixed(3),
-                                e: (
-                                  parseFloat(
-                                    event.timestamp
-                                  ) + 0.001
-                                ).toFixed(3),
-                                f: "",
-                                g: "",
-                                h: "",
-                                i: "",
-                                j: "",
-                                k: "",
-                                l: base64url.encode(
-                                  "Any Event",
-                                  "utf8"
-                                ),
-                              }),
-                              "utf8"
-                            )}`}
+                                                      JSON.stringify({
+                                                        a: this.props.match.params.dataFile,
+                                                        b: "-1",
+                                                        c: "-1",
+                                                        d: (parseFloat(event.timestamp) - 0.001).toFixed(3),
+                                                        e: (parseFloat(event.timestamp) + 0.001).toFixed(3),
+                                                        f: "",
+                                                        g: "",
+                                                        h: "",
+                                                        i: "",
+                                                        j: "",
+                                                        k: "",
+                                                        l: base64url.encode("Any Event", "utf8"),
+                                                      }),
+                                                      "utf8"
+                                                    )}`}
                           >
                             {`HasStack="True"`}
                           </a>

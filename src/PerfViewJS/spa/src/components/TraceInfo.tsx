@@ -1,18 +1,13 @@
-import React from "react";
-import { RouteComponentProps } from "react-router";
+import React, { useEffect, useState } from "react";
+import { useDataFileContext } from "../context/DataFileContext";
+import Loading from "./Loading/Loading";
 
-interface MatchParams {
-  dataFile: string;
-}
-
-export interface Props extends RouteComponentProps<MatchParams> { }
-
-interface State {
-  traceInfo: TraceInfoInterface | null;
+interface ITraceState {
+  traceInfo: ITraceInfo | null;
   loading: boolean;
 }
 
-interface TraceInfoInterface {
+interface ITraceInfo {
   machineName: string;
   operatingSystemName: string;
   operatingSystemBuildNumber: string;
@@ -32,23 +27,20 @@ interface TraceInfoInterface {
   fileSize: number;
 }
 
-export class TraceInfo extends React.Component<Props, State> {
-  static displayName = TraceInfo.name;
-
-  constructor(props: Props) {
-    super(props);
-    this.state = { loading: true, traceInfo: null };
-    fetch("/api/traceinfo?filename=" + this.props.match.params.dataFile, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
+const TraceInfo: React.FC = () => {
+  const [trace, setTraceInfo] = useState<ITraceState>({ loading: true, traceInfo: null });
+  const { dataFile } = useDataFileContext();
+  useEffect(() => {
+    fetch("/api/traceinfo?filename=" + dataFile)
       .then((res) => res.json())
       .then((data) => {
-        this.setState({ traceInfo: data, loading: false });
+        setTraceInfo({ traceInfo: data, loading: false });
       });
-  }
+  }, []);
 
-  static renderTraceInfoTable(traceInfo: TraceInfoInterface) {
+  const renderTraceInfoTable = () => {
+    const { traceInfo } = trace;
+    if (traceInfo === null) return <Loading />;
     return (
       <table className="table table-striped">
         <thead>
@@ -125,24 +117,14 @@ export class TraceInfo extends React.Component<Props, State> {
         </tbody>
       </table>
     );
-  }
+  };
 
-  render() {
-    const contents = this.state.loading ? (
-      <p>
-        <em>Loading...</em>
-      </p>
-    ) : this.state.traceInfo != null ? (
-      TraceInfo.renderTraceInfoTable(this.state.traceInfo)
-    ) : (
-      "Null Data"
-    );
+  return (
+    <div>
+      <h1>Trace Info</h1>
+      {renderTraceInfoTable()}
+    </div>
+  );
+};
 
-    return (
-      <div>
-        <h1>Trace Info</h1>
-        {contents}
-      </div>
-    );
-  }
-}
+export default TraceInfo;

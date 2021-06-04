@@ -9,8 +9,7 @@ interface MatchParams {
   routeKey: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
-
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   loading: boolean;
@@ -32,13 +31,7 @@ export class Hotspots extends React.Component<Props, State> {
   fetchData() {
     this.setState({ loading: true }); // HACK: Why is this required?
 
-    fetch(
-      "/api/hotspots?" +
-      StackViewerFilter.constructAPICacheKeyFromRouteKey(
-        this.props.match.params.routeKey
-      ),
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch("/api/hotspots?" + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey), { method: "GET", headers: { "Content-Type": "application/json" } })
       .then((res) => res.json())
       .then((data) => {
         if (!this.ignoreLastFetch) {
@@ -53,24 +46,12 @@ export class Hotspots extends React.Component<Props, State> {
       drillType = "/api/drillinto/inclusive?";
     }
 
-    fetch(
-      drillType +
-      StackViewerFilter.constructAPICacheKeyFromRouteKey(
-        this.props.match.params.routeKey
-      ) +
-      "&name=" +
-      t,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch(drillType + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) + "&name=" + t, { method: "GET", headers: { "Content-Type": "application/json" } })
       .then((res) => res.json())
       .then((data) => {
-        const newRouteKey = JSON.parse(
-          base64url.decode(this.props.match.params.routeKey, "utf8")
-        );
+        const newRouteKey = JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8"));
         newRouteKey.k = data;
-        window.location.href =
-          "/ui/stackviewer/hotspots/" +
-          base64url.encode(JSON.stringify(newRouteKey));
+        window.location.href = "/ui/stackviewer/hotspots/" + base64url.encode(JSON.stringify(newRouteKey));
       });
   }
 
@@ -110,31 +91,15 @@ export class Hotspots extends React.Component<Props, State> {
           {nodes.map((node) => (
             <tr key={`${node.base64EncodedId}`}>
               <td>
-                <Link
-                  to={`/ui/stackviewer/callers/${routeKey}/${node.base64EncodedId}`}
-                >
-                  {node.name}
-                </Link>
+                <Link to={`/ui/stackviewer/callers/${routeKey}/${node.base64EncodedId}`}>{node.name}</Link>
               </td>
               <td className="center">{node.exclusiveMetricPercent}%</td>
               <td className="center">
-                <PrimaryButton
-                  onClick={() =>
-                    obj.handleDrillIntoClick("e", node.base64EncodedId)
-                  }
-                >
-                  {node.exclusiveCount}
-                </PrimaryButton>
+                <PrimaryButton onClick={() => obj.handleDrillIntoClick("e", node.base64EncodedId)}>{node.exclusiveCount}</PrimaryButton>
               </td>
               <td className="center">{node.inclusiveMetricPercent}%</td>
               <td className="center">
-                <PrimaryButton
-                  onClick={() =>
-                    obj.handleDrillIntoClick("i", node.base64EncodedId)
-                  }
-                >
-                  {node.inclusiveCount}
-                </PrimaryButton>
+                <PrimaryButton onClick={() => obj.handleDrillIntoClick("i", node.base64EncodedId)}>{node.inclusiveCount}</PrimaryButton>
               </td>
               <td className="center">{node.exclusiveFoldedMetric}</td>
               <td className="center">{node.inclusiveMetricByTimeString}</td>
@@ -153,29 +118,15 @@ export class Hotspots extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      Hotspots.renderHotspotsTable(
-        this.state.nodes,
-        this.props.match.params.routeKey,
-        this
-      )
+      Hotspots.renderHotspotsTable(this.state.nodes, this.props.match.params.routeKey, this)
     );
 
     return (
       <div>
         <div style={{ margin: 2 + "px" }}>
           <div style={{ margin: 10 + "px" }}>
-            <h4>
-              {base64url.decode(
-                JSON.parse(
-                  base64url.decode(this.props.match.params.routeKey, "utf8")
-                ).l,
-                "utf8"
-              )}{" "}
-              &raquo; Hotspots
-            </h4>
-            <StackViewerFilter
-              routeKey={this.props.match.params.routeKey}
-            ></StackViewerFilter>
+            <h4>{base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} &raquo; Hotspots</h4>
+            <StackViewerFilter routeKey={this.props.match.params.routeKey}></StackViewerFilter>
           </div>
           {contents}
         </div>

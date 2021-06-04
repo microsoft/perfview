@@ -12,16 +12,13 @@ import { ProcessInfo } from "./components/ProcessInfo";
 import { ProcessList } from "./components/ProcessList";
 import { Route } from "react-router";
 import { SourceViewer } from "./components/SourceViewer";
-import { TraceInfo } from "./components/TraceInfo";
-import { ThemeProvider, Toggle } from '@fluentui/react';
-import {
-  AzureThemeDark,
-  AzureThemeLight
-} from '@fluentui/azure-themes';
+import TraceInfo from "./components/TraceInfo";
+import { ThemeProvider, Toggle } from "@fluentui/react";
+import { AzureThemeDark, AzureThemeLight } from "@fluentui/azure-themes";
 import { Col, Row } from "react-grid-system";
-import './i18n/i18n';
-import { useTranslation } from 'react-i18next';
-import { DataFileContextProvider } from './context/DataFileContext';
+import "./i18n/i18n";
+import { useTranslation } from "react-i18next";
+import { DataFileContextProvider } from "./context/DataFileContext";
 
 const darkTheme = AzureThemeDark;
 const lightTheme = AzureThemeLight;
@@ -33,8 +30,10 @@ const App: React.FC = () => {
     <ThemeProvider applyTo="body" theme={useDarkMode ? darkTheme : lightTheme}>
       <DataFileContextProvider>
         <Layout>
-          <Row justify='end' align="center">
-            <Col xs={10}><h2>{t('brand')}</h2></Col>
+          <Row justify="end" align="center">
+            <Col xs={10}>
+              <h2>{t("brand")}</h2>
+            </Col>
             <Col xs={2}>
               <Toggle onText="dark" offText="light" onChange={() => setUseDarkMode(!useDarkMode)} />
             </Col>
@@ -42,35 +41,20 @@ const App: React.FC = () => {
           <Route exact path="/index.html" component={Home} />
           <Route exact path="/" component={Home} />
           <Route exact path="/ui" component={Home} />
-          <Route
-            path="/ui/processInfo/:dataFile/:processIndex"
-            component={ProcessInfo}
-          />
+          <Route path="/ui/processInfo/:dataFile/:processIndex" component={ProcessInfo} />
           <Route path="/ui/traceInfo/:dataFile" component={TraceInfo} />
           <Route path="/ui/processList/:dataFile" component={ProcessList} />
           <Route path="/ui/moduleList/:dataFile" component={ModuleList} />
           <Route path="/ui/eventviewer/:dataFile" component={EventViewer} />
-          <Route
-            path="/ui/stackviewer/eventlist/:dataFile"
-            component={EventList}
-          />
-          <Route
-            path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName"
-            component={ProcessChooser}
-          />
+          <Route path="/ui/stackviewer/eventlist/:dataFile" component={EventList} />
+          <Route path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName" component={ProcessChooser} />
           <Route path="/ui/stackviewer/hotspots/:routeKey" component={Hotspots} />
-          <Route
-            path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId"
-            component={Callers}
-          />
-          <Route
-            path="/ui/sourceviewer/:routeKey/:callTreeNodeId"
-            component={SourceViewer}
-          />
+          <Route path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId" component={Callers} />
+          <Route path="/ui/sourceviewer/:routeKey/:callTreeNodeId" component={SourceViewer} />
         </Layout>
       </DataFileContextProvider>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

@@ -11,7 +11,7 @@ interface MatchParams {
   callTreeNodeId: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   loading: boolean;
@@ -39,15 +39,10 @@ export class SourceViewer extends React.PureComponent<Props, State> {
     this.handleEditorDidMount = this.handleEditorDidMount.bind(this);
     this.state = { loading: true, sourceInformation: null };
 
-    fetch(
-      "/api/getsource?" +
-      StackViewerFilter.constructAPICacheKeyFromRouteKey(
-        this.props.match.params.routeKey
-      ) +
-      "&name=" +
-      this.props.match.params.callTreeNodeId,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch("/api/getsource?" + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) + "&name=" + this.props.match.params.callTreeNodeId, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
       .then((res) => res.json())
       .then((data) => {
         this.setState({ sourceInformation: data, loading: false });
@@ -55,13 +50,10 @@ export class SourceViewer extends React.PureComponent<Props, State> {
   }
 
   //handleEditorDidMount(_: Monaco, editor: editor.IEditor) {
-  handleEditorDidMount(editor: editor.IStandaloneCodeEditor/*, _: Monaco*/) {
+  handleEditorDidMount(editor: editor.IStandaloneCodeEditor /*, _: Monaco*/) {
     const summary = this.state.sourceInformation?.summary;
     if (summary !== undefined && summary.length > 0) {
-      editor.revealPosition(
-        { lineNumber: summary[0].lineNumber, column: 1 },
-        0
-      );
+      editor.revealPosition({ lineNumber: summary[0].lineNumber, column: 1 }, 0);
 
       // not available?
 
@@ -85,19 +77,13 @@ export class SourceViewer extends React.PureComponent<Props, State> {
     }
   }
 
-  static renderEditor(
-    routeKey: string,
-    sourceInformation: SourceInformation,
-    obj: SourceViewer
-  ) {
+  static renderEditor(routeKey: string, sourceInformation: SourceInformation, obj: SourceViewer) {
     return (
       <div>
         <div style={{ margin: 2 + "px" }}>
           <div style={{ margin: 10 + "px" }}>
             <h5>
-              <a href={sourceInformation.url}>
-                {sourceInformation.buildTimeFilePath}
-              </a>
+              <a href={sourceInformation.url}>{sourceInformation.buildTimeFilePath}</a>
             </h5>
           </div>
           <table className="hotlines">
@@ -128,11 +114,7 @@ export class SourceViewer extends React.PureComponent<Props, State> {
               scrollBeyondLastLine: false,
             }}
             value={sourceInformation.data}
-            line={
-              sourceInformation.summary.length > 0
-                ? sourceInformation.summary[0].lineNumber
-                : 1
-            }
+            line={sourceInformation.summary.length > 0 ? sourceInformation.summary[0].lineNumber : 1}
           />
         </div>
       </div>
@@ -145,11 +127,7 @@ export class SourceViewer extends React.PureComponent<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      SourceViewer.renderEditor(
-        this.props.match.params.routeKey,
-        this.state.sourceInformation,
-        this
-      )
+      SourceViewer.renderEditor(this.props.match.params.routeKey, this.state.sourceInformation, this)
     );
   }
 }

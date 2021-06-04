@@ -50,8 +50,7 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
     this.handleExcPatsChange = this.handleExcPatsChange.bind(this);
     this.handleOnClick = this.handleOnClick.bind(this);
     this.handleLookupWarmSymbols = this.handleLookupWarmSymbols.bind(this);
-    this.handleLookupWarmSymbolsMinCount =
-      this.handleLookupWarmSymbolsMinCount.bind(this);
+    this.handleLookupWarmSymbolsMinCount = this.handleLookupWarmSymbolsMinCount.bind(this);
   }
 
   handleGroupPatsChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -81,9 +80,7 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
   handleOnClick(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
 
-    const oldRouteKey = JSON.parse(
-      base64url.decode(this.props.routeKey, "utf8")
-    );
+    const oldRouteKey = JSON.parse(base64url.decode(this.props.routeKey, "utf8"));
     const newRouteKeyJsonString = JSON.stringify({
       a: oldRouteKey.a,
       b: oldRouteKey.b,
@@ -100,9 +97,7 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
     });
 
     if (JSON.stringify(oldRouteKey) !== newRouteKeyJsonString) {
-      window.location.href =
-        "/ui/stackviewer/hotspots/" +
-        base64url.encode(newRouteKeyJsonString, "utf8"); // HACK: But the "react" way is annoying. Any ideas?
+      window.location.href = "/ui/stackviewer/hotspots/" + base64url.encode(newRouteKeyJsonString, "utf8"); // HACK: But the "react" way is annoying. Any ideas?
     }
   }
 
@@ -112,17 +107,13 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
 
   handleLookupWarmSymbols() {
     this.setState({ symbolLookupStatus: " ... performing lookup." });
-    fetch(
-      "/api/lookupwarmsymbols?minCount=" +
-      this.state.minCount +
-      "&" +
-      StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.routeKey),
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch("/api/lookupwarmsymbols?minCount=" + this.state.minCount + "&" + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.routeKey), {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
       .then((res) => res.json())
       .then(() => {
-        window.location.href =
-          "/ui/stackviewer/hotspots/" + this.props.routeKey;
+        window.location.href = "/ui/stackviewer/hotspots/" + this.props.routeKey;
       });
   }
 
@@ -158,99 +149,36 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
     return (
       <div>
         <div style={{ float: "left" }}>
-          <form
-            style={{ fontSize: 9 + "pt" }}
-            method="get"
-            className="form-inline"
-          >
+          <form style={{ fontSize: 9 + "pt" }} method="get" className="form-inline">
             <div>
               <label htmlFor="GroupPatsBox">Grouping Patterns (Regex)</label>
-              <input
-                type="text"
-                name="GroupPats"
-                className="form-control"
-                id="GroupPatsBox"
-                aria-describedby="Start Time"
-                value={`${this.state.groupPats}`}
-                onChange={this.handleGroupPatsChange}
-              />
+              <input type="text" name="GroupPats" className="form-control" id="GroupPatsBox" aria-describedby="Start Time" value={`${this.state.groupPats}`} onChange={this.handleGroupPatsChange} />
               <label htmlFor="FoldPatsBox">Folding Patterns (Regex)</label>
-              <input
-                type="text"
-                name="FoldPats"
-                className="form-control"
-                id="FoldPatsBox"
-                aria-describedby="End Time"
-                value={`${this.state.foldPats}`}
-                onChange={this.handleFoldPatsChange}
-              />
+              <input type="text" name="FoldPats" className="form-control" id="FoldPatsBox" aria-describedby="End Time" value={`${this.state.foldPats}`} onChange={this.handleFoldPatsChange} />
             </div>
             <div style={{ marginLeft: 10 + "px" }}>
               <label htmlFor="Start">Relative Start Time (ms)</label>
-              <input
-                type="text"
-                className="form-control"
-                id="Start"
-                name="Start"
-                aria-describedby="Start Time"
-                value={`${this.state.start}`}
-                onChange={this.handleStartChange}
-              />
+              <input type="text" className="form-control" id="Start" name="Start" aria-describedby="Start Time" value={`${this.state.start}`} onChange={this.handleStartChange} />
               <label htmlFor="End">Relative End Time (ms)</label>
-              <input
-                type="text"
-                className="form-control"
-                id="End"
-                name="End"
-                aria-describedby="End Time"
-                value={`${this.state.end}`}
-                onChange={this.handleEndChange}
-              />
+              <input type="text" className="form-control" id="End" name="End" aria-describedby="End Time" value={`${this.state.end}`} onChange={this.handleEndChange} />
             </div>
             <div style={{ marginLeft: 10 + "px" }}>
               <label htmlFor="IncPatsBox">Include Patterns (Regex)</label>
-              <input
-                type="text"
-                name="IncPats"
-                className="form-control"
-                id="IncPatsBox"
-                aria-describedby="Start Time"
-                value={`${this.state.incPats}`}
-                onChange={this.handleIncPatsChange}
-              />
+              <input type="text" name="IncPats" className="form-control" id="IncPatsBox" aria-describedby="Start Time" value={`${this.state.incPats}`} onChange={this.handleIncPatsChange} />
               <label htmlFor="ExcPatsBox">Exclude Patterns (Regex)</label>
-              <input
-                type="text"
-                name="ExcPats"
-                className="form-control"
-                id="ExcPatsBox"
-                aria-describedby="End Time"
-                value={`${this.state.excPats}`}
-                onChange={this.handleExcPatsChange}
-              />
+              <input type="text" name="ExcPats" className="form-control" id="ExcPatsBox" aria-describedby="End Time" value={`${this.state.excPats}`} onChange={this.handleExcPatsChange} />
             </div>
 
             <div style={{ marginLeft: 10 + "px" }}>
-              <PrimaryButton onClick={this.handleOnClick}>
-                Update
-              </PrimaryButton>
+              <PrimaryButton onClick={this.handleOnClick}>Update</PrimaryButton>
             </div>
           </form>
           <div style={{ paddingTop: 10 + "px" }}>
-            <PrimaryButton onClick={this.handleLookupWarmSymbols}>
-              Lookup Symbols (min # of samples) &raquo;{" "}
-            </PrimaryButton>
-            <input
-              type="text"
-              value={this.state.minCount}
-              onChange={this.handleLookupWarmSymbolsMinCount}
-            />{" "}
-            {this.state.symbolLookupStatus}
+            <PrimaryButton onClick={this.handleLookupWarmSymbols}>Lookup Symbols (min # of samples) &raquo; </PrimaryButton>
+            <input type="text" value={this.state.minCount} onChange={this.handleLookupWarmSymbolsMinCount} /> {this.state.symbolLookupStatus}
           </div>
         </div>
-        <div
-          style={{ fontSize: 9 + "pt", float: "left", paddingLeft: 20 + "px" }}
-        >
+        <div style={{ fontSize: 9 + "pt", float: "left", paddingLeft: 20 + "px" }}>
           <strong>Grouping Patterns Examples</strong>
           <table>
             <thead>
@@ -263,10 +191,7 @@ export class StackViewerFilter extends React.PureComponent<Props, State> {
               <tr>
                 <td>{`{`}%&#125;!-&gt;module $1</td>
                 <td>
-                  <strong>
-                    Group Modules - Provides high-level overview (i.e. per
-                    dll/module cost)
-                  </strong>
+                  <strong>Group Modules - Provides high-level overview (i.e. per dll/module cost)</strong>
                 </td>
               </tr>
               <tr>

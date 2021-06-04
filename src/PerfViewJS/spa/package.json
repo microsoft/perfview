@@ -41,6 +41,7 @@
     "typescript": "^4.3.2"
   },
   "devDependencies": {
+    "@types/portscanner": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "4.26.0",
     "@typescript-eslint/parser": "4.26.0",
     "brotli": "^1.3.2",
@@ -63,11 +64,10 @@
     "build": "react-scripts build",
     "test": "cross-env CI=true react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "eslint ./src/",
     "dev": "concurrently -k \"BROWSER=none npm start\" \"npm:electron\"",
     "electron": "wait-on tcp:3000 && electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder",
+    "dist": "electron-builder -mwl",
     "postinstall": "electron-builder install-app-deps"
   },
   "proxy": "http://localhost:5000",

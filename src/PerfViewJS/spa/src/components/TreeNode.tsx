@@ -37,24 +37,15 @@ export class TreeNode extends React.PureComponent<Props, State> {
       drillType = "/api/drillinto/inclusive?";
     }
 
-    fetch(
-      drillType +
-      TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) +
-      "&name=" +
-      this.props.callTreeNodeId +
-      "&path=" +
-      this.props.node.path,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch(drillType + TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) + "&name=" + this.props.callTreeNodeId + "&path=" + this.props.node.path, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
       .then((res) => res.json())
       .then((data) => {
-        const newRouteKey = JSON.parse(
-          base64url.decode(this.props.routeKey, "utf8")
-        );
+        const newRouteKey = JSON.parse(base64url.decode(this.props.routeKey, "utf8"));
         newRouteKey.k = data;
-        window.location.href =
-          "/ui/stackviewer/hotspots/" +
-          base64url.encode(JSON.stringify(newRouteKey));
+        window.location.href = "/ui/stackviewer/hotspots/" + base64url.encode(JSON.stringify(newRouteKey));
       });
   }
 
@@ -71,15 +62,10 @@ export class TreeNode extends React.PureComponent<Props, State> {
   }
 
   expandTreeNode() {
-    fetch(
-      "/api/callerchildren?" +
-      TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) +
-      "&name=" +
-      this.props.callTreeNodeId +
-      "&path=" +
-      this.props.node.path,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch("/api/callerchildren?" + TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) + "&name=" + this.props.callTreeNodeId + "&path=" + this.props.node.path, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
       .then((res) => res.json())
       .then((data) => {
         this.setState({ children: data, isCollapsed: false });
@@ -129,34 +115,19 @@ export class TreeNode extends React.PureComponent<Props, State> {
       <React.Fragment>
         <tr>
           <td style={{ paddingLeft: indent + "px" }}>
-            {node.hasChildren && (
-              <PrimaryButton onClick={toggleTreeNode}
-              >
-                {isCollapsed ? "+" : "-"}
-              </PrimaryButton>
-            )}{" "}
-            <Link
-              to={`/ui/stackviewer/callers/${routeKey}/${node.base64EncodedId}`}
-            >
-              {node.name}
-            </Link>
+            {node.hasChildren && <PrimaryButton onClick={toggleTreeNode}>{isCollapsed ? "+" : "-"}</PrimaryButton>}{" "}
+            <Link to={`/ui/stackviewer/callers/${routeKey}/${node.base64EncodedId}`}>{node.name}</Link>
           </td>
           <td className="center">
-            <Link to={`/ui/sourceviewer/${routeKey}/${node.base64EncodedId}`}>
-              [S]
-            </Link>
+            <Link to={`/ui/sourceviewer/${routeKey}/${node.base64EncodedId}`}>[S]</Link>
           </td>
           <td className="center">{node.exclusiveMetricPercent}%</td>
           <td className="center">
-            <PrimaryButton onClick={() => obj.handleDrillIntoClick("e")}>
-              {node.exclusiveCount}
-            </PrimaryButton>
+            <PrimaryButton onClick={() => obj.handleDrillIntoClick("e")}>{node.exclusiveCount}</PrimaryButton>
           </td>
           <td className="center">{node.inclusiveMetricPercent}%</td>
           <td className="center">
-            <PrimaryButton onClick={() => obj.handleDrillIntoClick("i")}>
-              {node.inclusiveCount}
-            </PrimaryButton>
+            <PrimaryButton onClick={() => obj.handleDrillIntoClick("i")}>{node.inclusiveCount}</PrimaryButton>
           </td>
           <td className="center">{node.exclusiveFoldedMetric}</td>
           <td className="center">{node.inclusiveMetricByTimeString}</td>
@@ -164,14 +135,7 @@ export class TreeNode extends React.PureComponent<Props, State> {
           <td className="center">{node.lastTimeRelativeMSec}</td>
         </tr>
         {children.map((child) => (
-          <TreeNode
-            key={`${child.base64EncodedId}`}
-            routeKey={routeKey}
-            node={child}
-            indent={indent + 10}
-            callTreeNodeId={callTreeNodeId}
-            autoExpand={autoExpand}
-          ></TreeNode>
+          <TreeNode key={`${child.base64EncodedId}`} routeKey={routeKey} node={child} indent={indent + 10} callTreeNodeId={callTreeNodeId} autoExpand={autoExpand}></TreeNode>
         ))}
       </React.Fragment>
     );

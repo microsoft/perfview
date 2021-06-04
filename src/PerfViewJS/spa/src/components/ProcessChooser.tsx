@@ -7,7 +7,7 @@ interface MatchParams {
   stackTypeName: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   processes: Process[];
@@ -26,25 +26,14 @@ export class ProcessChooser extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { processes: [], loading: true };
-    fetch(
-      "/api/processchooser?filename=" +
-      this.props.match.params.dataFile +
-      "&stacktype=" +
-      this.props.match.params.stackType,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
-    )
+    fetch("/api/processchooser?filename=" + this.props.match.params.dataFile + "&stacktype=" + this.props.match.params.stackType, { method: "GET", headers: { "Content-Type": "application/json" } })
       .then((res) => res.json())
       .then((data) => {
         this.setState({ processes: data, loading: false });
       });
   }
 
-  static renderProcessChooserTable(
-    processes: Process[],
-    dataFile: string,
-    stackType: number,
-    stackTypeName: string
-  ) {
+  static renderProcessChooserTable(processes: Process[], dataFile: string, stackType: number, stackTypeName: string) {
     return (
       <table className="table table-striped">
         <thead>
@@ -93,21 +82,12 @@ export class ProcessChooser extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      ProcessChooser.renderProcessChooserTable(
-        this.state.processes,
-        this.props.match.params.dataFile,
-        parseInt(this.props.match.params.stackType, 10),
-        this.props.match.params.stackTypeName
-      )
+      ProcessChooser.renderProcessChooserTable(this.state.processes, this.props.match.params.dataFile, parseInt(this.props.match.params.stackType, 10), this.props.match.params.stackTypeName)
     );
 
     return (
       <div>
-        <h4>
-          Event{" "}
-          {base64url.decode(this.props.match.params.stackTypeName, "utf8")}{" "}
-          &raquo; Choose Process
-        </h4>
+        <h4>Event {base64url.decode(this.props.match.params.stackTypeName, "utf8")} &raquo; Choose Process</h4>
         {contents}
       </div>
     );

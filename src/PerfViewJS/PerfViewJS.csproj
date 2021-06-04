@@ -45,7 +45,7 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
   </Target>
   <ItemGroup>
-    <PerfViewJSbin Include="$(OutDir)\**\*.*"/>
+    <PerfViewJSbin Include="$(PublishDir)\**\*.*"/>
   </ItemGroup>
   <Target Name="PublishRunWebpack" AfterTargets="Publish">
       <Copy
@@ -57,7 +57,8 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run compress" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run dist" />
     <ItemGroup>
-      <DistFiles Include="$(SpaRoot)build\**" />
+      <DistFiles Include="$(SpaRoot)dist\**" />
+      <!-- <DistFiles Include="$(SpaRoot)build\**" /> -->
       <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
         <RelativePath>%(DistFiles.Identity)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

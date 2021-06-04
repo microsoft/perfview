@@ -5,8 +5,7 @@ interface MatchParams {
   dataFile: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
-
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   processes: Process[];
@@ -57,17 +56,7 @@ export class ProcessList extends React.Component<Props, State> {
             })
             .map((process) => (
               <tr key={`${process.id}`}>
-                <td>
-                  {process.processId === 0 ? (
-                    "Idle"
-                  ) : process.processId === 4 ? (
-                    "System"
-                  ) : (
-                    <Link to={`/ui/processInfo/${dataFile}/${process.id}`}>
-                      {process.name}
-                    </Link>
-                  )}
-                </td>
+                <td>{process.processId === 0 ? "Idle" : process.processId === 4 ? "System" : <Link to={`/ui/processInfo/${dataFile}/${process.id}`}>{process.name}</Link>}</td>
                 <td>{process.processId}</td>
                 <td>{process.parentId}</td>
                 <td>{process.cpumSec}</td>
@@ -85,10 +74,7 @@ export class ProcessList extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      ProcessList.renderProcessListTable(
-        this.state.processes,
-        this.props.match.params.dataFile
-      )
+      ProcessList.renderProcessListTable(this.state.processes, this.props.match.params.dataFile)
     );
 
     return (

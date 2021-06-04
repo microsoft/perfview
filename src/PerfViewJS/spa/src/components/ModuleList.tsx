@@ -5,8 +5,7 @@ interface MatchParams {
   dataFile: string;
 }
 
-export interface Props extends RouteComponentProps<MatchParams> { }
-
+export interface Props extends RouteComponentProps<MatchParams> {}
 
 interface State {
   modules: Module[];
@@ -49,11 +48,7 @@ export class ModuleList extends React.Component<Props, State> {
             <tr key={`${module.id}`}>
               <td>{module.modulePath}</td>
               <td>
-                <a
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href={`/api/lookupsymbol?filename=${dataFile}&moduleIndex=${module.id}`}
-                >
+                <a target="_blank" rel="noopener noreferrer" href={`/api/lookupsymbol?filename=${dataFile}&moduleIndex=${module.id}`}>
                   {module.addrCount}
                 </a>
               </td>
@@ -70,10 +65,7 @@ export class ModuleList extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      ModuleList.renderModuleListTable(
-        this.state.modules,
-        this.props.match.params.dataFile
-      )
+      ModuleList.renderModuleListTable(this.state.modules, this.props.match.params.dataFile)
     );
 
     return (

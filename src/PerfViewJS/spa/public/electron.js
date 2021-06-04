@@ -8,6 +8,7 @@ const fs = require("fs");
 const os = require("os");
 const cProcess = require("child_process").spawn;
 const portscanner = require("portscanner");
+
 let io, server, apiProcess;
 let launchFile;
 let launchUrl;
@@ -103,6 +104,21 @@ app.on("ready", () => {
 app.on("quit", async () => {
   await server.close();
   apiProcess.kill();
+});
+
+app.on("before-quit", async (event) => {
+  if (fs.existsSync(tmpDir)) {
+    event.preventDefault();
+    try {
+      await fs.rmdir(tmpDir, { recursive: true }, (err) => {
+        if (err) console.log(err);
+        console.log("cleared tmp dir");
+        app.quit();
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
 });
 
 function boot() {

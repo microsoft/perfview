@@ -1,33 +1,28 @@
 import React, { useEffect, useState } from "react";
-import {
-  Nav,
-  INavStyles,
-  INavLinkGroup,
-  INavLink,
-} from "@fluentui/react/lib/Nav";
-import { ScrollablePane } from '@fluentui/react';
+import { Nav, INavStyles, INavLinkGroup, INavLink } from "@fluentui/react/lib/Nav";
+import { ScrollablePane } from "@fluentui/react";
 import { RouteComponentProps, withRouter, useHistory } from "react-router-dom";
 import { useDataFileContext } from "../context/DataFileContext";
 import { Text } from "@fluentui/react";
 interface MatchParams {
   dataFile?: string;
 }
-export interface INavMenuProps extends RouteComponentProps<MatchParams> { }
+export interface INavMenuProps extends RouteComponentProps<MatchParams> {}
 
 const navStyles: Partial<INavStyles> = {
   root: {
-    height: '100vh',
-    boxSizing: 'border-box',
-    border: '1px solid #eee',
-    overflowY: 'auto',
+    height: "100vh",
+    boxSizing: "border-box",
+    border: "1px solid #eee",
+    overflowY: "auto",
   },
 };
 
 const navLinkGroups: INavLinkGroup[] = [
   {
-    name: 'PerfViewJS ',
-    links: []
-  }
+    name: "PerfViewJS ",
+    links: [],
+  },
 ];
 
 const NavMenu: React.FC = () => {
@@ -38,27 +33,26 @@ const NavMenu: React.FC = () => {
   const onLinkClick = (ev?: React.MouseEvent<HTMLElement, MouseEvent> | undefined, item?: INavLink | undefined) => {
     ev?.preventDefault();
     if (!item) return;
-    if (item.url === '/')
-      history.push(item.url);
+    if (item.url === "/") history.push(item.url);
     else {
       history.push(item.url + dataFile);
     }
-  }
+  };
 
   //* in case the datafile is default, we just bring user back to landing page to choose a trace file
   useEffect(() => {
-    if (dataFile === "") history.push('/')
-  }, [history])
+    if (dataFile === "") history.push("/");
+  }, [history]);
 
   useEffect(() => {
-
     const navLinks: INavLink[] = [
       {
         name: "Load file",
         url: "/",
         onClick: onLinkClick,
-        icon: 'OpenFile',
-      }];
+        icon: "OpenFile",
+      },
+    ];
     //! workaround for dynamically setting fluent-ui navLinks
     if (dataFile) {
       navLinks.push(
@@ -67,40 +61,41 @@ const NavMenu: React.FC = () => {
           key: "Trace Info",
           url: "/ui/traceinfo/" + dataFile,
           onClick: onLinkClick,
-          icon: "Trackers"
+          icon: "Trackers",
         },
         {
           name: "Event Viewer",
           key: "Event Viewer",
           url: "/ui/eventviewer/" + dataFile,
           onClick: onLinkClick,
-          icon: "WorkItemBug"
+          icon: "WorkItemBug",
         },
         {
           name: "Stack Viewer",
           key: "Stack Viewer",
           url: "/ui/stackviewer/eventlist/" + dataFile,
           onClick: onLinkClick,
-          icon: "Stack"
+          icon: "Stack",
         },
         {
           name: "Process List",
           key: "Process List",
           url: "/ui/processlist/" + dataFile,
           onClick: onLinkClick,
-          icon: "BulletedList"
+          icon: "BulletedList",
         },
         {
           name: "Module List",
           key: "Module List",
           url: "/ui/modulelist/" + dataFile,
           onClick: onLinkClick,
-          icon: "BacklogList"
-        })
+          icon: "BacklogList",
+        }
+      );
     }
     menuState[0].links = navLinks;
     setMenuState([...menuState]);
-  }, [dataFile])
+  }, [dataFile]);
 
   return (
     <ScrollablePane scrollbarVisibility={"auto"}>
@@ -108,6 +103,6 @@ const NavMenu: React.FC = () => {
       <Nav styles={navStyles} groups={navLinkGroups} />
     </ScrollablePane>
   );
-}
+};
 
 export default withRouter(NavMenu);
