@@ -919,7 +919,11 @@ namespace ETWManifest
             }
 
             m_stringsLookedUp = true;
-            foreach (var key in m_values.Keys)
+
+            int[] keys = new int[m_values.Keys.Count];
+            m_values.Keys.CopyTo(keys, 0);
+
+            foreach (var key in keys)
             {
                 var value = m_values[key];
                 if (Provider.Replace(ref value, stringMap))

@@ -79,6 +79,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal const uint EVENT_TRACE_FILE_MODE_NEWFILE = 0x00000008;
         internal const uint EVENT_TRACE_BUFFERING_MODE = 0x00000400;
         internal const uint EVENT_TRACE_INDEPENDENT_SESSION_MODE = 0x08000000;
+        internal const uint EVENT_TRACE_NO_PER_PROCESSOR_BUFFERING = 0x10000000;
 
         internal const uint EVENT_TRACE_CONTROL_QUERY = 0;
         internal const uint EVENT_TRACE_CONTROL_STOP = 1;

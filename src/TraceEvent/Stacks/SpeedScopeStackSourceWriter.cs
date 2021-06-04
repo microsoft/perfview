@@ -84,8 +84,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
                 writer.Write("\"type\": \"evented\", ");
                 writer.Write($"\"name\": \"{perThread.Key}\", ");
                 writer.Write("\"unit\": \"milliseconds\", ");
-                writer.Write($"\"startValue\": \"{sortedProfileEvents.First().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}\", ");
-                writer.Write($"\"endValue\": \"{sortedProfileEvents.Last().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}\", ");
+                writer.Write($"\"startValue\": {sortedProfileEvents.First().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}, ");
+                writer.Write($"\"endValue\": {sortedProfileEvents.Last().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}, ");
                 writer.Write("\"events\": [ ");
                 for (int i = 0; i < sortedProfileEvents.Count; i++)
                 {

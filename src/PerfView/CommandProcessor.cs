@@ -3472,9 +3472,12 @@ namespace PerfView
                     if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.None)
                     {
                         // Always enable minimal rundown, which ensures that we get the runtime start event.
-                        // We use the keyword 0x40000000 which does not match any valid keyword in the rundown provider.
+                        // We use the keyword 0x800000000000 which does not match any valid keyword in the rundown provider.
                         // Choosing 0 results in enabling all keywords based on the logic that checks for keyword status in the runtime.
-                        var rundownKeywords = (ClrRundownTraceEventParser.Keywords)0x40000000;
+                        // NOTE: This used to be 0x40000000 which matched the ClrStack keyword in the main provider.  This resulted in
+                        // lots of ClrStack/Walk events that couldn't be matched with Clr events, because for V2 rundown, we enable
+                        // the Clr provider.
+                        var rundownKeywords = (ClrRundownTraceEventParser.Keywords)0x800000000000;
 
                         // Only consider forcing suppression of these keywords if full rundown is enabled.
                         if (!parsedArgs.NoRundown && !parsedArgs.NoClrRundown)
