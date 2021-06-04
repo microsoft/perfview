@@ -321,7 +321,7 @@ export class EventViewer extends React.Component<Props, State> {
                               "utf8"
                             )}`}
                           >
-                            HasStack=&quot;True&ldquot;
+                            {`HasStack="True"`}
                           </a>
                         ) : (
                           ""

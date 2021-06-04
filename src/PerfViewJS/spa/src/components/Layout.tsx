@@ -11,7 +11,7 @@ const Layout = (props: ILayoutProps) => {
   const { children } = props;
   return (
     <Container fluid style={{ margin: 0 }}>
-      <Row>
+      <Row style={{ height: "100%", minHeight: "100vh" }}>
         <Col xs={3}>
           <NavMenu />
         </Col>

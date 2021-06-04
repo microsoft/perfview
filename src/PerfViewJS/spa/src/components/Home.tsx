@@ -1,20 +1,49 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  DetailsList, DetailsListLayoutMode, IColumn, Selection, IStackProps,
-  SelectionMode, Stack, Text, Link
+  DetailsList, DetailsListLayoutMode, IColumn, Selection,
+  SelectionMode, Stack, Text, Link, TooltipHost, FontIcon
 } from "@fluentui/react";
 import { Container, Row } from "react-grid-system";
 import { useTranslation } from "react-i18next";
 import { useDataFileContext } from '../context/DataFileContext';
+import { useDropzone } from 'react-dropzone'
+declare global {
+  interface Window {
+    api: IElectronBridge;
+  }
+}
 
-const stackTokens = { childrenGap: 50 };
-const columnProps: Partial<IStackProps> = {
-  tokens: { childrenGap: 5 },
-};
+type IToElectronBridgeChannel = 'toMain';
+type IFromElectronBridgeChannel = 'fromMain'
+type IElectronBridgeAction = 'reload';
+
+interface IElectronBridge {
+  send: (channel: IToElectronBridgeChannel, filePath: string) => void;
+  receive: (channel: IFromElectronBridgeChannel, fn: (action: IElectronBridgeAction) => void) => () => void;
+}
+
+const iconStyles = {
+  padding: 0,
+  fontSize: '24px',
+}
 
 const columns: IColumn[] = [
   {
     key: 'column1',
+    name: 'Trace files',
+    isIconOnly: true,
+    fieldName: 'file type',
+    minWidth: 56,
+    maxWidth: 56,
+    onRender: () => (
+      //todo: maybe detect different file types and load different ico
+      <TooltipHost content={`Trace file`}>
+        <FontIcon aria-label="Compass" iconName="FileBug" style={iconStyles} />
+      </TooltipHost>
+    ),
+  },
+  {
+    key: 'column2',
     name: 'Trace files',
     fieldName: 'name',
     minWidth: 510,
@@ -27,17 +56,38 @@ const Home = () => {
   const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>([]);
   const { setDataFile, } = useDataFileContext();
+  useEffect(() => getDirectoryListing(), []);
 
   useEffect(() => {
-    fetch("/api/datadirectorylisting", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setFiles(data);
-      });
+    const removeListener = window.api.receive('fromMain', (action: IElectronBridgeAction) => {
+      //support more actions in the future, maybe FS watcher
+      if (action === 'reload')
+        getDirectoryListing();
+    });
+
+    return () => {
+      if (removeListener) removeListener();
+    }
   }, []);
+
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    acceptedFiles.forEach((file: File) => {
+      //! https://github.com/react-dropzone/react-dropzone/issues/477
+      // but it is working for some reason
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      window.api.send('toMain', file.path)
+    })
+  }, [])
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
+
+  const getDirectoryListing = () => {
+    fetch("/api/datadirectorylisting")
+      .then((res) => res.json())
+      .then((data) => setFiles(data));
+  }
+
 
   const transformToDetailListItems = (items: string[]) => {
     return items.map((item, i) => {
@@ -83,20 +133,29 @@ const Home = () => {
         </Stack>
       </Row>
       <Row>
-        <Stack horizontal tokens={stackTokens} >
-          <Stack {...columnProps}>
-            {/* <TextField label={'Input file'} value={dataFileName} readOnly /> */}
-            <DetailsList
-              items={files ? transformToDetailListItems(files) : []}
-              columns={columns}
-              selection={selection}
-              selectionMode={SelectionMode.single}
-              layoutMode={DetailsListLayoutMode.justified}
-            />
-          </Stack>
+        <Stack>
+          <div {...getRootProps()}>
+            <input {...getInputProps()} />
+            {
+              isDragActive ?
+                <p>Drop the files here, or click to select files</p> :
+                <p>Drag and drop some files here</p>
+            }
+          </div>
         </Stack>
       </Row>
-    </Container>
+      <Row>
+        <Stack>
+          <DetailsList
+            items={files ? transformToDetailListItems(files) : []}
+            columns={columns}
+            selection={selection}
+            selectionMode={SelectionMode.single}
+            layoutMode={DetailsListLayoutMode.justified}
+          />
+        </Stack>
+      </Row>
+    </Container >
   );
 }
 export default Home;

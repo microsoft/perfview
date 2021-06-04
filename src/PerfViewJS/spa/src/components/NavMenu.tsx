@@ -16,8 +16,10 @@ export interface INavMenuProps extends RouteComponentProps<MatchParams> { }
 
 const navStyles: Partial<INavStyles> = {
   root: {
-    //height: '100%',
-    maxWidth: 200
+    height: '100vh',
+    boxSizing: 'border-box',
+    border: '1px solid #eee',
+    overflowY: 'auto',
   },
 };
 
@@ -33,54 +35,67 @@ const NavMenu: React.FC = () => {
   const [menuState, setMenuState] = useState<INavLinkGroup[]>(navLinkGroups);
   const { dataFile, dataFileName } = useDataFileContext();
 
-  useEffect(() => {
-    const onLinkClick = (ev?: React.MouseEvent<HTMLElement, MouseEvent> | undefined, item?: INavLink | undefined) => {
-      ev?.preventDefault();
-      if (!item) return;
-      if (item.url === '/')
-        history.push(item.url);
-      else {
-        history.push(item.url + dataFile);
-      }
+  const onLinkClick = (ev?: React.MouseEvent<HTMLElement, MouseEvent> | undefined, item?: INavLink | undefined) => {
+    ev?.preventDefault();
+    if (!item) return;
+    if (item.url === '/')
+      history.push(item.url);
+    else {
+      history.push(item.url + dataFile);
     }
+  }
+
+  //* in case the datafile is default, we just bring user back to landing page to choose a trace file
+  useEffect(() => {
+    if (dataFile === "") history.push('/')
+  }, [history])
+
+  useEffect(() => {
+
     const navLinks: INavLink[] = [
       {
         name: "Load file",
         url: "/",
-        onClick: onLinkClick
+        onClick: onLinkClick,
+        icon: 'OpenFile',
       }];
-    //workaround for dynamically setting fluent-ui navLinks
+    //! workaround for dynamically setting fluent-ui navLinks
     if (dataFile) {
       navLinks.push(
         {
           name: "Trace Info",
+          key: "Trace Info",
           url: "/ui/traceinfo/" + dataFile,
           onClick: onLinkClick,
-          key: '/ui/traceinfo/'
+          icon: "Trackers"
         },
         {
           name: "Event Viewer",
+          key: "Event Viewer",
           url: "/ui/eventviewer/" + dataFile,
           onClick: onLinkClick,
-          key: '/ui/eventviewer/'
+          icon: "WorkItemBug"
         },
         {
           name: "Stack Viewer",
+          key: "Stack Viewer",
           url: "/ui/stackviewer/eventlist/" + dataFile,
           onClick: onLinkClick,
-          key: '/ui/stackviewer/eventlist/'
+          icon: "Stack"
         },
         {
           name: "Process List",
+          key: "Process List",
           url: "/ui/processlist/" + dataFile,
           onClick: onLinkClick,
-          key: "/ui/processlist/"
+          icon: "BulletedList"
         },
         {
           name: "Module List",
+          key: "Module List",
           url: "/ui/modulelist/" + dataFile,
           onClick: onLinkClick,
-          key: "/ui/modulelist/"
+          icon: "BacklogList"
         })
     }
     menuState[0].links = navLinks;

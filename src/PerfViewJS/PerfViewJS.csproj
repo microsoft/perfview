@@ -44,12 +44,18 @@
     <Message Importance="high" Text="Restoring dependencies using 'npm'. This may take several minutes..." />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
   </Target>
-
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
+  <ItemGroup>
+    <PerfViewJSbin Include="$(OutDir)\**\*.*"/>
+  </ItemGroup>
+  <Target Name="PublishRunWebpack" AfterTargets="Publish">
+      <Copy
+        SourceFiles="@(PerfViewJSbin)"
+        DestinationFiles="@(PerfViewJSbin->'$(SpaRoot)public\bin\%(RecursiveDir)%(Filename)%(Extension)')"
+      />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run compress" />
-
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run dist" />
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)build\**" />
       <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">

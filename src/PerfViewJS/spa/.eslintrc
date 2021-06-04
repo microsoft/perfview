@@ -3,7 +3,6 @@
   "extends": [
     "plugin:react/recommended",
     "plugin:@typescript-eslint/recommended"
-    // "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -21,6 +20,7 @@
   },
   "rules": {
     "react/prop-types": "off",
+    "react/display-name": "off",
     "@typescript-eslint/explicit-module-boundary-types": ["off"],
     "@typescript-eslint/no-empty-interface": ["off"]
   }
