@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Nav, INavStyles, INavLinkGroup, INavLink } from "@fluentui/react/lib/Nav";
 import { ScrollablePane } from "@fluentui/react";
-import { RouteComponentProps, withRouter, useHistory } from "react-router-dom";
+import { INavLink, INavLinkGroup, INavStyles, Nav } from "@fluentui/react/lib/Nav";
+import React, { useEffect, useState } from "react";
+import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
+
 import { useDataFileContext } from "../context/DataFileContext";
-import { Text } from "@fluentui/react";
+
 interface MatchParams {
   dataFile?: string;
 }
@@ -28,7 +29,7 @@ const navLinkGroups: INavLinkGroup[] = [
 const NavMenu: React.FC = () => {
   const history = useHistory<MatchParams>();
   const [menuState, setMenuState] = useState<INavLinkGroup[]>(navLinkGroups);
-  const { dataFile, dataFileName } = useDataFileContext();
+  const { dataFile } = useDataFileContext();
 
   const onLinkClick = (ev?: React.MouseEvent<HTMLElement, MouseEvent> | undefined, item?: INavLink | undefined) => {
     ev?.preventDefault();
@@ -59,35 +60,35 @@ const NavMenu: React.FC = () => {
         {
           name: "Trace Info",
           key: "Trace Info",
-          url: "/ui/traceinfo/" + dataFile,
+          url: `/ui/traceinfo/${dataFile}`,
           onClick: onLinkClick,
           icon: "Trackers",
         },
         {
           name: "Event Viewer",
           key: "Event Viewer",
-          url: "/ui/eventviewer/" + dataFile,
+          url: `/ui/eventviewer/${dataFile}`,
           onClick: onLinkClick,
           icon: "WorkItemBug",
         },
         {
           name: "Stack Viewer",
           key: "Stack Viewer",
-          url: "/ui/stackviewer/eventlist/" + dataFile,
+          url: `/ui/stackviewer/eventlist/${dataFile}`,
           onClick: onLinkClick,
           icon: "Stack",
         },
         {
           name: "Process List",
           key: "Process List",
-          url: "/ui/processlist/" + dataFile,
+          url: `/ui/processlist/${dataFile}`,
           onClick: onLinkClick,
-          icon: "BulletedList",
+          icon: "ServerProcesses",
         },
         {
           name: "Module List",
           key: "Module List",
-          url: "/ui/modulelist/" + dataFile,
+          url: `/ui/modulelist/${dataFile}`,
           onClick: onLinkClick,
           icon: "BacklogList",
         }
@@ -98,8 +99,7 @@ const NavMenu: React.FC = () => {
   }, [dataFile]);
 
   return (
-    <ScrollablePane scrollbarVisibility={"auto"}>
-      <Text>{dataFileName}</Text>
+    <ScrollablePane scrollbarVisibility="auto">
       <Nav styles={navStyles} groups={navLinkGroups} />
     </ScrollablePane>
   );

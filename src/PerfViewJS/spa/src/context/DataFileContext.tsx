@@ -2,7 +2,7 @@ import base64url from "base64url";
 import React from "react";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
+// @ts-ignore
 const DataFileContext = React.createContext<DataFileContextType>();
 export type DataFileContextType = {
   dataFile: string;
@@ -19,9 +19,7 @@ export const DataFileContextProvider = (props: IDataFileContextProviderProp) => 
   const [dataFile, _setDataFile] = React.useState("");
   const dataFileName = base64url.decode(dataFile, "utf8").replaceAll("*", "");
 
-  const setDataFile = (dataFile: string) => {
-    return _setDataFile(base64url.encode(dataFile + "*" + "" + "*" + "", "utf8"));
-  };
+  const setDataFile = (_dataFile: string) => _setDataFile(base64url.encode(`${_dataFile}**`, "utf8"));
   const value = { dataFile, setDataFile, dataFileName };
   return <DataFileContext.Provider value={value}>{children}</DataFileContext.Provider>;
 };

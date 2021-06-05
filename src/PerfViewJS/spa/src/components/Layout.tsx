@@ -1,6 +1,8 @@
 import "./Layout.css";
-import { Container, Row, Col } from "react-grid-system";
+
 import React from "react";
+import { Col, Container, Row } from "react-grid-system";
+
 import NavMenu from "./NavMenu";
 
 interface ILayoutProps {
@@ -12,10 +14,12 @@ const Layout = (props: ILayoutProps) => {
   return (
     <Container fluid style={{ margin: 0 }}>
       <Row style={{ height: "100%", minHeight: "100vh" }}>
-        <Col xs={3}>
+        <Col xs={3} md={2} lg={2}>
           <NavMenu />
         </Col>
-        <Col xs={9}>{children}</Col>
+        <Col xs={9} md={10} lg={10}>
+          {children}
+        </Col>
       </Row>
     </Container>
   );

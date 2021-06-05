@@ -8,19 +8,25 @@ const fs = require("fs");
 const os = require("os");
 const cProcess = require("child_process").spawn;
 const portscanner = require("portscanner");
+const { askForFoldersAccess } = require("node-mac-permissions");
 
 let io, server, apiProcess;
 let launchFile;
 let launchUrl;
 let binaryFile = "PerfViewJS";
-let tmpDir = path.join(os.tmpdir() + "/" + "perf");
+//let tmpDir = path.join(os.tmpdir() + "/" + "perf");
+let tmpDir = path.join(
+  app.getPath("home") + "/" + "Downloads" + "/" + "PerfViewJS"
+);
 let win;
 
 function createWindow() {
   // Create the browser window.
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1024,
+    height: 768,
+    minWidth: 720,
+    minHeight: 576,
     webPreferences: {
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
@@ -87,6 +93,9 @@ app.on("will-finish-launching", () => {
 });
 
 app.on("ready", () => {
+  askForFoldersAccess("downloads").then((status) => {
+    console.log(`Access to downloads is ${status}`);
+  });
   //create tmp dir if not exists on
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir);

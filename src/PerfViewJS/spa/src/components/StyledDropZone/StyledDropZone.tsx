@@ -1,19 +1,23 @@
+import { getTheme, IStackTokens, Stack, Text } from "@fluentui/react";
 import React, { useMemo } from "react";
 import { DropEvent, FileRejection, useDropzone } from "react-dropzone";
-import { Stack, Text, getTheme, IStackTokens } from "@fluentui/react";
 import { Col, Container, Row } from "react-grid-system";
+import { useTranslation } from "react-i18next";
+
+const acceptedFileExt = ".etl,.btl,.netperf,.nettrace";
 const theme = getTheme();
 const baseStyle = {
   borderWidth: 2,
   borderRadius: 2,
   borderStyle: "dashed",
-  borderColor: theme.semanticColors.primaryButtonBackground,
+  borderColor: theme.semanticColors.bodyText,
   outline: "none",
   transition: "border .24s ease-in-out",
+  cursor: "pointer",
 };
 
 const activeStyle = {
-  borderColor: theme.semanticColors.severeWarningBackground,
+  borderColor: "#2196f3",
 };
 
 const acceptStyle = {
@@ -34,8 +38,8 @@ export interface IStyledDropzone {
 
 const StyledDropzone = (props: IStyledDropzone) => {
   const { onDrop } = props;
-  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({ onDrop: onDrop });
-
+  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({ onDrop, accept: acceptedFileExt });
+  const { t } = useTranslation();
   const style = useMemo(
     () => ({
       ...baseStyle,
@@ -54,8 +58,8 @@ const StyledDropzone = (props: IStyledDropzone) => {
             <input {...getInputProps()} />
             <Stack>
               <Stack.Item align="center" tokens={itemAlignmentsStackTokens}>
-                <Text style={{ opacity: 0.4 }} variant={"xLarge"}>
-                  Drag and drop some files here, or click to select files
+                <Text style={{ opacity: 0.6 }} variant="large">
+                  {t("home.dropzonetext")}
                 </Text>
               </Stack.Item>
             </Stack>
