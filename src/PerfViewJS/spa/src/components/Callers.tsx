@@ -28,14 +28,19 @@ export class Callers extends React.Component<Props, State> {
     this.setState({ node: new EmptyTNode(), loading: true }); // HACK: Why is this required?
 
     fetch(
-      "/api/treenode?" + Callers.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) + "&name=" + this.props.match.params.callTreeNodeId + "&subtree=" + this.props.match.params.subtree,
+      "/api/treenode?" +
+        Callers.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) +
+        "&name=" +
+        this.props.match.params.callTreeNodeId +
+        "&subtree=" +
+        this.props.match.params.subtree,
       { method: "GET", headers: { "Content-Type": "application/json" } }
     )
       .then((res) => res.json())
       .then((data) => {
         if (!this.ignoreLastFetch) {
           if (data === null) {
-            window.location.href = "/ui/stackviewer/hotspots/" + this.props.match.params.routeKey;
+            window.location.href = "/ui/stackviewer/hotspotsOld/" + this.props.match.params.routeKey;
           } else {
             data.hasChildren = true; // HACK: Because the api doesn't return this set true.
             this.setState({ node: data, loading: false });
@@ -112,7 +117,13 @@ export class Callers extends React.Component<Props, State> {
           </tr>
         </thead>
         <tbody>
-          <TreeNode routeKey={routeKey} callTreeNodeId={callTreeNodeId} node={node} indent={0} autoExpand={node.hasChildren} />
+          <TreeNode
+            routeKey={routeKey}
+            callTreeNodeId={callTreeNodeId}
+            node={node}
+            indent={0}
+            autoExpand={node.hasChildren}
+          />
         </tbody>
       </table>
     );
@@ -124,7 +135,11 @@ export class Callers extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      Callers.renderCallersTable(this.props.match.params.routeKey, this.props.match.params.callTreeNodeId, this.state.node)
+      Callers.renderCallersTable(
+        this.props.match.params.routeKey,
+        this.props.match.params.callTreeNodeId,
+        this.state.node
+      )
     );
 
     return (
@@ -132,8 +147,9 @@ export class Callers extends React.Component<Props, State> {
         <div style={{ margin: 2 + "px" }}>
           <div style={{ margin: 10 + "px" }}>
             <h4>
-              {base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} &raquo;{" "}
-              <Link to={`/ui/stackviewer/hotspots/${this.props.match.params.routeKey}`}>Hotspots</Link> &raquo; Callers
+              {base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")}{" "}
+              &raquo; <Link to={`/ui/stackviewer/hotspotsOld/${this.props.match.params.routeKey}`}>Hotspots</Link>{" "}
+              &raquo; Callers
             </h4>
             <StackViewerFilter routeKey={this.props.match.params.routeKey}></StackViewerFilter>
           </div>

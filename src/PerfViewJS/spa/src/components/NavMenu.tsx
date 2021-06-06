@@ -72,6 +72,13 @@ const NavMenu: React.FC = () => {
           icon: "WorkItemBug",
         },
         {
+          name: "Event Viewer (old)",
+          key: "Event Viewer (old)",
+          url: `/ui/eventviewerold/${dataFile}`,
+          onClick: onLinkClick,
+          icon: "WorkItemBug",
+        },
+        {
           name: "Stack Viewer",
           key: "Stack Viewer",
           url: `/ui/stackviewer/eventlist/${dataFile}`,

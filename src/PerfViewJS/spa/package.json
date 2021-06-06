@@ -7,7 +7,7 @@
   "author": "https://github.com/microsoft/perfview/graphs/contributors",
   "main": "public/electron.js",
   "build": {
-    "appId": "com.microsoft.experiemental.prefviewjs",
+    "appId": "com.microsoft.experiemental.perfviewjs",
     "compression": "maximum",
     "mac": {
       "type": "development",

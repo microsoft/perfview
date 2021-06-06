@@ -1,7 +1,7 @@
 import { Link, RouteComponentProps } from "react-router-dom";
 import React from "react";
-import { StackViewerFilter } from "./StackViewerFilter";
-import { TNode } from "./TNode";
+import { StackViewerFilter } from "../../components/StackViewerFilter";
+import { TNode } from "../../components/TNode";
 import base64url from "base64url";
 import { PrimaryButton } from "@fluentui/react";
 
@@ -16,10 +16,10 @@ interface State {
   nodes: TNode[];
 }
 
-export class Hotspots extends React.Component<Props, State> {
+export class HotspotsOld extends React.Component<Props, State> {
   ignoreLastFetch: boolean;
 
-  static displayName = Hotspots.name;
+  static displayName = HotspotsOld.name;
 
   constructor(props: Props) {
     super(props);
@@ -31,7 +31,10 @@ export class Hotspots extends React.Component<Props, State> {
   fetchData() {
     this.setState({ loading: true }); // HACK: Why is this required?
 
-    fetch("/api/hotspots?" + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey), { method: "GET", headers: { "Content-Type": "application/json" } })
+    fetch("/api/hotspots?" + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey), {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (!this.ignoreLastFetch) {
@@ -46,7 +49,10 @@ export class Hotspots extends React.Component<Props, State> {
       drillType = "/api/drillinto/inclusive?";
     }
 
-    fetch(drillType + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) + "&name=" + t, { method: "GET", headers: { "Content-Type": "application/json" } })
+    fetch(
+      drillType + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) + "&name=" + t,
+      { method: "GET", headers: { "Content-Type": "application/json" } }
+    )
       .then((res) => res.json())
       .then((data) => {
         const newRouteKey = JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8"));
@@ -71,7 +77,7 @@ export class Hotspots extends React.Component<Props, State> {
     }
   }
 
-  static renderHotspotsTable(nodes: TNode[], routeKey: string, obj: Hotspots) {
+  static renderHotspotsTable(nodes: TNode[], routeKey: string, obj: HotspotsOld) {
     return (
       <table className="table table-striped table-bordered" id="pd">
         <thead>
@@ -95,11 +101,15 @@ export class Hotspots extends React.Component<Props, State> {
               </td>
               <td className="center">{node.exclusiveMetricPercent}%</td>
               <td className="center">
-                <PrimaryButton onClick={() => obj.handleDrillIntoClick("e", node.base64EncodedId)}>{node.exclusiveCount}</PrimaryButton>
+                <PrimaryButton onClick={() => obj.handleDrillIntoClick("e", node.base64EncodedId)}>
+                  {node.exclusiveCount}
+                </PrimaryButton>
               </td>
               <td className="center">{node.inclusiveMetricPercent}%</td>
               <td className="center">
-                <PrimaryButton onClick={() => obj.handleDrillIntoClick("i", node.base64EncodedId)}>{node.inclusiveCount}</PrimaryButton>
+                <PrimaryButton onClick={() => obj.handleDrillIntoClick("i", node.base64EncodedId)}>
+                  {node.inclusiveCount}
+                </PrimaryButton>
               </td>
               <td className="center">{node.exclusiveFoldedMetric}</td>
               <td className="center">{node.inclusiveMetricByTimeString}</td>
@@ -118,14 +128,17 @@ export class Hotspots extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      Hotspots.renderHotspotsTable(this.state.nodes, this.props.match.params.routeKey, this)
+      HotspotsOld.renderHotspotsTable(this.state.nodes, this.props.match.params.routeKey, this)
     );
 
     return (
       <div>
         <div style={{ margin: 2 + "px" }}>
           <div style={{ margin: 10 + "px" }}>
-            <h4>{base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")} &raquo; Hotspots</h4>
+            <h4>
+              {base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")}{" "}
+              &raquo; Hotspots
+            </h4>
             <StackViewerFilter routeKey={this.props.match.params.routeKey}></StackViewerFilter>
           </div>
           {contents}

@@ -11,17 +11,19 @@ import React, { useState } from "react";
 import { Route } from "react-router";
 import { Callers } from "./components/Callers";
 import { EventList } from "./components/EventList";
-import { EventViewer } from "./components/EventViewer";
-import Home from "./components/Home";
-import { Hotspots } from "./components/Hotspots";
 import Layout from "./components/Layout";
 import { ModuleList } from "./components/ModuleList";
 import { ProcessChooser } from "./components/ProcessChooser";
 import { ProcessInfo } from "./components/ProcessInfo";
 import { ProcessList } from "./components/ProcessList";
 import { SourceViewer } from "./components/SourceViewer";
-import TraceInfo from "./components/TraceInfo";
 import { DataFileContextProvider } from "./context/DataFileContext";
+import Home from "features/Home";
+import TraceInfo from "features/TraceInfo";
+import EventViewer from "./features/EventViewer";
+import { EventViewerOld } from "features/EventViewer/EventViewerOld";
+import Hotspots from "features/Hotspots/Hotspots";
+import { HotspotsOld } from "features/Hotspots/HotspotsOld";
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(AzureThemeLight);
@@ -67,28 +69,25 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider applyTo="body" theme={theme}>
+      <SettingsCommandBar />
       <DataFileContextProvider>
-        <>
-          <SettingsCommandBar />
-          <Layout>
-            <Route exact path="/index.html" component={Home} />
-            <Route exact path="/" component={Home} />
-            <Route exact path="/ui" component={Home} />
-            <Route path="/ui/processInfo/:dataFile/:processIndex" component={ProcessInfo} />
-            <Route path="/ui/traceInfo/:dataFile" component={TraceInfo} />
-            <Route path="/ui/processList/:dataFile" component={ProcessList} />
-            <Route path="/ui/moduleList/:dataFile" component={ModuleList} />
-            <Route path="/ui/eventviewer/:dataFile" component={EventViewer} />
-            <Route path="/ui/stackviewer/eventlist/:dataFile" component={EventList} />
-            <Route
-              path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName"
-              component={ProcessChooser}
-            />
-            <Route path="/ui/stackviewer/hotspots/:routeKey" component={Hotspots} />
-            <Route path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId" component={Callers} />
-            <Route path="/ui/sourceviewer/:routeKey/:callTreeNodeId" component={SourceViewer} />
-          </Layout>
-        </>
+        <Layout>
+          <Route exact path="/index.html" component={Home} />
+          <Route exact path="/" component={Home} />
+          <Route exact path="/ui" component={Home} />
+          <Route path="/ui/processInfo/:dataFile/:processIndex" component={ProcessInfo} />
+          <Route path="/ui/traceInfo/:dataFile" component={TraceInfo} />
+          <Route path="/ui/processList/:dataFile" component={ProcessList} />
+          <Route path="/ui/moduleList/:dataFile" component={ModuleList} />
+          <Route path="/ui/eventviewer/:dataFile" component={EventViewer} />
+          <Route path="/ui/eventviewerold/:dataFile" component={EventViewerOld} />
+          <Route path="/ui/stackviewer/eventlist/:dataFile" component={EventList} />
+          <Route path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName" component={ProcessChooser} />
+          <Route path="/ui/stackviewer/hotspots/:routeKey" component={Hotspots} />
+          <Route path="/ui/stackviewer/hotspotsOld/:routeKey" component={HotspotsOld} />
+          <Route path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId" component={Callers} />
+          <Route path="/ui/sourceviewer/:routeKey/:callTreeNodeId" component={SourceViewer} />
+        </Layout>
       </DataFileContextProvider>
     </ThemeProvider>
   );

@@ -37,15 +37,23 @@ export class TreeNode extends React.PureComponent<Props, State> {
       drillType = "/api/drillinto/inclusive?";
     }
 
-    fetch(drillType + TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) + "&name=" + this.props.callTreeNodeId + "&path=" + this.props.node.path, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
+    fetch(
+      drillType +
+        TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) +
+        "&name=" +
+        this.props.callTreeNodeId +
+        "&path=" +
+        this.props.node.path,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    )
       .then((res) => res.json())
       .then((data) => {
         const newRouteKey = JSON.parse(base64url.decode(this.props.routeKey, "utf8"));
         newRouteKey.k = data;
-        window.location.href = "/ui/stackviewer/hotspots/" + base64url.encode(JSON.stringify(newRouteKey));
+        window.location.href = "/ui/stackviewer/hotspotsOld/" + base64url.encode(JSON.stringify(newRouteKey));
       });
   }
 
@@ -62,10 +70,18 @@ export class TreeNode extends React.PureComponent<Props, State> {
   }
 
   expandTreeNode() {
-    fetch("/api/callerchildren?" + TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) + "&name=" + this.props.callTreeNodeId + "&path=" + this.props.node.path, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
+    fetch(
+      "/api/callerchildren?" +
+        TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) +
+        "&name=" +
+        this.props.callTreeNodeId +
+        "&path=" +
+        this.props.node.path,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    )
       .then((res) => res.json())
       .then((data) => {
         this.setState({ children: data, isCollapsed: false });
@@ -135,7 +151,14 @@ export class TreeNode extends React.PureComponent<Props, State> {
           <td className="center">{node.lastTimeRelativeMSec}</td>
         </tr>
         {children.map((child) => (
-          <TreeNode key={`${child.base64EncodedId}`} routeKey={routeKey} node={child} indent={indent + 10} callTreeNodeId={callTreeNodeId} autoExpand={autoExpand}></TreeNode>
+          <TreeNode
+            key={`${child.base64EncodedId}`}
+            routeKey={routeKey}
+            node={child}
+            indent={indent + 10}
+            callTreeNodeId={callTreeNodeId}
+            autoExpand={autoExpand}
+          ></TreeNode>
         ))}
       </React.Fragment>
     );

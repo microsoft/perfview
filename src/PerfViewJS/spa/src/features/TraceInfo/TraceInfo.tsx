@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Container, Row, Col } from "react-grid-system";
 import { getTheme, Text } from "@fluentui/react";
-import { useDataFileContext } from "../context/DataFileContext";
-import Loading from "./Loading/Loading";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   IconDefinition,
@@ -16,6 +14,8 @@ import {
 import { faWindows } from "@fortawesome/free-brands-svg-icons";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import dayjs from "dayjs";
+import { useDataFileContext } from "context/DataFileContext";
+import Loading from "components/Loading";
 dayjs().format();
 
 const theme = getTheme();
@@ -68,12 +68,15 @@ const TraceInfo: React.FC = () => {
     for (let i = 1; i < traceInfo.numberOfProcessors + 1; i++) {
       ProcessorComponent.push(
         <FontAwesomeIcon
+          key={`${i}-fa`}
           icon={faMicrochip}
           color={theme.semanticColors.accentButtonBackground}
           style={{ padding: "3px" }}
         />
       );
-      if (i % 4 === 0 && i !== traceInfo.numberOfProcessors) ProcessorComponent.push(<br />);
+      if (i % 4 === 0 && i !== traceInfo.numberOfProcessors) {
+        ProcessorComponent.push(<br key={`${i}-br`} />);
+      }
     }
 
     return (

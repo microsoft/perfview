@@ -1,4 +1,5 @@
 import {
+  CheckboxVisibility,
   DetailsList,
   DetailsListLayoutMode,
   FontIcon,
@@ -13,9 +14,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Col, Container, Row } from "react-grid-system";
 import { useTranslation } from "react-i18next";
 
-import { useDataFileContext } from "../context/DataFileContext";
-import { IElectronBridgeAction } from "../global";
-import StyledDropzone from "./StyledDropZone/StyledDropZone";
+import { useDataFileContext } from "context/DataFileContext";
+import StyledDropzone from "components/StyledDropZone";
+import { IElectronBridgeAction } from "global";
+import { transformStringArrayToDetailListItems } from "common/Utility";
 
 // styles
 const iconStyles = {
@@ -54,14 +56,6 @@ const columns: IColumn[] = [
   },
 ];
 
-// Utility
-const transformToDetailListItems = (items: string[]) =>
-  items.map((item, i) => ({
-    key: i,
-    name: item,
-    value: item,
-  }));
-
 const Home: React.FC = () => {
   const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>([]);
@@ -96,7 +90,7 @@ const Home: React.FC = () => {
 
   const selection = new Selection({
     onSelectionChanged: () => {
-      if (selection.getSelection().length > 0) {
+      if (selection.getSelectedCount() > 0) {
         // ?workaround for Fluent-UI, since it's always an array
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -144,7 +138,8 @@ const Home: React.FC = () => {
         <Col>
           <DetailsList
             isHeaderVisible={false}
-            items={files ? transformToDetailListItems(files) : []}
+            checkboxVisibility={CheckboxVisibility.hidden}
+            items={files ? transformStringArrayToDetailListItems(files) : []}
             styles={detailsListStyles}
             columns={columns}
             selection={selection}

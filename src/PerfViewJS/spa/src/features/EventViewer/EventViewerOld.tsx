@@ -33,8 +33,8 @@ interface Event {
   hasStack: boolean;
 }
 
-export class EventViewer extends React.Component<Props, State> {
-  static displayName = EventViewer.name;
+export class EventViewerOld extends React.Component<Props, State> {
+  static displayName = EventViewerOld.name;
 
   //myRef: React.RefObject<any>;
   static windowCurrentScrollY = 0;
@@ -82,7 +82,7 @@ export class EventViewer extends React.Component<Props, State> {
       });
 
     window.addEventListener("scroll", () => {
-      EventViewer.windowCurrentScrollY = window.scrollY;
+      EventViewerOld.windowCurrentScrollY = window.scrollY;
     });
   }
 
@@ -148,7 +148,7 @@ export class EventViewer extends React.Component<Props, State> {
     this.setState({ eventNameFilter: e.target.value });
   }
 
-  static renderEventListTable(events: Event[], obj: EventViewer, eventNameFilter: string) {
+  static renderEventListTable(events: Event[], obj: EventViewerOld, eventNameFilter: string) {
     return (
       <React.Fragment>
         {
@@ -157,7 +157,7 @@ export class EventViewer extends React.Component<Props, State> {
             size={events.length}
             onChange={obj.handleChange}
             onFocus={() => {
-              window.scrollTo(0, EventViewer.windowCurrentScrollY);
+              window.scrollTo(0, EventViewerOld.windowCurrentScrollY);
             }}
           >
             {events
@@ -185,7 +185,7 @@ export class EventViewer extends React.Component<Props, State> {
         <em>Loading...</em>
       </p>
     ) : (
-      EventViewer.renderEventListTable(this.state.eventTypes, this, this.state.eventNameFilter)
+      EventViewerOld.renderEventListTable(this.state.eventTypes, this, this.state.eventNameFilter)
     );
 
     return (
@@ -196,15 +196,33 @@ export class EventViewer extends React.Component<Props, State> {
             <form style={{ fontSize: 9 + "pt" }} method="get" className="form-inline">
               <div>
                 <label htmlFor="StartBox">Start Time (Relative MSec)</label>
-                <input type="text" name="start" id="StartBox" value={`${this.state.start}`} onChange={this.handleStartChange} />
+                <input
+                  type="text"
+                  name="start"
+                  id="StartBox"
+                  value={`${this.state.start}`}
+                  onChange={this.handleStartChange}
+                />
                 <label htmlFor="TextFilterBox">Text Filter (.NET Regex)</label>
-                <input type="text" name="textfilter" id="TextFilterBox" value={`${this.state.textFilter}`} onChange={this.handleTextFilterChange} />
+                <input
+                  type="text"
+                  name="textfilter"
+                  id="TextFilterBox"
+                  value={`${this.state.textFilter}`}
+                  onChange={this.handleTextFilterChange}
+                />
               </div>
               <div style={{ marginLeft: 10 + "px" }}>
                 <label htmlFor="EndBox">End Time (Relative MSec)</label>
                 <input type="text" name="end" id="EndBox" value={`${this.state.end}`} onChange={this.handleEndChange} />
                 <label htmlFor="MaxEventCountBox">Maximum Event Count</label>
-                <input type="text" name="maxEventCount" id="MaxEventCountBox" value={`${this.state.maxEventCount}`} onChange={this.handleMaxEventCountChange} />
+                <input
+                  type="text"
+                  name="maxEventCount"
+                  id="MaxEventCountBox"
+                  value={`${this.state.maxEventCount}`}
+                  onChange={this.handleMaxEventCountChange}
+                />
               </div>
               <div style={{ marginLeft: 10 + "px" }}>
                 <PrimaryButton onClick={this.handleOnClick}>Update</PrimaryButton>
@@ -245,7 +263,7 @@ export class EventViewer extends React.Component<Props, State> {
                           <a
                             target="_blank"
                             rel="noopener noreferrer"
-                            href={`/ui/stackviewer/hotspots/
+                            href={`/ui/stackviewer/hotspotsOld/
                                                     ${base64url.encode(
                                                       JSON.stringify({
                                                         a: this.props.match.params.dataFile,
