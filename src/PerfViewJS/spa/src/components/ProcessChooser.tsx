@@ -67,8 +67,7 @@ export class ProcessChooser extends React.Component<Props, State> {
                       j: "",
                       k: "",
                       l: stackTypeName,
-                    }),
-                    "utf8"
+                    })
                   )}`}
                 >
                   {process.name}
@@ -95,10 +94,10 @@ export class ProcessChooser extends React.Component<Props, State> {
         this.props.match.params.stackTypeName
       )
     );
-
+    console.log(this.props.match);
     return (
       <div>
-        <h4>Event {base64url.decode(this.props.match.params.stackTypeName, "utf8")} &raquo; Choose Process</h4>
+        {/* <h4>Event {base64url.decode(this.props.match.params.stackTypeName, "utf8")} &raquo; Choose Process</h4> */}
         {contents}
       </div>
     );

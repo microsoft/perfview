@@ -1,5 +1,6 @@
 import {
   CheckboxVisibility,
+  DefaultButton,
   DetailsList,
   DetailsListLayoutMode,
   FontIcon,
@@ -18,7 +19,8 @@ import { useDataFileContext } from "context/DataFileContext";
 import StyledDropzone from "components/StyledDropZone";
 import { IElectronBridgeAction } from "global";
 import { transformStringArrayToDetailListItems } from "common/Utility";
-
+import { IpcRenderer } from "electron";
+import toast from "react-hot-toast";
 // styles
 const iconStyles = {
   padding: 0,
@@ -33,7 +35,7 @@ const detailsListStyles = {
 };
 
 // column definitions
-const columns: IColumn[] = [
+const traceListColumns: IColumn[] = [
   {
     key: "column1",
     name: "Trace files",
@@ -67,22 +69,59 @@ const Home: React.FC = () => {
       // but it is working for some reason
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      window.api.send("toMain", file.path);
+      window.electronBridge.send("toMain", file.path);
+      if (!window.electronBridge) {
+      }
     });
   }, []);
 
   useEffect(() => {
+    let removeListener: () => IpcRenderer;
     const getDirectoryListing = () => {
       fetch("/api/datadirectorylisting")
-        .then((res) => res.json())
-        .then((data) => setFiles(data));
+        .then(async (res: Response) => {
+          if (res.ok) {
+            const data = await res.json();
+            setFiles(data);
+          } else {
+            const resTxt = await res.text();
+            toast.error((t) => (
+              <Container>
+                <Row>
+                  <Text block>{"There was an error "}</Text>
+                  <Text variant={"xSmall"}>{resTxt}</Text>
+                </Row>
+                <Row justify="end" style={{ paddingTop: 7 }}>
+                  <Col xs={4}>
+                    <DefaultButton
+                      onClick={() => {
+                        getDirectoryListing();
+                        toast.dismiss(t.id);
+                      }}
+                    >
+                      Retry
+                    </DefaultButton>
+                  </Col>
+                  <Col xs={4}>
+                    <DefaultButton onClick={() => toast.dismiss(t.id)}>Dismiss</DefaultButton>
+                  </Col>
+                </Row>
+              </Container>
+            ));
+          }
+        })
+        .catch((err: Error) => {
+          console.log(err);
+        });
     };
     getDirectoryListing();
-    const removeListener = window.api.receive("fromMain", (action: IElectronBridgeAction) => {
-      // support more actions in the future, maybe FS watcher
-      if (action === "reload") getDirectoryListing();
-    });
-
+    if (window.electronBridge) {
+      removeListener = window.electronBridge.receive("fromMain", (action: IElectronBridgeAction) => {
+        console.log(action);
+        if (action === "reload") getDirectoryListing();
+      });
+    }
+    //clean up listener
     return () => {
       if (removeListener) removeListener();
     };
@@ -141,7 +180,7 @@ const Home: React.FC = () => {
             checkboxVisibility={CheckboxVisibility.hidden}
             items={files ? transformStringArrayToDetailListItems(files) : []}
             styles={detailsListStyles}
-            columns={columns}
+            columns={traceListColumns}
             selection={selection}
             selectionMode={SelectionMode.single}
             layoutMode={DetailsListLayoutMode.justified}

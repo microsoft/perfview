@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-//import base64url from "base64url";
 import {
   DetailsList,
   DetailsListLayoutMode,
@@ -122,7 +121,7 @@ const EventViewer: React.FC = () => {
   };
 
   const onValidate = (value: string): string | void => {
-    return Number.isInteger(value) ? value : defaultEventCount;
+    return Number.isInteger(parseInt(value)) ? value : defaultEventCount;
   };
 
   const onMaxEventChange = (event: React.SyntheticEvent<HTMLElement>, newValue?: string) => {

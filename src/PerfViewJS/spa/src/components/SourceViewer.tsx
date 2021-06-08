@@ -2,9 +2,9 @@ import "./SourceViewer.css";
 
 import Editor /*, { Monaco }*/ from "@monaco-editor/react";
 import React from "react";
-import { StackViewerFilter } from "./StackViewerFilter";
 import { RouteComponentProps } from "react-router";
 import { editor } from "monaco-editor";
+import { constructAPICacheKeyFromRouteKey } from "common/Utility";
 
 interface MatchParams {
   routeKey: string;
@@ -39,10 +39,16 @@ export class SourceViewer extends React.PureComponent<Props, State> {
     this.handleEditorDidMount = this.handleEditorDidMount.bind(this);
     this.state = { loading: true, sourceInformation: null };
 
-    fetch("/api/getsource?" + StackViewerFilter.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) + "&name=" + this.props.match.params.callTreeNodeId, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
+    fetch(
+      "/api/getsource?" +
+        constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) +
+        "&name=" +
+        this.props.match.params.callTreeNodeId,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    )
       .then((res) => res.json())
       .then((data) => {
         this.setState({ sourceInformation: data, loading: false });

@@ -2,24 +2,35 @@
 
 PerfViewJS is a webviewer for ETL and NetPerf data.
 
-## Usage
+## Development on VS Code
 
-* dotnet run
-* Browse to http://localhost:5000
-* Type in the location of your PerfViewData.etl (must be merged)
+## Browser
 
-## Debugging
+This will run backend in debug mode
 
-* Press F5 in Visual Studio (or VSCode)
-* cd spa
-* npm start
-* Browse to http://localhost:3000
+### Backend
+
+- cmd+shift+D or launch backend via debug toolbar
+- Place trace files in `"${workspaceFolder}/spa/tmp"`
+
+### Frontend
+
+- cd spa
+- `npm run start`
+- Browse to http://localhost:5000
+
+## **or**
+
+#### Electron
+
+This will run backend in electron shell
+
+- `npm run dev`
 
 ## Todo
 
-* Wrap PerfViewJS as a dotnet global tool
-* Use Chromium Embedded Framework to make a client-side application
-
-## Components
-
-PerfViewJS is an ASP.NET Core application. React is used for rendering and GUI state.
+- [ ] Refresh UI from HTML to Fluent-UI components
+- [x] Use Chromium Embedded Framework to make a client-side application
+- [ ] Sortable lists
+- [ ] Alternating list background
+- [ ] Wrap PerfViewJS as a dotnet global tool

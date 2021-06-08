@@ -14,7 +14,7 @@ let io, server, apiProcess;
 let launchFile;
 let launchUrl;
 let binaryFile = "PerfViewJS";
-//let tmpDir = path.join(os.tmpdir() + "/" + "perf");
+
 let tmpDir = path.join(
   app.getPath("home") + "/" + "Downloads" + "/" + "PerfViewJS"
 );
@@ -107,12 +107,17 @@ app.on("ready", () => {
     const pathname = request.url.replace("file:///", "");
     callback(pathname);
   });
-  boot();
+  startServer();
 });
 
 app.on("quit", async () => {
   await server.close();
-  apiProcess.kill();
+
+  // try graceful shutdown (SIGTERM)
+  if (!apiProcess.kill()) {
+    // force shutdown (SIGKILL)
+    apiProcess.kill(9);
+  }
 });
 
 app.on("before-quit", async (event) => {
@@ -130,7 +135,7 @@ app.on("before-quit", async (event) => {
   }
 });
 
-function boot() {
+function startServer() {
   // Added default port as configurable for port restricted environments.
   let defaultElectronPort = 4999;
 

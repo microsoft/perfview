@@ -2,14 +2,15 @@ import { EmptyTNode, TNode } from "./TNode";
 import { RouteComponentProps } from "react-router";
 import { Link } from "react-router-dom";
 import React from "react";
-import { StackViewerFilter } from "./StackViewerFilter";
 import { TreeNode } from "./TreeNode";
 import base64url from "base64url";
+import { constructAPICacheKeyFromRouteKey } from "common/Utility";
+import StackViewerFilter from "features/StackViewerFilter/StackViewerFilter";
 
 interface MatchParams {
   routeKey: string;
   callTreeNodeId: string;
-  subtree: string;
+  //subtree?: string;
 }
 
 export interface Props extends RouteComponentProps<MatchParams> {}
@@ -29,12 +30,12 @@ export class Callers extends React.Component<Props, State> {
 
     fetch(
       "/api/treenode?" +
-        Callers.constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) +
+        constructAPICacheKeyFromRouteKey(this.props.match.params.routeKey) +
         "&name=" +
         this.props.match.params.callTreeNodeId +
         "&subtree=" +
-        this.props.match.params.subtree,
-      { method: "GET", headers: { "Content-Type": "application/json" } }
+        //this.props.match.params.subtree,
+        { method: "GET", headers: { "Content-Type": "application/json" } }
     )
       .then((res) => res.json())
       .then((data) => {
@@ -69,34 +70,6 @@ export class Callers extends React.Component<Props, State> {
     if (newId !== oldId) {
       this.fetchData();
     }
-  }
-
-  static constructAPICacheKeyFromRouteKey(r: string) {
-    const routeKey = JSON.parse(base64url.decode(r, "utf8"));
-    return (
-      "filename=" +
-      routeKey.a +
-      "&stackType=" +
-      routeKey.b +
-      "&pid=" +
-      routeKey.c +
-      "&start=" +
-      base64url.encode(routeKey.d, "utf8") +
-      "&end=" +
-      base64url.encode(routeKey.e, "utf8") +
-      "&groupPats=" +
-      base64url.encode(routeKey.f, "utf8") +
-      "&foldPats=" +
-      base64url.encode(routeKey.g, "utf8") +
-      "&incPats=" +
-      base64url.encode(routeKey.h, "utf8") +
-      "&excPats=" +
-      base64url.encode(routeKey.i, "utf8") +
-      "&foldPct=" +
-      routeKey.j +
-      "&drillIntoKey=" +
-      routeKey.k
-    );
   }
 
   static renderCallersTable(routeKey: string, callTreeNodeId: string, node: TNode) {
@@ -147,11 +120,11 @@ export class Callers extends React.Component<Props, State> {
         <div style={{ margin: 2 + "px" }}>
           <div style={{ margin: 10 + "px" }}>
             <h4>
-              {base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey, "utf8")).l, "utf8")}{" "}
-              &raquo; <Link to={`/ui/stackviewer/hotspotsOld/${this.props.match.params.routeKey}`}>Hotspots</Link>{" "}
-              &raquo; Callers
+              {base64url.decode(JSON.parse(base64url.decode(this.props.match.params.routeKey)).l)} &raquo;{" "}
+              <Link to={`/ui/stackviewer/hotspotsOld/${this.props.match.params.routeKey}`}>Hotspots</Link> &raquo;
+              Callers
             </h4>
-            <StackViewerFilter routeKey={this.props.match.params.routeKey}></StackViewerFilter>
+            <StackViewerFilter />
           </div>
           {contents}
         </div>

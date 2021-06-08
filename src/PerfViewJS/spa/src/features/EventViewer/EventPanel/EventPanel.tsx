@@ -3,16 +3,11 @@ import {
   ConstrainMode,
   DetailsList,
   DetailsListLayoutMode,
-  FontWeights,
-  getTheme,
-  IButtonStyles,
   IColumn,
   IconButton,
   IDetailsColumnRenderTooltipProps,
   IDetailsHeaderProps,
-  IIconProps,
   IRenderFunction,
-  mergeStyleSets,
   Modal,
   Panel,
   PanelType,
@@ -28,6 +23,9 @@ import React, { useEffect, useState } from "react";
 import { useDataFileContext } from "context/DataFileContext";
 import base64url from "base64url";
 import Hotspots from "features/Hotspots";
+import { cancelIcon, contentStyles as modalStyles, iconButtonStyles, wrapperStyle } from "./EventPanelStyles";
+import { EventPanelColDef } from "./EventPanelColDef";
+import { useRouteKeyContext } from "context/RouteContext";
 
 interface IEventData {
   eventIndex: number;
@@ -45,84 +43,37 @@ interface IEventPanelProp {
   start: string;
   end: string;
   textFilter: string;
-  selectedEvents: string; //<-- csv?
+  selectedEvents: string; //<-- csv
 }
 
-const columns: IColumn[] = [
-  {
-    key: "eventName",
-    name: "Event Name",
-    fieldName: "eventName",
-    minWidth: 510,
-  },
-  {
-    key: "timestamp",
-    name: "Time MSec",
-    fieldName: "timestamp",
-    minWidth: 80,
-  },
-  {
-    key: "processName",
-    name: "Process Name",
-    fieldName: "processName",
-    minWidth: 100,
-  },
-  {
-    key: "hasStack",
-    name: "Has Stack",
-    fieldName: "hasStack",
-    minWidth: 80,
-  },
-  {
-    key: "rest",
-    name: "Rest",
-    fieldName: "rest",
-    minWidth: 1200,
-  },
-];
-
-const wrapperStyle: React.CSSProperties = { height: "100vh", position: "relative" };
-
-const cancelIcon: IIconProps = { iconName: "Cancel" };
-
-const theme = getTheme();
-const contentStyles = mergeStyleSets({
-  container: {
-    display: "flex",
-    flexFlow: "column nowrap",
-    alignItems: "stretch",
-  },
-  header: [
-    {
-      flex: "1 1 auto",
-      borderTop: `4px solid ${theme.palette.themePrimary}`,
-      display: "flex",
-      alignItems: "center",
-      fontWeight: FontWeights.semibold,
-      padding: "12px 12px 14px 24px",
-    },
-  ],
-  body: {
-    flex: "4 4 auto",
-    padding: "0 24px 24px 24px",
-    overflowY: "hidden",
-  },
-});
-const iconButtonStyles: Partial<IButtonStyles> = {
-  root: {
-    marginLeft: "auto",
-    marginTop: "4px",
-    marginRight: "2px",
-  },
+const GenerateRoute = (dataFile: string, eventData: IEventData[], eventIndex: number) => {
+  const timestamp = eventData.find((ev) => ev.eventIndex === eventIndex)?.timestamp || "";
+  return `${base64url.encode(
+    JSON.stringify({
+      a: dataFile,
+      b: "-1",
+      c: "-1",
+      d: (parseFloat(timestamp) - 0.001).toFixed(3),
+      e: (parseFloat(timestamp) + 0.001).toFixed(3),
+      f: "",
+      g: "",
+      h: "",
+      i: "",
+      j: "",
+      k: "",
+      l: base64url.encode("Any Event"),
+    }),
+    "utf8"
+  )}`;
 };
 
 const EventPanel: React.FC<IEventPanelProp> = (props) => {
   const { isOpen, maxEventCount, start, end, textFilter, selectedEvents, dismissPanel } = props;
   if (!isOpen) return <></>; //short circuit this component
   const { dataFile } = useDataFileContext();
+  const { setRouteKey } = useRouteKeyContext();
   const [eventData, setEventData] = useState<IEventData[]>([]);
   const [isModalOpen, { setTrue: showModal, setFalse: hideModal }] = useBoolean(false);
-  const [routeKey, setRouteKey] = useState<string>("");
 
   useEffect(() => {
     fetch(
@@ -138,25 +89,8 @@ const EventPanel: React.FC<IEventPanelProp> = (props) => {
   }, [dataFile, maxEventCount, start, end, textFilter, selectedEvents, dismissPanel]);
 
   const fetchHotSpots = (eventIndex: number) => {
-    const encodedRoute = `${base64url.encode(
-      JSON.stringify({
-        a: dataFile,
-        b: "-1",
-        c: "-1",
-        d: (parseFloat(eventData[eventIndex].timestamp) - 0.001).toFixed(3),
-        e: (parseFloat(eventData[eventIndex].timestamp) + 0.001).toFixed(3),
-        f: "",
-        g: "",
-        h: "",
-        i: "",
-        j: "",
-        k: "",
-        l: base64url.encode("Any Event", "utf8"),
-      }),
-      "utf8"
-    )}`;
+    const encodedRoute = GenerateRoute(dataFile, eventData, eventIndex);
     setRouteKey(encodedRoute);
-    console.log(encodedRoute);
     showModal();
   };
 
@@ -203,14 +137,14 @@ const EventPanel: React.FC<IEventPanelProp> = (props) => {
             constrainMode={ConstrainMode.unconstrained}
             compact={true}
             items={eventData}
-            columns={columns}
+            columns={EventPanelColDef}
             onRenderDetailsHeader={renderFixedDetailsHeader}
             onRenderItemColumn={renderItemColumn}
           ></DetailsList>
         </ScrollablePane>
       </div>
       <Modal isOpen={isModalOpen} onDismiss={hideModal} isBlocking={false}>
-        <div className={contentStyles.header}>
+        <div className={modalStyles.header}>
           <span>Stack</span>
           <IconButton
             styles={iconButtonStyles}
@@ -219,8 +153,8 @@ const EventPanel: React.FC<IEventPanelProp> = (props) => {
             onClick={hideModal}
           />
         </div>
-        <div className={contentStyles.body}>
-          <Hotspots routeKey={routeKey} />
+        <div className={modalStyles.body}>
+          <Hotspots />
         </div>
       </Modal>
     </Panel>

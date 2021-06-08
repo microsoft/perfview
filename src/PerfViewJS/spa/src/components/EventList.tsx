@@ -60,7 +60,13 @@ export class EventList extends React.Component<Props, State> {
             <tr key={`${event.name} (${event.eventId}`}>
               <td>
                 {event.stackEventCount !== 0 ? (
-                  <Link to={`/ui/stackviewer/processchooser/${dataFile}/${event.eventId}/${base64url.encode(event.eventName, "utf8")}`}>{event.eventName}</Link>
+                  <Link
+                    to={`/ui/stackviewer/processchooser/${dataFile}/${event.eventId}/${base64url.encode(
+                      event.eventName
+                    )}`}
+                  >
+                    {event.eventName}
+                  </Link>
                 ) : (
                   event.eventName
                 )}

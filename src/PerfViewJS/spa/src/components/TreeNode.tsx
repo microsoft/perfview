@@ -3,6 +3,7 @@ import React from "react";
 import { TNode } from "./TNode";
 import base64url from "base64url";
 import { PrimaryButton } from "@fluentui/react";
+import { constructAPICacheKeyFromRouteKey } from "common/Utility";
 
 export interface Props {
   routeKey: string;
@@ -39,7 +40,7 @@ export class TreeNode extends React.PureComponent<Props, State> {
 
     fetch(
       drillType +
-        TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) +
+        constructAPICacheKeyFromRouteKey(this.props.routeKey) +
         "&name=" +
         this.props.callTreeNodeId +
         "&path=" +
@@ -51,7 +52,7 @@ export class TreeNode extends React.PureComponent<Props, State> {
     )
       .then((res) => res.json())
       .then((data) => {
-        const newRouteKey = JSON.parse(base64url.decode(this.props.routeKey, "utf8"));
+        const newRouteKey = JSON.parse(base64url.decode(this.props.routeKey));
         newRouteKey.k = data;
         window.location.href = "/ui/stackviewer/hotspotsOld/" + base64url.encode(JSON.stringify(newRouteKey));
       });
@@ -72,7 +73,7 @@ export class TreeNode extends React.PureComponent<Props, State> {
   expandTreeNode() {
     fetch(
       "/api/callerchildren?" +
-        TreeNode.constructAPICacheKeyFromRouteKey(this.props.routeKey) +
+        constructAPICacheKeyFromRouteKey(this.props.routeKey) +
         "&name=" +
         this.props.callTreeNodeId +
         "&path=" +
@@ -86,34 +87,6 @@ export class TreeNode extends React.PureComponent<Props, State> {
       .then((data) => {
         this.setState({ children: data, isCollapsed: false });
       });
-  }
-
-  static constructAPICacheKeyFromRouteKey(r: string) {
-    const routeKey = JSON.parse(base64url.decode(r, "utf8"));
-    return (
-      "filename=" +
-      routeKey.a +
-      "&stackType=" +
-      routeKey.b +
-      "&pid=" +
-      routeKey.c +
-      "&start=" +
-      base64url.encode(routeKey.d, "utf8") +
-      "&end=" +
-      base64url.encode(routeKey.e, "utf8") +
-      "&groupPats=" +
-      base64url.encode(routeKey.f, "utf8") +
-      "&foldPats=" +
-      base64url.encode(routeKey.g, "utf8") +
-      "&incPats=" +
-      base64url.encode(routeKey.h, "utf8") +
-      "&excPats=" +
-      base64url.encode(routeKey.i, "utf8") +
-      "&foldPct=" +
-      routeKey.j +
-      "&drillIntoKey=" +
-      routeKey.k
-    );
   }
 
   static renderTreeNode(

@@ -1,100 +1,103 @@
-import { Link, RouteComponentProps } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { StackViewerFilter } from "../../components/StackViewerFilter";
+import StackViewerFilter from "../StackViewerFilter/StackViewerFilter";
 import { TNode } from "../../components/TNode";
 import base64url from "base64url";
-import { PrimaryButton } from "@fluentui/react";
+import { CheckboxVisibility, DetailsList, IDetailsHeaderProps, IRenderFunction, PrimaryButton } from "@fluentui/react";
 
-interface IHotspotsProp {
-  routeKey: string;
-}
-interface State {
-  loading: boolean;
-  nodes: TNode[];
-}
+import { Container, Row } from "react-grid-system";
+import { HotspotsColDef } from "./HotspotsColDef";
+import { constructAPICacheKeyFromRouteKey } from "common/Utility";
+import { useRouteKeyContext } from "context/RouteContext";
 
-const Hotspots: React.FC<IHotspotsProp> = (props: IHotspotsProp) => {
-  const [loading, setLoading] = useState(false);
+import { IColumn } from "@fluentui/react";
+
+const Hotspots: React.FC = () => {
   const [nodes, setNodes] = useState<TNode[]>([]);
-  const { routeKey } = props;
+  const { routeKey, setRouteKey } = useRouteKeyContext();
 
   useEffect(() => {
-    fetch("/api/hotspots?" + StackViewerFilter.constructAPICacheKeyFromRouteKey(routeKey))
+    fetch("/api/hotspots?" + constructAPICacheKeyFromRouteKey(routeKey))
       .then((res) => res.json())
       .then((data) => {
         setNodes(data);
       });
   }, [routeKey]);
 
-  const handleDrillIntoClick = (d: string, t: string) => {
+  const renderItemColumn = (item?: TNode, index?: number, column?: IColumn) => {
+    if (column?.fieldName === "exclusiveCount") {
+      return (
+        <PrimaryButton onClick={() => handleDrillIntoClick("e", item?.base64EncodedId)}>
+          {item?.exclusiveCount}
+        </PrimaryButton>
+      );
+    } else if (column?.fieldName === "inclusiveCount") {
+      return (
+        <PrimaryButton onClick={() => handleDrillIntoClick("i", item?.base64EncodedId)}>
+          {item?.inclusiveCount}
+        </PrimaryButton>
+      );
+    } else {
+      //? everything is optional..
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      return item[column.fieldName];
+    }
+  };
+
+  const handleDrillIntoClick = (d: string, nodeBase64EncodedId?: string) => {
     let drillType = "/api/drillinto/exclusive?";
     if (d === "i") {
       drillType = "/api/drillinto/inclusive?";
     }
 
-    fetch(drillType + StackViewerFilter.constructAPICacheKeyFromRouteKey(routeKey) + "&name=" + t, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    })
+    fetch(drillType + constructAPICacheKeyFromRouteKey(routeKey) + "&name=" + nodeBase64EncodedId)
       .then((res) => res.json())
       .then((data) => {
-        const newRouteKey = JSON.parse(base64url.decode(routeKey, "utf8"));
+        const newRouteKey = JSON.parse(base64url.decode(routeKey));
         newRouteKey.k = data;
-        window.location.href = "/ui/stackviewer/hotspots/" + base64url.encode(JSON.stringify(newRouteKey));
+        setRouteKey(base64url.encode(JSON.stringify(newRouteKey)));
       });
   };
 
-  const renderHotspotsTable = (nodes: TNode[], routeKey: string) => {
-    return (
-      <table className="table table-striped table-bordered" id="pd">
-        <thead>
-          <tr>
-            <td className="center">Name</td>
-            <td className="center">Exclusive Metric %</td>
-            <td className="center">Exclusive Count</td>
-            <td className="center">Inclusive Metric %</td>
-            <td className="center">Inclusive Count</td>
-            <td className="center">Fold Count</td>
-            <td className="center">When</td>
-            <td className="center">First</td>
-            <td className="center">Last</td>
-          </tr>
-        </thead>
-        <tbody>
-          {nodes.map((node) => (
-            <tr key={`${node.base64EncodedId}`}>
-              <td>
-                <Link to={`/ui/stackviewer/callers/${routeKey}/${node.base64EncodedId}`}>{node.name}</Link>
-              </td>
-              <td className="center">{node.exclusiveMetricPercent}%</td>
-              <td className="center">
-                {/* <PrimaryButton onClick={() => obj.handleDrillIntoClick("e", node.base64EncodedId)}>{node.exclusiveCount}</PrimaryButton> */}
-              </td>
-              <td className="center">{node.inclusiveMetricPercent}%</td>
-              <td className="center">
-                {/* <PrimaryButton onClick={() => obj.handleDrillIntoClick("i", node.base64EncodedId)}>{node.inclusiveCount}</PrimaryButton> */}
-              </td>
-              <td className="center">{node.exclusiveFoldedMetric}</td>
-              <td className="center">{node.inclusiveMetricByTimeString}</td>
-              <td className="center">{node.firstTimeRelativeMSec}</td>
-              <td className="center">{node.lastTimeRelativeMSec}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
+  const onRenderStackHeader: IRenderFunction<IDetailsHeaderProps> = (headerProps, defaultRender) => {
+    //https://github.com/microsoft/fluentui/issues/12148#issuecomment-593573808
+    if (!headerProps) return null;
+    if (!defaultRender) return null;
+    return defaultRender({
+      ...headerProps,
+      styles: {
+        root: {
+          selectors: {
+            ".ms-DetailsHeader-cell": {
+              whiteSpace: "normal",
+              textOverflow: "clip",
+              lineHeight: "normal",
+            },
+          },
+        },
+      },
+    });
   };
 
   return (
-    <div>
-      <div style={{ margin: 2 + "px" }}>
-        <div style={{ margin: 10 + "px" }}>
-          {/* <h4>{base64url.decode(JSON.parse(base64url.decode(routeKey, "utf8")).l, "utf8")} &raquo; Hotspots</h4> */}
-          <StackViewerFilter routeKey={routeKey}></StackViewerFilter>
-        </div>
-        {renderHotspotsTable(nodes, routeKey)}
-      </div>
-    </div>
+    <Container>
+      <Row>
+        <h4>{base64url.decode(JSON.parse(base64url.decode(routeKey)).l)} &raquo; Hotspots</h4>
+      </Row>
+      <StackViewerFilter />
+      <Row>
+        <DetailsList
+          checkboxVisibility={CheckboxVisibility.hidden}
+          setKey={"key"}
+          compact={true}
+          items={nodes}
+          columns={HotspotsColDef}
+          onRenderDetailsHeader={onRenderStackHeader}
+          onRenderItemColumn={renderItemColumn}
+        />
+      </Row>
+    </Container>
   );
 };
+
 export default Hotspots;

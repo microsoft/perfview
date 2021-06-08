@@ -49,6 +49,7 @@ const NavMenu: React.FC = () => {
     const navLinks: INavLink[] = [
       {
         name: "Load file",
+        key: "Load File",
         url: "/",
         onClick: onLinkClick,
         icon: "OpenFile",
@@ -60,42 +61,42 @@ const NavMenu: React.FC = () => {
         {
           name: "Trace Info",
           key: "Trace Info",
-          url: `/ui/traceinfo/${dataFile}`,
+          url: `/ui/traceinfo/`,
           onClick: onLinkClick,
           icon: "Trackers",
         },
         {
           name: "Event Viewer",
           key: "Event Viewer",
-          url: `/ui/eventviewer/${dataFile}`,
+          url: `/ui/eventviewer/`,
           onClick: onLinkClick,
           icon: "WorkItemBug",
         },
         {
           name: "Event Viewer (old)",
           key: "Event Viewer (old)",
-          url: `/ui/eventviewerold/${dataFile}`,
+          url: `/ui/eventviewerold/`,
           onClick: onLinkClick,
           icon: "WorkItemBug",
         },
         {
           name: "Stack Viewer",
           key: "Stack Viewer",
-          url: `/ui/stackviewer/eventlist/${dataFile}`,
+          url: `/ui/stackviewer/eventlist/`,
           onClick: onLinkClick,
           icon: "Stack",
         },
         {
           name: "Process List",
           key: "Process List",
-          url: `/ui/processlist/${dataFile}`,
+          url: `/ui/processlist/`,
           onClick: onLinkClick,
           icon: "ServerProcesses",
         },
         {
           name: "Module List",
           key: "Module List",
-          url: `/ui/modulelist/${dataFile}`,
+          url: `/ui/modulelist/`,
           onClick: onLinkClick,
           icon: "BacklogList",
         }
@@ -104,7 +105,6 @@ const NavMenu: React.FC = () => {
     menuState[0].links = navLinks;
     setMenuState([...menuState]);
   }, [dataFile]);
-
   return (
     <ScrollablePane scrollbarVisibility="auto">
       <Nav styles={navStyles} groups={navLinkGroups} />

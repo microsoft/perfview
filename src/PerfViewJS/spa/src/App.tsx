@@ -21,9 +21,10 @@ import { DataFileContextProvider } from "./context/DataFileContext";
 import Home from "features/Home";
 import TraceInfo from "features/TraceInfo";
 import EventViewer from "./features/EventViewer";
-import { EventViewerOld } from "features/EventViewer/EventViewerOld";
 import Hotspots from "features/Hotspots/Hotspots";
-import { HotspotsOld } from "features/Hotspots/HotspotsOld";
+import { Toaster } from "react-hot-toast";
+import { Routes } from "common/Routes";
+import { RouteKeyContextProvider } from "context/RouteContext";
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(AzureThemeLight);
@@ -71,24 +72,46 @@ const App: React.FC = () => {
     <ThemeProvider applyTo="body" theme={theme}>
       <SettingsCommandBar />
       <DataFileContextProvider>
-        <Layout>
-          <Route exact path="/index.html" component={Home} />
-          <Route exact path="/" component={Home} />
-          <Route exact path="/ui" component={Home} />
-          <Route path="/ui/processInfo/:dataFile/:processIndex" component={ProcessInfo} />
-          <Route path="/ui/traceInfo/:dataFile" component={TraceInfo} />
-          <Route path="/ui/processList/:dataFile" component={ProcessList} />
-          <Route path="/ui/moduleList/:dataFile" component={ModuleList} />
-          <Route path="/ui/eventviewer/:dataFile" component={EventViewer} />
-          <Route path="/ui/eventviewerold/:dataFile" component={EventViewerOld} />
-          <Route path="/ui/stackviewer/eventlist/:dataFile" component={EventList} />
-          <Route path="/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName" component={ProcessChooser} />
-          <Route path="/ui/stackviewer/hotspots/:routeKey" component={Hotspots} />
-          <Route path="/ui/stackviewer/hotspotsOld/:routeKey" component={HotspotsOld} />
-          <Route path="/ui/stackviewer/callers/:routeKey/:callTreeNodeId" component={Callers} />
-          <Route path="/ui/sourceviewer/:routeKey/:callTreeNodeId" component={SourceViewer} />
-        </Layout>
+        <RouteKeyContextProvider>
+          <Layout>
+            <Route exact path={Routes.IndexHtml} component={Home} />
+            <Route exact path={Routes.Root} component={Home} />
+            <Route exact path={Routes.UI} component={Home} />
+            <Route path={Routes.ProcessInfo} component={ProcessInfo} />
+            <Route path={Routes.TraceInfo} component={TraceInfo} />
+            <Route path={Routes.ProcessList} component={ProcessList} />
+            <Route path={Routes.ModuleList} component={ModuleList} />
+            <Route path={Routes.EventViewer} component={EventViewer} />
+            <Route path={Routes.EventList} component={EventList} />
+            <Route path={Routes.ProcessList} component={ProcessChooser} />
+            <Route path={Routes.HotSpots} component={Hotspots} />
+            <Route path={Routes.Callers} component={Callers} />
+            <Route path={Routes.SourceViewer} component={SourceViewer} />
+          </Layout>
+        </RouteKeyContextProvider>
       </DataFileContextProvider>
+      <Toaster
+        position="top-right"
+        containerStyle={{
+          zIndex: 1000001,
+        }}
+        toastOptions={{
+          error: {
+            duration: Infinity,
+            style: {
+              backgroundColor: theme.semanticColors.severeWarningBackground,
+              color: theme.semanticColors.bodyText,
+            },
+          },
+          success: {
+            duration: 5000,
+            style: {
+              backgroundColor: theme.semanticColors.successBackground,
+              color: theme.semanticColors.bodyText,
+            },
+          },
+        }}
+      />
     </ThemeProvider>
   );
 };
