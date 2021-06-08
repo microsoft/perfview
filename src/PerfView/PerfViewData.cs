@@ -8244,44 +8244,34 @@ table {
 
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
-            if (AppLog.InternalUser)
+            OpenDump(worker.LogWriter);
+
+            var advanced = new PerfViewTreeGroup("Advanced Group");
+
+            m_Children = new List<PerfViewTreeItem>(2);
+
+            var defaultSource = new PerfViewStackSource(this, DefaultStackSourceName);
+            defaultSource.IsSelected = true;
+            m_Children.Add(defaultSource);
+
+            if (m_gcDump.InteropInfo != null)
             {
-                OpenDump(worker.LogWriter);
-
-                var advanced = new PerfViewTreeGroup("Advanced Group");
-
-                m_Children = new List<PerfViewTreeItem>(2);
-
-                var defaultSource = new PerfViewStackSource(this, DefaultStackSourceName);
-                defaultSource.IsSelected = true;
-                m_Children.Add(defaultSource);
-
-                if (m_gcDump.InteropInfo != null)
-                {
-                    // TODO FIX NOW.   This seems to be broken right now  hiding it for now.  
-                    // advanced.Children.Add(new HeapDumpInteropObjects(this));
-                }
-
-                if (m_gcDump.DotNetHeapInfo != null)
-                {
-                    advanced.Children.Add(new PerfViewStackSource(this, Gen0WalkableObjectsViewName));
-                    advanced.Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
-                }
-
-                if (advanced.Children.Count > 0)
-                {
-                    m_Children.Add(advanced);
-                }
-
-                return null;
+                // TODO FIX NOW.   This seems to be broken right now  hiding it for now.  
+                // advanced.Children.Add(new HeapDumpInteropObjects(this));
             }
-            return delegate (Action doAfter)
+
+            if (m_gcDump.DotNetHeapInfo != null)
             {
-                // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
-                m_singletonStackSource = new PerfViewStackSource(this, "");
-                m_singletonStackSource.Open(parentWindow, worker);
-                doAfter?.Invoke();
-            };
+                advanced.Children.Add(new PerfViewStackSource(this, Gen0WalkableObjectsViewName));
+                advanced.Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
+            }
+
+            if (advanced.Children.Count > 0)
+            {
+                m_Children.Add(advanced);
+            }
+
+            return null;
         }
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
