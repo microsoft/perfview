@@ -513,6 +513,60 @@ namespace TraceEventTests
             Assert.Equal(7, diagSourceEventCount);
         }
 
+        [Fact]
+        public void ExecutionContextEventsAndTimeStamping()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore6.0-win-x64-executioncheckpoints.nettrace";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            var checkpoints = new Dictionary<string, double>();
+            checkpoints.Add("RuntimeInit", -15.97);
+            checkpoints.Add("RuntimeSuspend", 11.91);
+            checkpoints.Add("RuntimeResumed", 12.20);
+
+            UnicodeEncoding unicode = new UnicodeEncoding();
+            using (var source = new EventPipeEventSource(eventPipeFilePath))
+            {
+                source.Dynamic.All += (TraceEvent obj) =>
+                {
+                    ushort eventID = (ushort)obj.ID;
+
+                    // ExecutionCheckpoint.
+                    if (eventID == 300)
+                    {
+                        int index = 0;
+                        var buffer = obj.EventData();
+                        var clrid = BitConverter.ToUInt16(buffer, index);
+                        index += sizeof(UInt16);
+
+                        int length = 0;
+                        while (BitConverter.ToUInt16(buffer, index + (length * sizeof(UInt16))) != 0)
+                            length++;
+
+                        var name = Encoding.Unicode.GetString(buffer, index, (length * sizeof(UInt16)));
+                        index += ((length + 1) * sizeof(UInt16));
+
+                        var timestampQPC = BitConverter.ToInt64(buffer, index);
+                        var timestamp = source.QPCTimeToTimeStamp(timestampQPC);
+                        var diff = Math.Round((timestamp - source.SessionStartTime).TotalMilliseconds, 2);
+
+                        // Asserts
+                        Assert.True (checkpoints.ContainsKey (name));
+                        Assert.True (checkpoints[name] == diff);
+
+                        checkpoints.Remove(name);
+                    }
+
+                };
+                source.Process();
+
+                Assert.True(checkpoints.Count == 0);
+            }
+        }
+
         private void Dynamic_All(TraceEvent obj)
         {
             throw new NotImplementedException();
