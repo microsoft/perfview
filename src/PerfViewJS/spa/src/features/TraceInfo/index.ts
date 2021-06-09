@@ -1,1 +1,1 @@
-export { default } from "./TraceInfo";
+export { TraceInfo } from "./TraceInfo";

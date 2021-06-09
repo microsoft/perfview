@@ -15,7 +15,7 @@ import { faWindows } from "@fortawesome/free-brands-svg-icons";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import dayjs from "dayjs";
 import { useDataFileContext } from "context/DataFileContext";
-import Loading from "components/Loading";
+import { Loading } from "components/Loading";
 dayjs().format();
 
 const theme = getTheme();
@@ -203,4 +203,4 @@ const TraceInfo: React.FC = () => {
   );
 };
 
-export default TraceInfo;
+export { TraceInfo };

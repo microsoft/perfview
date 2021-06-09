@@ -16,7 +16,7 @@ import { Col, Container, Row } from "react-grid-system";
 import { useTranslation } from "react-i18next";
 
 import { useDataFileContext } from "context/DataFileContext";
-import StyledDropzone from "components/StyledDropZone";
+import { StyledDropzone } from "components/StyledDropZone";
 import { IElectronBridgeAction } from "global";
 import { transformStringArrayToDetailListItems } from "common/Utility";
 import { IpcRenderer } from "electron";
@@ -191,4 +191,4 @@ const Home: React.FC = () => {
     </Container>
   );
 };
-export default Home;
+export { Home };

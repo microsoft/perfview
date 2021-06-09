@@ -20,7 +20,7 @@ import {
 import { useDataFileContext } from "context/DataFileContext";
 import { Col, Container, Row } from "react-grid-system";
 import { useBoolean } from "@fluentui/react-hooks";
-import EventPanel from "./EventPanel/EventPanel";
+import { EventPanel } from "./EventPanel/EventPanel";
 
 //SpinButton only allows string
 const defaultEventCount = "1000";
@@ -209,4 +209,4 @@ const EventViewer: React.FC = () => {
   );
 };
 
-export default EventViewer;
+export { EventViewer };

@@ -1,5 +1,5 @@
 import { ModuleList } from "./ModuleList";
-import { ProcessList } from "./ProcessList";
+import { ProcessList } from "../features/ProcessList/ProcessList";
 import React from "react";
 import { RouteComponentProps } from "react-router-dom";
 
@@ -52,7 +52,13 @@ export class ProcessInfo extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { processInfo: null, loading: true };
-    fetch("/api/processinfo?filename=" + this.props.match.params.dataFile + "&processIndex=" + this.props.match.params.processIndex, { method: "GET", headers: { "Content-Type": "application/json" } })
+    fetch(
+      "/api/processinfo?filename=" +
+        this.props.match.params.dataFile +
+        "&processIndex=" +
+        this.props.match.params.processIndex,
+      { method: "GET", headers: { "Content-Type": "application/json" } }
+    )
       .then((res) => res.json())
       .then((data) => {
         this.setState({ processInfo: data, loading: false });

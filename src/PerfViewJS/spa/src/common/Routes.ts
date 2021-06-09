@@ -7,7 +7,6 @@ export const Routes = {
   ProcessList: "/ui/processList/:dataFile",
   ModuleList: "/ui/moduleList/:dataFile",
   EventViewer: "/ui/eventviewer/:dataFile",
-  EventViewerOld: "/ui/eventviewerold/:dataFile",
   EventList: "/ui/stackviewer/eventlist/:dataFile",
   ProcessChooser: "/ui/stackviewer/processchooser/:dataFile/:stackType/:stackTypeName",
   HotSpots: "/ui/stackviewer/hotspots/:routeKey",

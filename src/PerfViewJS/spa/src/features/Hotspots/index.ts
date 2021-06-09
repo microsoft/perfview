@@ -1,1 +1,1 @@
-export { default } from "./Hotspots";
+export { Hotspots } from "./Hotspots";

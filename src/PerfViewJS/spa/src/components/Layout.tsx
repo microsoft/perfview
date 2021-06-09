@@ -1,7 +1,7 @@
 import React from "react";
 import { Col, Container, Row } from "react-grid-system";
 
-import NavMenu from "./NavMenu";
+import { NavMenu } from "./NavMenu";
 
 interface ILayoutProps {
   children: React.ReactNode;
@@ -23,4 +23,4 @@ const Layout = (props: ILayoutProps) => {
   );
 };
 
-export default Layout;
+export { Layout };
