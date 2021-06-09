@@ -8,7 +8,6 @@ import { constructAPICacheKeyFromRouteKey } from "common/Utility";
 import toast from "react-hot-toast";
 
 const defaultSymbolsMinCount = "50";
-
 const updateButtonStyle = {
   root: {
     marginTop: 12,
@@ -25,14 +24,15 @@ const StackViewerFilter: React.FC = () => {
   const { routeKey, setRouteKey } = useRouteKeyContext();
   const data = JSON.parse(base64url.decode(routeKey));
 
-  const [foldCount] = useState(data.j);
-  const [drillIntoKey] = useState(data.k);
-  const [groupingPatterns, setGroupingPatterns] = useState("");
-  const [foldingPatterns, setFoldingPatterns] = useState("");
   const [relativeStartTime, setRelativeStartTime] = useState(data.d);
   const [relativeEndTime, setRelativeEndTime] = useState(data.e);
-  const [includePatterns, setIncludePatterns] = useState("");
-  const [excludePatterns, setExcludePatterns] = useState("");
+  const [groupingPatterns, setGroupingPatterns] = useState(data.f);
+  const [foldingPatterns, setFoldingPatterns] = useState(data.g);
+  const [includePatterns, setIncludePatterns] = useState(data.h);
+  const [excludePatterns, setExcludePatterns] = useState(data.i);
+  const [foldCount] = useState(data.j);
+  const [drillIntoKey] = useState(data.k);
+
   const [lookupWarmSymbolsMinCount, setLookupWarmSymbolsMinCount] = useState<number>(
     parseInt(defaultSymbolsMinCount, 10)
   );
@@ -154,4 +154,4 @@ const StackViewerFilter: React.FC = () => {
   );
 };
 
-export default StackViewerFilter;
+export { StackViewerFilter };

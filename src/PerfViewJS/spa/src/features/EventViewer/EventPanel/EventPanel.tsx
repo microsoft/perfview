@@ -22,7 +22,7 @@ import { useBoolean } from "@fluentui/react-hooks";
 import React, { useEffect, useState } from "react";
 import { useDataFileContext } from "context/DataFileContext";
 import base64url from "base64url";
-import Hotspots from "features/Hotspots";
+import { Hotspots } from "features/Hotspots";
 import { cancelIcon, contentStyles as modalStyles, iconButtonStyles, wrapperStyle } from "./EventPanelStyles";
 import { EventPanelColDef } from "./EventPanelColDef";
 import { useRouteKeyContext } from "context/RouteContext";
@@ -161,4 +161,4 @@ const EventPanel: React.FC<IEventPanelProp> = (props) => {
   );
 };
 
-export default EventPanel;
+export { EventPanel };

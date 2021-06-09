@@ -9,22 +9,22 @@ import {
 import { CommandBar, ICommandBarItemProps, Theme, ThemeProvider } from "@fluentui/react";
 import React, { useState } from "react";
 import { Route } from "react-router";
-import { Callers } from "./components/Callers";
-import { EventList } from "./components/EventList";
-import Layout from "./components/Layout";
+import { Callers } from "./features/Callers/Callers";
+import { EventList } from "./features/EventList.tsx/EventList";
+import { Layout } from "./components/Layout";
 import { ModuleList } from "./components/ModuleList";
-import { ProcessChooser } from "./components/ProcessChooser";
+import { ProcessChooser } from "./features/ProcessChooser/ProcessChooser";
 import { ProcessInfo } from "./components/ProcessInfo";
-import { ProcessList } from "./components/ProcessList";
+import { ProcessList } from "./features/ProcessList/ProcessList";
 import { SourceViewer } from "./components/SourceViewer";
 import { DataFileContextProvider } from "./context/DataFileContext";
-import Home from "features/Home";
-import TraceInfo from "features/TraceInfo";
-import EventViewer from "./features/EventViewer";
-import Hotspots from "features/Hotspots/Hotspots";
+import { EventViewer } from "./features/EventViewer";
+import { Hotspots } from "features/Hotspots/Hotspots";
 import { Toaster } from "react-hot-toast";
 import { Routes } from "common/Routes";
 import { RouteKeyContextProvider } from "context/RouteContext";
+import { Home } from "features/Home/Home";
+import { TraceInfo } from "features/TraceInfo/TraceInfo";
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(AzureThemeLight);
@@ -83,7 +83,7 @@ const App: React.FC = () => {
             <Route path={Routes.ModuleList} component={ModuleList} />
             <Route path={Routes.EventViewer} component={EventViewer} />
             <Route path={Routes.EventList} component={EventList} />
-            <Route path={Routes.ProcessList} component={ProcessChooser} />
+            <Route path={Routes.ProcessChooser} component={ProcessChooser} />
             <Route path={Routes.HotSpots} component={Hotspots} />
             <Route path={Routes.Callers} component={Callers} />
             <Route path={Routes.SourceViewer} component={SourceViewer} />
@@ -116,4 +116,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export { App };

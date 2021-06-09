@@ -1,4 +1,4 @@
-import { ScrollablePane } from "@fluentui/react";
+import { ScrollablePane, Text } from "@fluentui/react";
 import { INavLink, INavLinkGroup, INavStyles, Nav } from "@fluentui/react/lib/Nav";
 import React, { useEffect, useState } from "react";
 import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
@@ -29,7 +29,7 @@ const navLinkGroups: INavLinkGroup[] = [
 const NavMenu: React.FC = () => {
   const history = useHistory<MatchParams>();
   const [menuState, setMenuState] = useState<INavLinkGroup[]>(navLinkGroups);
-  const { dataFile } = useDataFileContext();
+  const { dataFile, dataFileName } = useDataFileContext();
 
   const onLinkClick = (ev?: React.MouseEvent<HTMLElement, MouseEvent> | undefined, item?: INavLink | undefined) => {
     ev?.preventDefault();
@@ -73,13 +73,6 @@ const NavMenu: React.FC = () => {
           icon: "WorkItemBug",
         },
         {
-          name: "Event Viewer (old)",
-          key: "Event Viewer (old)",
-          url: `/ui/eventviewerold/`,
-          onClick: onLinkClick,
-          icon: "WorkItemBug",
-        },
-        {
           name: "Stack Viewer",
           key: "Stack Viewer",
           url: `/ui/stackviewer/eventlist/`,
@@ -107,9 +100,11 @@ const NavMenu: React.FC = () => {
   }, [dataFile]);
   return (
     <ScrollablePane scrollbarVisibility="auto">
+      <Text>{dataFileName}</Text>
       <Nav styles={navStyles} groups={navLinkGroups} />
     </ScrollablePane>
   );
 };
 
-export default withRouter(NavMenu);
+const withRouterNavMenu = withRouter(NavMenu);
+export { withRouterNavMenu as NavMenu };

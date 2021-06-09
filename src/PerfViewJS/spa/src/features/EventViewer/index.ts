@@ -1,1 +1,1 @@
-export { default } from "./EventViewer";
+export { EventViewer } from "./EventViewer";

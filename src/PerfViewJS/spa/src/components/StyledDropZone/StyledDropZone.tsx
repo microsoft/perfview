@@ -38,7 +38,10 @@ export interface IStyledDropzone {
 
 const StyledDropzone = (props: IStyledDropzone) => {
   const { onDrop } = props;
-  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({ onDrop, accept: acceptedFileExt });
+  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
+    onDrop,
+    accept: acceptedFileExt,
+  });
   const { t } = useTranslation();
   const style = useMemo(
     () => ({
@@ -70,4 +73,4 @@ const StyledDropzone = (props: IStyledDropzone) => {
   );
 };
 
-export default StyledDropzone;
+export { StyledDropzone };

@@ -1,6 +1,6 @@
 import base64url from "base64url";
 import React from "react";
-import useLocalStorage from "../hooks/useLocalStorage";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -19,7 +19,7 @@ export const DataFileContextProvider = (props: IDataFileContextProviderProp) => 
   const { children } = props;
   const [dataFile, _setDataFile] = useLocalStorage<string>("dataFile", "");
 
-  const dataFileName = base64url.decode(dataFile).replace("*/g", "");
+  const dataFileName = base64url.decode(dataFile).replace(/\*/g, "");
 
   const setDataFile = (_dataFile: string) => _setDataFile(base64url.encode(`${_dataFile}**`));
   const value = { dataFile, setDataFile, dataFileName };

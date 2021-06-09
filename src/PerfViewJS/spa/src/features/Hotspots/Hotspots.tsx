@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import StackViewerFilter from "../StackViewerFilter/StackViewerFilter";
+import { StackViewerFilter } from "../StackViewerFilter/StackViewerFilter";
 import { TNode } from "../../components/TNode";
 import base64url from "base64url";
 import { CheckboxVisibility, DetailsList, IDetailsHeaderProps, IRenderFunction, PrimaryButton } from "@fluentui/react";
@@ -10,9 +10,12 @@ import { constructAPICacheKeyFromRouteKey } from "common/Utility";
 import { useRouteKeyContext } from "context/RouteContext";
 
 import { IColumn } from "@fluentui/react";
+import { useHistory } from "react-router";
+import { TextLink } from "components/TextLink/TextLink";
 
 const Hotspots: React.FC = () => {
   const [nodes, setNodes] = useState<TNode[]>([]);
+  const history = useHistory();
   const { routeKey, setRouteKey } = useRouteKeyContext();
 
   useEffect(() => {
@@ -35,6 +38,15 @@ const Hotspots: React.FC = () => {
         <PrimaryButton onClick={() => handleDrillIntoClick("i", item?.base64EncodedId)}>
           {item?.inclusiveCount}
         </PrimaryButton>
+      );
+    } else if (column?.fieldName === "name") {
+      return (
+        <TextLink
+          onClick={() => {
+            history.push(`/ui/stackviewer/callers/${routeKey}/${item?.base64EncodedId}`);
+          }}
+          content={item?.name || ""}
+        />
       );
     } else {
       //? everything is optional..
@@ -100,4 +112,4 @@ const Hotspots: React.FC = () => {
   );
 };
 
-export default Hotspots;
+export { Hotspots };
