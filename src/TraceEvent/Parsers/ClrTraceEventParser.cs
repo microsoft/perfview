@@ -12602,6 +12602,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Stabilizing = 0x5,
         Starvation = 0x6,
         ThreadTimedOut = 0x7,
+        CooperativeBlocking = 0x8,
     }
 
     [Flags]
