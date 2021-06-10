@@ -31,6 +31,5 @@ This will run backend in electron shell
 
 - [ ] Refresh UI from HTML to Fluent-UI components
 - [x] Use Chromium Embedded Framework to make a client-side application
-- [ ] Sortable lists
-- [ ] Alternating list background
+- [x] Sortable Hotspots
 - [ ] Wrap PerfViewJS as a dotnet global tool

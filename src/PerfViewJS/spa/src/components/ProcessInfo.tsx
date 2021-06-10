@@ -70,7 +70,8 @@ export class ProcessInfo extends React.Component<Props, State> {
       <div>
         {processInfo && ProcessList.renderProcessListTable([processInfo.processInfo], dataFile)}
         {processInfo && ModuleList.renderModuleListTable(processInfo.modules, dataFile)}
-        <table className="table table-striped">
+        {/* <table className="table table-striped"> */}
+        <table>
           <thead>
             <tr>
               <th>Thread ID</th>

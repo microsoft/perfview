@@ -36,7 +36,8 @@ export class ModuleList extends React.Component<Props, State> {
 
   static renderModuleListTable(modules: Module[], dataFile: string) {
     return (
-      <table className="table table-striped">
+      // <table className="table table-striped">
+      <table>
         <thead>
           <tr>
             <th>Module Name</th>
@@ -48,7 +49,11 @@ export class ModuleList extends React.Component<Props, State> {
             <tr key={`${module.id}`}>
               <td>{module.modulePath}</td>
               <td>
-                <a target="_blank" rel="noopener noreferrer" href={`/api/lookupsymbol?filename=${dataFile}&moduleIndex=${module.id}`}>
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={`/api/lookupsymbol?filename=${dataFile}&moduleIndex=${module.id}`}
+                >
                   {module.addrCount}
                 </a>
               </td>

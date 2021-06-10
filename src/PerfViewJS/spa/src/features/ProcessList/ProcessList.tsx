@@ -39,7 +39,8 @@ export class ProcessList extends React.Component<Props, State> {
 
   static renderProcessListTable(processes: Process[], dataFile: string) {
     return (
-      <table className="table table-striped">
+      // <table className="table table-striped">
+      <table>
         <thead>
           <tr>
             <th>Process Name</th>
@@ -56,7 +57,15 @@ export class ProcessList extends React.Component<Props, State> {
             })
             .map((process) => (
               <tr key={`${process.id}`}>
-                <td>{process.processId === 0 ? "Idle" : process.processId === 4 ? "System" : <Link to={`/ui/processInfo/${dataFile}/${process.id}`}>{process.name}</Link>}</td>
+                <td>
+                  {process.processId === 0 ? (
+                    "Idle"
+                  ) : process.processId === 4 ? (
+                    "System"
+                  ) : (
+                    <Link to={`/ui/processInfo/${dataFile}/${process.id}`}>{process.name}</Link>
+                  )}
+                </td>
                 <td>{process.processId}</td>
                 <td>{process.parentId}</td>
                 <td>{process.cpumSec}</td>

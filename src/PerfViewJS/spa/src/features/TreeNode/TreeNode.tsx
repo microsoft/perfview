@@ -55,36 +55,33 @@ const TreeNode: React.FC<ITreeNodeProps> = (props) => {
     if (autoExpand === true) {
       expandTreeNode(routeKey, callTreeNodeId, node.path);
     }
-  }, [routeKey, callTreeNodeId, node.path]);
+  }, [callTreeNodeId, node.path]);
 
   const collapseTreeNode = () => {
     setTreeNode({
       children: [],
       isCollapsed: true,
     });
-    // setChildren([]);
-    // setIsCollapsed(true);
   };
 
-  const handleDrillIntoClick = (d: string) => {
+  const handleDrillIntoClick = (d: string, path: string) => {
     let drillType = "/api/drillinto/exclusive?";
     if (d === "i") {
       drillType = "/api/drillinto/inclusive?";
     }
-
-    fetch(
-      drillType + constructAPICacheKeyFromRouteKey(routeKey) + "&name=" + callTreeNodeId + "&path=" + props.node.path
-    )
+    fetch(drillType + constructAPICacheKeyFromRouteKey(routeKey) + "&name=" + callTreeNodeId + "&path=" + path)
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
         const newRouteKey = JSON.parse(base64url.decode(routeKey));
+        console.log(newRouteKey);
         newRouteKey.k = data;
-        setRouteKey("/ui/stackviewer/hotspots/" + base64url.encode(JSON.stringify(newRouteKey)));
+        setRouteKey(base64url.encode(JSON.stringify(newRouteKey)));
+        history.push(`/ui/stackviewer/hotspots/${base64url.encode(JSON.stringify(newRouteKey))}`);
       });
   };
 
   const toggleTreeNode = () => {
-    //if (isCollapsed) {
     if (treeNode?.isCollapsed) {
       expandTreeNode(routeKey, callTreeNodeId, node.path);
     } else {
@@ -125,13 +122,13 @@ const TreeNode: React.FC<ITreeNodeProps> = (props) => {
           </td>
           <td className="center">{node.exclusiveMetricPercent}%</td>
           <td className="center">
-            <PrimaryButton styles={{ root: { width: 10 } }} onClick={() => handleDrillIntoClick("e")}>
+            <PrimaryButton styles={{ root: { width: 10 } }} onClick={() => handleDrillIntoClick("e", node.path)}>
               {node.exclusiveCount}
             </PrimaryButton>
           </td>
           <td className="center">{node.inclusiveMetricPercent}%</td>
           <td className="center">
-            <PrimaryButton onClick={() => handleDrillIntoClick("i")}>{node.inclusiveCount}</PrimaryButton>
+            <PrimaryButton onClick={() => handleDrillIntoClick("i", node.path)}>{node.inclusiveCount}</PrimaryButton>
           </td>
           <td className="center">{node.exclusiveFoldedMetric}</td>
           <td className="center">{node.inclusiveMetricByTimeString}</td>
