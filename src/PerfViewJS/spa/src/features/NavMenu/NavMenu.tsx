@@ -3,7 +3,7 @@ import { INavLink, INavLinkGroup, INavStyles, Nav } from "@fluentui/react/lib/Na
 import React, { useEffect, useState } from "react";
 import { RouteComponentProps, useHistory, withRouter } from "react-router-dom";
 
-import { useDataFileContext } from "../context/DataFileContext";
+import { useDataFileContext } from "../../context/DataFileContext";
 
 interface MatchParams {
   dataFile?: string;

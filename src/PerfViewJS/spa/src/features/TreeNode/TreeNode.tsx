@@ -1,11 +1,11 @@
 import { Link, useHistory } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { TNode } from "../../components/TNode";
 import base64url from "base64url";
 import { IconButton, PrimaryButton } from "@fluentui/react";
 import { constructAPICacheKeyFromRouteKey } from "common/Utility";
 import { useRouteKeyContext } from "context/RouteContext";
 import { TextLink } from "components/TextLink/TextLink";
+import { TNode } from "common/Interfaces";
 export interface ITreeNodeProps {
   routeKey: string;
   callTreeNodeId: string;
@@ -93,6 +93,8 @@ const TreeNode: React.FC<ITreeNodeProps> = (props) => {
     history.push(`/ui/stackviewer/callers/${routeKey}/${node.base64EncodedId}`);
   };
 
+  //const handleSourceViewer = () => {};
+
   const renderTreeNode = (
     routeKey: string,
     node: TNode,
@@ -118,6 +120,9 @@ const TreeNode: React.FC<ITreeNodeProps> = (props) => {
             <TextLink onClick={textLinkOnClick} content={node.name} />
           </td>
           <td className="center">
+            {/* <PrimaryButton styles={{ root: { width: 10 } }} onClick={() => handleDrillIntoClick("e", node.path)}>
+              {node.exclusiveCount}
+            </PrimaryButton> */}
             <Link to={`/ui/sourceviewer/${routeKey}/${node.base64EncodedId}`}>[S]</Link>
           </td>
           <td className="center">{node.exclusiveMetricPercent}%</td>

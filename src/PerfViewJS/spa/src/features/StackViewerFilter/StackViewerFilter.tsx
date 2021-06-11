@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import base64url from "base64url";
-import { ISpinButtonStyles, PrimaryButton, SpinButton, Stack, TextField, Text } from "@fluentui/react";
-import { Col, Container, Row } from "react-grid-system";
+import { ISpinButtonStyles, PrimaryButton, SpinButton, Stack, TextField } from "@fluentui/react";
+import { Col, Row } from "react-grid-system";
 import { useRouteKeyContext } from "context/RouteContext";
 import { GroupingPatternsExampleComponent } from "./GroupingPatternsExample";
 import { constructAPICacheKeyFromRouteKey } from "common/Utility";
-import toast from "react-hot-toast";
 
 const defaultSymbolsMinCount = "50";
 const updateButtonStyle = {
@@ -23,6 +22,8 @@ const spinButtonStyles: Partial<ISpinButtonStyles> = {
 const StackViewerFilter: React.FC = () => {
   const { routeKey, setRouteKey } = useRouteKeyContext();
   const data = JSON.parse(base64url.decode(routeKey));
+
+  const [lookupwarmsymbolsResponse, setLookupwarmsymbolsResponse] = useState("");
 
   const [relativeStartTime, setRelativeStartTime] = useState(data.d);
   const [relativeEndTime, setRelativeEndTime] = useState(data.e);
@@ -75,13 +76,14 @@ const StackViewerFilter: React.FC = () => {
     fetch(`/api/lookupwarmsymbols?minCount=${lookupWarmSymbolsMinCount}&${constructAPICacheKeyFromRouteKey(routeKey)}`)
       .then((res) => res.json())
       .then((data) => {
-        toast.success(() => (
-          <Container>
-            <Row>
-              <Text block>{data}</Text>
-            </Row>
-          </Container>
-        ));
+        setLookupwarmsymbolsResponse(data);
+        // toast.success(() => (
+        //   <Container>
+        //     <Row>
+        //       <Text block>{data}</Text>
+        //     </Row>
+        //   </Container>
+        // ));
         setRouteKey(routeKey);
       });
   };
@@ -150,6 +152,13 @@ const StackViewerFilter: React.FC = () => {
           />
         </Col>
       </Row>
+      {lookupwarmsymbolsResponse && (
+        <Row style={{ paddingTop: 12 }}>
+          <Col>
+            <TextField rows={10} readOnly multiline value={lookupwarmsymbolsResponse} />
+          </Col>
+        </Row>
+      )}
     </>
   );
 };

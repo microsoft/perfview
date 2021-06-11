@@ -1,4 +1,3 @@
-import { TNode } from "../../components/TNode";
 import { RouteComponentProps, useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import React, { useEffect, useState } from "react";
@@ -8,6 +7,7 @@ import { constructAPICacheKeyFromRouteKey } from "common/Utility";
 import { StackViewerFilter } from "features/StackViewerFilter/StackViewerFilter";
 import { useRouteKeyContext } from "context/RouteContext";
 import { ScrollablePane } from "@fluentui/react";
+import { TNode } from "common/Interfaces";
 
 interface MatchParams {
   callTreeNodeId: string;
@@ -35,7 +35,6 @@ const Callers: React.FC<ICallersProps> = (props) => {
       .then((data) => {
         if (data === null) {
           history.push(`/ui/stackviewer/hotspots/${routeKey}`);
-          //window.location.href = `/ui/stackviewer/hotspots/${routeKey}`;
         } else {
           data.hasChildren = true; // HACK: Because the api doesn't return this set true.
           setNode(data);

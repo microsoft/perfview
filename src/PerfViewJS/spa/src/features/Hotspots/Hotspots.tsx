@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { StackViewerFilter } from "../StackViewerFilter/StackViewerFilter";
-import { TNode } from "../../components/TNode";
 import base64url from "base64url";
 import { CheckboxVisibility, DetailsList, PrimaryButton } from "@fluentui/react";
 
@@ -11,6 +10,7 @@ import { useRouteKeyContext } from "context/RouteContext";
 import { IColumn } from "@fluentui/react";
 import { useHistory } from "react-router";
 import { TextLink } from "components/TextLink/TextLink";
+import { TNode } from "common/Interfaces";
 
 const Hotspots: React.FC = () => {
   const [nodes, setNodes] = useState<TNode[]>([]);

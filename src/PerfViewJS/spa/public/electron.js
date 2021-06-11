@@ -9,32 +9,42 @@ const os = require("os");
 const cProcess = require("child_process").spawn;
 const portscanner = require("portscanner");
 const { askForFoldersAccess } = require("node-mac-permissions");
-
+const { initSplashScreen } = require("@trodi/electron-splashscreen");
 let io, server, apiProcess;
 let launchFile;
 let launchUrl;
+let win;
 let binaryFile = "PerfViewJS";
+const mainOpts = {
+  width: 1024,
+  height: 768,
+  minWidth: 720,
+  minHeight: 576,
+  webPreferences: {
+    nodeIntegration: false,
+    nodeIntegrationInWorker: false,
+    nodeIntegrationInSubFrames: false,
+    contextIsolation: true,
+    preload: path.join(app.getAppPath(), "public/preload.js"),
+  },
+};
+const config = {
+  windowOpts: { ...mainOpts, resizable: false },
+  templateUrl: `${__dirname}/splashscreen/index.html`,
+  splashScreenOpts: {
+    width: 650,
+    height: 382,
+    transparent: true,
+  },
+};
 
 let tmpDir = path.join(
   app.getPath("home") + "/" + "Downloads" + "/" + "PerfViewJS"
 );
-let win;
 
 function createWindow() {
   // Create the browser window.
-  win = new BrowserWindow({
-    width: 1024,
-    height: 768,
-    minWidth: 720,
-    minHeight: 576,
-    webPreferences: {
-      nodeIntegration: false,
-      nodeIntegrationInWorker: false,
-      nodeIntegrationInSubFrames: false,
-      contextIsolation: true,
-      preload: path.join(app.getAppPath(), "public/preload.js"),
-    },
-  });
+  win = initSplashScreen(config);
 
   // and load the index.html of the app.
   // win.loadFile("index.html");

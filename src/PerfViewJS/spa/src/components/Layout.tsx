@@ -1,7 +1,7 @@
 import React from "react";
 import { Col, Container, Row } from "react-grid-system";
 
-import { NavMenu } from "./NavMenu";
+import { NavMenu } from "../features/NavMenu/NavMenu";
 
 interface ILayoutProps {
   children: React.ReactNode;

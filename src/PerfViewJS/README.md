@@ -29,7 +29,15 @@ This will run backend in electron shell
 
 ## Todo
 
-- [ ] Refresh UI from HTML to Fluent-UI components
+- [ ] Make source viewer work
+- [ ] Breadcrumbs on all pages
+- [ ] Loading indicator & error handlers
+- [ ] Understand what to do on "Lookup # of Symbols (min samples)"
+- [ ] Understand what to do on "Process List" page, links of "Number of address occurrences in all stacks"
+- [ ] Flame graph?
+- [ ] Electron MAS notarization
+- [ ] (is this still a todo?) Wrap PerfViewJS as a dotnet global tool
+- [x] Electron splash screen
+- [x] Refresh UI from HTML to Fluent-UI components
 - [x] Use Chromium Embedded Framework to make a client-side application
-- [x] Sortable Hotspots
-- [ ] Wrap PerfViewJS as a dotnet global tool
+- [x] Sortable Table (on tables which usually contains > 50 items)

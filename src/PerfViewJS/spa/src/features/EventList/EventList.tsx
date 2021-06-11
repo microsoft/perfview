@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router";
 import { useDataFileContext } from "context/DataFileContext";
-import { Container, Row } from "react-grid-system";
-import { CheckboxVisibility, DetailsList, IColumn } from "@fluentui/react";
+import { Col, Container, Row } from "react-grid-system";
+import { CheckboxVisibility, DetailsList, IColumn, Text } from "@fluentui/react";
 import { EventListColDef } from "./EventListColDef";
 import base64url from "base64url";
 import { TextLink } from "components/TextLink/TextLink";
@@ -50,7 +50,9 @@ const EventList = () => {
   return (
     <Container>
       <Row>
-        <h4>Choose Stack Type</h4>
+        <Col>
+          <Text variant={"xLarge"}>Stack Viewer</Text>
+        </Col>
       </Row>
       <Row>
         <DetailsList

@@ -1,3 +1,18 @@
+export interface Module {
+  modulePath: string;
+  id: number;
+  addrCount: number;
+}
+
+export interface Process {
+  id: number;
+  processId: number;
+  parentId: number;
+  name: string;
+  commandLine: string;
+  cpumSec: number;
+}
+
 export interface TNode {
   exclusiveMetricPercent: number;
   inclusiveMetricPercent: number;

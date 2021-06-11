@@ -6,16 +6,15 @@ import {
   AzureThemeLight,
   AzureThemeDark,
 } from "@fluentui/azure-themes";
-import { CommandBar, ICommandBarItemProps, Theme, ThemeProvider } from "@fluentui/react";
-import React, { useState } from "react";
+import { CommandBar, ICommandBarItemProps, ITheme, ThemeProvider } from "@fluentui/react";
+import React from "react";
 import { Route } from "react-router";
 import { Callers } from "./features/Callers/Callers";
-import { EventList } from "./features/EventList.tsx/EventList";
+import { EventList } from "./features/EventList/EventList";
 import { Layout } from "./components/Layout";
-import { ModuleList } from "./components/ModuleList";
+import { ModuleList } from "./features/ModuleList/ModuleList";
 import { ProcessChooser } from "./features/ProcessChooser/ProcessChooser";
-import { ProcessInfo } from "./components/ProcessInfo";
-import { ProcessList } from "./features/ProcessList/ProcessList";
+import { ProcessList } from "./features/ProcessChooser/ProcessList/ProcessList";
 import { SourceViewer } from "./components/SourceViewer";
 import { DataFileContextProvider } from "./context/DataFileContext";
 import { EventViewer } from "./features/EventViewer";
@@ -24,10 +23,24 @@ import { Toaster } from "react-hot-toast";
 import { Routes } from "common/Routes";
 import { RouteKeyContextProvider } from "context/RouteContext";
 import { Home } from "features/Home/Home";
-import { TraceInfo } from "features/TraceInfo/TraceInfo";
+import { TraceInfo } from "features/StackViewerFilter/TraceInfo/TraceInfo";
+import { ProcessInfo } from "features/ProcessChooser";
+import { useLocalStorage } from "hooks/useLocalStorage";
+
+type ThemeTypes = "Light" | "Dark" | "Dark High Contrast" | "Light High Contrast";
+
+type IThemeMap = {
+  [key in ThemeTypes]: ITheme;
+};
+const AvailableThemes: IThemeMap = {
+  Light: AzureThemeLight,
+  Dark: AzureThemeDark,
+  "Dark High Contrast": AzureThemeHighContrastDark,
+  "Light High Contrast": AzureThemeHighContrastLight,
+};
 
 const App: React.FC = () => {
-  const [theme, setTheme] = useState<Theme>(AzureThemeLight);
+  const [themeKey, setTheme] = useLocalStorage<keyof IThemeMap>("theme", "Light");
   const SettingsCommandBar: React.FunctionComponent = () => {
     return <CommandBar items={[]} farItems={themes} />;
   };
@@ -43,25 +56,25 @@ const App: React.FC = () => {
             key: "dark",
             text: "Dark",
             iconProps: { iconName: "CircleFill" },
-            onClick: () => setTheme(AzureThemeDark),
+            onClick: () => setTheme("Dark"),
           },
           {
             key: "light",
             text: "Light",
             iconProps: { iconName: "CircleRing" },
-            onClick: () => setTheme(AzureThemeLight),
+            onClick: () => setTheme("Light"),
           },
           {
             key: "darkContrast",
             text: "Dark high contrast",
             iconProps: { iconName: "CircleStopSolid" },
-            onClick: () => setTheme(AzureThemeHighContrastDark),
+            onClick: () => setTheme("Dark High Contrast"),
           },
           {
             key: "lightContrast",
             text: "Light high constrast",
             iconProps: { iconName: "CircleStop" },
-            onClick: () => setTheme(AzureThemeHighContrastLight),
+            onClick: () => setTheme("Light High Contrast"),
           },
         ],
       },
@@ -69,7 +82,7 @@ const App: React.FC = () => {
   ];
 
   return (
-    <ThemeProvider applyTo="body" theme={theme}>
+    <ThemeProvider applyTo="body" theme={AvailableThemes[themeKey]}>
       <SettingsCommandBar />
       <DataFileContextProvider>
         <RouteKeyContextProvider>
@@ -99,15 +112,15 @@ const App: React.FC = () => {
           error: {
             duration: Infinity,
             style: {
-              backgroundColor: theme.semanticColors.severeWarningBackground,
-              color: theme.semanticColors.bodyText,
+              backgroundColor: AvailableThemes[themeKey].semanticColors.severeWarningBackground,
+              color: AvailableThemes[themeKey].semanticColors.bodyText,
             },
           },
           success: {
             duration: 5000,
             style: {
-              backgroundColor: theme.semanticColors.successBackground,
-              color: theme.semanticColors.bodyText,
+              backgroundColor: AvailableThemes[themeKey].semanticColors.successBackground,
+              color: AvailableThemes[themeKey].semanticColors.bodyText,
             },
           },
         }}
