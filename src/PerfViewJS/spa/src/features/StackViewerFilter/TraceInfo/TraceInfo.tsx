@@ -88,19 +88,22 @@ const TraceInfo: React.FC = () => {
           <Col sm={6} md={6} lg={5}>
             <Text variant={"xSmall"} block>{`System Info`}</Text>
             <Text variant={"large"} block>
-              {traceInfo.operatingSystemName || "Windows 10 Enterprise"}
+              {/* {traceInfo.operatingSystemName || "Windows 10 Enterprise"} */}
+              {traceInfo.operatingSystemName || "Not available"}
             </Text>
           </Col>
           <Col sm={6} md={9} lg={5} offset={{ sm: 6, md: 3, lg: 0 }}>
             <Text variant={"xSmall"} block>{`Machine name`}</Text>
             <Text variant={"large"} block>
-              {traceInfo.machineName || "very-long-name-for-testing"}
+              {/* {traceInfo.machineName || "very-long-name-for-testing"} */}
+              {traceInfo.machineName || "Not available"}
             </Text>
           </Col>
           <Col sm={6} md={9} lg={12} offset={{ sm: 6, md: 3, lg: 2 }}>
             <Text variant={"xSmall"} block>{`Operating System build number`}</Text>
             <Text variant={"large"} block>
-              {traceInfo.operatingSystemBuildNumber || "18362.1.amd64.19h1_release.190318-1202"}
+              {/* {traceInfo.operatingSystemBuildNumber || "18362.1.amd64.19h1_release.190318-1202"} */}
+              {traceInfo.operatingSystemBuildNumber || "Not available"}
             </Text>
           </Col>
         </Row>

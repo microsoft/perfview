@@ -29,7 +29,7 @@ const navLinkGroups: INavLinkGroup[] = [
 const NavMenu: React.FC = () => {
   const history = useHistory<MatchParams>();
   const [menuState, setMenuState] = useState<INavLinkGroup[]>(navLinkGroups);
-  const { dataFile, dataFileName } = useDataFileContext();
+  const { dataFile } = useDataFileContext();
 
   const onLinkClick = (ev?: React.MouseEvent<HTMLElement, MouseEvent> | undefined, item?: INavLink | undefined) => {
     ev?.preventDefault();
@@ -100,7 +100,6 @@ const NavMenu: React.FC = () => {
   }, [dataFile]);
   return (
     <ScrollablePane scrollbarVisibility="auto">
-      <Text>{dataFileName}</Text>
       <Nav styles={navStyles} groups={navLinkGroups} />
     </ScrollablePane>
   );
