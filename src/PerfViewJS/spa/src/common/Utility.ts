@@ -37,5 +37,22 @@ export const constructAPICacheKeyFromRouteKey = (route: string) => {
 
 export const copyAndSort = <T>(items: T[], columnKey: string, isSortedDescending?: boolean): T[] => {
   const key = columnKey as keyof T;
-  return items.slice(0).sort((a: T, b: T) => ((isSortedDescending ? a[key] < b[key] : a[key] > b[key]) ? 1 : -1));
+  return items.slice(0).sort((a: T, b: T) => {
+    let first, second;
+    if (!isNaN(parseFloat(a[key] + ""))) {
+      first = parseFloat(a[key] + "");
+    } else if (!isNaN(parseInt(a + ""))) {
+      first = parseInt(a[key] + "");
+    } else {
+      first = a[key];
+    }
+    if (!isNaN(parseFloat(b[key] + ""))) {
+      second = parseFloat(b[key] + "");
+    } else if (!isNaN(parseInt(b + ""))) {
+      second = parseInt(b[key] + "");
+    } else {
+      second = b[key];
+    }
+    return (isSortedDescending ? first < second : first > second) ? 1 : -1;
+  });
 };

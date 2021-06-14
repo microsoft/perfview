@@ -29,6 +29,7 @@ This will run backend in electron shell
 
 ## Todo
 
+- [ ] Sortable columns on numerical bug
 - [ ] Make source viewer work
 - [ ] Breadcrumbs on all pages
 - [ ] Loading indicator & error handlers
