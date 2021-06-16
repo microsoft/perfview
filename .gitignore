@@ -207,3 +207,4 @@ documentation/internal/
 *.userosscache
 .DS_Store
 src/PerfViewJS/spa/dist/
+src/PerfViewJS/.dccache
