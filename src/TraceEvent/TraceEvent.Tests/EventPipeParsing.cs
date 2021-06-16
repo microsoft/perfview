@@ -514,7 +514,7 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void ExecutionContextEventsAndTimeStamping()
+        public void ExecutionCheckpointEventsAndTimeStamping()
         {
             PrepareTestData();
 
@@ -530,37 +530,19 @@ namespace TraceEventTests
             UnicodeEncoding unicode = new UnicodeEncoding();
             using (var source = new EventPipeEventSource(eventPipeFilePath))
             {
-                source.Dynamic.All += (TraceEvent obj) =>
+                var rundown = new ClrRundownTraceEventParser(source);
+                rundown.ExecutionCheckpointRundownExecutionCheckpointDCEnd += delegate (ExecutionCheckpointTraceData data)
                 {
-                    ushort eventID = (ushort)obj.ID;
+                    var timestamp = source.QPCTimeToTimeStamp(data.CheckpointTimestamp);
+                    var diff = Math.Round((timestamp - source.SessionStartTime).TotalMilliseconds, 2);
 
-                    // ExecutionCheckpoint.
-                    if (eventID == 300)
-                    {
-                        int index = 0;
-                        var buffer = obj.EventData();
-                        var clrid = BitConverter.ToUInt16(buffer, index);
-                        index += sizeof(UInt16);
+                    // Asserts
+                    Assert.True(checkpoints.ContainsKey(data.CheckpointName));
+                    Assert.True(checkpoints[data.CheckpointName] == diff);
 
-                        int length = 0;
-                        while (BitConverter.ToUInt16(buffer, index + (length * sizeof(UInt16))) != 0)
-                            length++;
-
-                        var name = Encoding.Unicode.GetString(buffer, index, (length * sizeof(UInt16)));
-                        index += ((length + 1) * sizeof(UInt16));
-
-                        var timestampQPC = BitConverter.ToInt64(buffer, index);
-                        var timestamp = source.QPCTimeToTimeStamp(timestampQPC);
-                        var diff = Math.Round((timestamp - source.SessionStartTime).TotalMilliseconds, 2);
-
-                        // Asserts
-                        Assert.True (checkpoints.ContainsKey (name));
-                        Assert.True (checkpoints[name] == diff);
-
-                        checkpoints.Remove(name);
-                    }
-
+                    checkpoints.Remove(data.CheckpointName);
                 };
+
                 source.Process();
 
                 Assert.True(checkpoints.Count == 0);
