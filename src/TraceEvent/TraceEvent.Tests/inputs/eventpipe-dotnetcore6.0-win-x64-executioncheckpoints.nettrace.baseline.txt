@@ -1,1 +1,1 @@
-Microsoft-Windows-DotNETRuntimeRundown/EventID(300), 3, <Event MSec=  "1753.7906" PID="9832" PName="Process(9832)" TID="25112" EventName="EventID(300)" ProviderName="Microsoft-Windows-DotNETRuntimeRundown"/>
+Microsoft-Windows-DotNETRuntimeRundown/ExecutionCheckpointRundown/ExecutionCheckpointDCEnd, 3, <Event MSec=  "1753.7906" PID="9832" PName="Process(9832)" TID="25112" EventName="ExecutionCheckpointRundown/ExecutionCheckpointDCEnd" ClrInstanceID="9" Name="RuntimeInit" Timestamp="11,111,925,598,665"/>
