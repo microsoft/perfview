@@ -83,6 +83,11 @@ namespace Microsoft.Diagnostics.Tracing
             StackCache = new StackCache();
         }
 
+        public DateTime QPCTimeToTimeStamp(long QPCTime)
+        {
+            return base.QPCTimeToDateTimeUTC(QPCTime).ToLocalTime();
+        }
+
         #region private
         // I put these in the private section because they are overrides, and thus don't ADD to the API.
         public override int EventsLost => _eventsLost;
