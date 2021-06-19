@@ -970,6 +970,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 102, ThreadPoolWorkerThreadAdjustmentTaskGuid);
             }
         }
+        public event Action<YieldProcessorMeasurementTraceData> YieldProcessorMeasurement
+        {
+            add
+            {
+                RegisterTemplate(YieldProcessorMeasurementTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 58, ProviderGuid);
+                source.UnregisterEventTemplate(value, 0, YieldProcessorMeasurementTaskGuid);
+            }
+        }
         public event Action<ThreadPoolWorkingThreadCountTraceData> ThreadPoolWorkingThreadCountStart
         {
             add
@@ -2093,13 +2105,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new ExecutionCheckpointTraceData(action, 300, 35, "ExecutionCheckpoint", ExecutionCheckpointTaskGuid, 11, "ExecutionCheckpoint", ProviderGuid, ProviderName);
         }
+        static private YieldProcessorMeasurementTraceData YieldProcessorMeasurementTemplate(Action<YieldProcessorMeasurementTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new YieldProcessorMeasurementTraceData(action, 58, 37, "YieldProcessorMeasurement", YieldProcessorMeasurementTaskGuid, 0, "Info", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[140];
+                var templates = new TraceEvent[141];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2248,6 +2264,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[138] = JitInstrumentationDataVerboseTemplate(null);
 
                 templates[139] = ExecutionCheckpointTemplate(null);
+                templates[140] = YieldProcessorMeasurementTemplate(null);
 
                 s_templates = templates;
             }
@@ -2316,6 +2333,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
+        private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -8203,6 +8221,71 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<ThreadPoolWorkerThreadAdjustmentStatsTraceData> Action;
+        #endregion
+    }
+    public sealed class YieldProcessorMeasurementTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public double NsPerYield { get { return GetDoubleAt(2); } }
+        public double EstablishedNsPerYield { get { return GetDoubleAt(10); } }
+
+        #region Private
+        internal YieldProcessorMeasurementTraceData(Action<YieldProcessorMeasurementTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 18));
+            Debug.Assert(!(Version > 0 && EventDataLength < 18));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<YieldProcessorMeasurementTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "NsPerYield", NsPerYield);
+            XmlAttrib(sb, "EstablishedNsPerYield", EstablishedNsPerYield);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "NsPerYield", "EstablishedNsPerYield" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return NsPerYield;
+                case 2:
+                    return EstablishedNsPerYield;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<YieldProcessorMeasurementTraceData> m_target;
         #endregion
     }
     public sealed class ThreadPoolWorkingThreadCountTraceData : TraceEvent
