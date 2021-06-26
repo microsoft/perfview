@@ -5649,6 +5649,58 @@ table {
 
                 source.Process();
             }
+            else if (streamName == "File Queries")
+            {
+                eventSource.Kernel.AddCallbackForEvents<FileIOInfoTraceData>(delegate (FileIOInfoTraceData data)
+                {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                    StackSourceCallStackIndex stackIdx = stackSource.GetCallStack(data.CallStackIndex(), data);
+
+                    // Create a call stack that ends with 'Disk READ <fileName> (<fileDirectory>)'
+                    var filePath = data.FileName;
+                    if (filePath.Length == 0)
+                    {
+                        filePath = "UNKNOWN";
+                    }
+
+                    var nodeName = string.Format("File {0}: {1} ({2})", data.OpcodeName,
+                        GetFileName(filePath), GetDirectoryName(filePath));
+                    var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                    stackIdx = stackSource.Interner.CallStackIntern(nodeIndex, stackIdx);
+
+                    sample.StackIndex = stackIdx;
+                    stackSource.AddSample(sample);
+                });
+                eventSource.Process();
+            }
+            else if (streamName == "Directory Enumerations")
+            {
+                eventSource.Kernel.AddCallbackForEvents<FileIODirEnumTraceData>(delegate (FileIODirEnumTraceData data)
+                {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                    StackSourceCallStackIndex stackIdx = stackSource.GetCallStack(data.CallStackIndex(), data);
+
+                    // Create a call stack that ends with 'Disk READ <fileName> (<fileDirectory>)'
+                    var filePath = data.FileName;
+                    if (filePath.Length == 0)
+                    {
+                        filePath = "UNKNOWN";
+                    }
+
+                    var nodeName = string.Format("File {0}: {1} ({2})", data.OpcodeName,
+                        GetFileName(filePath), GetDirectoryName(filePath));
+                    var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                    stackIdx = stackSource.Interner.CallStackIntern(nodeIndex, stackIdx);
+
+                    sample.StackIndex = stackIdx;
+                    stackSource.AddSample(sample);
+                });
+                eventSource.Process();
+            }
             else if (streamName == "File I/O")
             {
                 eventSource.Kernel.AddCallbackForEvents<FileIOReadWriteTraceData>(delegate (FileIOReadWriteTraceData data)
@@ -7228,6 +7280,8 @@ table {
             if (hasFileStacks)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "File I/O"));
+                advanced.Children.Add(new PerfViewStackSource(this, "File Queries"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Directory Enumerations"));
             }
 
             if (hasHeapStacks)
