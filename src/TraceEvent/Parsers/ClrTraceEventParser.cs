@@ -4827,7 +4827,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         MarkOlder = 3,
         MarkSizedRef = 4,
         MarkOverflow = 5,
-        MarkMax = 6,
+        MarkDependentHandles = 6,
+        MarkNewFQ = 7,
+        MarkSteal = 8,
+        MarkBGCRoots = 9,
+        MarkMax = 10,
     }
 
     public sealed class GCMarkTraceData : TraceEvent
