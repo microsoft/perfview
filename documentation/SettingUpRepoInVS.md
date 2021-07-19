@@ -1,13 +1,13 @@
-# GitHub Repository Setup with Visual Studio 2017
+# GitHub Repository Setup with Visual Studio 2019
 
 This section tells you how to build a project that is already hosted on GitHub, 
-using Visual Studio 2017. If you don't already have Visual Studio 2017, you 
+using Visual Studio 2019. If you don't already have Visual Studio 2019, you 
 can get the community edition for free from 
 [this link](https://www.visualstudio.com/vs/community/).
 This section also goes through important routine tasks like getting the latest 
 changes from GitHub and submitting a pull request to the main branch.
 
-It will show you how to do this using just Visual Studio 2017. Older versions 
+It will show you how to do this using just Visual Studio 2019. Older versions 
 of Visual Studio as well as other IDEs are possible, but not covered here.  
 You can also use 'raw' git commands but I don't cover that here.  
 
