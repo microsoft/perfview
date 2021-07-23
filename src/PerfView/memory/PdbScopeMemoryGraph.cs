@@ -495,7 +495,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
         }
 
         string src = reader.GetAttribute("src");
-        if (src != null)
+        if (src != null && src != "<stdin>")
         {
             fullName += "@" + Path.GetFileName(src);
         }
