@@ -596,10 +596,8 @@ namespace Microsoft.Diagnostics.Symbols
                             return null;
                         }
 
-                        if (fetchCmdStr.Contains(OldSourceServerUrl))
-                        {
-                            fetchCmdStr = fetchCmdStr.Replace(OldSourceServerUrl, NewSourceServerUrl);
-                        }
+                        // Update the source server URL if necessary.
+                        fetchCmdStr = fetchCmdStr.Replace(OldSourceServerUrl, NewSourceServerUrl);
 
                         Directory.CreateDirectory(Path.GetDirectoryName(target));
                         fetchCmdStr = "cmd /c " + fetchCmdStr;
