@@ -5684,15 +5684,13 @@ table {
 
                     StackSourceCallStackIndex stackIdx = stackSource.GetCallStack(data.CallStackIndex(), data);
 
-                    // Create a call stack that ends with 'Disk READ <fileName> (<fileDirectory>)'
-                    var filePath = data.FileName;
-                    if (filePath.Length == 0)
+                    var directoryPath = data.DirectoryName;
+                    if (directoryPath.Length == 0)
                     {
-                        filePath = "UNKNOWN";
+                        directoryPath = "UNKNOWN";
                     }
 
-                    var nodeName = string.Format("File {0}: {1} ({2})", data.OpcodeName,
-                        GetFileName(filePath), GetDirectoryName(filePath));
+                    var nodeName = string.Format("Directory {0}: {1}", data.OpcodeName, directoryPath);
                     var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
                     stackIdx = stackSource.Interner.CallStackIntern(nodeIndex, stackIdx);
 
