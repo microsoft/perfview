@@ -2047,6 +2047,34 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
                 stackTracingIds[curID].Type = 0x44;     // Write
                 curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x45;     // SetInfo
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x46;     // Delete
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x47;     // Rename
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x4A;     // QueryInfo
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x4B;     // FSControl
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x48;     // DirEnum
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x4D;     // DirNotify
+                curID++;
             }
 
             if ((stackCapture & KernelTraceEventParser.Keywords.Registry) != 0)

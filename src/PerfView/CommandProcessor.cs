@@ -1260,9 +1260,6 @@ namespace PerfView
                         }
 
                         clrSession.Stop();
-
-                        // Try to force the rundown of CLR method and loader events.  This routine does not fail.  
-                        DoClrRundownForSession(dataFile, clrSession.SessionName, parsedArgs);
                     }
                 }
                 catch (Exception e) { if (!(e is ThreadInterruptedException)) { LogFile.WriteLine("Error stopping User session: " + e.Message); } throw; }
@@ -1285,6 +1282,10 @@ namespace PerfView
             // Takes a while to shutdown, and we want the user mode session to shutdown at basically the same time
             // Doing them concurrently minimizes any skew.  
             Task.WaitAll(stopKernel, stopUser, stopHeap);
+            
+            // Try to force the rundown of CLR method and loader events.  This routine does not fail.  
+            DoClrRundownForSession(dataFile, s_UserModeSessionName, parsedArgs);
+            
             LogFile.WriteLine("Done stopping sessions.");
 
             UninstallETWClrProfiler(LogFile);

@@ -970,6 +970,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 102, ThreadPoolWorkerThreadAdjustmentTaskGuid);
             }
         }
+        public event Action<YieldProcessorMeasurementTraceData> YieldProcessorMeasurement
+        {
+            add
+            {
+                RegisterTemplate(YieldProcessorMeasurementTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 58, ProviderGuid);
+                source.UnregisterEventTemplate(value, 0, YieldProcessorMeasurementTaskGuid);
+            }
+        }
         public event Action<ThreadPoolWorkingThreadCountTraceData> ThreadPoolWorkingThreadCountStart
         {
             add
@@ -1164,7 +1176,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 256, ProviderGuid);
             }
         }
-
         public event Action<ContentionStartTraceData> ContentionStart
         {
             add
@@ -1964,6 +1975,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 12, JitInstrumentationDataTaskGuid);
             }
         }
+        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointExecutionCheckpoint {
+            add
+            {
+                RegisterTemplate(ExecutionCheckpointTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 300, ExecutionCheckpointTaskGuid);
+            }
+        }
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
@@ -2080,13 +2101,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new JitInstrumentationDataVerboseTraceData(action, 298, 34, "JitInstrumentationDataVerbose", JitInstrumentationDataTaskGuid, 12, "InstrumentationData", ProviderGuid, ProviderName);
         }
+        static private ExecutionCheckpointTraceData ExecutionCheckpointTemplate(Action<ExecutionCheckpointTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ExecutionCheckpointTraceData(action, 300, 35, "ExecutionCheckpoint", ExecutionCheckpointTaskGuid, 11, "ExecutionCheckpoint", ProviderGuid, ProviderName);
+        }
+        static private YieldProcessorMeasurementTraceData YieldProcessorMeasurementTemplate(Action<YieldProcessorMeasurementTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new YieldProcessorMeasurementTraceData(action, 58, 37, "YieldProcessorMeasurement", YieldProcessorMeasurementTaskGuid, 0, "Info", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[139];
+                var templates = new TraceEvent[141];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2234,6 +2263,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[137] = JitInstrumentationDataTemplate(null);
                 templates[138] = JitInstrumentationDataVerboseTemplate(null);
 
+                templates[139] = ExecutionCheckpointTemplate(null);
+                templates[140] = YieldProcessorMeasurementTemplate(null);
+
                 s_templates = templates;
             }
 
@@ -2300,6 +2332,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
         private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
+        private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
+        private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -4793,7 +4827,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         MarkOlder = 3,
         MarkSizedRef = 4,
         MarkOverflow = 5,
-        MarkMax = 6,
+        MarkDependentHandles = 6,
+        MarkNewFQ = 7,
+        MarkSteal = 8,
+        MarkBGCRoots = 9,
+        MarkMax = 10,
     }
 
     public sealed class GCMarkTraceData : TraceEvent
@@ -8187,6 +8225,71 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<ThreadPoolWorkerThreadAdjustmentStatsTraceData> Action;
+        #endregion
+    }
+    public sealed class YieldProcessorMeasurementTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public double NsPerYield { get { return GetDoubleAt(2); } }
+        public double EstablishedNsPerYield { get { return GetDoubleAt(10); } }
+
+        #region Private
+        internal YieldProcessorMeasurementTraceData(Action<YieldProcessorMeasurementTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 18));
+            Debug.Assert(!(Version > 0 && EventDataLength < 18));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<YieldProcessorMeasurementTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "NsPerYield", NsPerYield);
+            XmlAttrib(sb, "EstablishedNsPerYield", EstablishedNsPerYield);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "NsPerYield", "EstablishedNsPerYield" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return NsPerYield;
+                case 2:
+                    return EstablishedNsPerYield;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<YieldProcessorMeasurementTraceData> m_target;
         #endregion
     }
     public sealed class ThreadPoolWorkingThreadCountTraceData : TraceEvent
@@ -12353,6 +12456,73 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    public sealed class ExecutionCheckpointTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public string CheckpointName { get { return GetUnicodeStringAt(2); } }
+        public long CheckpointTimestamp { get { return GetInt64At(SkipUnicodeString(2)); } }
+
+        #region Private
+        internal ExecutionCheckpointTraceData(Action<ExecutionCheckpointTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(2) + 8));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(2) + 8));
+        }
+        protected internal override Delegate Target {
+            get { return Action; }
+            set { Action = (Action<ExecutionCheckpointTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "Name", CheckpointName);
+            XmlAttrib(sb, "Timestamp", CheckpointTimestamp);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "Name", "Timestamp" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return CheckpointName;
+                case 2:
+                    return CheckpointTimestamp;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 536870912; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<ExecutionCheckpointTraceData> Action;
+        #endregion
+    }
+
     [Flags]
     public enum AppDomainFlags
     {
@@ -12602,6 +12772,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Stabilizing = 0x5,
         Starvation = 0x6,
         ThreadTimedOut = 0x7,
+        CooperativeBlocking = 0x8,
     }
 
     [Flags]
@@ -13029,6 +13200,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 source.UnregisterEventTemplate(value, 11, TieredCompilationRundownTaskGuid);
             }
         }
+        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointRundownExecutionCheckpointDCEnd {
+            add
+            {
+                source.RegisterEventTemplate(ExecutionCheckpointDCEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 300, ExecutionCheckpointRundownTaskGuid);
+            }
+        }
 
         #region Event ID Definitions
         private const TraceEventID ClrStackWalkEventID = (TraceEventID)0;
@@ -13051,6 +13232,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private const TraceEventID LoaderThreadDCStopEventID = (TraceEventID)159;
         private const TraceEventID RuntimeStartEventID = (TraceEventID)187;
         private const TraceEventID CodeSymbolsRundownStartEventID = (TraceEventID)188;
+        private const TraceEventID TieredCompilationSettingsDCStartEventID = (TraceEventID)280;
+        private const TraceEventID ExecutionCheckpointDCEndEventID = (TraceEventID)300;
         #endregion
 
         public sealed class DCStartEndTraceData : TraceEvent
@@ -13118,12 +13301,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return new TieredCompilationSettingsTraceData(action, 280, 31, "TieredCompilationRundown", TieredCompilationRundownTaskGuid, 11, "SettingsDCStart", ProviderGuid, ProviderName);
         }
 
+        static private ExecutionCheckpointTraceData ExecutionCheckpointDCEndTemplate(Action<ExecutionCheckpointTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ExecutionCheckpointTraceData(action, 300, 35, "ExecutionCheckpointRundown", ExecutionCheckpointRundownTaskGuid, 11, "ExecutionCheckpointDCEnd", ProviderGuid, ProviderName);
+        }
+
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[23];
+                var templates = new TraceEvent[24];
                 templates[0] = new MethodILToNativeMapTraceData(null, 149, 1, "Method", MethodTaskGuid, 41, "ILToNativeMapDCStart", ProviderGuid, ProviderName);
                 templates[1] = new MethodILToNativeMapTraceData(null, 150, 1, "Method", MethodTaskGuid, 42, "ILToNativeMapDCStop", ProviderGuid, ProviderName);
                 templates[2] = new ClrStackWalkTraceData(null, 0, 11, "ClrStack", ClrStackTaskGuid, 82, "Walk", ProviderGuid, ProviderName);
@@ -13150,6 +13338,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 // New style
                 templates[22] = TieredCompilationSettingsDCStartTemplate(null);
 
+                templates[23] = ExecutionCheckpointDCEndTemplate(null);
+
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -13163,6 +13353,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private static readonly Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
         private static readonly Guid CodeSymbolsRundownTaskGuid = new Guid(unchecked((int)0x86b6c496), unchecked((short)0x0d9e), unchecked((short)0x4ba6), 0x81, 0x93, 0xca, 0x58, 0xe6, 0xe8, 0xc5, 0x15);
         private static readonly Guid TieredCompilationRundownTaskGuid = new Guid(unchecked((int)0xa1673472), unchecked((short)0x564), unchecked((short)0x48ea), 0xa9, 0x5d, 0xb4, 0x9d, 0x41, 0x73, 0xf1, 0x5);
+        private static readonly Guid ExecutionCheckpointRundownTaskGuid = new Guid(unchecked((int)0xdff63eca), unchecked((short)0xadaa), unchecked((short)0x431f), 0x8f, 0x91, 0x72, 0x82, 0x0c, 0x72, 0x17, 0xdb);
         #endregion
     }
 

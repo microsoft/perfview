@@ -5640,6 +5640,56 @@ table {
 
                 source.Process();
             }
+            else if (streamName == "File Queries")
+            {
+                eventSource.Kernel.AddCallbackForEvents<FileIOInfoTraceData>(delegate (FileIOInfoTraceData data)
+                {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                    StackSourceCallStackIndex stackIdx = stackSource.GetCallStack(data.CallStackIndex(), data);
+
+                    // Create a call stack that ends with 'Disk READ <fileName> (<fileDirectory>)'
+                    var filePath = data.FileName;
+                    if (filePath.Length == 0)
+                    {
+                        filePath = "UNKNOWN";
+                    }
+
+                    var nodeName = string.Format("File {0}: {1} ({2})", data.OpcodeName,
+                        GetFileName(filePath), GetDirectoryName(filePath));
+                    var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                    stackIdx = stackSource.Interner.CallStackIntern(nodeIndex, stackIdx);
+
+                    sample.StackIndex = stackIdx;
+                    stackSource.AddSample(sample);
+                });
+                eventSource.Process();
+            }
+            else if (streamName == "Directory Enumerations")
+            {
+                eventSource.Kernel.AddCallbackForEvents<FileIODirEnumTraceData>(delegate (FileIODirEnumTraceData data)
+                {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                    StackSourceCallStackIndex stackIdx = stackSource.GetCallStack(data.CallStackIndex(), data);
+
+                    var directoryPath = data.DirectoryName;
+                    if (directoryPath.Length == 0)
+                    {
+                        directoryPath = "UNKNOWN";
+                    }
+
+                    var nodeName = string.Format("Directory {0}: {1}", data.OpcodeName, directoryPath);
+                    var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                    stackIdx = stackSource.Interner.CallStackIntern(nodeIndex, stackIdx);
+
+                    sample.StackIndex = stackIdx;
+                    stackSource.AddSample(sample);
+                });
+                eventSource.Process();
+            }
             else if (streamName == "File I/O")
             {
                 eventSource.Kernel.AddCallbackForEvents<FileIOReadWriteTraceData>(delegate (FileIOReadWriteTraceData data)
@@ -7219,6 +7269,8 @@ table {
             if (hasFileStacks)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "File I/O"));
+                advanced.Children.Add(new PerfViewStackSource(this, "File Queries"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Directory Enumerations"));
             }
 
             if (hasHeapStacks)
@@ -8235,44 +8287,34 @@ table {
 
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
-            if (AppLog.InternalUser)
+            OpenDump(worker.LogWriter);
+
+            var advanced = new PerfViewTreeGroup("Advanced Group");
+
+            m_Children = new List<PerfViewTreeItem>(2);
+
+            var defaultSource = new PerfViewStackSource(this, DefaultStackSourceName);
+            defaultSource.IsSelected = true;
+            m_Children.Add(defaultSource);
+
+            if (m_gcDump.InteropInfo != null)
             {
-                OpenDump(worker.LogWriter);
-
-                var advanced = new PerfViewTreeGroup("Advanced Group");
-
-                m_Children = new List<PerfViewTreeItem>(2);
-
-                var defaultSource = new PerfViewStackSource(this, DefaultStackSourceName);
-                defaultSource.IsSelected = true;
-                m_Children.Add(defaultSource);
-
-                if (m_gcDump.InteropInfo != null)
-                {
-                    // TODO FIX NOW.   This seems to be broken right now  hiding it for now.  
-                    // advanced.Children.Add(new HeapDumpInteropObjects(this));
-                }
-
-                if (m_gcDump.DotNetHeapInfo != null)
-                {
-                    advanced.Children.Add(new PerfViewStackSource(this, Gen0WalkableObjectsViewName));
-                    advanced.Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
-                }
-
-                if (advanced.Children.Count > 0)
-                {
-                    m_Children.Add(advanced);
-                }
-
-                return null;
+                // TODO FIX NOW.   This seems to be broken right now  hiding it for now.  
+                // advanced.Children.Add(new HeapDumpInteropObjects(this));
             }
-            return delegate (Action doAfter)
+
+            if (m_gcDump.DotNetHeapInfo != null)
             {
-                // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
-                m_singletonStackSource = new PerfViewStackSource(this, "");
-                m_singletonStackSource.Open(parentWindow, worker);
-                doAfter?.Invoke();
-            };
+                advanced.Children.Add(new PerfViewStackSource(this, Gen0WalkableObjectsViewName));
+                advanced.Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
+            }
+
+            if (advanced.Children.Count > 0)
+            {
+                m_Children.Add(advanced);
+            }
+
+            return null;
         }
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)

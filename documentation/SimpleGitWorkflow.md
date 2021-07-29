@@ -1,9 +1,9 @@
-# Setting Up *Without* a Fork with Visual Studio 2015
+# Setting Up *Without* a Fork with Visual Studio 2019
 
- * See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md) for important background material. 
+ * See also [Setting up a Repo in VS](SettingUpRepoInVS.md) for important background material. 
  * See also [Open Source GitHub Setup and Workflow](OpenSourceGitWorkflow.md) for the setup needed for pull requests.  
 
-Here we describe how to use Visual Studio 2015 to set a local build of the GitHub project https://github.com/Microsoft/perfview.   
+Here we describe how to use Visual Studio 2019 to set a local build of the GitHub project https://github.com/Microsoft/perfview.   
 Because this project is open source, anyone can read it so this works even if you don't have a GitHub account, but
 of course you will only have read-only access.   
 
