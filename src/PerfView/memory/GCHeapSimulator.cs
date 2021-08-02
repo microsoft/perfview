@@ -732,5 +732,10 @@ namespace PerfView
         public int Size;                                // This is the size of the object being allocated on this particular event.  
         public int RepresentativeSize;                  // If sampling is on, this sample may represent many allocations. This is the sum of the sizes of all those allocations.  
         // If sampling is off this is the same as Size.  
+
+        public int GuessCountBasedOnSize()
+        {
+            return Size > 0 ? (RepresentativeSize / Size) : 1;
+        }
     }
 }
