@@ -262,9 +262,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // logic to initialize state
                 AddCallbackForEvents(delegate (RegistryTraceData data)
                 {
-                    var isRundown = (data.Opcode == (TraceEventOpcode)22);        // RegistryRundown
-                    if (RegistryTraceData.NameIsKeyName(data.Opcode))
-                        state.fileIDToName.Add(data.KeyHandle, data.TimeStampQPC, data.KeyName, isRundown);
+                    var isRundown = (data.Opcode == (TraceEventOpcode)22 || data.Opcode == (TraceEventOpcode)24 || data.Opcode == (TraceEventOpcode)25);        // RegistryRundown
+                        if (RegistryTraceData.NameIsKeyName(data.Opcode) && !string.IsNullOrEmpty(data.KeyName))
+                            state.fileIDToName.Add(data.KeyHandle, data.TimeStampQPC, data.KeyName, isRundown);
+
                 });
             }
             if ((tracking & ParserTrackingOptions.FileNameToObject) != 0 && (state.callBacksSet & ParserTrackingOptions.FileNameToObject) == 0)
