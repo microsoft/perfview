@@ -1864,6 +1864,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 84, MethodTaskGuid);
             }
         }
+        public event Action<GCSettingsTraceData> GCSettingsRundown
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new GCSettingsTraceData(value, 10, 40, "Runtime", RuntimeTaskGuid, 1, "GCSettingsRundown", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10, ProviderGuid);
+                source.UnregisterEventTemplate(value, 40, RuntimeTaskGuid);
+            }
+        }
         public event Action<RuntimeInformationTraceData> RuntimeStart
         {
             add
@@ -2141,7 +2154,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[141];
+                var templates = new TraceEvent[144];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2291,6 +2304,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 templates[139] = ExecutionCheckpointTemplate(null);
                 templates[140] = YieldProcessorMeasurementTemplate(null);
+
+                templates[141] = new GCLOHCompactTraceData(null, 208, 1, "GC", GCTaskGuid, 208, "LOHCompact", ProviderGuid, ProviderName);
+                templates[142] = new GCFitBucketInfoTraceData(null, 209, 1, "GC", GCTaskGuid, 209, "FitBucketInfo", ProviderGuid, ProviderName);
+                templates[143] = new GCSettingsTraceData(null, 10, 40, "GC", GCTaskGuid, 40, "GCSettings", ProviderGuid, ProviderName);
 
                 s_templates = templates;
             }
