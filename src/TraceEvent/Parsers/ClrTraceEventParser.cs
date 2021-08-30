@@ -702,6 +702,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 203, GCTaskGuid);
             }
         }
+        public event Action<GCLOHCompactTraceData> GCLOHCompact
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new GCLOHCompactTraceData(value, 208, 1, "GC", GCTaskGuid, 208, "LOHCompact", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 208, ProviderGuid);
+                source.UnregisterEventTemplate(value, 208, GCTaskGuid);
+            }
+        }
+        public event Action<GCFitBucketInfoTraceData> GCFitBucketInfo
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new GCFitBucketInfoTraceData(value, 209, 1, "GC", GCTaskGuid, 209, "FitBucketInfo", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 209, ProviderGuid);
+                source.UnregisterEventTemplate(value, 209, GCTaskGuid);
+            }
+        }
         public event Action<FinalizeObjectTraceData> GCFinalizeObject
         {
             add
@@ -2386,8 +2412,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Prefix(sb);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
             XmlAttrib(sb, "MethodFlags", MethodFlags);
-            XmlAttrib(sb, "DataSize", MethodFlags);
-            XmlAttrib(sb, "MethodID", MethodFlags);
+            XmlAttrib(sb, "DataSize", DataSize);
+            XmlAttrib(sb, "MethodID", MethodID);
             sb.Append("/>");
             return sb;
         }
@@ -3294,6 +3320,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string TypeName { get { if (Version >= 2) { return GetUnicodeStringAt(18 + PointerSize); } return ""; } }
         public int HeapIndex { get { if (Version >= 2) { return GetInt32At(SkipUnicodeString(18 + PointerSize)); } return 0; } }
         public Address Address { get { if (Version >= 3) { return GetAddressAt(SkipUnicodeString(HostOffset(22, 1)) + 4); } return 0; } }
+        public long ObjectSize { get { if (Version >= 4) { return GetInt64At(SkipUnicodeString(HostOffset(22, 2)) + 4); } return 0; } }
         #region Private
         internal GCAllocationTickTraceData(Action<GCAllocationTickTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -3320,16 +3347,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Prefix(sb);
             XmlAttribHex(sb, "AllocationAmount", AllocationAmount);
             XmlAttrib(sb, "AllocationKind", AllocationKind);
-            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
-            if (Version >= 2)
+            if (Version >= 1)
             {
-                XmlAttrib(sb, "AllocationAmount64", AllocationAmount64);
-                XmlAttrib(sb, "TypeID", TypeID);
-                XmlAttrib(sb, "TypeName", TypeName);
-                XmlAttrib(sb, "HeapIndex", HeapIndex);
-                if (Version >= 3)
+                XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+                if (Version >= 2)
                 {
-                    XmlAttribHex(sb, "Address", Address);
+                    XmlAttrib(sb, "AllocationAmount64", AllocationAmount64);
+                    XmlAttrib(sb, "TypeID", TypeID);
+                    XmlAttrib(sb, "TypeName", TypeName);
+                    XmlAttrib(sb, "HeapIndex", HeapIndex);
+                    if (Version >= 3)
+                    {
+                        XmlAttribHex(sb, "Address", Address);
+                        if (Version >= 4)
+                        {
+                            XmlAttrib(sb, "ObjectSize", ObjectSize);
+                        }
+                    }
                 }
             }
             sb.Append("/>");
@@ -3342,7 +3376,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "AllocationAmount", "AllocationKind", "ClrInstanceID", "AllocationAmount64", "TypeID", "TypeName", "HeapIndex", "Address" };
+                    payloadNames = new string[] { "AllocationAmount", "AllocationKind", "ClrInstanceID", "AllocationAmount64", "TypeID", "TypeName", "HeapIndex", "Address", "ObjectSize" };
                 }
 
                 return payloadNames;
@@ -3369,6 +3403,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return HeapIndex;
                 case 7:
                     return Address;
+                case 8:
+                    return ObjectSize;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -6599,6 +6635,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public bool HasCondemnReasons0 { get { return (Version >= 3); } }
         public int CondemnReasons1 { get { if (Version >= 3) { return GetInt32At(42); } return 0; } }
         public bool HasCondemnReasons1 { get { return (Version >= 3); } }
+        public int Count { get { if (Version >= 4) { return GetInt32At(46); } return 0; } }
+        public bool HasCount { get { return (Version >= 4); } }
         #region Private
         internal GCGlobalHeapHistoryTraceData(Action<GCGlobalHeapHistoryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -6620,7 +6658,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(!(Version == 1 && EventDataLength != 30));
             Debug.Assert(!(Version == 2 && EventDataLength != 38));
             Debug.Assert(!(Version == 3 && EventDataLength != 46));
-            Debug.Assert(!(Version > 3 && EventDataLength < 46));
+            Debug.Assert(!(Version == 4 && EventDataLength != 50));
+            Debug.Assert(!(Version > 4 && EventDataLength < 50));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -6631,7 +6670,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "Gen0ReductionCount", Gen0ReductionCount);
             XmlAttrib(sb, "Reason", Reason);
             XmlAttrib(sb, "GlobalMechanisms", GlobalMechanisms);
-            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            if (Version >= 1)
+            {
+                XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+                if (Version >= 2)
+                {
+                    XmlAttrib(sb, "PauseMode", PauseMode);
+                    XmlAttrib(sb, "MemoryPressure", MemoryPressure);
+                    if (Version >= 3)
+                    {
+                        XmlAttrib(sb, "CondemnReasons0", CondemnReasons0);
+                        XmlAttrib(sb, "CondemnReasons1", CondemnReasons1);
+                        if (Version >= 4)
+                        {
+                            XmlAttrib(sb, "Count", Count);
+                        }
+                    }
+                }
+            }
             sb.Append("/>");
             return sb;
         }
@@ -6642,7 +6698,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure", "CondemnReasons0", "CondemnReasons1" };
+                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure", "CondemnReasons0", "CondemnReasons1", "Count" };
                 }
 
                 return payloadNames;
@@ -6716,6 +6772,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                         return null;
                     }
 
+                case 11:
+                    if (HasCount)
+                    {
+                        return Count;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -6744,6 +6810,140 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         Restart = -1,
         Invalid = ~(int)0xff
+    }
+
+    public sealed class GCLOHCompactTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public int Count { get { return GetInt16At(2); } }
+        #region Private
+        internal GCLOHCompactTraceData(Action<GCLOHCompactTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<GCLOHCompactTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 4));
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "Count", Count);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "ClrInstanceID", "Count" };
+                }
+
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return Count;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<GCLOHCompactTraceData> Action;
+        #endregion
+    }
+
+    public sealed class GCFitBucketInfoTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public GCBucketKind BucketKind { get { return (GCBucketKind)GetInt16At(2); } }
+        public long TotalSize { get { return GetInt64At(4); } }
+        public int Count { get { return GetInt16At(12); } }
+        #region Private
+        internal GCFitBucketInfoTraceData(Action<GCFitBucketInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<GCFitBucketInfoTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 14));
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "BucketKind", BucketKind);
+            XmlAttrib(sb, "TotalSize", TotalSize);
+            XmlAttrib(sb, "Count", Count);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "ClrInstanceID", "BucketKind", "TotalSize", "Count" };
+                }
+
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return BucketKind;
+                case 2:
+                    return TotalSize;
+                case 3:
+                    return Count;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<GCFitBucketInfoTraceData> Action;
+        #endregion
     }
 
     public sealed class GCJoinTraceData : TraceEvent
@@ -12025,6 +12225,94 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    public sealed class GCSettingsTraceData : TraceEvent
+    {
+        public long HardLimit { get { return GetInt64At(0); } }
+        public long LOHThreshold { get { return GetInt64At(8); } }
+        public long PhysicalMemoryConfig { get { return GetInt64At(16); } }
+        public long Gen0MinBudgetConfig { get { return GetInt64At(24); } }
+        public long Gen0MaxBudgetConfig { get { return GetInt64At(32); } }
+        public int HighMemPercentConfig { get { return GetInt32At(40); } }
+        public int BitSettings { get { return GetInt32At(44); } }
+        public int ClrInstanceID { get { return GetInt16At(48); } }
+
+        #region Private
+        internal GCSettingsTraceData(Action<GCSettingsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<GCSettingsTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 50);
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "HardLimit", HardLimit);
+            XmlAttrib(sb, "LOHThreshold", LOHThreshold);
+            XmlAttrib(sb, "PhysicalMemoryConfig", PhysicalMemoryConfig);
+            XmlAttrib(sb, "Gen0MinBudgetConfig", Gen0MinBudgetConfig);
+            XmlAttrib(sb, "Gen0MaxBudgetConfig", Gen0MaxBudgetConfig);
+            XmlAttrib(sb, "HighMemPercentConfig", HighMemPercentConfig);
+            XmlAttrib(sb, "BitSettings", BitSettings);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "HardLimit", "LOHThreshold", "PhysicalMemoryConfig", "Gen0MinBudgetConfig", "Gen0MaxBudgetConfig", "HighMemPercentConfig", "BitSettings", "ClrInstanceID" };
+                }
+
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return HardLimit;
+                case 1:
+                    return LOHThreshold;
+                case 2:
+                    return PhysicalMemoryConfig;
+                case 3:
+                    return Gen0MinBudgetConfig;
+                case 4:
+                    return Gen0MaxBudgetConfig;
+                case 5:
+                    return HighMemPercentConfig;
+                case 6:
+                    return BitSettings;
+                case 7:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<GCSettingsTraceData> Action;
+        #endregion
+    }
+
     public sealed class RuntimeInformationTraceData : TraceEvent
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
@@ -12699,11 +12987,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         SmallObjectHeap = 0x0,
         LargeObjectHeap = 0x1,
         ReadOnlyHeap = 0x2,
+        PinnedObjectHeap = 0x3,
     }
     public enum GCAllocationKind
     {
         Small = 0x0,
         Large = 0x1,
+        Pinned = 0x2,
+    }
+    public enum GCBucketKind
+    {
+        FLItem = 0x0,
+        Plug = 0x1,
     }
     public enum GCType
     {
@@ -12801,7 +13096,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Older = 0x3,
         SizedRef = 0x4,
         Overflow = 0x5,
-
+        DependentHandle = 0x6,
+        NewFQ = 0x7,
+        Steal = 0x8,
+        BGC = 0x9,
     }
 
     public enum GCHandleKind
