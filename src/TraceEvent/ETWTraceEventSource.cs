@@ -250,7 +250,7 @@ namespace Microsoft.Diagnostics.Tracing
             /// Normally only modules what have a CPU or stack sample are included in the list of assemblies (thus you don't 
             /// unnecessarily have to generate NGEN PDBS for modules that will never be looked up).  However if there are 
             /// events that have addresses that need resolving that this routine does not recognise, this option can be
-            /// set to insure that any module that was event LOADED is included.   This is inefficient, but guaranteed to
+            /// set to ensure that any module that was event LOADED is included.   This is inefficient, but guaranteed to
             /// be complete
             /// </summary>
             IncludeModulesWithOutSamples = 2

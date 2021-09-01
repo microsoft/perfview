@@ -962,7 +962,7 @@ internal class TraceParserGen
     }
 
     /// <summary>
-    /// insures that the name is a valid CSharp Identifier.
+    /// ensures that the name is a valid CSharp Identifier.
     /// </summary>
     public static string ToCSharpName(string input)
     {

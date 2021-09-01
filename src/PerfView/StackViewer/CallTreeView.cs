@@ -223,7 +223,7 @@ namespace PerfView
 #endif
 
         /// <summary>
-        /// Given a CallTreeNode, find a CallTreeViewNode for it (insuring that it is displayed
+        /// Given a CallTreeNode, find a CallTreeViewNode for it (ensure that it is displayed)
         /// </summary>
         private CallTreeViewNode InsureVisible(CallTreeNode treeNode)
         {

@@ -578,14 +578,14 @@ namespace PerfView
             parser.DefineOptionalParameter("DataFile", ref DataFile, "ETL file containing profile data.");
 
             parser.DefineParameterSet("stop", ref DoCommand, App.CommandProcessor.Stop,
-                "Stop collecting profile data (machine wide).  If you specified EventSources with the /Providers qualifier on start you should repeat them here to insure manifest rundown.");
+                "Stop collecting profile data (machine wide).  If you specified EventSources with the /Providers qualifier on start you should repeat them here to ensure manifest rundown.");
 
             parser.DefineParameterSet("mark", ref DoCommand, App.CommandProcessor.Mark,
                 "Add a PerfView 'Mark' event to the event stream with a optional string message");
             parser.DefineOptionalParameter("Message", ref Message, "The string message to attach to the PerfView Mark event.");
 
             parser.DefineParameterSet("abort", ref DoCommand, App.CommandProcessor.Abort,
-                "Insures that any active PerfView sessions are stopped.");
+                "Ensures that any active PerfView sessions are stopped.");
 
             parser.DefineParameterSet("merge", ref DoCommand, App.CommandProcessor.Merge,
                 "Combine separate ETL files into a single ETL file (that can be decoded on another machine).");

@@ -216,7 +216,7 @@ namespace Microsoft.Diagnostics.Symbols
             return ret;
         }
         /// <summary>
-        /// Removes all references to remote paths.  This insures that network issues don't cause grief.  
+        /// Removes all references to remote paths.  This ensures that network issues don't cause grief.  
         /// </summary>
         public SymbolPath LocalOnly()
         {

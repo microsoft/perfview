@@ -644,12 +644,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return "[CANT PARSE OFFSET]";
             }
 
-            // CONSIDER:  The code below insures that if you have fields that are
+            // CONSIDER:  The code below ensures that if you have fields that are
             // 'off the end' of a data that you return the default value.  That
             // allows the parser to gracefully handle old events that have fewer
             // fields but does NOT guarantee we don't read past the end of the 
             // buffer in all cases (if you have corrupt/mismatched data).   The
-            // code below does insure this but is more expensive.   For now I have
+            // code below does ensure this but is more expensive.   For now I have
             // chosen the cheaper solution.   
             //
             // if ((uint)EventDataLength < OffsetOfNextField(offset, index))
@@ -2435,7 +2435,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var fieldFetch = new DynamicTraceEventData.PayloadFetch(offset, size, type, map);
                     if (inType == "win:Binary")
                     {
-                        // Check to insure that the length field is the preceding field. 
+                        // Check to ensure that the length field is the preceding field. 
                         int prevFieldIdx = ret.payloadNames.Count - 1;
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&

@@ -365,7 +365,7 @@ namespace PerfView
             objectData.RepresentativeSize = (int)representativeSize;
 
             var timeStamp = data.TimeStampRelativeMSec;
-            // Insure that timeStamps move forward in time and are unique, so they can be used as object IDs.  
+            // Ensure that timeStamps move forward in time and are unique, so they can be used as object IDs.  
             var verySmall = 1;
             while (timeStamp <= m_lastAllocTimeRelativeMSec)
             {

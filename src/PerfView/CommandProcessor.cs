@@ -217,7 +217,7 @@ namespace PerfView
                 }
                 finally
                 {
-                    collectionCompleted.Set();  // This insures that the GUI window closes.  
+                    collectionCompleted.Set();  // This ensures that the GUI window closes.  
                     if (!success)
                     {
                         Abort(parsedArgs);
@@ -405,7 +405,7 @@ namespace PerfView
             string heapFileName = Path.ChangeExtension(parsedArgs.DataFile, ".userheap.etl");
             string rundownFileName = Path.ChangeExtension(parsedArgs.DataFile, ".clrRundown.etl");
             string kernelRundownFileName = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
-            // Insure that old data is gone
+            // Ensure that old data is gone
             var fileNames = new string[] { zipFileName, userFileName, kernelFileName, heapFileName, rundownFileName, kernelRundownFileName };
             try
             {
@@ -1347,7 +1347,7 @@ namespace PerfView
         public void Abort(CommandLineArgs parsedArgs)
         {
             LaunchPerfViewElevatedIfNeeded("Abort", parsedArgs);
-            lock (s_UserModeSessionName)    // Insure only one thread can be aborting at a time.
+            lock (s_UserModeSessionName)    // Ensure only one thread can be aborting at a time.
             {
                 if (s_abortInProgress)
                 {
@@ -1402,7 +1402,7 @@ namespace PerfView
                 }
                 catch (Exception) { }
 
-                // Insure all the ETWEventTrigger sessions are dead.  
+                // Ensure all the ETWEventTrigger sessions are dead.  
                 foreach (var sessionName in TraceEventSession.GetActiveSessionNames())
                 {
                     if (sessionName.StartsWith(ETWEventTrigger.SessionNamePrefix, StringComparison.OrdinalIgnoreCase))
@@ -1418,7 +1418,7 @@ namespace PerfView
                     }
                 }
 
-                // Insure that the rundown session is also stopped. 
+                // Ensure that the rundown session is also stopped. 
                 try
                 {
                     using (var rundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", TraceEventSessionOptions.Attach))
@@ -1432,7 +1432,7 @@ namespace PerfView
                 try { UninstallETWClrProfiler(LogFile); }
                 catch (Exception) { }
 
-                // Insure that network monitoring is off
+                // Ensure that network monitoring is off
                 try
                 {
                     DisableNetMonTrace();
@@ -2524,10 +2524,10 @@ namespace PerfView
         private static string s_dotNetKey = @"Software\Microsoft\.NETFramework";
         private static string s_dotNetKey32 = @"Software\Wow6432Node\Microsoft\.NETFramework";
 
-        // Insures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
+        // Ensures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
-            log.WriteLine("Insuring that the .NET CLR Profiler is installed.");
+            log.WriteLine("Ensuring that the .NET CLR Profiler is installed.");
             var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
             if (File.Exists(profilerDll))
             {
@@ -2608,7 +2608,7 @@ namespace PerfView
 
         private static void UninstallETWClrProfiler(TextWriter log)
         {
-            log.WriteLine("Insuring .NET Allocation profiler not installed.");
+            log.WriteLine("Ensuring .NET Allocation profiler not installed.");
 
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
             {
