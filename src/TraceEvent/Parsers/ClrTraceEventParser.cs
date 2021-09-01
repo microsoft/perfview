@@ -12270,7 +12270,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 50);
+            Debug.Assert(!(Version == 0 && EventDataLength != 50));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
