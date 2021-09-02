@@ -559,7 +559,7 @@ STDMETHODIMP CorProfilerTracer::ObjectAllocated(ObjectID objectId, ClassID class
 				classInfo->AllocPerMSec = (float)minAllocPerMSec;
 			}
 
-			// We want to sample at a rate that insures less 100 allocations per second per type.  
+			// We want to sample at a rate that ensures less 100 allocations per second per type.  
 			// However don't sample less than 1/1000, 
 			int oldSamplingRate = classInfo->SamplingRate;
 			classInfo->SamplingRate = min((int)(classInfo->AllocPerMSec * 10), 1000);

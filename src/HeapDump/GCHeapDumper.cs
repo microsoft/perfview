@@ -366,7 +366,7 @@ public class GCHeapDumper
                             {
                                 throw new ApplicationException(
                                     "Could not find runtime support DLL " + dacInfo.FileName + " using the symbol server." +
-                                    "\r\nInsure that your Symbol Path includes a Microsoft Symbol Server" +
+                                    "\r\nEnsure that your Symbol Path includes a Microsoft Symbol Server" +
                                     "\r\nOr copy the %WINDIR%\\Microsoft.NET\\Framework*\\V*\\mscordacwks.dll from the collection machine to " + lastChance);
                             }
                         }
@@ -1154,7 +1154,7 @@ public class GCHeapDumper
         m_log.WriteLine("Estimated number of objects = {0:n0}", estimatedObjectCount);
 
         // We force the node count to be this max node count if we are within a factor of 2.  
-        // This insures that we don't have an issue where growing algorithms overshoot the amount
+        // This ensures that we don't have an issue where growing algorithms overshoot the amount
         // of memory available and fail.   Note we do this on 64 bit too 
         if (estimatedObjectCount >= m_maxNodeCount / 2)
         {
@@ -2590,7 +2590,7 @@ internal static class GCRootNames
         if (runningOnEntry != 0)
         {
             Console.WriteLine("Stopping in EnumerateThreadRoots");
-            Thread.Sleep(100);      // Insure that the debuggee got some CPU recently
+            Thread.Sleep(100);      // Ensure that the debuggee got some CPU recently
             proc.Stop(5000);        // TODO FIX NOW failure?
             timeStopped = Stopwatch.StartNew();
         }
@@ -2767,7 +2767,7 @@ internal static class GCRootNames
         if (runningOnEntry != 0)
         {
             Console.WriteLine("Stopping in EnumerateStaticRoots");
-            Thread.Sleep(100);      // Insure that the debuggee got some CPU recently
+            Thread.Sleep(100);      // Ensure that the debuggee got some CPU recently
             proc.Stop(5000);        // TODO FIX NOW failure?
             timeStopped = Stopwatch.StartNew();
         }

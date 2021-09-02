@@ -35,7 +35,7 @@ namespace Utilities
                     float keepTimeEnvVarValue;
                     if (keepTimeEnvVarName != null && float.TryParse(keepTimeEnvVarValueStr, out keepTimeEnvVarValue))
                     {
-                        // Insure that keep time is at least 10 mins.   This avoids files disappearing while in use. 
+                        // Ensure that keep time is at least 10 mins.   This avoids files disappearing while in use. 
                         if (keepTimeEnvVarValue < .007f)
                         {
                             keepTimeEnvVarValue = .007f;

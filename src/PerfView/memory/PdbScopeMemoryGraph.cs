@@ -296,7 +296,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
             // Do we overlap with the section at all?
             if (startGap < section.End)
             {
-                Debug.Assert(section.Start <= startGap);        // We insured this with first conditions above.  
+                Debug.Assert(section.Start <= startGap);        // We ensure this with conditions above.  
                 var subRegionEnd = Math.Min(endGap, section.End);
                 EmitRegion(startGap, subRegionEnd, "Section " + section.Name + " UNKNOWN");
                 startGap = subRegionEnd;
@@ -309,7 +309,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
             // Do we overlap with the section padding region?
             if (startGap < section.EndRoundedUpToPage)
             {
-                Debug.Assert(section.End <= startGap);        // We insured this with second conditions above.  
+                Debug.Assert(section.End <= startGap);        // We ensured this with second conditions above.  
                 var subRegionEnd = Math.Min(endGap, section.EndRoundedUpToPage);
 
                 // File padding is smaller (512 bytes) than virtual memory padding we emit the size of the file not the virtual memory

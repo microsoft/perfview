@@ -1880,7 +1880,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
-                Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
+                Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Ensure they are in order
                 lastTimeStamp = data.TimeStampQPC;
 #endif
                 // Show status every 128K events
@@ -1962,7 +1962,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
                 // Sadly we have seen cases of merged ETL files where there are events past the end of the session.
-                // This confuses later logic so insure that this does not happen.  Note that we also want the
+                // This confuses later logic so ensure that this does not happen.  Note that we also want the
                 // any module-DCStops to happen at sessionEndTime so we have to do this after processing all events
                 if (data.TimeStampQPC > sessionEndTimeQPC)
                 {
@@ -2232,7 +2232,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 CodeAddresses.totalCodeAddresses += inclusiveCount;
             }
 
-            // Insure the event to stack table is in sorted order.
+            // Ensure the event to stack table is in sorted order.
             eventsToStacks.Sort(delegate (EventsToStackIndex x, EventsToStackIndex y)
             {
                 return (int)x.EventIndex - (int)y.EventIndex;
@@ -3153,7 +3153,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private static unsafe void WriteBlob(IntPtr source, IStreamWriter writer, int byteCount)
         {
             // TODO: currently most uses the source aligned so
-            // I don't bother trying to insure that the copy is aligned.
+            // I don't bother trying to ensure that the copy is aligned.
             Debug.Assert(byteCount % 4 == 0);
             int* sourcePtr = (int*)source;
             int intCount = byteCount >> 2;
@@ -4271,7 +4271,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
 
         // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
-        private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.
+        private Timer realTimeFlushTimer;                          // Ensures the queue gets flushed even if there are no incoming events.
         private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
         #endregion
     }
@@ -5102,7 +5102,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     events.Log.sessionStartTimQPC <= ret.TimeStampQPC && ret.TimeStampQPC <= events.Log.sessionEndTimeQPC + 50000000);
 #endif
 
-                // We have to insure we have a pointer to the whole blob, not just the header.
+                // We have to ensure we have a pointer to the whole blob, not just the header.
                 int totalLength = TraceLog.headerSize + (ret.EventDataLength + 3 & ~3);
                 Debug.Assert(totalLength < 0x10000);
                 ret.eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)reader.GetPointer(totalLength);
@@ -8478,7 +8478,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // We can get the same name for different addresses, which makes us for distinct methods
             // which in turn cause the treeview to have multiple children with the same name.   This
-            // is confusing, so we intern the symbols, insuring that code address with the same name
+            // is confusing, so we intern the symbols, ensuring that code address with the same name
             // always use the same method.   This dictionary does that.
             var methodIntern = new Dictionary<string, MethodIndex>();
 
@@ -8854,7 +8854,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(value != ILMapIndex.Invalid);
 
-                // We may be overwriting other values, insure that they actually don't change.
+                // We may be overwriting other values, ensure that they actually don't change.
                 Debug.Assert(GetMethodIndex(codeAddresses) == Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid ||
                     GetMethodIndex(codeAddresses) == codeAddresses.ILToNativeMaps[(int)value].MethodIndex);
                 Debug.Assert(methodOrProcessOrIlMapIndex >= 0 ||
@@ -10646,7 +10646,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             TraceProcess ret = log.Processes.GetProcess(anEvent.ProcessID, anEvent.TimeStampQPC);
             // When the trace was converted, a TraceProcess should have been created for
             // every mentioned Process ID.
-            // When we care, we should insure this is true for the RealTime case.
+            // When we care, we should ensure this is true for the RealTime case.
             Debug.Assert(ret != null || log.IsRealTime);
             return ret;
         }
@@ -10664,7 +10664,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             TraceThread ret = log.Threads.GetThread(anEvent.ThreadID, anEvent.TimeStampQPC);
             // When the trace was converted, a TraceThread should have been created for
             // every mentioned Thread ID.
-            // When we care, we should insure this is true for the RealTime case.
+            // When we care, we should ensure this is true for the RealTime case.
             Debug.Assert(ret != null || log.IsRealTime);
             return ret;
         }

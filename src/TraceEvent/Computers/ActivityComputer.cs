@@ -344,7 +344,7 @@ namespace Microsoft.Diagnostics.Tracing
             TraceActivity activity = GetCurrentActivity(thread);
             CallStackIndex callStack = data.CallStackIndex();
 
-            // Insure we have a cache
+            // Ensure we have a cache
             if (m_callStackCache == null && !NoCache)
             {
                 m_callStackCache = new CallStackCache();
@@ -369,7 +369,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(outputStackSource.TraceLog == m_eventLog);
             m_outputSource = outputStackSource;
 
-            // Insure we have a cache
+            // Ensure we have a cache
             if (m_callStackCache == null && !NoCache)
             {
                 m_callStackCache = new CallStackCache();

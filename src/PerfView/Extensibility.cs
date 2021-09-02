@@ -766,7 +766,7 @@ namespace PerfViewExtensibility
         // Extract to a temp file and move so we get atomic update.  May leave trash behind
         private static void AtomicExtract(ZipArchiveEntry zipEntry, string targetPath)
         {
-            // Insure directory exists. 
+            // Ensure directory exists. 
             Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
             var extractPath = targetPath + ".new";
             try

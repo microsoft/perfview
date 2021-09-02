@@ -1792,7 +1792,7 @@ namespace Dia2Lib
         {
             if (!s_loadedNativeDll)
             {
-                // Insure that the native DLL we need exist.  
+                // Ensure that the native DLL we need exist.  
                 NativeDlls.LoadNative("msdia140.dll");
                 s_loadedNativeDll = true;
             }

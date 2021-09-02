@@ -1041,7 +1041,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Insures the bytes in the stream are written to the stream and cleans up resources.  
+        /// Ensures the bytes in the stream are written to the stream and cleans up resources.  
         /// </summary>
         public void Close()
         {

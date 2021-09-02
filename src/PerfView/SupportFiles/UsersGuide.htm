@@ -886,7 +886,7 @@
         100 samples are likely to be within 90 and 110 (10% error).&nbsp;&nbsp;&nbsp; For
         &#39;typical&#39; analysis this means you want at least 1000 and preferably more
         like 5000 samples (There are diminishing returns after 10K).&nbsp;&nbsp; By collecting
-        a few thousand samples you insure that even moderately &#39;warm&#39; methods will
+        a few thousand samples you ensure that even moderately &#39;warm&#39; methods will
         have at least 10 samples, and &#39;hot&#39; methods will have at least 100s, which
         keep the error acceptably small.&nbsp;&nbsp; Because PerfView does not allow you
         to vary the sampling frequency, this means that you need to run the scenario for
@@ -950,7 +950,7 @@
             <strong>Determine that the process is actually CPU bound over time of interest</strong>.&nbsp;
         </li>
         <li>
-            <strong>Insure that you have the symbolic information you need. </strong>&nbsp;See
+            <strong>Ensure that you have the symbolic information you need. </strong>&nbsp;See
             <a href="#SymbolResolution">symbol resolution</a> for more.&nbsp;
         </li>
     </ol>
@@ -1205,7 +1205,7 @@
     <p>
         If you have not already read <a href="#WhenToCareAboutMemory">When to care about Memory</a>
         and <a href="#WhenToCareAboutTheGCHeap">When to care about the GC Heap</a> please
-        do so to insure that GC memory is even relevant to your performance problem.
+        do so to ensure that GC memory is even relevant to your performance problem.
     </p>
     <p>
         The <strong>Memory-&gt;Take Heap Snapshot</strong> menu item allows you to take
@@ -1291,7 +1291,7 @@
         </li>
         <li>
             However, we also require that each object not only contain itself, but also a &#39;path
-            to root&#39;.&nbsp;&nbsp; To insure this
+            to root&#39;.&nbsp;&nbsp; To ensure this
             <ul>
                 <li>
                     When the heap graph was walked, spanning tree was formed (using the same priority
@@ -3427,7 +3427,7 @@
         Thus analysis of a diff trace always has an addition step:&nbsp; <strong>
             &nbsp;After
             you have formed the diff view but before you have don any analysis, you must use
-            the grouping/folding/filtering operators to insure that negative values have been
+            the grouping/folding/filtering operators to ensure that negative values have been
             &#39;cancel out&#39; sufficiently
         </strong>.&nbsp;&nbsp; The view needs to have
         only has positive metric numbers (or inconsequential negative numbers).&nbsp;&nbsp;
@@ -4474,10 +4474,10 @@
         </strong>.&nbsp; While this characteristic is useful (it allows independent
         start and stop command line commands), it also means that it is possible to accidentally
         leave ETW collection running for an indefinite period of time.&nbsp;&nbsp;&nbsp;
-        PerfView goes to some length to insure that data collection is stopped in typical
+        PerfView goes to some length to ensure that data collection is stopped in typical
         cases, however if PerfView was terminated abnormally, or if the command line &#39;start&#39;
         operation was used it is possible that ETW data collection is left on.&nbsp; The
-        Collect-&gt;Abort command is designed for this case.&nbsp;&nbsp; It insures that
+        Collect-&gt;Abort command is designed for this case.&nbsp;&nbsp; It ensures that
         any ETW providers turned on by PerfView are off.&nbsp;
     </p>
     <p>
@@ -5913,7 +5913,7 @@
         for &#39;off-line&#39; analysis.&nbsp;&nbsp;&nbsp; Note however that while the ETL
         file contains symbolic information for .NET Runtime code, it does NOT contain symbolic
         information for unmanaged code.&nbsp;&nbsp; Thus if it is important to see the symbolic
-        names for unmanaged code, you need to insure that the machine on which analysis
+        names for unmanaged code, you need to ensure that the machine on which analysis
         occurs has access to the PDB files that contains this information.&nbsp;&nbsp;
     </p>
     <hr />
@@ -6087,9 +6087,9 @@
         instead), if you can.&nbsp;&nbsp; The reason is if the script where to fail between
         the start and stop commands, logging might not be stopped and will run &#39;forever&#39;.
         Thus some care is necessary in using these.&nbsp;&nbsp; The &#39;abort&#39; command
-        is meant to help insure that PerfView is not logging.&nbsp;&nbsp;&nbsp; It is meant
+        is meant to help ensure that PerfView is not logging.&nbsp;&nbsp;&nbsp; It is meant
         to be called at locations where you know that PerfView should NOT be running, and
-        it insures that indeed it is not.&nbsp;&nbsp; You should use it liberally in scripts
+        it ensures that indeed it is not.&nbsp;&nbsp; You should use it liberally in scripts
         that use the &#39;start&#39; command.
     </p>
 
@@ -6151,7 +6151,7 @@
         </li>
     </ol>
     <p>
-        Thus PerfView works in a container, but need to insure you have a new enough version of the
+        Thus PerfView works in a container, but need to ensure you have a new enough version of the
         operating system, and that you use the techniques in <a href="#AutomatingCollection">Automating Collection</a>
         to collect data without using the GUI.
     </p>
@@ -6540,7 +6540,7 @@
     </p>
     <h5><a id="DelayAfterTriggerSec">Capturing more data after the stop Trigger has fired</a></h5>
     <p>
-        After the /StopOn* trigger has fired, By default PerfView waits 5 seconds before it stops the trace.   This insures that you
+        After the /StopOn* trigger has fired, By default PerfView waits 5 seconds before it stops the trace.   This ensures that you
         see no only the period just before the trigger, but also 5 seconds afterward.   This is sufficient for most scenarios
         but if you need more you can use the /DelayAfterTriggerSec=N to specify a longer period.    Keep in mind, however that typically
         the default 500Meg circular buffer will only hold 2-3 min of trace so specifying a number larger than 100-200 seconds is likely

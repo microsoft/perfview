@@ -28,7 +28,7 @@ namespace PerfView
     public class App
     {
         /// <summary>
-        /// At the top most level, Main simply calls 'DoMain' insuring that all error messages get to the user.  
+        /// At the top most level, Main simply calls 'DoMain' ensuring that all error messages get to the user.  
         /// Main is also responsible for doing the 'install On First launch' logic that unpacks the EXE if needed.  
         /// </summary>  
         [System.STAThreadAttribute()]
@@ -528,7 +528,7 @@ namespace PerfView
                 return;
             }
 
-            // This is redundant, but insures that we don't get into infinite loops during testing. 
+            // This is redundant, but ensures that we don't get into infinite loops during testing. 
             if (exe.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
             {
                 return;

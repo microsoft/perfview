@@ -30,12 +30,12 @@ using Utilities;
 // Make Allocation Tick variable.  
 // JitStarted Info level (not verbose)
 // Consolidate the GCRange events into one event
-// Insure that we don't have 2 GC Start events (Or others...)
+// Ensure that we don't have 2 GC Start events (Or others...)
 // Allow ClrStress to pay attention to level and keyword.
 // GC allocation stacks should work without process restart.  
 // Keyword if you only care about large objects.
 // Guarantee that every large object gets an event. 
-// Review and insure that we don't have any CLRStacks on any events that don't need them.  
+// Review and ensure that we don't have any CLRStacks on any events that don't need them.  
 // PinObjectAtGCTime and FinalizeObject seem to have a non-trivial impact in some scenarios.    Both should NOT have stacks!
 
 // The efficiency of stopwatch can be improved (at least review).
@@ -372,7 +372,7 @@ using Utilities;
 // Expose the provider exploration APIs through user commands. 
 // Take a heap dump at the end of a ETW collection.  
 // Make it so that it is VERY hard to created unmerged file (make it on by default but sticky, and pop a dialog box while you do the work);  
-// Insure that /merge:false implies /zip:false
+// Ensure that /merge:false implies /zip:false
 // Make default groupings a user preference (it is remembered) 
 // Goo error messages if you overflow the 4GB  ETLX limit
 // FIx it so that the max event count is not used but we stop before we hit the 4GB limit.  
@@ -460,7 +460,7 @@ using Utilities;
 // Fix is so that bad symbol paths do not cause massive slowdown.  
 // Use new symbol lookup code. 
 // Validate that Kernel keywords work when using the CPU counters.  
-// Insure that symbol server issues don't cause grief during collection (merge (NGen Pdbs)).
+// Ensure that symbol server issues don't cause grief during collection (merge (NGen Pdbs)).
 // Make it so that Symbol lookup is smart about machine failures (cache failure results).  
 // If you order the columns by something make search move in the way users expect.  
 // Look at traces from ARM and see if we can do better with traces with identical timestamps for two different events. 
@@ -491,7 +491,7 @@ using Utilities;
 // Change Fold column to be 'NoFold'  It is more useful.  
 // Dump type information associated with allocs at end (for circular buffer case).  
 // Color scheme (Dark Blue selection) 
-// Insure that if CPU sample rate can be set above 100Msec or there is a good error message.    
+// Ensure that if CPU sample rate can be set above 100Msec or there is a good error message.    
 // Add a ? to the BROKEN node that takes you to the explaination. 
 // Allow Goto source to work in diffs and bring up both sources (or a diff of the sources.  
 // Color scheme (more muted) 
@@ -539,7 +539,7 @@ using Utilities;
 
 // BIG BUGS 
 // Make Task-based attributization work 
-// Insure that Heap dumps work  
+// Ensure that Heap dumps work  
 // Security check on PDBs that came from the ZIP file.  
 
 // EASY GUI IMPROVEMENTS
@@ -680,7 +680,7 @@ using Utilities;
 
 // Help should launch external web pages in a instance of IE, not in the window.  
 // Annoying clicking when help is resized.  
-// Some pause times are ignored for background GC.   Insure that we don't double count.  (Review all GC Stats for background GC consideration) 
+// Some pause times are ignored for background GC.   Ensure that we don't double count.  (Review all GC Stats for background GC consideration) 
 //   Probably can be fixed by noticing overlap when computing total pause, and keeping both the total pause and max pause for every GC so you
 //   can deal with several pauses for a single GC.   
 
@@ -832,7 +832,7 @@ using Utilities;
 // Column Summation does not seem to respect the filter (adds filtered entries)
 
 // For very large traces, allow you to filter the range BEFORE creating the tree.  
-// Insure that event error CPU samples are attributed to the root node.  I don't want to lose anything.  
+// Ensure that event error CPU samples are attributed to the root node.  I don't want to lose anything.  
 
 // Create an option for copying the PDBs necessary next to the ETL file (to make it SymServer agnostic)
 //  * This option probably needs one where OS dlls don't count. 
@@ -934,7 +934,7 @@ using Utilities;
 // Cut and paste of the caller-callee view (as a whole)
 
 // Indicate the number of total samples in the view in the title.  
-// Insure that open files are closed when file operations are performed.  
+// Ensure that open files are closed when file operations are performed.  
 // Caller-Callee view does not agree with ByName view!
 // Do ZIP by right clicking
 // Finish Merge by right clicking.  Decide if we ever open a dialog box (indicate that the file is merged somehow)
@@ -1009,7 +1009,7 @@ using Utilities;
 // Backport read-only mode to ETLStackBrowse
 // Gui option to show full path names
 // Gui for status on the whole  trace
-// Insure that things work when mulitple traces are scaning the same file.  
+// Ensure that things work when mulitple traces are scaning the same file.  
 // Better arithmetic with the clipboard? 
 
 // Make /? go to command line help with a link to users guide 
@@ -1019,7 +1019,7 @@ using Utilities;
 // Should I disable filter comboBoxes when working?   (Probably)
 // Make 'When' work on Caller-callee view. 
 // Shortcuts don't work on selected cells. 
-// Insure the deserialization errors give good diagnostics. 
+// Ensure the deserialization errors give good diagnostics. 
 // The group pattern *=>X does not seem to work properly 
 // New should preserve the current window's state and place the focus where it was.  
 // Implement rigth arrow key in call tree window.  
@@ -1239,7 +1239,7 @@ namespace PerfView
             ChangeCurrentDirectoryIfNeeded();
             var memoryDialog = new Dialogs.MemoryDataDialog(App.CommandLineArgs, this, continuation);
             memoryDialog.Show();        // Can't be a true dialog because you can't bring up the log otherwise.  
-            // TODO FIX NOW.   no longer a dialog, insure that it is unique?
+            // TODO FIX NOW.   no longer a dialog, ensure that it is unique?
         }
 
         /// <summary>
