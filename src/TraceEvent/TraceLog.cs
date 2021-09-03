@@ -1589,7 +1589,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 IncompleteStack stackInfo = GetIncompleteStackForStackEvent(data, data.EventTimeStampQPC);
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, timeStampQPC);
                 thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
-                var isKernelModeStackFragment = IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize);
+                var isKernelModeStackFragment = process.IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize);
                 if (isKernelModeStackFragment)
                 {
                     // If we reach here the fragment we have is totally in the kernel, and thus might have a user mode part that we have
@@ -1612,7 +1612,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     var loggedUserStack = false;    // Have we logged this stack at all
                     // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
                     // and we use this as the 'top' of the stack for all kernel fragments on this thread.
-                    if (!IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
+                    if (!process.IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
                     {
                         loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo);
                         thread.lastEmitStackOnExitFromKernelQPC = data.TimeStampQPC;
@@ -2513,7 +2513,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // we get a def, we have to know which one to look in (we do this based on the address
             // in the def (a bit kludgey in my opinion).
             IncompleteStack stackInfo;
-            if (IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize))
+            if (IsWindowsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize))
             {
                 // We have a kernel mode definition, look up in the kernel mode table.
                 if (kernelStackKeyToInfo.TryGetValue(data.StackKey, out stackInfo))
@@ -2947,7 +2947,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        internal static bool IsKernelAddress(Address ip, int pointerSize)
+        internal static bool IsWindowsKernelAddress(Address ip, int pointerSize)
         {
             if (pointerSize == 4)
             {
@@ -3001,7 +3001,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         sampleAddress &= 0xFFFFFFFF00000000;
                     }
 
-                    if (IsKernelAddress(sampleAddress, PointerSize) && data.ProcessID != 0 && data.ProcessID != 4)
+                    if (process.IsKernelAddress(sampleAddress, PointerSize) && data.ProcessID != 0 && data.ProcessID != 4)
                     {
                         // If this is a kernel event, we have to defer making the stack (it is incomplete).
                         // Make a new IncompleteStack to track that (unlike other stack events we don't need to go looking for it.
@@ -5800,6 +5800,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
         #endregion
 
+        internal bool IsKernelAddress(Address ip, int pointerSize)
+        {
+            // EventPipe doesn't generate kernel address events and current heauristics are not deterministic on none Windows platforms.
+            if (log?.rawEventSourceToConvert is EventPipeEventSource)
+                return false;
+
+            return TraceLog.IsWindowsKernelAddress(ip, pointerSize);
+        }
+
         /// <summary>
         /// Create a new TraceProcess.  It should only be done by log.CreateTraceProcess because
         /// only TraceLog is responsible for generating a new ProcessIndex which we need.   'processIndex'
@@ -8347,7 +8356,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private TraceProcess ProcessForAddress(TraceProcess process, Address address)
         {
-            if (TraceLog.IsKernelAddress(address, log.pointerSize))
+            if (process.IsKernelAddress(address, log.pointerSize))
             {
                 return log.Processes.GetOrCreateProcess(0, log.sessionStartTimeQPC);
             }
