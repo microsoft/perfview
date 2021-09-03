@@ -2513,7 +2513,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // we get a def, we have to know which one to look in (we do this based on the address
             // in the def (a bit kludgey in my opinion).
             IncompleteStack stackInfo;
-            if (IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize))
+            if (IsWindowsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize))
             {
                 // We have a kernel mode definition, look up in the kernel mode table.
                 if (kernelStackKeyToInfo.TryGetValue(data.StackKey, out stackInfo))
@@ -2947,7 +2947,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        internal static bool IsKernelAddress(Address ip, int pointerSize)
+        internal static bool IsWindowsKernelAddress(Address ip, int pointerSize)
         {
             if (pointerSize == 4)
             {
@@ -5806,7 +5806,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (log?.rawEventSourceToConvert is EventPipeEventSource)
                 return false;
 
-            return TraceLog.IsKernelAddress(ip, pointerSize);
+            return TraceLog.IsWindowsKernelAddress(ip, pointerSize);
         }
 
         /// <summary>
