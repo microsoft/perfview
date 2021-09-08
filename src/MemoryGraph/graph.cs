@@ -122,7 +122,7 @@ namespace Graphs
         /// <summary>
         /// Same as NodeIndexLimit, just cast to an integer.  
         /// </summary>
-        public int NodeCount { get { return m_nodes.Count; } }
+        public int NodeCount { get { return (int)m_nodes.Count; } }
         /// <summary>
         /// It is expected that users will want additional information associated with TYPES of the nodes of the graph.  They can
         /// do this by allocating an array of code:NodeTypeIndexLimit and then indexing this by code:NodeTypeIndex
@@ -571,10 +571,10 @@ namespace Graphs
             }
 
             // Read in the Nodes 
-            int nodeCount = deserializer.ReadInt();
+            long nodeCount = deserializer.ReadInt64();
             m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
 
-            for (int i = 0; i < nodeCount; i++)
+            for (long i = 0; i < nodeCount; i++)
             {
                 m_nodes.Add((StreamLabel)(uint)deserializer.ReadInt());
             }

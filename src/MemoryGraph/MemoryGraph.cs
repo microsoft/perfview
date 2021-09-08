@@ -132,10 +132,10 @@ namespace Graphs
         {
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
-            int addressCount = deserializer.ReadInt();
+            long addressCount = deserializer.ReadInt64();
             m_nodeAddresses = new SegmentedList<Address>(SegmentSize, addressCount);
 
-            for (int i = 0; i < addressCount; i++)
+            for (long i = 0; i < addressCount; i++)
             {
                 m_nodeAddresses.Add((Address)deserializer.ReadInt64());
             }
