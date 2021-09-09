@@ -1836,6 +1836,11 @@ public class GCHeapDumper
     /// </summary>
     private void DumpAllSegments()
     {
+        Action<Address, int> addRefAsChild = delegate (Address childObj, int fieldOffset)
+        {
+            m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(childObj));
+        };
+
         var segments = m_dotNetHeap.Segments;
         m_log.WriteLine("Dumping {0} GC segments in the heap in bulk.", segments.Count);
         var segmentCount = 0;
@@ -1890,10 +1895,7 @@ public class GCHeapDumper
                     m_children.Clear();
                 }
 
-                type.EnumerateRefsOfObjectCarefully(objAddr, delegate (Address childObj, int fieldOffset)
-                {
-                    m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(childObj));
-                });
+                type.EnumerateRefsOfObjectCarefully(objAddr, addRefAsChild);
 
                 var objNodeIdx = m_gcHeapDump.MemoryGraph.GetNodeIndex(objAddr);
                 ulong objSize = type.GetSize(objAddr);
