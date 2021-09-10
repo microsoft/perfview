@@ -10,7 +10,17 @@ namespace Graphs
         public MemoryGraph(int expectedSize)
             : base(expectedSize)
         {
-            m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
+            // If we have too many addresses we will reach the Dictionary's internal array's size limit and throw.
+            // Therefore use a new implementation of it that is similar in performance but that can handle the extra load.
+            if (expectedSize > 200_000)
+            {
+                m_addressToNodeIndex = new SegmentedDictionary<Address, NodeIndex>(expectedSize);
+            }
+            else
+            {
+                m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
+            }
+                                                              
             m_nodeAddresses = new SegmentedList<Address>(SegmentSize, expectedSize);
         }
 
@@ -111,7 +121,7 @@ namespace Graphs
         /// THis table maps the ID that CLRProfiler uses (an address), to the NodeIndex we have assigned to it.  
         /// It is only needed while the file is being read in.  
         /// </summary>
-        protected Dictionary<Address, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
+        protected IDictionary<Address, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
 
         #endregion
         #region private

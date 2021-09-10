@@ -93,6 +93,8 @@ namespace System.Collections.Generic
             }
         }
 
+        public int Capacity => this.capacity;
+
         /// <summary>
         /// Copy to Array
         /// </summary>
@@ -148,6 +150,9 @@ namespace System.Collections.Generic
                 this.items[index >> this.segmentShift][index & this.offsetMask] = value;
             }
         }
+
+        public ref T GetElementByReference(int index) =>
+            ref this.items[index >> this.segmentShift][index & this.offsetMask];
 
         /// <summary>
         /// Necessary if the list is being used as an array since it creates the segments lazily.
