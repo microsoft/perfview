@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using Address = System.UInt64;
 
@@ -203,6 +201,13 @@ namespace Graphs
             m_nodes.Add((nuint)m_undefinedObjDef);
             return ret;
         }
+
+        /// <summary>
+        /// Provides a temporary buffer to sort children in <see cref="SetNode"/>.
+        /// </summary>
+        [ThreadStatic]
+        private static NodeIndex[] s_sortedChildrenBuffer;
+
         /// <summary>
         /// Sets the information associated with the node at 'nodeIndex' (which was created via code:CreateNode).  Nodes
         /// have a nodeId, Size and children.  (TODO: should Size be here?)
@@ -211,12 +216,51 @@ namespace Graphs
         {
             SetNodeTypeAndSize(nodeIndex, typeIndex, sizeInBytes);
 
+            var sortedChildren = SortChildren(children);
+
             Node.WriteCompressedInt(m_writer, children.Count);
-            foreach (var child in children.OrderBy(static nodeIndex => (int)nodeIndex))
+            for (int i = 0; i < children.Count; i++)
             {
+                var child = sortedChildren[i];
                 Node.WriteCompressedInt(m_writer, (int)child - (int)nodeIndex);
             }
             m_totalRefs += children.Count;
+        }
+
+        private static NodeIndex[] SortChildren(HashSet<NodeIndex> children)
+        {
+            NodeIndex[] sortedChildren;
+            if (children.Count > 1024)
+            {
+                // Avoid large thread-static allocations that never get garbage collected
+                sortedChildren = new NodeIndex[children.Count];
+            }
+            else
+            {
+                if (s_sortedChildrenBuffer is null)
+                {
+                    s_sortedChildrenBuffer = new NodeIndex[children.Count];
+                }
+                else if (s_sortedChildrenBuffer.Length < children.Count)
+                {
+                    Array.Resize(ref s_sortedChildrenBuffer, children.Count);
+                }
+
+                sortedChildren = s_sortedChildrenBuffer;
+            }
+
+            children.CopyTo(sortedChildren);
+            Array.Sort(sortedChildren, 0, children.Count, NodeIndexComparer.Instance);
+            return sortedChildren;
+        }
+
+        private sealed class NodeIndexComparer : Comparer<NodeIndex>
+        {
+            public static readonly NodeIndexComparer Instance = new NodeIndexComparer();
+            public override int Compare(NodeIndex x, NodeIndex y)
+            {
+                return x - y;
+            }
         }
 
         /// <summary>
