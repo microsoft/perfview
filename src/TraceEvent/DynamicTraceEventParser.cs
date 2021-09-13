@@ -386,7 +386,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 provider.ISDynamic = true;
                 return provider;
 
-                Fail:
+            Fail:
                 Chunks = null;
                 return null;
             }
@@ -759,6 +759,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                     else if (type == typeof(DateTime))
                     {
+                        if (payloadFetch.Size == 16)
+                        {
+                            int currentOffset = offset;
+                            int year = GetInt16At(currentOffset);
+                            int month = GetInt16At(currentOffset += 2);
+                            int dayOfWeek = GetInt16At(currentOffset += 2);
+                            int day = GetInt16At(currentOffset += 2);
+                            int hour = GetInt16At(currentOffset += 2);
+                            int minute = GetInt16At(currentOffset += 2);
+                            int second = GetInt16At(currentOffset += 2);
+                            int milliseconds = GetInt16At(currentOffset);
+
+                            return new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+                        }
                         return DateTime.FromFileTime(GetInt64At(offset));
                     }
                     else
@@ -2233,7 +2247,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             case "bitMap":
                                 map = new SortedDictionary<long, string>();    // Bitmaps stored as sorted dictionaries
                                 goto DoMap;
-                                DoMap:
+                            DoMap:
                                 string name = reader.GetAttribute("name");
                                 using (var mapValues = reader.ReadSubtree())
                                 {
@@ -2369,7 +2383,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 error = e;
             }
 
-            THROW:
+        THROW:
             if (!noThrowOnError && error != null)
             {
                 throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
