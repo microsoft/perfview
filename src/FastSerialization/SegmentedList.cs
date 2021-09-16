@@ -426,10 +426,10 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
+            if (arrayIndex < 0 || arrayIndex >= array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex),
-                    "Index must be non-negative and less than the length of the target array.");
+                    "arrayIndex must be non-negative and less than the length of the array.");
             }
 
             if (array.Length - arrayIndex < this.count)
@@ -467,10 +467,10 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
+            if (arrayIndex < 0 || arrayIndex >= array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex),
-                    "Index must be non-negative and less than the length of the target array.");
+                    "arrayIndex must be non-negative and less than the length of the array.");
             }
 
             if (startIndex < 0 || startIndex > endIndex)
