@@ -39,8 +39,11 @@ bash ./dotnet-install.sh --install-dir .
 # run ConsoleApp1 in background
 cd /src/tests/ConsoleApp1
 /src/sdk/dotnet run &
-
 appPid=$!
+
+echo "Dotnet-trace hangs if attached too early, waiting..."
+sleep 15
+echo "Finsihed sleeping"
 
 # Capture a short trace with dotnet-trace activated.
 $perfcollect collect test-dotnettrace -pid $appPid -dotnet-trace -collectsec 5
@@ -56,4 +59,3 @@ if [[ ! -s test-dotnettrace.trace/trace.nettrace ]]
 then
     exit -1
 fi
-
