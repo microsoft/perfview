@@ -588,7 +588,7 @@ namespace TraceEventTests
     }
 
     /// <summary>
-    /// Test code to insure that the TraceEventDispatcher works properly in the face of lots of
+    /// Test code to ensure that the TraceEventDispatcher works properly in the face of lots of
     /// adds and deletes.   
     /// </summary>
     public class DispatcherTester

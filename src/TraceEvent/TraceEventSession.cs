@@ -314,7 +314,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                 }
 
-                const int MaxDesc = 7;  // This number needs to be bumped for to insure that all curDescrIdx never exceeds it below.  
+                const int MaxDesc = 7;  // This number needs to be bumped for to ensure that all curDescrIdx never exceeds it below.  
                 TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR* filterDescrPtr = stackalloc TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR[MaxDesc];
                 int curDescrIdx = 0;
                 fixed (byte* providerDataPtr = valueData)
@@ -592,7 +592,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             {
 #if !CONTAINER_WORKAROUND_NOT_NEEDED
                 // This is a work-around because in containers if you try to turn on kernel events that
-                // it does not support it simply silently fails.   We work around this by insuring that 
+                // it does not support it simply silently fails.   We work around this by ensuring that 
                 // we detect if we are in a container and if so strip out kernel events that might cause 
                 // problems.   Can be removed when containers do this automatically 
                 var containerTypeObj = Registry.GetValue(@"HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control", "ContainerType", null);
@@ -1493,7 +1493,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             finally
             {
-                // Insure we clean up.  
+                // Ensure we clean up.  
                 if (File.Exists(tempName))
                 {
                     File.Delete(tempName);
@@ -2046,6 +2046,34 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
                 stackTracingIds[curID].Type = 0x44;     // Write
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x45;     // SetInfo
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x46;     // Delete
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x47;     // Rename
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x4A;     // QueryInfo
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x4B;     // FSControl
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x48;     // DirEnum
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.FileIOTaskGuid;
+                stackTracingIds[curID].Type = 0x4D;     // DirNotify
                 curID++;
             }
 

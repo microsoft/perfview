@@ -603,7 +603,7 @@ namespace Microsoft.Diagnostics.Tracing
         // already present.  
         private static void AtomicExtract(ZipArchiveEntry zipEntry, string targetPath)
         {
-            // Insure directory exists. 
+            // Ensure directory exists. 
             var dirName = Path.GetDirectoryName(targetPath);
             if (dirName.Length != 0)
             {

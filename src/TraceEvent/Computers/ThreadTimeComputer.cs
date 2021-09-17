@@ -186,7 +186,7 @@ namespace Microsoft.Diagnostics.Tracing
                 /*********  Start Unknown Async State machine for StartStop activities ******/
                 // The delegates below along with the AddUnkownAsyncDurationIfNeeded have one purpose:
                 // To inject UNKNOWN_ASYNC stacks when there is an active start-stop activity that is
-                // 'missing' time.   It has the effect of insuring that Start-Stop tasks always have
+                // 'missing' time.   It has the effect of ensuring that Start-Stop tasks always have
                 // a metric that is not unrealistically small.  
                 m_activityComputer.Start += delegate (TraceActivity activity, TraceEvent data)
                 {
@@ -204,7 +204,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     // We only care about the top-most activities since unknown async time is defined as time
                     // where a top  most activity is running but no thread (or await time) is associated with it 
-                    // fast out otherwise (we just insure that we mark the thread as doing this activity)
+                    // fast out otherwise (we just ensure that we mark the thread as doing this activity)
                     if (startStopActivity.Creator != null)
                     {
                         UpdateThreadToWorkOnStartStopActivity(data.Thread(), startStopActivity, data);

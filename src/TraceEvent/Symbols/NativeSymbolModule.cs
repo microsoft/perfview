@@ -468,6 +468,9 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public class MicrosoftPdbSourceFile : SourceFile
         {
+            private const string OldSourceServerUrl = "http://vstfdevdiv.redmond.corp.microsoft.com:8080";
+            private const string NewSourceServerUrl = "https://vstfdevdiv";
+
             /// <inheritdoc/>
             public override bool GetSourceLinkInfo(out string url, out string relativePath)
             {
@@ -592,6 +595,10 @@ namespace Microsoft.Diagnostics.Symbols
                             _log.WriteLine("Source Server command {0} is not recognized as safe (sd.exe or tf.exe), failing.", fetchCmdStr);
                             return null;
                         }
+
+                        // Update the source server URL if necessary.
+                        fetchCmdStr = fetchCmdStr.Replace(OldSourceServerUrl, NewSourceServerUrl);
+
                         Directory.CreateDirectory(Path.GetDirectoryName(target));
                         fetchCmdStr = "cmd /c " + fetchCmdStr;
                         var options = new CommandOptions().AddOutputStream(_log).AddNoThrow();
@@ -1785,7 +1792,7 @@ namespace Dia2Lib
         {
             if (!s_loadedNativeDll)
             {
-                // Insure that the native DLL we need exist.  
+                // Ensure that the native DLL we need exist.  
                 NativeDlls.LoadNative("msdia140.dll");
                 s_loadedNativeDll = true;
             }

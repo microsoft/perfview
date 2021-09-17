@@ -439,13 +439,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
-            // Insure that we have a certain amount of sanity (events don't occur before sessionStartTime).  
+            // Ensure that we have a certain amount of sanity (events don't occur before sessionStartTime).  
             if (QPCTime < sessionStartTimeQPC)
             {
                 QPCTime = sessionStartTimeQPC;
             }
 
-            // We used to have a sanity check to insure that the time was always inside sessionEndTimeQPC
+            // We used to have a sanity check to ensure that the time was always inside sessionEndTimeQPC
             // ETLX files enforce this, but sometimes ETWTraceEventParser (ETL) traces have bad session times.
             // After some thought, the best answer seems to be not to try to enforce this consistantancy.
             // (it will be true for ETLX but maybe not for ETWTraceEventParser scenarios).  
@@ -2101,7 +2101,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal static unsafe void CopyBlob(IntPtr source, IntPtr destination, int byteCount)
         {
             // TODO: currently most uses the source aligned so
-            // I don't bother trying to insure that the copy is aligned.
+            // I don't bother trying to ensure that the copy is aligned.
             // Consider moving to Buffer.MemoryCopy
             Debug.Assert((long)destination % 4 == 0);
             Debug.Assert(byteCount % 4 == 0);
@@ -3618,7 +3618,7 @@ namespace Microsoft.Diagnostics.Tracing
                 do
                 {
                     // Check the next last chance handler.  If it returns true it may have modified the lookup table, so retry the lookup.  
-                    // In ether case we move past the current last chance handler to the next one (insuring termination). 
+                    // In ether case we move past the current last chance handler to the next one (ensuring termination). 
                     var lastChanceHandlerModifiedLookup = lastChanceHandlers[lastChanceHandlerChecked](unhandledEventTemplate);
                     lastChanceHandlerChecked++;
                     if (lastChanceHandlerModifiedLookup)

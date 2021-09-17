@@ -194,7 +194,7 @@ internal class Program
                     outputFile = Path.ChangeExtension(inputSpec, ".gcDump");
                 }
 
-                // This avoids file sharing issues, and also insures that old files are not left behind.  
+                // This avoids file sharing issues, and also ensures that old files are not left behind.  
                 if (File.Exists(outputFile))
                 {
                     File.Delete(outputFile);

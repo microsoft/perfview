@@ -36,7 +36,7 @@ Version 1.0.0.3  - Initial release to NuGet, pre-release.
         ***********************************************************************************************
 Version 1.0.0.4  - Initial stable release 
 
-        Mostly this was insuring that the library was cleaned up in preparation
+        Mostly this ensured that the library was cleaned up in preparation
         for release the TraceParserGen tool
 
         Improved the docs, removed old code, fixed some naming convention stuff

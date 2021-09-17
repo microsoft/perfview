@@ -68,6 +68,33 @@ namespace FastSerialization
     // This is MUCH leaner, and now dominated by actual work of copying the data to the output buffer.
 
     /// <summary>
+    /// Allows users of serialization and de-serialization mechanisms to specify the size of the StreamLabel.
+    /// As traces get larger, there is a need to support larger file sizes, and thus to increase the addressable
+    /// space within the files.  StreamLabel instances are 8-bytes in-memory, but all serialization and de-serialization
+    /// of them results in the upper 4-bytes being lost.  This setting will allow Serializer and Deserializer to read
+    /// and write 8-byte StreamLabel instances.
+    /// </summary>
+#if FASTSERIALIZATION_PUBLIC
+    public
+#endif
+    enum StreamLabelWidth
+    {
+        FourBytes = 0,
+        EightBytes = 1
+    };
+
+    /// <summary>
+    /// These settings apply to use of Serializer and Deserializer specifically.
+    /// </summary>
+#if FASTSERIALIZATION_PUBLIC
+    public
+#endif
+    sealed class SerializationConfiguration
+    {
+        public StreamLabelWidth StreamLabelWidth { get; set; }
+    }
+
+    /// <summary>
     /// A StreamLabel represents a position in a IStreamReader or IStreamWriter.
     /// In memory it is represented as a 64 bit signed value but to preserve compat 
     /// with the FastSerializer.1 format it is a 32 bit unsigned value when
@@ -991,14 +1018,19 @@ namespace FastSerialization
         /// <summary>
         /// Create a Deserializer that reads its data from a given file
         /// </summary>
-        public Deserializer(string filePath) : this(new IOStreamStreamReader(filePath), filePath) { }
+        public Deserializer(string filePath, SerializationConfiguration config = null)
+        {
+            IOStreamStreamReader reader = new IOStreamStreamReader(filePath, config);
+            Initialize(reader, filePath);
+        }
 
         /// <summary>
         /// Create a Deserializer that reads its data from a given System.IO.Stream.   The stream will be closed when the Deserializer is done with it.  
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName)
-            : this(new IOStreamStreamReader(inputStream), streamName)
+        public Deserializer(Stream inputStream, string streamName, SerializationConfiguration config = null)
         {
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, config: config);
+            Initialize(reader, streamName);
         }
 
         /// <summary>
@@ -1006,15 +1038,21 @@ namespace FastSerialization
         /// <paramref name="leaveOpen"/> parameter determines whether the deserializer will close the stream when it
         /// closes.
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName, bool leaveOpen)
-            : this(new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen), streamName)
+        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationConfiguration config = null)
         {
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, config: config);
+            Initialize(reader, streamName);
         }
 
         /// <summary>
         /// Create a Deserializer that reads its data from a given IStreamReader.   The stream will be closed when the Deserializer is done with it.  
         /// </summary>
         public Deserializer(IStreamReader reader, string streamName)
+        {
+            Initialize(reader, streamName);
+        }
+
+        private void Initialize(IStreamReader reader, string streamName)
         {
             ObjectsInGraph = new Dictionary<StreamLabel, IFastSerializable>();
             this.reader = reader;
@@ -2196,7 +2234,7 @@ namespace FastSerialization
         public StreamLabel StartPosition { get { return startPosition; } }
         #region private
         /// <summary>
-        /// This helper is just here to insure that FinishRead gets inlined 
+        /// This helper is just here to ensure that FinishRead gets inlined 
         /// </summary>
         private void FinishReadHelper(bool preserveStreamPosition)
         {
@@ -2246,7 +2284,7 @@ namespace FastSerialization
         /// * For object fields there is a choice
         ///     * If is is only references by the enclosing object (eg and therefore field's lifetime is
         ///         identical to referencing object), then the Serialize.WritePrivateObject can be
-        ///         used.  This skips placing the object in the interning table (that insures it is written
+        ///         used.  This skips placing the object in the interning table (that ensures it is written
         ///         exactly once).  
         ///     * Otherwise call Serialize.WriteObject
         /// * For value type fields (or collections of structs), you serialize the component fields.  
@@ -2302,7 +2340,7 @@ namespace FastSerialization
         /// version indicates that you don't care about ever reading data generated with an older version
         /// of the code.  
         /// 
-        /// If you set this to something other than your current version, you are obligated to insure that
+        /// If you set this to something other than your current version, you are obligated to ensure that
         /// your FromStream() method can handle all formats >= than this number. 
         ///
         /// You can achieve this if you simply use the 'WriteTagged' and 'ReadTagged' APIs in your 'ToStream' 
@@ -2355,7 +2393,7 @@ namespace FastSerialization
         /// compatibility (old readers reading data generated by new readers) then this should be set to 
         /// the current version.  
         /// 
-        /// If you set this to something besides the current version you are obligated to insure that your
+        /// If you set this to something besides the current version you are obligated to ensure that your
         /// ToStream() method ONLY adds fields at the end, AND that all of those added fields use the WriteTagged()
         /// operations (which tags the data in a way that old readers can skip even if they don't know what it is)
         /// In addition your FromStream() method must read these with the ReadTagged() deserializer APIs.  

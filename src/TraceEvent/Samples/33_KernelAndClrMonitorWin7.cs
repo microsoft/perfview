@@ -160,7 +160,7 @@ namespace TraceEventSamples
         private static void StopSessions()
         {
             s_stopping = true;
-            Out.WriteLine("Insuring all ETW sessions are stopped.");
+            Out.WriteLine("Ensuring all ETW sessions are stopped.");
             if (s_kernelSession != null)
             {
                 s_kernelSession.Dispose();

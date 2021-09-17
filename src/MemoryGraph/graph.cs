@@ -548,7 +548,7 @@ namespace Graphs
 
                     // You can place tagged values in here always adding right before the WriteTaggedEnd
                     // for any new fields added after version 1 
-                    serializer.WriteTaggedEnd(); // This insures tagged things don't read junk after the region.  
+                    serializer.WriteTaggedEnd(); // This ensures tagged things don't read junk after the region.  
                 });
             }
         }
@@ -2387,7 +2387,7 @@ public class GraphSampler
             stats.TotalMetric += node.Size;
         }
 
-        // Also insure that if there are a large number of types, that we sample them at least some. 
+        // Also ensure that if there are a large number of types, that we sample them at least some. 
         if (stats.SampleCount == 0 && !mustAdd && (m_numDistictTypesWithSamples + .5F) * m_filteringRatio <= m_numDistictTypes)
         {
             mustAdd = true;

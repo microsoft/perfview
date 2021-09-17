@@ -1,6 +1,6 @@
 # Setting Up *With* a Fork with Visual Studio 
 
- * See also [Setting up a Repo in VS](SettingUpRepoInVS2015.md) for important background material.  
+ * See also [Setting up a Repo in VS](SettingUpRepoInVS.md) for important background material.  
  * See also [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for a simpler setup without a fork, 
    if you only need read-only access.  Note that this information is also relevant to this (more complex)
    workflow.   

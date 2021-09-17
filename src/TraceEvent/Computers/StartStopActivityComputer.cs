@@ -680,17 +680,18 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// returns a string representation for the activity path.  If the GUID is not an activity path then it returns
-        /// the normal string representation for a GUID.  
+        /// the normal string representation for a GUID.
         /// </summary>
-        public static unsafe string ActivityPathString(Guid guid)
+        /// <remarks>
+        /// 0001111d-0000-0000-0000-00007bc7be59 will pass IsActivityPath check only when process Id 2125233 is provided.
+        /// </remarks>
+        public static unsafe string ActivityPathString(Guid guid, int processId = 0)
         {
-            return IsActivityPath(guid, 0) ? CreateActivityPathString(guid) : guid.ToString();
+            return IsActivityPath(guid, processId) ? CreateActivityPathString(guid) : guid.ToString();
         }
 
         internal static unsafe string CreateActivityPathString(Guid guid)
         {
-            Debug.Assert(IsActivityPath(guid, 0));
-
             var processID = ActivityPathProcessID(guid);
             StringBuilder sb = Utilities.StringBuilderCache.Acquire();
             if (processID != 0)

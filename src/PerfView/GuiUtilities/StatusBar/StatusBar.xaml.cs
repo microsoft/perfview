@@ -51,7 +51,7 @@ namespace PerfView
         /// used for any messages that are in direct response to an obvious user command (Effectively 
         /// logging what the user did.  
         /// 
-        /// This can called by the worker thread, and Log() will insure that it posts the message on the GUI thread
+        /// This can called by the worker thread, and Log() will ensure that it posts the message on the GUI thread
         /// </summary>
         public void Log(string message)
         {
@@ -323,7 +323,7 @@ namespace PerfView
             m_endWorkStarted = true;
             Dispatcher.BeginInvoke((Action)delegate ()
             {
-                // m_endWorkDone insures that we call EndWork at most once. 
+                // m_endWorkDone ensures that we call EndWork at most once. 
                 if (!m_endWorkCompleted)
                 {
                     m_endWorkCompleted = true;
@@ -407,7 +407,7 @@ namespace PerfView
                     }
 
                     // Because we interrupted the worker, We can't rely on the worker to do EndWork, so we do it.  
-                    // EndWork will insure that if we try to do the work twice, only the first will succeed.  
+                    // EndWork will ensure that if we try to do the work twice, only the first will succeed.  
                     EndWork(null);
                 });
             }

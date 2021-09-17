@@ -19,7 +19,7 @@ namespace TraceEventTests
         /// <summary>
         /// This test simply scans all the events in the ETL.ZIP files in TestDataDir
         /// and scans them (so you should get asserts if there is parsing problem)
-        /// and insures that no more than .1% of the events are 
+        /// and ensures that no more than .1% of the events are 
         /// </summary>
         [Theory]
         [MemberData(nameof(TestEtlFiles))]

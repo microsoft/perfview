@@ -517,7 +517,7 @@ namespace PerfView
         private Dictionary<string, TraceEventCounts> m_nameToCounts;
         private List<string> m_eventNames;
         private Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
-        private bool m_selectedAllEvents;       // This insures that when a user selects all events he gets everything 
+        private bool m_selectedAllEvents;       // This ensures that when a user selects all events he gets everything 
 
         internal class ETWEventRecord : EventRecord
         {
@@ -788,7 +788,7 @@ namespace PerfView
             public readonly int Version;
             public readonly bool ShouldShow;
             /// <summary>
-            /// We match start and stop opcodes.  We want to allow Start opcodes even if they are not selected to insure that
+            /// We match start and stop opcodes.  We want to allow Start opcodes even if they are not selected to ensure that
             /// we can compute the duration between start and stop events.  
             /// </summary>
             public readonly bool ShouldProcess;
@@ -896,7 +896,7 @@ namespace PerfView
         SortedDictionary<string, bool> m_processFilter;
 
         Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
-        bool m_selectedAllEvents;                       // This insures that when a user selects all events he gets everything 
+        bool m_selectedAllEvents;                       // This ensures that when a user selects all events he gets everything 
         List<GenericEventRecord> m_allEventRecords;
         Predicate<GenericEventRecord> m_textFilter;
 

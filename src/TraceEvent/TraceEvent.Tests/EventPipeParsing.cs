@@ -513,6 +513,42 @@ namespace TraceEventTests
             Assert.Equal(7, diagSourceEventCount);
         }
 
+        [Fact]
+        public void ExecutionCheckpointEventsAndTimeStamping()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore6.0-win-x64-executioncheckpoints.nettrace";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            var checkpoints = new Dictionary<string, double>();
+            checkpoints.Add("RuntimeInit", -15.97);
+            checkpoints.Add("RuntimeSuspend", 11.91);
+            checkpoints.Add("RuntimeResumed", 12.20);
+
+            UnicodeEncoding unicode = new UnicodeEncoding();
+            using (var source = new EventPipeEventSource(eventPipeFilePath))
+            {
+                var rundown = new ClrRundownTraceEventParser(source);
+                rundown.ExecutionCheckpointRundownExecutionCheckpointDCEnd += delegate (ExecutionCheckpointTraceData data)
+                {
+                    var timestamp = source.QPCTimeToTimeStamp(data.CheckpointTimestamp);
+                    var diff = Math.Round((timestamp - source.SessionStartTime).TotalMilliseconds, 2);
+
+                    // Asserts
+                    Assert.True(checkpoints.ContainsKey(data.CheckpointName));
+                    Assert.True(checkpoints[data.CheckpointName] == diff);
+
+                    checkpoints.Remove(data.CheckpointName);
+                };
+
+                source.Process();
+
+                Assert.True(checkpoints.Count == 0);
+            }
+        }
+
         private void Dynamic_All(TraceEvent obj)
         {
             throw new NotImplementedException();

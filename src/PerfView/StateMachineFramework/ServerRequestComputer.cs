@@ -459,7 +459,7 @@ namespace PerfView
         /// <summary>
         /// retrieves the ASP.NET request with ID 'requestKey'.  If it does not exist it is created with the url 'url' 
         /// (you should pass 'unknown' if you don't know it).   It also marks 'thread' to point at this new request
-        /// and insures that no other thread is pointing at it.   This routine never returns null. 
+        /// and ensures that no other thread is pointing at it.   This routine never returns null. 
         /// </summary>
         private ASPNetServerRequest GetOrCreateASPNetServerRequest(RequestKey requestKey, TraceThread thread, string url)
         {

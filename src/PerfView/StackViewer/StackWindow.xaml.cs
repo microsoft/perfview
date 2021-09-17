@@ -3389,7 +3389,7 @@ namespace PerfView
                 {
                     DataSource.ViewClosing(this);
                 }
-                // Insure our parent is visible
+                // Ensure our parent is visible
                 DoOpenParent(null, null);
 
                 // Throw the old call tree nodes away (GUI keeps reference to them, so disconnecting saves memory)
@@ -3860,7 +3860,7 @@ namespace PerfView
         public static List<StackWindow> StackWindows = new List<StackWindow>();
 
         /// <summary>
-        /// Insure that there is an entry for each element in 'stackWindows' in the diff menu. 
+        /// Ensure that there is an entry for each element in 'stackWindows' in the diff menu. 
         /// </summary>
         private static void UpdateDiffMenus(List<StackWindow> stackWindows)
         {

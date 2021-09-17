@@ -2616,7 +2616,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return freeList;
             }
 
-            if (gc.PerHeapHistories[0].HasFreeListAllocated && gc.PerHeapHistories[0].HasFreeListRejected)
+            if (gc.PerHeapHistories[0].HasAllocatedInfo)
             {
                 freeList.Allocated = 0;
                 freeList.FreeListConsumed = 0;
@@ -3526,15 +3526,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// Per heap statistics
     /// </summary>
+    /// HasAllocatedInfo indicates the following fields will not be -1
+    /// FreeListAllocated
+    /// FreeListRejected
+    /// EndOfSegAllocated
+    /// CondemnedAllocated
+    /// PinnedAllocated
+    /// PinnedAllocatedAdvance
+    /// RunningFreeListEfficiency
     public class GCPerHeapHistory
     {
         public int MemoryPressure;
         public bool HasMemoryPressure;
         public bool VersionRecognized;
         public long FreeListAllocated;
-        public bool HasFreeListAllocated;
+        public bool HasAllocatedInfo;
         public long FreeListRejected;
-        public bool HasFreeListRejected;
+        public long EndOfSegAllocated;
+        public long CondemnedAllocated;
+        public long PinnedAllocated;
+        public long PinnedAllocatedAdvance;
+        public int RunningFreeListEfficiency;
         public int CondemnReasons0;
         public int CondemnReasons1;
         public bool HasCondemnReasons1;
@@ -4599,9 +4611,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 var hist = new GCPerHeapHistory()
                 {
                     FreeListAllocated = (data.HasFreeListAllocated) ? data.FreeListAllocated : -1,
-                    HasFreeListAllocated = data.HasFreeListAllocated,
-                    FreeListRejected = (data.HasFreeListRejected) ? data.FreeListRejected : -1,
-                    HasFreeListRejected = data.HasFreeListRejected,
+                    HasAllocatedInfo = data.HasFreeListAllocated,
+                    FreeListRejected = (data.HasFreeListAllocated) ? data.FreeListRejected : -1,
+                    EndOfSegAllocated = (data.HasFreeListAllocated) ? data.EndOfSegAllocated : -1,
+                    CondemnedAllocated = (data.HasFreeListAllocated) ? data.CondemnedAllocated : -1,
+                    PinnedAllocated = (data.HasFreeListAllocated) ? data.PinnedAllocated: -1,
+                    PinnedAllocatedAdvance = (data.HasFreeListAllocated) ? data.PinnedAllocatedAdvance : -1,
+                    RunningFreeListEfficiency = (data.HasFreeListAllocated) ? data.RunningFreeListEfficiency : -1,
                     MemoryPressure = (data.HasMemoryPressure) ? data.MemoryPressure : -1,
                     HasMemoryPressure = data.HasMemoryPressure,
                     VersionRecognized = data.VersionRecognized,

@@ -166,7 +166,7 @@ namespace Microsoft.Samples.Debugging.Native
 
         public DumpPointer Adjust(ulong delta64)
         {
-            uint delta = (uint)delta64;
+            long delta = (long)delta64;
             EnsureSizeRemaining(delta);
             long offset = m_offset + delta;
 
@@ -296,7 +296,7 @@ namespace Microsoft.Samples.Debugging.Native
 
         #endregion Data access
 
-        private void EnsureSizeRemaining(uint requestedSize)
+        private void EnsureSizeRemaining(long requestedSize)
         {
             if (m_reader.Length - m_offset < requestedSize)
             {

@@ -734,7 +734,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             m_Interner.DoneInterning();
 
-            // Insure that the samples are in sorted order.  
+            // Ensure that the samples are in sorted order.  
             m_samples.Sort(
                 (x, y) =>
                 {

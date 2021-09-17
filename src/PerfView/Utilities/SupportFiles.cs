@@ -304,7 +304,7 @@ namespace Utilities
             {
                 if (resourceName.StartsWith(@".\") || resourceName.StartsWith(@"./"))
                 {
-                    // Unpack everything, inefficient, but insures ldr64 works.  
+                    // Unpack everything, inefficient, but ensures ldr64 works.  
                     string targetPath = Path.Combine(prepDir, resourceName);
                     if (!ResourceUtilities.UnpackResourceAsFile(resourceName, targetPath, resourceAssembly))
                     {

@@ -1088,7 +1088,7 @@ namespace Diagnostics.Tracing.StackSources
             }
             public bool Discard;                                // This sample should be discarded 
             public bool Fold;                                   // This frame should be folded into its parent
-            public bool IsMoveNext;                             // As a special case MoveNext we insure 'perfect' recursion removal (TODO: make this work for any method)
+            public bool IsMoveNext;                             // As a special case MoveNext we ensure 'perfect' recursion removal (TODO: make this work for any method)
 
             public bool IsEntryGroup;                           // This frame is part of a entry group. 
             /// <summary>

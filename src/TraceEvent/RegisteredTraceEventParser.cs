@@ -110,7 +110,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Dictionary<string, int> taskNames = new Dictionary<string, int>();
             // Any  es used so far 
             Dictionary<string, int> opcodeNames = new Dictionary<string, int>();
-            // This insures that we have unique event names. 
+            // This ensures that we have unique event names. 
             Dictionary<string, int> eventNames = new Dictionary<string, int>();
 
             SortedDictionary<ulong, string> keywords = new SortedDictionary<ulong, string>();
@@ -180,7 +180,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             taskName = "task_" + eventInfo->EventDescriptor.Task.ToString();
                         }
 
-                        // Insure task name is unique.  
+                        // Ensure task name is unique.  
                         int taskNumForName;
                         if (taskNames.TryGetValue(taskName, out taskNumForName) && taskNumForName != eventInfo->EventDescriptor.Task)
                         {
@@ -203,7 +203,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                         }
 
-                        // Insure opcode name is unique.  
+                        // Ensure opcode name is unique.  
                         int opcodeNumForName;
                         if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
                         {
@@ -224,7 +224,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             eventName += Capitalize(opcodeName);
                         }
 
-                        // Insure uniqueness of the event name
+                        // Ensure uniqueness of the event name
                         int eventNumForName;
                         if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
                         {
@@ -1172,7 +1172,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
                     // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
-                    // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
+                    // and just general fragility we don't want to rely on that.  So we keep a bit and ensure that we
                     // only add the event definition once.  
                     if (!parsedTemplate.registeredWithTraceEventSource)
                     {
