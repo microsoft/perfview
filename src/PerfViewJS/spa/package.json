@@ -11,6 +11,7 @@
     "@types/reactstrap": "^8.5.1",
     "base64url": "^3.0.1",
     "bootstrap": "^4.5.3",
+    "immer": "^9.0.6",
     "lodash": "^4.17.21",
     "monaco-editor": "^0.21.2",
     "react": "^16.14.0",
