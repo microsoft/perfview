@@ -1096,7 +1096,7 @@ InstallPerf_Ubuntu()
     then
         apt-get install -y linux-tools-azure zip curl software-properties-common
     else
-        apt-get install -y linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r` zip curl software-properties-common
+        apt-get install -y linux-tools-common linux-tools-generic zip curl software-properties-common
     fi
 }
 
@@ -2194,6 +2194,7 @@ StartDotnetTraceCollection()
 
 StopDotnetTraceCollection()
 {
+    
     RunSilent "kill -15 $dotnetTraceCollectionPid"
     while [ "$dotnetTraceCollectionPid" != "" ] && [ -e /proc/$dotnetTraceCollectionPid ]
     do
