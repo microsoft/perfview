@@ -134,15 +134,3 @@ jobs:
         filePath: './src/perfcollect/tests/run-containers.sh'
         workingDirectory: src/perfcollect/tests
 
-  - job: PerfViewJS
-    pool:
-      vmImage: 'windows-2019'
-      name: Azure Pipelines
-      demands: msbuild
-
-    steps:
-    - task: MSBuild@1
-      displayName: 'Build src/PerfViewJS/PerfViewJS.csproj'
-      inputs:
-        solution: src/PerfViewJS/PerfViewJS.csproj
-        msbuildArguments: /restore
