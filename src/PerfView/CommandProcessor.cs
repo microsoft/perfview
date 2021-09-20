@@ -2070,6 +2070,14 @@ namespace PerfView
 
         }
 #endif
+        public void ImportPresets(CommandLineArgs parsedArgs)
+        {
+            LogFile.WriteLine("Importing presets from '{0}'", parsedArgs.PresetsFile);
+            var presets = Preset.LoadPresets();
+            Preset.Import(parsedArgs.PresetsFile, presets, p => LogFile.WriteLine("Imported preset '{0}'", p.Name), LogFile);
+            Preset.SavePresets(presets);
+            LogFile.WriteLine("Importing presets completed.");
+        }
 
         #region private
         private void DisableNetMonTrace()

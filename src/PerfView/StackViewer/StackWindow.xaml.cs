@@ -3896,8 +3896,7 @@ namespace PerfView
 
         private void ConfigurePresetMenu()
         {
-            var presets = App.ConfigData["Presets"];
-            m_presets = Preset.ParseCollection(presets);
+            m_presets = Preset.LoadPresets();
 
             foreach (var preset in m_presets)
             {
@@ -3985,7 +3984,7 @@ namespace PerfView
                 m_presets.Insert(0, preset);
                 m_presets.Sort((x, y) => Comparer<string>.Default.Compare(x.Name, y.Name));
             }
-            App.ConfigData["Presets"] = Preset.Serialize(m_presets);
+            Preset.SavePresets(m_presets);
 
             DoUpdatePresetMenu();
         }
@@ -3996,7 +3995,7 @@ namespace PerfView
             managePresetsDialog.Owner = this;
             managePresetsDialog.ShowDialog();
             m_presets = managePresetsDialog.Presets;
-            App.ConfigData["Presets"] = Preset.Serialize(m_presets);
+            Preset.SavePresets(m_presets);
             DoUpdatePresetMenu();
         }
 
