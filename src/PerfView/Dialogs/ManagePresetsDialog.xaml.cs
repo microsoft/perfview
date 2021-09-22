@@ -113,18 +113,7 @@ namespace PerfView.Dialogs
                 return;
             }
             string fileName = saveDialog.FileName;
-
-            using (XmlWriter writer = XmlWriter.Create(
-                fileName,
-                new XmlWriterSettings() { Indent = true, NewLineOnAttributes = true }))
-            {
-                writer.WriteStartElement("Presets");
-                foreach (Preset preset in Presets)
-                {
-                    writer.WriteElementString("Preset", Preset.Serialize(preset));
-                }
-                writer.WriteEndElement();
-            }
+            Preset.Export(Presets, fileName);
             m_log.LogWriter.WriteLine($"[Presets exported to {fileName}.]");
         }
         private void ImportPresets(object sender, RoutedEventArgs e)
@@ -146,62 +135,9 @@ namespace PerfView.Dialogs
 
             string fileName = openDialog.FileName;
 
-            List<Preset> presetsFromFile = new List<Preset>();
-            XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
-            using (XmlReader reader = XmlTextReader.Create(fileName, settings))
-            {
-                int entryDepth = reader.Depth;
-                try
-                {
-                    reader.Read();
-                    while (true)
-                    {
-                        if (reader.NodeType == XmlNodeType.Element && reader.Depth > entryDepth)
-                        {
-                            string value = reader.ReadElementContentAsString();
-                            presetsFromFile.Add(Preset.ParsePreset(value));
-                            continue;
-                        }
-
-                        if (!reader.Read())
-                        {
-                            break;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    m_log.LogWriter.WriteLine($"[Import of presets from {fileName} has failed.]");
-                    m_log.LogWriter.WriteLine("Error during reading presets file: " + ex);
-                }
-            }
-
-            // Now we have current presets in Presets collection and new presets in presetsFromFile collection.
-            // Existing identical presets are ignored.
-            // Existing presets that differ are ignored too, but warning is written into logs.
-            int imported = 0, ignored = 0;
-            foreach (var preset in presetsFromFile)
-            {
-                var existingPreset = Presets.FirstOrDefault(x => x.Name == preset.Name);
-                if (existingPreset == null)
-                {
-                    Presets.Add(preset);
-                    PresetListBox.Items.Add(preset.Name);
-                    imported++;
-                    continue;
-                }
-
-                if (existingPreset.Equals(preset))
-                {
-                    imported++;
-                    continue;
-                }
-
-                m_log.LogWriter.WriteLine($"WARN: Preset '{preset.Name}' was ignored during import because there already exist a preset with the same name.");
-                ignored++;
-            }
-            m_log.LogWriter.WriteLine($"[Import of presets completed: {imported} imported, {ignored} ignored.]");
+            Preset.Import(fileName, Presets, p => PresetListBox.Items.Add(p.Name), m_log.LogWriter);
         }
+
         private void DoPresetSelected(object sender, SelectionChangedEventArgs e)
         {
             var selectedItem = PresetListBox.SelectedItem;

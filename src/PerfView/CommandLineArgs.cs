@@ -80,6 +80,9 @@ namespace PerfView
         public string CGL_PathToOutputFile;
 #endif
 
+        // import presets options
+        public string PresetsFile;
+
         // view options
         public string Process;              // A process name to focus on.
 
@@ -641,6 +644,10 @@ namespace PerfView
             parser.DefineParameterSet("GuiCollect", ref DoCommand, App.CommandProcessor.GuiCollect, "Opens the 'Collect' dialog box.");
             parser.DefineParameterSet("GuiHeapSnapshot", ref DoCommand, App.CommandProcessor.GuiHeapSnapshot,
                 "Opens the 'TakeHeapSnapshot' dialog box.");
+
+            parser.DefineParameterSet("ImportPresets", ref DoCommand, App.CommandProcessor.ImportPresets,
+                "Imports presets from the file.");
+            parser.DefineParameter("PresetFile", ref PresetsFile, "The path of the file to import presets from.");
 
             parser.DefineParameterSet("UserCommand", ref DoCommand, App.CommandProcessor.UserCommand,
                 "Runs a user defined command.  Type 'PerfView UserCommandHelp' to see the help for all the user commands. " +

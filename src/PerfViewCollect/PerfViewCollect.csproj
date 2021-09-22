@@ -19,6 +19,7 @@
     <Compile Include="..\PerfView\CommandLineArgs.cs" />
     <Compile Include="..\PerfView\CommandProcessor.cs" />
     <Compile Include="..\PerfView\ConfigData.cs" />
+    <Compile Include="..\PerfView\StackViewer\Preset.cs" Link="Preset.cs" />
     <Compile Include="..\PerfView\Triggers.cs" />
     <Compile Include="..\PerfView\PerfViewLogger.cs" />
     <Compile Include="..\PerfView\Utilities\commandLine.cs" />
