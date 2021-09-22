@@ -7,8 +7,8 @@ namespace Graphs
 {
     public class MemoryGraph : Graph, IFastSerializable
     {
-        public MemoryGraph(int expectedSize)
-            : base(expectedSize)
+        public MemoryGraph(int expectedSize, bool isVeryLargeGraph = false)
+            : base(expectedSize, isVeryLargeGraph)
         {
             // If we have too many addresses we will reach the Dictionary's internal array's size limit and throw.
             // Therefore use a new implementation of it that is similar in performance but that can handle the extra load.
@@ -128,8 +128,16 @@ namespace Graphs
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);
-            // Write out the Memory addresses of each object 
-            serializer.Write(m_nodeAddresses.Count);
+            // Write out the Memory addresses of each object
+            if (m_isVeryLargeGraph)
+            {
+                serializer.Write(m_nodeAddresses.Count);
+            }
+            else
+            {
+                serializer.Write((int)m_nodeAddresses.Count);
+            }
+            
             for (int i = 0; i < m_nodeAddresses.Count; i++)
             {
                 serializer.Write((long)m_nodeAddresses[i]);
@@ -142,10 +150,10 @@ namespace Graphs
         {
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
-            int addressCount = deserializer.ReadInt();
+            long addressCount = m_isVeryLargeGraph ? deserializer.ReadInt64() : deserializer.ReadInt();
             m_nodeAddresses = new SegmentedList<Address>(SegmentSize, addressCount);
 
-            for (int i = 0; i < addressCount; i++)
+            for (long i = 0; i < addressCount; i++)
             {
                 m_nodeAddresses.Add((Address)deserializer.ReadInt64());
             }

@@ -122,7 +122,7 @@ namespace Graphs
         /// <summary>
         /// Same as NodeIndexLimit, just cast to an integer.  
         /// </summary>
-        public int NodeCount { get { return m_nodes.Count; } }
+        public int NodeCount { get { return (int)m_nodes.Count; } }
         /// <summary>
         /// It is expected that users will want additional information associated with TYPES of the nodes of the graph.  They can
         /// do this by allocating an array of code:NodeTypeIndexLimit and then indexing this by code:NodeTypeIndex
@@ -161,7 +161,7 @@ namespace Graphs
         /// 
         /// TODO I can eliminate the need for AllowReading.  
         /// </summary>
-        public Graph(int expectedNodeCount)
+        public Graph(int expectedNodeCount, bool isVeryLargeGraph = false)
         {
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
@@ -509,8 +509,16 @@ namespace Graphs
                 serializer.Write(m_types[i].ModuleName);
             }
 
-            // Write out the Nodes 
-            serializer.Write(m_nodes.Count);
+            // Write out the Nodes
+            if (m_isVeryLargeGraph)
+            {
+                serializer.Write(m_nodes.Count);
+            }
+            else
+            {
+                serializer.Write((int)m_nodes.Count);
+            }
+
             for (int i = 0; i < m_nodes.Count; i++)
             {
                 serializer.Write((int)m_nodes[i]);
@@ -571,10 +579,10 @@ namespace Graphs
             }
 
             // Read in the Nodes 
-            int nodeCount = deserializer.ReadInt();
+            long nodeCount = m_isVeryLargeGraph ? deserializer.ReadInt64() : deserializer.ReadInt();
             m_nodes = new SegmentedList<StreamLabel>(SegmentSize, nodeCount);
 
-            for (int i = 0; i < nodeCount; i++)
+            for (long i = 0; i < nodeCount; i++)
             {
                 m_nodes.Add((StreamLabel)(uint)deserializer.ReadInt());
             }
@@ -653,6 +661,7 @@ namespace Graphs
         // There should not be any of these left as long as every node referenced
         // by another node has a definition.
         internal SegmentedMemoryStreamWriter m_writer; // Used only during construction to serialize the nodes.
+        protected bool m_isVeryLargeGraph;
         #endregion
     }
 
