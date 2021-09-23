@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 
 namespace FastSerialization
@@ -13,12 +12,31 @@ namespace FastSerialization
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
         /// </summary>
-        public SegmentedMemoryStreamReader(SegmentedList<byte> data) : this(data, 0, (int)data.Count) { }
+        public SegmentedMemoryStreamReader(SegmentedList<byte> data, SerializationConfiguration config = null) : this(data, 0, data.Count, config) { }
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given subregion of a byte buffer 
         /// </summary>
-        public SegmentedMemoryStreamReader(SegmentedList<byte> data, int start, int length)
+        public SegmentedMemoryStreamReader(SegmentedList<byte> data, long start, long length, SerializationConfiguration config = null)
         {
+            SerializationConfiguration = config ?? new SerializationConfiguration();
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                readLabel = () =>
+                {
+                    return (StreamLabel)(uint)ReadInt32();
+                };
+                sizeOfSerializedStreamLabel = 4;
+            }
+            else
+            {
+                readLabel = () =>
+                {
+                    return (StreamLabel)(ulong)ReadInt64();
+                };
+                sizeOfSerializedStreamLabel = 8;
+            }
+
             bytes = new SegmentedList<byte>(65_536, length);
             bytes.AppendFrom(data, start, length);
             position = start;
@@ -130,18 +148,24 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
-        public StreamLabel ReadLabel()
-        {
-            return (StreamLabel)(uint)ReadInt32();
-        }
+        public StreamLabel ReadLabel() => readLabel();
+
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
         public virtual void Goto(StreamLabel label)
         {
             Debug.Assert(label != StreamLabel.Invalid);
-            Debug.Assert((long)label <= int.MaxValue);
-            position = (int)label;
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                Debug.Assert((long)label <= int.MaxValue);
+                position = (uint)label;
+            }
+            else
+            {
+                position = (long)label;
+            }
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -150,7 +174,14 @@ namespace FastSerialization
         {
             get
             {
-                return (StreamLabel)(uint)position;
+                if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+                {
+                    return (StreamLabel)(uint)position;
+                }
+                else
+                {
+                    return (StreamLabel)position;
+                }
             }
         }
         /// <summary>
@@ -158,8 +189,7 @@ namespace FastSerialization
         /// </summary>
         public virtual void GotoSuffixLabel()
         {
-            const int serializedStreamLabelSize = 4;
-            Goto((StreamLabel)(Length - serializedStreamLabelSize));
+            Goto((StreamLabel)(Length - sizeOfSerializedStreamLabel));
             Goto(ReadLabel());
         }
         /// <summary>
@@ -174,6 +204,11 @@ namespace FastSerialization
         /// Dispose pattern
         /// </summary>
         protected virtual void Dispose(bool disposing) { }
+
+        /// <summary>
+        /// Returns the SerializationConfiguration for this stream reader.
+        /// </summary>
+        internal SerializationConfiguration SerializationConfiguration { get; private set; }
         #endregion
 
         #region private 
@@ -182,9 +217,11 @@ namespace FastSerialization
             throw new Exception("Streamreader read past end of buffer");
         }
         internal /*protected*/  SegmentedList<byte> bytes;
-        internal /*protected*/  int position;
-        internal /*protected*/  int endPosition;
+        internal /*protected*/  long position;
+        internal /*protected*/  long endPosition;
         private StringBuilder sb;
+        private Func<StreamLabel> readLabel;
+        private readonly int sizeOfSerializedStreamLabel;
         #endregion
     }
 }
