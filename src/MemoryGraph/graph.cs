@@ -120,9 +120,9 @@ namespace Graphs
         /// </summary>
         public NodeIndex NodeIndexLimit { get { return (NodeIndex)m_nodes.Count; } }
         /// <summary>
-        /// Same as NodeIndexLimit, just cast to an integer.  
+        /// Same as NodeIndexLimit.  
         /// </summary>
-        public int NodeCount { get { return (int)m_nodes.Count; } }
+        public long NodeCount { get { return m_nodes.Count; } }
         /// <summary>
         /// It is expected that users will want additional information associated with TYPES of the nodes of the graph.  They can
         /// do this by allocating an array of code:NodeTypeIndexLimit and then indexing this by code:NodeTypeIndex
@@ -161,8 +161,11 @@ namespace Graphs
         /// 
         /// TODO I can eliminate the need for AllowReading.  
         /// </summary>
+        /// <remarks>if isVeryLargeGraph argument is true, then StreamLabels will be serialized as longs
+        /// too acommodate for the extra size of the graph's stream representation.</remarks>
         public Graph(int expectedNodeCount, bool isVeryLargeGraph = false)
         {
+            m_isVeryLargeGraph = isVeryLargeGraph;
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
             m_nodes = new SegmentedList<StreamLabel>(SegmentSize, m_expectedNodeCount);
@@ -462,7 +465,8 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             if (m_writer == null)
             {
-                m_writer = new SegmentedMemoryStreamWriter(m_expectedNodeCount * 8);
+                m_writer = new SegmentedMemoryStreamWriter(m_expectedNodeCount * 8,
+                    m_isVeryLargeGraph ? new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes } : null);
             }
 
             m_totalSize = 0;
@@ -590,7 +594,9 @@ namespace Graphs
             // Read in the Blob stream.  
             // TODO be lazy about reading in the blobs.  
             int blobCount = deserializer.ReadInt();
-            SegmentedMemoryStreamWriter writer = new SegmentedMemoryStreamWriter(blobCount);
+            SegmentedMemoryStreamWriter writer = new SegmentedMemoryStreamWriter(blobCount,
+                m_isVeryLargeGraph ? new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes } : null);
+
             while (8 <= blobCount)
             {
                 writer.Write(deserializer.ReadInt64());
@@ -649,7 +655,7 @@ namespace Graphs
             }
         }
 
-        private int m_expectedNodeCount;                // Initial guess at graph Size. 
+        private long m_expectedNodeCount;                // Initial guess at graph Size.
         private long m_totalSize;                       // Total Size of all the nodes in the graph.  
         internal int m_totalRefs;                       // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these

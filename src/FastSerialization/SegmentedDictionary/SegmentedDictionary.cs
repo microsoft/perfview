@@ -781,7 +781,8 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
-            var currentCapacity = _entries.Capacity;
+            // Normal usage of a dictionary should never ask for a capacity that exceeds int32.MaxValue.
+            var currentCapacity = (int)_entries.Capacity;
             if (currentCapacity >= capacity)
             {
                 return currentCapacity;

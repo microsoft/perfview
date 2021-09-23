@@ -1,16 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
 
 namespace FastSerialization
 {
     public class SegmentedMemoryStreamWriter
     {
-        public SegmentedMemoryStreamWriter() : this(64) { }
-        public SegmentedMemoryStreamWriter(int initialSize)
+        public SegmentedMemoryStreamWriter(SerializationConfiguration config = null) : this(64, config) { }
+        public SegmentedMemoryStreamWriter(long initialSize, SerializationConfiguration config = null)
         {
+            SerializationConfiguration = config ?? new SerializationConfiguration();
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                writeLabel = (value) =>
+                {
+                    Write((int)value);
+                };
+            }
+            else
+            {
+                writeLabel = (value) =>
+                {
+                    Write((long)value);
+                };
+            }
+
             bytes = new SegmentedList<byte>(65_536, initialSize);
         }
 
@@ -45,10 +60,8 @@ namespace FastSerialization
             bytes.Add((byte)value); value = value >> 8;
             bytes.Add((byte)value); value = value >> 8;
         }
-        public void Write(StreamLabel value)
-        {
-            Write((int)value);
-        }
+        public void Write(StreamLabel value) => writeLabel(value);
+
         public void Write(string value)
         {
             if (value == null)
@@ -85,9 +98,14 @@ namespace FastSerialization
         public SegmentedMemoryStreamReader GetReader()
         {
             var readerBytes = bytes;
-            return new SegmentedMemoryStreamReader(readerBytes, 0, (int)readerBytes.Count);
+            return new SegmentedMemoryStreamReader(readerBytes, 0, readerBytes.Count, SerializationConfiguration);
         }
         public void Dispose() { }
+
+        /// <summary>
+        /// Returns the SerializationConfiguration for this stream writer.
+        /// </summary>
+        public SerializationConfiguration SerializationConfiguration { get; private set; }
 
         #region private
         protected virtual void MakeSpace()
@@ -101,6 +119,7 @@ namespace FastSerialization
         }
 
         protected SegmentedList<byte> bytes;
+        private Action<StreamLabel> writeLabel;
         #endregion
     }
 }

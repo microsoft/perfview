@@ -100,7 +100,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public int Capacity => this.capacity;
+        public long Capacity => this.capacity;
 
         /// <summary>
         /// Copy to Array
