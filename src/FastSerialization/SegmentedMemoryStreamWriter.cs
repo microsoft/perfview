@@ -16,7 +16,7 @@ namespace FastSerialization
             {
                 writeLabel = (value) =>
                 {
-                    Debug.Assert((int)value >= 0, "The StreamLabel overflowed, why do we think it is 32 bits!?");
+                    Debug.Assert((long)value <= int.MaxValue, "The StreamLabel overflowed, it should not be treated as a 32bit value.");
                     Write((int)value);
                 };
             }
