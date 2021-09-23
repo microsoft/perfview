@@ -709,7 +709,7 @@ public class InteropInfo : IFastSerializable
 /// </graph>
 /// 
 /// </summary>
-public class XmlGcHeapDump
+internal class XmlGcHeapDump
 {
     public static GCHeapDump ReadGCHeapDumpFromXml(string fileName)
     {
@@ -840,7 +840,7 @@ public class XmlGcHeapDump
         return graph;
     }
 
-    public static void WriteGCDumpToXml(GCHeapDump gcDump, StreamWriter writer)
+    internal static void WriteGCDumpToXml(GCHeapDump gcDump, StreamWriter writer)
     {
         writer.WriteLine("<GCHeapDump>");
 

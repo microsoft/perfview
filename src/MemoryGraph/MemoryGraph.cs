@@ -12,7 +12,7 @@ namespace Graphs
         {
             // If we have too many addresses we will reach the Dictionary's internal array's size limit and throw.
             // Therefore use a new implementation of it that is similar in performance but that can handle the extra load.
-            if (expectedSize > 200_000)
+            if (isVeryLargeGraph)
             {
                 m_addressToNodeIndex = new SegmentedDictionary<Address, NodeIndex>(expectedSize);
             }

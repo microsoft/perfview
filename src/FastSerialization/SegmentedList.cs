@@ -100,7 +100,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public long Capacity => this.capacity;
+        internal long Capacity => this.capacity;
 
         /// <summary>
         /// Copy to Array
@@ -177,7 +177,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public ref T GetElementByReference(int index) =>
+        internal ref T GetElementByReference(int index) =>
             ref this.items[index >> this.segmentShift][index & this.offsetMask];
 
         /// <summary>
@@ -188,6 +188,18 @@ namespace System.Collections.Generic
         public bool IsValidIndex(long index)
         {
             return this.items[index >> this.segmentShift] != null;
+        }
+
+        /// <summary>
+        /// Get slot of an element
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="slot"></param>
+        /// <returns></returns>
+        public T[] GetSlot(int index, out int slot)
+        {
+            slot = index & this.offsetMask;
+            return this.items[index >> this.segmentShift];
         }
 
         /// <summary>
@@ -443,12 +455,12 @@ namespace System.Collections.Generic
                     "Destination array is not long enough to copy all the items in the collection. Check array index and length.");
             }
 
-            int remain = (int)this.count;
+            long remain = this.count;
 
-            for (int i = 0; (remain > 0) && (i < this.items.Length); i++)
+            for (long i = 0; (remain > 0) && (i < this.items.Length); i++)
             {
                 // We can safely cast to int, since that is the max value that items[i].Length can have.
-                int len = Math.Min(remain, this.items[i].Length);
+                int len = (int)Math.Min(remain, this.items[i].Length);
 
                 Array.Copy(this.items[i], 0, array, arrayIndex, len);
 
