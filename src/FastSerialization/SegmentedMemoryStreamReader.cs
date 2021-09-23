@@ -208,7 +208,7 @@ namespace FastSerialization
         /// <summary>
         /// Returns the SerializationConfiguration for this stream reader.
         /// </summary>
-        public SerializationConfiguration SerializationConfiguration { get; private set; }
+        internal SerializationConfiguration SerializationConfiguration { get; private set; }
         #endregion
 
         #region private 

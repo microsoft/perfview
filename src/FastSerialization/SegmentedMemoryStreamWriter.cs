@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace FastSerialization
@@ -15,6 +16,7 @@ namespace FastSerialization
             {
                 writeLabel = (value) =>
                 {
+                    Debug.Assert((int)value >= 0, "The StreamLabel overflowed, why do we think it is 32 bits!?");
                     Write((int)value);
                 };
             }
@@ -105,7 +107,7 @@ namespace FastSerialization
         /// <summary>
         /// Returns the SerializationConfiguration for this stream writer.
         /// </summary>
-        public SerializationConfiguration SerializationConfiguration { get; private set; }
+        internal SerializationConfiguration SerializationConfiguration { get; private set; }
 
         #region private
         protected virtual void MakeSpace()
