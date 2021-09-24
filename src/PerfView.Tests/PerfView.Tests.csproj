@@ -40,10 +40,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="GraphSerialization\inputs\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="app.config" />
     <Content Include="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="GraphSerialization\inputs\" />
   </ItemGroup>
 
 </Project>
