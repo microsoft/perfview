@@ -14,8 +14,8 @@ namespace Microsoft.Diagnostics.Utilities
         private const string VolumeNamePrefix = @"\\?\";
         private const string VolumeNameSuffix = "\\";
 
-        private const string HardDiskVolumePathToken = "Device\\HarddiskVolume";
-        private const int HardDiskVolumePathTokenIndex = 3;
+        private const string HardDiskVolumePathToken = "\\Device\\HarddiskVolume";
+        private const int HardDiskVolumePathTokenIndex = 0;
         private const string VHDHardDiskPathToken = "Device\\VhdHardDisk{";
         private const int VHDHardDiskPathTokenIndex = 3;
 
@@ -28,7 +28,7 @@ namespace Microsoft.Diagnostics.Utilities
 
         /// <summary>
         /// Convert an input file path from a device path to a volume-based path.
-        /// Example input: c:\device\harddiskvolume7\sdk\shared\microsoft.netcore.app\3.1.7\coreclr.dll
+        /// Example input: \device\harddiskvolume7\sdk\shared\microsoft.netcore.app\3.1.7\coreclr.dll
         /// Example output: \\?\Volume{a296af82-8d67-4f46-a792-9e78ec0adf9b}\sdk\shared\microsoft.netcore.app\3.1.7\coreclr.dll
         /// </summary>
         public string ConvertDevicePathToVolumePath(string inputPath)
@@ -41,7 +41,7 @@ namespace Microsoft.Diagnostics.Utilities
             {
                 // Get the device path and see if we have a match.
                 int indexOfSlashAfterDeviceName = inputPath.IndexOf("\\", HardDiskVolumePathTokenIndex + HardDiskVolumePathToken.Length, StringComparison.OrdinalIgnoreCase);
-                string deviceName = inputPath.Substring(2, indexOfSlashAfterDeviceName - 2);
+                string deviceName = inputPath.Substring(0, indexOfSlashAfterDeviceName);
 
                 string volumePath;
                 if (_deviceNameToVolumeNameMap.TryGetValue(deviceName, out volumePath))
