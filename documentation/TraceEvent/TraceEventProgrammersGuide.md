@@ -12,7 +12,7 @@ As long as there have been programs, developers have used logging system to diag
 
 Because the events are strongly typed, the consumer of the logging data can assume that the events conform to the schema which makes processing the events considerably easier and less fragile. It also improves the speed and compactness of logging as well as the post processing (no need to print to strings and then parse back). The [Event Tracing for Windows](http://msdn.microsoft.com/en-us/library/windows/desktop/bb968803(v=vs.85).aspx) (ETW) system built into the Windows Operating System is an example of a strongly typed logging system (see [Introduction to ETW](http://msdn.microsoft.com/en-us/magazine/cc163437.aspx) for more)
 
-In general strongly types logging systems make sense in the same places where strongly typed programming languages make sense, when
+In general strongly types logging systems make sense in the same places where strongly typed programming languages make sense, when:
 
 1. When the data is likely to be consumed by other automation rather than simply viewed by humans.
 2. When the amount of data (scale of logging) is high and therefore puts a premium on logging efficiently.
@@ -88,16 +88,16 @@ class Program
 }
 ```
 
-Above is source code for a program that logs two events using `EventSource` class. To be strongly typed, we must provide a schema for each event, and we do this by defining a subclass of the `EventSource` class. This class will have an instance method for each event that can be logged by this provider. In the example above we define two events.
+Above is the source code for a program that logs two events using `EventSource` class. To be strongly typed, we must provide a schema for each event, and we do this by defining a subclass of the `EventSource` class. This class will have an instance method for each event that can be logged by this provider. In the example above we define two events:
 
 1. The `MyFirstEvent` that logs a string *MyName* and an integer *MyId*.
 2. The `MySecondEvent` that logs just the integer *MyId* (which allows it to be correlated with the corresponding `MyFirstEvent`).
 
 Notice that the method definitions provide all the information needed to generate the schema for the events. The name of the method defines the name of the event, and the argument names and types provide the names and types of each of the properties associate with the event.
 
-In a more perfect world, humans would only author the declarations of an EventSource class since it is these declarations that specify the programmer's intent. However to make these methods actually log events, the user need to define a 'boiler plate' body for each event that does two things
+In a more perfect world, humans would only author the declarations of an EventSource class since it is these declarations that specify the programmer's intent. However to make these methods actually log events, the user needs to define a 'boiler plate' body for each event that does two things:
 
-1. Defines a numeric value associated with the event. This is the first parameter to the `WriteEvent` method call and is used to identify the event in all further processing (the event name is only used to generate the manifest). These event numbers start at 1 (0 is reserved) and by default needs to be the ordinal number of the method in the class. Thus it would be an error to reverse the order of the `MyFirstEvent` and `MySecondEvent` declarations above without also changing the first parameter to `WriteEvent` to match the order in the class. If this restriction bugs you we will see how to avoid it later, but it will mean more typing on your part.
+1. Defines a numeric value associated with the event. This is the first parameter to the `WriteEvent` method call and is used to identify the event in all further processing (the event name is only used to generate the manifest). These event numbers start at 1 (0 is reserved) and by default needs to be the ordinal number of the method in the class. Thus it would be an error to reverse the order of the `MyFirstEvent` and `MySecondEvent` declarations above without also changing the first parameter to `WriteEvent` to match the order in the class. If this restriction bugs you, we will see how to avoid it later, but it will mean more typing on your part.
 2. Passes along all the arguments from the method to the `WriteEvent` method. Because the arguments to the event method are used to generate the manifest, and the manifest is supposed to accurately describe the event, it would be an error to pass more or fewer arguments to `WriteEvent`. Thus the `WriteEvent` method is intended to be used only in this very particular way illustrated above.
 
 The `Logger` class also has an attribute that defines the name for this provider to be **Microsoft-Demos-MySource**. If this attribute had not been provided the name of the provider would have been the name of the class without any namespace (e.g. **Logger**). If your provider is for more than ad-hoc logging, it is **STRONGLY** encouraged that you define a 'real' name for it that avoids collisions and helps your users understand what information your provider will log. We should follow the 'best practices' which the Windows Operation system group uses by making our name:
@@ -164,7 +164,7 @@ class Program
 }
 ```
 
-In the program above we
+In the program above we:
 
 1. Create an `ETWTraceEventSource` that uses the **MyEventData.etl** file as its data source. The `ETWTraceEventSource` represents the stream of events as a whole. Because this class needs to support real time processing of events it does not use the `IEnumerable` (pull model) for processing the events but rather provides a way of registering a callbacks.
 2. Register callback for any events we are interested in. In this case we register a delegate that receives *data* (of type `TraceEvent`) and prints **GOT EVENT** and the event data for **All** events in the **Dynamic** group associated with the session. (More on this mysterious `Dynamic` property shortly).
@@ -405,8 +405,8 @@ Capabilities include:
 * The ability to read events written with the [WPP Tracing](http://msdn.microsoft.com/en-us/library/windows/hardware/ff556204.aspx) system.
 * The ability to access 'Activity IDs' that allow you to track causality across asynchronous operations (if all components emits the right events).
 * Access Kernel events (along with stack traces), including:
-    * Process start/stop, Thread start/stop, DLL load and unload
-    * CPU Samples every MSec (but you can control the frequency down to .125 msec)
+    * Process start/stop, Thread start/stop, DLL load and unload.
+    * CPU Samples every MSec (but you can control the frequency down to .125 msec).
     * Every context switch (which means you know where you spend blocked item) as well as the thread that unblocked the thread.
     * Page faults.
     * Virtual memory allocation.
@@ -628,7 +628,7 @@ This section is really more about EventSource (production) than TraceEvent (cons
 
 At some point you are going to have deployed EventSource that generate events and parsers built on TraceEvent for processing the events. Inevitably you will wish to update the events to include more data or otherwise change things. It is likely however that you do not wish to break things and you will not be able to update all event generators and consumers atomically. This is where versioning is important.
 
-The key to making this work is compatibility, and that is not hard to achieve if a few simple rules are followed.
+The key to making this work is compatibility, and that is not hard to achieve if a few simple rules are followed:
 
 1. Events can never remove or change the meaning of existing fields. If you need to so this, you need to make new events that are logically independent from the old events.
 2. If you wish to add new data to an existing event (the most common versioning operation), make sure you add it to the END of the existing arguments. This way the serialized format for the old fields is IDENTICAL and can be parsed by logic that has no understanding of the new data.
@@ -745,7 +745,7 @@ What is amazing about this is that it is efficient. All the intermediate collect
 
 ### Using Call Stacks with the TraceEvent library
 
-Perhaps the most compelling reason to use the `TraceLog` class is that it support symbolic resolution of stack information associated with events. ETW has the ability to collect stack traces associated with most events, but what actually gets logged are arrays of method return addresses. In addition some stacks are decoupled from the event they are associated with and may even be in two pieces (a kernel piece and a user mode piece)   In addition these addresses need to be resolved to the module or JIT compiled method they belong to and the physical address needs to be resolved to a symbolic name. All this complexity make it infeasible use the raw stack events 'on the fly' but the ETLX conversion does all the necessary computation to make getting these stacks relatively easy. At least currently this functionality is only available via the `TraceLog` class. When an ETL file is converted to ETLX the stack events are processed into an efficient and compact form and wired up to the appropriate events.
+Perhaps the most compelling reason to use the `TraceLog` class is that it support symbolic resolution of stack information associated with events. ETW has the ability to collect stack traces associated with most events, but what actually gets logged are arrays of method return addresses. In addition, some stacks are decoupled from the event they are associated with and may even be in two pieces (a kernel piece and a user mode piece). In addition, these addresses need to be resolved to the module or JIT compiled method they belong to and the physical address needs to be resolved to a symbolic name. All this complexity make it infeasible use the raw stack events 'on the fly' but the ETLX conversion does all the necessary computation to make getting these stacks relatively easy. At least currently this functionality is only available via the `TraceLog` class. When an ETL file is converted to ETLX the stack events are processed into an efficient and compact form and wired up to the appropriate events.
 
 There is a complete example of using the `TraceLog` class to access stack traces in the [TraceEvent code samples](http://www.nuget.org/packages/Microsoft.Diagnostics.Tracing.TraceEvent.Samples) but the actual API is pretty straightforward. Here is some code that opens an ETL file finds all the exception events in the **PerfView** process in the trace, and prints each method name
 
@@ -785,7 +785,7 @@ While the user model for dealing with stack capture is pretty straightforward, u
 
 Below are the steps in converting logging an event with a stack to a resolved symbolic name annotated with some things that can go wrong along the way.
 
-1. When the event is logged the ETW system tries to crawl the stack at runtime. However this can fail for various reasons:
+1. When the event is logged, the ETW system tries to crawl the stack at runtime. However this can fail for various reasons:
 
     1. On 32-bit machines the crawler assumes the compiler stores unwinding information (EBP frames) on the stack. If the compile does not do this the stack 'breaks' (can't be unwound) and you lose any frames 'toward thread start'.
     2. On 64-bit processes on 64-bit machines the crawler needs 'unwind' information. For native code this is stored in the EXE, but for Just In Time (JIT) compiled code on Systems **before Windows 8 (or Win2012 server)** the ETW system did not know how to find this unwind information and break at the first frame with JIT compiled code. This is the most common reason for stack breakage, but will diminish machines are upgraded to new OSes.
@@ -799,10 +799,10 @@ Below are the steps in converting logging an event with a stack to a resolved sy
 
     If the necessary events are not present, the best that can be done is to show the address value as a hexadecimal number (which is not very helpful). **Thus it is critical that these events be present.** Complicating this is the fact that in many scenario of long running processes. If the process lives longer than the collection interval, then there can be image loads or JIT compilation that occurred before the trace started. We need these events as well. To get them the ETW providers involved support something called 'CAPTURE\_STATE' which causes them to emit events for all past image loads or JIT compilations. **The logic for capturing data must explicitly include logic for triggering this CAPTURE\_STATE.**
 
-3. For JIT compiled code, we are mostly done, however for native code, the symbolic name has only been resolved to the DLL level. To go further you need to get the mapping from DLL address to symbolic name. This is what the debugger PDB (program database) files do. For this you need to be able to find these PDB files. There are a number of things that can go wrong.
+3. For JIT compiled code, we are mostly done, however for native code, the symbolic name has only been resolved to the DLL level. To go further you need to get the mapping from DLL address to symbolic name. This is what the debugger PDB (program database) files do. For this you need to be able to find these PDB files. There are a number of things that can go wrong:
 
     1. You must set your `_NT_SYMBOL_PATH` environment variable to locations where to search for the PDBS. If you do not you will only know the module and hex address.
-    2. For operating system DLLs, the PDBS live on what is called a symbol server. To find these your `_NT_SYMBOL_PATH` must include the name for these symbol servers (the public Microsoft symbol server is `SRV*https://msdl.microsoft.com/download/symbols`). However to look up a DLL in the symbol server **you need a special GUID associated with the DLL, and a RAW ETL file does NOT INCLUDE this GUID**!. If you try to look up the DLL's PDB on the machine where the DLL exists, `TraceEvent` can fetch the necessary GUID from the DLL itself, but if the ETL file was copied to another machine this will not work and the PDB cannot be fetched. Running the `TraceEventSource.MergeInPlace` operation rewrites the raw ETL file so that it includes the necessary DLL GUIDs and thus is a requirement if you move the data off the collection machine (and you want symbolic information for native code stacks).
+    2. For operating system DLLs, the PDBS live on what is called a symbol server. To find these your `_NT_SYMBOL_PATH` must include the name for these symbol servers (the public Microsoft symbol server is `SRV*https://msdl.microsoft.com/download/symbols`). However to look up a DLL in the symbol server, **you need a special GUID associated with the DLL, and a RAW ETL file does NOT INCLUDE this GUID**!. If you try to look up the DLL's PDB on the machine where the DLL exists, `TraceEvent` can fetch the necessary GUID from the DLL itself, but if the ETL file was copied to another machine this will not work and the PDB cannot be fetched. Running the `TraceEventSource.MergeInPlace` operation rewrites the raw ETL file so that it includes the necessary DLL GUIDs and thus is a requirement if you move the data off the collection machine (and you want symbolic information for native code stacks).
     3. For .NET code all the library code is precompiled (NGENed) and so is looked up using a PDB like the native case. However unlike native DLLs, the PDBs for the NGEN images are typically not saved on the Microsoft symbol server. Instead you must generate the PDBs for the NGEN images from the IL images as you need them. Again if you resolve the symbols on the machine where the collection happened, at the time you resolve the symbols `TraceEvent`'s `SymbolReader` class will automatically generate the NGEN image for you and cache it, however if you move the ETL file off the machine, you need to generate the NGEN PDBs as well as merge the ETL file to get the symbolic information for the .NET code in NGEN images. This is what the `SymbolReader.GenerateNGenSymbolsForModule` method can help you do. TODO MORE
 
 So in summary to get good stacks and have them work on any machine for any code you need to:
@@ -817,7 +817,7 @@ TODO
 
 ## Building Compile-time `TraceEventParser` parsers using **TraceParserGen**
 
-If you have built your own `EventSource` so far the only way you have of accessing the data from your `EventSource` is to use the `DynamicTraceEventParser` class. As mentioned previously the experience coding against `DynamicTraceEventParser` is not great since each property of the event has to be fetched with the `PayloadByName` method and it is very easy to get the names wrong. What we want is a way of creating a specialized COMPILE TIME `TraceEventParser` that 'knows' about this ETW provider (`EventSource`). This is what the **TraceParserGen.exe** tool does. The process is really very simple:
+If you have built your own `EventSource`, so far the only way you have of accessing the data from your `EventSource` is to use the `DynamicTraceEventParser` class. As mentioned previously the experience coding against `DynamicTraceEventParser` is not great since each property of the event has to be fetched with the `PayloadByName` method and it is very easy to get the names wrong. What we want is a way of creating a specialized COMPILE TIME `TraceEventParser` that 'knows' about this ETW provider (`EventSource`). This is what the **TraceParserGen.exe** tool does. The process is really very simple:
 
 * All ETW providers, including `EventSource` sources, have a XML file called a 'manifest' that describes all the events and their properties.
 * **TraceParserGen** takes a XML manifest and creates a C# file that defines a `TraceEventParser` for the provider described in the manifest.
@@ -839,7 +839,7 @@ In both cases, the [PerfView](http://www.microsoft.com/en-us/download/details.as
 
 #### Creating XML Manifests for `EventSource` Sources
 
-1. Collect an ETL file that events from the `EventSource` you want a manifest for. For example collect a trace for the **Microsoft-Demos-MySource** `EventSource` do
+1. Collect an ETL file that events from the `EventSource` you want a manifest for. For example, collect a trace for the **Microsoft-Demos-MySource** `EventSource` do
 
     ```
     PerfView /onlyProviders=*Microsoft-Demos-MySource EventSource collect
@@ -897,7 +897,7 @@ One interesting aspect of the lifecycle of an event logging session is Event Pro
 
 The first problem that hits almost immediately is the fact that the fundamental ID associated with a provider is a GUID not a name. Clearly humans would prefer a name, but how to do you get from a name to the GUID (which is what the OS APIs want). There is another problem in that each provider has 64-bit bit-vector of 'keywords' which define groups of events that you can turn on and off independently. How do we discover what our 'keyword' possibilities are for any particular provider?
 
-Traditionally, this was solved by manifest publication. The idea is that a provider would compile its manifest to a binary form (using a tool called **MC.exe**), attach it to a DLL as a resource, and then run a utility called **wevtutil** that will publish the manifest to the operating system. Thus the OS has a list of every published event provider and this list includes its name and descriptions of all its keywords. You can use the command
+Traditionally, this was solved by manifest publication. The idea is that a provider would compile its manifest to a binary form (using a tool called **MC.exe**), attach it to a DLL as a resource, and then run a utility called **wevtutil** that will publish the manifest to the operating system. Thus the OS has a list of every published event provider and this list includes its name and descriptions of all its keywords. You can use the command:
 
 ```
 logman query providers
@@ -913,7 +913,7 @@ The functionality of these two commands is also available in the `TraceEventProv
 
 There are a couple of problems with ETW's registration scheme. The first is that it requires a step at 'install' time, which is problematic for programs that wish to keep an 'xcopy' deployment characteristic. Second, at least currently, publishing a manifest with **wevtutil** requires administrative permissions, which is even more problematic for many scenarios.
 
-It is possible publish the manifest for an `EventSource` using the **wevtutil** mechanism (this is what the **EventRegister** tool does), however this does not solve
+It is possible publish the manifest for an `EventSource` using the **wevtutil** mechanism (this is what the **EventRegister** tool does), however this does not solve the problem.
 
 `EventSource` sources will not show up on the lists above. As mentioned previously, because `EventSource` sources use a standard way of generating its provider GUID from its name, you can get the GUID from the name, but you can't get the names and descriptions of the keywords for a particular `EventSource` (although you can turn them all on blindly which actually works pretty well).
 
