@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
-            return new SourceLocation(GetSourceFile(lastSequencePoint.Document), lastSequencePoint.StartLine);
+            return new SourceLocation(GetSourceFile(lastSequencePoint.Document), lastSequencePoint.StartLine, lastSequencePoint.EndLine, lastSequencePoint.StartColumn, lastSequencePoint.EndColumn);
         }
 
         #region private 
