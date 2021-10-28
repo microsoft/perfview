@@ -303,8 +303,8 @@ namespace Microsoft.Diagnostics.Symbols
                 lineNum = 0;
             }
 
-            var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
+            var sourceLocation = new SourceLocation(sourceFile, (int)sourceLoc.lineNumber, (int)sourceLoc.lineNumberEnd, (int)sourceLoc.columnNumber, (int)sourceLoc.columnNumberEnd);
+            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line ({1},{2}):({3},{4}) file {5} ", rva, sourceLocation.LineNumber, sourceLocation.ColumnNumber, sourceLocation.LineNumberEnd, sourceLocation.ColumnNumberEnd, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 
@@ -356,18 +356,19 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var sourceFile = new MicrosoftPdbSourceFile(this, sourceLoc.sourceFile);
-            int lineNum;
+            IDiaLineNumber lineNum = null;
+
             // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
             // and take the next valid line
             for (; ; )
             {
-                lineNum = (int)sourceLoc.lineNumber;
-                if (lineNum != 0xFEEFEE)
+                lineNum = sourceLoc;
+                if (sourceLoc.lineNumber != 0xFEEFEE)
                 {
                     break;
                 }
 
-                lineNum = 0;
+                lineNum = null;
                 sourceLocs.Next(1, out sourceLoc, out fetchCount);
                 if (fetchCount == 0)
                 {
@@ -375,8 +376,13 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForManaged: found source linenum {0} file {1}", lineNum, sourceFile.BuildTimeFilePath);
+            int lineBegin = lineNum != null ? (int)lineNum.lineNumber : 0;
+            int lineEnd = lineNum != null ? (int)lineNum.lineNumberEnd : 0;
+            int columnBegin = lineNum != null ? (int)lineNum.columnNumber : 0;
+            int columnEnd = lineNum != null ? (int)lineNum.columnNumberEnd : 0;
+
+            var sourceLocation = new SourceLocation(sourceFile, lineBegin, lineEnd, columnBegin, columnEnd);
+            m_reader.m_log.WriteLine("SourceLocationForManaged: found source linenum ({0},{1}):({2},{3}) file {4}", sourceLocation.LineNumber, sourceLocation.ColumnNumber, sourceLocation.LineNumberEnd, sourceLocation.ColumnNumberEnd, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 

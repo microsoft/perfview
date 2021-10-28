@@ -1760,12 +1760,33 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SourceFile SourceFile { get; private set; }
         /// <summary>
-        /// The line number for the code.
+        /// The starting line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
+        /// <summary>
+        /// The ending line number for the code.
+        /// </summary>
+        public int LineNumberEnd { get; private set; }
+        /// <summary>
+        /// The starting column number for the code. This column corresponds to the starting line number.
+        /// </summary>
+        public int ColumnNumber { get; private set; }
+        /// <summary>
+        /// The ending column number for the code. This column corresponds to the ending line number.
+        /// </summary>
+        public int ColumnNumberEnd { get; private set; }
 
         #region private
-        internal SourceLocation(SourceFile sourceFile, int lineNumber)
+        internal SourceLocation(SourceFile sourceFile, int lineNumberBegin, int lineNumberEnd, int columnNumberBegin, int columnNumberEnd)
+        {
+            SourceFile = sourceFile;
+            LineNumber = SanitizeLineNumber(lineNumberBegin);
+            LineNumberEnd = SanitizeLineNumber(lineNumberEnd);
+            ColumnNumber = SanitizeLineNumber(columnNumberBegin);
+            ColumnNumberEnd = SanitizeLineNumber(columnNumberEnd);
+        }
+
+        private int SanitizeLineNumber(int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
             if (0xFEEFEE <= lineNumber)
@@ -1773,8 +1794,7 @@ namespace Microsoft.Diagnostics.Symbols
                 lineNumber = 0;
             }
 
-            SourceFile = sourceFile;
-            LineNumber = lineNumber;
+            return lineNumber;
         }
         #endregion
     }
