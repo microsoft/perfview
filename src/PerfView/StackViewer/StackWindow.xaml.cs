@@ -92,7 +92,7 @@ namespace PerfView
         }
         public string GetDefaultFoldPercentage()
         {
-            string defaultFoldPercentage = App.ConfigData["DefaultFoldPercent"];
+            string defaultFoldPercentage = App.UserConfigData["DefaultFoldPercent"];
             if (defaultFoldPercentage == null)
             {
                 defaultFoldPercentage = "1";
@@ -102,7 +102,7 @@ namespace PerfView
         }
         public string GetDefaultFoldPat()
         {
-            string defaultFoldPat = App.ConfigData["DefaultFoldPat"];
+            string defaultFoldPat = App.UserConfigData["DefaultFoldPat"];
             if (defaultFoldPat == null)
             {
                 defaultFoldPat = "ntoskrnl!%ServiceCopyEnd";
@@ -112,7 +112,7 @@ namespace PerfView
         }
         public string GetDefaultGroupPat()
         {
-            string defaultGroupPat = App.ConfigData["DefaultGroupPat"];
+            string defaultGroupPat = App.UserConfigData["DefaultGroupPat"];
 
             // By default, it is Just My App.  
             if (defaultGroupPat == null)
@@ -864,8 +864,8 @@ namespace PerfView
         }
         private void DoSetStartupPreset(object sender, RoutedEventArgs e)
         {
-            App.ConfigData["DefaultFoldPercent"] = FoldPercentTextBox.Text;
-            App.ConfigData["DefaultFoldPat"] = FoldRegExTextBox.Text;
+            App.UserConfigData["DefaultFoldPercent"] = FoldPercentTextBox.Text;
+            App.UserConfigData["DefaultFoldPat"] = FoldRegExTextBox.Text;
 
             var defaultGroupPat = GroupRegExTextBox.Text;
             if (defaultGroupPat.StartsWith("[Just My App]"))
@@ -873,7 +873,7 @@ namespace PerfView
                 defaultGroupPat = defaultGroupPat.Substring(0, 13);
             }
 
-            App.ConfigData["DefaultGroupPat"] = defaultGroupPat;
+            App.UserConfigData["DefaultGroupPat"] = defaultGroupPat;
         }
         private void DoSaveAs(object sender, RoutedEventArgs e)
         {
@@ -2881,13 +2881,13 @@ namespace PerfView
 
                 if (value)
                 {
-                    App.ConfigData["NotesPaneHidden"] = "true";
+                    App.UserConfigData["NotesPaneHidden"] = "true";
                     m_NotesPaneHidden = true;
                     NodePaneRowDef.MaxHeight = 0;
                 }
                 else
                 {
-                    App.ConfigData["NotesPaneHidden"] = "false";
+                    App.UserConfigData["NotesPaneHidden"] = "false";
                     m_NotesPaneHidden = false;
                     NodePaneRowDef.MaxHeight = Double.PositiveInfinity;
                 }
@@ -3377,10 +3377,10 @@ namespace PerfView
 
                 if (StackWindows[0] == this && WindowState != System.Windows.WindowState.Maximized)
                 {
-                    App.ConfigData["StackWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
-                    App.ConfigData["StackWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
-                    App.ConfigData["StackWindowWidth"] = RenderSize.Width.ToString("f0", CultureInfo.InvariantCulture);
-                    App.ConfigData["StackWindowHeight"] = RenderSize.Height.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["StackWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["StackWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["StackWindowWidth"] = RenderSize.Width.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["StackWindowHeight"] = RenderSize.Height.ToString("f0", CultureInfo.InvariantCulture);
                 }
 
                 StackWindows.Remove(this);
@@ -3423,19 +3423,19 @@ namespace PerfView
                 --GuiApp.MainWindow.NumWindowsNeedingSaving;
             }
 
-            NotesPaneHidden = (App.ConfigData["NotesPaneHidden"] == "true");
+            NotesPaneHidden = (App.UserConfigData["NotesPaneHidden"] == "true");
 
             if (StackWindows.Count == 1)
             {
                 // Make sure the location is sane so it can be displayed. 
-                var top = App.ConfigData.GetDouble("StackWindowTop", Top);
+                var top = App.UserConfigData.GetDouble("StackWindowTop", Top);
                 Top = Math.Min(Math.Max(top, 0), System.Windows.SystemParameters.PrimaryScreenHeight - 200);
 
-                var left = App.ConfigData.GetDouble("StackWindowLeft", Left);
+                var left = App.UserConfigData.GetDouble("StackWindowLeft", Left);
                 Left = Math.Min(Math.Max(left, 0), System.Windows.SystemParameters.PrimaryScreenWidth - 200);
 
-                Height = App.ConfigData.GetDouble("StackWindowHeight", Height);
-                Width = App.ConfigData.GetDouble("StackWindowWidth", Width);
+                Height = App.UserConfigData.GetDouble("StackWindowHeight", Height);
+                Width = App.UserConfigData.GetDouble("StackWindowWidth", Width);
             }
         }
 
@@ -3472,7 +3472,7 @@ namespace PerfView
 
                         // Checked value and visibliity of column is based off of ConfigData.
                         // If there is no ConfigData property for it, it is defaulted to display. 
-                        string configValue = App.ConfigData[XmlConvert.EncodeName(header + "ColumnView")];
+                        string configValue = App.UserConfigData[XmlConvert.EncodeName(header + "ColumnView")];
                         if (configValue == null || configValue == "1")
                         {
                             menuItem.IsChecked = true;
@@ -3540,7 +3540,7 @@ namespace PerfView
                         // XmlConvert.EncodeName is used to handle symbols like %
                         // E.g. CallTreeViewNameColumnView
                         string name = XmlConvert.EncodeName(header + "ColumnView");
-                        App.ConfigData[name] = mItem.IsChecked ? "1" : "0";
+                        App.UserConfigData[name] = mItem.IsChecked ? "1" : "0";
                     }
                 }
             };
@@ -3896,7 +3896,7 @@ namespace PerfView
 
         private void ConfigurePresetMenu()
         {
-            var presets = App.ConfigData["Presets"];
+            var presets = App.UserConfigData["Presets"];
             m_presets = Preset.ParseCollection(presets);
 
             foreach (var preset in m_presets)
@@ -3985,7 +3985,7 @@ namespace PerfView
                 m_presets.Insert(0, preset);
                 m_presets.Sort((x, y) => Comparer<string>.Default.Compare(x.Name, y.Name));
             }
-            App.ConfigData["Presets"] = Preset.Serialize(m_presets);
+            App.UserConfigData["Presets"] = Preset.Serialize(m_presets);
 
             DoUpdatePresetMenu();
         }
@@ -3996,7 +3996,7 @@ namespace PerfView
             managePresetsDialog.Owner = this;
             managePresetsDialog.ShowDialog();
             m_presets = managePresetsDialog.Presets;
-            App.ConfigData["Presets"] = Preset.Serialize(m_presets);
+            App.UserConfigData["Presets"] = Preset.Serialize(m_presets);
             DoUpdatePresetMenu();
         }
 

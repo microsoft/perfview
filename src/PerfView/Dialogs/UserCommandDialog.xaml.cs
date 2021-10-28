@@ -18,7 +18,7 @@ namespace PerfView.Dialogs
             CommandTextBox.HistoryLength = 50;      // Keep a fair bit of history for user commands. 
 
             // Initialize from persistent store. 
-            var history = App.ConfigData["UserCommandHistory"];
+            var history = App.UserConfigData["UserCommandHistory"];
             if (history != null)
             {
                 CommandTextBox.SetHistory(history.Split(';'));
@@ -57,7 +57,7 @@ namespace PerfView.Dialogs
 
                 sb.Append(item);
             }
-            App.ConfigData["UserCommandHistory"] = sb.ToString();
+            App.UserConfigData["UserCommandHistory"] = sb.ToString();
         }
 
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)

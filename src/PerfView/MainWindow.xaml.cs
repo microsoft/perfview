@@ -1055,7 +1055,7 @@ namespace PerfView
             DataContext = this;
 
             // Initialize the directory history if available. 
-            var directoryHistory = App.ConfigData["DirectoryHistory"];
+            var directoryHistory = App.UserConfigData["DirectoryHistory"];
             if (directoryHistory != null)
             {
                 Directory.SetHistory(directoryHistory.Split(';'));
@@ -1069,14 +1069,14 @@ namespace PerfView
             }
 
             // Make sure the location is sane so it can be displayed. 
-            var top = App.ConfigData.GetDouble("MainWindowTop", Top);
+            var top = App.UserConfigData.GetDouble("MainWindowTop", Top);
             Top = Math.Min(Math.Max(top, 0), System.Windows.SystemParameters.PrimaryScreenHeight - 200);
 
-            var left = App.ConfigData.GetDouble("MainWindowLeft", Left);
+            var left = App.UserConfigData.GetDouble("MainWindowLeft", Left);
             Left = Math.Min(Math.Max(left, 0), System.Windows.SystemParameters.PrimaryScreenWidth - 200);
 
-            Height = App.ConfigData.GetDouble("MainWindowHeight", Height);
-            Width = App.ConfigData.GetDouble("MainWindowWidth", Width);
+            Height = App.UserConfigData.GetDouble("MainWindowHeight", Height);
+            Width = App.UserConfigData.GetDouble("MainWindowWidth", Width);
 
             Loaded += delegate (object sender1, RoutedEventArgs e2)
             {
@@ -1101,10 +1101,10 @@ namespace PerfView
 
                 if (WindowState != System.Windows.WindowState.Maximized)
                 {
-                    App.ConfigData["MainWindowWidth"] = RenderSize.Width.ToString("f0", CultureInfo.InvariantCulture);
-                    App.ConfigData["MainWindowHeight"] = RenderSize.Height.ToString("f0", CultureInfo.InvariantCulture);
-                    App.ConfigData["MainWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
-                    App.ConfigData["MainWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["MainWindowWidth"] = RenderSize.Width.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["MainWindowHeight"] = RenderSize.Height.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["MainWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
+                    App.UserConfigData["MainWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
                 }
 
                 AppLog.LogUsage("Exiting");
@@ -1146,7 +1146,7 @@ namespace PerfView
 
                             sb.Append(item);
                         }
-                        App.ConfigData["DirectoryHistory"] = sb.ToString();
+                        App.UserConfigData["DirectoryHistory"] = sb.ToString();
                     }
 
                     FileFilterTextBox.Text = "";
@@ -1479,9 +1479,9 @@ namespace PerfView
         }
         private void DoClearUserConfig(object sender, RoutedEventArgs e)
         {
-            StatusBar.Log("Deleting user config file " + App.ConfigDataFileName + ".");
-            FileUtilities.ForceDelete(App.ConfigDataFileName);
-            App.ConfigData.Clear();
+            StatusBar.Log("Deleting user config file " + App.UserConfigDataFileName + ".");
+            FileUtilities.ForceDelete(App.UserConfigDataFileName);
+            App.UserConfigData.Clear();
         }
 
         private void DoCancel(object sender, ExecutedRoutedEventArgs e)
@@ -2200,7 +2200,7 @@ namespace PerfView
             {
                 if (!m_AllowNativateToWeb)
                 {
-                    var naviateToWeb = App.ConfigData["AllowNavigateToWeb"];
+                    var naviateToWeb = App.UserConfigData["AllowNavigateToWeb"];
                     m_AllowNativateToWeb = naviateToWeb == "true";
                     if (!m_AllowNativateToWeb)
                     {
@@ -2210,7 +2210,7 @@ namespace PerfView
                         if (result == MessageBoxResult.Yes)
                         {
                             m_AllowNativateToWeb = true;
-                            App.ConfigData["AllowNavigateToWeb"] = "true";
+                            App.UserConfigData["AllowNavigateToWeb"] = "true";
                         }
                     }
                 }

@@ -1476,12 +1476,12 @@ namespace PerfView
             LogFile.WriteLine("[Merging data files to " + Path.GetFileName(parsedArgs.DataFile) + ".  Can take 10s of seconds... (can skip if data analyzed on same machine with PerfView)]");
             Stopwatch sw = Stopwatch.StartNew();
 
-            if (!parsedArgs.NoGui && !App.ConfigData.ContainsKey("InformedAboutSkippingMerge"))
+            if (!parsedArgs.NoGui && !App.UserConfigData.ContainsKey("InformedAboutSkippingMerge"))
             {
                 if (IsGuiCollection(parsedArgs))
                 {
                     InformedAboutSkippingMerge();
-                    App.ConfigData["InformedAboutSkippingMerge"] = "true";
+                    App.UserConfigData["InformedAboutSkippingMerge"] = "true";
                 }
             }
 
@@ -2330,13 +2330,13 @@ namespace PerfView
                     parsedArgs.Merge = collectWindow.MergeCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Merge.HasValue)
                     {
-                        App.ConfigData["Merge"] = parsedArgs.Merge.Value.ToString();
+                        App.UserConfigData["Merge"] = parsedArgs.Merge.Value.ToString();
                     }
 
                     parsedArgs.Zip = collectWindow.ZipCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Zip.HasValue)
                     {
-                        App.ConfigData["Zip"] = parsedArgs.Zip.Value.ToString();
+                        App.UserConfigData["Zip"] = parsedArgs.Zip.Value.ToString();
                     }
 
                     parsedArgs.NoRundown = !(collectWindow.RundownCheckBox.IsChecked ?? false);
@@ -3255,14 +3255,14 @@ namespace PerfView
                 return;
             }
 
-            var warnedAboutAspNetTracing = App.ConfigData["WarnedAboutAspNetTracing"];
+            var warnedAboutAspNetTracing = App.UserConfigData["WarnedAboutAspNetTracing"];
             if (warnedAboutAspNetTracing == "true")
             {
                 return;
             }
 
             ShowAspNetWarningBox(message);
-            App.ConfigData["WarnedAboutAspNetTracing"] = "true";
+            App.UserConfigData["WarnedAboutAspNetTracing"] = "true";
         }
 
         // In its own routine so that we don't run WPF on ARM.  

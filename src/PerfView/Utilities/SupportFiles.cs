@@ -128,15 +128,21 @@ namespace Utilities
         /// <summary>
         /// SupportFileDir is a directory that is reserved for CURRENT VERSION of the software (if a later version is installed)
         /// It gets its own directory).   This is the directory where files in the EXE get unpacked to.  
+        /// NOTE: It is possible to override this through the AppConfig.xml file for cases where we don't want to use the unpacked version.
         /// </summary>
         public static string SupportFileDir
         {
             get
             {
+                if (s_supportFileDir == null)
                 {
-                    var exeLastWriteTime = File.GetLastWriteTime(MainAssemblyPath);
-                    var version = exeLastWriteTime.ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff");
-                    s_supportFileDir = Path.Combine(SupportFileDirBase, version);
+                    s_supportFileDir = App.AppConfigData["SupportFilesDir"];
+                    if (s_supportFileDir == null)
+                    {
+                        var exeLastWriteTime = File.GetLastWriteTime(MainAssemblyPath);
+                        var version = exeLastWriteTime.ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff");
+                        s_supportFileDir = Path.Combine(SupportFileDirBase, version);
+                    }
                 }
                 return s_supportFileDir;
             }
