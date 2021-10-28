@@ -335,32 +335,60 @@ namespace PerfView
 #endif
         }
 
-        // ConfigData
-        public static string ConfigDataFileName
+        // UserConfigData
+        public static string UserConfigDataFileName
         {
             get
             {
-                if (s_ConfigDataName == null)
+                if (s_UserConfigDataName == null)
                 {
-                    s_ConfigDataName = Path.Combine(SupportFiles.SupportFileDirBase, "UserConfig.xml");
+                    s_UserConfigDataName = Path.Combine(SupportFiles.SupportFileDirBase, "UserConfig.xml");
                 }
 
-                return s_ConfigDataName;
+                return s_UserConfigDataName;
             }
         }
-        public static ConfigData ConfigData
+        public static ConfigData UserConfigData
         {
             get
             {
-                if (s_ConfigData == null)
+                if (s_UserConfigData == null)
                 {
-                    s_ConfigData = new ConfigData(ConfigDataFileName, autoWrite: true);
+                    s_UserConfigData = new ConfigData(UserConfigDataFileName, autoWrite: true);
                 }
 
-                return s_ConfigData;
+                return s_UserConfigData;
             }
         }
-        public static void WriteConfig() { ConfigData.Write(ConfigDataFileName); }
+        public static void WriteUserConfig() { UserConfigData.Write(UserConfigDataFileName); }
+
+        // UserConfigData
+        public static string AppConfigDataFileName
+        {
+            get
+            {
+                if (s_AppConfigDataName == null)
+                {
+                    string exePath = Path.GetDirectoryName(SupportFiles.ExePath);
+                    s_AppConfigDataName = Path.Combine(exePath, "AppConfig.xml");
+                }
+
+                return s_AppConfigDataName;
+            }
+        }
+        public static ConfigData AppConfigData
+        {
+            get
+            {
+                if (s_AppConfigData == null)
+                {
+                    s_AppConfigData = new ConfigData(AppConfigDataFileName);
+                }
+
+                return s_AppConfigData;
+            }
+        }
+
 
         // Logfile
         /// <summary>
@@ -599,7 +627,7 @@ namespace PerfView
         // Legal stuff (EULA)
         public static bool NeedsEulaConfirmation(CommandLineArgs commandLineArgs)
         {
-            var acceptedVersion = App.ConfigData["EULA_Accepted"];
+            var acceptedVersion = App.UserConfigData["EULA_Accepted"];
             if (acceptedVersion != null && acceptedVersion == EulaVersion)
             {
                 return false;
@@ -608,7 +636,7 @@ namespace PerfView
             // Did the accept the EULA by command line argument?
             if (App.CommandLineArgs.AcceptEULA)
             {
-                App.ConfigData["EULA_Accepted"] = EulaVersion;
+                App.UserConfigData["EULA_Accepted"] = EulaVersion;
                 return false;
             }
 
@@ -622,7 +650,7 @@ namespace PerfView
         }
         public static void AcceptEula()
         {
-            App.ConfigData["EULA_Accepted"] = EulaVersion;
+            App.UserConfigData["EULA_Accepted"] = EulaVersion;
             // It will auto-update the user state.  
         }
 
@@ -653,7 +681,7 @@ namespace PerfView
                     var symPath = new SymbolPath(Microsoft.Diagnostics.Symbols.SymbolPath.SymbolPathFromEnvironment);
 
                     // Add any path that we had on previous runs.  
-                    var savedPath = App.ConfigData["_NT_SYMBOL_PATH"];
+                    var savedPath = App.UserConfigData["_NT_SYMBOL_PATH"];
                     if (savedPath != null)
                     {
                         symPath.Add(savedPath);
@@ -699,9 +727,9 @@ namespace PerfView
             set
             {
                 m_SymbolPath = value;
-                if (App.ConfigData["_NT_SYMBOL_PATH"] != m_SymbolPath)
+                if (App.UserConfigData["_NT_SYMBOL_PATH"] != m_SymbolPath)
                 {
-                    App.ConfigData["_NT_SYMBOL_PATH"] = m_SymbolPath;
+                    App.UserConfigData["_NT_SYMBOL_PATH"] = m_SymbolPath;
                 }
             }
         }
@@ -712,7 +740,7 @@ namespace PerfView
                 if (m_SourcePath == null)
                 {
                     var symPath = new SymbolPath(Environment.GetEnvironmentVariable("_NT_SOURCE_PATH"));
-                    var savedPath = App.ConfigData["_NT_SOURCE_PATH"];
+                    var savedPath = App.UserConfigData["_NT_SOURCE_PATH"];
                     if (savedPath != null)
                     {
                         symPath.Add(savedPath);
@@ -726,7 +754,7 @@ namespace PerfView
             set
             {
                 m_SourcePath = value;
-                App.ConfigData["_NT_SOURCE_PATH"] = value;
+                App.UserConfigData["_NT_SOURCE_PATH"] = value;
             }
         }
 
@@ -962,8 +990,10 @@ namespace PerfView
         private static WeakReference s_splashScreen;
 #endif
         private const string EulaVersion = "1";
-        private static ConfigData s_ConfigData;
-        private static string s_ConfigDataName;
+        private static ConfigData s_UserConfigData;
+        private static string s_UserConfigDataName;
+        private static ConfigData s_AppConfigData;
+        private static string s_AppConfigDataName;
 
         private static bool s_IsElevated;
         private static bool s_IsElevatedInited;

@@ -6922,7 +6922,7 @@ table {
             // Warn the user about the behavior of type name lookup, but only once per user.  
             if (stackSourceName == "Net OS Heap Alloc")
             {
-                if (App.ConfigData["WarnedAboutOsHeapAllocTypes"] == null)
+                if (App.UserConfigData["WarnedAboutOsHeapAllocTypes"] == null)
                 {
                     MessageBox.Show(stackWindow,
                         "Warning: Allocation type resolution only happens on window launch.\r\n" +
@@ -6932,7 +6932,7 @@ table {
                         "\r\n" +
                         "You must close and reopen this window to get the allocation types.\r\n"
                         , "May need to resolve PDBs and reopen.");
-                    App.ConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
+                    App.UserConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
                 }
             }
         }
