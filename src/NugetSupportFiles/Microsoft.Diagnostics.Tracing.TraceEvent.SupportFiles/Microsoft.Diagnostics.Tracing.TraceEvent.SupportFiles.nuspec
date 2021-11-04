@@ -2,7 +2,7 @@
 <package >
   <metadata minClientVersion="2.5">
     <id>Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles</id>
-    <version>1.0.18</version>
+    <version>1.0.23</version>
     <title>Non-Source files needed to Build TraceEvent</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -16,7 +16,6 @@
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <description> Basically this package contains DLLs that TraceEvent depends on but does not build itself.</description>
-    <releaseNotes>Move to signed nuget packages.</releaseNotes>
     <tags>TraceEvent</tags>
   </metadata>
 </package>
