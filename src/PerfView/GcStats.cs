@@ -280,7 +280,7 @@ namespace Stats
                         continue;
                     }
 
-                    var allocGen0MB = _event.GenSizeBeforeMB[(int)Gens.Gen0];
+                    var allocGen0MB = _event.UserAllocated[(int)Gens.Gen0];
                     writer.WriteLine("{0}{26}{1:f3}{26}{2}{26}{3}{26}{4:f3}{26}{5:f1}{26}{6:f3}{26}{7:f2}{26}{8:f3}{26}{9:f3}{26}{10:2}{26}{11:f3}{26}{12:f3}{26}{13:f0}{26}{14:f2}{26}{15:f3}{26}{16:f0}{26}{17:f2}{26}{18:f3}{26}{19:f0}{26}{20:f2}{26}{21:f3}{26}{22:f0}{26}{23:f2}{26}{24:f2}{26}{25:f0}{26}{27:f1}{26}{28:f3}",
                                    _event.Number,
                                    _event.PauseStartRelativeMSec,
