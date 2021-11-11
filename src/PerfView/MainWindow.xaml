@@ -24,7 +24,7 @@
         <CommandBinding Command="{x:Static src:MainWindow.MergeCommand}" Executed="DoMerge"/>
         <CommandBinding Command="{x:Static src:MainWindow.ZipCommand}" Executed="DoZip"/>
         <CommandBinding Command="{x:Static src:MainWindow.UnZipCommand}" Executed="DoUnZip"/>
-        <CommandBinding Command="{x:Static src:MainWindow.HideCommand}" Executed="DoHide"/>
+        <CommandBinding Command="{x:Static src:MainWindow.HideCommand}" Executed="DoHide" CanExecute="CanHide" />
         <CommandBinding Command="{x:Static src:MainWindow.UserCommand}" Executed="DoUserCommand"/>
         <CommandBinding Command="{x:Static src:MainWindow.RefreshDirCommand}" Executed="DoRefreshDir"/>
         <CommandBinding Command="{x:Static src:MainWindow.OpenCommand}" Executed="DoOpen"/>
