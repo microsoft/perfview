@@ -2113,7 +2113,7 @@ namespace PerfView
         // TODO FIX NOW clean up symbols
         /// <summary>
         /// Given a source of stacks, a process ID, and and ETL file look up all the symbols for any module in
-        /// that process that has more than 5% CPU time inclusive.   
+        /// that process that has more than 2% of measured metric inclusive.
         /// </summary>
         private static void PrimeWarmSymbols(StackSource stackSource, int processID, ETLPerfViewData etlFile, TextWriter log)
         {
@@ -2162,7 +2162,7 @@ namespace PerfView
                 }
             });
 
-            // For any module with more than 5% inclusive time, lookup symbols.  
+            // For any module with more than 2% inclusive time, lookup symbols.  
             var modulesToLookUp = new List<string>(10);
 
             foreach (string moduleName in modIdxes.Keys)
