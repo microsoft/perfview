@@ -1113,6 +1113,12 @@ namespace PerfView
             InitializeFeedback();
         }
         public PerfViewDirectory CurrentDirectory { get { return m_CurrentDirectory; } }
+
+        public void OpenPreviouslyOpened()
+        {
+            OpenPath(App.UserConfigData["Directory"]  ?? ".");
+        }
+
         /// <summary>
         /// Set the left pane to the specified directory.  If it is a file name, then that file name is opened
         /// </summary>
@@ -1149,6 +1155,7 @@ namespace PerfView
                         App.UserConfigData["DirectoryHistory"] = sb.ToString();
                     }
 
+                    App.UserConfigData["Directory"] = fullPath;
                     FileFilterTextBox.Text = "";
                     m_CurrentDirectory = new PerfViewDirectory(fullPath);
                     UpdateFileFilter();
