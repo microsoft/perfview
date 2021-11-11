@@ -1242,18 +1242,6 @@ namespace PerfView
             // TODO FIX NOW.   no longer a dialog, ensure that it is unique?
         }
 
-        /// <summary>
-        /// Hides the window (if it can still be reached).  
-        /// </summary>
-        public void HideWindow()
-        {
-            // TODO need count of all active children
-            if (StackWindow.StackWindows.Count > 0)
-            {
-                Visibility = System.Windows.Visibility.Hidden;
-            }
-        }
-
         public RunCommandDialog CollectWindow { get; set; }
         /// <summary>
         /// This is a helper that performs a command line style action, logging output to the log.  
@@ -1443,8 +1431,19 @@ namespace PerfView
 
         private void DoHide(object sender, RoutedEventArgs e)
         {
-            HideWindow();
+            // TODO need count of all active children
+            if (StackWindow.StackWindows.Count > 0)
+            {
+                Visibility = Visibility.Hidden;
+            }
         }
+
+        private void CanHide(object sender, CanExecuteRoutedEventArgs e)
+        {
+            // TODO need count of all active children
+            e.CanExecute = StackWindow.StackWindows.Count > 0;
+        }
+
         private void DoUserCommand(object sender, RoutedEventArgs e)
         {
             if (m_UserDefineCommandDialog == null)
