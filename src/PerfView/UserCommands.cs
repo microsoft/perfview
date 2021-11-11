@@ -1182,7 +1182,7 @@ namespace PerfViewExtensibility
             CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
 
             List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-            using (var source = new ETWTraceEventSource(etlFile))
+            using (var source = TraceEventDispatcher.GetDispatcherFromFileName(etlFile))
             {
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
