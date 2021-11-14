@@ -7,6 +7,7 @@ using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1819,6 +1820,7 @@ namespace PerfView
             // refresh the directory. 
             RefreshCurrentDirectory();
         }
+
         private void DoRename(object sender, ExecutedRoutedEventArgs e)
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
@@ -1862,6 +1864,42 @@ namespace PerfView
             // refresh the directory. 
             RefreshCurrentDirectory();
         }
+
+        private void CanOpenFolder(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = TreeView.SelectedItem is PerfViewDirectory;
+        }
+
+        private void DoOpenFolder(object sender, ExecutedRoutedEventArgs e)
+        {
+            var directory = (PerfViewDirectory)TreeView.SelectedItem;
+
+            ShellExecute("explorer.exe", directory.FilePath);
+        }
+
+        private void CanOpenContainingFolder(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = TreeView.SelectedItem is PerfViewFile;
+        }
+
+        private void DoOpenContainingFolder(object sender, ExecutedRoutedEventArgs e)
+        {
+            var file =  (PerfViewFile)TreeView.SelectedItem;
+
+            ShellExecute("explorer.exe", $"/select,\"{file.FilePath}\"");
+        }
+
+        private void ShellExecute(string fileName, string arguments)
+        {
+            try
+            {
+                Process.Start(fileName, arguments);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         private void DoMakeLocalSymbolDir(object sender, ExecutedRoutedEventArgs e)
         {
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
@@ -2000,6 +2038,8 @@ namespace PerfView
         public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete", "Delete", typeof(MainWindow),
             new InputGestureCollection() { new KeyGesture(Key.Delete) });   // TODO is this shortcut a good idea?
         public static RoutedUICommand RenameCommand = new RoutedUICommand("Rename", "Rename", typeof(MainWindow));
+        public static RoutedUICommand OpenFolderCommand = new RoutedUICommand("Open _Folder", "OpenFolder", typeof(MainWindow));
+        public static RoutedUICommand OpenContainingFolderCommand = new RoutedUICommand("Open Containing _Folder", "OpenContainingFolder", typeof(MainWindow));
         public static RoutedUICommand MakeLocalSymbolDirCommand = new RoutedUICommand(
             "Make Local Symbol Dir", "MakeLocalSymbolDir", typeof(MainWindow));
         public static RoutedUICommand CloseCommand = new RoutedUICommand("Close", "Close", typeof(MainWindow));

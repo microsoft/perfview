@@ -14,6 +14,10 @@
         <BitmapImage x:Key="FolderOpenBitmapImage"  UriSource="images/VSFolder_open.png"/>
         <BitmapImage x:Key="HtmlReportBitmapImage"  UriSource="images/VSProject_html.png"/>
         <BitmapImage x:Key="ChartBitmapImage"  UriSource="images/Chart.png"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <Style TargetType="MenuItem">
+            <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Converter={StaticResource BooleanToVisibilityConverter }}" />
+        </Style>
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static src:MainWindow.ItemHelpCommand}" Executed="DoItemHelp" CanExecute="CanDoItemHelp"/>
@@ -30,6 +34,8 @@
         <CommandBinding Command="{x:Static src:MainWindow.OpenCommand}" Executed="DoOpen"/>
         <CommandBinding Command="{x:Static src:MainWindow.DeleteCommand}" Executed="DoDelete"/>
         <CommandBinding Command="{x:Static src:MainWindow.RenameCommand}" Executed="DoRename"/>
+        <CommandBinding Command="{x:Static src:MainWindow.OpenFolderCommand}" Executed="DoOpenFolder" CanExecute="CanOpenFolder"/>
+        <CommandBinding Command="{x:Static src:MainWindow.OpenContainingFolderCommand}" Executed="DoOpenContainingFolder" CanExecute="CanOpenContainingFolder"/>
         <CommandBinding Command="{x:Static src:MainWindow.MakeLocalSymbolDirCommand}" Executed="DoMakeLocalSymbolDir"/>
         <CommandBinding Command="{x:Static src:MainWindow.CloseCommand}" Executed="DoClose"/>
         <CommandBinding Command="{x:Static src:MainWindow.CancelCommand}" Executed="DoCancel"/>
@@ -182,6 +188,8 @@
                                         <MenuItem Command="{x:Static src:MainWindow.CloseCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.DeleteCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.RenameCommand}"/>
+                                        <MenuItem Command="{x:Static src:MainWindow.OpenFolderCommand}"/>
+                                        <MenuItem Command="{x:Static src:MainWindow.OpenContainingFolderCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.MergeCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.MakeLocalSymbolDirCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.ZipCommand}"/>
