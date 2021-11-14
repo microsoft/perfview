@@ -7,3 +7,63 @@ indent_size = 2
 [*.cs]
 indent_style = space
 indent_size = 4
+
+# Naming Rules
+dotnet_naming_rule.interfaces_must_be_pascal_cased_and_prefixed_with_I.symbols                        = interface_symbols
+dotnet_naming_rule.interfaces_must_be_pascal_cased_and_prefixed_with_I.style                          = pascal_case_and_prefix_with_I_style
+dotnet_naming_rule.interfaces_must_be_pascal_cased_and_prefixed_with_I.severity                       = warning
+
+dotnet_naming_rule.externally_visible_members_must_be_pascal_cased.symbols                            = externally_visible_symbols
+dotnet_naming_rule.externally_visible_members_must_be_pascal_cased.style                              = pascal_case_style
+dotnet_naming_rule.externally_visible_members_must_be_pascal_cased.severity                           = warning
+
+dotnet_naming_rule.parameters_must_be_camel_cased.symbols                                             = parameter_symbols
+dotnet_naming_rule.parameters_must_be_camel_cased.style                                               = camel_case_style
+dotnet_naming_rule.parameters_must_be_camel_cased.severity                                            = warning
+
+dotnet_naming_rule.constants_must_be_pascal_cased.symbols                                             = constant_symbols
+dotnet_naming_rule.constants_must_be_pascal_cased.style                                               = pascal_case_style
+dotnet_naming_rule.constants_must_be_pascal_cased.severity                                            = warning
+
+dotnet_naming_rule.private_static_fields_must_be_camel_cased_and_prefixed_with_s_underscore.symbols   = private_static_field_symbols
+dotnet_naming_rule.private_static_fields_must_be_camel_cased_and_prefixed_with_s_underscore.style     = camel_case_and_prefix_with_s_underscore_style
+dotnet_naming_rule.private_static_fields_must_be_camel_cased_and_prefixed_with_s_underscore.severity  = warning
+
+dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.symbols   = private_field_symbols
+dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.style     = camel_case_and_prefix_with_underscore_style
+dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.severity  = warning
+
+# Symbols
+dotnet_naming_symbols.externally_visible_symbols.applicable_kinds                                     = class,struct,interface,enum,property,method,field,event,delegate
+dotnet_naming_symbols.externally_visible_symbols.applicable_accessibilities                           = public,internal,friend,protected,protected_internal,protected_friend,private_protected
+
+dotnet_naming_symbols.interface_symbols.applicable_kinds                                              = interface
+dotnet_naming_symbols.interface_symbols.applicable_accessibilities                                    = *
+
+dotnet_naming_symbols.parameter_symbols.applicable_kinds                                              = parameter
+dotnet_naming_symbols.parameter_symbols.applicable_accessibilities                                    = *
+
+dotnet_naming_symbols.constant_symbols.applicable_kinds                                               = field
+dotnet_naming_symbols.constant_symbols.required_modifiers                                             = const
+dotnet_naming_symbols.constant_symbols.applicable_accessibilities                                     = *
+
+dotnet_naming_symbols.private_static_field_symbols.applicable_kinds                                   = field
+dotnet_naming_symbols.private_static_field_symbols.required_modifiers                                 = static,shared
+dotnet_naming_symbols.private_static_field_symbols.applicable_accessibilities                         = private
+
+dotnet_naming_symbols.private_field_symbols.applicable_kinds                                          = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities                                = private
+
+# Styles
+dotnet_naming_style.camel_case_style.capitalization                                                   = camel_case
+
+dotnet_naming_style.pascal_case_style.capitalization                                                  = pascal_case
+
+dotnet_naming_style.camel_case_and_prefix_with_s_underscore_style.required_prefix                     = s_
+dotnet_naming_style.camel_case_and_prefix_with_s_underscore_style.capitalization                      = camel_case
+
+dotnet_naming_style.camel_case_and_prefix_with_underscore_style.required_prefix                       = m_
+dotnet_naming_style.camel_case_and_prefix_with_underscore_style.capitalization                        = camel_case
+
+dotnet_naming_style.pascal_case_and_prefix_with_I_style.required_prefix                               = I
+dotnet_naming_style.pascal_case_and_prefix_with_I_style.capitalization                                = pascal_case
