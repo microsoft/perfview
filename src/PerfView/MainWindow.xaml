@@ -14,6 +14,7 @@
         <BitmapImage x:Key="FolderClosedBitmapImage" UriSource="images/FolderClosed.png"/>
         <BitmapImage x:Key="HtmlReportBitmapImage" UriSource="images/HtmlFile.png"/>
         <BitmapImage x:Key="ChartBitmapImage" UriSource="images/Chart.png"/>
+        <BitmapImage x:Key="RefreshBitmapImage" UriSource="images/Refresh.png"/>
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static src:MainWindow.ItemHelpCommand}" Executed="DoItemHelp" CanExecute="CanDoItemHelp"/>
@@ -148,8 +149,17 @@
                 <ColumnDefinition Width="619*"/>
             </Grid.ColumnDefinitions>
             <DockPanel Background="Gray" Grid.Column="0">
-                <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top" 
+                <Grid DockPanel.Dock="Top" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                    </Grid.ColumnDefinitions>
+                    <controls:HistoryComboBox x:Name="Directory" Grid.Column="0"
                          ToolTip="This is the directory to search for performance data files." TextEntered="DoTextEnteredInDirectoryTextBox" />
+                    <Button Grid.Column="1" Command="{x:Static src:MainWindow.RefreshDirCommand}" ToolTip="Refresh" Focusable="false">
+                        <Image Source="{StaticResource RefreshBitmapImage }" />
+                    </Button>
+                </Grid>
                 <Grid DockPanel.Dock="Top" >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -177,7 +187,6 @@
                                     <ContextMenu>
                                         <MenuItem Command="{x:Static src:MainWindow.ItemHelpCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.OpenInBrowserCommand}"/>
-                                        <MenuItem Command="{x:Static src:MainWindow.RefreshDirCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.OpenCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.CloseCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.DeleteCommand}"/>
