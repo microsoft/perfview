@@ -513,7 +513,6 @@
 
   <ItemGroup>
     <Resource Include="images\**\*.*" />
-    <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />
     <Resource Include="performance.ico" />
   </ItemGroup>
 
