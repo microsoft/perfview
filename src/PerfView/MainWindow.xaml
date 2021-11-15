@@ -11,6 +11,7 @@
         <BitmapImage x:Key="StackSourceBitmapImage" UriSource="images/Table.png"/>
         <BitmapImage x:Key="EventSourceBitmapImage" UriSource="images/Events.png"/>
         <BitmapImage x:Key="FolderOpenBitmapImage" UriSource="images/FolderOpen.png"/>
+        <BitmapImage x:Key="FolderClosedBitmapImage" UriSource="images/FolderClosed.png"/>
         <BitmapImage x:Key="HtmlReportBitmapImage" UriSource="images/HtmlFile.png"/>
         <BitmapImage x:Key="ChartBitmapImage" UriSource="images/Chart.png"/>
     </Window.Resources>
@@ -187,9 +188,14 @@
                                         <MenuItem Command="{x:Static src:MainWindow.UnZipCommand}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
-                                <Image Margin="0,0,5,0" Source="{Binding Icon}"/>
+                                <Image x:Name="TreeViewImage" Margin="0,0,5,0" Source="{Binding Icon}"/>
                                 <TextBlock Text="{Binding Name}" />
                             </StackPanel>
+                            <HierarchicalDataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                    <Setter TargetName="TreeViewImage" Property="Source" Value="{Binding ExpandedIcon}"/>
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
                 </TreeView>

@@ -91,6 +91,13 @@ namespace PerfView
         /// The Icon to show next to the entry.  
         /// </summary>
         public virtual ImageSource Icon { get { return GuiApp.MainWindow.Resources["StackSourceBitmapImage"] as ImageSource; } }
+
+        /// <summary>
+        /// The expanded Icon to show next to the entry.  
+        /// </summary>
+        public virtual ImageSource ExpandedIcon => Icon;
+
+
         #region private
         public override string ToString() { if (FilePath != null) { return FilePath; } return Name; }
 
@@ -200,7 +207,9 @@ namespace PerfView
         /// </summary>
         public override void Close() { }
 
-        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FolderOpenBitmapImage"] as ImageSource; } }
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FolderClosedBitmapImage"] as ImageSource; } }
+
+        public override ImageSource ExpandedIcon { get { return GuiApp.MainWindow.Resources["FolderOpenBitmapImage"] as ImageSource; } }
 
         #region private
 
@@ -290,7 +299,9 @@ namespace PerfView
 
         public override string HelpAnchor { get { return Name.Replace(" ", ""); } }
 
-        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FolderOpenBitmapImage"] as ImageSource; } }
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FolderClosedBitmapImage"] as ImageSource; } }
+
+        public override ImageSource ExpandedIcon { get { return GuiApp.MainWindow.Resources["FolderOpenBitmapImage"] as ImageSource; } }
     }
 
     /// <summary>
