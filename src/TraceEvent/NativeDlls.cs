@@ -60,11 +60,11 @@ internal class NativeDlls
         throw new ApplicationException("Could not load native DLL " + dllName);
     }
 
-    public static ProcessorArchitecture ProcessArch
+    public static Architecture ProcessArch
     {
         get
         {
-            return IntPtr.Size == 8 ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
+            return RuntimeInformation.ProcessArchitecture;
         }
     }
 
