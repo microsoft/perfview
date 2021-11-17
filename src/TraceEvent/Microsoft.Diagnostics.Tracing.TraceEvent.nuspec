@@ -59,6 +59,12 @@
     <file src="$OutDir$netstandard2.0\x86\msvcp140.dll" target="build\native\x86\msvcp140.dll" />
     <file src="$OutDir$netstandard2.0\x86\vcruntime140.dll" target="build\native\x86\vcruntime140.dll" />
 
+    <file src="$OutDir$netstandard2.0\arm64\KernelTraceControl.dll" target="build\native\arm64\KernelTraceControl.dll" />
+    <file src="$OutDir$netstandard2.0\arm64\msdia140.dll" target="build\native\arm64\msdia140.dll" />
+    <file src="$OutDir$netstandard2.0\arm64\msvcp140.dll" target="build\native\arm64\msvcp140.dll" />
+    <file src="$OutDir$netstandard2.0\arm64\vcruntime140.dll" target="build\native\arm64\vcruntime140.dll" />
+    <file src="$OutDir$netstandard2.0\arm64\vcruntime140_1.dll" target="build\native\arm64\vcruntime140_1.dll" />
+
     <!-- NetStandard 2.0 Framework -->
 	
     <!-- Built libraries -->
