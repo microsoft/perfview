@@ -47,6 +47,7 @@ internal class Program
             bool forceGC = false;
             bool processDump = false;
             string inputSpec = null;
+            int minSecForTrigger = -1;
             var dumper = new GCHeapDumper(Console.Out);
 
             for (int curArgIdx = 0; curArgIdx < args.Length; curArgIdx++)
@@ -120,7 +121,7 @@ internal class Program
                     {
                         string spec = arg.Substring(19);
                         bool done = false;
-                        using (var trigger = new PerformanceCounterTrigger(spec, decayToZeroHours, Console.Out, delegate (PerformanceCounterTrigger t) { done = true; }))
+                        using (var trigger = new PerformanceCounterTrigger(spec, decayToZeroHours, Console.Out, delegate (PerformanceCounterTrigger t) { done = true; }) { MinSecForTrigger = minSecForTrigger })
                         {
                             for (int i = 0; !done; i++)
                             {
@@ -134,6 +135,10 @@ internal class Program
                         }
                         Console.WriteLine("[PerfCounter Triggered: {0}]", spec);
                         return 0;
+                    }
+                    else if (arg.StartsWith("/MinSecForTrigger:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        minSecForTrigger = int.Parse(arg.Substring(18));
                     }
                     else if (arg.StartsWith("/PromotedBytesThreshold:", StringComparison.OrdinalIgnoreCase))
                     {
