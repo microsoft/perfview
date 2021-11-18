@@ -32,6 +32,7 @@ namespace PerfView.Collections.Tests
         /// <summary>
         /// The Comparer that can be used in the overriding class when creating test enumerables
         /// or test collections. Default if not overridden is the default comparator.
+        /// </summary>
         protected virtual IComparer<T> GetIComparer() => Comparer<T>.Default;
 
         /// <summary>
