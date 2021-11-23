@@ -95,7 +95,7 @@ namespace PerfView
             string defaultFoldPercentage = App.UserConfigData["DefaultFoldPercent"];
             if (defaultFoldPercentage == null)
             {
-                defaultFoldPercentage = "1";
+                defaultFoldPercentage = "";
             }
 
             return defaultFoldPercentage;
