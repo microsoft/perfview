@@ -91,7 +91,7 @@ namespace FastSerialization
 #endif
     sealed class SerializationConfiguration
     {
-        public StreamLabelWidth StreamLabelWidth { get; set; } = StreamLabelWidth.EightBytes;
+        public StreamLabelWidth StreamLabelWidth { get; set; }
     }
 
     /// <summary>
