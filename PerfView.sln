@@ -57,6 +57,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CtfTracing.Tests", "src\Tra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent.Tests", "src\TraceEvent\TraceEvent.Tests\TraceEvent.Tests.csproj", "{19281902-FBC4-48C0-962B-9FDADAF5C783}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView64", "src\PerfView64\PerfView64.csproj", "{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView.Tests", "src\PerfView.Tests\PerfView.Tests.csproj", "{A0248EF2-8C39-478A-951E-324DDF4FF3EC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView.TestUtilities", "src\PerfView.TestUtilities\PerfView.TestUtilities.csproj", "{FE5CC86D-E87E-4560-8004-8852F3DE6794}"

@@ -17,11 +17,11 @@ using Address = System.UInt64;
 public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 {
     public GCHeapDump(string inputFileName) :
-        this(new Deserializer(inputFileName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }))
+        this(new Deserializer(inputFileName))
     { }
 
     public GCHeapDump(Stream inputStream, string streamName) :
-        this(new Deserializer(inputStream, streamName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }))
+        this(new Deserializer(inputStream, streamName))
     { }
 
     /// <summary>

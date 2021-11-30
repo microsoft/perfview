@@ -5,6 +5,7 @@
     <TargetFramework>net45</TargetFramework>
     <OutputType>WinExe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Prefer32Bit>True</Prefer32Bit>
     <StartupObject>PerfView.App</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
