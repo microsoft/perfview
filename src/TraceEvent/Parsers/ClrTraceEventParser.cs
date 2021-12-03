@@ -191,6 +191,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             TypeDiagnostic = 0x8000000000,
 
             /// <summary>
+            /// Events about stubs created by the runtime.
+            /// </summary>
+            Stubs = 0x40000000000,
+
+            /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
@@ -1975,7 +1980,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 12, JitInstrumentationDataTaskGuid);
             }
         }
-        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointExecutionCheckpoint {
+        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointExecutionCheckpoint
+        {
             add
             {
                 RegisterTemplate(ExecutionCheckpointTemplate(value));
@@ -1983,6 +1989,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 source.UnregisterEventTemplate(value, 300, ExecutionCheckpointTaskGuid);
+            }
+        }
+        public event Action<VSDStubTraceData> StubsVSDStubCreated
+        {
+            add
+            {
+                RegisterTemplate(StubsVSDStubTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 310, ProviderGuid);
+                source.UnregisterEventTemplate(value, 11, StubsTaskGuid);
             }
         }
 
@@ -2109,13 +2127,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new YieldProcessorMeasurementTraceData(action, 58, 37, "YieldProcessorMeasurement", YieldProcessorMeasurementTaskGuid, 0, "Info", ProviderGuid, ProviderName);
         }
+        static private VSDStubTraceData StubsVSDStubTemplate(Action<VSDStubTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new VSDStubTraceData(action, 310, 38, "Stubs", StubsTaskGuid, 11, "VSDStubCreated", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[141];
+                var templates = new TraceEvent[142];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2266,6 +2288,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[139] = ExecutionCheckpointTemplate(null);
                 templates[140] = YieldProcessorMeasurementTemplate(null);
 
+                templates[141] = StubsVSDStubTemplate(null);
+
                 s_templates = templates;
             }
 
@@ -2334,6 +2358,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
         private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
+        private static readonly Guid StubsTaskGuid = new Guid(unchecked((int)0xddd644b5), unchecked((short)0x7d96), unchecked((short)0x4294), 0x9b, 0xe8, 0x99, 0x5b, 0xf9, 0x97, 0x53, 0xb2);
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -3614,8 +3639,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (TypeParameterCount * 8) + 36));
-            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (TypeParameterCount * 8) + 36));
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (TypeParameterCount * 8) + 32));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (TypeParameterCount * 8) + 32));
         }
         protected internal override Delegate Target
         {
@@ -4980,7 +5005,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Gen2,
         GenLargeObj,
         GenPinObj,
-        MaxGenCount, 
+        MaxGenCount,
     }
 
     /// <summary>
@@ -12523,6 +12548,103 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    public sealed class VSDStubTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+        public VSDStubKind VSDStubKind { get { return (VSDStubKind)GetByteAt(2); } }
+        public Address StartAddress { get { return (Address)GetInt64At(3); } }
+        public int Size { get { return GetInt32At(11); } }
+        public long VirtualTypeID { get { return GetInt64At(15); } }
+        public long VirtualMethodID { get { return GetInt64At(23); } }
+        public string VirtualMethodNamespace { get { return GetUnicodeStringAt(31); } }
+        public string VirtualMethodName { get { return GetUnicodeStringAt(SkipUnicodeString(31)); } }
+        public string VirtualMethodSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(31))); } }
+        public long DispatchTypeID { get { return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(31)))); } }
+
+        #region Private
+        internal VSDStubTraceData(Action<VSDStubTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(31)))+8));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(31)))+8));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<VSDStubTraceData>) value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+             Prefix(sb);
+             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+             XmlAttrib(sb, "VSDStubKind", VSDStubKind);
+             XmlAttribHex(sb, "StartAddress", StartAddress);
+             XmlAttribHex(sb, "Size", Size);
+             XmlAttribHex(sb, "VirtualTypeID", VirtualTypeID);
+             XmlAttribHex(sb, "VirtualMethodID", VirtualMethodID);
+             XmlAttrib(sb, "VirtualMethodNamespace", VirtualMethodNamespace);
+             XmlAttrib(sb, "VirtualMethodName", VirtualMethodName);
+             XmlAttrib(sb, "VirtualMethodSignature", VirtualMethodSignature);
+             XmlAttribHex(sb, "DispatchTypeID", DispatchTypeID);
+             sb.Append("/>");
+             return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID", "VSDStubKind", "StartAddress", "Size", "VirtualTypeID", "VirtualMethodID", "VirtualMethodNamespace", "VirtualMethodName", "VirtualMethodSignature", "DispatchTypeID"};
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return VSDStubKind;
+                case 2:
+                    return StartAddress;
+                case 3:
+                    return Size;
+                case 4:
+                    return VirtualTypeID;
+                case 5:
+                    return VirtualMethodID;
+                case 6:
+                    return VirtualMethodNamespace;
+                case 7:
+                    return VirtualMethodName;
+                case 8:
+                    return VirtualMethodSignature;
+                case 9:
+                    return DispatchTypeID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 0x40000000000; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<VSDStubTraceData> Action;
+        #endregion
+    }
+
     [Flags]
     public enum AppDomainFlags
     {
@@ -12844,6 +12966,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         ResolveSatelliteAssembly = 0x4,
         AssemblyLoadContextResolvingEvent = 0x5,
         AppDomainAssemblyResolveEvent = 0x6,
+    }
+
+    public enum VSDStubKind
+    {
+        Lookup = 0x0,
+        Dispatch = 0x1,
+        Resolve = 0x2,
+        VTableCall = 0x3,
     }
 
     [Flags]
