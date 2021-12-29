@@ -88,7 +88,7 @@ internal class TraceParserGen
     public bool NeedsParserState;
 
     /// <summary>
-    /// Once you have set all the properties you wish, you can actually geneate a TraceEventParser to a
+    /// Once you have set all the properties you wish, you can actually generate a TraceEventParser to a
     /// particular output file by calling this routine.
     /// </summary>
     public void GenerateTraceEventParserFile(string outputFileName)
@@ -102,6 +102,7 @@ internal class TraceParserGen
             output.WriteLine("using System.Text;");
             output.WriteLine("using Microsoft.Diagnostics.Tracing;");
             output.WriteLine("using Address = System.UInt64;");
+            output.WriteLine("using FastSerialization;");
             output.WriteLine();
             output.WriteLine("#pragma warning disable 1591        // disable warnings on XML comments not being present");
             output.WriteLine("");
@@ -144,6 +145,8 @@ internal class TraceParserGen
 
         if (NeedsParserState)
         {
+            output.WriteLine("        private {0} ParserState;", stateClassName);
+            output.WriteLine();
             output.WriteLine("        private " + stateClassName + " State");
             output.WriteLine("        {");
             output.WriteLine("            get");
@@ -255,8 +258,7 @@ internal class TraceParserGen
     /// <param name="output"></param>
     private void GenerateTemplateDefs(TextWriter output)
     {
-
-        // Geneate all the helper functions that initialize a single template for an event.
+        // Generate all the helper functions that initialize a single template for an event.
         foreach (var keyValue in m_eventsByName)
         {
             var evntName = keyValue.Key;
@@ -268,7 +270,7 @@ internal class TraceParserGen
                 stateArg = ", " + templateClassName + "State state=null";
             }
 
-            output.WriteLine("        static private {0} {1}Template(Action<{0}> action{2})", templateClassName, TraceParserGen.ToCSharpName(evntName), stateArg);
+            output.WriteLine("        static private {0} {1}Template(Action<{0}> action, {2}State state)", templateClassName, TraceParserGen.ToCSharpName(evntName), ClassNamePrefix);
             output.WriteLine("        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName");
             var state = "";
             if (NeedsParserState && templateClassName != "EmptyTraceData")
@@ -276,7 +278,7 @@ internal class TraceParserGen
                 state = ", state";
             }
 
-            output.WriteLine("            return new {0}(action, {1}, {2}, \"{3}\", Guid.Empty, {4}, \"{5}\", ProviderGuid, ProviderName {6});",
+            output.WriteLine("            return new {0}(action, {1}, {2}, \"{3}\", {3}TaskGuid, {4}, \"{5}\", ProviderGuid, ProviderName{6});",
                 templateClassName, evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName), state);
             output.WriteLine("        }");
         }
@@ -298,12 +300,14 @@ internal class TraceParserGen
         {
             var evnt = m_provider.Events[i];
 
+            string templateClassName = GetTemplateNameForEvent(evnt, evnt.EventName);
+
             // check if the same event template has not been already defined (different versions of the same event)
-            output.WriteLine("                templates[{0}] = new {1}TraceData(null, {2}, {3}, \"{4}\", {4}TaskGuid, {5}, \"{6}\", ProviderGuid, ProviderName);",
-                                              i, TraceParserGen.ToCSharpName(evnt.EventName),
+            output.WriteLine("                templates[{0}] = new {1}(null, {2}, {3}, \"{4}\", {4}TaskGuid, {5}, \"{6}\", ProviderGuid, ProviderName, null);",
+                                              i, templateClassName,
                                               evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
                                               );
-            // as of today, the generated code won't compile because the task GUID is not defined
+            // as of today, the task GUID defaults to Guid.Empty and declarations are written in the following code
             // TODO: define the xxxTaskGuid based on eventGUID attribute of <task> elements of the .man file
         }
 
@@ -313,6 +317,26 @@ internal class TraceParserGen
         output.WriteLine("                if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)");
         output.WriteLine("                    callback(template);");
         output.WriteLine("        }");
+        output.WriteLine();
+
+        output.WriteLine("        // These default to Guid.Empty. Modify as needed to assign unique GUIDs");
+
+        var eventsGenerated = new HashSet<string>();
+
+        for (int i = 0; i < m_provider.Events.Count; i++)
+        {
+            var evnt = m_provider.Events[i];
+            var csharpName = TraceParserGen.ToCSharpName(evnt.TaskName);
+
+            if (eventsGenerated.Contains(csharpName))
+            {
+                continue;
+            }
+
+            output.WriteLine("        private static readonly Guid {0}TaskGuid = Guid.Empty;", csharpName);
+
+            eventsGenerated.Add(csharpName);
+        }
         output.WriteLine();
     }
 
@@ -346,14 +370,11 @@ internal class TraceParserGen
             var taskName = TraceParserGen.ToCSharpName(evnt.TaskName);
             if (string.IsNullOrEmpty(taskName)) taskName = evntName;
             // Call the *Template() function that does the work
-            output.WriteLine("                RegisterTemplate(new {0}(value, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName));",
-                                              templateClassName, evnt.Id, evnt.Task, taskName, taskGuid,
-                                              evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
-                                              );
+            output.WriteLine("                source.RegisterEventTemplate(" + evntName + "Template(value,state));");
             output.WriteLine("            }");
             output.WriteLine("            remove");
             output.WriteLine("            {");
-            output.WriteLine("                source.UnregisterEventTemplate(value, " + evnt.Id + ", " + taskGuid + ");");
+            output.WriteLine("                source.UnregisterEventTemplate(value, " + evnt.Id + ", ProviderGuid);");
             output.WriteLine("            }");
             output.WriteLine("        }");
         }
@@ -361,7 +382,7 @@ internal class TraceParserGen
 
     private void GenerateEventPayloadClass(TextWriter output, string stateClassName)
     {
-        // Severla distinct events might have the same payload class, this Dictionary keeps track
+        // Several distinct events might have the same payload class, this Dictionary keeps track
         // of which we have emitted so we don't emit it twice.
         var classesEmitted = new Dictionary<string, string>();
 
@@ -1111,6 +1132,7 @@ internal class TraceParserGen
                     ByteSize = 16;
                     break;
                 case "trace:WBEMSid":
+                case "win:SID":
                     SkipMethod = "SkipSID(" + FieldInfo.Skip(prevField) + ")";
                     break;
                 case "win:GUID":
