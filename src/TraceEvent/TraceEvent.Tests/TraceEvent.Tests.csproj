@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>TraceEventTests</RootNamespace>
     <AssemblyName>TraceEventTests</AssemblyName>
     <Description>Unit tests for TraceEvent.</Description>

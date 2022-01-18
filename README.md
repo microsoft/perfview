@@ -92,7 +92,7 @@ PerfView is developed in Visual Studio 2019 using features through C# 6.
 
 You will want to deploy the 'Release' rather than the 'Debug' version of PerfView.  Thus, first set your build configuration
 to 'Release' (Text window in the top toolbar, or right click on the .SLN file -> Configuration Manager -> Active Solution Configuration).
-Next build (Build -> Build Solution (Ctrl-Shift-B)).   The result will be that in the src\perfView\bin\net45\Release directory there will be
+Next build (Build -> Build Solution (Ctrl-Shift-B)).   The result will be that in the src\perfView\bin\net462\Release directory there will be
 among other things a PerfView.exe.   This one file is all you need to deploy.   Simply copy it to where you wish to deploy the app.  
 
 ### Information for build troubleshooting.  
