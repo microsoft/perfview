@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.EtwHeapDump</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.EtwHeapDump</AssemblyName>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

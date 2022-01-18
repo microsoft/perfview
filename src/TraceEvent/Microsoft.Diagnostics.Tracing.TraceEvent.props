@@ -99,7 +99,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND Exists('$(MSBuildThisFileDirectory)..\lib\net45\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\net45\OSExtensions.dll">
+    <None Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND Exists('$(MSBuildThisFileDirectory)..\lib\net462\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\net462\OSExtensions.dll">
       <Link>OSExtensions.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
