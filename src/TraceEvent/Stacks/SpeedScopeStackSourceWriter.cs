@@ -52,16 +52,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         private static void WriteToFile(IReadOnlyDictionary<string, IReadOnlyList<ProfileEvent>> sortedProfileEventsPerThread,
             IReadOnlyList<string> orderedFrameNames, TextWriter writer, string name)
         {
+            Dictionary<string, string> escapedNames = new Dictionary<string, string>();
+
             writer.Write("{");
             writer.Write($"\"exporter\": \"{GetExporterInfo()}\", ");
-            writer.Write($"\"name\": \"{name}\", ");
+            writer.Write($"\"name\": \"{GetEscaped(name, escapedNames)}\", ");
             writer.Write("\"activeProfileIndex\": 0, ");
             writer.Write("\"$schema\": \"https://www.speedscope.app/file-format-schema.json\", ");
 
             writer.Write("\"shared\": { \"frames\": [ ");
             for (int i = 0; i < orderedFrameNames.Count; i++)
             {
-                writer.Write($"{{ \"name\": \"{orderedFrameNames[i].Replace("\\", "\\\\").Replace("\"", "\\\"")}\" }}");
+                writer.Write($"{{ \"name\": \"{GetEscaped(orderedFrameNames[i], escapedNames)}\" }}");
 
                 if (i != orderedFrameNames.Count - 1)
                     writer.Write(", ");
@@ -82,7 +84,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 
                 writer.Write("{ ");
                 writer.Write("\"type\": \"evented\", ");
-                writer.Write($"\"name\": \"{perThread.Key}\", ");
+                writer.Write($"\"name\": \"{GetEscaped(perThread.Key, escapedNames)}\", ");
                 writer.Write("\"unit\": \"milliseconds\", ");
                 writer.Write($"\"startValue\": {sortedProfileEvents.First().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}, ");
                 writer.Write($"\"endValue\": {sortedProfileEvents.Last().RelativeTime.ToString("R", CultureInfo.InvariantCulture)}, ");
