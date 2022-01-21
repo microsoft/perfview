@@ -265,6 +265,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             var images = new List<ImageData>(300);
             var addressCounts = new Dictionary<Address, int>();
+            var stackKeyToStack = new Dictionary<Address, StackWalkDefTraceData>();
 
             // Get the name of all DLLS (in the file, and the set of all address-process pairs in the file.   
             using (var source = new ETWTraceEventSource(etlFile))
@@ -306,6 +307,31 @@ namespace Microsoft.Diagnostics.Tracing
 
                     var processId = data.ProcessID;
                     images.Add(new ImageData(processId, fileName, data.ImageBase, data.ImageSize));
+                };
+
+                source.Kernel.AddCallbackForEvents(delegate (StackWalkDefTraceData data)
+                {
+                    Debug.Assert(data.ProcessID == -1);
+                    stackKeyToStack[data.StackKey] = (StackWalkDefTraceData)data.Clone();
+                });
+
+                source.Kernel.StackWalkStackKeyUser += delegate (StackWalkRefTraceData data)
+                {
+                    if (data.ProcessID == 0)
+                    {
+                        return;
+                    }
+
+                    Debug.Assert(data.ProcessID != -1);
+                    if (stackKeyToStack.TryGetValue(data.StackKey, out StackWalkDefTraceData stack))
+                    {
+                        var processId = data.ProcessID;
+                        for (int i = 0; i < stack.FrameCount; i++)
+                        {
+                            var address = (stack.InstructionPointer(i) & 0xFFFFFFFFFFFF0000L) + ((Address)(processId & 0xFFFF));
+                            addressCounts[address] = 1;
+                        }
+                    }
                 };
 
                 source.Kernel.StackWalkStack += delegate (StackWalkStackTraceData data)
@@ -354,6 +380,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (!imageNames.ContainsKey(image.DllName))
                 {
+                    Debug.Assert((image.BaseAddress & 0xFFFFFFFFFFFF0000L) == image.BaseAddress);
                     for (uint offset = 0; offset < (uint)image.Size; offset += 0x10000)
                     {
                         var key = image.BaseAddress + offset + (uint)(image.ProcessID & 0xFFFF);
