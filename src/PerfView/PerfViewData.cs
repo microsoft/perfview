@@ -9166,6 +9166,7 @@ table {
             if (stackSourceName.Contains("Thread Time"))
             {
                 stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+                stackWindow.FoldRegExTextBox.Text += ";UNMANAGED_CODE_TIME;CPU";
             }
 
             if (stackSourceName.StartsWith("GC Heap Net Mem") || stackSourceName.StartsWith("GC Heap Alloc Ignore Free"))
