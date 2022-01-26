@@ -18,9 +18,17 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 {
                     // Assume plugins sit in a plugins directory next to the current assembly.
 #if AUTOANALYSIS_EXTENSIBILITY
-                    s_analyzersDirectory = Path.Combine(
-                        Path.GetDirectoryName(typeof(AnalyzerResolver).Assembly.Location),
-                        AnalyzersDirectoryName);
+                    string probePath = Environment.GetEnvironmentVariable("TRACEEVENT_ANALYZER_PATH");
+                    if (!string.IsNullOrEmpty(probePath))
+                    {
+                        s_analyzersDirectory = probePath;
+                    }
+                    else
+                    {
+                        s_analyzersDirectory = Path.Combine(
+                            Path.GetDirectoryName(typeof(AnalyzerResolver).Assembly.Location),
+                            AnalyzersDirectoryName);
+                    }
 #endif
                 }
                 return s_analyzersDirectory;
