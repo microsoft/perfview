@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     string probePath = Environment.GetEnvironmentVariable("TRACEEVENT_ANALYZER_PATH");
                     if (!string.IsNullOrEmpty(probePath))
                     {
-                        s_analyzersDirectory = probePath;
+                        s_analyzersDirectory = Environment.ExpandEnvironmentVariables(probePath);
                     }
                     else
                     {
@@ -39,7 +39,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         {
 #if AUTOANALYSIS_EXTENSIBILITY
             // Iterate through all assemblies in the analyzers directory.
-            if(!Directory.Exists(AnalyzersDirectory))
+            if (!Directory.Exists(AnalyzersDirectory))
             {
                 yield break;
             }
@@ -47,21 +47,20 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             string[] candidateAssemblies = Directory.GetFiles(AnalyzersDirectory, "*.dll", SearchOption.TopDirectoryOnly);
             foreach(string candidateAssembly in candidateAssemblies)
             {
+                // NOTE: If an assembly with the same identity is already loaded,
+                // LoadFrom will return the loaded assembly even if a different path was specified.
                 Assembly assembly = Assembly.LoadFrom(candidateAssembly);
-                if(assembly != null)
+                if (assembly != null &&
+                    assembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute)) is AnalyzerProviderAttribute attr &&
+                    attr.ProviderType != null)
                 {
-                    AnalyzerProviderAttribute attr = 
-                        (AnalyzerProviderAttribute)assembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute));
-                    if(attr != null && attr.ProviderType != null)
+                    // Create an instance of the provider.
+                    IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
+                    if (analyzerProvider != null)
                     {
-                        // Create an instance of the provider.
-                        IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
-                        if (analyzerProvider != null)
+                        foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
                         {
-                            foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
-                            {
-                                yield return analyzer;
-                            }
+                            yield return analyzer;
                         }
                     }
                 }
@@ -81,7 +80,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             if (Directory.Exists(AnalyzersDirectory))
             {
                 string[] filePaths = Directory.GetFiles(AnalyzersDirectory, "*.config.xml");
-                foreach(string filePath in filePaths)
+                foreach (string filePath in filePaths)
                 {
                     configuration.AddConfigurationFile(filePath);
                 }
