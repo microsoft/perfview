@@ -258,7 +258,7 @@ namespace TraceEventTests
         [Fact]
         public void GotoWorksForPositionsGreaterThanAlignment()
         {
-            using (var reader = new PinnedStreamReader(new MockHugeStream((long)uint.MaxValue + 5_000_000), config: new SerializationConfiguration { StreamReaderAlignment = StreamReaderAlignment.EightBytes }))
+            using (var reader = new PinnedStreamReader(new MockHugeStream((long)uint.MaxValue + 5_000_000), bufferSize: 0x4000 /* 16KB */, config: new SerializationConfiguration { StreamReaderAlignment = StreamReaderAlignment.EightBytes }))
             {
                 reader.Goto((StreamLabel)0x148);
                 var buf = new byte[100_000];
@@ -913,7 +913,6 @@ namespace TraceEventTests
         const int payloadSize = 60000;
 
         MemoryStream _currentChunk = new MemoryStream();
-        FileStream _loggingStream = new FileStream($"testdata_{DateTime.Now:yyyyMMddhhmmss}.nettrace", FileMode.OpenOrCreate);
         long _minSize;
         long _bytesWritten;
         int _sequenceNumber = 1;
@@ -994,7 +993,6 @@ namespace TraceEventTests
                 _bytesWritten += _currentChunk.Length;
                 ret = _currentChunk.Read(buffer, offset, count);
             }
-            _loggingStream.Write(buffer, offset, ret);
             return ret;
         }
         public override long Seek(long offset, SeekOrigin origin)
