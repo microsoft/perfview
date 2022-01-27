@@ -718,8 +718,12 @@ namespace FastSerialization
                     while (amountToThrowOut > 0)
                     {
                         int read = inputStream.Read(bytes, 0, (int)Math.Min(amountToThrowOut, (long)bytes.Length));
-                        amountToThrowOut -= read;
                         inputStreamBytesRead += read;
+                        if (read == 0)
+                        {
+                            throw new Exception("Read past end of stream.");
+                        }
+                        amountToThrowOut -= read;
                     }
                 }
 
