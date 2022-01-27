@@ -1,4 +1,5 @@
-﻿using Microsoft.Diagnostics.Tracing;
+﻿using FastSerialization;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -251,6 +252,21 @@ namespace TraceEventTests
                 {
                     Assert.NotEqual(0, counts[i]);
                 }
+            }
+        }
+
+        [Fact]
+        public void GotoWorksForPositionsGreaterThanAlignment()
+        {
+            using (var reader = new PinnedStreamReader(new MockHugeStream((long)uint.MaxValue + 5_000_000), config: new SerializationConfiguration { StreamReaderAlignment = StreamReaderAlignment.EightBytes }))
+            {
+                reader.Goto((StreamLabel)0x148);
+                var buf = new byte[100_000];
+                // Specifically doing a read larger than the default buffer size (16KB) to avoid caching path.
+                reader.Read(buf, 0, buf.Length);
+                // 0x14 is the 148th byte of the MockHugeStream (it is deterministic).
+                // If MockHugeStream changes, then this should be changed as well.
+                Assert.Equal(0x14, buf[0]);
             }
         }
 
@@ -897,6 +913,7 @@ namespace TraceEventTests
         const int payloadSize = 60000;
 
         MemoryStream _currentChunk = new MemoryStream();
+        FileStream _loggingStream = new FileStream($"testdata_{DateTime.Now:yyyyMMddhhmmss}.nettrace", FileMode.OpenOrCreate);
         long _minSize;
         long _bytesWritten;
         int _sequenceNumber = 1;
@@ -977,6 +994,7 @@ namespace TraceEventTests
                 _bytesWritten += _currentChunk.Length;
                 ret = _currentChunk.Read(buffer, offset, count);
             }
+            _loggingStream.Write(buffer, offset, ret);
             return ret;
         }
         public override long Seek(long offset, SeekOrigin origin)

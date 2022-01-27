@@ -84,6 +84,20 @@ namespace FastSerialization
     };
 
     /// <summary>
+    /// Allows users of serialization and de-serialization mechanism to specify the alignment required by the
+    /// reader.
+    /// </summary>
+#if FASTSERIALIZATION_PUBLIC
+    public
+#endif
+    enum StreamReaderAlignment
+    {
+        OneByte     = 1,
+        FourBytes   = 4,
+        EightBytes  = 8
+    };
+
+    /// <summary>
     /// These settings apply to use of Serializer and Deserializer specifically.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
@@ -92,6 +106,7 @@ namespace FastSerialization
     sealed class SerializationConfiguration
     {
         public StreamLabelWidth StreamLabelWidth { get; set; }
+        public StreamReaderAlignment StreamReaderAlignment { get; set; } = StreamReaderAlignment.EightBytes;
     }
 
     /// <summary>

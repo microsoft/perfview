@@ -647,8 +647,9 @@ namespace FastSerialization
         /// The stream will be closed by the IOStreamStreamReader when it is closed.  
         /// </summary>
         public IOStreamStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, bool leaveOpen = false, SerializationConfiguration config = null)
-            : base(new byte[bufferSize + align], 0, 0, config)
+            : base(new byte[bufferSize + (((int?)config?.StreamReaderAlignment) ?? 8)], 0, 0, config)
         {
+            align = (int?)config?.StreamReaderAlignment ?? 8;
             Debug.Assert(bufferSize % align == 0);
             this.inputStream = inputStream;
             this.leaveOpen = leaveOpen;
@@ -710,6 +711,18 @@ namespace FastSerialization
             // remainder from the stream
             if (length > (bytes.Length - align))
             {
+                // check if our inputstreambytesread < position in stream then throw out delta
+                if (inputStreamBytesRead < positionInStream)
+                {
+                    long amountToThrowOut = positionInStream - inputStreamBytesRead;
+                    while (amountToThrowOut > 0)
+                    {
+                        int read = inputStream.Read(bytes, 0, (int)Math.Min(amountToThrowOut, (long)bytes.Length));
+                        amountToThrowOut -= read;
+                        inputStreamBytesRead += read;
+                    }
+                }
+
                 int positionAlignmentOffset = position % align;
                 int alignedLength = (length & ~(align - 1)) - positionAlignmentOffset;
                 int cacheBytes = Math.Max(0, endPosition - position);
@@ -766,7 +779,7 @@ namespace FastSerialization
             base.Dispose(disposing);
         }
 
-        internal /*protected*/  const int align = 8;        // Needs to be a power of 2
+        internal /*protected*/  readonly int align = 8;        // Needs to be a power of 2
         internal /*protected*/  const int defaultBufferSize = 0x4000;  // 16K 
 
         /// <summary>
