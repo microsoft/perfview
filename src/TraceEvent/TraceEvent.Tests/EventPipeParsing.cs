@@ -258,7 +258,7 @@ namespace TraceEventTests
         [Fact]
         public void GotoWorksForPositionsGreaterThanAlignment()
         {
-            using (var reader = new PinnedStreamReader(new MockHugeStream((long)uint.MaxValue + 5_000_000), bufferSize: 0x4000 /* 16KB */, config: new SerializationConfiguration { StreamReaderAlignment = StreamReaderAlignment.EightBytes }))
+            using (var reader = new PinnedStreamReader(new MockHugeStream((long)uint.MaxValue + 5_000_000), bufferSize: 0x4000 /* 16KB */, alignment: StreamReaderAlignment.EightBytes))
             {
                 reader.Goto((StreamLabel)0x148);
                 var buf = new byte[100_000];

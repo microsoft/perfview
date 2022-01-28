@@ -90,7 +90,7 @@ namespace FastSerialization
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif
-    enum StreamReaderAlignment
+    enum StreamReaderAlignment : int
     {
         OneByte     = 1,
         FourBytes   = 4,
@@ -106,7 +106,6 @@ namespace FastSerialization
     sealed class SerializationConfiguration
     {
         public StreamLabelWidth StreamLabelWidth { get; set; }
-        public StreamReaderAlignment StreamReaderAlignment { get; set; } = StreamReaderAlignment.EightBytes;
     }
 
     /// <summary>
