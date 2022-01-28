@@ -44,7 +44,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
 
             string[] candidateAssemblies = Directory.GetFiles(AnalyzersDirectory, "*.dll", SearchOption.TopDirectoryOnly);
-            foreach(string candidateAssembly in candidateAssemblies)
+            foreach (string candidateAssembly in candidateAssemblies)
             {
                 // If an assembly with the same identity is already loaded,
                 // LoadFrom will return the loaded assembly even if a different path was specified.
