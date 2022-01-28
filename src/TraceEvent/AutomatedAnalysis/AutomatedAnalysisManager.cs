@@ -9,11 +9,15 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         private IEnumerable<Analyzer> _analyzers;
         private Configuration _configuration;
 
-        public AutomatedAnalysisManager()
+        /// <summary>
+        /// Constructs the AutomatedAnalysisManager.
+        /// </summary>
+        /// <param name="probePath">(optional) A path to search for analyzers and configuration files.</param>
+        public AutomatedAnalysisManager(string probePath = null)
         {
+            AnalyzerResolver.AnalyzersDirectory = probePath;
             _analyzers = AnalyzerResolver.GetAnalyzers();
             _configuration = AnalyzerResolver.GetConfiguration();
-
         }
 
         public AutomatedAnalysisResult ProcessTrace(ITrace trace, TextWriter textLog)
