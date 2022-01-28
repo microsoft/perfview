@@ -264,7 +264,7 @@ namespace TraceEventTests
                 var buf = new byte[100_000];
                 // Specifically doing a read larger than the default buffer size (16KB) to avoid caching path.
                 reader.Read(buf, 0, buf.Length);
-                // 0x14 is the 148th byte of the MockHugeStream (it is deterministic).
+                // 0x14 is the 0x148th byte of the MockHugeStream (it is deterministic).
                 // If MockHugeStream changes, then this should be changed as well.
                 Assert.Equal(0x14, buf[0]);
             }
