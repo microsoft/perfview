@@ -7,9 +7,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     internal sealed class AnalyzerResolver
     {
+        /// <summary>
+        /// This is the child directory to search in if <see cref="AnalyzersDirectory"/> is not explicitly set.
+        /// </summary>
         private const string AnalyzersDirectoryName = "Analyzers";
-        private static string s_analyzersDirectory;
 
+        private static string s_analyzersDirectory;
         internal static string AnalyzersDirectory
         {
             get
