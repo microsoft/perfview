@@ -63,6 +63,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Web" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="5.2.9" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard1.6'">

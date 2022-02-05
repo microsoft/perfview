@@ -1043,6 +1043,19 @@ namespace Microsoft.Diagnostics.Symbols
                             // So set it (this is what the symsrv code on Windows sets).   On NetStandard1.6 we give up since we dont' have this API available.  
                             req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
 #endif
+
+#if NET45
+                            // Ugly support for ADO sources
+                            if (fullUri.StartsWith("https://") && fullUri.Contains("artifacts.visualstudio.com/"))
+                            {
+                                var token = Adal.AcquireToken();
+                                if (token != null)
+                                {
+                                    req.Headers.Add("Authorization", $"bearer {token}");
+                                }
+                            }
+#endif
+
                             var responseTask = req.GetResponseAsync();
                             responseTask.Wait();
                             var response = responseTask.Result;
