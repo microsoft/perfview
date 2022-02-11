@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Runtime;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -41,6 +42,7 @@ internal class Program
     private static int MainWorker(string[] args)
     {
         string outputFile = null;
+        int exceptionExitCode = 1;
         try
         {
             float decayToZeroHours = 0;
@@ -251,6 +253,13 @@ internal class Program
         }
         catch (Exception e)
         {
+            ClrDiagnosticsException diagException = e as ClrDiagnosticsException;
+            if ((diagException != null) && ((uint)diagException.HResult == 0x80070057))
+            {
+                exceptionExitCode = 3;
+                Console.WriteLine("HeapDump Error: Unable to open process dump.  HeapDump only supports converting Windows process dumps.");
+            }
+
             if (e is ApplicationException)
             {
                 Console.WriteLine("HeapDump Error: {0}", e.Message);
@@ -266,7 +275,7 @@ internal class Program
                 catch (Exception) { }
             }
         }
-        return 1;
+        return exceptionExitCode;
     }
 
     #region private
