@@ -119,6 +119,7 @@ namespace PerfView
         public bool ThreadTime;             // Shortcut for /KernelEvents=ThreadTime
         public bool GCOnly;                 // collect only enough for GC analysis
         public bool GCCollectOnly;          // Turn off even the allocation Tick
+        public bool GCTriggeredStacks;      // Collects a stack for each triggered GC
         public bool DotNetAlloc;            // Turn on .NET Allocation profiling 
         public bool DotNetAllocSampled;     // Turn on .NET Allocation profiling, but only sampled (in a smart way)
         public bool DotNetCalls;            // Turn on logging of every .NET call
@@ -240,9 +241,19 @@ namespace PerfView
         /// <param name="commandLineArgs"></param>
         internal static void ConfigureForGCCollectOnly(CommandLineArgs commandLineArgs)
         {
-            // The process events are so we get process names. The ImageLoad events are so that we get version information about the DLLs.
-            commandLineArgs.KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
+            // The process events are so we get process names.
+            commandLineArgs.KernelEvents = KernelTraceEventParser.Keywords.Process;
+
+            // ImageLoad events are required if we want to capture trigger stacks.
+            if (commandLineArgs.GCTriggeredStacks)
+            {
+                commandLineArgs.KernelEvents |= KernelTraceEventParser.Keywords.ImageLoad;
+            }
             commandLineArgs.ClrEvents = ClrTraceEventParser.Keywords.GC;
+            if(commandLineArgs.GCTriggeredStacks)
+            {
+                commandLineArgs.ClrEvents |= ClrTraceEventParser.Keywords.Stack;
+            }
             commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
             commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
             commandLineArgs.NoRundown = true;
@@ -479,6 +490,7 @@ namespace PerfView
                 DataFile = "PerfViewGCOnly.etl";
             }
             parser.DefineOptionalQualifier("GCCollectOnly", ref GCCollectOnly, "Turns on GC collections (no allocation sampling).");
+            parser.DefineOptionalQualifier("GCTriggeredStacks", ref GCTriggeredStacks, "Collects a stack for each triggered GC.");
             if (GCCollectOnly)
             {
                 ConfigureForGCCollectOnly(this);
