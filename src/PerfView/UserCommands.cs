@@ -44,8 +44,8 @@ namespace PerfViewExtensibility
         // file, your new command will not have help.   
         //
         // This can be as simple as coping the PerfView.xml file from output directory to src\PerfView\SupportFiles.
-        // HOwever you can do better than this by removing all 'method' entries that are not user commands
-        // That is members of this class.   THis makes the file (and therefore PerfView.exe) smaller.  
+        // However you can do better than this by removing all 'method' entries that are not user commands
+        // That is members of this class.   This makes the file (and therefore PerfView.exe) smaller.  
 
         /// <summary>
         /// Save Thread stacks from a NetPerf file into a *.speedscope.json file.
