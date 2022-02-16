@@ -15,7 +15,7 @@
     public class DebugAssertionTests
     {
 #if DEBUG
-        [Fact]
+        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
         public void TestDebugAssertThrowsException()
         {
             Debug.Assert(true);
@@ -23,20 +23,20 @@
             Assert.ThrowsAny<Exception>(() => Debug.Assert(false));
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
         public void TestDebugFailThrowsException()
         {
             Assert.ThrowsAny<Exception>(() => Debug.Fail("Bad things"));
         }
 #endif
 
-        [Fact]
+        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
         public void TestTraceAssertThrowsException()
         {
             Assert.ThrowsAny<Exception>(() => Trace.Assert(false));
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
         public void TestTraceFailThrowsException()
         {
             Assert.ThrowsAny<Exception>(() => Trace.Fail("Bad things"));
