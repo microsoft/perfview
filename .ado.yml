@@ -27,6 +27,7 @@ jobs:
       displayName: 'NuGet Restore PerfView.sln'
       inputs:
         restoreSolution: PerfView.sln
+        includeNuGetOrg: false
 
     - task: MSBuild@1
       displayName: 'Build PerfView.sln'
@@ -79,6 +80,7 @@ jobs:
       displayName: 'NuGet Restore PerfView.sln'
       inputs:
         restoreSolution: PerfView.sln
+        includeNuGetOrg: false
 
     - task: MSBuild@1
       displayName: 'Build PerfView.sln'
