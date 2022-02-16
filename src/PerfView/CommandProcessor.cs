@@ -485,7 +485,14 @@ namespace PerfView
                         kernelModeSession.CircularBufferMB = parsedArgs.CircularMB;
                     }
 
-                    kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
+                    // Don't capture any kernel stacks for /GCCollectOnly.
+                    KernelTraceEventParser.Keywords stackKeywords = parsedArgs.KernelEvents;
+                    if (parsedArgs.GCCollectOnly)
+                    {
+                        stackKeywords = KernelTraceEventParser.Keywords.None;
+                    }
+
+                    kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, stackKeywords);
                 }
 
                 // Turn on the OS Heap stuff if anyone asked for it.  
@@ -892,11 +899,14 @@ namespace PerfView
                                 stacksEnabled);
                         }
 
-                        LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
-                        EnableUserProvider(userModeSession, "MeasurementBlock",
-                            new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue, options);
-                        EnableUserProvider(userModeSession, "CodeMarkers",
-                            new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                        if (!(parsedArgs.GCCollectOnly || parsedArgs.GCOnly))
+                        {
+                            LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
+                            EnableUserProvider(userModeSession, "MeasurementBlock",
+                                new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                            EnableUserProvider(userModeSession, "CodeMarkers",
+                                new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                        }
 
                         // Turn off NGEN if they asked for it.  
                         if (parsedArgs.NoNGenRundown)
@@ -3030,6 +3040,11 @@ namespace PerfView
             if (parsedArgs.GCCollectOnly)
             {
                 cmdLineArgs += " /GCCollectOnly";
+            }
+
+            if (parsedArgs.GCTriggeredStacks)
+            {
+                cmdLineArgs += " /GCTriggeredStacks";
             }
 
             if (parsedArgs.DotNetAlloc)
