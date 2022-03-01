@@ -646,9 +646,10 @@ namespace FastSerialization
         /// Create a new IOStreamStreamReader from the given System.IO.Stream.   Optionally you can specify the size of the read buffer
         /// The stream will be closed by the IOStreamStreamReader when it is closed.  
         /// </summary>
-        public IOStreamStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, bool leaveOpen = false, SerializationConfiguration config = null)
-            : base(new byte[bufferSize + align], 0, 0, config)
+        public IOStreamStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, bool leaveOpen = false, SerializationConfiguration config = null, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
+            : base(new byte[bufferSize + (int)alignment], 0, 0, config)
         {
+            align = (int)alignment;
             Debug.Assert(bufferSize % align == 0);
             this.inputStream = inputStream;
             this.leaveOpen = leaveOpen;
@@ -710,6 +711,22 @@ namespace FastSerialization
             // remainder from the stream
             if (length > (bytes.Length - align))
             {
+                // check if our inputstreambytesread < position in stream then throw out delta
+                if (inputStreamBytesRead < positionInStream)
+                {
+                    long amountToThrowOut = positionInStream - inputStreamBytesRead;
+                    while (amountToThrowOut > 0)
+                    {
+                        int read = inputStream.Read(bytes, 0, (int)Math.Min(amountToThrowOut, (long)bytes.Length));
+                        inputStreamBytesRead += read;
+                        if (read == 0)
+                        {
+                            throw new Exception("Read past end of stream.");
+                        }
+                        amountToThrowOut -= read;
+                    }
+                }
+
                 int positionAlignmentOffset = position % align;
                 int alignedLength = (length & ~(align - 1)) - positionAlignmentOffset;
                 int cacheBytes = Math.Max(0, endPosition - position);
@@ -766,7 +783,6 @@ namespace FastSerialization
             base.Dispose(disposing);
         }
 
-        internal /*protected*/  const int align = 8;        // Needs to be a power of 2
         internal /*protected*/  const int defaultBufferSize = 0x4000;  // 16K 
 
         /// <summary>
@@ -860,6 +876,8 @@ namespace FastSerialization
                 throw new Exception("Read past end of stream.");
             }
         }
+
+        internal /*protected*/  readonly int align = 8;        // Needs to be a power of 2
         internal /*protected*/  Stream inputStream;
         internal /* protected*/ long inputStreamBytesRead; // only required for non-seekable streams
         private bool leaveOpen;
@@ -890,8 +908,8 @@ namespace FastSerialization
         /// Create a new PinnedStreamReader that gets its data from a given System.IO.Stream.  You can optionally set the size of the read buffer.  
         /// The stream will be closed by the PinnedStreamReader when it is closed.  
         /// </summary>
-        public PinnedStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, SerializationConfiguration config = null)
-            : base(inputStream, bufferSize, config: config)
+        public PinnedStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, SerializationConfiguration config = null, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
+            : base(inputStream, bufferSize, config: config, alignment: alignment)
         {
             // Pin the array
             pinningHandle = System.Runtime.InteropServices.GCHandle.Alloc(bytes, System.Runtime.InteropServices.GCHandleType.Pinned);

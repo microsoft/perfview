@@ -171,7 +171,11 @@ namespace PerfView
             log.WriteLine("Exec: {0}", commandLine);
             PerfViewLogger.Log.TriggerHeapSnapshot(outputFile, inputArg, qualifiers);
             var cmd = Command.Run(commandLine, options);
-            if (cmd.ExitCode != 0)
+            if (cmd.ExitCode == 3)
+            {
+                throw new ApplicationException("Unable to open the process dump.  PerfView only supports converting Windows process dumps.  Please confirm that this is a Windows process dump.");
+            }
+            else if (cmd.ExitCode != 0)
             {
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
             }
