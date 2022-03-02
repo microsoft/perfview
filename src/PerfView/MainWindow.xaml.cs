@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -1111,13 +1112,37 @@ namespace PerfView
                 AppLog.LogUsage("Exiting");
             };
 
+            // Initialize configuration options.
+            InitializeOpenToLastUsedDirectory();
+
             InitializeFeedback();
         }
         public PerfViewDirectory CurrentDirectory { get { return m_CurrentDirectory; } }
 
+        public void InitializeOpenToLastUsedDirectory()
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["OpenToLastUsedDirectory"], out currentValue);
+            Option_OpenToLastUsedDirectory.IsChecked = currentValue;
+        }
+
+        public void ToggleOpenToLastUsedDirectory(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["OpenToLastUsedDirectory"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["OpenToLastUsedDirectory"] = newValue.ToString();
+            Option_OpenToLastUsedDirectory.IsChecked = newValue;
+        }
+
         public void OpenPreviouslyOpened()
         {
-            OpenPath(App.UserConfigData["Directory"]  ?? ".");
+            string path = ".";
+            if (bool.TryParse(App.UserConfigData["OpenToLastUsedDirectory"], out bool openToLastUsedDirectory) && openToLastUsedDirectory)
+            {
+                path = App.UserConfigData["Directory"] ?? ".";
+            }
+            OpenPath(path);
         }
 
         /// <summary>
