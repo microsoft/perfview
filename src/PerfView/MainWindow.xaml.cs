@@ -1186,7 +1186,7 @@ namespace PerfView
                     m_CurrentDirectory = new PerfViewDirectory(fullPath);
                     UpdateFileFilter();
 
-                    string appName = Environment.Is64BitProcess ? "PerfView64" : "PerfView";
+                    string appName = "PerfView";
                     string elevatedSuffix = (TraceEventSession.IsElevated() ?? false) ? " (Administrator)" : "";
                     Title = appName + " " + CurrentDirectory.FilePath + elevatedSuffix;
                 }
