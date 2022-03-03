@@ -7,13 +7,15 @@
         Closed="Window_Closed"
         Title="PerfView" Height="535" Width="1000">
     <Window.Resources>
-        <BitmapImage x:Key="FileBitmapImage"  UriSource="images/VSProject_genericfile.png"/>
-        <BitmapImage x:Key="HeapFileBitmapImage"  UriSource="images/VSProject_schema.png"/>
-        <BitmapImage x:Key="StackSourceBitmapImage"  UriSource="images/VSProject_form.png"/>
-        <BitmapImage x:Key="EventSourceBitmapImage"  UriSource="images/VSProject_cab.png"/>
-        <BitmapImage x:Key="FolderOpenBitmapImage"  UriSource="images/VSFolder_open.png"/>
-        <BitmapImage x:Key="HtmlReportBitmapImage"  UriSource="images/VSProject_html.png"/>
-        <BitmapImage x:Key="ChartBitmapImage"  UriSource="images/Chart.png"/>
+        <BitmapImage x:Key="FileBitmapImage" UriSource="images/GenericFile.png"/>
+        <BitmapImage x:Key="LogFileBitmapImage" UriSource="images/LogFile.png"/>
+        <BitmapImage x:Key="StackSourceBitmapImage" UriSource="images/Table.png"/>
+        <BitmapImage x:Key="EventSourceBitmapImage" UriSource="images/Events.png"/>
+        <BitmapImage x:Key="EtlFileBitmapImage" UriSource="images/EtlFile.png"/>
+        <BitmapImage x:Key="FolderOpenBitmapImage" UriSource="images/FolderOpen.png"/>
+        <BitmapImage x:Key="HtmlReportBitmapImage" UriSource="images/HtmlFile.png"/>
+        <BitmapImage x:Key="ChartBitmapImage" UriSource="images/Chart.png"/>
+        
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style TargetType="MenuItem">
             <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Converter={StaticResource BooleanToVisibilityConverter }}" />

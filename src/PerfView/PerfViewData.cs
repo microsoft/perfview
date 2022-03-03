@@ -7603,7 +7603,7 @@ table {
             }
             base.Close();
         }
-        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["EtlFileBitmapImage"] as ImageSource; } }
 
         internal static List<TraceModuleFile> GetInterestingModuleFiles(ETLPerfViewData etlFile, double pdbThresholdPercent, TextWriter log, List<int> focusProcessIDs = null)
         {
@@ -9845,7 +9845,7 @@ table {
         }
 
         public override void Close() { }
-        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["LogFileBitmapImage"] as ImageSource; } }
 
         /// <summary>
         /// Gets a new local file path for the given resource, extracting it from the .diagsession if required
