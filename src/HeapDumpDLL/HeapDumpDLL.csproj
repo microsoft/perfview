@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.HeapDump</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.HeapDump</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

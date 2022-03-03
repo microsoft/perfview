@@ -43,7 +43,7 @@ namespace Microsoft.Diagnostics.Tracing.Compatibility
 #endif
         }
 
-#if NET45
+#if NET462
         public static StringDictionary GetEnvironment(this ProcessStartInfo startInfo) => startInfo.EnvironmentVariables;
 #else
         public static IDictionary<string, string> GetEnvironment(this ProcessStartInfo startInfo) => startInfo.Environment;
