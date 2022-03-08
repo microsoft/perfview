@@ -52,6 +52,7 @@ namespace PerfView
 
         public bool CommandLineCommand;
         public bool CollectingData;
+        public bool RundownActive;
         public TextWriter LogFile
         {
             get { return m_logFile; }
@@ -1162,6 +1163,7 @@ namespace PerfView
 
         public void Stop(CommandLineArgs parsedArgs)
         {
+            RundownActive = true;
             if (parsedArgs.DataFile == null)
             {
                 parsedArgs.DataFile = "PerfViewData.etl";
@@ -1344,6 +1346,7 @@ namespace PerfView
 
             DateTime stopComplete = DateTime.Now;
             LogFile.WriteLine("Stop Completed at {0}", stopComplete);
+            RundownActive = false;
         }
         public void Mark(CommandLineArgs parsedArgs)
         {

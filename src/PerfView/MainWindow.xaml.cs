@@ -1097,12 +1097,18 @@ namespace PerfView
                 }
                 if (StatusBar.IsWorking)
                 {
-                    var result = MessageBox.Show(this, "Rundown is still in progress. If you abort now the collected trace will be unusable. Are you sure you want to abort?", "Collecting data in progress", MessageBoxButton.YesNo);
-                    if (result == MessageBoxResult.No)
+                    if (App.CommandProcessor.RundownActive)
                     {
-                        e.Cancel = true;
-                        return;
+                        var result = MessageBox.Show(this,
+                            "Rundown is still in progress. If you abort now the collected trace will be unusable. Are you sure you want to abort?",
+                            "Collecting data in progress", MessageBoxButton.YesNo);
+                        if (result == MessageBoxResult.No)
+                        {
+                            e.Cancel = true;
+                            return;
+                        }
                     }
+
                     StatusBar.AbortWork();
                 }
 
