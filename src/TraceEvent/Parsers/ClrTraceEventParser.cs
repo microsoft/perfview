@@ -12575,6 +12575,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Optimized,
         QuickJitted,
         OptimizedTier1,
+        OptimizedTier1OSR,
 
         // Pregenerated code, not sent by the runtime
         ReadyToRun,
