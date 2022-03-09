@@ -485,7 +485,7 @@ namespace PerfView
             columnsForSelectedEvents["ActivityID"] = "ActivityID";
             columnsForSelectedEvents["RelatedActivityID"] = "RelatedActivityID";
             columnsForSelectedEvents["HasStack"] = "HasStack";
-            columnsForSelectedEvents["HasBlockedStack"] = "HasBlockedStack";
+            columnsForSelectedEvents["HasBlockingStack"] = "HasBlockingStack";
             columnsForSelectedEvents["DURATION_MSEC"] = "DURATION_MSEC";
             columnsForSelectedEvents["FormattedMessage"] = "FormattedMessage";
             columnsForSelectedEvents["ContainerID"] = "ContainerID";
