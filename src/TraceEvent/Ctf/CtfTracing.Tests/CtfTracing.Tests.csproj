@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>Tests</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
     <Description>Unit tests.</Description>

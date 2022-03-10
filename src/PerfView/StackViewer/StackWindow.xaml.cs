@@ -95,7 +95,7 @@ namespace PerfView
             string defaultFoldPercentage = App.UserConfigData["DefaultFoldPercent"];
             if (defaultFoldPercentage == null)
             {
-                defaultFoldPercentage = string.Empty;
+                defaultFoldPercentage = "";
             }
 
             return defaultFoldPercentage;
@@ -114,7 +114,7 @@ namespace PerfView
         {
             string defaultGroupPat = App.UserConfigData["DefaultGroupPat"];
 
-            // By default, it is Just My App.  
+            // By default, it is group module entries.
             if (defaultGroupPat == null)
             {
                 defaultGroupPat = @"[no grouping]";

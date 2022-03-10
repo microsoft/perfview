@@ -4177,25 +4177,10 @@ table {
 
             if (brokenPercent > 10)
             {
-                if (is64Bit)
-                {
-                    MessageBox.Show(parentWindow, "Warning: There are " + brokenPercent.ToString("f1") +
-                        "% stacks that are broken, analysis is suspect." + "\r\n" +
-                        "This is likely due the current inability of the OS stackwalker to walk 64 bit\r\n" +
-                        "code that is dynamically (JIT) generated.\r\n\r\n" +
-                        "This can be worked around by either by NGENing the EXE,\r\n" +
-                        "forcing the EXE to run as a 32 bit app, profiling on Windows 8\r\n" +
-                        "or avoiding any top-down analysis.\r\n\r\n" +
-                        "Use the troubleshooting link at the top of the view for more information.\r\n",
-                        "Broken Stacks");
-                }
-                else
-                {
-                    MessageBox.Show(parentWindow, "Warning: There are " + brokenPercent.ToString("f1") + "% stacks that are broken\r\n" +
-                        "Top down analysis is suspect, however bottom up approaches are still valid.\r\n\r\n" +
-                        "Use the troubleshooting link at the top of the view for more information.\r\n",
-                        "Broken Stacks");
-                }
+                MessageBox.Show(parentWindow, "Warning: There are " + brokenPercent.ToString("f1") + "% stacks that are broken\r\n" +
+                    "Top down analysis is suspect, however bottom up approaches are still valid.\r\n\r\n" +
+                    "Use the troubleshooting link at the top of the view for more information.\r\n",
+                    "Broken Stacks");
 
                 return true;
             }
@@ -9124,6 +9109,7 @@ table {
             if (stackSourceName.Contains("Thread Time"))
             {
                 stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+                stackWindow.FoldRegExTextBox.Text += ";UNMANAGED_CODE_TIME;CPU";
             }
 
             if (stackSourceName.StartsWith("GC Heap Net Mem") || stackSourceName.StartsWith("GC Heap Alloc Ignore Free"))

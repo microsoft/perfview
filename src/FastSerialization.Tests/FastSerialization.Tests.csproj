@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>FastSerializationTests</RootNamespace>
     <Description>Unit tests for FastSerialization.</Description>
     <Copyright>Copyright © Microsoft 2016</Copyright>
