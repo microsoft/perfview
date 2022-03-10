@@ -3929,8 +3929,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             else
             {
                 // This isn't always true, but we don't yet have enough data to distinguish tiered compilation from other causes of versioned compilation (ie profiler ReJIT)
-                _method.CompilationThreadKind = _method.IsDefaultVersion ? CompilationThreadKind.Foreground : CompilationThreadKind.TieredCompilationBackground;
-
+                // Currently, OSR only happens on foreground threads.
+                if (_method.OptimizationTier == OptimizationTier.OptimizedTier1OSR)
+                {
+                    _method.CompilationThreadKind = CompilationThreadKind.Foreground;
+                }
+                else
+                {
+                    _method.CompilationThreadKind = _method.IsDefaultVersion ? CompilationThreadKind.Foreground : CompilationThreadKind.TieredCompilationBackground;
+                }
             }
 
             _method.Completed++;
