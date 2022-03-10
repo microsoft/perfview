@@ -55,8 +55,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             IReadOnlyDictionary<ThreadInfo, IReadOnlyList<ProfileEvent>> sortedProfileEventsPerThread,
             TextWriter writer, string name)
         {
+            Dictionary<string, string> escapedNames = new Dictionary<string, string>();
+
             writer.Write("{");
-            writer.Write($"\"otherData\": {{ \"name\": \"{name}\", \"exporter\": \"{GetExporterInfo()}\" }}, ");
+            writer.Write($"\"otherData\": {{ \"name\": \"{GetEscaped(name, escapedNames)}\", \"exporter\": \"{GetExporterInfo()}\" }}, ");
             writer.Write("\"traceEvents\": [");
             bool isFirst = true;
             foreach (var perThread in sortedProfileEventsPerThread.OrderBy(pair => pair.Value.First().RelativeTime))
@@ -69,7 +71,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
                         isFirst = false;
 
                     writer.Write("{");
-                    writer.Write($"\"name\": \"{frameIdToFrameTuple[profileEvent.FrameId].Name}\", ");
+                    writer.Write($"\"name\": \"{GetEscaped(frameIdToFrameTuple[profileEvent.FrameId].Name, escapedNames)}\", ");
                     writer.Write($"\"cat\": \"sampleEvent\", ");
                     writer.Write($"\"ph\": \"{(profileEvent.Type == ProfileEventType.Open ? "B" : "E")}\", ");
                     writer.Write($"\"ts\": {profileEvent.RelativeTime.ToString("R", CultureInfo.InvariantCulture)}, ");
@@ -93,7 +95,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
                 var frameId = frame.Key;
                 var frameInfo = frame.Value;
                 writer.Write($"\"{frameId}\": {{");
-                writer.Write($"\"name\": \"{frameInfo.Name}\", ");
+                writer.Write($"\"name\": \"{GetEscaped(frameInfo.Name, escapedNames)}\", ");
                 writer.Write($"\"category\": \"{frameInfo.Category}\"");
                 if (frameInfo.ParentId != -1)
                     writer.Write($", \"parent\": {frameInfo.ParentId}");

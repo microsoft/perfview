@@ -51,6 +51,31 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\KernelTraceControl.dll')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\KernelTraceControl.dll">
+      <Link>arm64\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\msdia140.dll')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\msdia140.dll">
+      <Link>arm64\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\msvcp140.dll')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\msvcp140.dll">
+      <Link>arm64\msvcp140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140.dll')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140.dll">
+      <Link>arm64\vcruntime140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140_1.dll')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140_1.dll">
+      <Link>arm64\vcruntime140_1.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
 
     <!-- There are no static references to these so I need to copy them explicitly.  
          The first two COM interop assemblies so they are the same for all targets, I pick netstandard1.6 pretty arbitraily 

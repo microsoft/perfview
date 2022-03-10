@@ -27,6 +27,8 @@ namespace FastSerialization
         internal const long InitialCapacity = 64 * 1024;
         internal const int BlockCopyCapacity = 10 * 1024 * 1024;
 
+        private Action<StreamLabel> writeLabel;
+
         private MemoryMappedFile _file;
         private string _mapName;
         private long _fileCapacity;
@@ -36,8 +38,26 @@ namespace FastSerialization
         private int _capacity;
         private int _offset;
 
-        public MemoryMappedFileStreamWriter(long initialCapacity = InitialCapacity)
+        public MemoryMappedFileStreamWriter(long initialCapacity = InitialCapacity, SerializationConfiguration config = null)
         {
+            SerializationConfiguration = config ?? new SerializationConfiguration();
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                writeLabel = (value) =>
+                {
+                    Debug.Assert((long)value <= int.MaxValue, "The StreamLabel overflowed, it should not be treated as a 32bit value.");
+                    Write((int)value);
+                };
+            }
+            else
+            {
+                writeLabel = (value) =>
+                {
+                    Write((long)value);
+                };
+            }
+
             long subPageSize = initialCapacity % PageSize;
             if (subPageSize != 0)
             {
@@ -58,6 +78,11 @@ namespace FastSerialization
                 throw new OutOfMemoryException(e.Message, e);
             }
         }
+
+        /// <summary>
+        /// Returns the SerializationConfiguration for this stream writer.
+        /// </summary>
+        internal SerializationConfiguration SerializationConfiguration { get; }
 
         public void Dispose()
         {
@@ -81,7 +106,7 @@ namespace FastSerialization
 
         public MemoryMappedFileStreamReader GetReader()
         {
-            return new MemoryMappedFileStreamReader(_mapName, Length);
+            return new MemoryMappedFileStreamReader(_mapName, Length, SerializationConfiguration);
         }
 
         public void Clear()
@@ -110,17 +135,8 @@ namespace FastSerialization
         public long Length
             => _viewOffset + _offset;
 
-        public StreamLabel GetLabel(bool allowPadding)
+        public StreamLabel GetLabel()
         {
-            if ((Length & 0x1) != 0)
-            {
-                if (!allowPadding)
-                    throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-                Write((byte)Tags.Padding);
-                Debug.Assert((Length & 0x1) == 0);
-            }
-
             return checked((StreamLabel)Length);
         }
 
@@ -209,11 +225,7 @@ namespace FastSerialization
 
         public void Write(StreamLabel value)
         {
-            if (((long)value & 0x1) != 0)
-                throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-            uint packedLabel = (uint)((long)value >> 1);
-            Write(unchecked((int)packedLabel));
+            writeLabel(value);
         }
 
         public unsafe void Write(string value)

@@ -27,19 +27,39 @@ namespace FastSerialization
         /// </summary>
         public MemoryStreamReader(byte[] data) : this(data, 0, data.Length) { }
         /// <summary>
-        /// Create a IStreamReader (reads binary data) from a given subregion of a byte buffer 
+        /// Create a IStreamReader (reads binary data) from a given subregion of a byte buffer.
         /// </summary>
-        public MemoryStreamReader(byte[] data, int start, int length)
+        public MemoryStreamReader(byte[] data, int start, int length, SerializationConfiguration config = null)
         {
             bytes = data;
             position = start;
             endPosition = length;
+            SerializationConfiguration = config != null ? config : new SerializationConfiguration();
+
+            if(SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                readLabel = () =>
+                {
+                    return (StreamLabel)(uint)ReadInt32();
+                };
+                sizeOfSerializedStreamLabel = 4;
+            }
+            else
+            {
+                readLabel = () =>
+                {
+                    return (StreamLabel)(ulong)ReadInt64();
+                };
+                sizeOfSerializedStreamLabel = 8;
+            }
         }
+
         /// <summary>
         /// The total length of bytes that this reader can read.
         /// </summary>
         public virtual long Length { get { return endPosition; } }
         public virtual bool HasLength { get { return true; } }
+        public SerializationConfiguration SerializationConfiguration { get; private set; }
 
         #region implemenation of IStreamReader
         public virtual void Read(byte[] data, int offset, int length)
@@ -153,7 +173,8 @@ namespace FastSerialization
         /// </summary>
         public StreamLabel ReadLabel()
         {
-            return (StreamLabel)((ulong)unchecked((uint)ReadInt32()) << 1);
+            // Delegate set in the constructor based on the size of StreamLabel.
+            return readLabel();
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -179,7 +200,6 @@ namespace FastSerialization
         /// </summary>
         public virtual void GotoSuffixLabel()
         {
-            const int sizeOfSerializedStreamLabel = 4;
             Goto((StreamLabel)(Length - sizeOfSerializedStreamLabel));
             Goto(ReadLabel());
         }
@@ -206,6 +226,8 @@ namespace FastSerialization
         internal /*protected*/  int position;
         internal /*protected*/  int endPosition;
         private StringBuilder sb;
+        private Func<StreamLabel> readLabel;
+        private readonly int sizeOfSerializedStreamLabel;
         #endregion
     }
 
@@ -225,10 +247,30 @@ namespace FastSerialization
         /// 
         /// Call 'GetBytes' call to get the raw array.  Only the first 'Length' bytes are valid
         /// </summary>
-        public MemoryStreamWriter(int initialSize = 64)
+        public MemoryStreamWriter(int initialSize = 64, SerializationConfiguration config = null)
         {
             bytes = new byte[initialSize];
+            SerializationConfiguration = config != null ? config : new SerializationConfiguration();
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                writeLabel = (value) =>
+                {
+                    Debug.Assert((long)value <= int.MaxValue);
+                    Write((int)value);
+                };
+            }
+            else
+            {
+                writeLabel = (value) =>
+                {
+                    Debug.Assert((long)value <= long.MaxValue);
+                    Write((long)value);
+                };
+            }
         }
+
+        public SerializationConfiguration SerializationConfiguration { get; set; }
 
         /// <summary>
         /// Returns a IStreamReader that will read the written bytes. You cannot write additional bytes to the stream after making this call.
@@ -330,11 +372,7 @@ namespace FastSerialization
         /// </summary>
         public void Write(StreamLabel value)
         {
-            if (((long)value & 0x1) != 0)
-                throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-            uint packedLabel = (uint)((long)value >> 1);
-            Write(unchecked((int)packedLabel));
+            writeLabel(value);
         }
         /// <summary>
         /// Implementation of IStreamWriter
@@ -401,17 +439,8 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public virtual StreamLabel GetLabel(bool allowPadding)
+        public virtual StreamLabel GetLabel()
         {
-            if ((Length & 0x1) != 0)
-            {
-                if (!allowPadding)
-                    throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-                Write((byte)Tags.Padding);
-                Debug.Assert((Length & 0x1) == 0);
-            }
-
             return (StreamLabel)Length;
         }
         /// <summary>
@@ -466,6 +495,7 @@ namespace FastSerialization
             Array.Copy(bytes, newBytes, bytes.Length);
             bytes = newBytes;
         }
+        private Action<StreamLabel> writeLabel;
         internal /* protected */ byte[] bytes;
         internal /* protected */ int endPosition;
         #endregion
@@ -639,16 +669,17 @@ namespace FastSerialization
         /// Create a new IOStreamStreamReader from the given file.  
         /// </summary>
         /// <param name="fileName"></param>
-        public IOStreamStreamReader(string fileName)
-            : this(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete)) { }
+        public IOStreamStreamReader(string fileName, SerializationConfiguration config = null)
+            : this(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete), config: config) { }
 
         /// <summary>
         /// Create a new IOStreamStreamReader from the given System.IO.Stream.   Optionally you can specify the size of the read buffer
         /// The stream will be closed by the IOStreamStreamReader when it is closed.  
         /// </summary>
-        public IOStreamStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, bool leaveOpen = false)
-            : base(new byte[bufferSize + align], 0, 0)
+        public IOStreamStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, bool leaveOpen = false, SerializationConfiguration config = null, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
+            : base(new byte[bufferSize + (int)alignment], 0, 0, config)
         {
+            align = (int)alignment;
             Debug.Assert(bufferSize % align == 0);
             this.inputStream = inputStream;
             this.leaveOpen = leaveOpen;
@@ -710,6 +741,22 @@ namespace FastSerialization
             // remainder from the stream
             if (length > (bytes.Length - align))
             {
+                // check if our inputstreambytesread < position in stream then throw out delta
+                if (inputStreamBytesRead < positionInStream)
+                {
+                    long amountToThrowOut = positionInStream - inputStreamBytesRead;
+                    while (amountToThrowOut > 0)
+                    {
+                        int read = inputStream.Read(bytes, 0, (int)Math.Min(amountToThrowOut, (long)bytes.Length));
+                        inputStreamBytesRead += read;
+                        if (read == 0)
+                        {
+                            throw new Exception("Read past end of stream.");
+                        }
+                        amountToThrowOut -= read;
+                    }
+                }
+
                 int positionAlignmentOffset = position % align;
                 int alignedLength = (length & ~(align - 1)) - positionAlignmentOffset;
                 int cacheBytes = Math.Max(0, endPosition - position);
@@ -766,7 +813,6 @@ namespace FastSerialization
             base.Dispose(disposing);
         }
 
-        internal /*protected*/  const int align = 8;        // Needs to be a power of 2
         internal /*protected*/  const int defaultBufferSize = 0x4000;  // 16K 
 
         /// <summary>
@@ -860,6 +906,8 @@ namespace FastSerialization
                 throw new Exception("Read past end of stream.");
             }
         }
+
+        internal /*protected*/  readonly int align = 8;        // Needs to be a power of 2
         internal /*protected*/  Stream inputStream;
         internal /* protected*/ long inputStreamBytesRead; // only required for non-seekable streams
         private bool leaveOpen;
@@ -881,17 +929,17 @@ namespace FastSerialization
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given file.  You can optionally set the size of the read buffer.  
         /// </summary>
-        public PinnedStreamReader(string fileName, int bufferSize = defaultBufferSize)
+        public PinnedStreamReader(string fileName, int bufferSize = defaultBufferSize, SerializationConfiguration config = null)
             : this(new FileStream(fileName, FileMode.Open, FileAccess.Read,
-            FileShare.Read | FileShare.Delete), bufferSize)
+            FileShare.Read | FileShare.Delete), bufferSize, config)
         { }
 
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given System.IO.Stream.  You can optionally set the size of the read buffer.  
         /// The stream will be closed by the PinnedStreamReader when it is closed.  
         /// </summary>
-        public PinnedStreamReader(Stream inputStream, int bufferSize = defaultBufferSize)
-            : base(inputStream, bufferSize)
+        public PinnedStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, SerializationConfiguration config = null, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
+            : base(inputStream, bufferSize, config: config, alignment: alignment)
         {
             // Pin the array
             pinningHandle = System.Runtime.InteropServices.GCHandle.Alloc(bytes, System.Runtime.InteropServices.GCHandleType.Pinned);
@@ -1058,13 +1106,13 @@ namespace FastSerialization
         /// Create a IOStreamStreamWriter that writes its data to a given file that it creates
         /// </summary>
         /// <param name="fileName"></param>
-        public IOStreamStreamWriter(string fileName) : this(new FileStream(fileName, FileMode.Create)) { }
+        public IOStreamStreamWriter(string fileName, SerializationConfiguration config = null) : this(new FileStream(fileName, FileMode.Create), config: config) { }
 
         /// <summary>
         /// Create a IOStreamStreamWriter that writes its data to a System.IO.Stream
         /// </summary>
-        public IOStreamStreamWriter(Stream outputStream, int bufferSize = defaultBufferSize + sizeof(long), bool leaveOpen = false)
-            : base(bufferSize)
+        public IOStreamStreamWriter(Stream outputStream, int bufferSize = defaultBufferSize + sizeof(long), bool leaveOpen = false, SerializationConfiguration config = null)
+            : base(bufferSize, config)
         {
             this.outputStream = outputStream;
             this.leaveOpen = leaveOpen;
@@ -1083,7 +1131,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Insures the bytes in the stream are written to the stream and cleans up resources.  
+        /// Ensures the bytes in the stream are written to the stream and cleans up resources.  
         /// </summary>
         public void Close()
         {
@@ -1110,21 +1158,12 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of the IStreamWriter interface 
         /// </summary>
-        public override StreamLabel GetLabel(bool allowPadding)
+        public override StreamLabel GetLabel()
         {
             long len = Length;
-            if ((len >> 1) != (uint)(len >> 1))
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes && len != (uint)len)
             {
-                throw new NotSupportedException("Streams larger than 8 GB.  You need to use /MaxEventCount to limit the size.");
-            }
-
-            if ((len & 0x1) != 0)
-            {
-                if (!allowPadding)
-                    throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-                Write((byte)Tags.Padding);
-                len++;
+                throw new NotSupportedException("Streams larger than 4 GB.  You need to use /MaxEventCount to limit the size.");
             }
 
             return (StreamLabel)len;

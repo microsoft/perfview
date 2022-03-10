@@ -2,15 +2,32 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 
 namespace FastSerialization
 {
     public class SegmentedMemoryStreamWriter : IStreamWriter
     {
-        public SegmentedMemoryStreamWriter() : this(64) { }
-        public SegmentedMemoryStreamWriter(int initialSize)
+        public SegmentedMemoryStreamWriter(SerializationConfiguration config = null) : this(64, config) { }
+        public SegmentedMemoryStreamWriter(long initialSize, SerializationConfiguration config = null)
         {
+            SerializationConfiguration = config ?? new SerializationConfiguration();
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                writeLabel = (value) =>
+                {
+                    Debug.Assert((long)value <= int.MaxValue, "The StreamLabel overflowed, it should not be treated as a 32bit value.");
+                    Write((int)value);
+                };
+            }
+            else
+            {
+                writeLabel = (value) =>
+                {
+                    Write((long)value);
+                };
+            }
+
             bytes = new SegmentedList<byte>(65_536, initialSize);
         }
 
@@ -45,10 +62,8 @@ namespace FastSerialization
             bytes.Add((byte)value); value = value >> 8;
             bytes.Add((byte)value); value = value >> 8;
         }
-        public void Write(StreamLabel value)
-        {
-            Write((int)value);
-        }
+        public void Write(StreamLabel value) => writeLabel(value);
+
         public void Write(string value)
         {
             if (value == null)
@@ -71,17 +86,8 @@ namespace FastSerialization
             throw new NotImplementedException();
         }
 
-        public virtual StreamLabel GetLabel(bool allowPadding)
+        public virtual StreamLabel GetLabel()
         {
-            if ((Length & 0x1) != 0)
-            {
-                if (!allowPadding)
-                    throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-                Write((byte)Tags.Padding);
-                Debug.Assert((Length & 0x1) == 0);
-            }
-
             return (StreamLabel)Length;
         }
         public void WriteSuffixLabel(StreamLabel value)
@@ -100,9 +106,14 @@ namespace FastSerialization
         public SegmentedMemoryStreamReader GetReader()
         {
             var readerBytes = bytes;
-            return new SegmentedMemoryStreamReader(readerBytes, 0, (int)readerBytes.Count);
+            return new SegmentedMemoryStreamReader(readerBytes, 0, readerBytes.Count, SerializationConfiguration);
         }
         public void Dispose() { }
+
+        /// <summary>
+        /// Returns the SerializationConfiguration for this stream writer.
+        /// </summary>
+        internal SerializationConfiguration SerializationConfiguration { get; private set; }
 
         #region private
         protected virtual void MakeSpace()
@@ -116,6 +127,7 @@ namespace FastSerialization
         }
 
         protected SegmentedList<byte> bytes;
+        private Action<StreamLabel> writeLabel;
         #endregion
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using Address = System.UInt64;
 
@@ -119,9 +120,9 @@ namespace Graphs
         /// </summary>
         public NodeIndex NodeIndexLimit { get { return (NodeIndex)m_nodes.Count; } }
         /// <summary>
-        /// Same as NodeIndexLimit, just cast to an integer.  
+        /// Same as NodeIndexLimit.  
         /// </summary>
-        public int NodeCount { get { return m_nodes.Count; } }
+        public long NodeCount { get { return m_nodes.Count; } }
         /// <summary>
         /// It is expected that users will want additional information associated with TYPES of the nodes of the graph.  They can
         /// do this by allocating an array of code:NodeTypeIndexLimit and then indexing this by code:NodeTypeIndex
@@ -160,8 +161,11 @@ namespace Graphs
         /// 
         /// TODO I can eliminate the need for AllowReading.  
         /// </summary>
-        public Graph(int expectedNodeCount)
+        /// <remarks>if isVeryLargeGraph argument is true, then StreamLabels will be serialized as longs
+        /// too acommodate for the extra size of the graph's stream representation.</remarks>
+        public Graph(int expectedNodeCount, bool isVeryLargeGraph = false)
         {
+            m_isVeryLargeGraph = isVeryLargeGraph;
             m_expectedNodeCount = expectedNodeCount;
             m_types = new GrowableArray<TypeInfo>(Math.Max(expectedNodeCount / 100, 2000));
             m_nodes = new SegmentedList<nuint>(SegmentSize, m_expectedNodeCount);
@@ -460,7 +464,7 @@ namespace Graphs
         internal void SetNodeTypeAndSize(NodeIndex nodeIndex, NodeTypeIndex typeIndex, int sizeInBytes)
         {
             Debug.Assert((StreamLabel)m_nodes[(int)nodeIndex] == m_undefinedObjDef, "Calling SetNode twice for node index " + nodeIndex);
-            m_nodes[(int)nodeIndex] = (nuint)m_writer.GetLabel(allowPadding: true);
+            m_nodes[(int)nodeIndex] = (nuint)m_writer.GetLabel();
 
             Debug.Assert(sizeInBytes >= 0);
             // We are going to assume that if this is negative it is because it is a large positive number.  
@@ -507,7 +511,8 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             if (m_writer == null)
             {
-                m_writer = new MemoryMappedFileStreamWriter((long)m_expectedNodeCount * 8);
+                m_writer = new MemoryMappedFileStreamWriter(m_expectedNodeCount * 8,
+                    m_isVeryLargeGraph ? new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes } : null);
             }
 
             m_totalSize = 0;
@@ -518,7 +523,7 @@ namespace Graphs
 
             // Create an undefined node, kind of gross because SetNode expects to have an entry
             // in the m_nodes table, so we make a fake one and then remove it.  
-            m_undefinedObjDef = m_writer.GetLabel(allowPadding: false);
+            m_undefinedObjDef = m_writer.GetLabel();
             m_nodes.Add((nuint)m_undefinedObjDef);
             SetNode(0, CreateType("UNDEFINED"), 0, new HashSet<NodeIndex>());
             Debug.Assert((StreamLabel)m_nodes[0] == m_undefinedObjDef);
@@ -580,7 +585,15 @@ namespace Graphs
             }
 
             // Write out the Nodes 
-            serializer.Write(m_nodes.Count);
+            if (m_isVeryLargeGraph)
+            {
+                serializer.Write(m_nodes.Count);
+            }
+            else
+            {
+                serializer.Write((int)m_nodes.Count);
+            }
+
             int previousLabel = 0;
             for (int i = 0; i < m_nodes.Count; i++)
             {
@@ -630,7 +643,7 @@ namespace Graphs
 
                     // You can place tagged values in here always adding right before the WriteTaggedEnd
                     // for any new fields added after version 1 
-                    serializer.WriteTaggedEnd(); // This insures tagged things don't read junk after the region.  
+                    serializer.WriteTaggedEnd(); // This ensures tagged things don't read junk after the region.  
                 });
             }
         }
@@ -661,11 +674,11 @@ namespace Graphs
             }
 
             // Read in the Nodes 
-            int nodeCount = deserializer.ReadInt();
+            long nodeCount = m_isVeryLargeGraph ? deserializer.ReadInt64() : deserializer.ReadInt();
             m_nodes = new SegmentedList<nuint>(SegmentSize, nodeCount);
 
             uint previousLabel = 0;
-            for (int i = 0; i < nodeCount; i++)
+            for (long i = 0; i < nodeCount; i++)
             {
                 // Read the label as a compressed differential integer
                 uint difference = unchecked((uint)Node.ReadCompressedInt(deserializer.Reader));
@@ -680,7 +693,9 @@ namespace Graphs
             const int BlockCopyCapacity = 0x4000;
             byte[] data = new byte[BlockCopyCapacity];
 
-            MemoryMappedFileStreamWriter writer = new MemoryMappedFileStreamWriter(blobCount);
+            MemoryMappedFileStreamWriter writer = new MemoryMappedFileStreamWriter(blobCount,
+                m_isVeryLargeGraph ? new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes } : null);
+
             for (long i = 0; i < blobCount; i += BlockCopyCapacity)
             {
                 int chunkSize = (int)Math.Min(blobCount - i, BlockCopyCapacity);
@@ -735,7 +750,7 @@ namespace Graphs
             }
         }
 
-        private int m_expectedNodeCount;                // Initial guess at graph Size. 
+        private long m_expectedNodeCount;                // Initial guess at graph Size.
         private long m_totalSize;                       // Total Size of all the nodes in the graph.  
         internal int m_totalRefs;                       // Total Number of references in the graph
         internal GrowableArray<TypeInfo> m_types;       // We expect only thousands of these
@@ -747,6 +762,7 @@ namespace Graphs
         // There should not be any of these left as long as every node referenced
         // by another node has a definition.
         internal MemoryMappedFileStreamWriter m_writer; // Used only during construction to serialize the nodes.  
+        protected bool m_isVeryLargeGraph;
         #endregion
     }
 
@@ -2491,7 +2507,7 @@ public class GraphSampler
             stats.TotalMetric += node.Size;
         }
 
-        // Also insure that if there are a large number of types, that we sample them at least some. 
+        // Also ensure that if there are a large number of types, that we sample them at least some. 
         if (stats.SampleCount == 0 && !mustAdd && (m_numDistictTypesWithSamples + .5F) * m_filteringRatio <= m_numDistictTypes)
         {
             mustAdd = true;

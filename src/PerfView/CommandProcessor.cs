@@ -217,7 +217,7 @@ namespace PerfView
                 }
                 finally
                 {
-                    collectionCompleted.Set();  // This insures that the GUI window closes.  
+                    collectionCompleted.Set();  // This ensures that the GUI window closes.  
                     if (!success)
                     {
                         Abort(parsedArgs);
@@ -405,7 +405,7 @@ namespace PerfView
             string heapFileName = Path.ChangeExtension(parsedArgs.DataFile, ".userheap.etl");
             string rundownFileName = Path.ChangeExtension(parsedArgs.DataFile, ".clrRundown.etl");
             string kernelRundownFileName = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
-            // Insure that old data is gone
+            // Ensure that old data is gone
             var fileNames = new string[] { zipFileName, userFileName, kernelFileName, heapFileName, rundownFileName, kernelRundownFileName };
             try
             {
@@ -485,7 +485,14 @@ namespace PerfView
                         kernelModeSession.CircularBufferMB = parsedArgs.CircularMB;
                     }
 
-                    kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
+                    // Don't capture any kernel stacks for /GCCollectOnly.
+                    KernelTraceEventParser.Keywords stackKeywords = parsedArgs.KernelEvents;
+                    if (parsedArgs.GCCollectOnly)
+                    {
+                        stackKeywords = KernelTraceEventParser.Keywords.None;
+                    }
+
+                    kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, stackKeywords);
                 }
 
                 // Turn on the OS Heap stuff if anyone asked for it.  
@@ -892,11 +899,14 @@ namespace PerfView
                                 stacksEnabled);
                         }
 
-                        LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
-                        EnableUserProvider(userModeSession, "MeasurementBlock",
-                            new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue, options);
-                        EnableUserProvider(userModeSession, "CodeMarkers",
-                            new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                        if (!(parsedArgs.GCCollectOnly || parsedArgs.GCOnly))
+                        {
+                            LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
+                            EnableUserProvider(userModeSession, "MeasurementBlock",
+                                new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                            EnableUserProvider(userModeSession, "CodeMarkers",
+                                new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue, options);
+                        }
 
                         // Turn off NGEN if they asked for it.  
                         if (parsedArgs.NoNGenRundown)
@@ -1347,7 +1357,7 @@ namespace PerfView
         public void Abort(CommandLineArgs parsedArgs)
         {
             LaunchPerfViewElevatedIfNeeded("Abort", parsedArgs);
-            lock (s_UserModeSessionName)    // Insure only one thread can be aborting at a time.
+            lock (s_UserModeSessionName)    // Ensure only one thread can be aborting at a time.
             {
                 if (s_abortInProgress)
                 {
@@ -1402,7 +1412,7 @@ namespace PerfView
                 }
                 catch (Exception) { }
 
-                // Insure all the ETWEventTrigger sessions are dead.  
+                // Ensure all the ETWEventTrigger sessions are dead.  
                 foreach (var sessionName in TraceEventSession.GetActiveSessionNames())
                 {
                     if (sessionName.StartsWith(ETWEventTrigger.SessionNamePrefix, StringComparison.OrdinalIgnoreCase))
@@ -1418,7 +1428,7 @@ namespace PerfView
                     }
                 }
 
-                // Insure that the rundown session is also stopped. 
+                // Ensure that the rundown session is also stopped. 
                 try
                 {
                     using (var rundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", TraceEventSessionOptions.Attach))
@@ -1432,7 +1442,7 @@ namespace PerfView
                 try { UninstallETWClrProfiler(LogFile); }
                 catch (Exception) { }
 
-                // Insure that network monitoring is off
+                // Ensure that network monitoring is off
                 try
                 {
                     DisableNetMonTrace();
@@ -1476,12 +1486,12 @@ namespace PerfView
             LogFile.WriteLine("[Merging data files to " + Path.GetFileName(parsedArgs.DataFile) + ".  Can take 10s of seconds... (can skip if data analyzed on same machine with PerfView)]");
             Stopwatch sw = Stopwatch.StartNew();
 
-            if (!parsedArgs.NoGui && !App.ConfigData.ContainsKey("InformedAboutSkippingMerge"))
+            if (!parsedArgs.NoGui && !App.UserConfigData.ContainsKey("InformedAboutSkippingMerge"))
             {
                 if (IsGuiCollection(parsedArgs))
                 {
                     InformedAboutSkippingMerge();
-                    App.ConfigData["InformedAboutSkippingMerge"] = "true";
+                    App.UserConfigData["InformedAboutSkippingMerge"] = "true";
                 }
             }
 
@@ -2330,13 +2340,13 @@ namespace PerfView
                     parsedArgs.Merge = collectWindow.MergeCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Merge.HasValue)
                     {
-                        App.ConfigData["Merge"] = parsedArgs.Merge.Value.ToString();
+                        App.UserConfigData["Merge"] = parsedArgs.Merge.Value.ToString();
                     }
 
                     parsedArgs.Zip = collectWindow.ZipCheckBox.IsChecked;
                     if (collectWindow.m_mergeOrZipCheckboxTouched && parsedArgs.Zip.HasValue)
                     {
-                        App.ConfigData["Zip"] = parsedArgs.Zip.Value.ToString();
+                        App.UserConfigData["Zip"] = parsedArgs.Zip.Value.ToString();
                     }
 
                     parsedArgs.NoRundown = !(collectWindow.RundownCheckBox.IsChecked ?? false);
@@ -2524,10 +2534,10 @@ namespace PerfView
         private static string s_dotNetKey = @"Software\Microsoft\.NETFramework";
         private static string s_dotNetKey32 = @"Software\Wow6432Node\Microsoft\.NETFramework";
 
-        // Insures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
+        // Ensures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
-            log.WriteLine("Insuring that the .NET CLR Profiler is installed.");
+            log.WriteLine("Ensuring that the .NET CLR Profiler is installed.");
             var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
             if (File.Exists(profilerDll))
             {
@@ -2608,7 +2618,7 @@ namespace PerfView
 
         private static void UninstallETWClrProfiler(TextWriter log)
         {
-            log.WriteLine("Insuring .NET Allocation profiler not installed.");
+            log.WriteLine("Ensuring .NET Allocation profiler not installed.");
 
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
             {
@@ -3032,6 +3042,11 @@ namespace PerfView
                 cmdLineArgs += " /GCCollectOnly";
             }
 
+            if (parsedArgs.GCTriggeredStacks)
+            {
+                cmdLineArgs += " /GCTriggeredStacks";
+            }
+
             if (parsedArgs.DotNetAlloc)
             {
                 cmdLineArgs += " /DotNetAlloc";
@@ -3255,14 +3270,14 @@ namespace PerfView
                 return;
             }
 
-            var warnedAboutAspNetTracing = App.ConfigData["WarnedAboutAspNetTracing"];
+            var warnedAboutAspNetTracing = App.UserConfigData["WarnedAboutAspNetTracing"];
             if (warnedAboutAspNetTracing == "true")
             {
                 return;
             }
 
             ShowAspNetWarningBox(message);
-            App.ConfigData["WarnedAboutAspNetTracing"] = "true";
+            App.UserConfigData["WarnedAboutAspNetTracing"] = "true";
         }
 
         // In its own routine so that we don't run WPF on ARM.  

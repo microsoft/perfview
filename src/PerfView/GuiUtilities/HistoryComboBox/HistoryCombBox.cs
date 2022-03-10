@@ -146,15 +146,7 @@ namespace Controls
         /// </summary>
         private void FireEnter(object sender, RoutedEventArgs e)
         {
-            // Remove selected text (completion guess), so we only get what the user typed
-            var selectionLength = GetTextBox().SelectionLength;
             var text = GetTextBox().Text;
-
-            // the selection is the whole textbox, go ahead and leave it.  
-            if (selectionLength != 0 && selectionLength != GetTextBox().Text.Length)
-            {
-                GetTextBox().Text = text.Substring(0, GetTextBox().SelectionStart);
-            }
 
             if (text.Length > 0)
             {

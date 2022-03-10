@@ -93,7 +93,7 @@
             </TextBlock>
             <CheckBox Grid.Column="1" Name="ZipCheckBox" VerticalAlignment="Center" Margin="0,0,10,0" Click="ZipCheckBoxClicked" />
 
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="After this size (in metabytes) old events are thown away to keep file size under control" >
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="After this size (in megabytes) old events are thown away to keep file size under control" >
                         <Hyperlink Command="Help" CommandParameter="CircularTextBox">Circular<LineBreak/>MB:</Hyperlink>
             </TextBlock>
 

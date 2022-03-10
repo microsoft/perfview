@@ -68,7 +68,7 @@ namespace TraceEventSamples
                 // Set up Ctrl-C to stop both user mode and kernel mode sessions
                 Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs cancelArgs)
                 {
-                    Out.WriteLine("Insuring all ETW sessions are stopped.");
+                    Out.WriteLine("Ensuring all ETW sessions are stopped.");
                     kernelSession.Stop(true);         // true means don't throw on error
                     userSession.Stop(true);           // true means don't throw on error
                     // Since we don't cancel the Ctrl-C we will terminate the process as normal for Ctrl-C
@@ -94,7 +94,7 @@ namespace TraceEventSamples
                 Thread.Sleep(10000);
 
                 Out.WriteLine("Stopping sessions");
-            }    // Using clauses will insure that session are disposed (and thus stopped) before Main returns.  
+            }    // Using clauses will ensure that session are disposed (and thus stopped) before Main returns.  
 
             Out.WriteLine("Merging the raw files into a single '{0}' file.", dataFileName);
             TraceEventSession.MergeInPlace(dataFileName, Out);

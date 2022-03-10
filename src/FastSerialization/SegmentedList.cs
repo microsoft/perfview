@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 // ---------------------------------------------------------------------------
 // <copyright file="SegmentedList.cs" company="Microsoft">
@@ -33,8 +27,8 @@ namespace System.Collections.Generic
         private readonly int segmentShift;
         private readonly int offsetMask;
 
-        private int capacity;
-        private int count;
+        private long capacity;
+        private long count;
         private T[][] items;
 
         /// <summary>
@@ -51,7 +45,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="segmentSize">Segment size</param>
         /// <param name="initialCapacity">Initial capacity</param>
-        public SegmentedList(int segmentSize, int initialCapacity)
+        public SegmentedList(int segmentSize, long initialCapacity)
         {
             if (segmentSize <= 1 || (segmentSize & (segmentSize - 1)) != 0)
             {
@@ -83,15 +77,30 @@ namespace System.Collections.Generic
         /// <summary>
         /// Returns the count of elements in the list.
         /// </summary>
-        public int Count
+        int ICollection<T>.Count
         {
-            get { return (int)this.count; }
+            get
+            {
+                if (Count > int.MaxValue)
+                {
+                    throw new InvalidOperationException("Number of elements in Collection are greater than max value of int.");
+                }
+
+                return (int)Count;
+            }
+        }
+
+        public long Count
+        {
+            get { return this.count; }
             set
             {
                 Debug.Assert(value >= 0);
                 this.count = value;
             }
         }
+
+        internal long Capacity => this.capacity;
 
         /// <summary>
         /// Copy to Array
@@ -110,10 +119,10 @@ namespace System.Collections.Generic
                 throw new InvalidOperationException("Attempting to remove an element from empty collection.");
             }
 
-            int oldSegmentIndex = --count >> segmentShift;
+            int oldSegmentIndex = (int)(--count >> segmentShift);
             T result = items[oldSegmentIndex][count & offsetMask];
 
-            int newSegmentIndex = (count - 1) >> segmentShift;
+            int newSegmentIndex = (int)((count - 1) >> segmentShift);
 
             if (newSegmentIndex != oldSegmentIndex)
             {
@@ -132,11 +141,30 @@ namespace System.Collections.Generic
             get { return false; }
         }
 
+        int IReadOnlyCollection<T>.Count
+        {
+            get
+            {
+                if (Count > int.MaxValue)
+                {
+                    throw new InvalidOperationException("Number of elements in Collection are greater than max value of int.");
+                }
+
+                return (int)Count;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the given element in the list.
         /// </summary>
         /// <param name="index">Element index.</param>
-        public T this[int index]
+        T IReadOnlyList<T>.this[int index] => this[index];
+
+        /// <summary>
+        /// Gets or sets the given element in the list.
+        /// </summary>
+        /// <param name="index">Element index.</param>
+        public T this[long index]
         {
             get
             {
@@ -149,12 +177,15 @@ namespace System.Collections.Generic
             }
         }
 
+        internal ref T GetElementByReference(int index) =>
+            ref this.items[index >> this.segmentShift][index & this.offsetMask];
+
         /// <summary>
         /// Necessary if the list is being used as an array since it creates the segments lazily.
         /// </summary>
         /// <param name="index"></param>
         /// <returns>true if the segment is allocated and false otherwise</returns>
-        public bool IsValidIndex(int index)
+        public bool IsValidIndex(long index)
         {
             return this.items[index >> this.segmentShift] != null;
         }
@@ -191,7 +222,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="index">Insert position.</param>
         /// <param name="item">New element to insert.</param>
-        public void Insert(int index, T item)
+        public void Insert(long index, T item)
         {
             // Note that insertions at the end are legal.
             if (this.count == this.capacity)
@@ -219,7 +250,7 @@ namespace System.Collections.Generic
         /// Removes element at the given position in the list.
         /// </summary>
         /// <param name="index">Position of the element to remove.</param>
-        public void RemoveAt(int index)
+        public void RemoveAt(long index)
         {
             if (index < this.count)
             {
@@ -227,9 +258,6 @@ namespace System.Collections.Generic
             }
 
             this.count--;
-
-            // For the inner class of GlobCountSet we know that T is a simple value type, so no need to zero out.
-            //// this.items[this.count >> this.segmentShift][this.count & this.offsetMask] = default(T);
         }
 
         /// <summary>
@@ -239,7 +267,7 @@ namespace System.Collections.Generic
         /// <param name="comparer">Comparer to use.</param>
         /// <returns>Non-negative position of the element if found, negative binary complement of the position of the next element if not found.</returns>
         /// <remarks>The implementation was copied from CLR BinarySearch implementation.</remarks>
-        public int BinarySearch(T item, IComparer<T> comparer)
+        public long BinarySearch(T item, IComparer<T> comparer)
         {
             return BinarySearch(item, 0, this.count - 1, comparer);
         }
@@ -252,7 +280,7 @@ namespace System.Collections.Generic
         /// <param name="high">The highest index in which to search.</param>
         /// <param name="comparer">Comparer to use.</param>
         /// <returns>The index </returns>
-        public int BinarySearch(T item, int low, int high, IComparer<T> comparer)
+        public long BinarySearch(T item, long low, long high, IComparer<T> comparer)
         {
             if (low < 0 || low > high)
             {
@@ -266,7 +294,7 @@ namespace System.Collections.Generic
 
             while (low <= high)
             {
-                int i = low + ((high - low) >> 1);
+                long i = low + ((high - low) >> 1);
                 int order = comparer.Compare(this.items[i >> this.segmentShift][i & this.offsetMask], item);
 
                 if (order == 0)
@@ -310,16 +338,16 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Appends a range of elements from anothe list.
+        /// Appends a range of elements from another list.
         /// </summary>
         /// <param name="from">Source list.</param>
         /// <param name="index">Start index in the source list.</param>
         /// <param name="count">Count of elements from the source list to append.</param>
-        public void AppendFrom(SegmentedList<T> from, int index, int count)
+        public void AppendFrom(SegmentedList<T> from, long index, long count)
         {
             if (count > 0)
             {
-                int minCapacity = this.count + count;
+                long minCapacity = this.count + count;
 
                 if (this.capacity < minCapacity)
                 {
@@ -328,13 +356,14 @@ namespace System.Collections.Generic
 
                 do
                 {
-                    int sourceSegment = index / from.segmentSize;
-                    int sourceOffset = index % from.segmentSize;
+                    int sourceSegment = (int)(index / from.segmentSize);
+                    int sourceOffset = (int)(index % from.segmentSize);
                     int sourceLength = from.segmentSize - sourceOffset;
-                    int targetSegment = this.count >> this.segmentShift;
-                    int targetOffset = this.count & this.offsetMask;
+                    int targetSegment = (int)(this.count >> this.segmentShift);
+                    int targetOffset = (int)(this.count & this.offsetMask);
                     int targetLength = this.segmentSize - targetOffset;
-                    int countToCopy = Math.Min(count, Math.Min(sourceLength, targetLength));
+                    // We can safely cast to int since source and target lengths will never surpass int.MaxValue
+                    int countToCopy = (int)Math.Min(count, Math.Min(sourceLength, targetLength));
 
                     Array.Copy(from.items[sourceSegment], sourceOffset, this.items[targetSegment], targetOffset, countToCopy);
 
@@ -346,11 +375,17 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Appends a range of elements from another array.
+        /// </summary>
+        /// <param name="from">Source array.</param>
+        /// <param name="index">Start index in the source list.</param>
+        /// <param name="count">Count of elements from the source list to append.</param>
         public void AppendFrom(T[] from, int index, int count)
         {
             if (count > 0)
             {
-                int minCapacity = this.count + count;
+                long minCapacity = this.count + count;
 
                 if (this.capacity < minCapacity)
                 {
@@ -359,8 +394,8 @@ namespace System.Collections.Generic
 
                 do
                 {
-                    int targetSegment = this.count >> this.segmentShift;
-                    int targetOffset = this.count & this.offsetMask;
+                    int targetSegment = (int)(this.count >> this.segmentShift);
+                    int targetOffset = (int)(this.count & this.offsetMask);
                     int targetLength = this.segmentSize - targetOffset;
                     int countToCopy = Math.Min(count, targetLength);
 
@@ -403,11 +438,29 @@ namespace System.Collections.Generic
         /// <param name="arrayIndex">Destination array starting index.</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            int remain = this.count;
-
-            for (int i = 0; (remain > 0) && (i < this.items.Length); i++)
+            if (array == null)
             {
-                int len = Math.Min(remain, this.items[i].Length);
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (arrayIndex < 0 || arrayIndex >= array.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex),
+                    "arrayIndex must be non-negative and less than the length of the array.");
+            }
+
+            if (array.Length - arrayIndex < this.count)
+            {
+                throw new ArgumentException(
+                    "Destination array is not long enough to copy all the items in the collection. Check array index and length.");
+            }
+
+            long remain = this.count;
+
+            for (long i = 0; (remain > 0) && (i < this.items.Length); i++)
+            {
+                // We can safely cast to int, since that is the max value that items[i].Length can have.
+                int len = (int)Math.Min(remain, this.items[i].Length);
 
                 Array.Copy(this.items[i], 0, array, arrayIndex, len);
 
@@ -424,9 +477,38 @@ namespace System.Collections.Generic
         /// <param name="arrayIndex">Destination array starting index.</param>
         /// <param name="startIndex">The collection index from where the copying should start.</param>
         /// <param name="endIndex">The collection index where the copying should end.</param>
-        public void CopyRangeTo(T[] array, int arrayIndex, int startIndex, int endIndex)
+        public void CopyRangeTo(T[] array, int arrayIndex, long startIndex, long endIndex)
         {
-            int remain = Math.Min(this.count, endIndex - startIndex + 1);
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (arrayIndex < 0 || arrayIndex >= array.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex),
+                    "arrayIndex must be non-negative and less than the length of the array.");
+            }
+
+            if (startIndex < 0 || startIndex > endIndex)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex),
+                    "Index must be non-negative and less than or equal to endIndex.");
+            }
+
+            if (endIndex < 0 || !IsValidIndex(endIndex))
+            {
+                throw new ArgumentOutOfRangeException(nameof(endIndex),
+                    "Index must be non-negative and less than the length of this collection.");
+            }
+
+            if (array.Length - arrayIndex < (endIndex - startIndex + 1))
+            {
+                throw new ArgumentException(
+                    "Destination array is not long enough to copy all the items in the collection. Check array index and length.");
+            }
+
+            int remain = (int)Math.Min(this.count, endIndex - startIndex + 1);
             int firstSegmentIndex = (int)(startIndex / segmentSize);
             int lastSegmentIndex = Math.Min((int)(endIndex / segmentSize), this.items.Length); // The list might not have the range specified, we limit it if necessary to the actual size
             int segmentStartIndex = (int)(startIndex % segmentSize);
@@ -478,10 +560,8 @@ namespace System.Collections.Generic
         /// Check if ICollection contains the given element.
         /// </summary>
         /// <param name="item">Element to check.</param>
-        bool ICollection<T>.Contains(T item)
-        {
-            throw new NotImplementedException("This method of ICollection is not implemented");
-        }
+        bool ICollection<T>.Contains(T item) =>
+            throw new NotImplementedException();
 
         /// <summary>
         /// CopyTo copies a collection into an Array, starting at a particular
@@ -489,30 +569,26 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="array">Destination array.</param>
         /// <param name="arrayIndex">Destination array starting index.</param>
-        void ICollection<T>.CopyTo(T[] array, int arrayIndex)
-        {
-            this.CopyTo(array, arrayIndex);
-        }
+        void ICollection<T>.CopyTo(T[] array, int arrayIndex) =>
+            CopyTo(array, arrayIndex);
 
         /// <summary>
         /// Removes the given element from this ICollection.
         /// </summary>
         /// <param name="item">Element to remove.</param>
-        bool ICollection<T>.Remove(T item)
-        {
-            throw new NotImplementedException("This method of ICollection is not implemented");
-        }
+        bool ICollection<T>.Remove(T item) =>
+            throw new NotImplementedException();
 
         /// <summary>
         /// Shifts the tail of the list to make room for a new inserted element.
         /// </summary>
         /// <param name="index">Index of a new inserted element.</param>
-        private void AddRoomForElement(int index)
+        private void AddRoomForElement(long index)
         {
             int firstSegment = (int)(index >> this.segmentShift);
             int lastSegment = (int)(this.count >> this.segmentShift);
-            int firstOffset = index & this.offsetMask;
-            int lastOffset = this.count & this.offsetMask;
+            int firstOffset = (int)(index & this.offsetMask);
+            int lastOffset = (int)(this.count & this.offsetMask);
 
             if (firstSegment == lastSegment)
             {
@@ -543,12 +619,12 @@ namespace System.Collections.Generic
         /// Shifts the tail of the list to remove the element.
         /// </summary>
         /// <param name="index">Index of the removed element.</param>
-        private void RemoveRoomForElement(int index)
+        private void RemoveRoomForElement(long index)
         {
             int firstSegment = (int)(index >> this.segmentShift);
             int lastSegment = (int)((this.count - 1) >> this.segmentShift);
-            int firstOffset = index & this.offsetMask;
-            int lastOffset = (this.count - 1) & this.offsetMask;
+            int firstOffset = (int)(index & this.offsetMask);
+            int lastOffset = (int)((this.count - 1) & this.offsetMask);
 
             if (firstSegment == lastSegment)
             {
@@ -573,7 +649,7 @@ namespace System.Collections.Generic
         /// Ensures that we have enough capacity for the given number of elements.
         /// </summary>
         /// <param name="minCapacity">Number of elements.</param>
-        private void EnsureCapacity(int minCapacity)
+        private void EnsureCapacity(long minCapacity)
         {
             if (this.capacity < this.segmentSize)
             {
@@ -582,7 +658,7 @@ namespace System.Collections.Generic
                     this.items = new T[(minCapacity + this.segmentSize - 1) >> this.segmentShift][];
                 }
 
-                int newFirstSegmentCapacity = this.segmentSize;
+                long newFirstSegmentCapacity = this.segmentSize;
 
                 if (minCapacity < this.segmentSize)
                 {
@@ -600,7 +676,9 @@ namespace System.Collections.Generic
 
                 if (this.count > 0)
                 {
-                    Array.Copy(this.items[0], 0, newFirstSegment, 0, this.count);
+                    // We can safely cast to int this.count because count < capacity and capacity
+                    // will be less than the segment size that is always less than int32.MaxValue
+                    Array.Copy(this.items[0], 0, newFirstSegment, 0, (int)this.count);
                 }
 
                 this.items[0] = newFirstSegment;
@@ -609,8 +687,8 @@ namespace System.Collections.Generic
 
             if (this.capacity < minCapacity)
             {
-                int currentSegments = (int)this.capacity >> this.segmentShift;
-                int neededSegments = (int)(minCapacity + this.segmentSize - 1) >> this.segmentShift;
+                int currentSegments = (int)(this.capacity >> this.segmentShift);
+                int neededSegments = (int)((minCapacity + this.segmentSize - 1) >> this.segmentShift);
 
                 if (neededSegments > this.items.Length)
                 {
@@ -640,7 +718,7 @@ namespace System.Collections.Generic
         /// <param name="comparer">Comparer to use.</param>
         /// <param name="a">Position of the first element.</param>
         /// <param name="b">Position of the second element.</param>
-        private void SwapIfGreaterWithItems(IComparer<T> comparer, int a, int b)
+        private void SwapIfGreaterWithItems(IComparer<T> comparer, long a, long b)
         {
             if (a != b)
             {
@@ -660,17 +738,17 @@ namespace System.Collections.Generic
         /// <param name="right">right boundary.</param>
         /// <param name="comparer">Comparer to use.</param>
         /// <remarks>The implementation was copied from CLR QuickSort implementation.</remarks>
-        private void QuickSort(int left, int right, IComparer<T> comparer)
+        private void QuickSort(long left, long right, IComparer<T> comparer)
         {
             do
             {
-                int i = left;
-                int j = right;
+                long i = left;
+                long j = right;
 
                 // pre-sort the low, middle (pivot), and high values in place.
                 // this improves performance in the face of already sorted data, or
                 // data that is made up of multiple sorted runs appended together.
-                int middle = i + ((j - i) >> 1);
+                long middle = i + ((j - i) >> 1);
 
                 this.SwapIfGreaterWithItems(comparer, i, middle); // swap the low with the mid point
                 this.SwapIfGreaterWithItems(comparer, i, j); // swap the low with the high
@@ -737,10 +815,10 @@ namespace System.Collections.Generic
         /// <summary>
         /// Enumerator over the segmented list.
         /// </summary>
-        public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
+        public struct Enumerator : IEnumerator<T>, IEnumerator
         {
             private readonly SegmentedList<T> list;
-            private int index;
+            private long index;
 
             /// <summary>
             /// Constructws the Enumerator.
@@ -787,7 +865,7 @@ namespace System.Collections.Generic
             /// <summary>
             /// Returns the current element.
             /// </summary>
-            object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get { return this.Current; }
             }
@@ -795,7 +873,7 @@ namespace System.Collections.Generic
             /// <summary>
             /// Resets the enumerator to initial state.
             /// </summary>
-            void System.Collections.IEnumerator.Reset()
+            void IEnumerator.Reset()
             {
                 index = -1;
             }

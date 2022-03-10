@@ -27,6 +27,9 @@ jobs:
       displayName: 'NuGet Restore PerfView.sln'
       inputs:
         restoreSolution: PerfView.sln
+        feedsToUse: config
+        includeNuGetOrg: false
+        nugetConfigPath: '.\NuGet.config'
 
     - task: MSBuild@1
       displayName: 'Build PerfView.sln'
@@ -79,6 +82,9 @@ jobs:
       displayName: 'NuGet Restore PerfView.sln'
       inputs:
         restoreSolution: PerfView.sln
+        feedsToUse: config
+        includeNuGetOrg: false
+        nugetConfigPath: '.\NuGet.config'
 
     - task: MSBuild@1
       displayName: 'Build PerfView.sln'
@@ -134,15 +140,3 @@ jobs:
         filePath: './src/perfcollect/tests/run-containers.sh'
         workingDirectory: src/perfcollect/tests
 
-  - job: PerfViewJS
-    pool:
-      vmImage: 'windows-2019'
-      name: Azure Pipelines
-      demands: msbuild
-
-    steps:
-    - task: MSBuild@1
-      displayName: 'Build src/PerfViewJS/PerfViewJS.csproj'
-      inputs:
-        solution: src/PerfViewJS/PerfViewJS.csproj
-        msbuildArguments: /restore

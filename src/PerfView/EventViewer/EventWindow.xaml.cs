@@ -1175,7 +1175,7 @@ namespace PerfView
 
             EndTextBox.Text = m_source.EndTimeRelativeMSec.ToString("n3");
             StartTextBox.Text = m_source.StartTimeRelativeMSec.ToString("n3");
-            m_source.StartTimeRelativeMSec -= .0006;         // Insure that we are inclusive as far as rounding goes.
+            m_source.StartTimeRelativeMSec -= .0006;         // Ensure that we are inclusive as far as rounding goes.
             m_source.EndTimeRelativeMSec += .0006;
 
             if (!int.TryParse(MaxRetTextBox.Text, out m_source.MaxRet))

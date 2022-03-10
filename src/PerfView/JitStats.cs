@@ -452,7 +452,7 @@ namespace Stats
                 for (int i = 0; i < runtime.JIT.Methods.Count; i++)
                 {
                     var _event = runtime.JIT.Methods[i];
-                    var csvMethodName = _event.MethodName.Replace(",", " ");    // Insure there are no , in the name 
+                    var csvMethodName = _event.MethodName.Replace(",", " ");    // Ensure there are no , in the name 
 
                     writer.Write(
                         "{1:f3}{0}{2:f3}{0}{3}{0}{4}{0}{5}",

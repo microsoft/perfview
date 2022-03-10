@@ -402,6 +402,21 @@ namespace TraceEventTests
             }
         }
 
+        [Theory]
+        [InlineData("simple", "simple")]
+        [InlineData(@"Process64 Test (1) Args:  -r:C:\Test\", @"Process64 Test (1) Args:  -r:C:\\Test\\")]
+        [InlineData("CPU Wait > 10ms", "CPU Wait \\u003e 10ms")]
+        [InlineData("methodName(value class argument&,float32)", "methodName(value class argument\\u0026,float32)")]
+        [InlineData("IEqualityComparer`1<!0>", "IEqualityComparer`1\\u003c!0\\u003e")]
+        public void NamesGetEscaped(string name, string expected)
+        {
+            Dictionary<string, string> escapedNames = new Dictionary<string, string>();
+
+            Assert.Equal(expected, GetEscaped(name, escapedNames));
+            Assert.True(escapedNames.ContainsKey(name));
+            Assert.Equal(expected, escapedNames[name]);
+        }
+
         #region private
         internal class FakeStackSourceSample
         {

@@ -69,7 +69,7 @@ namespace PerfView
             CurrentDirTextBox.Text = Environment.CurrentDirectory;
 
             // Initialize the CommandToRun history if available. 
-            var commandToRunHistory = App.ConfigData["CommandToRunHistory"];
+            var commandToRunHistory = App.UserConfigData["CommandToRunHistory"];
             if (commandToRunHistory != null)
             {
                 CommandToRunTextBox.SetHistory(commandToRunHistory.Split(';'));
@@ -108,7 +108,7 @@ namespace PerfView
                 if (!ZipCheckBox.IsChecked.HasValue)
                 {
                     string configZip;
-                    if (App.ConfigData.TryGetValue("Zip", out configZip))
+                    if (App.UserConfigData.TryGetValue("Zip", out configZip))
                     {
                         ZipCheckBox.IsChecked = string.Compare(configZip, "true", true) == 0;
                     }
@@ -116,7 +116,7 @@ namespace PerfView
                 if (!MergeCheckBox.IsChecked.HasValue)
                 {
                     string configMerge;
-                    if (App.ConfigData.TryGetValue("Merge", out configMerge))
+                    if (App.UserConfigData.TryGetValue("Merge", out configMerge))
                     {
                         MergeCheckBox.IsChecked = string.Compare(configMerge, "true", true) == 0;
                     }
@@ -258,7 +258,7 @@ namespace PerfView
             }
 
             // Initialize history of additional providers
-            var additionalProvidersHistory = App.ConfigData["AdditionalProvidersHistory"];
+            var additionalProvidersHistory = App.UserConfigData["AdditionalProvidersHistory"];
             if (additionalProvidersHistory != null)
             {
                 AdditionalProvidersTextBox.SetHistory(additionalProvidersHistory.Split(';'));
@@ -569,7 +569,7 @@ namespace PerfView
                             sb.Append(item);
                         }
                     }
-                    App.ConfigData["CommandToRunHistory"] = sb.ToString();
+                    App.UserConfigData["CommandToRunHistory"] = sb.ToString();
                 }
             }
             else
@@ -808,7 +808,7 @@ namespace PerfView
                             sb.Append(item);
                         }
                     }
-                    App.ConfigData["AdditionalProvidersHistory"] = sb.ToString();
+                    App.UserConfigData["AdditionalProvidersHistory"] = sb.ToString();
                 }
             }
 

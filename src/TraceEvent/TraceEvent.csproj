@@ -38,7 +38,7 @@
   </Target>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2;CONTAINER_WORKAROUND_NOT_NEEDED</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
@@ -64,6 +64,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
 
@@ -162,6 +163,31 @@
     </None>
     <None Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
       <Link>x86\vcruntime140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
+      <Link>arm64\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\msdia140.dll">
+      <Link>arm64\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\msvcp140.dll">
+      <Link>arm64\msvcp140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\vcruntime140.dll">
+      <Link>arm64\vcruntime140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\vcruntime140_1.dll">
+      <Link>arm64\vcruntime140_1.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>

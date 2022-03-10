@@ -8,10 +8,20 @@ namespace Graphs
 {
     public class MemoryGraph : Graph, IFastSerializable
     {
-        public MemoryGraph(int expectedSize)
-            : base(expectedSize)
+        public MemoryGraph(int expectedSize, bool isVeryLargeGraph = false)
+            : base(expectedSize, isVeryLargeGraph)
         {
-            m_addressToNodeIndex = new Dictionary<nuint, NodeIndex>(expectedSize, NativeIntegerEqualityComparer.Instance);
+            // If we have too many addresses we will reach the Dictionary's internal array's size limit and throw.
+            // Therefore use a new implementation of it that is similar in performance but that can handle the extra load.
+            if (isVeryLargeGraph)
+            {
+                m_addressToNodeIndex = new SegmentedDictionary<nuint, NodeIndex>(expectedSize);
+            }
+            else
+            {
+                m_addressToNodeIndex = new Dictionary<nuint, NodeIndex>(expectedSize);
+            }
+                                                              
             m_nodeAddresses = new SegmentedList<nuint>(SegmentSize, expectedSize);
         }
 
@@ -140,15 +150,22 @@ namespace Graphs
         /// THis table maps the ID that CLRProfiler uses (an address), to the NodeIndex we have assigned to it.  
         /// It is only needed while the file is being read in.  
         /// </summary>
-        protected Dictionary<nuint, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
+        protected IDictionary<nuint, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
 
         #endregion
         #region private
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);
-            // Write out the Memory addresses of each object 
-            serializer.Write(m_nodeAddresses.Count);
+            // Write out the Memory addresses of each object
+            if (m_isVeryLargeGraph)
+            {
+                serializer.Write(m_nodeAddresses.Count);
+            }
+            else
+            {
+                serializer.Write((int)m_nodeAddresses.Count);
+            }
 
             // Write m_nodeAddresses as a sequence of groups of addresses near each other. The following assumptions are
             // made for this process:
@@ -218,7 +235,7 @@ namespace Graphs
                     startIndex = i;
                 }
 
-                yield return new KeyValuePair<Address, int>(baseAddress, nodeAddresses.Count - startIndex);
+                yield return new KeyValuePair<Address, int>(baseAddress, checked((int)(nodeAddresses.Count - startIndex)));
             }
         }
 
@@ -226,17 +243,17 @@ namespace Graphs
         {
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
-            int addressCount = deserializer.ReadInt();
+            long addressCount = m_isVeryLargeGraph ? deserializer.ReadInt64() : deserializer.ReadInt();
             m_nodeAddresses = new SegmentedList<nuint>(SegmentSize, addressCount);
 
             // See ToStream above for a description of the differential compression process
-            int offset = 0;
+            long offset = 0;
             while (offset < addressCount)
             {
                 int groupCount = deserializer.ReadInt();
                 nuint baseAddress = checked((nuint)deserializer.ReadUInt64());
                 m_nodeAddresses.Add(baseAddress);
-                for (int i = 1; i < groupCount; i++)
+                for (long i = 1; i < groupCount; i++)
                 {
                     ushort relativeAddress = deserializer.ReadUInt16();
                     if (relativeAddress == 0)

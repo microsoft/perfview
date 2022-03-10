@@ -4386,7 +4386,7 @@ table {
                     newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         sample.Metric = objInfo.RepresentativeSize;
-                        sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                               // We guess a count from the size.  
+                        sample.Count = objInfo.GuessCountBasedOnSize();                                                          // We guess a count from the size.
                         sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
                         stackSource.AddSample(sample);
@@ -4410,7 +4410,7 @@ table {
                     newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         sample.Metric = objInfo.RepresentativeSize;
-                        sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
+                        sample.Count = objInfo.GuessCountBasedOnSize();                                                          // We guess a count from the size.
                         sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
                         stackSource.AddSample(sample);
@@ -4419,7 +4419,7 @@ table {
                     newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         sample.Metric = -objInfo.RepresentativeSize;
-                        sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
+                        sample.Count = -(objInfo.GuessCountBasedOnSize());                                            // We guess a count from the size.
                         sample.TimeRelativeMSec = time;
                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
                         stackSource.AddSample(sample);
@@ -4456,7 +4456,7 @@ table {
                         if (2 <= gen)
                         {
                             sample.Metric = objInfo.RepresentativeSize;
-                            sample.Count = (objInfo.RepresentativeSize / objInfo.Size);                                         // We guess a count from the size.  
+                            sample.Count = objInfo.GuessCountBasedOnSize();                                         // We guess a count from the size.
                             sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                             sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);
                             stackSource.AddSample(sample);
@@ -6913,7 +6913,7 @@ table {
             // Warn the user about the behavior of type name lookup, but only once per user.  
             if (stackSourceName == "Net OS Heap Alloc")
             {
-                if (App.ConfigData["WarnedAboutOsHeapAllocTypes"] == null)
+                if (App.UserConfigData["WarnedAboutOsHeapAllocTypes"] == null)
                 {
                     MessageBox.Show(stackWindow,
                         "Warning: Allocation type resolution only happens on window launch.\r\n" +
@@ -6923,7 +6923,7 @@ table {
                         "\r\n" +
                         "You must close and reopen this window to get the allocation types.\r\n"
                         , "May need to resolve PDBs and reopen.");
-                    App.ConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
+                    App.UserConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
                 }
             }
         }
@@ -8951,7 +8951,7 @@ table {
                             newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
                             {
                                 sample.Metric = objInfo.RepresentativeSize;
-                                sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                               // We guess a count from the size.  
+                                sample.Count = objInfo.GuessCountBasedOnSize();                                                          // We guess a count from the size.
                                 sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                 sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
                                 stackSource.AddSample(sample);
@@ -8984,7 +8984,7 @@ table {
                                 newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
                                 {
                                     sample.Metric = objInfo.RepresentativeSize;
-                                    sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
+                                    sample.Count = objInfo.GuessCountBasedOnSize();                                                          // We guess a count from the size.
                                     sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);        // Add the type as a pseudo frame.  
                                     stackSource.AddSample(sample);
@@ -8993,7 +8993,7 @@ table {
                                 newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                                 {
                                     sample.Metric = -objInfo.RepresentativeSize;
-                                    sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
+                                    sample.Count = -(objInfo.GuessCountBasedOnSize());                                                      // We guess a count from the size.
                                     sample.TimeRelativeMSec = time;
                                     sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
                                     stackSource.AddSample(sample);
@@ -9030,7 +9030,7 @@ table {
                                     if (2 <= gen)
                                     {
                                         sample.Metric = objInfo.RepresentativeSize;
-                                        sample.Count = (objInfo.RepresentativeSize / objInfo.Size);                                         // We guess a count from the size.  
+                                        sample.Count = objInfo.GuessCountBasedOnSize();                                         // We guess a count from the size.
                                         sample.TimeRelativeMSec = objInfo.AllocationTimeRelativeMSec;
                                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);
                                         stackSource.AddSample(sample);

@@ -14,9 +14,7 @@ care about specific bug fixes or features go there.
 ## Shortcut to Download the Latest PerfView.exe
 
 In the common case, you only need one file, PerfView.exe, to use the tool.  The most recent copy of
-this file can be downloaded here:
-
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/microsoft/perfview)](https://github.com/microsoft/perfview/releases/latest)
+this file can be downloaded from the [releases page](https://github.com/microsoft/perfview/releases).
 
 Once you click the above link in your browser it will start downloading, the details of which vary from browser to browser.
 In some cases it will prompt for more information (IE) and in others (Chrome) it may not be obvious that

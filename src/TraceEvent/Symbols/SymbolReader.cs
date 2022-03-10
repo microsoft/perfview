@@ -499,7 +499,7 @@ namespace Microsoft.Diagnostics.Symbols
         public TextWriter Log { get { return m_log; } }
 
         /// <summary>
-        /// Given a full filename path to an NGEN image, insure that there is an NGEN image for it
+        /// Given a full filename path to an NGEN image, ensure that there is an NGEN image for it
         /// in the symbol cache.  If one already exists, this method simply returns that.   If not
         /// it is generated and placed in the symbol cache.  When generating the PDB this routine
         /// attempt to resolve line numbers, which DOES require looking up the PDB for the IL image. 
@@ -709,7 +709,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
             finally
             {
-                // Insure we have cleaned up any temporary files.  
+                // Ensure we have cleaned up any temporary files.  
                 if (tempDir != null)
                 {
                     DirectoryUtilities.Clean(tempDir);
@@ -984,7 +984,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// Fetches a file from the server 'serverPath' with pdb signature path 'pdbSigPath' (concatinate them with a / or \ separator
         /// to form a complete URL or path name).   It will place the file in 'fullDestPath'   It will return true if successful
         /// If 'contentTypeFilter is present, this predicate is called with the URL content type (e.g. application/octet-stream)
-        /// and if it returns false, it fails.   This insures that things that are the wrong content type (e.g. redirects to 
+        /// and if it returns false, it fails.   This ensures that things that are the wrong content type (e.g. redirects to 
         /// some sort of login) fail cleanly.  
         /// 
         /// You should probably be using GetFileFromServer
@@ -1755,12 +1755,33 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SourceFile SourceFile { get; private set; }
         /// <summary>
-        /// The line number for the code.
+        /// The starting line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
+        /// <summary>
+        /// The ending line number for the code.
+        /// </summary>
+        public int LineNumberEnd { get; private set; }
+        /// <summary>
+        /// The starting column number for the code. This column corresponds to the starting line number.
+        /// </summary>
+        public int ColumnNumber { get; private set; }
+        /// <summary>
+        /// The ending column number for the code. This column corresponds to the ending line number.
+        /// </summary>
+        public int ColumnNumberEnd { get; private set; }
 
         #region private
-        internal SourceLocation(SourceFile sourceFile, int lineNumber)
+        internal SourceLocation(SourceFile sourceFile, int lineNumberBegin, int lineNumberEnd, int columnNumberBegin, int columnNumberEnd)
+        {
+            SourceFile = sourceFile;
+            LineNumber = SanitizeLineNumber(lineNumberBegin);
+            LineNumberEnd = SanitizeLineNumber(lineNumberEnd);
+            ColumnNumber = SanitizeLineNumber(columnNumberBegin);
+            ColumnNumberEnd = SanitizeLineNumber(columnNumberEnd);
+        }
+
+        private int SanitizeLineNumber(int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
             if (0xFEEFEE <= lineNumber)
@@ -1768,8 +1789,7 @@ namespace Microsoft.Diagnostics.Symbols
                 lineNumber = 0;
             }
 
-            SourceFile = sourceFile;
-            LineNumber = lineNumber;
+            return lineNumber;
         }
         #endregion
     }

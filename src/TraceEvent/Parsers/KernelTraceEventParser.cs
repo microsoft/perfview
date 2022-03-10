@@ -3503,14 +3503,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // Heuristic.  If we have not found it yet, tack on the system drive letter if it is not 
-            // This is similar to what XPERF does too, but it is clear it is not perfect. 
-            if (kernelName.Length > 2 && kernelName[0] == '\\' && Char.IsLetterOrDigit(kernelName[1]))
-            {
-                return systemDrive + kernelName;
-            }
-
-            // TODO this is still not complete, compare to XPERF and align.  
             return kernelName;
         }
 

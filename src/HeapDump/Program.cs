@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Runtime;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -41,12 +42,14 @@ internal class Program
     private static int MainWorker(string[] args)
     {
         string outputFile = null;
+        int exceptionExitCode = 1;
         try
         {
             double decayToZeroHours = 0;
             bool forceGC = false;
             bool processDump = false;
             string inputSpec = null;
+            int minSecForTrigger = -1;
             var dumper = new GCHeapDumper(Console.Out);
 
             for (int curArgIdx = 0; curArgIdx < args.Length; curArgIdx++)
@@ -120,7 +123,7 @@ internal class Program
                     {
                         string spec = arg.Substring(19);
                         bool done = false;
-                        using (var trigger = new PerformanceCounterTrigger(spec, decayToZeroHours, Console.Out, delegate (PerformanceCounterTrigger t) { done = true; }))
+                        using (var trigger = new PerformanceCounterTrigger(spec, decayToZeroHours, Console.Out, delegate (PerformanceCounterTrigger t) { done = true; }) { MinSecForTrigger = minSecForTrigger })
                         {
                             for (int i = 0; !done; i++)
                             {
@@ -134,6 +137,10 @@ internal class Program
                         }
                         Console.WriteLine("[PerfCounter Triggered: {0}]", spec);
                         return 0;
+                    }
+                    else if (arg.StartsWith("/MinSecForTrigger:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        minSecForTrigger = int.Parse(arg.Substring(18));
                     }
                     else if (arg.StartsWith("/PromotedBytesThreshold:", StringComparison.OrdinalIgnoreCase))
                     {
@@ -194,7 +201,7 @@ internal class Program
                     outputFile = Path.ChangeExtension(inputSpec, ".gcDump");
                 }
 
-                // This avoids file sharing issues, and also insures that old files are not left behind.  
+                // This avoids file sharing issues, and also ensures that old files are not left behind.  
                 if (File.Exists(outputFile))
                 {
                     File.Delete(outputFile);
@@ -246,6 +253,13 @@ internal class Program
         }
         catch (Exception e)
         {
+            ClrDiagnosticsException diagException = e as ClrDiagnosticsException;
+            if ((diagException != null) && ((uint)diagException.HResult == 0x80070057))
+            {
+                exceptionExitCode = 3;
+                Console.WriteLine("HeapDump Error: Unable to open process dump.  HeapDump only supports converting Windows process dumps.");
+            }
+
             if (e is ApplicationException)
             {
                 Console.WriteLine("HeapDump Error: {0}", e.Message);
@@ -261,7 +275,7 @@ internal class Program
                 catch (Exception) { }
             }
         }
-        return 1;
+        return exceptionExitCode;
     }
 
     #region private

@@ -472,7 +472,7 @@ namespace PerfView
 
 #if false // TODO FIX NOW use or remove
         /// <summary>
-        /// Given a TreeViewGridNode, find a TreeViewGridNode for it (insuring that it is displayed)
+        /// Given a TreeViewGridNode, find a TreeViewGridNode for it (ensuring that it is displayed)
         /// </summary>
         private TreeViewGridNode InsureVisible(object treeNode)
         {

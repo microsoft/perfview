@@ -14,6 +14,10 @@
         <BitmapImage x:Key="FolderOpenBitmapImage"  UriSource="images/VSFolder_open.png"/>
         <BitmapImage x:Key="HtmlReportBitmapImage"  UriSource="images/VSProject_html.png"/>
         <BitmapImage x:Key="ChartBitmapImage"  UriSource="images/Chart.png"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <Style TargetType="MenuItem">
+            <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Converter={StaticResource BooleanToVisibilityConverter }}" />
+        </Style>
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static src:MainWindow.ItemHelpCommand}" Executed="DoItemHelp" CanExecute="CanDoItemHelp"/>
@@ -24,12 +28,14 @@
         <CommandBinding Command="{x:Static src:MainWindow.MergeCommand}" Executed="DoMerge"/>
         <CommandBinding Command="{x:Static src:MainWindow.ZipCommand}" Executed="DoZip"/>
         <CommandBinding Command="{x:Static src:MainWindow.UnZipCommand}" Executed="DoUnZip"/>
-        <CommandBinding Command="{x:Static src:MainWindow.HideCommand}" Executed="DoHide"/>
+        <CommandBinding Command="{x:Static src:MainWindow.HideCommand}" Executed="DoHide" CanExecute="CanHide" />
         <CommandBinding Command="{x:Static src:MainWindow.UserCommand}" Executed="DoUserCommand"/>
         <CommandBinding Command="{x:Static src:MainWindow.RefreshDirCommand}" Executed="DoRefreshDir"/>
         <CommandBinding Command="{x:Static src:MainWindow.OpenCommand}" Executed="DoOpen"/>
         <CommandBinding Command="{x:Static src:MainWindow.DeleteCommand}" Executed="DoDelete"/>
         <CommandBinding Command="{x:Static src:MainWindow.RenameCommand}" Executed="DoRename"/>
+        <CommandBinding Command="{x:Static src:MainWindow.OpenFolderCommand}" Executed="DoOpenFolder" CanExecute="CanOpenFolder"/>
+        <CommandBinding Command="{x:Static src:MainWindow.OpenContainingFolderCommand}" Executed="DoOpenContainingFolder" CanExecute="CanOpenContainingFolder"/>
         <CommandBinding Command="{x:Static src:MainWindow.MakeLocalSymbolDirCommand}" Executed="DoMakeLocalSymbolDir"/>
         <CommandBinding Command="{x:Static src:MainWindow.CloseCommand}" Executed="DoClose"/>
         <CommandBinding Command="{x:Static src:MainWindow.CancelCommand}" Executed="DoCancel"/>
@@ -60,13 +66,14 @@
             </Grid.ColumnDefinitions>
             <Menu Grid.Column="0" Background="#FFD1D1D1">
                 <MenuItem Header="_File">
-                    <Separator/>
-                    <MenuItem Header="_Hide" Command="{x:Static src:MainWindow.HideCommand}" ToolTip="Hides the current window (can reopen using windows explorer)"/>
                     <MenuItem Header="_Clear Temp Files" Click="DoClearTempFiles" ToolTip="Some operations create temporary files.  This command clears all of these."/>
                     <MenuItem Header="Clear User Config" Click="DoClearUserConfig" ToolTip="Reset all user preferences back to their defaults when PerfView was first installed."/>
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
                     <MenuItem Header="_User Command" Command="{x:Static src:MainWindow.UserCommand}" ToolTip="Run a User Defined Command."/>
                     <MenuItem Header="Go to Directory" Command="{x:Static src:MainWindow.FocusDirectoryCommand}" ToolTip="Focus and select the directory textbox."/>
+                    <Separator/>
+                    <MenuItem Header="_Hide" Command="{x:Static src:MainWindow.HideCommand}" ToolTip="Hides the current window (can reopen using windows explorer)"/>
+                    <Separator/>
                     <MenuItem Header="_Exit" Click="DoExit"/>
                 </MenuItem>
                 <MenuItem Header="_Collect">
@@ -147,7 +154,7 @@
                 <ColumnDefinition Width="619*"/>
             </Grid.ColumnDefinitions>
             <DockPanel Background="Gray" Grid.Column="0">
-                <controls:HistoryComboBox x:Name="Directory" Margin="4,2,4,2"  DockPanel.Dock="Top" 
+                <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top" 
                          ToolTip="This is the directory to search for performance data files." TextEntered="DoTextEnteredInDirectoryTextBox" />
                 <Grid DockPanel.Dock="Top" >
                     <Grid.ColumnDefinitions>
@@ -158,7 +165,7 @@
                     <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only files that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="FileFilterTextBox">Filter:</Hyperlink>
                     </TextBlock>
-                    <TextBox Name="FileFilterTextBox" TextChanged="FilterTextChanged" KeyDown="FilterKeyDown" Grid.Column="1" Margin="5,2,2,2" />
+                    <TextBox Name="FileFilterTextBox" TextChanged="FilterTextChanged" KeyDown="FilterKeyDown" Grid.Column="1" Margin="5,2,0,2" />
                 </Grid>
                 <TreeView x:Name="TreeView" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView" PreviewMouseRightButtonDown="TreeView_PreviewMouseRightButtonDown"
                           ToolTip="Double Click to open.  Right click contains additional help and additional options."
@@ -181,6 +188,8 @@
                                         <MenuItem Command="{x:Static src:MainWindow.CloseCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.DeleteCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.RenameCommand}"/>
+                                        <MenuItem Command="{x:Static src:MainWindow.OpenFolderCommand}"/>
+                                        <MenuItem Command="{x:Static src:MainWindow.OpenContainingFolderCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.MergeCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.MakeLocalSymbolDirCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.ZipCommand}"/>
@@ -196,7 +205,7 @@
             </DockPanel>
             <GridSplitter Grid.Column="1" Width="3"  HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
             <RichTextBox Name="Body" Grid.Column="2" Background="White" IsReadOnly="True" IsDocumentEnabled="True" 
-                         IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" VerticalScrollBarVisibility="auto" Margin="4.667,0,-5,0.07">
+                         IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" VerticalScrollBarVisibility="auto" >
                 <RichTextBox.Resources>
                     <Style TargetType="{x:Type Paragraph}">
                         <Setter Property="Margin" Value="0"/>

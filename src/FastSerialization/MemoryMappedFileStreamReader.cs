@@ -16,6 +16,9 @@ namespace FastSerialization
 {
     public class MemoryMappedFileStreamReader : IStreamReader
     {
+        private readonly Func<StreamLabel> readLabel;
+        private readonly int sizeOfSerializedStreamLabel;
+
         private MemoryMappedFile _file;
         private long _fileLength;
         private bool _leaveOpen;
@@ -26,13 +29,32 @@ namespace FastSerialization
         private long _capacity;
         private long _offset;
 
-        public MemoryMappedFileStreamReader(string mapName, long length)
-            : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false)
+        public MemoryMappedFileStreamReader(string mapName, long length, SerializationConfiguration config = null)
+            : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false, config)
         {
         }
 
-        public MemoryMappedFileStreamReader(MemoryMappedFile file, long length, bool leaveOpen)
+        public MemoryMappedFileStreamReader(MemoryMappedFile file, long length, bool leaveOpen, SerializationConfiguration config = null)
         {
+            SerializationConfiguration = config ?? new SerializationConfiguration();
+
+            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            {
+                readLabel = () =>
+                {
+                    return (StreamLabel)(uint)ReadInt32();
+                };
+                sizeOfSerializedStreamLabel = 4;
+            }
+            else
+            {
+                readLabel = () =>
+                {
+                    return (StreamLabel)(ulong)ReadInt64();
+                };
+                sizeOfSerializedStreamLabel = 8;
+            }
+
             _file = file;
             _fileLength = length;
             _leaveOpen = leaveOpen;
@@ -56,6 +78,11 @@ namespace FastSerialization
             MemoryMappedFile file = MemoryMappedFile.CreateFromFile(path, FileMode.Open, Guid.NewGuid().ToString("N"), capacity, MemoryMappedFileAccess.Read);
             return new MemoryMappedFileStreamReader(file, capacity, leaveOpen: false);
         }
+
+        /// <summary>
+        /// Returns the SerializationConfiguration for this stream reader.
+        /// </summary>
+        internal SerializationConfiguration SerializationConfiguration { get; }
 
         public StreamLabel Current
         {

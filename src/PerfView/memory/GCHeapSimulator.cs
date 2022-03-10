@@ -365,7 +365,7 @@ namespace PerfView
             objectData.RepresentativeSize = (int)representativeSize;
 
             var timeStamp = data.TimeStampRelativeMSec;
-            // Insure that timeStamps move forward in time and are unique, so they can be used as object IDs.  
+            // Ensure that timeStamps move forward in time and are unique, so they can be used as object IDs.  
             var verySmall = 1;
             while (timeStamp <= m_lastAllocTimeRelativeMSec)
             {
@@ -732,5 +732,10 @@ namespace PerfView
         public int Size;                                // This is the size of the object being allocated on this particular event.  
         public int RepresentativeSize;                  // If sampling is on, this sample may represent many allocations. This is the sum of the sizes of all those allocations.  
         // If sampling is off this is the same as Size.  
+
+        public int GuessCountBasedOnSize()
+        {
+            return Size > 0 ? (RepresentativeSize / Size) : 1;
+        }
     }
 }

@@ -262,7 +262,7 @@ namespace Triggers
             {
                 m_log.WriteLine("To allow 64 bit processes to participate in the perf counters, we launch a 64 bit process to do the monitoring");
                 string heapDumpExe = Path.Combine(Utilities.SupportFiles.SupportFileDir, @"AMD64\HeapDump.exe");
-                string commandLine = heapDumpExe + " \"/StopOnPerfCounter:" + m_spec + "\"";
+                string commandLine = heapDumpExe + " /MinSecForTrigger:" + MinSecForTrigger + " \"/StopOnPerfCounter:" + m_spec + "\"";
                 m_log.WriteLine("Exec: {0}", commandLine);
                 var options = new Utilities.CommandOptions().AddNoThrow().AddTimeout(Utilities.CommandOptions.Infinite).AddOutputStream(m_log);
                 m_cmd = Utilities.Command.Run(commandLine, options);
@@ -945,7 +945,7 @@ namespace Triggers
         /// <summary>
         /// If TriggerForceToZeroHours is set then the effective TriggerDurationMSec is decrease over time so
         /// that it is 0 after TriggerForceToZeroHours.  Thus if TriggerDurationMSec is 10,000 and TriggerForceToZeroHours
-        /// is 24 after 6 hours the trigger will be 7,500 and after 6 hourse it is 5000.  This insures that eventually
+        /// is 24 after 6 hours the trigger will be 7,500 and after 6 hourse it is 5000.  This ensures that eventually
         /// you will trigger.  
         /// </summary>
         public double DecayToZeroHours { get; set; }

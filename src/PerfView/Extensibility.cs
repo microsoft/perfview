@@ -407,7 +407,7 @@ namespace PerfViewExtensibility
         /// ConfigData is a set of key-value dictionary that is persisted (as AppData\Roaming\PerfView\UserConfig.xml)
         /// so it is remembered across invocations of the program.  
         /// </summary>
-        public static ConfigData ConfigData { get { return App.ConfigData; } }
+        public static ConfigData ConfigData { get { return App.UserConfigData; } }
         /// <summary>
         /// This is a directory where you can place temporary files.   These files will be cleaned up
         /// eventually if the number grows too large.   (this is %TEMP%\PerfView)
@@ -799,7 +799,7 @@ namespace PerfViewExtensibility
         // Extract to a temp file and move so we get atomic update.  May leave trash behind
         private static void AtomicExtract(ZipArchiveEntry zipEntry, string targetPath)
         {
-            // Insure directory exists. 
+            // Ensure directory exists. 
             Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
             var extractPath = targetPath + ".new";
             try

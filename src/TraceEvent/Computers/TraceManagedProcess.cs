@@ -1866,7 +1866,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Server GC histories
         /// </summary>
         //list of workload histories per server GC heap
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public List<ServerGcHistory> ServerGcHeapHistories = new List<ServerGcHistory>();
         /// <summary>
         /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The 
@@ -1881,7 +1880,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Calculate the size of all pinned objects
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public long GetPinnedObjectSizes()
         {
             if (pinnedObjectSizes == -1)
@@ -1901,7 +1899,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Percentage of the pinned objects created by the user
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public int GetPinnedObjectPercentage()
         {
             if (TotalPinnedPlugSize == -1)
@@ -2002,7 +1999,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Heap size after GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double HeapSizeAfterMB
         {
             get
@@ -2020,7 +2016,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Amount of memory promoted with GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double PromotedMB
         {
             get
@@ -2041,7 +2036,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double SurvivalPercent(Gens gen)
         {
             double retSurvRate = double.NaN;
@@ -2079,7 +2073,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenSizeAfterMB(Gens gen)
         {
             if (gen == Gens.GenPinObj)
@@ -2115,7 +2108,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenFragmentationMB(Gens gen)
         {
             if (PerHeapHistories == null)
@@ -2136,7 +2128,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenFragmentationPercent(Gens gen)
         {
             return (GenFragmentationMB(gen) * 100.0 / GenSizeAfterMB(gen));
@@ -2146,7 +2137,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenInMB(Gens gen)
         {
             if (PerHeapHistories == null)
@@ -2167,7 +2157,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenOutMB(Gens gen)
         {
             if (PerHeapHistories == null)
@@ -2192,7 +2181,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenPromotedMB(Gens gen)
         {
             if (gen == Gens.GenPinObj)
@@ -2228,7 +2216,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenBudgetMB(Gens gen)
         {
             if (PerHeapHistories == null)
@@ -2249,7 +2236,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenObjSizeAfterMB(Gens gen)
         {
             if (PerHeapHistories == null)
@@ -2268,7 +2254,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Global condemned reasons by GC
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public GCCondemnedReasons GlobalCondemnedReasons
         {
             get
@@ -2287,7 +2272,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Heap condemned reasons by GC
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public GCCondemnedReasons[] PerHeapCondemnedReasons
         {
             get
@@ -2317,7 +2301,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Identify the first and greatest condemned heap
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public int FindFirstHighestCondemnedHeap()
         {
             int GenNumberHighest = (int)Generation;
@@ -2357,7 +2340,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Returns the condemned reason for this heap
         /// </summary>
         /// <param name="ReasonsInfo"></param>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public void GetCondemnedReasons(Dictionary<CondemnedReasonGroup, int> ReasonsInfo)
         {
             // Older versions of the runtime does not have this event. So even for a complete GC, we may not have this
@@ -2409,12 +2391,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Sum of the pinned plug sizes
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public long TotalPinnedPlugSize;
         /// <summary>
         /// Sum of the user created pinned plug sizes
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public long TotalUserPinnedPlugSize;
         /// <summary>
         /// Per heap statstics
@@ -2423,7 +2403,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Large object heap wait threads
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public Dictionary<int, BGCAllocWaitInfo> LOHWaitThreads;
         /// <summary>
         /// Process heap statistics
@@ -2432,47 +2411,38 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Free list efficiency statistics
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public FreeListEfficiency FreeList;
         /// <summary>
         /// Memory allocated since last GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double AllocedSinceLastGCMB;
         /// <summary>
         /// Ratio of heap size before and after
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double RatioPeakAfter;
         /// <summary>
         /// Ratio of allocations since last GC over time executed
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double AllocRateMBSec;
         /// <summary>
         /// Peak heap size before GCs (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double HeapSizePeakMB;
         /// <summary>
         /// Per generation view of user allocated data
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double[] UserAllocated = new double[(int)Gens.MaxGenCount];
         /// <summary>
         /// Heap size before gc (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double HeapSizeBeforeMB;
         /// <summary>
         /// Per generation view of heap sizes before GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double[] GenSizeBeforeMB = new double[(int)Gens.MaxGenCount];
         /// <summary>
         /// This represents the percentage time spent paused for this GC since the last GC completed. 
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double PauseTimePercentageSinceLastGC;
 
 #region private
@@ -3155,7 +3125,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// Each group corresponds to one or more reasons. 
     /// Groups are organized in the way that they mean something to users. 
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public enum CondemnedReasonGroup
     {
         // The first 4 will have values of a number which is the generation.
@@ -3199,7 +3168,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// Background GC allocation information
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class BGCAllocWaitInfo
     {
         public double WaitStartRelativeMSec;
@@ -3245,7 +3213,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// Span of thread work recorded by CSwitch or CPU Sample Profile events
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class ThreadWorkSpan
     {
         public int ThreadId;
@@ -3302,7 +3269,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// CondemnedReason
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public struct EncodedCondemnedReasons
     {
         public int Reasons;
@@ -3312,7 +3278,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// Heap condemned reason
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class GCCondemnedReasons
     {
         public EncodedCondemnedReasons EncodedReasons;
@@ -3616,7 +3581,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     ///
     /// 
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class FreeListEfficiency
     {
         public bool Valid = false;
@@ -3624,7 +3588,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public double FreeListConsumed;
     }
 
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class GcJoin
     {
         public int Heap;
@@ -3642,7 +3605,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     // 3) restarts
     // 4) goes back to 1).
     // We call 1 through 3 an activity. There are as many activities as there are joins.
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class ServerGcHistory
     {
         public int HeapId;
@@ -3751,7 +3713,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 #endregion
     }
 
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public enum WorkSpanType
     {
         GcThread,
@@ -3760,7 +3721,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Idle
     }
 
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class GcWorkSpan : ThreadWorkSpan
     {
         public WorkSpanType Type;
@@ -3842,7 +3802,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// <summary>
         /// Indication if this is running on .NET 4.x+
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public bool IsClr4;
         /// <summary>
         /// Indicates if this process has sufficient JIT activity to be interesting
@@ -4442,7 +4401,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Means it detected that the ETW information is in a format it does not understand.
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public bool GCVersionInfoMismatch { get; private set; }
         /// <summary>
         /// Indicator of if ServerGC is enabled (1).  -1 indicates that not enough events have been processed to know for sure.

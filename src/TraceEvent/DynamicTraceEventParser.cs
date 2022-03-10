@@ -386,7 +386,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 provider.ISDynamic = true;
                 return provider;
 
-                Fail:
+            Fail:
                 Chunks = null;
                 return null;
             }
@@ -644,12 +644,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return "[CANT PARSE OFFSET]";
             }
 
-            // CONSIDER:  The code below insures that if you have fields that are
+            // CONSIDER:  The code below ensures that if you have fields that are
             // 'off the end' of a data that you return the default value.  That
             // allows the parser to gracefully handle old events that have fewer
             // fields but does NOT guarantee we don't read past the end of the 
             // buffer in all cases (if you have corrupt/mismatched data).   The
-            // code below does insure this but is more expensive.   For now I have
+            // code below does ensure this but is more expensive.   For now I have
             // chosen the cheaper solution.   
             //
             // if ((uint)EventDataLength < OffsetOfNextField(offset, index))
@@ -759,6 +759,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                     else if (type == typeof(DateTime))
                     {
+                        if (payloadFetch.Size == 16)
+                        {
+                            int currentOffset = offset;
+                            int year = GetInt16At(currentOffset);
+                            int month = GetInt16At(currentOffset += 2);
+                            int dayOfWeek = GetInt16At(currentOffset += 2);
+                            int day = GetInt16At(currentOffset += 2);
+                            int hour = GetInt16At(currentOffset += 2);
+                            int minute = GetInt16At(currentOffset += 2);
+                            int second = GetInt16At(currentOffset += 2);
+                            int milliseconds = GetInt16At(currentOffset);
+
+                            return new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+                        }
                         return DateTime.FromFileTime(GetInt64At(offset));
                     }
                     else
@@ -2237,7 +2251,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             case "bitMap":
                                 map = new SortedDictionary<long, string>();    // Bitmaps stored as sorted dictionaries
                                 goto DoMap;
-                                DoMap:
+                            DoMap:
                                 string name = reader.GetAttribute("name");
                                 using (var mapValues = reader.ReadSubtree())
                                 {
@@ -2373,7 +2387,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 error = e;
             }
 
-            THROW:
+        THROW:
             if (!noThrowOnError && error != null)
             {
                 throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
@@ -2439,7 +2453,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var fieldFetch = new DynamicTraceEventData.PayloadFetch(offset, size, type, map);
                     if (inType == "win:Binary")
                     {
-                        // Check to insure that the length field is the preceding field. 
+                        // Check to ensure that the length field is the preceding field. 
                         int prevFieldIdx = ret.payloadNames.Count - 1;
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
