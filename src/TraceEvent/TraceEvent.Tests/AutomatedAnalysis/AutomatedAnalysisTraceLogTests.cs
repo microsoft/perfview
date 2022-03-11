@@ -27,22 +27,27 @@ namespace TraceEventTests
             using (TraceLog traceLog = TraceLog.OpenOrConvert(inputFilePath))
             {
                 // Create the list of TraceLog processes.
-                Dictionary<int, string> traceLogProcesses = new Dictionary<int, string>();
+                Dictionary<int, TraceProcess> traceLogProcesses = new Dictionary<int, TraceProcess>();
                 foreach (TraceProcess process in traceLog.Processes)
                 {
-                    traceLogProcesses.Add((int)process.ProcessIndex, process.CommandLine);
+                    traceLogProcesses.Add((int)process.ProcessIndex, process);
                 }
 
                 // Find and remove all of the AutoAnalyzer processes from the list.
                 AutomatedAnalysisTraceLog autoAnalysisTraceLog = new AutomatedAnalysisTraceLog(traceLog, new SymbolReader(TextWriter.Null));
-                foreach (AnalyzerTraceProcess process in ((ITrace)autoAnalysisTraceLog).Processes)
+                foreach (AnalyzerTraceProcess autoAnalysisProcess in ((ITrace)autoAnalysisTraceLog).Processes)
                 {
-                    string commandLine;
-                    Assert.True(traceLogProcesses.TryGetValue(process.UniqueID, out commandLine));
-                    Assert.Equal(commandLine, process.Description);
-                    Assert.True(traceLogProcesses.Remove(process.UniqueID));
+                    TraceProcess traceProcess;
+                    Assert.True(traceLogProcesses.TryGetValue(autoAnalysisProcess.UniqueID, out traceProcess));
+
+                    // Verify that details match.
+                    Assert.Equal(traceProcess.ProcessID, autoAnalysisProcess.DisplayID);
+                    Assert.Equal(traceProcess.CommandLine, autoAnalysisProcess.Description);
+                    Assert.Equal(traceProcess.ManagedProcess(), autoAnalysisProcess.ContainsManagedCode);
+                    Assert.True(traceLogProcesses.Remove(autoAnalysisProcess.UniqueID));
                 }
 
+                // Make sure we didn't miss any.
                 Assert.True(traceLogProcesses.Count == 0);
             }
         }
