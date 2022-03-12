@@ -24,7 +24,10 @@ namespace TraceEventTests
             PrepareTestData();
 
             string inputFilePath = Path.Combine(UnZippedDataDir, inputTestFile);
-            using (TraceLog traceLog = TraceLog.OpenOrConvert(inputFilePath))
+            string etlxFileName = Path.GetFileNameWithoutExtension(inputFilePath) + "-AutoAnalysis.etlx";
+            string etlxFilePath = Path.Combine(UnZippedDataDir, etlxFileName);
+            etlxFilePath = TraceLog.CreateFromEventTraceLogFile(inputFilePath, etlxFilePath);
+            using (TraceLog traceLog = new TraceLog(etlxFilePath))
             {
                 // Create the list of TraceLog processes.
                 Dictionary<int, TraceProcess> traceLogProcesses = new Dictionary<int, TraceProcess>();
