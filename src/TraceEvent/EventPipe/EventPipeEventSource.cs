@@ -135,7 +135,11 @@ namespace Microsoft.Diagnostics.Tracing
         public override bool Process()
         {
             if (_deserializer is null)
-                _deserializer = _deserializerIntializer?.Invoke() ?? throw new Exception("TODO: Come up with better errror path later");
+            {
+                Debug.Assert(_deserializerIntializer != null);
+                _deserializer = _deserializerIntializer?.Invoke();
+                Debug.Assert(_deserializer != null);
+            }
 
 
             if (FileFormatVersionNumber >= 3)
