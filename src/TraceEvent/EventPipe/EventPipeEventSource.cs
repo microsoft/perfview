@@ -848,8 +848,6 @@ namespace Microsoft.Diagnostics.Tracing
         private StreamLabel _endOfEventStream;
 #endif
         private Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
-        private PinnedStreamReader _streamReader;
-        private string _name;
         private Deserializer _deserializer;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
