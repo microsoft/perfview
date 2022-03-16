@@ -1529,7 +1529,9 @@ table {
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
-            AutomatedAnalysisManager manager = new AutomatedAnalysisManager();
+            string analyzersDirectory = Path.Combine(SupportFiles.SupportFileDir, "Analyzers");
+            DirectoryAnalyzerResolver resolver = new DirectoryAnalyzerResolver(analyzersDirectory);
+            AutomatedAnalysisManager manager = new AutomatedAnalysisManager(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
             AutomatedAnalysisResult result = manager.ProcessTrace(traceLog, log);
             result.GenerateReport(writer);

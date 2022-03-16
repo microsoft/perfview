@@ -67,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
             else
             {
-                _writer.WriteLine($"<H3>No analyzers were executed.  Check '{AnalyzerResolver.AnalyzersDirectory}' for DLLs containing analyzers.</H3>");
+                _writer.WriteLine($"<H3>No analyzers were executed.</H3>");
             }
         }
     }

@@ -9,10 +9,14 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         private IEnumerable<Analyzer> _analyzers;
         private Configuration _configuration;
 
-        public AutomatedAnalysisManager()
+        public AutomatedAnalysisManager(AnalyzerResolver analyzerResolver)
         {
-            _analyzers = AnalyzerResolver.GetAnalyzers();
-            _configuration = AnalyzerResolver.GetConfiguration();
+            // Resolve the set of analyzers and configuration.
+            analyzerResolver.Resolve();
+
+            // Save the results.
+            _analyzers = analyzerResolver.ResolvedAnalyzers;
+            _configuration = analyzerResolver.Configuration;
 
         }
 

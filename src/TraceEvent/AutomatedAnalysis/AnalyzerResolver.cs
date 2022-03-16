@@ -1,86 +1,92 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
+using System.Text;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    internal sealed class AnalyzerResolver
+    public sealed class AnalyzerLoadContext
     {
-        private const string AnalyzersDirectoryName = "Analyzers";
-        private static string s_analyzersDirectory;
+        public Analyzer Analyzer { get; private set; }
+        public bool ShouldRun { get; set; }
 
-        internal static string AnalyzersDirectory
+        internal void Reset(Analyzer analyzer)
+        {
+            Analyzer = analyzer;
+            ShouldRun = true;
+        }
+    }
+
+    public abstract class AnalyzerResolver
+    {
+        private List<Analyzer> _analyzers = new List<Analyzer>();
+        private Configuration _configuration;
+
+        internal IEnumerable<Analyzer> ResolvedAnalyzers
+        {
+            get { return _analyzers; }
+        }
+
+        internal Configuration Configuration
         {
             get
             {
-                if (s_analyzersDirectory == null)
+                if (_configuration == null)
                 {
-                    // Assume plugins sit in a plugins directory next to the current assembly.
-#if AUTOANALYSIS_EXTENSIBILITY
-                    s_analyzersDirectory = Path.Combine(
-                        Path.GetDirectoryName(typeof(AnalyzerResolver).Assembly.Location),
-                        AnalyzersDirectoryName);
-#endif
+                    return new Configuration();
                 }
-                return s_analyzersDirectory;
+
+                return _configuration;
             }
         }
 
-        internal static IEnumerable<Analyzer> GetAnalyzers()
+        protected virtual void OnAnalyzerLoaded(AnalyzerLoadContext loadContext)
         {
-#if AUTOANALYSIS_EXTENSIBILITY
-            // Iterate through all assemblies in the analyzers directory.
-            if(!Directory.Exists(AnalyzersDirectory))
+            // All analyzers are run by default.
+        }
+
+        protected void ConsumeAssembly(Assembly analyzerAssembly)
+        {
+            if (analyzerAssembly == null)
             {
-                yield break;
+                throw new ArgumentNullException(nameof(analyzerAssembly));
             }
 
-            string[] candidateAssemblies = Directory.GetFiles(AnalyzersDirectory, "*.dll", SearchOption.TopDirectoryOnly);
-            foreach(string candidateAssembly in candidateAssemblies)
+            AnalyzerLoadContext loadContext = new AnalyzerLoadContext();
+
+            AnalyzerProviderAttribute attr =
+                (AnalyzerProviderAttribute)analyzerAssembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute));
+            if (attr != null && attr.ProviderType != null)
             {
-                Assembly assembly = Assembly.LoadFrom(candidateAssembly);
-                if(assembly != null)
+                IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
+                if (analyzerProvider != null)
                 {
-                    AnalyzerProviderAttribute attr = 
-                        (AnalyzerProviderAttribute)assembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute));
-                    if(attr != null && attr.ProviderType != null)
+                    foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
                     {
-                        // Create an instance of the provider.
-                        IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
-                        if (analyzerProvider != null)
+                        loadContext.Reset(analyzer);
+                        OnAnalyzerLoaded(loadContext);
+                        if (loadContext.ShouldRun)
                         {
-                            foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
-                            {
-                                yield return analyzer;
-                            }
+                            _analyzers.Add(loadContext.Analyzer);
                         }
                     }
                 }
             }
-#else
-            yield break;
-#endif
-
         }
 
-        internal static Configuration GetConfiguration()
+        internal void ConsumeConfiguration(Configuration configuration)
         {
-            Configuration configuration = new Configuration();
-
-#if AUTOANALYSIS_EXTENSIBILITY
-            // Iterate through all configuration files in the analyzers directory.
-            if (Directory.Exists(AnalyzersDirectory))
+            if (_configuration != null)
             {
-                string[] filePaths = Directory.GetFiles(AnalyzersDirectory, "*.config.xml");
-                foreach(string filePath in filePaths)
-                {
-                    configuration.AddConfigurationFile(filePath);
-                }
+                throw new InvalidOperationException("Only one configuration can be specified.");
             }
-#endif
 
-            return configuration;
+            _configuration = configuration;
         }
+
+        protected internal abstract void Resolve();
     }
 }

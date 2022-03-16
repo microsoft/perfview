@@ -16,10 +16,10 @@ namespace TraceEventTests
     public abstract class AutomatedAnalysisTestBase : TestBase
     {
         private const string AutomatedAnalysisDirName = "AutomatedAnalysis";
-        private static new string TestDataDir = @".\inputs\" + AutomatedAnalysisDirName;
-        private static new string UnZippedDataDir = @".\unzipped\" + AutomatedAnalysisDirName;
-        private static new string BaseOutputDir = @".\output\" + AutomatedAnalysisDirName;
-        private static new string NewBaselineDir = @".\newBaseLines\" + AutomatedAnalysisDirName;
+        protected static new string TestDataDir = @".\inputs\" + AutomatedAnalysisDirName;
+        protected static new string UnZippedDataDir = @".\unzipped\" + AutomatedAnalysisDirName;
+        protected static new string BaseOutputDir = @".\output\" + AutomatedAnalysisDirName;
+        protected static new string NewBaselineDir = @".\newBaseLines\" + AutomatedAnalysisDirName;
 
         protected AutomatedAnalysisTestBase(ITestOutputHelper output)
             : base(output)
