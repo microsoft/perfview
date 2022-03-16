@@ -15,16 +15,16 @@ namespace TraceEventTests
     [UseCulture("en-US")]
     public abstract class AutomatedAnalysisTestBase : TestBase
     {
-        private const string AutomatedAnalysisDirName = "AutomatedAnalysis";
-        private static new string TestDataDir = @".\inputs\" + AutomatedAnalysisDirName;
-        private static new string UnZippedDataDir = @".\unzipped\" + AutomatedAnalysisDirName;
-        private static new string BaseOutputDir = @".\output\" + AutomatedAnalysisDirName;
-        private static new string NewBaselineDir = @".\newBaseLines\" + AutomatedAnalysisDirName;
+        private const string AutomatedAnalysisDirName = @"\AutomatedAnalysis";
 
         protected AutomatedAnalysisTestBase(ITestOutputHelper output)
             : base(output)
         {
-        }
+            TestDataDir += AutomatedAnalysisDirName;
+            UnZippedDataDir += AutomatedAnalysisDirName;
+            BaseOutputDir += AutomatedAnalysisDirName;
+            NewBaselineDir += AutomatedAnalysisDirName;
+    }
 
         public static IEnumerable<object[]> TestEtlFiles
         {

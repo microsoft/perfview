@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
+using TraceEventTests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,12 +13,16 @@ namespace TestEventTests.Analyzers
 {
     public sealed class TestAnalyzerProvider : IAnalyzerProvider
     {
+        // Execution tests.
+        public static readonly SingleIssueAnalyzer ExecutionTests_SingleIssueAnalyzer = new SingleIssueAnalyzer();
+
         // Resolver tests.
         public static readonly ResolverTests_AnalyzerOne ResolverTests_AnalyzerOne = new ResolverTests_AnalyzerOne();
         public static readonly ResolverTests_AnalyzerTwo ResolverTests_AnalyzerTwo = new ResolverTests_AnalyzerTwo();
 
         internal static readonly Analyzer[] Analyzers = new Analyzer[]
         {
+            ExecutionTests_SingleIssueAnalyzer,
             ResolverTests_AnalyzerOne,
             ResolverTests_AnalyzerTwo
         };
