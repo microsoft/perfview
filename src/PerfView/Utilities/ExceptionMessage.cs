@@ -21,7 +21,7 @@ namespace Utilities
                 || ex.GetType().Name == "SerializationException") // We do this to avoid loading the FastSerialziation DLL (which may fail)
             {
                 userLevel = true;
-                return "Error: " + ex.Message;
+                return "Error: " + ex.ToString();
             }
             else
             {
