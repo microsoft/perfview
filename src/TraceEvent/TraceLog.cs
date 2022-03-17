@@ -797,7 +797,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 //****************************************************************************************************
                 // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
+                using (Serializer serializer = new Serializer(etlxTempPath, newLog, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes })) { }
                 if (File.Exists(etlxFilePath))
                 {
                     File.Delete(etlxFilePath);
@@ -841,7 +841,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 //****************************************************************************************************
                 // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
+                using (Serializer serializer = new Serializer(etlxTempPath, newLog, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes })) { }
                 if (File.Exists(etlxFilePath))
                 {
                     File.Delete(etlxFilePath);
@@ -932,7 +932,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     //****************************************************************************************************
                     // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                    using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
+                    using (Serializer serializer = new Serializer(etlxTempPath, newLog, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes })) { }
                     if (File.Exists(etlxFilePath))
                     {
                         File.Delete(etlxFilePath);
@@ -3413,7 +3413,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // If this Assert files, fix the declaration of headerSize to match
             Debug.Assert(sizeof(TraceEventNativeMethods.EVENT_HEADER) == 0x50 && sizeof(TraceEventNativeMethods.ETW_BUFFER_CONTEXT) == 4);
 
-            Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, 0x10000), etlxFilePath);
+            Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, 0x10000, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }), etlxFilePath);
             deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
 
             // when the deserializer needs a TraceLog we return the current instance.  We also assert that

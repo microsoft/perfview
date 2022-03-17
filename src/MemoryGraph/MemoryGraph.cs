@@ -27,7 +27,7 @@ namespace Graphs
 
         public void WriteAsBinaryFile(string outputFileName)
         {
-            Serializer serializer = new Serializer(outputFileName, this);
+            Serializer serializer = new Serializer(outputFileName, this, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes });
             serializer.Close();
         }
         public static MemoryGraph ReadFromBinaryFile(string inputFileName)

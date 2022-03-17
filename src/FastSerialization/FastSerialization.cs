@@ -517,14 +517,14 @@ namespace FastSerialization
         /// <summary>
         /// Create a serializer writes 'entryObject' to a file.  
         /// </summary>
-        public Serializer(string filePath, IFastSerializable entryObject) : this(new IOStreamStreamWriter(filePath), entryObject) { }
+        public Serializer(string filePath, IFastSerializable entryObject, SerializationConfiguration config) : this(new IOStreamStreamWriter(filePath, config), entryObject) { }
 
         /// <summary>
         /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The serializer
         /// will close the stream when it closes.
         /// </summary>
-        public Serializer(Stream outputStream, IFastSerializable entryObject)
-            : this(outputStream, entryObject, false)
+        public Serializer(Stream outputStream, IFastSerializable entryObject, SerializationConfiguration config)
+            : this(outputStream, entryObject, false, config)
         {
         }
 
@@ -533,8 +533,8 @@ namespace FastSerialization
         /// <paramref name="leaveOpen"/> parameter determines whether the serializer will close the stream when it
         /// closes.
         /// </summary>
-        public Serializer(Stream outputStream, IFastSerializable entryObject, bool leaveOpen)
-            : this(new IOStreamStreamWriter(outputStream, leaveOpen: leaveOpen), entryObject)
+        public Serializer(Stream outputStream, IFastSerializable entryObject, bool leaveOpen, SerializationConfiguration config)
+            : this(new IOStreamStreamWriter(outputStream, leaveOpen: leaveOpen, config: config), entryObject)
         {
         }
 
