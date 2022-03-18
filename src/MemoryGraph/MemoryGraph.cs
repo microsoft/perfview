@@ -8,7 +8,7 @@ namespace Graphs
 {
     public class MemoryGraph : Graph, IFastSerializable
     {
-        public MemoryGraph(int expectedSize, bool isVeryLargeGraph = false)
+        public MemoryGraph(int expectedSize, bool isVeryLargeGraph = true)
             : base(expectedSize, isVeryLargeGraph)
         {
             // If we have too many addresses we will reach the Dictionary's internal array's size limit and throw.
@@ -32,7 +32,7 @@ namespace Graphs
         }
         public static MemoryGraph ReadFromBinaryFile(string inputFileName)
         {
-            Deserializer deserializer = new Deserializer(inputFileName);
+            Deserializer deserializer = new Deserializer(inputFileName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes });
             deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
             deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
             deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
@@ -72,7 +72,7 @@ namespace Graphs
         }
         public override long SizeOfGraphDescription()
         {
-            return base.SizeOfGraphDescription() + 8 * (long)m_nodeAddresses.Count;
+            return base.SizeOfGraphDescription() + 8 * m_nodeAddresses.Count;
         }
         /// <summary>
         /// Returns the number of distinct references in the graph so far (the size of the interning table).  

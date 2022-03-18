@@ -17,11 +17,11 @@ using Address = System.UInt64;
 public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 {
     public GCHeapDump(string inputFileName) :
-        this(new Deserializer(inputFileName))
+        this(new Deserializer(inputFileName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }))
     { }
 
     public GCHeapDump(Stream inputStream, string streamName) :
-        this(new Deserializer(inputStream, streamName))
+        this(new Deserializer(inputStream, streamName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }))
     { }
 
     /// <summary>
@@ -224,7 +224,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         }
         catch (Exception e)
         {
-            throw new ApplicationException("Error opening file " + deserializer.Name + " Message: " + e.Message);
+            throw new ApplicationException("Error opening file " + deserializer.Name + " Message: " + e.Message, e);
         }
     }
 

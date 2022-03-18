@@ -983,7 +983,6 @@ namespace FastSerialization
         }
         private void WriteObjectData(IFastSerializable obj, Tags beginTag)
         {
-            Debug.Assert(writer.GetLabel() != StreamLabel.Invalid, "Objects should be pre-aligned to a label.");
             Debug.Assert(beginTag == Tags.BeginObject || beginTag == Tags.BeginPrivateObject);
             WriteTag(beginTag);
             WriteTypeForObject(obj);

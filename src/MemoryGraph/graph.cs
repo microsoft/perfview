@@ -598,11 +598,8 @@ namespace Graphs
             for (int i = 0; i < m_nodes.Count; i++)
             {
                 // Apply differential compression to the label, and then write it as a compressed integer
-                if ((m_nodes[i] & 0x1) != 0)
-                    throw new NotSupportedException("Labels must be aligned to a 2-byte boundary.");
-
-                int currentLabel = unchecked((int)(m_nodes[i] >> 1));
-                int difference = unchecked(currentLabel - previousLabel);
+                int currentLabel = checked((int)m_nodes[i]);
+                int difference = checked(currentLabel - previousLabel);
                 Node.WriteCompressedInt(serializer.Writer, difference);
                 previousLabel = currentLabel;
             }
@@ -683,7 +680,7 @@ namespace Graphs
                 // Read the label as a compressed differential integer
                 uint difference = unchecked((uint)Node.ReadCompressedInt(deserializer.Reader));
                 uint currentLabel = unchecked(previousLabel + difference);
-                m_nodes.Add((nuint)(StreamLabel)((long)currentLabel << 1));
+                m_nodes.Add((nuint)(StreamLabel)(long)currentLabel);
                 previousLabel = currentLabel;
             }
 
