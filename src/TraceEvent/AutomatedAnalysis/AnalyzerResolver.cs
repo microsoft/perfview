@@ -36,7 +36,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             {
                 if (_configuration == null)
                 {
-                    return new Configuration();
+                    return _configuration = new Configuration();
                 }
 
                 return _configuration;
