@@ -16,6 +16,11 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _executionContext = executionContext;
         }
 
+        public IEnumerable<Analyzer> ExecutedAnalyzers
+        {
+            get { return _executedAnalyzers; }
+        }
+
         public AnalyzerIssueCollection Issues
         {
             get { return _executionContext.Issues; }

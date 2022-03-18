@@ -47,6 +47,11 @@ namespace TraceEventTests
                 // Get the issue and confirm its the right one.
                 AnalyzerIssue issue = issues[0];
                 Assert.Equal(SingleIssueAnalyzer.Issue, issue);
+
+                // Make sure the expected Analyzer was run.
+                IEnumerable<Analyzer> executedAnalyzers = result.ExecutedAnalyzers;
+                Assert.Single(executedAnalyzers);
+                Assert.Equal(executedAnalyzers.Single(), TestAnalyzerProvider.ExecutionTests_SingleIssueAnalyzer);
             }
         }
     }
