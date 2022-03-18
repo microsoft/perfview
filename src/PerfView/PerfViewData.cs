@@ -1534,7 +1534,21 @@ table {
             AutomatedAnalysisManager manager = new AutomatedAnalysisManager(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
             AutomatedAnalysisResult result = manager.ProcessTrace(traceLog, log);
-            result.GenerateReport(writer);
+
+            using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
+            {
+                // Write out issues.
+                foreach (KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>> pair in result.Issues)
+                {
+                    if (pair.Value.Count > 0)
+                    {
+                        reportGenerator.WriteIssuesForProcess(pair.Key, pair.Value);
+                    }
+                }
+
+                // Write the list of executed analyzers.
+                reportGenerator.WriteExecutedAnalyzerList(result.ExecutedAnalyzers);
+            }
         }
     }
 
