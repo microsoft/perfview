@@ -47,6 +47,7 @@ namespace TraceEventTests
                 // Get the issue and confirm its the right one.
                 AnalyzerIssue issue = issues[0];
                 Assert.Equal(SingleIssueAnalyzer.Issue, issue);
+                Assert.Equal(SingleIssueAnalyzer.Issue.Analyzer, TestAnalyzerProvider.ExecutionTests_SingleIssueAnalyzer);
 
                 // Make sure the expected Analyzer was run.
                 IEnumerable<Analyzer> executedAnalyzers = result.ExecutedAnalyzers;
@@ -69,7 +70,7 @@ namespace TraceEventTests
 
     public sealed class SingleIssueAnalyzer : PerProcessAnalyzer
     {
-        internal static readonly AnalyzerIssue Issue = new AnalyzerIssue("Test Title", "Test Description", "http://test-url");
+        internal static AnalyzerIssue Issue;
         internal const int PID = 106800;
         internal const string ProcessDescription = "SimpleAllocator.exe";
 
@@ -77,6 +78,8 @@ namespace TraceEventTests
         {
             if (processContext.AnalyzerProcess.DisplayID == PID && ProcessDescription.Equals(processContext.AnalyzerProcess.Description))
             {
+                Assert.Null(Issue);
+                Issue = new AnalyzerIssue("Test Title", "Test Description", "http://test-url");
                 processContext.Issues.Add(Issue);
             }
 
