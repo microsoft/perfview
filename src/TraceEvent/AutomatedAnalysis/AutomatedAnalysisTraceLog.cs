@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -10,17 +11,22 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         public AutomatedAnalysisTraceLog(TraceLog traceLog, SymbolReader symbolReader)
         {
             TraceLog = traceLog;
+            UnderlyingSource = traceLog;
             SymbolReader = symbolReader;
         }
 
-        internal TraceLog TraceLog { get; }
+        [Obsolete]
+        public TraceLog TraceLog { get; }
+
+        public TraceLog UnderlyingSource { get; }
+
         internal SymbolReader SymbolReader { get; }
 
         IEnumerable<AnalyzerTraceProcess> ITrace.Processes
         {
             get
             {
-                foreach(TraceProcess traceProcess in TraceLog.Processes)
+                foreach(TraceProcess traceProcess in UnderlyingSource.Processes)
                 {
                     yield return new AnalyzerTraceProcess((int)traceProcess.ProcessIndex, traceProcess.ProcessID, traceProcess.CommandLine, traceProcess.ManagedProcess());
                 }

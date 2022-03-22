@@ -1,6 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing.Etlx;
 using System.IO;
 using Microsoft.Diagnostics.Symbols;
+using System;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
@@ -15,7 +16,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             AutomatedAnalysisTraceLog traceLog = trace as AutomatedAnalysisTraceLog;
             if(traceLog != null)
             {
-                TraceLog = traceLog.TraceLog;
+                TraceLog = traceLog.UnderlyingSource;
                 SymbolReader = traceLog.SymbolReader;
             }
         }
@@ -24,6 +25,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public SymbolReader SymbolReader { get; }
 
+        [Obsolete]
         public TraceLog TraceLog { get; }
 
         public ITrace Trace { get; }
