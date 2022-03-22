@@ -28,7 +28,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
-        // Keep this for now because GLAD depends on it.
+        // Keep this for now because GLAD depends on it
+        [Obsolete]
         public List<AnalyzerIssue> this[TraceProcess process]
         {
             get

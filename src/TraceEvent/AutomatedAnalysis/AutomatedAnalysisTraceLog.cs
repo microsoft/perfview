@@ -33,6 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
+        [Obsolete]
         StackView ITrace.GetCPUStacks(AnalyzerTraceProcess process)
         {
             StackView stackView = null;
