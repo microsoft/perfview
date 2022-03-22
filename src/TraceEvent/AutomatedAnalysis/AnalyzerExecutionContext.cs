@@ -30,6 +30,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public ITrace Trace { get; }
 
+        [Obsolete]
         public TextWriter TextLog { get; }
 
         public AnalyzerIssueCollection Issues { get; } = new AnalyzerIssueCollection();
