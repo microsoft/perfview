@@ -38,7 +38,10 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     // Execute the analyzer.
                     try
                     {
-                        analyzer.RunAnalyzer(executionContext, null);
+                        using (new AnalyzerExecutionScope(analyzer))
+                        {
+                            analyzer.RunAnalyzer(executionContext, null);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -59,7 +62,10 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     {
                         try
                         {
-                            analyzer.RunAnalyzer(executionContext, processContext);
+                            using (new AnalyzerExecutionScope(analyzer))
+                            {
+                                analyzer.RunAnalyzer(executionContext, processContext);
+                            }
                         }
                         catch (Exception ex)
                         {
