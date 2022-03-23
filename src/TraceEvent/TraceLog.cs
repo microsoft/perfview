@@ -1889,12 +1889,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Show status every 128K events
                 if ((rawEventCount & 0x1FFFF) == 0)
                 {
-                    var curOutputSizeMB = ((double)(uint)writer.GetLabel()) / 1000000.0;
-                    // Currently ETLX has a size restriction of 4Gig.  Thus if we are getting big, start truncating.
-                    if (curOutputSizeMB > 3500)
-                    {
-                        processingDisabled = true;
-                    }
+                    var curOutputSizeMB = ((double)(ulong)writer.GetLabel()) / 1000000.0;
 
                     if (options != null && options.ConversionLog != null)
                     {
@@ -1920,10 +1915,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             else if (maxEventCount != -1 && eventCount >= maxEventCount)
                             {
                                 message = "  Hit MaxEventCount, truncating.";
-                            }
-                            else if (curOutputSizeMB > 3500)
-                            {
-                                message = "  Hit File size limit (3.5Gig) truncating.";
                             }
 
                             options.ConversionLog.WriteLine(
