@@ -1902,11 +1902,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             var curDurationSec = (DateTime.Now - startTime).TotalSeconds;
 
-                            var ratioOutputToInput = (double)eventCount / (double)rawEventCount;
-                            var estimatedFinalSizeMB = Math.Max(rawInputSizeMB * ratioOutputToInput * 1.15, curOutputSizeMB * 1.02);
-                            var ratioSizeComplete = curOutputSizeMB / estimatedFinalSizeMB;
-                            var estTimeLeftSec = (int)(curDurationSec / ratioSizeComplete - curDurationSec);
-
                             var message = "";
                             if (0 < startMSec && data.TimeStampRelativeMSec < startMSec)
                             {
@@ -1918,14 +1913,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             }
 
                             options.ConversionLog.WriteLine(
-                                "[Sec {0,4:f0} Read {1,10:n0} events. At {2,7:n0}ms.  Wrote {3,4:f0}MB ({4,3:f0}%).  EstDone {5,2:f0} min {6,2:f0} sec.{7}]",
+                                "[ELAPSED {0,2:f0} seconds.     READ {1,10:n0} events.     TIMESTAMP {2,7:n0}ms.     WRITTEN {3,5:n0}MB.     {4}]",
                                 curDurationSec,
                                 rawEventCount,
                                 data.TimeStampRelativeMSec,
                                 curOutputSizeMB,
-                                ratioSizeComplete * 100.0,
-                                estTimeLeftSec / 60,
-                                estTimeLeftSec % 60,
                                 message);
                         }
                     }
