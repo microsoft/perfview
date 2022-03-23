@@ -7008,10 +7008,10 @@ table {
                 }
             }
 
-            var advanced = new PerfViewTreeGroup("Advanced Group");
-            var memory = new PerfViewTreeGroup("Memory Group");
-            var obsolete = new PerfViewTreeGroup("Old Group");
-            var experimental = new PerfViewTreeGroup("Experimental Group");
+            var advanced = new PerfViewTreeGroup("Advanced");
+            var memory = new PerfViewTreeGroup("Memory");
+            var frameworkAspNetWcf = new PerfViewTreeGroup(".NET Framework ASP.NET/WCF");
+            var experimental = new PerfViewTreeGroup("Experimental");
             m_Children = new List<PerfViewTreeItem>();
 
             bool hasCPUStacks = false;
@@ -7352,15 +7352,15 @@ table {
             {
                 if (hasCPUStacks)
                 {
-                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request CPU"));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "Server Request CPU"));
                 }
                 if (hasCSwitchStacks)
                 {
-                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request Thread Time"));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "Server Request Thread Time"));
                 }
                 if (hasGCAllocationTicks)
                 {
-                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request Managed Allocation"));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "Server Request Managed Allocation"));
                 }
             }
 
@@ -7387,14 +7387,14 @@ table {
                     var name = "ASP.NET Thread Time";
                     if (hasCSwitchStacks && hasTplStacks)
                     {
-                        obsolete.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
+                        frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
                     }
                     else if (!hasCSwitchStacks)
                     {
                         name += " (CPU ONLY)";
                     }
 
-                    obsolete.Children.Add(new PerfViewStackSource(this, name));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, name));
                 }
             }
 
@@ -7447,9 +7447,9 @@ table {
                 m_Children.Add(advanced);
             }
 
-            if (0 < obsolete.Children.Count)
+            if (0 < frameworkAspNetWcf.Children.Count)
             {
-                m_Children.Add(obsolete);
+                m_Children.Add(frameworkAspNetWcf);
             }
 
             if (AppLog.InternalUser && 0 < experimental.Children.Count)
