@@ -2,6 +2,9 @@
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// The result of a trace processing operation.
+    /// </summary>
     public sealed class TraceProcessorResult
     {
         private IEnumerable<Analyzer> _executedAnalyzers;
@@ -15,11 +18,17 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _executionContext = executionContext;
         }
 
+        /// <summary>
+        /// The set of Analyzers that were executed.
+        /// </summary>
         public IEnumerable<Analyzer> ExecutedAnalyzers
         {
             get { return _executedAnalyzers; }
         }
 
+        /// <summary>
+        /// The set of issues identified by the executed Analyzers.
+        /// </summary>
         public AnalyzerIssueCollection Issues
         {
             get { return _executionContext.Issues; }

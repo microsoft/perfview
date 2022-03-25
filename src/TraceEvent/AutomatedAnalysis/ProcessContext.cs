@@ -2,6 +2,9 @@
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// The process-specific context associated with execution of ProcessAnalyzers.
+    /// </summary>
     public sealed class ProcessContext
     {
         private StackView _cpuStacks;
@@ -14,10 +17,16 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             Issues = executionContext.Issues[process];
         }
 
+        /// <summary>
+        /// The process being analyzed.
+        /// </summary>
         public AnalyzerTraceProcess Process { get; }
 
         public List<AnalyzerIssue> Issues { get; }
 
+        /// <summary>
+        /// The CPU stacks for the process being analyzed.
+        /// </summary>
         public StackView CPUStacks
         {
             get

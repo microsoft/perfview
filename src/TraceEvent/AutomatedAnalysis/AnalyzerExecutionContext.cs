@@ -5,6 +5,9 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// The top-level object used to store contextual information during Analyzer execution.
+    /// </summary>
     public sealed class AnalyzerExecutionContext
     {
         internal AnalyzerExecutionContext(Configuration configuration, ITrace trace, TextWriter textLog)
@@ -23,11 +26,17 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public Configuration Configuration { get; }
 
+        /// <summary>
+        /// The SymbolReader associated with the execution.
+        /// </summary>
         public SymbolReader SymbolReader { get; }
 
         [Obsolete]
         public TraceLog TraceLog { get; }
 
+        /// <summary>
+        /// The trace to be analyzed.
+        /// </summary>
         public ITrace Trace { get; }
 
         [Obsolete]

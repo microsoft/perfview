@@ -18,6 +18,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         [Obsolete]
         public TraceLog TraceLog { get; }
 
+        /// <summary>
+        /// The underlying source of the data.
+        /// </summary>
         public TraceLog UnderlyingSource { get; }
 
         internal SymbolReader SymbolReader { get; }

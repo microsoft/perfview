@@ -4,11 +4,18 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// Processes traces by running a set of Analyzers against the trace data.
+    /// </summary>
     public sealed class TraceProcessor
     {
         private IEnumerable<Analyzer> _analyzers;
         private Configuration _configuration;
 
+        /// <summary>
+        /// Creates a new instance of TraceProcessor with the specified AnalyzerResolver.
+        /// </summary>
+        /// <param name="analyzerResolver">The resolver that will be used to discover Analyzers for execution.</param>
         public TraceProcessor(AnalyzerResolver analyzerResolver)
         {
             // Resolve the set of analyzers and configuration.
@@ -20,6 +27,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         }
 
+        /// <summary>
+        /// Process a single trace.
+        /// </summary>
+        /// <param name="trace">The trace.</param>
+        /// <param name="textLog">The diagnostic text log.</param>
+        /// <returns></returns>
         public TraceProcessorResult ProcessTrace(ITrace trace, TextWriter textLog)
         {
             List<ProcessAnalyzer> processAnalyzers = new List<ProcessAnalyzer>();
