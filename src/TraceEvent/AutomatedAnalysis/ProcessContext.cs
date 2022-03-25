@@ -8,7 +8,7 @@
         private StackView _cpuStacks;
         private AnalyzerExecutionContext _executionContext;
 
-        public ProcessContext(AnalyzerExecutionContext executionContext, AnalyzerTraceProcess process)
+        internal ProcessContext(AnalyzerExecutionContext executionContext, AnalyzerTraceProcess process)
         {
             _executionContext = executionContext;
             Process = process;
