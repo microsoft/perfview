@@ -36,11 +36,26 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         [Obsolete]
         StackView ITrace.GetCPUStacks(AnalyzerTraceProcess process)
         {
-            StackView stackView = null;
-            TraceProcess traceProcess = TraceLog.Processes[(ProcessIndex)process.UniqueID];
-            if(traceProcess != null)
+            return GetCPUStacks(process);
+        }
+
+        StackView ITrace.GetStacks(AnalyzerTraceProcess process, string stackType)
+        {
+            if(StackTypes.CPU.Equals(stackType))
             {
-                StackSource stackSource = TraceLog.CPUStacks(traceProcess);
+                return GetCPUStacks(process);
+            }
+
+            return null;
+        }
+
+        private StackView GetCPUStacks(AnalyzerTraceProcess process)
+        {
+            StackView stackView = null;
+            TraceProcess traceProcess = UnderlyingSource.Processes[(ProcessIndex)process.UniqueID];
+            if (traceProcess != null)
+            {
+                StackSource stackSource = UnderlyingSource.CPUStacks(traceProcess);
                 stackView = new StackView(traceProcess.Log, stackSource, SymbolReader);
             }
             return stackView;
