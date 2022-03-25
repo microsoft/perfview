@@ -76,7 +76,7 @@ namespace TraceEventTests
 
         protected override AnalyzerExecutionResult Execute(AnalyzerExecutionContext executionContext, ProcessContext processContext)
         {
-            if (processContext.AnalyzerProcess.DisplayID == PID && ProcessDescription.Equals(processContext.AnalyzerProcess.Description))
+            if (processContext.Process.DisplayID == PID && ProcessDescription.Equals(processContext.Process.Description))
             {
                 Assert.Null(Issue);
                 Issue = new AnalyzerIssue("Test Title", "Test Description", "http://test-url");

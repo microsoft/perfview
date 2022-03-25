@@ -13,11 +13,11 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         public ProcessContext(AnalyzerExecutionContext executionContext, AnalyzerTraceProcess process)
         {
             _executionContext = executionContext;
-            AnalyzerProcess = process;
+            Process = process;
             Issues = executionContext.Issues[process];
         }
 
-        public AnalyzerTraceProcess AnalyzerProcess { get; }
+        public AnalyzerTraceProcess Process { get; }
 
         public List<AnalyzerIssue> Issues { get; }
 
@@ -27,7 +27,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             {
                 if (_cpuStacks == null)
                 {
-                    _cpuStacks = _executionContext.Trace.GetStacks(AnalyzerProcess, StackTypes.CPU);
+                    _cpuStacks = _executionContext.Trace.GetStacks(Process, StackTypes.CPU);
                 }
                 return _cpuStacks;
             }
