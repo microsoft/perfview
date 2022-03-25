@@ -80,7 +80,7 @@ namespace TraceEventTests
             {
                 Assert.Null(Issue);
                 Issue = new AnalyzerIssue("Test Title", "Test Description", "http://test-url");
-                processContext.Issues.Add(Issue);
+                processContext.AddIssue(Issue);
             }
 
             return AnalyzerExecutionResult.Success;

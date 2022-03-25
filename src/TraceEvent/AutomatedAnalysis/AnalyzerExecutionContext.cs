@@ -39,6 +39,16 @@
         /// </summary>
         public ITrace Trace { get; }
 
-        public AnalyzerIssueCollection Issues { get; } = new AnalyzerIssueCollection();
+        internal AnalyzerIssueCollection Issues { get; } = new AnalyzerIssueCollection();
+
+        /// <summary>
+        /// Add an identified issue.
+        /// </summary>
+        /// <param name="process">The process associated with the issue.</param>
+        /// <param name="issue">The issue.</param>
+        public void AddIssue(AnalyzerTraceProcess process, AnalyzerIssue issue)
+        {
+            Issues[process].Add(issue);
+        }
     }
 }

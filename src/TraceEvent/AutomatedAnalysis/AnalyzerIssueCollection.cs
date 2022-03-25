@@ -1,14 +1,20 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// A collection of AnalyzerIssue instances organized by process.
+    /// </summary>
     public sealed class AnalyzerIssueCollection : IEnumerable<KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>>>
     {
         private Dictionary<AnalyzerTraceProcess, List<AnalyzerIssue>> _issues = new Dictionary<AnalyzerTraceProcess, List<AnalyzerIssue>>();
 
+        /// <summary>
+        /// Get a list of issues for the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns>A list of issues associated with the specified process.</returns>
         public List<AnalyzerIssue> this[AnalyzerTraceProcess process]
         {
             get

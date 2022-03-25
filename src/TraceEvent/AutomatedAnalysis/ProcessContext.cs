@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
@@ -14,15 +15,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         {
             _executionContext = executionContext;
             Process = process;
-            Issues = executionContext.Issues[process];
         }
 
         /// <summary>
         /// The process being analyzed.
         /// </summary>
         public AnalyzerTraceProcess Process { get; }
-
-        public List<AnalyzerIssue> Issues { get; }
 
         /// <summary>
         /// The CPU stacks for the process being analyzed.
@@ -37,6 +35,15 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 }
                 return _cpuStacks;
             }
+        }
+
+        /// <summary>
+        /// Add an identified issue.
+        /// </summary>
+        /// <param name="issue">The issue.</param>
+        public void AddIssue(AnalyzerIssue issue)
+        {
+            _executionContext.AddIssue(Process, issue);
         }
     }
 }
