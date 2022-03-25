@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         }
 
-        public AutomatedAnalysisResult ProcessTrace(ITrace trace, TextWriter textLog)
+        public TraceProcessorResult ProcessTrace(ITrace trace, TextWriter textLog)
         {
             List<PerProcessAnalyzer> perProcessAnalyzers = new List<PerProcessAnalyzer>();
 
@@ -75,7 +75,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 }
             }
 
-            return new AutomatedAnalysisResult(_analyzers, executionContext);
+            return new TraceProcessorResult(_analyzers, executionContext);
         }
     }
 }

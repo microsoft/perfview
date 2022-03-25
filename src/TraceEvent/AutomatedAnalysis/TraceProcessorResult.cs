@@ -3,12 +3,12 @@ using System.IO;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisResult
+    public sealed class TraceProcessorResult
     {
         private IEnumerable<Analyzer> _executedAnalyzers;
         private AnalyzerExecutionContext _executionContext;
 
-        internal AutomatedAnalysisResult(
+        internal TraceProcessorResult(
             IEnumerable<Analyzer> executedAnalyzers,
             AnalyzerExecutionContext executionContext)
         {

@@ -1533,7 +1533,7 @@ table {
             DirectoryAnalyzerResolver resolver = new DirectoryAnalyzerResolver(analyzersDirectory);
             TraceProcessor traceProcessor = new TraceProcessor(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
-            AutomatedAnalysisResult result = traceProcessor.ProcessTrace(traceLog, log);
+            TraceProcessorResult result = traceProcessor.ProcessTrace(traceLog, log);
 
             using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
             {

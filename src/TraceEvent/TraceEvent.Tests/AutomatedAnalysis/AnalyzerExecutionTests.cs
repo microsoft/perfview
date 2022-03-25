@@ -32,7 +32,7 @@ namespace TraceEventTests
             {
                 AutomatedAnalysisTraceLog automatedAnalysisTraceLog = new AutomatedAnalysisTraceLog(traceLog, new SymbolReader(TextWriter.Null));
                 TraceProcessor traceProcessor = new TraceProcessor(new AnalyzerExecutionTestResolver());
-                AutomatedAnalysisResult result = traceProcessor.ProcessTrace(automatedAnalysisTraceLog, TextWriter.Null);
+                TraceProcessorResult result = traceProcessor.ProcessTrace(automatedAnalysisTraceLog, TextWriter.Null);
 
                 // Get the process.
                 AnalyzerTraceProcess process = ((ITrace)automatedAnalysisTraceLog).Processes
