@@ -8,11 +8,11 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisReportGenerator : IDisposable
+    public sealed class HtmlReportGenerator : IDisposable
     {
         private TextWriter _writer;
 
-        public AutomatedAnalysisReportGenerator(TextWriter writer)
+        public HtmlReportGenerator(TextWriter writer)
         {
             _writer = writer;
             StartReport();

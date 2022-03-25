@@ -1535,7 +1535,7 @@ table {
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
             TraceProcessorResult result = traceProcessor.ProcessTrace(traceLog, log);
 
-            using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
+            using (HtmlReportGenerator reportGenerator = new HtmlReportGenerator(writer))
             {
                 // Write out issues.
                 foreach (KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>> pair in result.Issues)
