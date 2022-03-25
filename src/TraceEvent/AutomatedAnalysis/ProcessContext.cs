@@ -8,7 +8,7 @@
         private StackView _cpuStacks;
         private AnalyzerExecutionContext _executionContext;
 
-        internal ProcessContext(AnalyzerExecutionContext executionContext, AnalyzerTraceProcess process)
+        internal ProcessContext(AnalyzerExecutionContext executionContext, Process process)
         {
             _executionContext = executionContext;
             Process = process;
@@ -17,7 +17,7 @@
         /// <summary>
         /// The process being analyzed.
         /// </summary>
-        public AnalyzerTraceProcess Process { get; }
+        public Process Process { get; }
 
         /// <summary>
         /// The CPU stacks for the process being analyzed.

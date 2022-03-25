@@ -1137,7 +1137,7 @@ namespace PerfView
 
                 worker.EndWork(delegate ()
                 {
-                    Process.Start(reportFileName);
+                    System.Diagnostics.Process.Start(reportFileName);
                 });
             });
         }
@@ -1538,7 +1538,7 @@ table {
             using (HtmlReportGenerator reportGenerator = new HtmlReportGenerator(writer))
             {
                 // Write out issues.
-                foreach (KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>> pair in result.Issues)
+                foreach (KeyValuePair<Microsoft.Diagnostics.Tracing.AutomatedAnalysis.Process, List<AnalyzerIssue>> pair in result.Issues)
                 {
                     if (pair.Value.Count > 0)
                     {

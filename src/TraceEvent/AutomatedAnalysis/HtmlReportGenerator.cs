@@ -50,7 +50,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// </summary>
         /// <param name="process">The process.</param>
         /// <param name="issues">The list of issues.</param>
-        public void WriteIssuesForProcess(AnalyzerTraceProcess process, List<AnalyzerIssue> issues)
+        public void WriteIssuesForProcess(Process process, List<AnalyzerIssue> issues)
         {
             _writer.WriteLine($"<H3>Process {process.DisplayID}: {process.Description}</H3>");
             _writer.WriteLine("<Table Border=\"1\">");

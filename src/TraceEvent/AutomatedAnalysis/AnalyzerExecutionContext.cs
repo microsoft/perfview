@@ -46,7 +46,7 @@
         /// </summary>
         /// <param name="process">The process associated with the issue.</param>
         /// <param name="issue">The issue.</param>
-        public void AddIssue(AnalyzerTraceProcess process, AnalyzerIssue issue)
+        public void AddIssue(Process process, AnalyzerIssue issue)
         {
             Issues[process].Add(issue);
         }

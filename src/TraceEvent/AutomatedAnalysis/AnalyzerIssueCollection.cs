@@ -6,16 +6,16 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     /// <summary>
     /// A collection of AnalyzerIssue instances organized by process.
     /// </summary>
-    public sealed class AnalyzerIssueCollection : IEnumerable<KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>>>
+    public sealed class AnalyzerIssueCollection : IEnumerable<KeyValuePair<Process, List<AnalyzerIssue>>>
     {
-        private Dictionary<AnalyzerTraceProcess, List<AnalyzerIssue>> _issues = new Dictionary<AnalyzerTraceProcess, List<AnalyzerIssue>>();
+        private Dictionary<Process, List<AnalyzerIssue>> _issues = new Dictionary<Process, List<AnalyzerIssue>>();
 
         /// <summary>
         /// Get a list of issues for the specified process.
         /// </summary>
         /// <param name="process">The process.</param>
         /// <returns>A list of issues associated with the specified process.</returns>
-        public List<AnalyzerIssue> this[AnalyzerTraceProcess process]
+        public List<AnalyzerIssue> this[Process process]
         {
             get
             {
@@ -35,9 +35,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             return ((IEnumerable)_issues).GetEnumerator();
         }
 
-        IEnumerator<KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>>> IEnumerable<KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>>>.GetEnumerator()
+        IEnumerator<KeyValuePair<Process, List<AnalyzerIssue>>> IEnumerable<KeyValuePair<Process, List<AnalyzerIssue>>>.GetEnumerator()
         {
-            return ((IEnumerable<KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>>>)_issues).GetEnumerator();
+            return ((IEnumerable<KeyValuePair<Process, List<AnalyzerIssue>>>)_issues).GetEnumerator();
         }
     }
 }

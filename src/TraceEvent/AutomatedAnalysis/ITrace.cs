@@ -19,7 +19,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <summary>
         /// The set of processes contained within the trace.
         /// </summary>
-        IEnumerable<AnalyzerTraceProcess> Processes { get; }
+        IEnumerable<Process> Processes { get; }
 
         /// <summary>
         /// Get a StackView containing stacks for the specified process and stack type.
@@ -27,6 +27,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <param name="process">The process to filter stacks by.</param>
         /// <param name="stackType">The type of stacks for the request.</param>
         /// <returns>A StackView containing the requested stacks.</returns>
-        StackView GetStacks(AnalyzerTraceProcess process, string stackType);
+        StackView GetStacks(Process process, string stackType);
     }
 }

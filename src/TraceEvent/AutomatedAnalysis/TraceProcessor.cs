@@ -63,7 +63,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
 
             // Run per-process analyzers.
-            foreach (AnalyzerTraceProcess process in executionContext.Trace.Processes)
+            foreach (Process process in executionContext.Trace.Processes)
             {
                 if (process.ContainsManagedCode)
                 {

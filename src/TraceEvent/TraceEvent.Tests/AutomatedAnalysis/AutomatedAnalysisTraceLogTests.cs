@@ -38,16 +38,16 @@ namespace TraceEventTests
 
                 // Find and remove all of the AutoAnalyzer processes from the list.
                 AutomatedAnalysisTraceLog autoAnalysisTraceLog = new AutomatedAnalysisTraceLog(traceLog, new SymbolReader(TextWriter.Null));
-                foreach (AnalyzerTraceProcess autoAnalysisProcess in ((ITrace)autoAnalysisTraceLog).Processes)
+                foreach (Process process in ((ITrace)autoAnalysisTraceLog).Processes)
                 {
                     TraceProcess traceProcess;
-                    Assert.True(traceLogProcesses.TryGetValue(autoAnalysisProcess.UniqueID, out traceProcess));
+                    Assert.True(traceLogProcesses.TryGetValue(process.UniqueID, out traceProcess));
 
                     // Verify that details match.
-                    Assert.Equal(traceProcess.ProcessID, autoAnalysisProcess.DisplayID);
-                    Assert.Equal(traceProcess.CommandLine, autoAnalysisProcess.Description);
-                    Assert.Equal(traceProcess.ManagedProcess(), autoAnalysisProcess.ContainsManagedCode);
-                    Assert.True(traceLogProcesses.Remove(autoAnalysisProcess.UniqueID));
+                    Assert.Equal(traceProcess.ProcessID, process.DisplayID);
+                    Assert.Equal(traceProcess.CommandLine, process.Description);
+                    Assert.Equal(traceProcess.ManagedProcess(), process.ContainsManagedCode);
+                    Assert.True(traceLogProcesses.Remove(process.UniqueID));
                 }
 
                 // Make sure we didn't miss any.

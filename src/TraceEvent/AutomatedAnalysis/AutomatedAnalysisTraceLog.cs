@@ -20,18 +20,18 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         internal SymbolReader SymbolReader { get; }
 
-        IEnumerable<AnalyzerTraceProcess> ITrace.Processes
+        IEnumerable<Process> ITrace.Processes
         {
             get
             {
                 foreach(TraceProcess traceProcess in UnderlyingSource.Processes)
                 {
-                    yield return new AnalyzerTraceProcess((int)traceProcess.ProcessIndex, traceProcess.ProcessID, traceProcess.CommandLine, traceProcess.ManagedProcess());
+                    yield return new Process((int)traceProcess.ProcessIndex, traceProcess.ProcessID, traceProcess.CommandLine, traceProcess.ManagedProcess());
                 }
             }
         }
 
-        StackView ITrace.GetStacks(AnalyzerTraceProcess process, string stackType)
+        StackView ITrace.GetStacks(Process process, string stackType)
         {
             if(StackTypes.CPU.Equals(stackType))
             {
@@ -41,7 +41,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             return null;
         }
 
-        private StackView GetCPUStacks(AnalyzerTraceProcess process)
+        private StackView GetCPUStacks(Process process)
         {
             StackView stackView = null;
             TraceProcess traceProcess = UnderlyingSource.Processes[(ProcessIndex)process.UniqueID];

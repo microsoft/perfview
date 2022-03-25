@@ -1,13 +1,12 @@
 ﻿namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public class AnalyzerTraceProcess
+    public class Process
     {
-        public AnalyzerTraceProcess()
+        public Process()
         {
-
         }
 
-        public AnalyzerTraceProcess(int uniqueID, int displayID, string description, bool containsManagedCode)
+        public Process(int uniqueID, int displayID, string description, bool containsManagedCode)
         {
             UniqueID = uniqueID;
             DisplayID = displayID;
@@ -42,9 +41,9 @@
 
         public override bool Equals(object obj)
         {
-            if(obj is AnalyzerTraceProcess)
+            if(obj is Process)
             {
-                return UniqueID == ((AnalyzerTraceProcess)obj).UniqueID;
+                return UniqueID == ((Process)obj).UniqueID;
             }
 
             return false;

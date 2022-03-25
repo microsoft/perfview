@@ -35,7 +35,7 @@ namespace TraceEventTests
                 TraceProcessorResult result = traceProcessor.ProcessTrace(automatedAnalysisTraceLog);
 
                 // Get the process.
-                AnalyzerTraceProcess process = ((ITrace)automatedAnalysisTraceLog).Processes
+                Process process = ((ITrace)automatedAnalysisTraceLog).Processes
                     .Where(p => p.DisplayID == SingleIssueAnalyzer.PID && p.Description == SingleIssueAnalyzer.ProcessDescription)
                     .FirstOrDefault();
                 Assert.NotNull(process);
