@@ -14,6 +14,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         public static string CPU { get; } = "CPU";
     }
 
+    /// <summary>
+    /// The common interface for all supported trace formats.
+    /// </summary>
     public interface ITrace
     {
         /// <summary>
