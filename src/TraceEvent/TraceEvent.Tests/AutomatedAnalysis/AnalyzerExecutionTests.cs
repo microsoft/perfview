@@ -31,8 +31,8 @@ namespace TraceEventTests
             using (TraceLog traceLog = TraceLog.OpenOrConvert(inputFilePath))
             {
                 AutomatedAnalysisTraceLog automatedAnalysisTraceLog = new AutomatedAnalysisTraceLog(traceLog, new SymbolReader(TextWriter.Null));
-                AutomatedAnalysisManager automatedAnalysisManager = new AutomatedAnalysisManager(new AnalyzerExecutionTestResolver());
-                AutomatedAnalysisResult result = automatedAnalysisManager.ProcessTrace(automatedAnalysisTraceLog, TextWriter.Null);
+                TraceProcessor traceProcessor = new TraceProcessor(new AnalyzerExecutionTestResolver());
+                AutomatedAnalysisResult result = traceProcessor.ProcessTrace(automatedAnalysisTraceLog, TextWriter.Null);
 
                 // Get the process.
                 AnalyzerTraceProcess process = ((ITrace)automatedAnalysisTraceLog).Processes

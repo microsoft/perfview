@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisManager
+    public sealed class TraceProcessor
     {
         private IEnumerable<Analyzer> _analyzers;
         private Configuration _configuration;
 
-        public AutomatedAnalysisManager(AnalyzerResolver analyzerResolver)
+        public TraceProcessor(AnalyzerResolver analyzerResolver)
         {
             // Resolve the set of analyzers and configuration.
             analyzerResolver.Resolve();

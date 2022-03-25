@@ -1531,9 +1531,9 @@ table {
         {
             string analyzersDirectory = Path.Combine(SupportFiles.SupportFileDir, "Analyzers");
             DirectoryAnalyzerResolver resolver = new DirectoryAnalyzerResolver(analyzersDirectory);
-            AutomatedAnalysisManager manager = new AutomatedAnalysisManager(resolver);
+            TraceProcessor traceProcessor = new TraceProcessor(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
-            AutomatedAnalysisResult result = manager.ProcessTrace(traceLog, log);
+            AutomatedAnalysisResult result = traceProcessor.ProcessTrace(traceLog, log);
 
             using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
             {
