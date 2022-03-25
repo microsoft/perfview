@@ -31,14 +31,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// Process a single trace.
         /// </summary>
         /// <param name="trace">The trace.</param>
-        /// <param name="textLog">The diagnostic text log.</param>
-        /// <returns></returns>
-        public TraceProcessorResult ProcessTrace(ITrace trace, TextWriter textLog)
+        /// <returns>The result of processing the trace.</returns>
+        public TraceProcessorResult ProcessTrace(ITrace trace)
         {
             List<ProcessAnalyzer> processAnalyzers = new List<ProcessAnalyzer>();
 
             // Run global analyzers, deferring per-process analyzers.
-            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_configuration, trace, textLog);
+            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_configuration, trace);
             foreach (Analyzer analyzer in _analyzers)
             {
                 if (analyzer is ProcessAnalyzer)
@@ -58,7 +57,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     }
                     catch (Exception ex)
                     {
-                        textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                        // TODO
+                        //textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                     }
                 }
             }
@@ -82,7 +82,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                         }
                         catch (Exception ex)
                         {
-                            textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                            // TODO
+                            //textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                         }
                     }
                 }

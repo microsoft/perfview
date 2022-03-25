@@ -10,13 +10,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     {
         public AutomatedAnalysisTraceLog(TraceLog traceLog, SymbolReader symbolReader)
         {
-            TraceLog = traceLog;
             UnderlyingSource = traceLog;
             SymbolReader = symbolReader;
         }
-
-        [Obsolete]
-        public TraceLog TraceLog { get; }
 
         /// <summary>
         /// The underlying source of the data.
@@ -34,12 +30,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     yield return new AnalyzerTraceProcess((int)traceProcess.ProcessIndex, traceProcess.ProcessID, traceProcess.CommandLine, traceProcess.ManagedProcess());
                 }
             }
-        }
-
-        [Obsolete]
-        StackView ITrace.GetCPUStacks(AnalyzerTraceProcess process)
-        {
-            return GetCPUStacks(process);
         }
 
         StackView ITrace.GetStacks(AnalyzerTraceProcess process, string stackType)

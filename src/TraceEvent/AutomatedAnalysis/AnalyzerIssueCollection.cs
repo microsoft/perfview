@@ -24,24 +24,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
-        // Keep this for now because GLAD depends on it
-        [Obsolete]
-        public List<AnalyzerIssue> this[TraceProcess process]
-        {
-            get
-            {
-                AnalyzerTraceProcess traceProcess = new AnalyzerTraceProcess((int)process.ProcessIndex, process.ProcessID, process.CommandLine, process.ManagedProcess());
-                List<AnalyzerIssue> issues;
-                if (!_issues.TryGetValue(traceProcess, out issues))
-                {
-                    issues = new List<AnalyzerIssue>();
-                    _issues.Add(traceProcess, issues);
-                }
-
-                return issues;
-            }
-        }
-
         public IEnumerator GetEnumerator()
         {
             return ((IEnumerable)_issues).GetEnumerator();

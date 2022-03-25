@@ -21,9 +21,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// </summary>
         IEnumerable<AnalyzerTraceProcess> Processes { get; }
 
-        [Obsolete]
-        StackView GetCPUStacks(AnalyzerTraceProcess process);
-
         /// <summary>
         /// Get a StackView containing stacks for the specified process and stack type.
         /// </summary>
