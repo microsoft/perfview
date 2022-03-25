@@ -5,8 +5,16 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// Encapsulates a TraceEvent TraceLog within the AutomatedAnalysis system.
+    /// </summary>
     public sealed class AutomatedAnalysisTraceLog : ITrace
     {
+        /// <summary>
+        /// Create a new instance for the specified TraceLog and SymbolReader.
+        /// </summary>
+        /// <param name="traceLog">The TraceLog instance.</param>
+        /// <param name="symbolReader">A SymbolReader that can be used to resolve symbols within the TraceLog.</param>
         public AutomatedAnalysisTraceLog(TraceLog traceLog, SymbolReader symbolReader)
         {
             UnderlyingSource = traceLog;
