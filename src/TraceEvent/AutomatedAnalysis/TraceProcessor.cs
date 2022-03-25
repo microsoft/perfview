@@ -22,16 +22,16 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public TraceProcessorResult ProcessTrace(ITrace trace, TextWriter textLog)
         {
-            List<PerProcessAnalyzer> perProcessAnalyzers = new List<PerProcessAnalyzer>();
+            List<ProcessAnalyzer> processAnalyzers = new List<ProcessAnalyzer>();
 
             // Run global analyzers, deferring per-process analyzers.
             AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_configuration, trace, textLog);
             foreach (Analyzer analyzer in _analyzers)
             {
-                if (analyzer is PerProcessAnalyzer)
+                if (analyzer is ProcessAnalyzer)
                 {
                     // Defer per-process analyzers.
-                    perProcessAnalyzers.Add((PerProcessAnalyzer)analyzer);
+                    processAnalyzers.Add((ProcessAnalyzer)analyzer);
                 }
                 else
                 {
@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     // Create the process context.
                     ProcessContext processContext = new ProcessContext(executionContext, process);
 
-                    foreach (PerProcessAnalyzer analyzer in perProcessAnalyzers)
+                    foreach (ProcessAnalyzer analyzer in processAnalyzers)
                     {
                         try
                         {

@@ -68,7 +68,7 @@ namespace TraceEventTests
         }
     }
 
-    public sealed class SingleIssueAnalyzer : PerProcessAnalyzer
+    public sealed class SingleIssueAnalyzer : ProcessAnalyzer
     {
         internal static AnalyzerIssue Issue;
         internal const int PID = 106800;

@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public abstract class PerProcessAnalyzer : Analyzer
+    public abstract class ProcessAnalyzer : Analyzer
     {
         protected abstract AnalyzerExecutionResult Execute(AnalyzerExecutionContext executionContext, ProcessContext processContext);
 
