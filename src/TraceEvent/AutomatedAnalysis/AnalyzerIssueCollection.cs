@@ -1,11 +1,7 @@
-﻿using Microsoft.Diagnostics.Tracing.Etlx;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {

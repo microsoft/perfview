@@ -1,7 +1,7 @@
-﻿using Microsoft.Diagnostics.Tracing.Etlx;
+﻿using System;
 using System.IO;
 using Microsoft.Diagnostics.Symbols;
-using System;
+using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
