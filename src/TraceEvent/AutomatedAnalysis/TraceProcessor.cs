@@ -56,8 +56,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     }
                     catch (Exception ex)
                     {
-                        // TODO
-                        //textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                        AutomatedAnalysisEventSource.Log.Error($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                     }
                 }
             }
@@ -81,8 +80,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                         }
                         catch (Exception ex)
                         {
-                            // TODO
-                            //textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                            AutomatedAnalysisEventSource.Log.Error($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                         }
                     }
                 }
