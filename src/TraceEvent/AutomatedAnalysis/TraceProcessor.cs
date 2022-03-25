@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-
-namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
+﻿namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     /// <summary>
     /// The process-specific context associated with execution of ProcessAnalyzers.

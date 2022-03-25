@@ -1,7 +1,7 @@
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
     /// <summary>
-    /// The base class for all analyzers..
+    /// The base class for all analyzers.
     /// </summary>
     public abstract class Analyzer
     {
