@@ -31,11 +31,11 @@ namespace TraceEventTests
             using (TraceLog traceLog = TraceLog.OpenOrConvert(inputFilePath))
             {
                 AutomatedAnalysisTraceLog automatedAnalysisTraceLog = new AutomatedAnalysisTraceLog(traceLog, new SymbolReader(TextWriter.Null));
-                AutomatedAnalysisManager automatedAnalysisManager = new AutomatedAnalysisManager(new AnalyzerExecutionTestResolver());
-                AutomatedAnalysisResult result = automatedAnalysisManager.ProcessTrace(automatedAnalysisTraceLog, TextWriter.Null);
+                TraceProcessor traceProcessor = new TraceProcessor(new AnalyzerExecutionTestResolver());
+                TraceProcessorResult result = traceProcessor.ProcessTrace(automatedAnalysisTraceLog);
 
                 // Get the process.
-                AnalyzerTraceProcess process = ((ITrace)automatedAnalysisTraceLog).Processes
+                Process process = ((ITrace)automatedAnalysisTraceLog).Processes
                     .Where(p => p.DisplayID == SingleIssueAnalyzer.PID && p.Description == SingleIssueAnalyzer.ProcessDescription)
                     .FirstOrDefault();
                 Assert.NotNull(process);
@@ -68,7 +68,7 @@ namespace TraceEventTests
         }
     }
 
-    public sealed class SingleIssueAnalyzer : PerProcessAnalyzer
+    public sealed class SingleIssueAnalyzer : ProcessAnalyzer
     {
         internal static AnalyzerIssue Issue;
         internal const int PID = 106800;
@@ -76,11 +76,11 @@ namespace TraceEventTests
 
         protected override AnalyzerExecutionResult Execute(AnalyzerExecutionContext executionContext, ProcessContext processContext)
         {
-            if (processContext.AnalyzerProcess.DisplayID == PID && ProcessDescription.Equals(processContext.AnalyzerProcess.Description))
+            if (processContext.Process.DisplayID == PID && ProcessDescription.Equals(processContext.Process.Description))
             {
                 Assert.Null(Issue);
                 Issue = new AnalyzerIssue("Test Title", "Test Description", "http://test-url");
-                processContext.Issues.Add(Issue);
+                processContext.AddIssue(Issue);
             }
 
             return AnalyzerExecutionResult.Success;

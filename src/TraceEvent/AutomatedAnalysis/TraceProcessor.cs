@@ -1,15 +1,21 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisManager
+    /// <summary>
+    /// Processes traces by running a set of Analyzers against the trace data.
+    /// </summary>
+    public sealed class TraceProcessor
     {
         private IEnumerable<Analyzer> _analyzers;
         private Configuration _configuration;
 
-        public AutomatedAnalysisManager(AnalyzerResolver analyzerResolver)
+        /// <summary>
+        /// Creates a new instance of TraceProcessor with the specified AnalyzerResolver.
+        /// </summary>
+        /// <param name="analyzerResolver">The resolver that will be used to discover Analyzers for execution.</param>
+        public TraceProcessor(AnalyzerResolver analyzerResolver)
         {
             // Resolve the set of analyzers and configuration.
             analyzerResolver.Resolve();
@@ -20,18 +26,23 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         }
 
-        public AutomatedAnalysisResult ProcessTrace(ITrace trace, TextWriter textLog)
+        /// <summary>
+        /// Process a single trace.
+        /// </summary>
+        /// <param name="trace">The trace.</param>
+        /// <returns>The result of processing the trace.</returns>
+        public TraceProcessorResult ProcessTrace(ITrace trace)
         {
-            List<PerProcessAnalyzer> perProcessAnalyzers = new List<PerProcessAnalyzer>();
+            List<ProcessAnalyzer> processAnalyzers = new List<ProcessAnalyzer>();
 
             // Run global analyzers, deferring per-process analyzers.
-            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_configuration, trace, textLog);
+            AnalyzerExecutionContext executionContext = new AnalyzerExecutionContext(_configuration, trace);
             foreach (Analyzer analyzer in _analyzers)
             {
-                if (analyzer is PerProcessAnalyzer)
+                if (analyzer is ProcessAnalyzer)
                 {
                     // Defer per-process analyzers.
-                    perProcessAnalyzers.Add((PerProcessAnalyzer)analyzer);
+                    processAnalyzers.Add((ProcessAnalyzer)analyzer);
                 }
                 else
                 {
@@ -45,20 +56,20 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     }
                     catch (Exception ex)
                     {
-                        textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                        AutomatedAnalysisEventSource.Log.Error($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                     }
                 }
             }
 
             // Run per-process analyzers.
-            foreach (AnalyzerTraceProcess process in executionContext.Trace.Processes)
+            foreach (Process process in executionContext.Trace.Processes)
             {
                 if (process.ContainsManagedCode)
                 {
                     // Create the process context.
                     ProcessContext processContext = new ProcessContext(executionContext, process);
 
-                    foreach (PerProcessAnalyzer analyzer in perProcessAnalyzers)
+                    foreach (ProcessAnalyzer analyzer in processAnalyzers)
                     {
                         try
                         {
@@ -69,13 +80,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                         }
                         catch (Exception ex)
                         {
-                            textLog.WriteLine($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
+                            AutomatedAnalysisEventSource.Log.Error($"Error while executing analyzer '{analyzer.GetType().FullName}': {ex}");
                         }
                     }
                 }
             }
 
-            return new AutomatedAnalysisResult(_analyzers, executionContext);
+            return new TraceProcessorResult(_analyzers, executionContext);
         }
     }
 }

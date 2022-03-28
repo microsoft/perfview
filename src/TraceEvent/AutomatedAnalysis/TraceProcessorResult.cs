@@ -1,14 +1,16 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisResult
+    /// <summary>
+    /// The result of a trace processing operation.
+    /// </summary>
+    public sealed class TraceProcessorResult
     {
         private IEnumerable<Analyzer> _executedAnalyzers;
         private AnalyzerExecutionContext _executionContext;
 
-        internal AutomatedAnalysisResult(
+        internal TraceProcessorResult(
             IEnumerable<Analyzer> executedAnalyzers,
             AnalyzerExecutionContext executionContext)
         {
@@ -16,11 +18,17 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _executionContext = executionContext;
         }
 
+        /// <summary>
+        /// The set of Analyzers that were executed.
+        /// </summary>
         public IEnumerable<Analyzer> ExecutedAnalyzers
         {
             get { return _executedAnalyzers; }
         }
 
+        /// <summary>
+        /// The set of issues identified by the executed Analyzers.
+        /// </summary>
         public AnalyzerIssueCollection Issues
         {
             get { return _executionContext.Issues; }

@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// The context object used when loading an Analyzer.
+    /// </summary>
     public sealed class AnalyzerLoadContext
     {
+        /// <summary>
+        /// The Analyzer being loaded.
+        /// </summary>
         public Analyzer Analyzer { get; private set; }
+
+        /// <summary>
+        /// True iff the Analyzer should be run during trace processing.
+        /// </summary>
         public bool ShouldRun { get; set; }
 
         internal void Reset(Analyzer analyzer)
@@ -20,6 +26,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         }
     }
 
+    /// <summary>
+    /// The base class for all resolver implementations.
+    /// </summary>
     public abstract class AnalyzerResolver
     {
         private List<Analyzer> _analyzers = new List<Analyzer>();
@@ -43,11 +52,19 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
+        /// <summary>
+        /// Called when each Analyzer is loaded.
+        /// </summary>
+        /// <param name="loadContext">The context for the Analyzer load.</param>
         protected virtual void OnAnalyzerLoaded(AnalyzerLoadContext loadContext)
         {
             // All analyzers are run by default.
         }
 
+        /// <summary>
+        /// Searches the specified assembly for Analyzer instances and loads them.
+        /// </summary>
+        /// <param name="analyzerAssembly">The assembly to consume.</param>
         protected void ConsumeAssembly(Assembly analyzerAssembly)
         {
             if (analyzerAssembly == null)
@@ -87,6 +104,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// Called to discover assemblies that contain Analyzers to be executed.
+        /// </summary>
         protected internal abstract void Resolve();
     }
 }

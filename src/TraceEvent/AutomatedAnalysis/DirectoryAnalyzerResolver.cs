@@ -4,10 +4,17 @@ using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// Analyzer resolver that searches the specified directory.
+    /// </summary>
     public sealed class DirectoryAnalyzerResolver : AnalyzerResolver
     {
         private static string _baseDirectory;
 
+        /// <summary>
+        /// Create an instance of the DirectoryAnalyzerResolver pointing at the specified directory.
+        /// </summary>
+        /// <param name="baseDirectory">The directory to search for Analyzers.</param>
         public DirectoryAnalyzerResolver(string baseDirectory)
         {
             _baseDirectory = baseDirectory;

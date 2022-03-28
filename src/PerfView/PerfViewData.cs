@@ -1137,7 +1137,7 @@ namespace PerfView
 
                 worker.EndWork(delegate ()
                 {
-                    Process.Start(reportFileName);
+                    System.Diagnostics.Process.Start(reportFileName);
                 });
             });
         }
@@ -1531,14 +1531,14 @@ table {
         {
             string analyzersDirectory = Path.Combine(SupportFiles.SupportFileDir, "Analyzers");
             DirectoryAnalyzerResolver resolver = new DirectoryAnalyzerResolver(analyzersDirectory);
-            AutomatedAnalysisManager manager = new AutomatedAnalysisManager(resolver);
+            TraceProcessor traceProcessor = new TraceProcessor(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
-            AutomatedAnalysisResult result = manager.ProcessTrace(traceLog, log);
+            TraceProcessorResult result = traceProcessor.ProcessTrace(traceLog);
 
-            using (AutomatedAnalysisReportGenerator reportGenerator = new AutomatedAnalysisReportGenerator(writer))
+            using (HtmlReportGenerator reportGenerator = new HtmlReportGenerator(writer))
             {
                 // Write out issues.
-                foreach (KeyValuePair<AnalyzerTraceProcess, List<AnalyzerIssue>> pair in result.Issues)
+                foreach (KeyValuePair<Microsoft.Diagnostics.Tracing.AutomatedAnalysis.Process, List<AnalyzerIssue>> pair in result.Issues)
                 {
                     if (pair.Value.Count > 0)
                     {

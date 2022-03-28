@@ -2,17 +2,21 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public sealed class AutomatedAnalysisReportGenerator : IDisposable
+    /// <summary>
+    /// A report generator whose output format is HTML.
+    /// </summary>
+    public sealed class HtmlReportGenerator : IDisposable
     {
         private TextWriter _writer;
 
-        public AutomatedAnalysisReportGenerator(TextWriter writer)
+        /// <summary>
+        /// Create a new instance of HtmlReportGenerator.
+        /// </summary>
+        /// <param name="writer">The destination for the report.</param>
+        public HtmlReportGenerator(TextWriter writer)
         {
             _writer = writer;
             StartReport();
@@ -41,7 +45,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _writer.WriteLine("</html>");
         }
 
-        public void WriteIssuesForProcess(AnalyzerTraceProcess process, List<AnalyzerIssue> issues)
+        /// <summary>
+        /// Write out the specified process information and issues.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="issues">The list of issues.</param>
+        public void WriteIssuesForProcess(Process process, List<AnalyzerIssue> issues)
         {
             _writer.WriteLine($"<H3>Process {process.DisplayID}: {process.Description}</H3>");
             _writer.WriteLine("<Table Border=\"1\">");
@@ -53,6 +62,10 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _writer.WriteLine("</Table>");
         }
 
+        /// <summary>
+        /// Write out the set of executed analyzers.
+        /// </summary>
+        /// <param name="analyzers">The set of executed analyzers.</param>
         public void WriteExecutedAnalyzerList(IEnumerable<Analyzer> analyzers)
         {
             if(analyzers.Count() > 0)
