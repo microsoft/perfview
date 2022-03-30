@@ -37,7 +37,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
         }
 
-        private EventPipeEventSource(PinnedStreamReader streamReader, string name, bool isLive)
+        private EventPipeEventSource(PinnedStreamReader streamReader, string name, bool isStreaming)
         {
             _deserializerIntializer = () =>
             {
@@ -83,7 +83,7 @@ namespace Microsoft.Diagnostics.Tracing
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
 
-            if (!isLive)
+            if (!isStreaming)
                 _deserializer = _deserializerIntializer();
 
             EventCache = new EventCache();
