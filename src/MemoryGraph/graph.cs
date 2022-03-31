@@ -594,13 +594,13 @@ namespace Graphs
                 serializer.Write((int)m_nodes.Count);
             }
 
-            int previousLabel = 0;
-            for (int i = 0; i < m_nodes.Count; i++)
+            nuint previousLabel = 0;
+            for (long i = 0; i < m_nodes.Count; i++)
             {
                 // Apply differential compression to the label, and then write it as a compressed integer
-                int currentLabel = checked((int)m_nodes[i]);
-                int difference = checked(currentLabel - previousLabel);
-                Node.WriteCompressedInt(serializer.Writer, difference);
+                nuint currentLabel = m_nodes[i];
+                long difference = currentLabel >= previousLabel ? checked((long)(currentLabel - previousLabel)) : checked(-(long)(previousLabel - currentLabel));
+                Node.WriteCompressedInt64(serializer.Writer, difference);
                 previousLabel = currentLabel;
             }
 
@@ -674,12 +674,12 @@ namespace Graphs
             long nodeCount = m_isVeryLargeGraph ? deserializer.ReadInt64() : deserializer.ReadInt();
             m_nodes = new SegmentedList<nuint>(SegmentSize, nodeCount);
 
-            uint previousLabel = 0;
+            nuint previousLabel = 0;
             for (long i = 0; i < nodeCount; i++)
             {
                 // Read the label as a compressed differential integer
-                uint difference = unchecked((uint)Node.ReadCompressedInt(deserializer.Reader));
-                uint currentLabel = unchecked(previousLabel + difference);
+                long difference = unchecked(Node.ReadCompressedInt64(deserializer.Reader));
+                nuint currentLabel = unchecked((nuint)((long)previousLabel + difference));
                 m_nodes.Add((nuint)(StreamLabel)(long)currentLabel);
                 previousLabel = currentLabel;
             }
@@ -985,6 +985,88 @@ namespace Graphs
             return ret;
         }
 
+        internal static long ReadCompressedInt64<T>(T reader)
+            where T : IStreamReader
+        {
+            long ret = 0;
+            byte b = reader.ReadByte();
+            ret = b << 25 >> 25;
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+            {
+                return ret;
+            }
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            Debug.Assert((b & 0x80) == 0);
+            ret += b;
+            return ret;
+        }
+
         internal static void WriteCompressedInt<T>(T writer, int value)
             where T : IStreamWriter
         {
@@ -1016,6 +1098,75 @@ namespace Graphs
             twoBytes:
             writer.Write(unchecked((byte)((value >> 7) | 0x80)));
             oneByte:
+            writer.Write(unchecked((byte)(value & 0x7F)));
+        }
+
+        internal static void WriteCompressedInt64<T>(T writer, long value)
+            where T : IStreamWriter
+        {
+            if (value << 57 >> 57 == value)
+            {
+                goto oneByte;
+            }
+
+            if (value << 50 >> 50 == value)
+            {
+                goto twoBytes;
+            }
+
+            if (value << 43 >> 43 == value)
+            {
+                goto threeBytes;
+            }
+
+            if (value << 36 >> 36 == value)
+            {
+                goto fourBytes;
+            }
+
+            if (value << 29 >> 29 == value)
+            {
+                goto fiveBytes;
+            }
+
+            if (value << 22 >> 22 == value)
+            {
+                goto sixBytes;
+            }
+
+            if (value << 15 >> 15 == value)
+            {
+                goto sevenBytes;
+            }
+
+            if (value << 8 >> 8 == value)
+            {
+                goto eightBytes;
+            }
+
+            if (value << 1 >> 1 == value)
+            {
+                goto nineBytes;
+            }
+
+            writer.Write(unchecked((byte)((value >> 63) | 0x80)));
+        nineBytes:
+            writer.Write(unchecked((byte)((value >> 56) | 0x80)));
+        eightBytes:
+            writer.Write(unchecked((byte)((value >> 49) | 0x80)));
+        sevenBytes:
+            writer.Write(unchecked((byte)((value >> 42) | 0x80)));
+        sixBytes:
+            writer.Write(unchecked((byte)((value >> 35) | 0x80)));
+        fiveBytes:
+            writer.Write(unchecked((byte)((value >> 28) | 0x80)));
+        fourBytes:
+            writer.Write(unchecked((byte)((value >> 21) | 0x80)));
+        threeBytes:
+            writer.Write(unchecked((byte)((value >> 14) | 0x80)));
+        twoBytes:
+            writer.Write(unchecked((byte)((value >> 7) | 0x80)));
+        oneByte:
             writer.Write(unchecked((byte)(value & 0x7F)));
         }
 
