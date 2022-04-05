@@ -1522,7 +1522,7 @@ public class GCHeapDumper
         if (m_outputFileName != null)
         {
             m_log.WriteLine("{0,5:f1}s:   Started Writing to file.", m_sw.Elapsed.TotalSeconds);
-            var serializer = new Serializer(m_outputFileName, m_gcHeapDump);
+            var serializer = new Serializer(new IOStreamStreamWriter(m_outputFileName, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }), m_gcHeapDump);
             serializer.Close();
 
             m_log.WriteLine("Actual file size = {0:f3}MB", new FileInfo(m_outputFileName).Length / 1000000.0);
@@ -1531,7 +1531,7 @@ public class GCHeapDumper
         if (m_outputStream != null)
         {
             m_log.WriteLine("{0,5:f1}s:   Started Writing to stream.", m_sw.Elapsed.TotalSeconds);
-            var serializer = new Serializer(m_outputStream, m_gcHeapDump);
+            var serializer = new Serializer(new IOStreamStreamWriter(m_outputStream, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }), m_gcHeapDump);
             serializer.Close();
         }
 
