@@ -198,6 +198,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return false;
             }
 
+            // Starting with .NET 6, the manifest is written into the event stream, which results in
+            // duplicate event dispatch.  To avoid this, filter out the Microsoft-Windows-DotNETRuntime provider
+            // if it is present in the event stream.
+            if (data.ProviderGuid == ClrTraceEventParser.ProviderGuid)
+            {
+                return false;
+            }
+
             // Look up our information. 
             List<PartialManifestInfo> partialManifestsForGuid;
             if (!partialManifests.TryGetValue(data.ProviderGuid, out partialManifestsForGuid))
