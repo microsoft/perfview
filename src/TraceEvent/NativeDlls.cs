@@ -78,7 +78,8 @@ internal class NativeDlls
         {
             if (s_ProcessArchDirectory == null)
             {
-                s_ProcessArchDirectory = ProcessArch.ToString().ToLowerInvariant();
+                // Special case amd64 because the Architecture uses X64, but the previous behavior was to use amd64.
+                s_ProcessArchDirectory = ProcessArch == Architecture.X64 ? "amd64" : ProcessArch.ToString().ToLowerInvariant();
             }
 
             return s_ProcessArchDirectory;

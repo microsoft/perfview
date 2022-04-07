@@ -1,35 +1,54 @@
-﻿using Microsoft.Diagnostics.Tracing.Etlx;
-using System.IO;
-using Microsoft.Diagnostics.Symbols;
-
-namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
+﻿namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// The top-level object used to store contextual information during Analyzer execution.
+    /// </summary>
     public sealed class AnalyzerExecutionContext
     {
-        internal AnalyzerExecutionContext(Configuration configuration, ITrace trace, TextWriter textLog)
-        {
-            Configuration = configuration;
-            Trace = trace;
-            TextLog = textLog;
+        private Configuration _configuration;
 
-            AutomatedAnalysisTraceLog traceLog = trace as AutomatedAnalysisTraceLog;
-            if(traceLog != null)
+        internal AnalyzerExecutionContext(Configuration configuration, ITrace trace)
+        {
+            _configuration = configuration;
+            Trace = trace;
+        }
+
+        /// <summary>
+        /// The configuration for the currently executing Analyzer.
+        /// NULL if no configuration is available.
+        /// </summary>
+        public AnalyzerConfiguration Configuration
+        {
+            get
             {
-                TraceLog = traceLog.TraceLog;
-                SymbolReader = traceLog.SymbolReader;
+                AnalyzerExecutionScope current = AnalyzerExecutionScope.Current;
+                if (current != null)
+                {
+                    if (_configuration.TryGetAnalyzerConfiguration(current.ExecutingAnalyzer, out AnalyzerConfiguration config))
+                    {
+                        return config;
+                    }
+                }
+
+                return null;
             }
         }
 
-        public Configuration Configuration { get; }
-
-        public SymbolReader SymbolReader { get; }
-
-        public TraceLog TraceLog { get; }
-
+        /// <summary>
+        /// The trace to be analyzed.
+        /// </summary>
         public ITrace Trace { get; }
 
-        public TextWriter TextLog { get; }
+        internal AnalyzerIssueCollection Issues { get; } = new AnalyzerIssueCollection();
 
-        public AnalyzerIssueCollection Issues { get; } = new AnalyzerIssueCollection();
+        /// <summary>
+        /// Add an identified issue.
+        /// </summary>
+        /// <param name="process">The process associated with the issue.</param>
+        /// <param name="issue">The issue.</param>
+        public void AddIssue(Process process, AnalyzerIssue issue)
+        {
+            Issues[process].Add(issue);
+        }
     }
 }

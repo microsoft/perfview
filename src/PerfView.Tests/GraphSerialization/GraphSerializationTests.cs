@@ -2,6 +2,7 @@
 using System.IO;
 using Xunit;
 using System.Linq;
+using PerfView.TestUtilities;
 
 namespace PerfViewTests.GraphSerialization
 {
@@ -14,6 +15,7 @@ namespace PerfViewTests.GraphSerialization
         }
 
         [Theory]
+        [UseCulture("en-US")]
         [MemberData(nameof(TestGCDumpFiles))]
         public void GenerateBaselineXmlFiles(string gcDumpFileName)
         {

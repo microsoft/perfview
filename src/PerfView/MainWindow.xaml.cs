@@ -1097,6 +1097,18 @@ namespace PerfView
                 }
                 if (StatusBar.IsWorking)
                 {
+                    if (App.CommandProcessor.StopInProgress)
+                    {
+                        var result = MessageBox.Show(this,
+                            "Closing PerfView while the trace is being processed will result in a trace that is unusable if copied off of this machine.\r\nWould you still like to close PerfView?",
+                            "Collecting data in progress", MessageBoxButton.YesNo);
+                        if (result == MessageBoxResult.No)
+                        {
+                            e.Cancel = true;
+                            return;
+                        }
+                    }
+
                     StatusBar.AbortWork();
                 }
 

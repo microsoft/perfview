@@ -22,15 +22,15 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <PerfViewVersion>2.0.75</PerfViewVersion>
-    <TraceEventVersion>2.0.75</TraceEventVersion>
+    <PerfViewVersion>2.0.76</PerfViewVersion>
+    <TraceEventVersion>2.0.76</TraceEventVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.23</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.0</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
+    <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
     <MicrosoftDiagnosticsRuntimeVersion>1.1.37504</MicrosoftDiagnosticsRuntimeVersion>
     <XunitVersion>2.3.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.3.0</XunitRunnerVisualstudioVersion>

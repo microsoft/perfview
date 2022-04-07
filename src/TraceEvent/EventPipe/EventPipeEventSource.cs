@@ -28,55 +28,63 @@ namespace Microsoft.Diagnostics.Tracing
     /// </summary>
     public unsafe class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
     {
-        public EventPipeEventSource(string fileName) : this(new PinnedStreamReader(fileName, 0x20000), fileName)
+        public EventPipeEventSource(string fileName) : this(new PinnedStreamReader(fileName, 0x20000), fileName, false)
         {
         }
 
         public EventPipeEventSource(Stream stream)
-            : this(new PinnedStreamReader(stream, alignment: StreamReaderAlignment.OneByte), "stream")
+            : this(new PinnedStreamReader(stream, alignment: StreamReaderAlignment.OneByte), "stream", true)
         {
         }
 
-        private EventPipeEventSource(PinnedStreamReader streamReader, string name)
+        private EventPipeEventSource(PinnedStreamReader streamReader, string name, bool isStreaming)
         {
-            StreamLabel start = streamReader.Current;
-            byte[] netTraceMagic = new byte[8];
-            streamReader.Read(netTraceMagic, 0, netTraceMagic.Length);
-            byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
-            bool isNetTrace = true;
-            if (!netTraceMagic.SequenceEqual(expectedMagic))
+            _deserializerIntializer = () =>
             {
-                // The older netperf format didn't have this 'Nettrace' magic on it.
-                streamReader.Goto(start);
-                isNetTrace = false;
-            }
+                StreamLabel start = streamReader.Current;
+                byte[] netTraceMagic = new byte[8];
+                streamReader.Read(netTraceMagic, 0, netTraceMagic.Length);
+                byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
+                bool isNetTrace = true;
+                if (!netTraceMagic.SequenceEqual(expectedMagic))
+                {
+                    // The older netperf format didn't have this 'Nettrace' magic on it.
+                    streamReader.Goto(start);
+                    isNetTrace = false;
+                }
+
+                var deserializer = new Deserializer(streamReader, name);
+
+#if SUPPORT_V1_V2
+                // This is only here for V2 and V1.  V3+ should use the name EventTrace, it can be removed when we drop support.
+                deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
+#endif
+                deserializer.RegisterFactory("Trace", delegate { return this; });
+                deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
+                deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(this); });
+                deserializer.RegisterFactory("SPBlock", delegate { return new EventPipeSequencePointBlock(this); });
+                deserializer.RegisterFactory("StackBlock", delegate { return new EventPipeStackBlock(this); });
+
+                var entryObj = deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
+
+                if ((FileFormatVersionNumber >= 4) != isNetTrace)
+                {
+                    //NetTrace header should be present iff the version is >= 4
+                    throw new SerializationException("Invalid NetTrace file format version");
+                }
+
+                // Because we told the deserialize to use 'this' when creating a EventPipeFile, we
+                // expect the entry object to be 'this'.
+                Debug.Assert(entryObj == this);
+
+                return deserializer;
+            };
 
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
 
-            _deserializer = new Deserializer(streamReader, name);
-
-#if SUPPORT_V1_V2
-            // This is only here for V2 and V1.  V3+ should use the name EventTrace, it can be removed when we drop support.
-            _deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
-#endif
-            _deserializer.RegisterFactory("Trace", delegate { return this; });
-            _deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
-            _deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(this); });
-            _deserializer.RegisterFactory("SPBlock", delegate { return new EventPipeSequencePointBlock(this); });
-            _deserializer.RegisterFactory("StackBlock", delegate { return new EventPipeStackBlock(this); });
-
-            var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
-
-            if((FileFormatVersionNumber >= 4) != isNetTrace)
-            {
-                //NetTrace header should be present iff the version is >= 4
-                throw new SerializationException("Invalid NetTrace file format version");
-            }
-
-            // Because we told the deserialize to use 'this' when creating a EventPipeFile, we
-            // expect the entry object to be 'this'.
-            Debug.Assert(entryObj == this);
+            if (!isStreaming)
+                _deserializer = _deserializerIntializer();
 
             EventCache = new EventCache();
             EventCache.OnEvent += EventCache_OnEvent;
@@ -126,6 +134,14 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool Process()
         {
+            if (_deserializer is null)
+            {
+                Debug.Assert(_deserializerIntializer != null);
+                _deserializer = _deserializerIntializer?.Invoke();
+                Debug.Assert(_deserializer != null);
+            }
+
+
             if (FileFormatVersionNumber >= 3)
             {
                 // loop through the stream until we hit a null object.  Deserialization of
@@ -840,6 +856,7 @@ namespace Microsoft.Diagnostics.Tracing
         private Guid _relatedActivityId;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
+        private Func<Deserializer> _deserializerIntializer;
         #endregion
     }
 

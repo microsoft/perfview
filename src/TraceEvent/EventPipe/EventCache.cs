@@ -195,6 +195,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 {
                     EventMarker eventMarker = oldestEventQueue.Dequeue();
                     OnEvent?.Invoke(ref eventMarker.Header);
+                    GC.KeepAlive(eventMarker);
                 }
             }
 

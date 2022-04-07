@@ -1137,7 +1137,7 @@ namespace PerfView
 
                 worker.EndWork(delegate ()
                 {
-                    Process.Start(reportFileName);
+                    System.Diagnostics.Process.Start(reportFileName);
                 });
             });
         }
@@ -1529,10 +1529,26 @@ table {
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
-            AutomatedAnalysisManager manager = new AutomatedAnalysisManager();
+            string analyzersDirectory = Path.Combine(SupportFiles.SupportFileDir, "Analyzers");
+            DirectoryAnalyzerResolver resolver = new DirectoryAnalyzerResolver(analyzersDirectory);
+            TraceProcessor traceProcessor = new TraceProcessor(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
-            AutomatedAnalysisResult result = manager.ProcessTrace(traceLog, log);
-            result.GenerateReport(writer);
+            TraceProcessorResult result = traceProcessor.ProcessTrace(traceLog);
+
+            using (HtmlReportGenerator reportGenerator = new HtmlReportGenerator(writer))
+            {
+                // Write out issues.
+                foreach (KeyValuePair<Microsoft.Diagnostics.Tracing.AutomatedAnalysis.Process, List<AnalyzerIssue>> pair in result.Issues)
+                {
+                    if (pair.Value.Count > 0)
+                    {
+                        reportGenerator.WriteIssuesForProcess(pair.Key, pair.Value);
+                    }
+                }
+
+                // Write the list of executed analyzers.
+                reportGenerator.WriteExecutedAnalyzerList(result.ExecutedAnalyzers);
+            }
         }
     }
 
