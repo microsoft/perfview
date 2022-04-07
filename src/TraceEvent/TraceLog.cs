@@ -575,7 +575,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // Remember past events so we can hook up stacks to them.
                     data.eventIndex = (EventIndex)eventCount;
                     pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
-                    eventCount++;
 
                     // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
                     // same notion of what that is if we have two dispatcher.
@@ -596,6 +595,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
                     }
+
+                    // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
+                    // that it has been associated before the event count is incremented.  Otherwise, the stack will be associated with
+                    // the next event, and not the current event.
+                    eventCount++;
 
                     realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
                 }
