@@ -251,8 +251,34 @@
         TypeLoad information is only available in .NET 5 and above.
 
         Otherwise, the data captured will be restricted to JIT and assembly load operations. The /RuntimeLoading switch may also be used.
-        <hr />
-    <p>&nbsp;</p>
+    <hr />
+    <h3>
+        <a id="UnderstandingEventPipeThreadTime">Understanding EventPipe Thread Time</a>
+    </h3>
+    <p>
+        EventPipe is a technology in .NET Core 3.1 on that allows the collection of events and CPU
+        sampling on all platforms. The CPU sampling performed by EventPipe is only aware of managed
+        code, which means that transitions into native code, e.g., P/Invokes, won't appear in the
+        trace. This means that stacks that containing native code will end with the last managed frame.
+    </p>
+    <p>
+        For example, if an application has a sequence of methods <tt>Main->A->B->C->MyNativeFunction</tt>,
+        where <tt>MyNativeFunction</tt> P/Invokes into native code, then samples collected while that native
+        code is on the stack will only contain <tt>Main->A->B->C->MyNativeFunction</tt>. Any native functions
+        after the P/Invoke method won't appear in the trace.
+    </p>
+    <p>
+        During a typical CPU usage investigation, you may want to ask about on-CPU vs off-CPU time to determine
+        when your code is blocked waiting or actively doing work. Due to the only knowing about
+        managed frames, CPU samples collected via EventPipe can't give exact on/off-CPU information. Instead,
+        the TraceEvent library uses a heuristic to add pseudo-frames to the trace that indicate whether there
+        are additional native frames on the stack or not. When a nettrace file is opened in the "Thread Time"
+        view or is exported to another format, e.g., SpeedScope, the heuristic will insert either <tt>UNMANAGED_CODE_TIME</tt>
+        or <tt>CPU_TIME</tt> onto the stacks. <tt>UNMANAGED_CODE_TIME</tt> represents stacks where there are one or more native
+        frames after the last managed frame and that these frames may be blocked waiting or actively on the CPU.
+        <tt>CPU_TIME</tt> represents stacks where the last managed frame is the function currently on the CPU and doing work.
+    </p>
+    <hr />
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
