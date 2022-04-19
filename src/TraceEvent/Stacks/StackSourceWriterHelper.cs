@@ -239,7 +239,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     .GetType("System.Web.HttpUtility, System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
                     .GetMethod("JavaScriptStringEncode", new Type[1] { typeof(string) })
                     .Invoke(null, new object[] { name });
-#elif NETSTANDARD2_0 || NET45
+#elif NETSTANDARD2_0 || NET462
                 escaped = escapedNames[name] = System.Web.HttpUtility.JavaScriptStringEncode(name);
 #endif
             }

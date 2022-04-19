@@ -104,6 +104,9 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
+                <MenuItem Header="_Options">
+                    <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
+                </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Main View" Command="Help" CommandParameter="MainViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>

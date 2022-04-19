@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net462;netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.Utilities</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.Utilities</AssemblyName>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
