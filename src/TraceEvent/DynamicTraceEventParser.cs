@@ -855,7 +855,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             first = false;
                         }
 
-                        sb.Append(keyvalue.Key).Append(":");
+                        sb.Append("\"");
+                        Quote(sb, keyvalue.Key);
+                        sb.Append("\":");
                         WriteAsJSon(sb, keyvalue.Value);
                     }
                     sb.Append(" }");
