@@ -1206,7 +1206,6 @@ public class GCHeapDumper
 
         if (ccwInfo != null)
         {
-            // TODO FIX NOW for some reason IUnknown is always 0
             ulong comPtr = ccwInfo.IUnknown != 0 ? ccwInfo.IUnknown : ccwInfo.Interfaces.FirstOrDefault().InterfacePointer;
 
             // Create a CCW node that represents the COM object that has one child that points at the managed object.  
@@ -1499,7 +1498,6 @@ public class GCHeapDumper
 
                 var memoryGraphTypeIdx = GetTypeIndexForClrType(obj.Type, objSizeAsInt);
 
-                // TODO this seems inefficient, can we get a list of RCWs? 
                 RuntimeCallableWrapper rcwData = obj.HasRuntimeCallableWrapper ? obj.GetRuntimeCallableWrapper() : null;
                 if (rcwData != null)
                 {
@@ -1519,11 +1517,9 @@ public class GCHeapDumper
 
                     memoryGraphTypeIdx = GetTypeIndexForName(typeName, null, objSizeAsInt);
 
-                    // todo, is this the right place?
                     DumpRCW(dataTarget.DataReader, objNodeIdx, obj, rcwData);
                 }
 
-                // todo, is this the right place?
                 ComCallableWrapper ccwData = obj.HasComCallableWrapper ? obj.GetComCallableWrapper() : null;
                 if (ccwData != null)
                     DumpCCW(dataTarget.DataReader, objNodeIdx, obj, ccwData);
