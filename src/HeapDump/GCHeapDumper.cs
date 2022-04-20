@@ -1055,7 +1055,7 @@ public class GCHeapDumper
             }
             else
             {
-                gcHeapDumpSegment.Gen0End = seg.End;
+                gcHeapDumpSegment.Gen0End = seg.Generation0.End;
                 gcHeapDumpSegment.Gen1End = seg.Generation1.End;
                 gcHeapDumpSegment.Gen2End = seg.Generation2.End;
                 gcHeapDumpSegment.Gen3End = seg.Start;
@@ -1131,15 +1131,14 @@ public class GCHeapDumper
                         foreach (ClrAppDomain domain in runtime.AppDomains)
                         {
                             ClrObject obj = field.ReadObject(domain);
-                            string name = $"static var {field.ContainingType?.Name}.{field.Name}";
-                            if (field.ContainingType?.Name == "Microsoft.VisualStudio.IntelliCode.Refactorings.LanguageServerClient.CSharpLanguageClient")
-                                Console.WriteLine(name);
 
                             // Only report objects if they contain pointers (and therefore are interesting roots) or are large in size.
                             if (obj.IsValid && (obj.Type.ContainsPointers || obj.Size > 0x1000))
                             {
-                                // We will use -1 to mean "static variable".
+                                string name = $"static var {field.ContainingType?.Name}.{field.Name}";
                                 ComCallableWrapper ccwInfo = obj.HasComCallableWrapper ? obj.GetComCallableWrapper() : null;
+
+                                // We will use -1 to mean "static variable".
                                 WriteRoot(dataTarget.DataReader, dotNetRoot, obj, (ClrRootKind)(-1), false, ccwInfo, name, ref numRoots);
                             }
                         }
