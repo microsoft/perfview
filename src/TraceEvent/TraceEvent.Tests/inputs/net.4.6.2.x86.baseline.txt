@@ -183,11 +183,11 @@ EVENT 449.122: Microsoft-JScript/Jscript_GC_DecommitConcurrentCollectPageAllocat
 EVENT 449.383: Microsoft-JScript/Jscript_GC_SweepWeakRef/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; RecyclerID=0x1d42ab93f30; 
 EVENT 450.222: Microsoft-JScript/Jscript_GC_SweepWeakRef/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; RecyclerID=0x1d42ab93f30; 
 EVENT 450.223: Microsoft-JScript/Jscript_GC_SetupBackgroundSweep/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; RecyclerID=0x1d42ab93f30; 
-EVENT 450.317: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ MemoryAddress:"20...; 
-EVENT 450.357: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ MemoryAddress:"20...; 
-EVENT 450.393: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ MemoryAddress:"20...; 
-EVENT 450.427: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ MemoryAddress:"20...; 
-EVENT 450.464: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ MemoryAddress:"20...; 
+EVENT 450.317: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ "MemoryAddress":"...; 
+EVENT 450.357: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ "MemoryAddress":"...; 
+EVENT 450.393: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ "MemoryAddress":"...; 
+EVENT 450.427: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ "MemoryAddress":"...; 
+EVENT 450.464: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=6404; Values=[{ "MemoryAddress":"...; 
 EVENT 450.560: Microsoft-JScript/Jscript_Recycler_Allocation/Free_Memory_Block PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=16; MemoryAddress=0x1dc44db4000; BlockSize=16,384; ObjectSize=128; 
 EVENT 450.667: Microsoft-JScript/Jscript_GC_SetupBackgroundSweep/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; RecyclerID=0x1d42ab93f30; 
 EVENT 450.684: Microsoft-IE/Mshtml_CWindow_Script/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=12; CDoc=0x1dc2c938000; Nesting=1; 

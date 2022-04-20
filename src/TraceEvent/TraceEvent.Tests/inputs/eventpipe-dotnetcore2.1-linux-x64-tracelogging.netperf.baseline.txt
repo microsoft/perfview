@@ -1,7 +1,7 @@
 ﻿MySource/SendEmptyEvent, 1, <Event MSec=  "1344.7359" PID="12365" PName="Process(12365)" TID="12365" EventName="SendEmptyEvent" ProviderName="MySource"/>
 MySource/TestEmptyEvent, 2, <Event MSec=  "1343.0440" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEmptyEvent" ProviderName="MySource"/>
-MySource/TestEvent, 1, <Event MSec=  "1450.9500" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEvent" ProviderName="MySource" ="{ field1:&quot;Hello&quot;, field2:3, field3:6 }"/>
-MySource/TestEvent1, 3, <Event MSec=  "1421.1897" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEvent1" ProviderName="MySource" ="{ field1:&quot;Hello&quot; }"/>
-MySource/TestEvent2, 3, <Event MSec=  "1421.7060" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEvent2" ProviderName="MySource" ="{ field1:&quot;Hello&quot; }"/>
+MySource/TestEvent, 1, <Event MSec=  "1450.9500" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEvent" ProviderName="MySource" ="{ &quot;field1&quot;:&quot;Hello&quot;, &quot;field2&quot;:3, &quot;field3&quot;:6 }"/>
+MySource/TestEvent1, 3, <Event MSec=  "1421.1897" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEvent1" ProviderName="MySource" ="{ &quot;field1&quot;:&quot;Hello&quot; }"/>
+MySource/TestEvent2, 3, <Event MSec=  "1421.7060" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEvent2" ProviderName="MySource" ="{ &quot;field1&quot;:&quot;Hello&quot; }"/>
 MySource/TestEventMethod, 1, <Event MSec=  "1340.6720" PID="12365" PName="Process(12365)" TID="12365" EventName="TestEventMethod" ProviderName="MySource" i="1" s="Hello World!"/>
-MySource/TestNestedStructs, 1, <Event MSec=  "1499.5145" PID="12365" PName="Process(12365)" TID="12365" EventName="TestNestedStructs" ProviderName="MySource" ="{ structVal:{ field17:&quot;hello world!&quot; }, i:42 }"/>
+MySource/TestNestedStructs, 1, <Event MSec=  "1499.5145" PID="12365" PName="Process(12365)" TID="12365" EventName="TestNestedStructs" ProviderName="MySource" ="{ &quot;structVal&quot;:{ &quot;field17&quot;:&quot;hello world!&quot; }, &quot;i&quot;:42 }"/>
