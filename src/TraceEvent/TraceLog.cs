@@ -5974,11 +5974,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
 #if DEBUG
-            var preCount = 0;
-            if (_skipCount == 0)
-            {
-                preCount = JitTableCount();
-            }
+            var preCount = JitTableCount();
 #endif
             if (index < 0)
             {
@@ -6030,13 +6026,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             RETURN:;
 #if DEBUG
             // Confirm that we did not break anything.
-            if (_skipCount == 0)
-            {
-                CheckJitTables();
-                Debug.Assert(preCount + 1 == JitTableCount());
-                _skipCount = 32;
-            }
-            --_skipCount;
+            CheckJitTables();
+            Debug.Assert(preCount + 1 == JitTableCount());
 #endif
         }
 
@@ -6056,13 +6047,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 #if DEBUG
-        /// <summary>
-        /// The JIT table checks are expensive. They are only enabled in debug builds, and even then do not run every
-        /// time a method is added. This field counts down each time <see cref="InsertJITTEDMethod"/> is called; when it
-        /// reaches zero the sanity checks are run and it is reset to an unspecified positive value.
-        /// </summary>
-        private static int _skipCount;
-
         private int JitTableCount()
         {
             int count = 0;
