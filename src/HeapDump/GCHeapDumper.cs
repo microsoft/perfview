@@ -959,7 +959,6 @@ public class GCHeapDumper
     private void DumpDotNetHeapDataWorker(DataTarget dataTarget, ClrRuntime[] runtimes, double retryScale)
     {
         IEnumerable<ClrSegment> allSegments = runtimes.SelectMany(r => r.Heap.Segments);
-        IEnumerable<IClrRoot> allRoots = runtimes.SelectMany(r => r.Heap.EnumerateRoots());
 
         m_children = new GrowableArray<NodeIndex>(2000);
         m_graphTypeIdxForArrayType = new Dictionary<string, NodeTypeIndex>(100);
@@ -1031,10 +1030,7 @@ public class GCHeapDumper
 
         m_gcHeapDump.MemoryGraph.Is64Bit = EnvironmentUtilities.Is64BitProcess;
 
-        var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[.NET Roots]");
-
         ulong total = 0;
-        var ccwChildren = new GrowableArray<NodeIndex>();
         m_log.WriteLine("DumpDotNetHeapDataWorker: Heap Size of dumper {0:n0} MB", GC.GetTotalMemory(false) / 1000000.0);
 
         int segmentCount = allSegments.Count();
@@ -1073,107 +1069,8 @@ public class GCHeapDumper
 
         m_log.WriteLine("Segment: Total {0,16} Length: {1,16:x} {2,11:n3}M", "", total, total / 1000000.0);
 
-        try
-        {
-            m_log.WriteLine("{0,5:f1}s: Scanning Named GC roots", m_sw.Elapsed.TotalSeconds);
-            // AddStaticAndLocalRoots(rootNode, debugProcess);
-
-            m_log.WriteLine("{0,5:f1}s: Scanning UNNAMED GC roots", m_sw.Elapsed.TotalSeconds);
-            var rootsStartTimeMSec = m_sw.Elapsed.TotalMilliseconds;
-            int numRoots = 0;
-            foreach (IClrRoot root in allRoots)
-            {
-                // If there is a named root already then we assume that that root is the interesting one and we drop this one.  
-                if (m_gcHeapDump.MemoryGraph.IsInGraph(root.Object))
-                    continue;
-
-                numRoots++;
-                if (numRoots % 1024 == 0)
-                    m_log.WriteLine("{0,5:f1}s: Scanned {1} roots.", m_sw.Elapsed.TotalSeconds, numRoots);
-
-                string name;
-                switch (root.RootKind)
-                {
-                    case ClrRootKind.Stack:
-                        name = "local vars";
-                        break;
-
-                    case ClrRootKind.RefCountedHandle:
-                        name = "COM/WinRT Objects";
-                        break;
-
-                    default:
-                        name = root.RootKind.ToString();
-                        break;
-                };
-
-                MemoryNodeBuilder nodeToAddRootTo = dotNetRoot;
-
-                if (root.Object.Type != null)
-                {
-                    // TODO FIX NOW, try clause is a hack because ccwInfo.* methods sometime throw.  
-                    // Also GetCCWData fails for silverlight
-                    try
-                    {
-                        if (root.Object.HasComCallableWrapper)
-                        {
-                            var ccwInfo = root.Object.GetComCallableWrapper();
-                            if (ccwInfo != null)
-                            {
-                                // TODO FIX NOW for some reason IUnknown is always 0
-                                ulong comPtr = ccwInfo.IUnknown != 0 ? ccwInfo.IUnknown : ccwInfo.Interfaces.FirstOrDefault().InterfacePointer;
-
-                                // Create a CCW node that represents the COM object that has one child that points at the managed object.  
-                                var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(ccwInfo.Handle);
-
-                                string typeName = $"[CCW for {root.Object.Type?.Name ?? "unknown"} RefCnt: {ccwInfo.RefCount:n0}]";
-                                var ccwTypeIndex = GetTypeIndexForName(typeName, null, 200);
-
-                                NodeIndex childNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object);
-
-                                DumpCCW(dataTarget.DataReader, childNode, root.Object, ccwInfo);
-
-                                ccwChildren.Clear();
-                                ccwChildren.Add(childNode);
-
-                                if (comPtr != 0)
-                                    m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
-
-                                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[COM/WinRT Objects]");
-                                nodeToAddRootTo.AddChild(ccwNode);
-                                continue;
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        m_log.WriteLine("Caught exception {0} while fetching CCW information, treating as unknown root", e.GetType().Name);
-                    }
-                }
-
-                if (name.StartsWith("static var"))
-                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[static vars]");
-
-                // Add pinned local vars to their own node
-                if (root.IsPinned && root.RootKind == ClrRootKind.Stack)
-                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[Pinned local vars]");
-                else
-                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[" + name + "]");
-
-                NodeIndex child = m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object);
-
-                nodeToAddRootTo.AddChild(child);
-            }
-
-            var rootDuration = m_sw.Elapsed.TotalMilliseconds - rootsStartTimeMSec;
-            m_log.WriteLine("Scanning UNNAMED GC roots took {0:n1} msec", rootDuration);
-        }
-        catch (Exception e) when (!(e is OutOfMemoryException))
-        {
-            m_log.WriteLine("[ERROR while processing roots: {0}", e.Message);
-            m_log.WriteLine("Continuing without complete root information");
-        }
-        m_log.Flush();
+        m_gcHeapDump.InteropInfo = new InteropInfo();
+        var dotNetRoot = DumpRoots(dataTarget, runtimes);
 
         m_log.WriteLine("{0,5:f1}s: Starting GC Graph Traversal.  This can take a while...", m_sw.Elapsed.TotalSeconds);
         double heapTravseralStartSec = m_sw.Elapsed.TotalSeconds;
@@ -1185,7 +1082,6 @@ public class GCHeapDumper
 
         m_log.Write("{0,5:f1}s: Dump RCW/CCW information", m_sw.Elapsed.TotalSeconds);
 
-        m_gcHeapDump.InteropInfo = new InteropInfo();
         try
         {
             DumpCCWRCW(dataTarget);
@@ -1209,6 +1105,144 @@ public class GCHeapDumper
         m_log.WriteLine("Number of bad objects during trace {0:n0}", BadObjectCount);
         m_log.WriteLine("{0,5:f1}s: Finished heap dump {1}", m_sw.Elapsed.TotalSeconds, DateTime.Now);
         return;
+    }
+
+    private readonly object _sync = new object();
+    private MemoryNodeBuilder DumpRoots(DataTarget dataTarget, ClrRuntime[] runtimes)
+    {
+        int numRoots = 0;
+        var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[.NET Roots]");
+        try
+        {
+            m_log.WriteLine("{0,5:f1}s: Scanning Static Variables", m_sw.Elapsed.TotalSeconds);
+
+            foreach (ClrModule module in runtimes.SelectMany(r => r.EnumerateModules()))
+            {
+                ClrRuntime runtime = module.AppDomain.Runtime;
+
+                foreach (var item in module.EnumerateTypeDefToMethodTableMap())
+                {
+                    ClrType type = runtime.GetTypeByMethodTable(item.MethodTable);
+                    if (type is null)
+                        continue;
+
+                    foreach (ClrStaticField field in type.StaticFields.Where(sf => sf.IsObjectReference))
+                    {
+                        foreach (ClrAppDomain domain in runtime.AppDomains)
+                        {
+                            ClrObject obj = field.ReadObject(domain);
+                            string name = $"static var {field.ContainingType?.Name}.{field.Name}";
+                            if (field.ContainingType?.Name == "Microsoft.VisualStudio.IntelliCode.Refactorings.LanguageServerClient.CSharpLanguageClient")
+                                Console.WriteLine(name);
+
+                            // Only report objects if they contain pointers (and therefore are interesting roots) or are large in size.
+                            if (obj.IsValid && (obj.Type.ContainsPointers || obj.Size > 0x1000))
+                            {
+                                // We will use -1 to mean "static variable".
+                                ComCallableWrapper ccwInfo = obj.HasComCallableWrapper ? obj.GetComCallableWrapper() : null;
+                                WriteRoot(dataTarget.DataReader, dotNetRoot, obj, (ClrRootKind)(-1), false, ccwInfo, name, ref numRoots);
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
+            m_log.WriteLine("{0,5:f1}s: Scanning Actual GC roots", m_sw.Elapsed.TotalSeconds);
+            var rootsStartTimeMSec = m_sw.Elapsed.TotalMilliseconds;
+            foreach (IClrRoot root in runtimes.SelectMany(r => r.Heap.EnumerateRoots()))
+            {
+                if (!root.Object.IsValid)
+                    continue;
+
+                ClrObject obj = root.Object;
+                ClrRootKind kind = root.RootKind;
+                bool pinned = root.IsPinned;
+                ComCallableWrapper ccwInfo = obj.HasComCallableWrapper ? obj.GetComCallableWrapper() : null;
+
+                string name;
+                switch (kind)
+                {
+                    case ClrRootKind.Stack:
+                        name = "local vars";
+                        break;
+
+                    case ClrRootKind.RefCountedHandle:
+                        name = "COM/WinRT Objects";
+                        break;
+
+                    default:
+                        name = kind.ToString();
+                        break;
+                };
+
+                WriteRoot(dataTarget.DataReader, dotNetRoot, obj, kind, pinned, ccwInfo, name, ref numRoots);
+            }
+
+            var rootDuration = m_sw.Elapsed.TotalMilliseconds - rootsStartTimeMSec;
+            m_log.WriteLine("Scanning UNNAMED GC roots took {0:n1} msec", rootDuration);
+        }
+        catch (Exception e) when (!(e is OutOfMemoryException))
+        {
+            m_log.WriteLine("[ERROR while processing roots: {0}", e.Message);
+            m_log.WriteLine("Continuing without complete root information");
+        }
+        m_log.Flush();
+
+        return dotNetRoot;
+    }
+
+    private void WriteRoot(IDataReader reader, MemoryNodeBuilder dotNetRoot, ClrObject obj, ClrRootKind kind, bool pinned, ComCallableWrapper ccwInfo, string name, ref int numRoots)
+    {
+        // If there is a named root already then we assume that that root is the interesting one and we drop this one.  
+        if (m_gcHeapDump.MemoryGraph.IsInGraph(obj))
+            return;
+
+        numRoots++;
+        if (numRoots % 1024 == 0)
+            m_log.WriteLine("{0,5:f1}s: Scanned {1} roots.", m_sw.Elapsed.TotalSeconds, numRoots);
+
+        MemoryNodeBuilder nodeToAddRootTo = dotNetRoot;
+
+        if (ccwInfo != null)
+        {
+            // TODO FIX NOW for some reason IUnknown is always 0
+            ulong comPtr = ccwInfo.IUnknown != 0 ? ccwInfo.IUnknown : ccwInfo.Interfaces.FirstOrDefault().InterfacePointer;
+
+            // Create a CCW node that represents the COM object that has one child that points at the managed object.  
+            var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(ccwInfo.Handle);
+
+            string typeName = $"[CCW for {obj.Type?.Name ?? "unknown"} RefCnt: {ccwInfo.RefCount:n0}]";
+            var ccwTypeIndex = GetTypeIndexForName(typeName, null, 200);
+
+            NodeIndex childNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(obj);
+
+            DumpCCW(reader, childNode, obj, ccwInfo);
+
+            GrowableArray<NodeIndex> ccwChildren = new GrowableArray<NodeIndex>();
+            ccwChildren.Add(childNode);
+
+            if (comPtr != 0)
+                m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
+
+            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[COM/WinRT Objects]");
+            nodeToAddRootTo.AddChild(ccwNode);
+        }
+        else
+        {
+            if (kind == (ClrRootKind)(-1))
+                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[static vars]");
+
+            // Add pinned local vars to their own node
+            if (pinned && kind == ClrRootKind.Stack)
+                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[Pinned local vars]");
+            else
+                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[" + name + "]");
+
+            NodeIndex child = m_gcHeapDump.MemoryGraph.GetNodeIndex(obj);
+            nodeToAddRootTo.AddChild(child);
+        }
     }
 
     /// <summary>
