@@ -295,9 +295,8 @@ public class GCHeapDumper
             }
             catch
             {
+                dataTarget = DataTarget.AttachToProcess(processID, Freeze);
             }
-
-            dataTarget = DataTarget.AttachToProcess(processID, Freeze);
         }
         else
         {
@@ -958,7 +957,7 @@ public class GCHeapDumper
 
     private void DumpDotNetHeapDataWorker(DataTarget dataTarget, ClrRuntime[] runtimes, double retryScale)
     {
-        IEnumerable<ClrSegment> allSegments = runtimes.SelectMany(r => r.Heap.Segments);
+        IEnumerable<ClrSegment> allSegments = runtimes.SelectMany(r => r.Heap.Segments).OrderBy(r => r.Start);
 
         m_children = new GrowableArray<NodeIndex>(2000);
         m_graphTypeIdxForArrayType = new Dictionary<string, NodeTypeIndex>(100);
@@ -1469,7 +1468,7 @@ public class GCHeapDumper
     /// </summary>
     private void DumpAllSegments(DataTarget dataTarget, ClrRuntime[] runtimes)
     {
-        var segments = runtimes.SelectMany(r => r.Heap.Segments).ToArray();
+        var segments = runtimes.SelectMany(r => r.Heap.Segments).OrderBy(seg => seg.Start).ToArray();
 
         m_log.WriteLine("Dumping {0} GC segments in the heap in bulk.", segments.Length);
         var segmentCount = 0;
