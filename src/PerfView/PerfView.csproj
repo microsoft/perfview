@@ -57,7 +57,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all" />
 
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
@@ -119,11 +119,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Update="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
@@ -291,7 +286,7 @@
       <Link>amd64\System.Runtime.CompilerServices.Unsafe.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)System.ValueTuple.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.ValueTuple\4.4.0\lib\net461\System.ValueTuple.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\System.ValueTuple.dll</LogicalName>
@@ -340,7 +335,7 @@
       <Link>x86\System.Runtime.CompilerServices.Unsafe.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)System.ValueTuple.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.ValueTuple\4.4.0\lib\net461\System.ValueTuple.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\System.ValueTuple.dll</LogicalName>
