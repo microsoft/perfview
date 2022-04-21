@@ -8,6 +8,7 @@
     <StartupObject>PerfView.App</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
@@ -255,11 +256,95 @@
       <Link>amd64\HeapDump.exe.config</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Buffers\4.5.1\lib\net461\System.Buffers.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\System.Buffers.dll</LogicalName>
+      <Link>amd64\System.Buffers.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Collections.Immutable\5.0.0\lib\net461\System.Collections.Immutable.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\System.Collections.Immutable.dll</LogicalName>
+      <Link>amd64\System.Collections.Immutable.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Memory\4.5.4\lib\net461\System.Memory.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\System.Memory.dll</LogicalName>
+      <Link>amd64\System.Memory.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Reflection.Metadata\5.0.0\lib\net461\System.Reflection.Metadata.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\System.Reflection.Metadata.dll</LogicalName>
+      <Link>amd64\System.Reflection.Metadata.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Runtime.CompilerServices.Unsafe\4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+      <Link>amd64\System.Runtime.CompilerServices.Unsafe.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutDir)System.ValueTuple.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\System.ValueTuple.dll</LogicalName>
+      <Link>amd64\System.ValueTuple.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
       <Link>x86\HeapDump.exe</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Buffers\4.5.1\lib\net461\System.Buffers.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\System.Buffers.dll</LogicalName>
+      <Link>x86\System.Buffers.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Collections.Immutable\5.0.0\lib\net461\System.Collections.Immutable.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\System.Collections.Immutable.dll</LogicalName>
+      <Link>x86\System.Collections.Immutable.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Memory\4.5.4\lib\net461\System.Memory.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\System.Memory.dll</LogicalName>
+      <Link>x86\System.Memory.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Reflection.Metadata\5.0.0\lib\net461\System.Reflection.Metadata.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\System.Reflection.Metadata.dll</LogicalName>
+      <Link>x86\System.Reflection.Metadata.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Runtime.CompilerServices.Unsafe\4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+      <Link>x86\System.Runtime.CompilerServices.Unsafe.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutDir)System.ValueTuple.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\System.ValueTuple.dll</LogicalName>
+      <Link>x86\System.ValueTuple.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
