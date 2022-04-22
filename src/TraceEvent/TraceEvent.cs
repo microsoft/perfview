@@ -3525,7 +3525,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Debug.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
                 Debug.WriteLine("Exception: " + e.Message);
-                Debug.Assert(false, "Thrown exception " + e.GetType().Name + " '" + e.Message + "'");
+                Debug.Assert(false, "Thrown exception:" + e.ToString());
             }
 #endif
         }

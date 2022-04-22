@@ -2,7 +2,7 @@
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public class Configuration
+    internal class Configuration
     {
         private Dictionary<string, AnalyzerConfiguration> _analyzerConfigurations = new Dictionary<string, AnalyzerConfiguration>();
 
@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
-        public bool TryGetAnalyzerConfiguration(Analyzer analyzer, out AnalyzerConfiguration config)
+        internal bool TryGetAnalyzerConfiguration(Analyzer analyzer, out AnalyzerConfiguration config)
         {
             return _analyzerConfigurations.TryGetValue(analyzer.GetType().FullName, out config);
         }

@@ -142,7 +142,7 @@ namespace PerfView
         public string FocusProcess;       // The target process for CLR Rundown.  
         public bool NoRundown;
         public bool NoNGenPdbs;
-        public bool NoNGenRundown;
+        public bool NoNGenRundown = true;
         public bool NoClrRundown;
         public bool NoV2Rundown;
         public bool LowPriority;

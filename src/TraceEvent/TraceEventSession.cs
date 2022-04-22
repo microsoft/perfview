@@ -956,12 +956,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
             var origFileName = m_FileName;      // Remember the original name we had.  
 
-            // If we are in file mode, flush it before we close it and move on to the next file.  
-            if (origFileName != null)
-            {
-                Flush();
-            }
-
             // Set up the properties for the new file name 
             var propertiesBuff = stackalloc byte[PropertiesSize];
             m_FileName = newName;

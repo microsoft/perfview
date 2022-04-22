@@ -192,7 +192,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     private void Write(string outputFileName)
     {
         Debug.Assert(MemoryGraph != null);
-        var serializer = new Serializer(outputFileName, this, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes });
+        var serializer = new Serializer(new IOStreamStreamWriter(outputFileName, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }), this);
         serializer.Close();
     }
 

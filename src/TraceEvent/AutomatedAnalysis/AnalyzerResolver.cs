@@ -1,86 +1,112 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    internal sealed class AnalyzerResolver
+    /// <summary>
+    /// The context object used when loading an Analyzer.
+    /// </summary>
+    public sealed class AnalyzerLoadContext
     {
-        private const string AnalyzersDirectoryName = "Analyzers";
-        private static string s_analyzersDirectory;
+        /// <summary>
+        /// The Analyzer being loaded.
+        /// </summary>
+        public Analyzer Analyzer { get; private set; }
 
-        internal static string AnalyzersDirectory
+        /// <summary>
+        /// True iff the Analyzer should be run during trace processing.
+        /// </summary>
+        public bool ShouldRun { get; set; }
+
+        internal void Reset(Analyzer analyzer)
+        {
+            Analyzer = analyzer;
+            ShouldRun = true;
+        }
+    }
+
+    /// <summary>
+    /// The base class for all resolver implementations.
+    /// </summary>
+    public abstract class AnalyzerResolver
+    {
+        private List<Analyzer> _analyzers = new List<Analyzer>();
+        private Configuration _configuration;
+
+        internal IEnumerable<Analyzer> ResolvedAnalyzers
+        {
+            get { return _analyzers; }
+        }
+
+        internal Configuration Configuration
         {
             get
             {
-                if (s_analyzersDirectory == null)
+                if (_configuration == null)
                 {
-                    // Assume plugins sit in a plugins directory next to the current assembly.
-#if AUTOANALYSIS_EXTENSIBILITY
-                    s_analyzersDirectory = Path.Combine(
-                        Path.GetDirectoryName(typeof(AnalyzerResolver).Assembly.Location),
-                        AnalyzersDirectoryName);
-#endif
+                    return _configuration = new Configuration();
                 }
-                return s_analyzersDirectory;
+
+                return _configuration;
             }
         }
 
-        internal static IEnumerable<Analyzer> GetAnalyzers()
+        /// <summary>
+        /// Called when each Analyzer is loaded.
+        /// </summary>
+        /// <param name="loadContext">The context for the Analyzer load.</param>
+        protected virtual void OnAnalyzerLoaded(AnalyzerLoadContext loadContext)
         {
-#if AUTOANALYSIS_EXTENSIBILITY
-            // Iterate through all assemblies in the analyzers directory.
-            if(!Directory.Exists(AnalyzersDirectory))
+            // All analyzers are run by default.
+        }
+
+        /// <summary>
+        /// Searches the specified assembly for Analyzer instances and loads them.
+        /// </summary>
+        /// <param name="analyzerAssembly">The assembly to consume.</param>
+        protected void ConsumeAssembly(Assembly analyzerAssembly)
+        {
+            if (analyzerAssembly == null)
             {
-                yield break;
+                throw new ArgumentNullException(nameof(analyzerAssembly));
             }
 
-            string[] candidateAssemblies = Directory.GetFiles(AnalyzersDirectory, "*.dll", SearchOption.TopDirectoryOnly);
-            foreach(string candidateAssembly in candidateAssemblies)
+            AnalyzerLoadContext loadContext = new AnalyzerLoadContext();
+
+            AnalyzerProviderAttribute attr =
+                (AnalyzerProviderAttribute)analyzerAssembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute));
+            if (attr != null && attr.ProviderType != null)
             {
-                Assembly assembly = Assembly.LoadFrom(candidateAssembly);
-                if(assembly != null)
+                IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
+                if (analyzerProvider != null)
                 {
-                    AnalyzerProviderAttribute attr = 
-                        (AnalyzerProviderAttribute)assembly.GetCustomAttribute(typeof(AnalyzerProviderAttribute));
-                    if(attr != null && attr.ProviderType != null)
+                    foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
                     {
-                        // Create an instance of the provider.
-                        IAnalyzerProvider analyzerProvider = Activator.CreateInstance(attr.ProviderType) as IAnalyzerProvider;
-                        if (analyzerProvider != null)
+                        loadContext.Reset(analyzer);
+                        OnAnalyzerLoaded(loadContext);
+                        if (loadContext.ShouldRun)
                         {
-                            foreach (Analyzer analyzer in analyzerProvider.GetAnalyzers())
-                            {
-                                yield return analyzer;
-                            }
+                            _analyzers.Add(loadContext.Analyzer);
                         }
                     }
                 }
             }
-#else
-            yield break;
-#endif
-
         }
 
-        internal static Configuration GetConfiguration()
+        internal void ConsumeConfiguration(Configuration configuration)
         {
-            Configuration configuration = new Configuration();
-
-#if AUTOANALYSIS_EXTENSIBILITY
-            // Iterate through all configuration files in the analyzers directory.
-            if (Directory.Exists(AnalyzersDirectory))
+            if (_configuration != null)
             {
-                string[] filePaths = Directory.GetFiles(AnalyzersDirectory, "*.config.xml");
-                foreach(string filePath in filePaths)
-                {
-                    configuration.AddConfigurationFile(filePath);
-                }
+                throw new InvalidOperationException("Only one configuration can be specified.");
             }
-#endif
 
-            return configuration;
+            _configuration = configuration;
         }
+
+        /// <summary>
+        /// Called to discover assemblies that contain Analyzers to be executed.
+        /// </summary>
+        protected internal abstract void Resolve();
     }
 }

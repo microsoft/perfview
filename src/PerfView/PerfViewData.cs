@@ -1128,7 +1128,7 @@ namespace PerfView
 
                 worker.EndWork(delegate ()
                 {
-                    Process.Start(reportFileName);
+                    System.Diagnostics.Process.Start(reportFileName);
                 });
             });
         }
@@ -1520,10 +1520,26 @@ table {
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
-            AutomatedAnalysisManager manager = new AutomatedAnalysisManager();
+            string analyzersDirectory = Path.Combine(SupportFiles.SupportFileDir, "Analyzers");
+            DirectoryAnalyzerResolver resolver = new DirectoryAnalyzerResolver(analyzersDirectory);
+            TraceProcessor traceProcessor = new TraceProcessor(resolver);
             AutomatedAnalysisTraceLog traceLog = new AutomatedAnalysisTraceLog(dataFile, App.GetSymbolReader(dataFile.FilePath));
-            AutomatedAnalysisResult result = manager.ProcessTrace(traceLog, log);
-            result.GenerateReport(writer);
+            TraceProcessorResult result = traceProcessor.ProcessTrace(traceLog);
+
+            using (HtmlReportGenerator reportGenerator = new HtmlReportGenerator(writer))
+            {
+                // Write out issues.
+                foreach (KeyValuePair<Microsoft.Diagnostics.Tracing.AutomatedAnalysis.Process, List<AnalyzerIssue>> pair in result.Issues)
+                {
+                    if (pair.Value.Count > 0)
+                    {
+                        reportGenerator.WriteIssuesForProcess(pair.Key, pair.Value);
+                    }
+                }
+
+                // Write the list of executed analyzers.
+                reportGenerator.WriteExecutedAnalyzerList(result.ExecutedAnalyzers);
+            }
         }
     }
 
@@ -6999,10 +7015,10 @@ table {
                 }
             }
 
-            var advanced = new PerfViewTreeGroup("Advanced Group");
-            var memory = new PerfViewTreeGroup("Memory Group");
-            var obsolete = new PerfViewTreeGroup("Old Group");
-            var experimental = new PerfViewTreeGroup("Experimental Group");
+            var advanced = new PerfViewTreeGroup("Advanced");
+            var memory = new PerfViewTreeGroup("Memory");
+            var frameworkAspNetWcf = new PerfViewTreeGroup(".NET Framework ASP.NET/WCF");
+            var experimental = new PerfViewTreeGroup("Experimental");
             m_Children = new List<PerfViewTreeItem>();
 
             bool hasCPUStacks = false;
@@ -7343,15 +7359,15 @@ table {
             {
                 if (hasCPUStacks)
                 {
-                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request CPU"));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "Server Request CPU"));
                 }
                 if (hasCSwitchStacks)
                 {
-                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request Thread Time"));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "Server Request Thread Time"));
                 }
                 if (hasGCAllocationTicks)
                 {
-                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request Managed Allocation"));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "Server Request Managed Allocation"));
                 }
             }
 
@@ -7378,14 +7394,14 @@ table {
                     var name = "ASP.NET Thread Time";
                     if (hasCSwitchStacks && hasTplStacks)
                     {
-                        obsolete.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
+                        frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
                     }
                     else if (!hasCSwitchStacks)
                     {
                         name += " (CPU ONLY)";
                     }
 
-                    obsolete.Children.Add(new PerfViewStackSource(this, name));
+                    frameworkAspNetWcf.Children.Add(new PerfViewStackSource(this, name));
                 }
             }
 
@@ -7438,9 +7454,9 @@ table {
                 m_Children.Add(advanced);
             }
 
-            if (0 < obsolete.Children.Count)
+            if (0 < frameworkAspNetWcf.Children.Count)
             {
-                m_Children.Add(obsolete);
+                m_Children.Add(frameworkAspNetWcf);
             }
 
             if (AppLog.InternalUser && 0 < experimental.Children.Count)

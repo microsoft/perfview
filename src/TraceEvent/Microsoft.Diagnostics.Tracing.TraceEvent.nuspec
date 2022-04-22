@@ -29,7 +29,7 @@
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
 
     <dependencies>
-      <group targetFramework=".NETFramework4.5">
+      <group targetFramework=".NETFramework4.6.2">
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.5.2" />
       </group>
       <group targetFramework=".NETStandard1.6">

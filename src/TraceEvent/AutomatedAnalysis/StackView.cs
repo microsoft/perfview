@@ -9,6 +9,9 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    /// <summary>
+    /// A view into a set of aggregated stacks.
+    /// </summary>
     public class StackView
     {
         private static readonly char[] SymbolSeparator = new char[] { '!' };
@@ -20,6 +23,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         private List<CallTreeNodeBase> _byName;
         private HashSet<string> _resolvedSymbolModules = new HashSet<string>();
 
+
+        /// <summary>
+        /// Create a new instance of StackView for the specified source.
+        /// </summary>
+        /// <param name="traceLog">Optional: The TraceLog associated with the StackSource.</param>
+        /// <param name="stackSource">The souce of the stack data.</param>
+        /// <param name="symbolReader">Optional: A symbol reader that can be used to lookup symbols.</param>
         public StackView(TraceLog traceLog, StackSource stackSource, SymbolReader symbolReader)
         {
             _traceLog = traceLog;
@@ -31,6 +41,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
+        /// <summary>
+        /// The call tree representing all stacks in the view.
+        /// </summary>
         public CallTree CallTree
         {
             get
@@ -47,6 +60,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
+        /// <summary>
+        /// All nodes in the view ordered by exclusive metric.
+        /// </summary>
         private IEnumerable<CallTreeNodeBase> ByName
         {
             get
@@ -60,6 +76,11 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
         }
 
+        /// <summary>
+        /// Find a node.
+        /// </summary>
+        /// <param name="nodeNamePat">The regex pattern for the node name.</param>
+        /// <returns>The requested node, or the root node if requested not found.</returns>
         public CallTreeNodeBase FindNodeByName(string nodeNamePat)
         {
             var regEx = new Regex(nodeNamePat, RegexOptions.IgnoreCase);
@@ -72,17 +93,31 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
             return CallTree.Root;
         }
-        public CallTreeNode GetCallers(string focusNodeName)
+        /// <summary>
+        /// Get the set of caller nodes for a specified symbol.
+        /// </summary>
+        /// <param name="symbolName">The symbol.</param>
+        public CallTreeNode GetCallers(string symbolName)
         {
-            var focusNode = FindNodeByName(focusNodeName);
+            var focusNode = FindNodeByName(symbolName);
             return AggregateCallTreeNode.CallerTree(focusNode);
         }
-        public CallTreeNode GetCallees(string focusNodeName)
+
+        /// <summary>
+        /// Get the set of callee nodes for a specified symbol.
+        /// </summary>
+        /// <param name="symbolName">The symbol.</param>
+        public CallTreeNode GetCallees(string symbolName)
         {
-            var focusNode = FindNodeByName(focusNodeName);
+            var focusNode = FindNodeByName(symbolName);
             return AggregateCallTreeNode.CalleeTree(focusNode);
         }
 
+        /// <summary>
+        /// Get the call tree node for the specified symbol.
+        /// </summary>
+        /// <param name="symbolName">The symbol.</param>
+        /// <returns>The call tree node representing the symbol, or null if the symbol is not found.</returns>
         public CallTreeNodeBase GetCallTreeNode(string symbolName)
         {
             string[] symbolParts = symbolName.Split(SymbolSeparator);
