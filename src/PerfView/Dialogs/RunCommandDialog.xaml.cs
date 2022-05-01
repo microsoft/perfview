@@ -658,6 +658,10 @@ namespace PerfView
             {
                 m_args.KernelEvents = (KernelTraceEventParser.Keywords)(KernelTraceEventParser.Keywords.Default - KernelTraceEventParser.Keywords.Profile);
             }
+            else
+            {
+                m_args.KernelEvents = KernelTraceEventParser.Keywords.None;
+            }
 
             if (CpuSamplesCheckBox.IsChecked ?? false)
             {

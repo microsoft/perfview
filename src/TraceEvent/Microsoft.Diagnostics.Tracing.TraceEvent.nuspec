@@ -29,7 +29,7 @@
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
 
     <dependencies>
-      <group targetFramework=".NETFramework4.5">
+      <group targetFramework=".NETFramework4.6.2">
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.5.2" />
       </group>
       <group targetFramework=".NETStandard1.6">
@@ -100,18 +100,18 @@
     <!-- NET 4.5 Framework -->
 
     <!-- Built libraries -->
-    <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net45" />
+    <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net462" />
+    <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net462" />
+    <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net462" />
 
-    <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.dll" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.xml" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\net45" />
+    <file src="$OutDir$net462\Microsoft.Diagnostics.FastSerialization.dll" target="lib\net462" />
+    <file src="$OutDir$net462\Microsoft.Diagnostics.FastSerialization.xml" target="lib\net462" />
+    <file src="$OutDir$net462\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\net462" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\net45" />
-    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\net45" />
-    <file src="$OutDir$net45\OSExtensions.dll" target="lib\net45" />
+    <file src="$OutDir$net462\Dia2Lib.dll" target="lib\net462" />
+    <file src="$OutDir$net462\TraceReloggerLib.dll" target="lib\net462" />
+    <file src="$OutDir$net462\OSExtensions.dll" target="lib\net462" />
 
     <!-- Source code (All Frameworks *) -->
     <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />

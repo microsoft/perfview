@@ -575,7 +575,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // Remember past events so we can hook up stacks to them.
                     data.eventIndex = (EventIndex)eventCount;
                     pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
-                    eventCount++;
 
                     // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
                     // same notion of what that is if we have two dispatcher.
@@ -596,6 +595,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
                     }
+
+                    // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
+                    // that it has been associated before the event count is incremented.  Otherwise, the stack will be associated with
+                    // the next event, and not the current event.
+                    eventCount++;
 
                     realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
                 }
@@ -1845,7 +1849,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             };
 
-            const int defaultMaxEventCount = 20000000;                   // 20M events produces about 3GB of data.  which is close to the limit of ETLX.
+            const int defaultMaxEventCount = -1;
             int maxEventCount = defaultMaxEventCount;
             double startMSec = 0;
             if (options != null)
@@ -1865,7 +1869,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     options.ConversionLog.WriteLine("MaxEventCount {0} < 1000, assumed in error, ignoring", options.MaxEventCount);
                 }
             }
-            options.ConversionLog.WriteLine("Collecting a maximum of {0:n0} events.", maxEventCount);
+            if (maxEventCount != -1)
+            {
+                options.ConversionLog.WriteLine("Collecting a maximum of {0:n0} events.", maxEventCount);
+            }
 
             uint rawEventCount = 0;
             double rawInputSizeMB = rawEvents.Size / 1000000.0;
@@ -1886,12 +1893,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Show status every 128K events
                 if ((rawEventCount & 0x1FFFF) == 0)
                 {
-                    var curOutputSizeMB = ((double)(uint)writer.GetLabel()) / 1000000.0;
-                    // Currently ETLX has a size restriction of 4Gig.  Thus if we are getting big, start truncating.
-                    if (curOutputSizeMB > 3500)
-                    {
-                        processingDisabled = true;
-                    }
+                    var curOutputSizeMB = ((double)(ulong)writer.GetLabel()) / 1000000.0;
 
                     if (options != null && options.ConversionLog != null)
                     {
@@ -1904,34 +1906,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             var curDurationSec = (DateTime.Now - startTime).TotalSeconds;
 
-                            var ratioOutputToInput = (double)eventCount / (double)rawEventCount;
-                            var estimatedFinalSizeMB = Math.Max(rawInputSizeMB * ratioOutputToInput * 1.15, curOutputSizeMB * 1.02);
-                            var ratioSizeComplete = curOutputSizeMB / estimatedFinalSizeMB;
-                            var estTimeLeftSec = (int)(curDurationSec / ratioSizeComplete - curDurationSec);
-
                             var message = "";
                             if (0 < startMSec && data.TimeStampRelativeMSec < startMSec)
                             {
                                 message = "  Before StartMSec truncating";
                             }
-                            else if (eventCount >= maxEventCount)
+                            else if (maxEventCount != -1 && eventCount >= maxEventCount)
                             {
                                 message = "  Hit MaxEventCount, truncating.";
                             }
-                            else if (curOutputSizeMB > 3500)
-                            {
-                                message = "  Hit File size limit (3.5Gig) truncating.";
-                            }
 
                             options.ConversionLog.WriteLine(
-                                "[Sec {0,4:f0} Read {1,10:n0} events. At {2,7:n0}ms.  Wrote {3,4:f0}MB ({4,3:f0}%).  EstDone {5,2:f0} min {6,2:f0} sec.{7}]",
+                                "[ELAPSED {0,2:f0} seconds.     READ {1,10:n0} events.     TIMESTAMP {2,7:n0}ms.     WRITTEN {3,5:n0}MB.     {4}]",
                                 curDurationSec,
                                 rawEventCount,
                                 data.TimeStampRelativeMSec,
                                 curOutputSizeMB,
-                                ratioSizeComplete * 100.0,
-                                estTimeLeftSec / 60,
-                                estTimeLeftSec % 60,
                                 message);
                         }
                     }
@@ -1956,7 +1946,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 else
                 {
-                    if (maxEventCount <= eventCount)
+                    if (maxEventCount != -1 && maxEventCount <= eventCount)
                     {
                         processingDisabled = true;
                     }
@@ -2107,7 +2097,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 eventsLost = rawEvents.EventsLost;
             }
 
-            if (eventCount >= maxEventCount)
+            if (maxEventCount != -1 && eventCount >= maxEventCount)
             {
                 if (options != null && options.ConversionLog != null)
                 {
@@ -2116,9 +2106,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         options.OnLostEvents(true, EventsLost, eventCount);
                     }
 
-                    options.ConversionLog.WriteLine("Truncated events to {0:n} events.  Use /MaxEventCount to change.", maxEventCount);
-                    options.ConversionLog.WriteLine("However  is a hard limit of 4GB of of processed (ETLX) data, increasing it over 15M will probably hit that.");
-                    options.ConversionLog.WriteLine("Instead you can use /SkipMSec:X to skip the beginning events and thus see the next window of /MaxEventCount the file.");
+                    options.ConversionLog.WriteLine("Truncated events to {0:n} events.  Change the value of /MaxEventCount or remove it entirely.", maxEventCount);
+                    options.ConversionLog.WriteLine("If you must use /MaxEventCount, consider using /SkipMSec:X to skip the beginning events and see the next window of /MaxEventCount the file.");
                 }
             }
 
@@ -3404,6 +3393,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // If this Assert files, fix the declaration of headerSize to match
             Debug.Assert(sizeof(TraceEventNativeMethods.EVENT_HEADER) == 0x50 && sizeof(TraceEventNativeMethods.ETW_BUFFER_CONTEXT) == 4);
 
+            // As of TraceLog version 74, all StreamLabels are 64-bit.  See IFastSerializableVersion for details.
             Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, 0x10000), etlxFilePath);
             deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
 
@@ -3848,7 +3838,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 73; }
+            get { return 74; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {

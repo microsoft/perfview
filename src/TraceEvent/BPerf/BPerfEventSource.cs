@@ -428,7 +428,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 long length = fs.Length;
 
-#if NET45
+#if NET462
                 using (var mmapedFile = MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.Read, null, HandleInheritability.None, true))
 #else
                 using (var mmapedFile = MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
