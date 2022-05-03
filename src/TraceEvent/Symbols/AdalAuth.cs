@@ -1,4 +1,4 @@
-﻿#if NET45
+﻿#if NET462
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,12 +12,14 @@ namespace Microsoft.Diagnostics.Symbols
         private static object s_lock = new object();
         private static DateTime s_lastAttempt = DateTime.MinValue;
         private static string s_accessToken;
+        private static DateTimeOffset s_accessTokenExpiresOn = DateTimeOffset.MinValue;
 
-        public static string AcquireToken()
+        public static async Task<string> AcquireTokenAsync()
         {
             lock (s_lock)
             {
-                if (s_accessToken != null)
+                // If there is a token and it hasn't expired yet, use it
+                if (s_accessToken != null && DateTime.UtcNow < s_accessTokenExpiresOn.UtcDateTime)
                 {
                     return s_accessToken;
                 }
@@ -42,10 +44,11 @@ namespace Microsoft.Diagnostics.Symbols
 
             try
             {
-                var token = authContext.AcquireTokenAsync(resourceId, clientId, redirectUri, new PlatformParameters(PromptBehavior.Auto)).Result;
+                var token = await authContext.AcquireTokenAsync(resourceId, clientId, redirectUri, new PlatformParameters(PromptBehavior.Auto));
                 lock (s_lock)
                 {
                     s_accessToken = token.AccessToken;
+                    s_accessTokenExpiresOn = token.ExpiresOn;
                 }
                 return token.AccessToken;
             }
