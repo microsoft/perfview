@@ -42,6 +42,7 @@
     <Compile Include="..\PerfView\GcStats.cs" />
     <Compile Include="..\PerfView\JitStats.cs" />
     <Compile Include="..\PerfView\RuntimeLoaderStats.cs" />
+    <Compile Include="..\PerfView\FileVersionInformation.cs" />
   </ItemGroup>
 
   <ItemGroup>
