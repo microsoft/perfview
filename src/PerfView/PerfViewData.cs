@@ -3746,6 +3746,29 @@ table {
         private Dictionary<int /*pid*/, List<object>> m_bgJitEvents;
     }
 
+    public class PerfViewFileVersionStats : PerfViewHtmlReport
+    {
+        public PerfViewFileVersionStats(PerfViewFile dataFile) : base(dataFile, "Module Version Information") { }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter output, string fileName, TextWriter log)
+        {
+            Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            var source = dataFile.Events.GetSource();
+
+            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+            source.Process();
+            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+            {
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !processes.ContainsKey(proc.ProcessID))
+                {
+                    processes.Add(proc.ProcessID, proc);
+                }
+            }
+
+            Stats.ClrStats.ToHtml(output, processes.Values.ToList(), fileName, "Module Version Information", Stats.ClrStats.ReportType.FileVersion, true, traceLog: dataFile);
+        }
+    }
+
     /// <summary>
     /// Represents all the heap snapshots in the trace
     /// </summary>
@@ -7450,6 +7473,7 @@ table {
             }
 
             advanced.Children.Add(new PerfViewEventStats(this));
+            advanced.Children.Add(new PerfViewFileVersionStats(this));
 
             m_Children.Add(new PerfViewEventSource(this));
 

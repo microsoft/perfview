@@ -10,9 +10,9 @@ namespace Stats
 {
     internal static class ClrStats
     {
-        public enum ReportType { JIT, GC, RuntimeLoader };
+        public enum ReportType { JIT, GC, RuntimeLoader, FileVersion };
 
-        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, RuntimeLoaderStatsData runtimeOpsStats = null)
+        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, RuntimeLoaderStatsData runtimeOpsStats = null, Microsoft.Diagnostics.Tracing.Etlx.TraceLog traceLog = null)
         {
             if (!justBody)
             {
@@ -37,6 +37,10 @@ namespace Stats
             else if (type == ReportType.RuntimeLoader)
             {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -RuntimeLoaderStats.TotalCPUMSec(p1, runtimeOpsStats).CompareTo(RuntimeLoaderStats.TotalCPUMSec(p2, runtimeOpsStats)); });
+            }
+            else if(type == ReportType.FileVersion)
+            {
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return string.Compare(p1.Name, p2.Name); });
             }
 
             int count = sortedProcs.Count;
@@ -95,6 +99,11 @@ namespace Stats
                 if (type == ReportType.RuntimeLoader && RuntimeLoaderStats.IsInteresting(stats, runtimeOpsStats))
                 {
                     Stats.RuntimeLoaderStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
+                }
+
+                if(type == ReportType.FileVersion)
+                {
+                    Stats.FileVersionInformation.ToHtml(writer, stats, traceLog);
                 }
             }
 
