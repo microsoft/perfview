@@ -1205,7 +1205,9 @@ namespace PerfView
             }
 
             m_source.SetEventFilter(eventFilter);
-            m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter));
+            m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter), out var filterQueryExpresionTree);
+            m_source.FilterQueryExpressionTree = filterQueryExpresionTree;
+
             for (int i = 0; i < m_userDefinedColumns.Count; i++)
             {
                 if (m_source.ColumnsToDisplay != null && i < m_source.ColumnsToDisplay.Count)
