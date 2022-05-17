@@ -5,7 +5,6 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
     public sealed class FilterQueryExpressionTree
     {
-        private readonly string _originalExpression;
         private readonly FilterQueryExpression _simpleFilterQueryExpression;
         private readonly Dictionary<char, FilterQueryExpression> _expressionMap;
         private readonly string _postFixExpression;
@@ -26,14 +25,15 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 
             else
             {
-                _originalExpression = expression;
+                OriginalExpression = expression;
 
                 // Prime Expression -> Post Fix
-                string primedExpression = ShuntingYard.PrimeExpression(_originalExpression, out var expressionMap);
-                _expressionMap = expressionMap;
+                string primedExpression = ShuntingYard.PrimeExpression(OriginalExpression, out var _expressionMap);
                 _postFixExpression = ShuntingYard.ToPostFix(primedExpression);
             }
         }
+
+        public string OriginalExpression { get; }
 
         public bool Match(TraceEvent @event)
         {

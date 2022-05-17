@@ -114,7 +114,8 @@ namespace EventSources
 
             if (matched.Success)
             {
-                filterQueryExpressionTree = new FilterQueryExpressionTree(matched.Value.Replace("[", "").Replace("]", ""));
+                var cleanedExpressionString = matched.Value.Replace("[", string.Empty).Replace("]", string.Empty);
+                filterQueryExpressionTree = new FilterQueryExpressionTree(cleanedExpressionString);
             }
 
             var regex = new Regex(@"\s*(\S+)\s*");

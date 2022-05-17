@@ -4,7 +4,9 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
     internal sealed class FilterQueryExpression
     {
-        private static readonly string[] _separator = new[] { " " };
+        private static readonly string[] _separator      = new[] { " " };
+        private static readonly string[] _eventSeparator = new[] { "::" };
+
         public enum Operator
         {
             NotValid,
@@ -74,12 +76,31 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 @operator == ">" ||
                 @operator == "<=" ||
                 @operator == "<" ||
-                @operator == "contain");
+                @operator == "contains");
         }
 
         public bool Match(TraceEvent @event)
         {
-            var rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, LeftOperand);
+            string rhsOperand = null;
+            string[] lhsSplit = LeftOperand.Split(_eventSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+            if (lhsSplit.Length == 1)
+            {
+                rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, LeftOperand);
+            }
+
+            else
+            {
+                var eventName = @event.EventName;
+
+                // If the event name is provided, try to match on it.
+                if (!eventName.Contains(lhsSplit[0]))
+                {
+                    return false;
+                }
+
+                rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, lhsSplit[1]);
+            }
 
             // Payload not found => ignore this trace event.
             if (rhsOperand == null)
@@ -139,5 +160,8 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         public string RightOperand { get; }
         public double RightOperandAsDouble { get; } = double.NaN;
         public bool IsDouble { get; }
+
+        public override string ToString()
+            => $"{LeftOperand} {OperatorAsString} {RightOperand}";
     }
 }

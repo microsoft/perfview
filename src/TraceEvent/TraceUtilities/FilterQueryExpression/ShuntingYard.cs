@@ -138,6 +138,9 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             }
         }
 
+        private static char[] Alphabets = Enumerable.Range('a', 26).Select(a => (char)a)
+                                                    .Concat(Enumerable.Range('A', 26).Select(a => (char)a))
+                                                    .ToArray();
         public static string PrimeExpression(string expression, out Dictionary<char, FilterQueryExpression> expressionMap)
         {
             var returnExpression = expression;
@@ -148,12 +151,11 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             expression = expression.Replace("(", "").Replace(")", "");
 
             var splitExpression = expression.Split('`');
-            char[] alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower().ToCharArray();
             for (int i = 0; i < splitExpression.Length; i++)
             {
-                // Constrain to 26 expressions.
+                // Constrain to 52 expressions.
                 FilterQueryExpression fe = new FilterQueryExpression(splitExpression[i]);
-                var alphabet = alpha[i];
+                var alphabet = Alphabets[i];
                 expressionMap[alphabet] = fe;
                 returnExpression = returnExpression.Replace(splitExpression[i].TrimStart().TrimEnd(), alphabet.ToString());
             }
@@ -161,5 +163,4 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             return returnExpression;
         }
     }
-
 }
