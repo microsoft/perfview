@@ -1,4 +1,4 @@
-﻿#if NET462 || NETSTANDARD2_0
+﻿#if NET48 || NETSTANDARD2_0
 using System.IO;
 using System.Reflection;
 

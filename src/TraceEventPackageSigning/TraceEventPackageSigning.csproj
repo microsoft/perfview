@@ -9,7 +9,7 @@
 
   <PropertyGroup>
     <OutputType>library</OutputType>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
   </PropertyGroup>
    
   <ItemGroup>

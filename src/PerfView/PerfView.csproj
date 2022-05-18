@@ -2,7 +2,7 @@
 <Project Sdk="MSBuild.Sdk.Extras">
 
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <OutputType>WinExe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <StartupObject>PerfView.App</StartupObject>
@@ -241,14 +241,14 @@
       <Link>amd64\vcruntime140_1.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net48\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
       <Link>amd64\HeapDump.exe</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\HeapDump.exe.config">
+    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net48\HeapDump.exe.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
@@ -263,14 +263,14 @@
       <Visible>False</Visible>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
-    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net462\x86\EtwClrProfiler.dll">
+    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net48\x86\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
       <Link>x86\EtwClrProfiler.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net462\amd64\EtwClrProfiler.dll">
+    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net48\amd64\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
@@ -296,13 +296,6 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.InteropServices.RuntimeInformation.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\System.Runtime.InteropServices.RuntimeInformation.dll</LogicalName>
-      <Link>System.Runtime.InteropServices.RuntimeInformation.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Collections.Immutable.dll">

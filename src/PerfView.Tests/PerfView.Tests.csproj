@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462</TargetFrameworks>
+    <TargetFrameworks>net48</TargetFrameworks>
     <RootNamespace>PerfViewTests</RootNamespace>
     <AssemblyName>PerfViewTests</AssemblyName>
     <Description>Unit tests for PerfView.</Description>

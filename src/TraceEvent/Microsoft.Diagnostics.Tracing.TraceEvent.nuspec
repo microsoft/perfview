@@ -100,18 +100,18 @@
     <!-- NET 4.5 Framework -->
 
     <!-- Built libraries -->
-    <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net462" />
-    <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net462" />
-    <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net462" />
+    <file src="$OutDir$net48\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net48" />
+    <file src="$OutDir$net48\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net48" />
+    <file src="$OutDir$net48\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net48" />
 
-    <file src="$OutDir$net462\Microsoft.Diagnostics.FastSerialization.dll" target="lib\net462" />
-    <file src="$OutDir$net462\Microsoft.Diagnostics.FastSerialization.xml" target="lib\net462" />
-    <file src="$OutDir$net462\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\net462" />
+    <file src="$OutDir$net48\Microsoft.Diagnostics.FastSerialization.dll" target="lib\net48" />
+    <file src="$OutDir$net48\Microsoft.Diagnostics.FastSerialization.xml" target="lib\net48" />
+    <file src="$OutDir$net48\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\net48" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$net462\Dia2Lib.dll" target="lib\net462" />
-    <file src="$OutDir$net462\TraceReloggerLib.dll" target="lib\net462" />
-    <file src="$OutDir$net462\OSExtensions.dll" target="lib\net462" />
+    <file src="$OutDir$net48\Dia2Lib.dll" target="lib\net48" />
+    <file src="$OutDir$net48\TraceReloggerLib.dll" target="lib\net48" />
+    <file src="$OutDir$net48\OSExtensions.dll" target="lib\net48" />
 
     <!-- Source code (All Frameworks *) -->
     <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />

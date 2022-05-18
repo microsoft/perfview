@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <Description>Unit test utility library.</Description>
     <Copyright>Copyright © Microsoft 2017</Copyright>
 

@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>net48;netstandard1.3</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.FastSerialization</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.FastSerialization</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
