@@ -2,6 +2,12 @@
 
 namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
+    /// <summary>
+    /// This class encapsulates a single expression of the type ``LeftOperand Operator RightOperand``.
+    /// - ``LeftOperand`` represents either the name of a property or an event name and a property. The format here is: ``PropertyName`` or ``EventName::PropertyName``.
+    /// - Acceptable ``Operators`` include &lt; &lt;=, &gt;, &gt;=, !=, = and Contains.
+    /// - ``RightOperand`` must be either a string or a double. 
+    /// </summary>
     internal sealed class FilterQueryExpression
     {
         private static readonly string[] _separator      = new[] { " " };
@@ -19,9 +25,12 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             Contains
         };
 
-        public FilterQueryExpression(string exp)
+        private readonly string _expression;
+
+        public FilterQueryExpression(string expression)
         {
-            var splits = exp.Split(_separator, StringSplitOptions.RemoveEmptyEntries); 
+            _expression = expression;
+            var splits = expression.Split(_separator, StringSplitOptions.RemoveEmptyEntries); 
             LeftOperand = splits[0];
             OperatorAsString = splits[1].ToLower();
             switch (OperatorAsString)
@@ -63,7 +72,7 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         public static bool IsValidExpression(string expression)
         {
             var split = expression.Split(_separator, StringSplitOptions.RemoveEmptyEntries);
-            if (split.Length < 3)
+            if (split.Length != 3)
                 return false;
 
             var @operator = split[1].ToLower();
@@ -79,6 +88,12 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 @operator == "contains");
         }
 
+        /// <summary>
+        /// Method responsible for checking if a trace event's contents match the expression. If so, return true, otherwise, return false.
+        /// </summary>
+        /// <param name="event"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public bool Match(TraceEvent @event)
         {
             string rhsOperand = null;
@@ -123,20 +138,29 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 case Operator.GreaterThanOrEqualTo:
                     return HandleDoubleComparisons(this, rhsOperand, Op);
                 default:
-                    throw new ArgumentException("Unidentified Operator.");
+                    // Should never get here.
+                    throw new FilterQueryExpressionParsingException($"Unidentified Operator: {Op}", _expression);
             }
         }
 
+        /// <summary>
+        /// Helper method responsible for handling the case when the rhsOperand is a double.
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="rhsOperand"></param>
+        /// <param name="o"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         internal static bool HandleDoubleComparisons(FilterQueryExpression expression, string rhsOperand, Operator o)
         {
             if (!expression.IsDouble)
             {
-                throw new ArgumentException($"Right Operand: {rhsOperand} is not a double.");
+                throw new FilterQueryExpressionParsingException($"Right Operand: {rhsOperand} is not a double.", expression._expression);
             }
 
             if (!double.TryParse(rhsOperand, out double rhsOperandAsDouble))
             {
-                throw new ArgumentException($"Right Operand: {rhsOperand} is not a double.");
+                throw new FilterQueryExpressionParsingException($"Right Operand: {rhsOperand} is not a double.", expression._expression);
             }
 
             switch (o)
@@ -150,7 +174,7 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 case Operator.GreaterThanOrEqualTo:
                     return rhsOperandAsDouble >= expression.RightOperandAsDouble;
                 default:
-                    throw new ArgumentException("Unidentified Operator.");
+                    throw new FilterQueryExpressionParsingException($"Unidentified Operator: {o}.", expression._expression);
             }
         }
 

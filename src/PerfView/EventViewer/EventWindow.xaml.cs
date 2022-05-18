@@ -1,6 +1,7 @@
 ﻿using EventSources;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -1205,8 +1206,23 @@ namespace PerfView
             }
 
             m_source.SetEventFilter(eventFilter);
-            m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter), out var filterQueryExpresionTree);
-            m_source.FilterQueryExpressionTree = filterQueryExpresionTree;
+            try
+            {
+                m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter), out var filterQueryExpresionTree);
+                m_source.FilterQueryExpressionTree = filterQueryExpresionTree;
+            }
+
+            // Appropriately log any filter query expression parsing issue to give as much info to the user.
+            catch (FilterQueryExpressionTreeParsingException fqpEx)
+            {
+                StatusBar.Log(fqpEx.Message);
+                m_source.FilterQueryExpressionTree = null; 
+            }
+            catch (FilterQueryExpressionParsingException fqepEx)
+            {
+                StatusBar.Log(fqepEx.Message);
+                m_source.FilterQueryExpressionTree = null; 
+            }
 
             for (int i = 0; i < m_userDefinedColumns.Count; i++)
             {

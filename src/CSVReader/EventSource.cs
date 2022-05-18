@@ -95,7 +95,7 @@ namespace EventSources
 
         /// <summary>
         /// Utility function that takes a specification for columns (which can include *) and the raw list of
-        /// all possible columns and returns the list that match the specification. 
+        /// all possible columns and returns the list that match the specification. This function also extracts the event filter query and creates a FilterQueryExpressionTree.
         /// </summary>
         public static List<string> ParseColumns(string columnSpec, ICollection<string> columnNames, out FilterQueryExpressionTree filterQueryExpressionTree)
         {

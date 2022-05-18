@@ -5,6 +5,10 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
+    /// <summary>
+    /// Helper methods that implement a modified version of the Shunting Yard Algorithm 
+    /// to convert an expression specified as a infix notation to postfix notation.
+    /// </summary>
     internal static class ShuntingYard
     {
         private sealed class OperatorInfo
@@ -26,28 +30,44 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             { '&', new OperatorInfo('&', 2, false) },
             { '|', new OperatorInfo('|', 1, false) }
         };
+        private static readonly Regex _operandRegex = new Regex(@"-?[a-z]+");
+        private static char[] Alphabets = Enumerable.Range('a', 26).Select(a => (char)a)
+                                                    .ToArray();
 
-        public static string ToPostFix(this string infix)
+        /// <summary>
+        /// Method responsible for converting an infix expression into its postfix equivalent.
+        /// </summary>
+        /// <param name="infix"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static string ToPostFix(string infix)
         {
             var stack = new Stack<char>();
             var output = new List<char>();
 
             foreach (var token in infix)
             {
+                // Check if the token is an operand. 
                 if (char.IsLetter(token))
                 {
                     output.Add(token);
                 }
 
-                if (operators.TryGetValue(token, out var opt1))
+                // Check if the token is an operator and if the operator has lower precendence than that of the top of the stack,
+                // pop out the old value and append it to the output to apply else, we get out of the loop and add the token to the stack.
+                else if (operators.TryGetValue(token, out var operator1))
                 {
-                    while (stack.Count > 0 && operators.TryGetValue(stack.Peek(), out var op2))
+                    while (stack.Count > 0 && operators.TryGetValue(stack.Peek(), out var operator2))
                     {
-                        int c = opt1.Precedence.CompareTo(op2.Precedence);
-                        if (c < 0 || !opt1.RightAssociative && c <= 0)
+                        int operatorPrecedenceComparison = operator1.Precedence.CompareTo(operator2.Precedence);
+
+                        // NOTE: Right associativity doesn't really matter for && and || but for the sake of completion, check it.
+                        if (operatorPrecedenceComparison < 0 || !operator1.RightAssociative && operatorPrecedenceComparison <= 0)
                         {
                             output.Add(stack.Pop());
                         }
+
+                        // Get out of this loop if we encounter an operator with higher precendence.
                         else
                         {
                             break;
@@ -57,11 +77,13 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                     stack.Push(token);
                 }
 
+                // Open parentheses have to be matched.
                 else if (token == '(')
                 {
                     stack.Push(token);
                 }
 
+                // Match the open parentheses and check if there are mismatches.
                 else if (token == ')')
                 {
                     char top = '\0';
@@ -71,30 +93,41 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                     }
 
                     if (top != '(')
-                        throw new ArgumentException("No matching left parentheses.");
+                        throw new FilterQueryExpressionTreeParsingException("No matching left parentheses for expression.", infix);
                 }
             }
 
+            // Now that we have processed all the tokens, we add whatever is remaining in the operator stack into the output.
             while (stack.Count > 0)
             {
                 var top = stack.Pop();
-                if (!operators.ContainsKey(top)) throw new ArgumentException("No matching right parentheses");
+
+                // Mismatched Parentheses!
+                if (!operators.ContainsKey(top)) 
+                    throw new FilterQueryExpressionTreeParsingException("No matching right parentheses.", infix);
+
                 output.Add(top);
             }
 
-            return String.Join(" ", output);
+            return string.Join(" ", output);
         }
 
-        private static readonly Regex _operandRegex = new Regex(@"-?[a-z]+");
-
+        /// <summary>
+        /// Method that matches the postfix notation
+        /// </summary>
+        /// <param name="postfixNotation"></param>
+        /// <param name="expressionMap"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public static bool Match(string postfixNotation, Dictionary<string, bool> expressionMap)
         {
-            // Handle fast path.
+            // Handle fast path. 
             if (postfixNotation.Length == 1)
             {
-                return expressionMap["a"];
+                return expressionMap.Values.First();
             }
 
+            // Now that the representation of the expression is in postfix notation, it should be easy to deduce the logical expression.
             var tokens = new Stack<string>();
             string[] rawTokens = postfixNotation.Split(' ');
             foreach (var rawToken in rawTokens)
@@ -112,6 +145,12 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                     var result = EvaluateSingleExpression(operand1, operand2, @operator, expressionMap);
                     tokens.Push(result.ToString());
                 }
+
+                else
+                {
+                    throw new FilterQueryExpressionTreeParsingException($"Incorrect token encountered while parsing the postfix notation: {rawToken}", postfixNotation);
+
+                }
             }
 
             if (tokens.Count > 0)
@@ -119,41 +158,65 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 return bool.Parse(tokens.Pop());
             }
 
-            throw new ArgumentException("Shouldn't get here!");
+            throw new FilterQueryExpressionTreeMatchingException("Shouldn't get here. Check query", postfixNotation);
         }
 
+        /// <summary>
+        /// The evaluation of a single expression obtained from the PostFix deduction.
+        /// </summary>
+        /// <param name="operand1"></param>
+        /// <param name="operand2"></param>
+        /// <param name="operator"></param>
+        /// <param name="expressionMap"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public static bool EvaluateSingleExpression(string operand1, string operand2, string @operator, Dictionary<string, bool> expressionMap)
         {
-            var exp1 = expressionMap.ContainsKey(operand1) ? expressionMap[operand1] : bool.Parse(operand1);
-            var exp2 = expressionMap.ContainsKey(operand2) ? expressionMap[operand2] : bool.Parse(operand2);
+            if (!expressionMap.TryGetValue(operand1, out bool deducedExpression1))
+            {
+                deducedExpression1 = bool.Parse(operand1);
+            }
+
+            if (!expressionMap.TryGetValue(operand2, out bool deducedExpression2))
+            {
+                deducedExpression2 = bool.Parse(operand2);
+            }
 
             switch (@operator)
             {
                 case "|":
-                    return exp1 || exp2;
+                    return deducedExpression1 || deducedExpression2;
                 case "&":
-                    return exp1;
+                    return deducedExpression1 && deducedExpression2;
                 default:
-                    throw new ArgumentException($"Operator: {@operator} not found.");
+                    throw new FilterQueryExpressionTreeMatchingException($"Operator: {@operator} not found for single expression.", $"{operand1} {@operator} {operand2}");
             }
         }
 
-        private static char[] Alphabets = Enumerable.Range('a', 26).Select(a => (char)a)
-                                                    .Concat(Enumerable.Range('A', 26).Select(a => (char)a))
-                                                    .ToArray();
+        /// <summary>
+        /// Method responsible for priming the user specified expression in infix notation to convert into its modified postfix notation.
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="expressionMap"></param>
+        /// <returns></returns>
         public static string PrimeExpression(string expression, out Dictionary<char, FilterQueryExpression> expressionMap)
         {
             var returnExpression = expression;
+
+            // We want the operators as single characters for easier deduction.
             returnExpression = returnExpression.Replace("&&", "&").Replace("||", "|");
 
+            // To create the expressionMap that consists an id which, is a lowercase alphabet, to the FilterQueryExpression,
+            // we need to appropriately parse out the individual filter query expressions and this entails segregating them from the rest of the expression.
             expressionMap = new Dictionary<char, FilterQueryExpression>();
             expression = expression.Replace("&&", "`").Replace("||", "`");
             expression = expression.Replace("(", "").Replace(")", "");
 
+            // Once the expression string is sufficiently primed to extract the individual FilterQueryExpressions, we create the expressionMap.
             var splitExpression = expression.Split('`');
             for (int i = 0; i < splitExpression.Length; i++)
             {
-                // Constrain to 52 expressions.
+                // Constrain to 26 expressions.
                 FilterQueryExpression fe = new FilterQueryExpression(splitExpression[i]);
                 var alphabet = Alphabets[i];
                 expressionMap[alphabet] = fe;

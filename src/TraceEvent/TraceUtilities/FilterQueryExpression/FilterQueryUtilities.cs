@@ -24,14 +24,5 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 
             return @event.PayloadByName(payloadName)?.ToString(); 
         }
-
-        internal static string ExtractEventName(TraceEvent @event)
-            => @event.EventName;
-
-        internal static string LogQuery(FilterQueryExpressionTree tree, Exception ex)
-            => $"Expression: \"{tree.OriginalExpression}\" excepted with message: {ex}.";
-
-        internal static string LogQuery(FilterQueryExpressionTree tree, FilterQueryExpression exp, Exception ex)
-            => $"Expression: \"{tree.OriginalExpression}\":{exp.ToString()} excepted with message: {ex}.";
     }
 }
