@@ -11,6 +11,9 @@
     <Company>Microsoft</Company>
     <Description>Serialization library for TraceEvent.</Description>
     <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>$(FastSerializationVersion)</Version>
+    <FileVersion>$(FastSerializationVersion)</FileVersion>
+    <InformationalVersion>$(FastSerializationVersion)</InformationalVersion>
   </PropertyGroup>
 
   <Choose>
