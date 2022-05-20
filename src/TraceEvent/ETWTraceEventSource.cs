@@ -596,7 +596,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             Debug.Assert(_QPCFreq != 0);
             int ver = (int)logFiles[0].LogfileHeader.Version;
-            osVersion = new Version((byte)ver, (byte)(ver >> 8));
+            osVersion = new Version((byte)ver, (byte)(ver >> 8), 0, 0);
 
             // Logic for looking up process names
             processNameForID = new Dictionary<int, string>();
