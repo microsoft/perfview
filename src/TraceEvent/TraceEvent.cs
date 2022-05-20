@@ -404,6 +404,21 @@ namespace Microsoft.Diagnostics.Tracing
         }
         #endregion
 
+        internal void CopyFrom(TraceEventSource source)
+        {
+            pointerSize = source.pointerSize;
+            numberOfProcessors = source.numberOfProcessors;
+            cpuSpeedMHz = source.cpuSpeedMHz;
+            utcOffsetMinutes = source.utcOffsetMinutes;
+            osVersion = source.osVersion;
+            _QPCFreq = source._QPCFreq;
+            _syncTimeQPC = source._syncTimeQPC;
+            _syncTimeUTC = source._syncTimeUTC;
+            sessionStartTimeQPC = source.sessionStartTimeQPC;
+            sessionEndTimeQPC = source.sessionEndTimeQPC;
+            useClassicETW = source.useClassicETW;
+        }
+
         internal /*protected*/ IDictionary<string, object> userData;
 
         internal /*protected*/ int pointerSize;
