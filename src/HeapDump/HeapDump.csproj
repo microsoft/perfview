@@ -29,9 +29,11 @@
   <ItemGroup>
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
-    <!-- This is required for ClrMD and is here so that we can embed the assembly into PerfView. -->
-    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+
+    <!-- These are required for ClrMD and are here so that we can embed the assemblies into PerfView. -->
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
   </ItemGroup>
 
   <ItemGroup>
