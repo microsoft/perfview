@@ -64,5 +64,24 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             // Conduct a Shunting Yard Match using the modified postfix expression.
             return ShuntingYard.Match(_postFixExpression, convertedExpressionMap);
         }
+
+        public bool Match(Dictionary<string, string> propertyNamesToValues, string eventName)
+        {
+            if (_simpleFilterQueryExpression != null)
+            {
+                return _simpleFilterQueryExpression.Match(propertyNamesToValues, eventName);
+            }
+
+
+            // Map each of the expressions to lower-case alphabet and the match result of the expression i.e. a boolean.
+            Dictionary<string, bool> convertedExpressionMap = new Dictionary<string, bool>();
+            foreach (var kvp in _expressionMap)
+            {
+                convertedExpressionMap[kvp.Key.ToString()] = kvp.Value.Match(propertyNamesToValues, eventName);
+            }
+
+            // Conduct a Shunting Yard Match using the modified postfix expression.
+            return ShuntingYard.Match(_postFixExpression, convertedExpressionMap);
+        }
     }
 }

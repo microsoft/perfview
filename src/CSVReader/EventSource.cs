@@ -108,15 +108,8 @@ namespace EventSources
 
             var ret = new List<string>();
 
-            var escapedMatch = new Regex(@"\[[^\]]*\]");
-            var matched = escapedMatch.Match(columnSpec);
-            columnSpec = escapedMatch.Replace(columnSpec, string.Empty);
-
-            if (matched.Success)
-            {
-                var cleanedExpressionString = matched.Value.Replace("[", string.Empty).Replace("]", string.Empty);
-                filterQueryExpressionTree = new FilterQueryExpressionTree(cleanedExpressionString);
-            }
+            columnSpec = FilterQueryUtilities.TryExtractFilterQueryExpression(columnSpec, out FilterQueryExpressionTree tree);
+            filterQueryExpressionTree = tree;
 
             var regex = new Regex(@"\s*(\S+)\s*");
             var index = 0;

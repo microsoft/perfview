@@ -149,7 +149,6 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 else
                 {
                     throw new FilterQueryExpressionTreeParsingException($"Incorrect token encountered while parsing the postfix notation: {rawToken}", postfixNotation);
-
                 }
             }
 

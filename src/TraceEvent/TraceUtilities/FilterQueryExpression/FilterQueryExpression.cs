@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
@@ -115,6 +116,60 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 }
 
                 rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, lhsSplit[1]);
+            }
+
+            // Payload not found => ignore this trace event.
+            if (rhsOperand == null)
+            {
+                return false;
+            }
+
+            switch (Op)
+            {
+                case Operator.Equal:
+                    return rhsOperand == RightOperand;
+                case Operator.NotEqualTo:
+                    return rhsOperand != RightOperand;
+                case Operator.Contains:
+                    return rhsOperand.Contains(RightOperand);
+
+                case Operator.LessThan:
+                case Operator.LessThanOrEqualTo:
+                case Operator.GreaterThan:
+                case Operator.GreaterThanOrEqualTo:
+                    return HandleDoubleComparisons(this, rhsOperand, Op);
+                default:
+                    // Should never get here.
+                    throw new FilterQueryExpressionParsingException($"Unidentified Operator: {Op}", _expression);
+            }
+        }
+
+        public bool Match(Dictionary<string, string> propertyNamesToValues, string eventName)
+        {
+            string rhsOperand = null;
+            string[] lhsSplit = LeftOperand.Split(_eventSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+            if (lhsSplit.Length == 1)
+            {
+                // If the property names.
+                if (!propertyNamesToValues.TryGetValue(lhsSplit[0], out rhsOperand))
+                {
+                    return false;
+                }
+            }
+
+            else
+            {
+                // If the event name is provided, try to match on it.
+                if (!eventName.Contains(lhsSplit[0]))
+                {
+                    return false;
+                }
+
+                if (!propertyNamesToValues.TryGetValue(lhsSplit[1], out rhsOperand))
+                {
+                    return false;
+                }
             }
 
             // Payload not found => ignore this trace event.

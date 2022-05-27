@@ -1074,6 +1074,9 @@ namespace PerfView
             Grid.Focus();
             int curPos = SelectionStartIndex();
             var startingNewSearch = false;
+
+            string modifiedPat = FilterQueryUtilities.TryExtractFilterQueryExpression(pat, out FilterQueryExpressionTree tree);
+
             if (m_findPat == null || m_findPat.ToString() != pat)
             {
                 startingNewSearch = true;
@@ -1109,20 +1112,48 @@ namespace PerfView
                 }
 
                 var item = list[curPos] as EventRecord;
-                var foundItem = m_findPat.IsMatch(item.Rest) || m_findPat.IsMatch(item.EventName) ||
-                    m_findPat.IsMatch(item.ProcessName) || m_findPat.IsMatch(item.TimeStampRelatveMSec.ToString());
-                var fields = item.DisplayFields;
-                for (int i = 0; i < fields.Length; i++)
+                var foundItem = false;
+
+                // If the filter query tree is successfully generated, use it to find.
+                if (tree != null)
                 {
-                    if (foundItem)
+                    Dictionary<string, string> data = new Dictionary<string, string>();
+                    data["ProcessName"] = item.ProcessName;
+                    data["TimestampRelativeMsec"] = item.TimeStampRelatveMSec.ToString();
+                    data["ProcessName"] = item.ProcessName;
+                    
+                    foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        break;
+                        // Format of Rest: Property0=Value0 Property1=Value1
+                        var splitOnEquals = r.Trim().Split('=');
+                        data[splitOnEquals[0]] = splitOnEquals[1].Replace("\"", "");
                     }
 
-                    var field = fields[i];
-                    if (field != null)
+                    foundItem = tree.Match(data, item.EventName);
+                    if (foundItem)
                     {
-                        foundItem = m_findPat.IsMatch(field);
+                        Select(item);
+                        return true;
+                    }
+                }
+
+                else
+                {
+                    foundItem = m_findPat.IsMatch(item.Rest) || m_findPat.IsMatch(item.EventName) ||
+                        m_findPat.IsMatch(item.ProcessName) || m_findPat.IsMatch(item.TimeStampRelatveMSec.ToString());
+                    var fields = item.DisplayFields;
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        if (foundItem)
+                        {
+                            break;
+                        }
+
+                        var field = fields[i];
+                        if (field != null)
+                        {
+                            foundItem = m_findPat.IsMatch(field);
+                        }
                     }
                 }
 
@@ -1215,12 +1246,12 @@ namespace PerfView
             // Appropriately log any filter query expression parsing issue to give as much info to the user.
             catch (FilterQueryExpressionTreeParsingException fqpEx)
             {
-                StatusBar.Log(fqpEx.Message);
+                StatusBar.LogError(fqpEx.Message);
                 m_source.FilterQueryExpressionTree = null; 
             }
             catch (FilterQueryExpressionParsingException fqepEx)
             {
-                StatusBar.Log(fqepEx.Message);
+                StatusBar.LogError(fqepEx.Message);
                 m_source.FilterQueryExpressionTree = null; 
             }
 
