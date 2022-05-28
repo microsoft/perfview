@@ -1122,11 +1122,27 @@ namespace PerfView
                     data["TimestampRelativeMsec"] = item.TimeStampRelatveMSec.ToString();
                     data["ProcessName"] = item.ProcessName;
                     
-                    foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    if (!string.IsNullOrEmpty(item.Rest))
                     {
-                        // Format of Rest: Property0=Value0 Property1=Value1
-                        var splitOnEquals = r.Trim().Split('=');
-                        data[splitOnEquals[0]] = splitOnEquals[1].Replace("\"", "");
+                        foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            // Format of Rest: Property0=Value0 Property1=Value1
+                            var splitOnEquals = r.Trim().Split('=');
+                            if (splitOnEquals.Length != 2)
+                            {
+                                continue;
+                            }
+
+                            data[splitOnEquals[0]] = splitOnEquals[1].Replace("\"", "");
+                        }
+                    }
+
+                    if (m_source.ColumnsToDisplay != null)
+                    {
+                        for(int displayFieldIdx = 0; displayFieldIdx < item.DisplayFields.Length; displayFieldIdx++)
+                        {
+                            data[m_source.ColumnsToDisplay[displayFieldIdx]] = item.DisplayFields[displayFieldIdx];
+                        }
                     }
 
                     foundItem = tree.Match(data, item.EventName);
