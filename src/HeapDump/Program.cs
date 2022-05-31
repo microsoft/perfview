@@ -14,8 +14,6 @@ internal class Program
 {
     private static int Main(string[] args)
     {
-        // This EXE lives in the architecture specific directory but uses TraceEvent which lives in the neutral directory, 
-        // Set up a resolve event that finds this DLL.  
         AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs resolveArgs)
         {
             var simpleName = resolveArgs.Name;
@@ -27,7 +25,16 @@ internal class Program
 
             var exeAssembly = System.Reflection.Assembly.GetExecutingAssembly();
             var parentDir = Path.GetDirectoryName(Path.GetDirectoryName(exeAssembly.ManifestModule.FullyQualifiedName));
-            string fileName = Path.Combine(parentDir, simpleName + ".dll");
+
+            // Check the HeapDump IL dependencies directory.
+            string fileName = Path.Combine(parentDir, "HeapDump", simpleName + ".dll");
+            if (File.Exists(fileName))
+            {
+                return System.Reflection.Assembly.LoadFrom(fileName);
+            }
+
+            // Check the parent directory (for shared dependencies such as TraceEvent.dll).
+            fileName = Path.Combine(parentDir, simpleName + ".dll");
             if (File.Exists(fileName))
             {
                 return System.Reflection.Assembly.LoadFrom(fileName);

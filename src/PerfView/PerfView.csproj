@@ -8,6 +8,7 @@
     <StartupObject>PerfView.App</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
@@ -56,7 +57,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all" />
 
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
@@ -118,11 +119,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Update="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
@@ -255,6 +251,41 @@
       <Link>amd64\HeapDump.exe.config</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Buffers\4.5.1\lib\net461\System.Buffers.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Buffers.dll</LogicalName>
+      <Link>HeapDump\System.Buffers.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Collections.Immutable\5.0.0\lib\net461\System.Collections.Immutable.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Collections.Immutable.dll</LogicalName>
+      <Link>HeapDump\System.Collections.Immutable.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Memory\4.5.4\lib\net461\System.Memory.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Memory.dll</LogicalName>
+      <Link>HeapDump\System.Memory.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Reflection.Metadata\5.0.0\lib\net461\System.Reflection.Metadata.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Reflection.Metadata.dll</LogicalName>
+      <Link>HeapDump\System.Reflection.Metadata.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.ValueTuple\4.4.0\lib\net461\System.ValueTuple.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.ValueTuple.dll</LogicalName>
+      <Link>HeapDump\System.ValueTuple.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -333,7 +364,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net45\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net461\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
