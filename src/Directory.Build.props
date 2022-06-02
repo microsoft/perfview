@@ -32,7 +32,7 @@
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.23</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>2.0.226801</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>2.1.327703</MicrosoftDiagnosticsRuntimeVersion>
     <XunitVersion>2.4.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
   </PropertyGroup>
