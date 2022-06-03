@@ -1431,8 +1431,8 @@ namespace Microsoft.Diagnostics.Symbols
             string majorVersion;            // a small integer (e.g. 4)
             privateRuntimeVerStr = null;
             // Set the default bitness
-            string bitness;            // Either "64" or ""
-            var m = Regex.Match(ngenImagePath, @"^(.*)\\assembly\\NativeImages_(v(\d+)[\dA-Za-z.]*)_(\d\d)\\", RegexOptions.IgnoreCase);
+            string bitness;            // "ARM64", "64", or ""
+            var m = Regex.Match(ngenImagePath, @"^(.*)\\assembly\\NativeImages_(v(\d+)[\dA-Za-z.]*)_((\d\d)|(ARM64))\\", RegexOptions.IgnoreCase);
             if (m.Success)
             {
                 var basePath = m.Groups[1].Value;
@@ -1484,12 +1484,12 @@ namespace Microsoft.Diagnostics.Symbols
 
             var winDir = Environment.GetEnvironmentVariable("winDir");
 
-            if (bitness != "64")
+            if (bitness != "64" && !bitness.Equals("ARM64", StringComparison.OrdinalIgnoreCase))
             {
                 bitness = "";
             }
 
-            Debug.Assert(bitness == "64" || bitness == "");
+            Debug.Assert(bitness == "64" || bitness == "" || bitness == "ARM64" || bitness == "arm64");
 
             var frameworkDir = Path.Combine(winDir, @"Microsoft.NET\Framework" + bitness);
             var candidates = Directory.GetDirectories(frameworkDir, "v" + majorVersion + ".*");
