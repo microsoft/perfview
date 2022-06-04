@@ -3229,7 +3229,7 @@ namespace PerfView
                 wildCardFileName = Command.FindOnPath(GetExeName(commandLine));
             }
 
-            var parsedProviders = ProviderParser.ParseProviderSpecs(providerSpecs, wildCardFileName, LogFile);
+            var parsedProviders = ProviderParser.ParseProviderSpecs(providerSpecs, wildCardFileName, options, LogFile);
             foreach (var parsedProvider in parsedProviders)
             {
                 if (parsedProvider.Level == TraceEventLevel.Always && parsedProvider.MatchAnyKeywords == 0)
@@ -3478,7 +3478,7 @@ namespace PerfView
                     {
                         if (parsedArgs.Providers != null)
                         {
-                            var parsedProviders = ProviderParser.ParseProviderSpecs(parsedArgs.Providers, null, LogFile);
+                            var parsedProviders = ProviderParser.ParseProviderSpecs(parsedArgs.Providers, null, null, LogFile);
                             foreach (var parsedProvider in parsedProviders)
                             {
                                 // turn it on in the Rundown Session, this will dump the manifest into the rundown information. 
@@ -3649,7 +3649,7 @@ namespace PerfView
         /// <summary>
         /// TODO FIX NOW document
         /// </summary>
-        public static List<ParsedProvider> ParseProviderSpecs(string[] providerSpecs, string wildCardFileName, TextWriter log = null)
+        public static List<ParsedProvider> ParseProviderSpecs(string[] providerSpecs, string wildCardFileName, TraceEventProviderOptions inputOptions, TextWriter log = null)
         {
             var ret = new List<ParsedProvider>();
 
@@ -3660,7 +3660,7 @@ namespace PerfView
                     log.WriteLine("Parsing ETW Provider Spec: {0}", providerSpec);
                 }
 
-                TraceEventProviderOptions options = new TraceEventProviderOptions();
+                TraceEventProviderOptions options = inputOptions.Clone() ?? new TraceEventProviderOptions();
                 TraceEventLevel level = TraceEventLevel.Verbose;
                 ulong matchAnyKeywords = unchecked((ulong)-1);
 

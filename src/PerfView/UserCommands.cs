@@ -774,7 +774,7 @@ namespace PerfViewExtensibility
 
                 // Enable all the providers the users asked for
 
-                var parsedProviders = ProviderParser.ParseProviderSpecs(etwProviderNames.Split(','), null, LogFile);
+                var parsedProviders = ProviderParser.ParseProviderSpecs(etwProviderNames.Split(','), null, null, LogFile);
                 foreach (var parsedProvider in parsedProviders)
                 {
                     LogFile.WriteLine("Enabling provider {0}:{1:x}:{2}", parsedProvider.Name, (ulong)parsedProvider.MatchAnyKeywords, parsedProvider.Level);
