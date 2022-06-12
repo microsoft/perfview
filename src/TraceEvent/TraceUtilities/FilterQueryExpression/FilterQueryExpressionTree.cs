@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
@@ -11,6 +10,9 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         private readonly FilterQueryExpression _simpleFilterQueryExpression;
         private readonly Dictionary<char, FilterQueryExpression> _expressionMap;
         private readonly string _postFixExpression;
+
+        // Map each of the expressions to lower-case alphabet and the match result of the expression i.e. a boolean.
+        private readonly Dictionary<string, bool> _convertedExpressionMap = new Dictionary<string, bool>();
 
         public FilterQueryExpressionTree(string expression)
         {
@@ -54,15 +56,15 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 return _simpleFilterQueryExpression.Match(@event);
             }
 
-            // Map each of the expressions to lower-case alphabet and the match result of the expression i.e. a boolean.
-            Dictionary<string, bool> convertedExpressionMap = new Dictionary<string, bool>();
             foreach (var kvp in _expressionMap)
             {
-                convertedExpressionMap[kvp.Key.ToString()] = kvp.Value.Match(@event);
+                _convertedExpressionMap[kvp.Key.ToString()] = kvp.Value.Match(@event);
             }
 
             // Conduct a Shunting Yard Match using the modified postfix expression.
-            return ShuntingYard.Match(_postFixExpression, convertedExpressionMap);
+            bool isMatched = ShuntingYard.Match(_postFixExpression, _convertedExpressionMap);
+            _convertedExpressionMap.Clear();
+            return isMatched;
         }
 
         public bool Match(Dictionary<string, string> propertyNamesToValues, string eventName)
@@ -72,16 +74,16 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 return _simpleFilterQueryExpression.Match(propertyNamesToValues, eventName);
             }
 
-
             // Map each of the expressions to lower-case alphabet and the match result of the expression i.e. a boolean.
-            Dictionary<string, bool> convertedExpressionMap = new Dictionary<string, bool>();
             foreach (var kvp in _expressionMap)
             {
-                convertedExpressionMap[kvp.Key.ToString()] = kvp.Value.Match(propertyNamesToValues, eventName);
+                _convertedExpressionMap[kvp.Key.ToString()] = kvp.Value.Match(propertyNamesToValues, eventName);
             }
 
             // Conduct a Shunting Yard Match using the modified postfix expression.
-            return ShuntingYard.Match(_postFixExpression, convertedExpressionMap);
+            bool isMatched = ShuntingYard.Match(_postFixExpression, _convertedExpressionMap);
+            _convertedExpressionMap.Clear();
+            return isMatched;
         }
     }
 }

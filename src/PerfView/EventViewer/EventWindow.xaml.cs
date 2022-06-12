@@ -1090,6 +1090,7 @@ namespace PerfView
                 return false;
             }
 
+            Dictionary<string, string> data = new Dictionary<string, string>();
             for (; ; )
             {
                 if (startingNewSearch)
@@ -1117,11 +1118,29 @@ namespace PerfView
                 // If the filter query tree is successfully generated, use it to find.
                 if (tree != null)
                 {
-                    Dictionary<string, string> data = new Dictionary<string, string>();
                     data["ProcessName"] = item.ProcessName;
                     data["TimestampRelativeMsec"] = item.TimeStampRelatveMSec.ToString();
-                    data["ProcessName"] = item.ProcessName;
-                    
+
+                    // Before parsing the "Rest" column, grab everything displayed from the ColumnsToDisplay.
+                    if (m_source.ColumnsToDisplay != null)
+                    {
+                        for(int displayFieldIdx = 0; displayFieldIdx < m_source.ColumnsToDisplay.Count; displayFieldIdx++)
+                        {
+                            data[m_source.ColumnsToDisplay[displayFieldIdx]] = item.DisplayFields[displayFieldIdx];
+                        }
+                    }
+
+                    foundItem = tree.Match(data, item.EventName);
+                    if (foundItem)
+                    {
+                        Select(item);
+                        return true;
+                    }
+
+                    // Clear so we don't waste re-processing the ProcessName, Timestamp and ColumnsToDisplay again.
+                    data.Clear();
+
+                    // Parse Rest if the above steps fail.
                     if (!string.IsNullOrEmpty(item.Rest))
                     {
                         foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
@@ -1137,15 +1156,11 @@ namespace PerfView
                         }
                     }
 
-                    if (m_source.ColumnsToDisplay != null)
-                    {
-                        for(int displayFieldIdx = 0; displayFieldIdx < item.DisplayFields.Length; displayFieldIdx++)
-                        {
-                            data[m_source.ColumnsToDisplay[displayFieldIdx]] = item.DisplayFields[displayFieldIdx];
-                        }
-                    }
-
                     foundItem = tree.Match(data, item.EventName);
+
+                    // Clear again so that next time we start afresh with a new EventRecord.
+                    data.Clear();
+
                     if (foundItem)
                     {
                         Select(item);
@@ -1255,8 +1270,9 @@ namespace PerfView
             m_source.SetEventFilter(eventFilter);
             try
             {
-                m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter), out var filterQueryExpresionTree);
-                m_source.FilterQueryExpressionTree = filterQueryExpresionTree;
+                string columnSpec = FilterQueryUtilities.TryExtractFilterQueryExpression(ColumnsToDisplayTextBox.Text, out FilterQueryExpressionTree tree);
+                m_source.FilterQueryExpressionTree = tree; 
+                m_source.ColumnsToDisplay = EventSource.ParseColumns(columnSpec, m_source.AllColumnNames(eventFilter));
             }
 
             // Appropriately log any filter query expression parsing issue to give as much info to the user.
