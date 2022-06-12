@@ -4,6 +4,7 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
     /// <summary>
     /// Class responsible for encapsulating the collection of FilterQueryExpressions and the logic to combine them to deduce if we match on a particular trace event.
+    /// NOTE: This class is no way thread-safe.
     /// </summary>
     public sealed class FilterQueryExpressionTree
     {
@@ -18,7 +19,7 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         {
             if (string.IsNullOrEmpty(expression))
             {
-                throw new FilterQueryExpressionTreeParsingException($"{nameof(expression)} is null.", expression); 
+                throw new FilterQueryExpressionTreeParsingException($"{nameof(expression)} is null.", expression);
             }
 
             // Faster computation if a single Expression Without Parentheses i.e. one simple expression is provided.
