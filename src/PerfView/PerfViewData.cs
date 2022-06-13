@@ -7863,6 +7863,8 @@ table {
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
             stackWindow.RestoreWindow(m_guiState, FilePath);
+            stackWindow.GroupRegExTextBox.Items.Add(@"[group modules]           {%}!->module $1");
+            stackWindow.GroupRegExTextBox.Items.Add(@"[group module entries]  {%}!=>module $1");
         }
         protected internal override void FirstAction(StackWindow stackWindow)
         {
