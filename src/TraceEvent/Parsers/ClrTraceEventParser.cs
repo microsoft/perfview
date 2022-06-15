@@ -986,8 +986,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new ThreadPoolMinMaxThreadsTraceData(value, 59, 38, "ThreadPoolMinMaxThreads", ThreadPoolMinMaxThreadsTaskGuid, 0, "Info", ProviderGuid, ProviderName));
+                RegisterTemplate(ThreadPoolMinMaxThreadsTemplate(value));
             }
             remove
             {
