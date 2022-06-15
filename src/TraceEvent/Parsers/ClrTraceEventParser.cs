@@ -2124,7 +2124,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         static private ThreadPoolMinMaxThreadsTraceData ThreadPoolMinMaxThreadsTemplate(Action<ThreadPoolMinMaxThreadsTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ThreadPoolMinMaxThreadsTraceData(action, 58, 37, "YieldProcessorMeasurement", YieldProcessorMeasurementTaskGuid, 0, "Info", ProviderGuid, ProviderName);
+            return new ThreadPoolMinMaxThreadsTraceData(action, 59, 38, "ThreadPoolMinMaxThreads", ThreadPoolMinMaxThreadsTaskGuid, 0, "Info", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
