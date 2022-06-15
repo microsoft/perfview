@@ -272,6 +272,20 @@
       <Link>HeapDump\System.Memory.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\System.Net.Http.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Net.Http.dll</LogicalName>
+      <Link>HeapDump\System.Net.Http.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\System.Numerics.Vectors.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Numerics.Vectors.dll</LogicalName>
+      <Link>HeapDump\System.Numerics.Vectors.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(NuGetPackageRoot)\System.Reflection.Metadata\5.0.0\lib\net461\System.Reflection.Metadata.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -364,7 +378,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net461\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>

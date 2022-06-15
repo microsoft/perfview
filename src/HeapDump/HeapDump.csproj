@@ -33,6 +33,7 @@
 
     <!-- These are required for ClrMD and are here so that we can embed the assemblies into PerfView. -->
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.4.0" />
   </ItemGroup>
 
