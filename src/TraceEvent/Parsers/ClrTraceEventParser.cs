@@ -2122,6 +2122,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new YieldProcessorMeasurementTraceData(action, 58, 37, "YieldProcessorMeasurement", YieldProcessorMeasurementTaskGuid, 0, "Info", ProviderGuid, ProviderName);
         }
+        static private ThreadPoolMinMaxThreadsTraceData ThreadPoolMinMaxThreadsTemplate(Action<ThreadPoolMinMaxThreadsTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ThreadPoolMinMaxThreadsTraceData(action, 58, 37, "YieldProcessorMeasurement", YieldProcessorMeasurementTaskGuid, 0, "Info", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
@@ -2279,7 +2283,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[139] = ExecutionCheckpointTemplate(null);
                 templates[140] = YieldProcessorMeasurementTemplate(null);
 
-                templates[141] = new ThreadPoolMinMaxThreadsTraceData(null, 59, 38, "ThreadPoolMinMaxThreads", ThreadPoolMinMaxThreadsTaskGuid, 0, "Info", ProviderGuid, ProviderName);
+                templates[141] = ThreadPoolMinMaxThreadsTemplate(null);
 
                 s_templates = templates;
             }
@@ -2334,7 +2338,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid AppDomainResourceManagementTaskGuid = new Guid(unchecked((int)0x88e83959), unchecked((short)0x6185), unchecked((short)0x4e0b), 0x95, 0xb8, 0x0e, 0x4a, 0x35, 0xdf, 0x61, 0x22);
         private static readonly Guid ILStubTaskGuid = new Guid(unchecked((int)0xd00792da), unchecked((short)0x07b7), unchecked((short)0x40f5), 0x00, 0x00, 0x5d, 0x97, 0x4e, 0x05, 0x47, 0x40);
         private static readonly Guid ThreadPoolWorkerThreadTaskGuid = new Guid(unchecked((int)0x8a9a44ab), unchecked((short)0xf681), unchecked((short)0x4271), 0x88, 0x10, 0x83, 0x0d, 0xab, 0x9f, 0x56, 0x21);
-        private static readonly Guid ThreadPoolMinMaxThreadsTaskGuid = new Guid(unchecked((int)0x3e99dad1), unchecked((short)0xa4e9), unchecked((short)0x4441), 0x9d, 0x2e, 0xdf, 0x5f, 0x67, 0x48, 0x13, 0x3b);
+        private static readonly Guid ThreadPoolMinMaxThreadsTaskGuid = new Guid(unchecked((int)0x6d168d67), unchecked((short)0xfb06), unchecked((short)0x4a60), 0x83, 0xba, 0x25, 0x44, 0xe8, 0x17, 0xf6, 0xa3);
         private static readonly Guid ThreadPoolWorkerThreadRetirementTaskGuid = new Guid(unchecked((int)0x402ee399), unchecked((short)0xc137), unchecked((short)0x4dc0), 0xa5, 0xab, 0x3c, 0x2d, 0xea, 0x64, 0xac, 0x9c);
         private static readonly Guid ThreadPoolWorkerThreadAdjustmentTaskGuid = new Guid(unchecked((int)0x94179831), unchecked((short)0xe99a), unchecked((short)0x4625), 0x88, 0x24, 0x23, 0xca, 0x5e, 0x00, 0xca, 0x7d);
         private static readonly Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
