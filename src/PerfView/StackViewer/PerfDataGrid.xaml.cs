@@ -245,7 +245,7 @@ namespace PerfView
                 return content;
             }
 
-            // Check if the user option is set to not truncate content
+            // Check if the user option is set to not truncate/shorten content
             if (bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out bool doNotTruncateLines) && doNotTruncateLines)
             {
                 return content;

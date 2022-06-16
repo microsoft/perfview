@@ -1157,7 +1157,9 @@ namespace PerfView
             }
             OpenPath(path);
         }
-
+        /// <summary>
+        /// Initial read-in of the user settings to check if they had previously opted-in for the DoNotTruncateStackViewerLinesOnPaste option
+        /// </summary>
         public void InitializeDoNotTruncateStackViewerLinesOnPaste()
         {
             bool currentValue;
