@@ -35,13 +35,13 @@
     </p>
     <h2>Getting the Latest PerfView Videos</h2>
     <p>
-        The videos listed below are those that existed at the time this version of PerfView was released.&nbsp;&nbsp; Since more videos are being added all the time, you should check the <a href="http://channel9.msdn.com/series/PerfView-tutorial">PerfView Tutorial Series</a>
-        on <a href="http://channel9.msdn.com/">Channel 9</a> for the latest additions.&nbsp;&nbsp; In particular the <a href="http://channel9.msdn.com/Series/PerfView-Tutorial?page=2">last page</a> of this series is the place to look for new material.&nbsp;
+        The videos listed below are those that existed at the time this version of PerfView was released.&nbsp;&nbsp; Since more videos are being added all the time, you should check the <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/">PerfView Tutorial Series</a>
+        for the latest additions.&nbsp;
     </p>
     <h2>Getting PerfView</h2>
     <ol>
         <li>
-            <a href="http://media.ch9.ms/ch9/58bc/9de8d66d-07f7-4265-a0eb-688870e858bc/0GettingPerfView_Source.wmv">Getting PerfView from the Internet</a> -(2 min) -
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/0-getting-perfview">Getting PerfView from the Internet</a> -(2 min) -
             PerfView is REALLY easy to get.   If you have an internet connection you are about 4 clicks
             away from running perfView.   This QUICK video shows you how.
         </li>
@@ -55,13 +55,13 @@
     <h3>Collecting Data for Investigations into Time </h3>
     <ol>
         <li>
-            <a href="http://media.ch9.ms/ch9/9774/2d7542e2-5aec-456a-a956-4b8b05ba9774/1CollectingDataWithRunCommand_Source.wmv">Collecting Data with the PerfView &#39;Run&#39; Command</a> -(5 min) - Before you can
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/1-collecting-data-run-command">Collecting Data with the PerfView &#39;Run&#39; Command</a> -(5 min) - Before you can
             investigate, you first have to collect. If your scenario can be run from the
             command line easily, you shoud use the &#39;Collect -&gt; Run&#39; command to collect the
             data. You can be finished collecting in less than a minute.
         </li>
         <li>
-            <a href="http://media.ch9.ms/ch9/575f/d27ed117-0df6-447d-b2ec-1c58fec0575f/11CollectionForServices_Source.wmv">Collecting Data For Services</a> -(7 min) - When investigating services it is convinient
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/11-data-collection-server-scenarios">Collecting Data For Services</a> -(7 min) - When investigating services it is convinient
             to explicitly start and stop the trace.   It is also very common to want to collect data on
             one machine (often by asking someone else to collect the data) and then analyze it on another
             machine.   This video shows you some of your options for server-scenario data collection.
@@ -77,21 +77,21 @@
     </p>
     <ol>
         <li>
-            <a href="http://media.ch9.ms/ch9/4308/7c67a721-de52-4932-a9be-99db9fe74308/2SimpleCPUPerfInvestigation_Source.wmv">A Simple CPU Investigation</a> (16 min) - Typically the first investigation you
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/2-simple-cpu-performance-investigation">A Simple CPU Investigation</a> (16 min) - Typically the first investigation you
             do is to check on CPU usage. This totorial is longer than most, but that is
             because it covers a lot of important &#39;background&#39; information need to be a
             productive investigator. If you watch only one video, this should be it.
         </li>
 
         <li>
-            <a href="http://media.ch9.ms/ch9/85e9/59ae86ea-70ff-492b-be16-ee329fac85e9/3ResolvingSymbols_Source.wmv">Symbol Resolution</a> (5 min) -  By default Perfview only resolves 'easy'
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/3-resolving-symbols">Symbol Resolution</a> (5 min) -  By default Perfview only resolves 'easy'
             symbols (which include many managed methods).  If you need symbol (.pdb)
             files to resolve addresses to names you typically need to ask PerfView to
             do this explicitly.  This video shows you what the process is where PerfView
             looks by default, and where to start if you have problems getting symbols.
         </li>
         <li>
-            <a href="http://media.ch9.ms/ch9/58ef/081cbb95-9250-4840-8396-aa2bfe1058ef/4GroupingAndFolding_Source.wmv">Grouping And Folding</a> (13 min) -
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/4-grouping-folding">Grouping And Folding</a> (13 min) -
             Something that sets PerfView apart from most other profiling tools is its
             ability to hide a large amount of irrelevant detail while also allowing you to
             have high detail on the parts of the application that matter to you.&nbsp;&nbsp;
@@ -100,7 +100,7 @@
             the basics you need in order to use it effectively.&nbsp;&nbsp;
         </li>
         <li>
-            <a href="http://media.ch9.ms/ch9/6fd8/ce299ad3-febd-41d5-a3a0-4aa37a7b6fd8/5DrillInto_Source.wmv">Drilling Into Cost</a> (6 min) -
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/5-drilling-into">Drilling Into Cost</a> (6 min) -
             In the first phase of an investigation you use the grouping and folding features
             to reduce the number of nodes you are considering.&nbsp; Your goal is to create
             nodes that are &#39;sematically meaninful&#39; which account for a substantial part of
@@ -118,9 +118,9 @@
     <h3>Wall Clock Time Investigations.&nbsp; </h3>
     <p>Typically if you aredoing a time investigation, you are concerned about wall clock time (not CPU time).&nbsp;&nbsp; Thus you can argue that wall clock time investigations are more important that CPU investigations.&nbsp; However wall clock time is more harder to investigate because every thread in your process has its own wall clock time, and what you are intersted in is the CRITICAL PATH among these threads.&nbsp;&nbsp; CPU is nice because it TENDS to be on the critical path (even if the flow of control hops from thread to thread), which means ANY CPU time is probably important.&nbsp; This is NOT true for wall clock time and is part of what makes it harder to analyze.&nbsp;&nbsp;&nbsp; These videos walk you through what you need to know in order to do a successful wall clock time investigation.&nbsp; </p>
     <ol>
-        <li><a href="http://channel9.msdn.com/Series/PerfView-Tutorial/Tutorial-12-Wall-Clock-Time-Investigation-Basics">Wall Clock Time Investigation Basics</a> (16 min) - This video walks through a wall clock investigation on a very simple scenario (a disk bound sequential program).&nbsp;&nbsp; It covers how you should collect the data (the Thread Time checkbox), as well as using a method frame to isolate time to a particular thread and time interval for analysis.</li>
-        <li><a href="http://channel9.msdn.com/Series/PerfView-Tutorial/Tutorial-13-Leveraging-Tasks-make-sense-of-ParallelAsynchronous-programs" href="http://channel9.msdn.com/Series/PerfView-Tutorial/Tutorial-13-Leveraging-Tasks-make-sense-of-ParallelAsynchronous-programs">Leveraging Tasks make sense of Parallel/Asynchronous programs</a> (16 min) - This video walks through a more complex scenario where operations are happening in parallel and shows you that if you used System.Diagnostics.Threading.Tasks to do the parallel activity, PerfView can &#39;roll up&#39; the costs of the paralllel/async activity in a way that allows parallel/async programs to be analyzed like the simpler sequential case. </li>
-        <li><a href="http://channel9.msdn.com/posts/Tutorial-14-Investigating-Wall-Clock-responce-time-in-ASPNET-Scenarios" href="http://channel9.msdn.com/posts/Tutorial-14-Investigating-Wall-Clock-responce-time-in-ASPNET-Scenarios">Investigating Wall Clock Response Time of ASP.NET scenarios</a>&nbsp;(16 min) In this video we show how to analyze the wall clock response time of an ASP.NET application.&nbsp; I also discuss this scenario in<a data-mce-href="http://blogs.msdn.com/b/vancem/archive/2012/11/28/video-wall-clock-time-analysis-of-asp-net-applications-using-perfview.aspx" href="http://blogs.msdn.com/b/vancem/archive/2012/11/28/video-wall-clock-time-analysis-of-asp-net-applications-using-perfview.aspx"> this blog entry</a>.</li>
+        <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-12-wall-clock-time-investigation-basics">Wall Clock Time Investigation Basics</a> (16 min) - This video walks through a wall clock investigation on a very simple scenario (a disk bound sequential program).&nbsp;&nbsp; It covers how you should collect the data (the Thread Time checkbox), as well as using a method frame to isolate time to a particular thread and time interval for analysis.</li>
+        <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-13-leveraging-tasks-make-sense-of-parallelasynchronous-programs">Leveraging Tasks make sense of Parallel/Asynchronous programs</a> (16 min) - This video walks through a more complex scenario where operations are happening in parallel and shows you that if you used System.Diagnostics.Threading.Tasks to do the parallel activity, PerfView can &#39;roll up&#39; the costs of the paralllel/async activity in a way that allows parallel/async programs to be analyzed like the simpler sequential case. </li>
+        <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-14-investigating-wall-clock-responce-time-in-aspnet-scenarios">Investigating Wall Clock Response Time of ASP.NET scenarios</a>&nbsp;(16 min) In this video we show how to analyze the wall clock response time of an ASP.NET application.&nbsp; I also discuss this scenario in<a data-mce-href="http://blogs.msdn.com/b/vancem/archive/2012/11/28/video-wall-clock-time-analysis-of-asp-net-applications-using-perfview.aspx" href="http://blogs.msdn.com/b/vancem/archive/2012/11/28/video-wall-clock-time-analysis-of-asp-net-applications-using-perfview.aspx"> this blog entry</a>.</li>
     </ol>
     <h3>The PerfView Event Viewer</h3>
     <p>
@@ -134,7 +134,7 @@
     </p>
     <ol>
         <li>
-            <a href="http://channel9.msdn.com/Series/PerfView-Tutorial/Perfview-Tutorial-6-The-Event-Viewer-Basics">Event Viewer Basics</a> (16 min)&nbsp; -
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/6-event-viewer-basics">Event Viewer Basics</a> (16 min)&nbsp; -
             Using the data in the tutorial example, we describe the basic funtionality of
             the Event Viewer, which is mostly about filtering events (by name, time,
             process, and text) as well as deciding which fields to display.&nbsp;&nbsp;&nbsp;
@@ -142,7 +142,7 @@
             events and the ability to export the view as a CSV (Excel file) for further processing.
         </li>
         <li>
-            <a href="http://channel9.msdn.com/Series/PerfView-Tutorial/PerfView-Tutorial-7-Using-the-Event-Viewer-in-ASPNET-Scenarios">The Event Viewer in ASP.NET Scenarios</a>
+            <a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/7-using-event-viewer-in-aspnet-scenarios">The Event Viewer in ASP.NET Scenarios</a>
             (6 min) - ASP.NET is a common sceanrio for many server workloads, and ASP.NET
             can log ETW events that are very helpful in isolating the processing of one
             request from all the other processing that is happening on the server.&nbsp;&nbsp;
@@ -155,7 +155,7 @@
         When doing any time based investigation, it is very useful to know what the program is doing at a &#39;high level&#39;, so that you can easily zoom into these logical regions and focus on just certain aspects of your applications performance.&nbsp;&nbsp; This is especially important in server scenarios as well any scnearios that use asynchronous I/O (because Async I/O makes it harder to use the stack of your program to do the same thing).&nbsp;&nbsp;&nbsp; There is a class in Version 4.5 of the .NET Framework called System.Diagnostics.Tracing.EventSource that lets you do just this.&nbsp; Using this class it is trivial to make your .NET program log ETW events with whatever payload you desire.&nbsp;&nbsp; These videos show you how.
     </p>
     <ol>
-        <li><a href="http://channel9.msdn.com/Series/PerfView-Tutorial/PerfView-Tutorial-8-Generating-Your-Own-Events-with-EventSources">Generating Your own Events with EventSource</a> (12 min).&nbsp; This video is an introduction to using EventSource, showing you how to write the code, how to turn on your event source and how to view the resulting log messages in the PerfView Event Viewer (see Event Viewer Basics above).&nbsp;&nbsp;&nbsp; There is also a <a href="http://blogs.msdn.com/b/vancem/archive/2012/07/09/logging-your-own-etw-events-in-c-system-diagnostics-tracing-eventsource.aspx">companion blog entry</a> that has links to a version of EventSource that works on versions of the .NET Framework before V4.5.&nbsp; </li>
+        <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/8-generating-your-own-events-eventsources">Generating Your own Events with EventSource</a> (12 min).&nbsp; This video is an introduction to using EventSource, showing you how to write the code, how to turn on your event source and how to view the resulting log messages in the PerfView Event Viewer (see Event Viewer Basics above).&nbsp;&nbsp;&nbsp; There is also a <a href="http://blogs.msdn.com/b/vancem/archive/2012/07/09/logging-your-own-etw-events-in-c-system-diagnostics-tracing-eventsource.aspx">companion blog entry</a> that has links to a version of EventSource that works on versions of the .NET Framework before V4.5.&nbsp; </li>
     </ol>
     <h2>Memory Investigations</h2>
     <p>
@@ -165,14 +165,14 @@
     </p>
     <ol>
         <li>
-            &nbsp;<a href="http://channel9.msdn.com/Series/PerfView-Tutorial/PerfView-Tutorial-9-NET-Memory-Investigation-Basics-of-GC-Heap-Snapshots">Basics of GC Heap Snapshots</a> (9 min) - The first
+            &nbsp;<a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/9-net-memory-investigation-basics-of-gc-heap-snapshots">Basics of GC Heap Snapshots</a> (9 min) - The first
             step in doing&nbsp; .NET Memory investigation is first determine whether .NET
             Memory is your problem and take a heap snapshot.&nbsp;&nbsp; This tutorial shows
             you how to determine how much of your process&#39;s memory is GC heap and (if that
             is your problem) shows you how to take a snapshot of the GC heap.&nbsp;
         </li>
-        <li><a href="http://channel9.msdn.com/Series/PerfView-Tutorial/Tutorial-10-Investigating-NET-Heap-Memory-Leaks-Part1-Collecting-the-data">Investigating .NET Heap Memory Leaks: Part 1: Collecting the Data</a> (8 min) This is the first of a two part video of step-by-step instructions for using PerfView to investigate a &#39;Leak&#39; in the .NET GC heap.&nbsp; This first part goes through the mechanics of collecting the data which involves taking two heap snapshots at appropriate times.&nbsp; </li>
-        <li><a href="http://channel9.msdn.com/Series/PerfView-Tutorial/Tutorial-11-Investigating-NET-Heap-Memory-Leaks-Part2-Analyzing-the-data">Investigation .NET Heap Memory Leaks: Part 2: Analyzing the Data </a>(11 min).&nbsp; In this second part we take the two snapshots collected in part 1 and walk though the mechanics of doing a &#39;diff&#39; of the two memory heaps to determine how the heap grew between the two points in time.&nbsp; This lets us home in on places where we were not dropping references to objects (which caused them to &#39;leak&#39;).&nbsp; </li>
+        <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-10-investigating-net-heap-memory-leaks-part1-collecting-data">Investigating .NET Heap Memory Leaks: Part 1: Collecting the Data</a> (8 min) This is the first of a two part video of step-by-step instructions for using PerfView to investigate a &#39;Leak&#39; in the .NET GC heap.&nbsp; This first part goes through the mechanics of collecting the data which involves taking two heap snapshots at appropriate times.&nbsp; </li>
+        <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-11-investigating-net-heap-memory-leaks-part2-analyzing-data">Investigation .NET Heap Memory Leaks: Part 2: Analyzing the Data </a>(11 min).&nbsp; In this second part we take the two snapshots collected in part 1 and walk though the mechanics of doing a &#39;diff&#39; of the two memory heaps to determine how the heap grew between the two points in time.&nbsp; This lets us home in on places where we were not dropping references to objects (which caused them to &#39;leak&#39;).&nbsp; </li>
     </ol>
 
 </body>
