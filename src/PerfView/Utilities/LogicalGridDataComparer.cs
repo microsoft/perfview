@@ -18,9 +18,9 @@ namespace Utilities
 
     internal class LogicalGridDataComparer<T> : IComparer where T : class
     {
-
         private readonly ListSortDirection _direction;
         private readonly PropertyInfo _propertyInfo;
+
         public LogicalGridDataComparer(string sortMemberPath, ListSortDirection direction)
         {
             _direction = direction;
@@ -45,8 +45,23 @@ namespace Utilities
                 return 1;
             }
 
-            var xVal = _propertyInfo.GetValue(x).ToString();
-            var yVal = _propertyInfo.GetValue(y).ToString();
+            var xVal = _propertyInfo.GetValue(x)?.ToString();
+            var yVal = _propertyInfo.GetValue(y)?.ToString();
+
+            if (string.IsNullOrEmpty(xVal))
+            {
+                if (string.IsNullOrEmpty(yVal))
+                {
+                    return 0;
+                }
+
+                return -1;
+            }
+
+            if (string.IsNullOrEmpty(yVal))
+            {
+                return 1;
+            }
 
             if (DateTime.TryParse(xVal, out var xDt) && DateTime.TryParse(yVal, out var yDt))
             {
