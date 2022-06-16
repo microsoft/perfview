@@ -1126,6 +1126,7 @@ namespace PerfView
 
             // Initialize configuration options.
             InitializeOpenToLastUsedDirectory();
+            InitializeDoNotTruncateStackViewerLinesOnPaste();
 
             InitializeFeedback();
         }
@@ -1155,6 +1156,25 @@ namespace PerfView
                 path = App.UserConfigData["Directory"] ?? ".";
             }
             OpenPath(path);
+        }
+
+        public void InitializeDoNotTruncateStackViewerLinesOnPaste()
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out currentValue);
+            Option_DoNotTruncateStackViewerLinesOnPaste.IsChecked = currentValue;
+        }
+
+        /// <summary>
+        /// Toggles the option to not truncate/minimize stack frame lines copied from the stack viewer window.
+        /// </summary>
+        public void ToggleDoNotTruncateStackViewerLinesOnPaste(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"] = newValue.ToString();
+            Option_DoNotTruncateStackViewerLinesOnPaste.IsChecked = newValue;
         }
 
         /// <summary>

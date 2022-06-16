@@ -245,6 +245,12 @@ namespace PerfView
                 return content;
             }
 
+            // Check if the user option is set to not truncate content
+            if (bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out bool doNotTruncateLines) && doNotTruncateLines)
+            {
+                return content;
+            }
+
             // Trim method names !*.XXX.YYY(*) -> !XXX.YYY
             content = Regex.Replace(content, @"![\w\.]+\.(\w+\.\w+)\(.*\)", "!$1");
             if (content.Length < 70)
