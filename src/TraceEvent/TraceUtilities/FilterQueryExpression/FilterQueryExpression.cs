@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
@@ -11,82 +12,89 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
     /// </summary>
     internal sealed class FilterQueryExpression
     {
-        private static readonly string[] _separator      = new[] { " " };
-        private static readonly string[] _eventSeparator = new[] { "::" };
-
-        public enum Operator
+        internal enum Operator
         {
             NotValid,
             Equal,
+            NotEqualTo,
             GreaterThan,
             GreaterThanOrEqualTo,
             LessThan,
             LessThanOrEqualTo,
-            NotEqualTo,
             Contains
         };
 
+        private static readonly string[] _separator      = new[] { " " };
+        private static readonly string[] _eventSeparator = new[] { "::" };
+
+        private static readonly Dictionary<string, Operator> _operatorMap =
+            new Dictionary<string, Operator>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "=" , Operator.Equal },
+                { "!=" , Operator.NotEqualTo },
+                { ">", Operator.GreaterThan },
+                { ">=", Operator.GreaterThanOrEqualTo },
+                { "<", Operator.LessThan },
+                { "<=", Operator.LessThanOrEqualTo },
+                { "contains", Operator.Contains },
+            };
+
+        private static HashSet<string> _uniqueNumericOperators 
+            = new HashSet<string> { "!=", "<=", ">=", "<", ">", "=" };
+
         private readonly string _expression;
+        private readonly string[] _lhsSplit;
 
         public FilterQueryExpression(string expression)
         {
-            _expression = expression;
-            var splits = expression.Split(_separator, StringSplitOptions.RemoveEmptyEntries); 
-            LeftOperand = splits[0];
-            OperatorAsString = splits[1].ToLower();
-            switch (OperatorAsString)
+            if (!expression.Contains("contains") && !expression.Contains("Contains"))
             {
-                case "=":
-                    Op = Operator.Equal;
-                    break;
-                case "!=":
-                    Op = Operator.NotEqualTo;
-                    break;
-                case "contains":
-                    Op = Operator.Contains;
-                    break;
-                case ">":
-                    Op = Operator.GreaterThan;
-                    break;
-                case ">=":
-                    Op = Operator.GreaterThanOrEqualTo;
-                    break;
-                case "<":
-                    Op = Operator.LessThan;
-                    break;
-                case "<=":
-                    Op = Operator.LessThanOrEqualTo;
-                    break;
-                default:
-                    Op = Operator.NotValid;
-                    break;
+                expression = expression.Replace(" ", "");
+                foreach(var o in _uniqueNumericOperators)
+                {
+                    if (expression.Contains(o))
+                    {
+                        var replaced = expression.Split(new string[] { o }, StringSplitOptions.RemoveEmptyEntries);
+                        LeftOperand  = replaced[0];
+                        RightOperand = replaced[1];
+                        Op           = _operatorMap[o];
+                        break;
+                    }
+                }
+
+                // If none of the supplied operators match, we know something is wrong.
+                if (Op == Operator.NotValid || string.IsNullOrWhiteSpace(LeftOperand) || string.IsNullOrWhiteSpace(RightOperand))
+                {
+                    throw new FilterQueryExpressionTreeParsingException("Invalid Expression.", expression);
+                }
             }
 
-            RightOperand = splits[2];
+            // The `contains` must be separated by spaces.
+            else
+            {
+                var splits = expression.Split(_separator, StringSplitOptions.RemoveEmptyEntries); 
+                LeftOperand = splits[0];
+                string operatorAsString = splits[1];
+
+                if (_operatorMap.TryGetValue(operatorAsString, out Operator op))
+                {
+                    Op = op;
+                }
+                else
+                {
+                    throw new FilterQueryExpressionParsingException($"Operator: {operatorAsString} is not a valid operator", expression);
+                }
+
+                RightOperand = splits[2];
+            }
+
             IsDouble = double.TryParse(RightOperand, out var rhsAsDouble);
             if (IsDouble)
             {
                 RightOperandAsDouble = rhsAsDouble;
             }
-        }
 
-        public static bool IsValidExpression(string expression)
-        {
-            var split = expression.Split(_separator, StringSplitOptions.RemoveEmptyEntries);
-            if (split.Length != 3)
-                return false;
-
-            var @operator = split[1].ToLower();
-            return
-                !split[0].Contains("(") &&
-                !split[2].Contains(")") &&
-                (@operator == "=" ||
-                @operator == "!=" ||
-                @operator == ">=" ||
-                @operator == ">" ||
-                @operator == "<=" ||
-                @operator == "<" ||
-                @operator == "contains");
+            _lhsSplit = LeftOperand.Split(_eventSeparator, StringSplitOptions.RemoveEmptyEntries);
         }
 
         /// <summary>
@@ -98,9 +106,8 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         public bool Match(TraceEvent @event)
         {
             string rhsOperand = null;
-            string[] lhsSplit = LeftOperand.Split(_eventSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            if (lhsSplit.Length == 1)
+            if (_lhsSplit.Length == 1)
             {
                 rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, LeftOperand);
             }
@@ -110,12 +117,12 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
                 var eventName = @event.EventName;
 
                 // If the event name is provided, try to match on it.
-                if (!eventName.Contains(lhsSplit[0]))
+                if (!eventName.Contains(_lhsSplit[0]))
                 {
                     return false;
                 }
 
-                rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, lhsSplit[1]);
+                rhsOperand = FilterQueryUtilities.ExtractPayloadByName(@event, _lhsSplit[1]);
             }
 
             // Payload not found => ignore this trace event.
@@ -147,12 +154,11 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         public bool Match(Dictionary<string, string> propertyNamesToValues, string eventName)
         {
             string rhsOperand = null;
-            string[] lhsSplit = LeftOperand.Split(_eventSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            if (lhsSplit.Length == 1)
+            if (_lhsSplit.Length == 1)
             {
                 // If the property names.
-                if (!propertyNamesToValues.TryGetValue(lhsSplit[0], out rhsOperand))
+                if (!propertyNamesToValues.TryGetValue(_lhsSplit[0], out rhsOperand))
                 {
                     return false;
                 }
@@ -161,12 +167,12 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             else
             {
                 // If the event name is provided, try to match on it.
-                if (!eventName.Contains(lhsSplit[0]))
+                if (!eventName.Contains(_lhsSplit[0]))
                 {
                     return false;
                 }
 
-                if (!propertyNamesToValues.TryGetValue(lhsSplit[1], out rhsOperand))
+                if (!propertyNamesToValues.TryGetValue(_lhsSplit[1], out rhsOperand))
                 {
                     return false;
                 }
@@ -233,14 +239,13 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             }
         }
 
-        public string LeftOperand { get; }
-        public string OperatorAsString { get; }
-        public Operator Op { get; }
-        public string RightOperand { get; }
-        public double RightOperandAsDouble { get; } = double.NaN;
-        public bool IsDouble { get; }
+        public string LeftOperand { get; private set; } = string.Empty;
+        public Operator Op { get; private set; }
+        public string RightOperand { get; private set; }
+        public double RightOperandAsDouble { get; private set; } = double.NaN;
+        public bool IsDouble { get; private set; }
 
         public override string ToString()
-            => $"{LeftOperand} {OperatorAsString} {RightOperand}";
+            => $"{LeftOperand} {Op} {RightOperand}";
     }
 }

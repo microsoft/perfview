@@ -8,7 +8,6 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
     /// </summary>
     public sealed class FilterQueryExpressionTree
     {
-        private readonly FilterQueryExpression _simpleFilterQueryExpression;
         private readonly Dictionary<char, FilterQueryExpression> _expressionMap;
         private readonly string _postFixExpression;
 
@@ -20,13 +19,6 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             if (string.IsNullOrEmpty(expression))
             {
                 throw new FilterQueryExpressionTreeParsingException($"{nameof(expression)} is null.", expression);
-            }
-
-            // Faster computation if a single Expression Without Parentheses i.e. one simple expression is provided.
-            if (FilterQueryExpression.IsValidExpression(expression) &&
-                (!expression.Contains("(") || expression.Contains(")")))
-            {
-                _simpleFilterQueryExpression = new FilterQueryExpression(expression);
             }
 
             // Compute the PostFix (RPN) representation of the expression for easier logical deduction where perf matters.
@@ -51,12 +43,6 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         /// <returns></returns>
         public bool Match(TraceEvent @event)
         {
-            // Handle the simple case where a single simple filter query expression is provided.
-            if (_simpleFilterQueryExpression != null)
-            {
-                return _simpleFilterQueryExpression.Match(@event);
-            }
-
             foreach (var kvp in _expressionMap)
             {
                 _convertedExpressionMap[kvp.Key.ToString()] = kvp.Value.Match(@event);
@@ -70,11 +56,6 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 
         public bool Match(Dictionary<string, string> propertyNamesToValues, string eventName)
         {
-            if (_simpleFilterQueryExpression != null)
-            {
-                return _simpleFilterQueryExpression.Match(propertyNamesToValues, eventName);
-            }
-
             // Map each of the expressions to lower-case alphabet and the match result of the expression i.e. a boolean.
             foreach (var kvp in _expressionMap)
             {

@@ -9,46 +9,35 @@ namespace TraceEventTests
     public sealed class FilterQueryExpressionTests
     {
         [Theory]
-        [InlineData("ThreadID = 1,001")]
-        [InlineData("ThreadID >= 1,001")]
-        [InlineData("ThreadID > 1,001")]
-        [InlineData("ThreadID < 1,001")]
-        [InlineData("ThreadID <= 1,001")]
-        [InlineData("ThreadID != 1,001")]
-        [InlineData("ThreadID Contains 1")]
-        [InlineData("GC/Start::ThreadID Contains 1")]
-        public void IsValidExpression_Valid_True(string expression)
-        {
-            var isValid = FilterQueryExpression.IsValidExpression(expression);
-            Assert.True(isValid);
-        }
-
-        [Theory]
-        [InlineData(" ")]
-        [InlineData("Depth 1000")]
-        [InlineData("Depth<1000")]
-        [InlineData("Depth <1000")]
-        [InlineData("Depth> 1000")]
-        [InlineData("> 1000")]
-        [InlineData("Depth <")]
-        [InlineData("Depth ^ 100")]
-        [InlineData("GC:: Depth = 100")]
-        [InlineData("GC ::Depth = 100")]
-        public void IsValidExpression_Invalid_False(string expression)
-        {
-            var isValid = FilterQueryExpression.IsValidExpression(expression);
-            Assert.False(isValid);
-        }
-
-        [Theory]
         [InlineData("Property = 1,001", "Property", "1,001")]
+        [InlineData("Property= 1,001", "Property", "1,001")]
+        [InlineData("Property=1,001", "Property", "1,001")]
+        [InlineData("Property =1,001", "Property", "1,001")]
         [InlineData("ThreadData Contains ,", "ThreadData", "1,001")]
         [InlineData("Depth <= 1", "Depth", "1")]
+        [InlineData("Depth<= 1", "Depth", "1")]
+        [InlineData("Depth <=1", "Depth", "1")]
+        [InlineData("Depth<=1", "Depth", "1")]
         [InlineData("Depth >= 1", "Depth", "10")]
+        [InlineData("Depth>= 1", "Depth", "10")]
+        [InlineData("Depth >=1", "Depth", "10")]
+        [InlineData("Depth>=1", "Depth", "10")]
         [InlineData("Depth != 1", "Depth", "10")]
+        [InlineData("Depth!= 1", "Depth", "10")]
+        [InlineData("Depth !=1", "Depth", "10")]
+        [InlineData("Depth!=1", "Depth", "10")]
         [InlineData("Depth < 1", "Depth", "0")]
+        [InlineData("Depth< 1", "Depth", "0")]
+        [InlineData("Depth <1", "Depth", "0")]
+        [InlineData("Depth<1", "Depth", "0")]
         [InlineData("Depth > 1", "Depth", "10")]
+        [InlineData("Depth> 1", "Depth", "10")]
+        [InlineData("Depth >1", "Depth", "10")]
+        [InlineData("Depth>1", "Depth", "10")]
         [InlineData("FakeEvent::Depth > 1", "Depth", "10", "FakeEvent")]
+        [InlineData("FakeEvent::Depth> 1", "Depth", "10", "FakeEvent")]
+        [InlineData("FakeEvent::Depth >1", "Depth", "10", "FakeEvent")]
+        [InlineData("FakeEvent::Depth>1", "Depth", "10", "FakeEvent")]
         public void MatchForTraceEvent_PropertyAndEventNameProvided_True(string expression, string propertyName, string value, string eventName = "")
         {
             FilterQueryExpression filterQueryExpression = new FilterQueryExpression(expression);
@@ -69,13 +58,67 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
+                    "Property= 1,001",
+                    new Dictionary<string, string> {{ "Property", "1,001" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Property =1,001",
+                    new Dictionary<string, string> {{ "Property", "1,001" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Property=1,001",
+                    new Dictionary<string, string> {{ "Property", "1,001" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
                     "Depth <= 1",
                     new Dictionary<string, string> {{ "Depth", "1" }},
                     "GC/Start"
                 },
                 new object[]
                 {
+                    "Depth<= 1",
+                    new Dictionary<string, string> {{ "Depth", "1" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Depth <=1",
+                    new Dictionary<string, string> {{ "Depth", "1" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Depth<=1",
+                    new Dictionary<string, string> {{ "Depth", "1" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
                     "Depth >= 10",
+                    new Dictionary<string, string> {{ "Depth", "20" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Depth>= 10",
+                    new Dictionary<string, string> {{ "Depth", "20" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Depth >=10",
+                    new Dictionary<string, string> {{ "Depth", "20" }},
+                    "GC/Start"
+                },
+                new object[]
+                {
+                    "Depth>=10",
                     new Dictionary<string, string> {{ "Depth", "20" }},
                     "GC/Start"
                 },

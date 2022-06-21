@@ -1075,7 +1075,21 @@ namespace PerfView
             int curPos = SelectionStartIndex();
             var startingNewSearch = false;
 
-            string modifiedPat = FilterQueryUtilities.TryExtractFilterQueryExpression(pat, out FilterQueryExpressionTree tree);
+            FilterQueryExpressionTree tree;
+            try
+            {
+                string modifiedPat = FilterQueryUtilities.TryExtractFilterQueryExpression(pat, out tree);
+            }
+            catch(FilterQueryExpressionParsingException exp)
+            {
+                StatusBar.LogError(exp.Message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                StatusBar.LogError($"Exception while parsing expression into a Filter Query Expression: {pat} - {ex.Message}");
+                return false;
+            }
 
             if (m_findPat == null || m_findPat.ToString() != pat)
             {
@@ -1284,6 +1298,11 @@ namespace PerfView
             catch (FilterQueryExpressionParsingException fqepEx)
             {
                 StatusBar.LogError(fqepEx.Message);
+                m_source.FilterQueryExpressionTree = null; 
+            }
+            catch(Exception ex)
+            {
+                StatusBar.LogError(ex.Message);
                 m_source.FilterQueryExpressionTree = null; 
             }
 
