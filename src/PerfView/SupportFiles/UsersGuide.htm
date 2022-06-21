@@ -3774,6 +3774,50 @@
         fields will be displayed in their own columns.  After the first 4 the rest of the specified
         columns will be displayed in the 'rest' column.
     </p>
+    <h5> 
+        <a id="FilteringSelectColumns">Filtering On Select Columns</a>
+    </h5>
+    <p>
+        Events can be filtered using the Columns to Display textbox by specifying expressions combined with boolean operators: || and &&
+        based on the selected column within square brackets (<strong>[]</strong>). The format of individual queries is: <strong>LeftOperand Operator RightOperand</strong>
+        where:
+        <ul>
+            <li> <strong>LeftOperand</strong> can either be the name of the property or the name of the event followed by "::" and the name of the property.  </li>
+            <li> <strong>Operator</strong> can be one of the following: ==, !=, &#60;, <=, >, >=, Contains. </li>
+            <li> <strong>RightOperand</strong> can either be a string or a numeric quantity that'll be interpreted as a double.</li>
+        </ul>
+
+        <strong> Notes: </strong>
+        <ul>
+            <li> Once a query is specified, the logical OR operator || / the logical AND operator && can be used to combine individual expressions. </li>
+            <li> Individual expressions can be encased in parentheses (). </li>
+            <li> Currently only 26 expressions can be created. </li>
+            <li> Spaces are required whenever Contains is used as an operator. </li>
+            <li> If you don't specify any fields to display, all fields will show up as part of the "Rest" column.</li>
+        </ul>
+
+        <strong> Examples: </strong><br /><br />
+
+        Examples of simple queries include:
+        <ul>
+            <li><code> [(ThreadID == 1,240) && (ProcessName == devenv)] ThreadID ProcessorNumber </code></li>
+            <li><code> [(GC/Start::Depth > 1) && (ProcessName==devenv)] </code></li>
+            <li><code> [(ProcessName Contains ServiceHub) || (ProcessName Contains devenv)] ProcessName Count ProcessorNumber Depth </code></li>
+        </ul>
+
+        <br /> Examples of some more complex expressions:
+
+        <ul>
+            <li><code> [(Count>10 && (Depth >= -1) && (Count<=30) && (Count <= 30 || ProcessorNumber == 2))] Count ProcessorNumber Depth </code></li>
+            <li><code> [(Count > 10 && (Count <= 30) && (Count <= 30 || ProcessorNumber == 2))] Count ProcessorNumber Depth </code></li>
+        </ul>
+
+        Some video examples of the usage:
+        <ul>
+            <li> <a href="https://user-images.githubusercontent.com/4951960/168762353-416a619c-0c2f-4b59-887c-213a7fe2f77f.mp4"> 2 Simple Queries Combined </a> </li>
+            <li> <a href="https://user-images.githubusercontent.com/4951960/168765726-f6644215-77e3-4f5a-a70f-a1359a82cdc0.mp4"> More Complex Queries Combined </a> </li>
+        </ul>
+    </p>
     <h4>
         <a id="EventTypes">Event Types</a>
     </h4>
@@ -4960,7 +5004,9 @@
         and is case insensitive.&nbsp;&nbsp; Searching starts at the current cursor position
         and will wrap around until all text is searched.&nbsp;&nbsp; The F3 key can be used
         to find the next instance of the pattern.&nbsp; When all the text has been searched
-        the app will beep.&nbsp; The next F3 after that starts over.
+        the app will beep.&nbsp; The next F3 after that starts over. 
+        Specification of expressions combined with boolean criteria can be done similar to filtering 
+        select columns in the <a href="#FilteringSelectColumns">Columns to Display</a> textbox.
         &nbsp;
     </p>
     <!--  ****************** -->

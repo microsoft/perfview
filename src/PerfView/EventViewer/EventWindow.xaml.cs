@@ -1,6 +1,7 @@
 ﻿using EventSources;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -1073,6 +1074,23 @@ namespace PerfView
             Grid.Focus();
             int curPos = SelectionStartIndex();
             var startingNewSearch = false;
+
+            FilterQueryExpressionTree tree;
+            try
+            {
+                string modifiedPat = FilterQueryUtilities.TryExtractFilterQueryExpression(pat, out tree);
+            }
+            catch(FilterQueryExpressionParsingException exp)
+            {
+                StatusBar.LogError(exp.Message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                StatusBar.LogError($"Exception while parsing expression into a Filter Query Expression: {pat} - {ex.Message}");
+                return false;
+            }
+
             if (m_findPat == null || m_findPat.ToString() != pat)
             {
                 startingNewSearch = true;
@@ -1086,6 +1104,7 @@ namespace PerfView
                 return false;
             }
 
+            Dictionary<string, string> data = new Dictionary<string, string>();
             for (; ; )
             {
                 if (startingNewSearch)
@@ -1108,20 +1127,78 @@ namespace PerfView
                 }
 
                 var item = list[curPos] as EventRecord;
-                var foundItem = m_findPat.IsMatch(item.Rest) || m_findPat.IsMatch(item.EventName) ||
-                    m_findPat.IsMatch(item.ProcessName) || m_findPat.IsMatch(item.TimeStampRelatveMSec.ToString());
-                var fields = item.DisplayFields;
-                for (int i = 0; i < fields.Length; i++)
+                var foundItem = false;
+
+                // If the filter query tree is successfully generated, use it to find.
+                if (tree != null)
                 {
-                    if (foundItem)
+                    data["ProcessName"] = item.ProcessName;
+                    data["TimestampRelativeMsec"] = item.TimeStampRelatveMSec.ToString();
+
+                    // Before parsing the "Rest" column, grab everything displayed from the ColumnsToDisplay.
+                    if (m_source.ColumnsToDisplay != null)
                     {
-                        break;
+                        for(int displayFieldIdx = 0; displayFieldIdx < m_source.ColumnsToDisplay.Count; displayFieldIdx++)
+                        {
+                            data[m_source.ColumnsToDisplay[displayFieldIdx]] = item.DisplayFields[displayFieldIdx];
+                        }
                     }
 
-                    var field = fields[i];
-                    if (field != null)
+                    foundItem = tree.Match(data, item.EventName);
+                    if (foundItem)
                     {
-                        foundItem = m_findPat.IsMatch(field);
+                        Select(item);
+                        return true;
+                    }
+
+                    // Clear so we don't waste re-processing the ProcessName, Timestamp and ColumnsToDisplay again.
+                    data.Clear();
+
+                    // Parse Rest if the above steps fail.
+                    if (!string.IsNullOrEmpty(item.Rest))
+                    {
+                        foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            // Format of Rest: Property0=Value0 Property1=Value1
+                            var splitOnEquals = r.Trim().Split('=');
+                            if (splitOnEquals.Length != 2)
+                            {
+                                continue;
+                            }
+
+                            data[splitOnEquals[0]] = splitOnEquals[1].Replace("\"", "");
+                        }
+                    }
+
+                    foundItem = tree.Match(data, item.EventName);
+
+                    // Clear again so that next time we start afresh with a new EventRecord.
+                    data.Clear();
+
+                    if (foundItem)
+                    {
+                        Select(item);
+                        return true;
+                    }
+                }
+
+                else
+                {
+                    foundItem = m_findPat.IsMatch(item.Rest) || m_findPat.IsMatch(item.EventName) ||
+                        m_findPat.IsMatch(item.ProcessName) || m_findPat.IsMatch(item.TimeStampRelatveMSec.ToString());
+                    var fields = item.DisplayFields;
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        if (foundItem)
+                        {
+                            break;
+                        }
+
+                        var field = fields[i];
+                        if (field != null)
+                        {
+                            foundItem = m_findPat.IsMatch(field);
+                        }
                     }
                 }
 
@@ -1205,7 +1282,30 @@ namespace PerfView
             }
 
             m_source.SetEventFilter(eventFilter);
-            m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter));
+            try
+            {
+                string columnSpec = FilterQueryUtilities.TryExtractFilterQueryExpression(ColumnsToDisplayTextBox.Text, out FilterQueryExpressionTree tree);
+                m_source.FilterQueryExpressionTree = tree; 
+                m_source.ColumnsToDisplay = EventSource.ParseColumns(columnSpec, m_source.AllColumnNames(eventFilter));
+            }
+
+            // Appropriately log any filter query expression parsing issue to give as much info to the user.
+            catch (FilterQueryExpressionTreeParsingException fqpEx)
+            {
+                StatusBar.LogError(fqpEx.Message);
+                m_source.FilterQueryExpressionTree = null; 
+            }
+            catch (FilterQueryExpressionParsingException fqepEx)
+            {
+                StatusBar.LogError(fqepEx.Message);
+                m_source.FilterQueryExpressionTree = null; 
+            }
+            catch(Exception ex)
+            {
+                StatusBar.LogError(ex.Message);
+                m_source.FilterQueryExpressionTree = null; 
+            }
+
             for (int i = 0; i < m_userDefinedColumns.Count; i++)
             {
                 if (m_source.ColumnsToDisplay != null && i < m_source.ColumnsToDisplay.Count)

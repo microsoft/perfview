@@ -327,6 +327,15 @@ namespace PerfView
                         }
                     }
 
+                    if (FilterQueryExpressionTree != null)
+                    {
+                        var match = FilterQueryExpressionTree.Match(data);
+                        if (!match)
+                        {
+                            return;
+                        }
+                    }
+
                     cnt++;
                     if (MaxRet < cnt)
                     {
