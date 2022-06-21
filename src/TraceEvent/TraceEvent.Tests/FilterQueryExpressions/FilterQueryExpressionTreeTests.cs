@@ -42,14 +42,14 @@ namespace TraceEventTests
                 new object[] { "Depth >=10", new FilterQueryExpressionTestTraceEvent("Depth", "25") },
                 new object[] { "Depth>=10", new FilterQueryExpressionTestTraceEvent("Depth", "25") },
                 new object[] { "ThreadData Contains 10", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
-                new object[] { "GC/Start::Depth = 10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "GC/Start::Depth= 10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "GC/Start::Depth =10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "GC/Start::Depth=10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "(GC/Start::Depth = 10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "(GC/Start::Depth= 10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "(GC/Start::Depth =10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
-                new object[] { "(GC/Start::Depth=10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "GC/Start::Depth == 10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "GC/Start::Depth== 10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "GC/Start::Depth ==10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "GC/Start::Depth==10", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "(GC/Start::Depth == 10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "(GC/Start::Depth== 10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "(GC/Start::Depth ==10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
+                new object[] { "(GC/Start::Depth==10)", new FilterQueryExpressionTestTraceEvent("Depth", "10", "GC/Start") },
             };
 
             public IEnumerator<object[]> GetEnumerator() => _data.GetEnumerator();
@@ -197,43 +197,43 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "GC/Start::Depth= 10",
+                    "GC/Start::Depth== 10",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "GC/Start::Depth =10",
+                    "GC/Start::Depth ==10",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "GC/Start::Depth=10",
+                    "GC/Start::Depth==10",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "(GC/Start::Depth = 10)",
+                    "(GC/Start::Depth == 10)",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "(GC/Start::Depth= 10)",
+                    "(GC/Start::Depth== 10)",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "(GC/Start::Depth =10)",
+                    "(GC/Start::Depth ==10)",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "(GC/Start::Depth=10)",
+                    "(GC/Start::Depth==10)",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
@@ -265,18 +265,18 @@ namespace TraceEventTests
                 new object[] { "(Depth <=10)", new FilterQueryExpressionTestTraceEvent("Depth", "20") },
                 new object[] { "(Depth<=10)", new FilterQueryExpressionTestTraceEvent("Depth", "20") },
                 new object[] { "Depth >= 10", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
-                new object[] { "Depth = 10", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
+                new object[] { "Depth == 10", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
                 new object[] { "Depth < 10", new FilterQueryExpressionTestTraceEvent("Depth", "25") },
                 new object[] { "Depth <= 10", new FilterQueryExpressionTestTraceEvent("Depth", "25") },
                 new object[] { "ThreadData Contains 1,0033", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
-                new object[] { "GC/Start::Depth = 10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::Depth= 10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::Depth =10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::Depth=10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::ThreadData = 1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::ThreadData= 1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::ThreadData =1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
-                new object[] { "GC/Start::ThreadData=1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::Depth == 10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::Depth== 10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::Depth ==10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::Depth==10", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::ThreadData == 1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::ThreadData== 1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::ThreadData ==1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
+                new object[] { "GC/Start::ThreadData==1,001", new FilterQueryExpressionTestTraceEvent("Depth", "1001", "GC/Start") },
             };
 
             public IEnumerator<object[]> GetEnumerator() => _data.GetEnumerator();
@@ -316,7 +316,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "Depth = 10",
+                    "Depth == 10",
                     new Dictionary<string, string> {{ "Depth", "5" }},
                     "GC/Start"
                 },
@@ -340,13 +340,13 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "GC/Start::Depth = 10",
+                    "GC/Start::Depth == 10",
                     new Dictionary<string, string> {{ "Depth", "15" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "GC/Start::ThreadData = 1,001",
+                    "GC/Start::ThreadData == 1,001",
                     new Dictionary<string, string> {{ "Depth", "15" }},
                     "GC/Start"
                 },
@@ -379,13 +379,13 @@ namespace TraceEventTests
                 new object[] { "((Depth <= 10) && (Depth <= 20)) || ((Depth != 15) && (Depth > 5))", new FilterQueryExpressionTestTraceEvent("Depth", "12") },
                 new object[] { "((Depth != 10 && (Depth != 10 && (Depth != 10))))", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
                 new object[] { "((Depth <= 10 && (Depth <= 10 && (Depth != 10))))", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
-                new object[] { "(ThreadData != 1,0033) && (ThreadData = 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
-                new object[] { "(ThreadData != 1,0033 && ThreadData != 1,002) && (ThreadData = 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
-                new object[] { "(OldProcessName = test && OldProcessName != test1 || OldProcessName != test2)", new FilterQueryExpressionTestTraceEvent("OldProcessName", "test") },
+                new object[] { "(ThreadData != 1,0033) && (ThreadData == 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
+                new object[] { "(ThreadData != 1,0033 && ThreadData != 1,002) && (ThreadData == 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
+                new object[] { "(OldProcessName == test && OldProcessName != test1 || OldProcessName != test2)", new FilterQueryExpressionTestTraceEvent("OldProcessName", "test") },
                 new object[] { "(GC/Start::Depth >= 10 && GC/Start::Depth <= 20)", new FilterQueryExpressionTestTraceEvent("Depth", "15", "GC/Start") },
                 new object[]
                 {
-                    "(GC/Start::Depth = 10) && (ThreadData Contains 10)",
+                    "(GC/Start::Depth == 10) && (ThreadData Contains 10)",
                     new FilterQueryExpressionTestTraceEvent(propertyNamesToValues: new List<System.Tuple<string, string>>
                     {
                         Tuple.Create("Depth", "10"),
@@ -395,7 +395,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "((GC/Start::Depth = 10) && (Depth <= 10)) || ((GC/Start::ThreadData != 10) || (Depth >= 10))",
+                    "((GC/Start::Depth == 10) && (Depth <= 10)) || ((GC/Start::ThreadData != 10) || (Depth >= 10))",
                     new FilterQueryExpressionTestTraceEvent(propertyNamesToValues: new List<System.Tuple<string, string>>
                     {
                         Tuple.Create("Depth", "10"),
@@ -405,7 +405,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "((GC/Start::Depth = 10 && (GC/Start::Depth <= 11 && (GC/Start::Depth <= 12 && (Depth <= 13 && (GC/Start::Depth <= 14))))))",
+                    "((GC/Start::Depth == 10 && (GC/Start::Depth <= 11 && (GC/Start::Depth <= 12 && (Depth <= 13 && (GC/Start::Depth <= 14))))))",
                     new FilterQueryExpressionTestTraceEvent(propertyNamesToValues: new List<System.Tuple<string, string>>
                     {
                         Tuple.Create("Depth", "10"),
@@ -437,14 +437,14 @@ namespace TraceEventTests
                 new object[] { "((Depth <= 10) && (Depth <= 20)) || ((Depth != 15) && (Depth > 5))", new Dictionary<string, string>{{ "Depth", "12"}}, string.Empty },
                 new object[] { "((Depth != 10 && (Depth != 10 && (Depth != 10))))", new Dictionary<string, string>{{ "Depth", "5"}}, string.Empty},
                 new object[] { "((Depth <= 10 && (Depth <= 10 && (Depth != 10))))", new Dictionary<string, string>{{ "Depth", "5"}}, string.Empty},
-                new object[] { "(ThreadData != 1,0033) && (ThreadData = 1001)", new Dictionary<string, string>{{ "ThreadData", "1001"}}, string.Empty},
-                new object[] { "(ThreadData != 1,0033 && ThreadData != 1,002) && (ThreadData = 1001)", new Dictionary<string, string>{{ "ThreadData", "1001"}}, string.Empty},
-                new object[] { "(OldProcessName = test && OldProcessName != test1 || OldProcessName != test2)", new Dictionary<string, string>{{ "OldProcessName", "test"}}, string.Empty},
+                new object[] { "(ThreadData != 1,0033) && (ThreadData == 1001)", new Dictionary<string, string>{{ "ThreadData", "1001"}}, string.Empty},
+                new object[] { "(ThreadData != 1,0033 && ThreadData != 1,002) && (ThreadData == 1001)", new Dictionary<string, string>{{ "ThreadData", "1001"}}, string.Empty},
+                new object[] { "(OldProcessName == test && OldProcessName != test1 || OldProcessName != test2)", new Dictionary<string, string>{{ "OldProcessName", "test"}}, string.Empty},
                 new object[] { "(GC/Start::Depth >= 10 && GC/Start::Depth <= 20)", new Dictionary<string, string>{{ "Depth", "15" }}, "GC/Start"},
                 new object[] { "(GC/Start::Depth>=10 && GC/Start::Depth <=20)", new Dictionary<string, string>{{ "Depth", "15" }}, "GC/Start"},
                 new object[]
                 {
-                    "(GC/Start::Depth = 10) && (ThreadData Contains 10)",
+                    "(GC/Start::Depth == 10) && (ThreadData Contains 10)",
                     new Dictionary<string, string>
                     {
                         { "Depth", "10" },
@@ -454,7 +454,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "((GC/Start::Depth = 10) && (Depth <= 10)) || ((GC/Start::ThreadData != 10) || (Depth >= 10))",
+                    "((GC/Start::Depth == 10) && (Depth <= 10)) || ((GC/Start::ThreadData != 10) || (Depth >= 10))",
                     new Dictionary<string, string>
                     {
                         { "Depth", "10" },
@@ -464,7 +464,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "((GC/Start::Depth = 10 && (GC/Start::Depth <= 11 && (GC/Start::Depth <= 12 && (Depth <= 13 && (GC/Start::Depth <= 14))))))",
+                    "((GC/Start::Depth == 10 && (GC/Start::Depth <= 11 && (GC/Start::Depth <= 12 && (Depth <= 13 && (GC/Start::Depth <= 14))))))",
                     new Dictionary<string, string>
                     {
                         { "Depth", "10" },
@@ -492,16 +492,16 @@ namespace TraceEventTests
             private readonly List<object[]> _data = new List<object[]>
             {
                 new object[] { "(Depth <= 10) && (Depth <= 20)", new FilterQueryExpressionTestTraceEvent("Depth", "15") },
-                new object[] { "((Depth <= 10) && (Depth <= 20)) || ((Depth = 15) && (Depth < 5))", new FilterQueryExpressionTestTraceEvent("Depth", "12") },
-                new object[] { "((Depth = 10 && (Depth = 10 && (Depth = 10))))", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
+                new object[] { "((Depth <= 10) && (Depth <= 20)) || ((Depth == 15) && (Depth < 5))", new FilterQueryExpressionTestTraceEvent("Depth", "12") },
+                new object[] { "((Depth == 10 && (Depth == 10 && (Depth == 10))))", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
                 new object[] { "((Depth >= 10 && (Depth >= 10 && (Depth >= 10))))", new FilterQueryExpressionTestTraceEvent("Depth", "5") },
-                new object[] { "(ThreadData = 1,0033) && (ThreadData = 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
-                new object[] { "(ThreadData = 1,0033 && ThreadData != 1,002) && (ThreadData = 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
-                new object[] { "(OldProcessName != test && OldProcessName = test1 || OldProcessName = test2)", new FilterQueryExpressionTestTraceEvent("OldProcessName", "test") },
+                new object[] { "(ThreadData == 1,0033) && (ThreadData == 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
+                new object[] { "(ThreadData == 1,0033 && ThreadData != 1,002) && (ThreadData == 1001)", new FilterQueryExpressionTestTraceEvent("ThreadData", "1001") },
+                new object[] { "(OldProcessName != test && OldProcessName == test1 || OldProcessName == test2)", new FilterQueryExpressionTestTraceEvent("OldProcessName", "test") },
                 new object[] { "(GC/Start::Depth >= 10 && GC/Start::Depth >= 20)", new FilterQueryExpressionTestTraceEvent("Depth", "15", "GC/Start") },
                 new object[]
                 {
-                    "(GC/Start::Depth = 10) && (ThreadData Contains 10)",
+                    "(GC/Start::Depth == 10) && (ThreadData Contains 10)",
                     new FilterQueryExpressionTestTraceEvent(propertyNamesToValues: new List<System.Tuple<string, string>>
                     {
                         Tuple.Create("Depth", "10"),
@@ -521,7 +521,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "((GC/Start::Depth != 10 && (GC/Start::Depth = 11 && (GC/Start::Depth = 12 && (Depth = 13 && (GC/Start::Depth = 14))))))",
+                    "((GC/Start::Depth != 10 && (GC/Start::Depth == 11 && (GC/Start::Depth == 12 && (Depth == 13 && (GC/Start::Depth == 14))))))",
                     new FilterQueryExpressionTestTraceEvent(propertyNamesToValues: new List<System.Tuple<string, string>>
                     {
                         Tuple.Create("Depth", "10"),
@@ -549,17 +549,17 @@ namespace TraceEventTests
             private readonly List<object[]> _data = new List<object[]>
             {
                 new object[] { "(Depth <= 10) && (Depth <= 20)", new Dictionary<string, string>{{"Depth", "15"}}, "GC/Start"},
-                new object[] { "((Depth<=10) && (Depth<=20)) || ((Depth = 15) && (Depth < 5))", new Dictionary<string, string>{{"Depth", "12"}}, "GC/Start"},
-                new object[] { "((Depth<=10) && (Depth<=20)) || ((Depth=15) && (Depth<5))", new Dictionary<string, string>{{"Depth", "12"}}, "GC/Start"},
-                new object[] { "((Depth = 10 && (Depth = 10 && (Depth = 10))))", new Dictionary<string, string>{{"Depth", "5"}}, "GC/Start"},
+                new object[] { "((Depth<=10) && (Depth<=20)) || ((Depth == 15) && (Depth < 5))", new Dictionary<string, string>{{"Depth", "12"}}, "GC/Start"},
+                new object[] { "((Depth<=10) && (Depth<=20)) || ((Depth==15) && (Depth<5))", new Dictionary<string, string>{{"Depth", "12"}}, "GC/Start"},
+                new object[] { "((Depth == 10 && (Depth == 10 && (Depth == 10))))", new Dictionary<string, string>{{"Depth", "5"}}, "GC/Start"},
                 new object[] { "((Depth >= 10 && (Depth >= 10 && (Depth >= 10))))", new Dictionary<string, string>{{"Depth", "5"}}, "GC/Start" },
-                new object[] { "(ThreadData = 1,0033) && (ThreadData = 1001)", new Dictionary<string, string>{{"ThreadData", "1001"}}, "GC/Start"},
-                new object[] { "(ThreadData = 1,0033 && ThreadData != 1,002) && (ThreadData = 1001)", new Dictionary<string, string>{{"ThreadData", "1001"}}, "GC/Start" },
-                new object[] { "(OldProcessName != test && OldProcessName = test1 || OldProcessName = test2)", new Dictionary<string, string>{{"OldProcessName", "test"}}, "GC/Start" },
+                new object[] { "(ThreadData == 1,0033) && (ThreadData == 1001)", new Dictionary<string, string>{{"ThreadData", "1001"}}, "GC/Start"},
+                new object[] { "(ThreadData == 1,0033 && ThreadData != 1,002) && (ThreadData == 1001)", new Dictionary<string, string>{{"ThreadData", "1001"}}, "GC/Start" },
+                new object[] { "(OldProcessName != test && OldProcessName == test1 || OldProcessName == test2)", new Dictionary<string, string>{{"OldProcessName", "test"}}, "GC/Start" },
                 new object[] { "(GC/Start::Depth >= 10 && GC/Start::Depth >= 20)", new Dictionary<string, string> { { "Depth", "15" }}, "GC/Start"},
                 new object[]
                 {
-                    "(GC/Start::Depth = 10) && (ThreadData Contains 10)",
+                    "(GC/Start::Depth == 10) && (ThreadData Contains 10)",
                     new Dictionary<string, string>
                     {
                         { "Depth", "10" },
@@ -579,7 +579,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "((GC/Start::Depth != 10 && (GC/Start::Depth = 11 && (GC/Start::Depth = 12 && (Depth = 13 && (GC/Start::Depth = 14))))))",
+                    "((GC/Start::Depth != 10 && (GC/Start::Depth == 11 && (GC/Start::Depth == 12 && (Depth == 13 && (GC/Start::Depth == 14))))))",
                     new Dictionary<string, string>
                     {
                         { "Depth", "10" },

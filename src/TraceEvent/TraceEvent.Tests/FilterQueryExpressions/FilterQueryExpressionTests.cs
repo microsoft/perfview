@@ -9,10 +9,10 @@ namespace TraceEventTests
     public sealed class FilterQueryExpressionTests
     {
         [Theory]
-        [InlineData("Property = 1,001", "Property", "1,001")]
-        [InlineData("Property= 1,001", "Property", "1,001")]
-        [InlineData("Property=1,001", "Property", "1,001")]
-        [InlineData("Property =1,001", "Property", "1,001")]
+        [InlineData("Property == 1,001", "Property", "1,001")]
+        [InlineData("Property== 1,001", "Property", "1,001")]
+        [InlineData("Property==1,001", "Property", "1,001")]
+        [InlineData("Property ==1,001", "Property", "1,001")]
         [InlineData("ThreadData Contains ,", "ThreadData", "1,001")]
         [InlineData("Depth <= 1", "Depth", "1")]
         [InlineData("Depth<= 1", "Depth", "1")]
@@ -52,25 +52,25 @@ namespace TraceEventTests
             {
                 new object[]
                 {
-                    "Property = 1,001",
+                    "Property == 1,001",
                     new Dictionary<string, string> {{ "Property", "1,001" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "Property= 1,001",
+                    "Property== 1,001",
                     new Dictionary<string, string> {{ "Property", "1,001" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "Property =1,001",
+                    "Property ==1,001",
                     new Dictionary<string, string> {{ "Property", "1,001" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "Property=1,001",
+                    "Property==1,001",
                     new Dictionary<string, string> {{ "Property", "1,001" }},
                     "GC/Start"
                 },
@@ -160,13 +160,13 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "GC/Start::Depth = 10",
+                    "GC/Start::Depth == 10",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
                 new object[]
                 {
-                    "GC/Start::Depth = 10",
+                    "GC/Start::Depth == 10",
                     new Dictionary<string, string> {{ "Depth", "10" }},
                     "GC/Start"
                 },
@@ -186,9 +186,9 @@ namespace TraceEventTests
         }
 
         [Theory]
-        [InlineData("Property = 1,001", "Property", "1,002")]
+        [InlineData("Property == 1,001", "Property", "1,002")]
         [InlineData("Property != 1,001", "Property", "1,001")]
-        [InlineData("Depth = 1", "Depth", "2")]
+        [InlineData("Depth == 1", "Depth", "2")]
         [InlineData("Depth >= 1", "Depth", "0")]
         [InlineData("Depth <= 1", "Depth", "2")]
         [InlineData("Depth <= 1", "Property", "2")]
@@ -208,7 +208,7 @@ namespace TraceEventTests
             {
                 new object[]
                 {
-                    "Property = 1,001",
+                    "Property == 1,001",
                     new Dictionary<string, string> {{ "Property", "1,002" }},
                     "GC/Start"
                 },
@@ -220,7 +220,7 @@ namespace TraceEventTests
                 },
                 new object[]
                 {
-                    "Depth = 1",
+                    "Depth == 1",
                     new Dictionary<string, string> {{ "Depth", "2" }},
                     "GC/Start"
                 },

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
 {
@@ -30,7 +29,7 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
         private static readonly Dictionary<string, Operator> _operatorMap =
             new Dictionary<string, Operator>(StringComparer.OrdinalIgnoreCase)
             {
-                { "=" , Operator.Equal },
+                { "==" , Operator.Equal },
                 { "!=" , Operator.NotEqualTo },
                 { ">", Operator.GreaterThan },
                 { ">=", Operator.GreaterThanOrEqualTo },
@@ -40,7 +39,7 @@ namespace Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression
             };
 
         private static HashSet<string> _uniqueNumericOperators 
-            = new HashSet<string> { "!=", "<=", ">=", "<", ">", "=" };
+            = new HashSet<string> { "!=", "<=", ">=", "==", "<", ">" };
 
         private readonly string _expression;
         private readonly string[] _lhsSplit;

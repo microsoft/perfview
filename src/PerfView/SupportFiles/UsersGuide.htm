@@ -3783,28 +3783,33 @@
         where:
         <ul>
             <li> <strong>LeftOperand</strong> can either be the name of the property or the name of the event followed by "::" and the name of the property.  </li>
-            <li> <strong>Operator</strong> can be one of the following: =, !=, &#60;, <=, >, >=, Contains </li>
-            <li> <strong>RightOperand</strong> can either be a string or a numeric quantity that'll be interpretted as a double</li>
+            <li> <strong>Operator</strong> can be one of the following: ==, !=, &#60;, <=, >, >=, Contains. </li>
+            <li> <strong>RightOperand</strong> can either be a string or a numeric quantity that'll be interpreted as a double.</li>
         </ul>
 
-        Once a query is specified, the logical OR operator || / the logical AND operator && can be used to combine individual expressions.
-        Individual expressions can be encased in parentheses (). Current limitations include not combining more than 26 expressions and spaces
-        are required whenever Contains is used as an operator. <br /><br />
+        <strong> Notes: </strong>
+        <ul>
+            <li> Once a query is specified, the logical OR operator || / the logical AND operator && can be used to combine individual expressions. </li>
+            <li> Individual expressions can be encased in parentheses (). </li>
+            <li> Currently only 26 expressions can be created. </li>
+            <li> Spaces are required whenever Contains is used as an operator. </li>
+            <li> If you don't specify any fields to display, all fields will show up as part of the "Rest" column.</li>
+        </ul>
 
-        <strong> Examples </strong><br /><br />
+        <strong> Examples: </strong><br /><br />
 
         Examples of simple queries include:
         <ul>
-            <li><code> [(ThreadID = 1,240) && (ProcessName = devenv)] ThreadID ProcessorNumber </code></li>
-            <li><code> [(GC/Start::Depth > 1) && (ProcessName=devenv)] </code></li>
+            <li><code> [(ThreadID == 1,240) && (ProcessName == devenv)] ThreadID ProcessorNumber </code></li>
+            <li><code> [(GC/Start::Depth > 1) && (ProcessName==devenv)] </code></li>
             <li><code> [(ProcessName Contains ServiceHub) || (ProcessName Contains devenv)] ProcessName Count ProcessorNumber Depth </code></li>
         </ul>
 
         <br /> Examples of some more complex expressions:
 
         <ul>
-            <li><code> [(Count>10 && (Depth >= -1) && (Count<=30) && (Count <= 30 || ProcessorNumber = 2))] Count ProcessorNumber Depth </code></li>
-            <li><code> [(Count > 10 && (Count <= 30) && (Count <= 30 || ProcessorNumber = 2))] Count ProcessorNumber Depth </code></li>
+            <li><code> [(Count>10 && (Depth >= -1) && (Count<=30) && (Count <= 30 || ProcessorNumber == 2))] Count ProcessorNumber Depth </code></li>
+            <li><code> [(Count > 10 && (Count <= 30) && (Count <= 30 || ProcessorNumber == 2))] Count ProcessorNumber Depth </code></li>
         </ul>
 
         Some video examples of the usage:
