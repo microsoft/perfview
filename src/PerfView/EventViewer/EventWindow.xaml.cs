@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using Utilities;
@@ -152,6 +153,15 @@ namespace PerfView
             }
 
             EventTypes.ItemsSource = m_source.EventNames;
+
+            Grid.Sorting += delegate (object sender, DataGridSortingEventArgs e)
+            {
+                e.Handled = true;
+                var direction = (e.Column.SortDirection != ListSortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                e.Column.SortDirection = direction;
+                var lcv = (ListCollectionView)CollectionViewSource.GetDefaultView(Grid.ItemsSource);
+                lcv.CustomSort = new LogicalGridDataComparer<EventRecord>(e.Column.SortMemberPath, direction);
+            };
         }
 
         public PerfViewEventSource DataSource { get; private set; }
