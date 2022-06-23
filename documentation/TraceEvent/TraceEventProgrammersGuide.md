@@ -481,8 +481,8 @@ PerfView collect /OnlyProviders=*Microsoft-Demos-MySource
 
 Please note the `*`. This is PerfView's way of indicating that the name should be converted to a GUID in the standard way that `EventSource` sources define. Once you have the data you can view it using the PerfView **Events** view. It is very easy to filter by process, time, event name or text in the events, as well as export the data to Excel or XML. The following PerfView videos are especially relevant.
 
-* [Event Viewer Basics](http://channel9.msdn.com/Series/PerfView-Tutorial/Perfview-Tutorial-6-The-Event-Viewer-Basics)
-* [Generating your own Events with EventSources](http://channel9.msdn.com/Series/PerfView-Tutorial/PerfView-Tutorial-8-Generating-Your-Own-Events-with-EventSources)
+* [Event Viewer Basics](https://docs.microsoft.com/en-us/shows/perfview-tutorial/6-event-viewer-basics)
+* [Generating your own Events with EventSources](https://docs.microsoft.com/en-us/shows/perfview-tutorial/8-generating-your-own-events-eventsources)
 
 You will find having PerfView to be very handy when debugging your own ETW processing.
 
