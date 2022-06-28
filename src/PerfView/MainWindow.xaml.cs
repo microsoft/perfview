@@ -1126,7 +1126,7 @@ namespace PerfView
 
             // Initialize configuration options.
             InitializeOpenToLastUsedDirectory();
-            InitializeDoNotTruncateStackViewerLinesOnPaste();
+            InitializeDoNotCompressStackFramesOnCopy();
 
             InitializeFeedback();
         }
@@ -1158,25 +1158,27 @@ namespace PerfView
             OpenPath(path);
         }
         /// <summary>
-        /// Initial read-in of the user settings to check if they had previously opted-in for the DoNotTruncateStackViewerLinesOnPaste option
+        /// Initial read-in of the user settings to check if they had previously opted-in for the DoNotCompressStackFramesOnCopy option
         /// </summary>
-        public void InitializeDoNotTruncateStackViewerLinesOnPaste()
+        public void InitializeDoNotCompressStackFramesOnCopy()
         {
             bool currentValue;
-            bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out currentValue);
-            Option_DoNotTruncateStackViewerLinesOnPaste.IsChecked = currentValue;
+            bool.TryParse(App.UserConfigData["DoNotCompressStackFramesOnCopy"], out currentValue);
+            Option_DoNotCompressStackFramesOnCopy.IsChecked = currentValue;
+            PerfDataGrid.DoNotCompressStackFrames = currentValue;
         }
 
         /// <summary>
-        /// Toggles the option to not truncate/minimize stack frame lines copied from the stack viewer window.
+        /// Toggles the option to compress stack frame lines copied from the stack viewer window.
         /// </summary>
-        public void ToggleDoNotTruncateStackViewerLinesOnPaste(object sender, RoutedEventArgs e)
+        public void ToggleDoNotCompressStackFramesOnCopy(object sender, RoutedEventArgs e)
         {
             bool currentValue;
-            bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out currentValue);
+            bool.TryParse(App.UserConfigData["DoNotCompressStackFramesOnCopy"], out currentValue);
             bool newValue = !currentValue;
-            App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"] = newValue.ToString();
-            Option_DoNotTruncateStackViewerLinesOnPaste.IsChecked = newValue;
+            App.UserConfigData["DoNotCompressStackFramesOnCopy"] = newValue.ToString();
+            Option_DoNotCompressStackFramesOnCopy.IsChecked = newValue;
+            PerfDataGrid.DoNotCompressStackFrames = newValue;
         }
 
         /// <summary>

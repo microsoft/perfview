@@ -18,6 +18,7 @@ namespace PerfView
     public partial class PerfDataGrid : UserControl
     {
         public static bool NoPadOnCopyToClipboard = false;
+        public static bool DoNotCompressStackFrames = false;
 
         public PerfDataGrid()
         {
@@ -245,8 +246,8 @@ namespace PerfView
                 return content;
             }
 
-            // Check if the user option is set to not truncate/shorten content
-            if (bool.TryParse(App.UserConfigData["DoNotTruncateStackViewerLinesOnPaste"], out bool doNotTruncateLines) && doNotTruncateLines)
+            // Check if the user option is set to not compress stack frames when copying
+            if (DoNotCompressStackFrames)
             {
                 return content;
             }
