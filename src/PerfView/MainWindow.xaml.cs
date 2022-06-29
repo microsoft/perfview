@@ -1126,6 +1126,7 @@ namespace PerfView
 
             // Initialize configuration options.
             InitializeOpenToLastUsedDirectory();
+            InitializeDoNotCompressStackFramesOnCopy();
 
             InitializeFeedback();
         }
@@ -1155,6 +1156,29 @@ namespace PerfView
                 path = App.UserConfigData["Directory"] ?? ".";
             }
             OpenPath(path);
+        }
+        /// <summary>
+        /// Initial read-in of the user settings to check if they had previously opted-in for the DoNotCompressStackFramesOnCopy option
+        /// </summary>
+        public void InitializeDoNotCompressStackFramesOnCopy()
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["DoNotCompressStackFramesOnCopy"], out currentValue);
+            Option_DoNotCompressStackFramesOnCopy.IsChecked = currentValue;
+            PerfDataGrid.DoNotCompressStackFrames = currentValue;
+        }
+
+        /// <summary>
+        /// Toggles the option to compress stack frame lines copied from the stack viewer window.
+        /// </summary>
+        public void ToggleDoNotCompressStackFramesOnCopy(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["DoNotCompressStackFramesOnCopy"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["DoNotCompressStackFramesOnCopy"] = newValue.ToString();
+            Option_DoNotCompressStackFramesOnCopy.IsChecked = newValue;
+            PerfDataGrid.DoNotCompressStackFrames = newValue;
         }
 
         /// <summary>
