@@ -270,12 +270,9 @@ namespace Microsoft.Diagnostics.Tracing
             // Get the name of all DLLS (in the file, and the set of all address-process pairs in the file.   
             using (var source = new ETWTraceEventSource(etlFile))
             {
-                var handledImageGroupFiles = new HashSet<string>();
                 source.Kernel.ImageGroup += delegate (ImageLoadTraceData data)
                 {
                     var fileName = data.FileName;
-                    if (!handledImageGroupFiles.Add(fileName))
-                        return;
 
                     if (fileName.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase) < 0)
                     {
