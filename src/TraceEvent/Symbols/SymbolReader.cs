@@ -23,8 +23,10 @@ namespace Microsoft.Diagnostics.Symbols
     {
         /// <summary>
         /// Opens a new SymbolReader.   All diagnostics messages about symbol lookup go to 'log'.  
+        /// Optional HttpClient delegating handler to be used when downloading symbols or source files.
+        /// Note: The delegating handler will be disposed when this SymbolReader is disposed.
         /// </summary>
-        public SymbolReader(TextWriter log, string nt_symbol_path = null)
+        public SymbolReader(TextWriter log, string nt_symbol_path = null, DelegatingHandler httpClientDelegatingHandler = null)
         {
             m_log = log;
 #if SYNC_SYMBOLREADER_LOG
@@ -67,6 +69,19 @@ namespace Microsoft.Diagnostics.Symbols
             }
             var newSymPathStr = newSymPath.ToString();
             m_symbolPath = newSymPathStr;
+
+            if (httpClientDelegatingHandler != null)
+            {
+                HttpClient = new HttpClient(httpClientDelegatingHandler, disposeHandler: true);
+            }
+            else
+            {
+                HttpClient = new HttpClient();
+            }
+
+            // Some symbol servers want a user agent and simply fail if they don't have one (see https://github.com/Microsoft/perfview/issues/571)
+            // So set it (this is what the symsrv code on Windows sets).
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Microsoft-Symbol-Server/6.13.0009.1140");
         }
 
         // These routines find a PDB based on something (either an DLL or a PDB 'signature')
@@ -443,10 +458,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return m_SymbolCacheDirectory;
             }
         }
-        /// <summary>
-        /// Authorization header to be ued when making requests to source server (only for SourceLink)
-        /// </summary>
-        public string AuthorizationHeaderForSourceLink { get; set; }
+
         /// <summary>
         /// The place where source is downloaded from a source server.  
         /// </summary>
@@ -497,6 +509,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// A place to log additional messages 
         /// </summary>
         public TextWriter Log { get { return m_log; } }
+
+        internal HttpClient HttpClient { get; private set; }
 
         /// <summary>
         /// Given a full filename path to an NGEN image, ensure that there is an NGEN image for it
@@ -938,6 +952,12 @@ namespace Microsoft.Diagnostics.Symbols
         public void Dispose()
         {
             m_symbolModuleCache.Clear();
+
+            if (HttpClient != null)
+            {
+                HttpClient.Dispose();
+                HttpClient = null;
+            }
         }
 
         #region private
@@ -1037,25 +1057,23 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
-                            var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
-#if !NETSTANDARD1_6
-                            // Some symbol servers want a user agent and simply fail if they don't have one (see https://github.com/Microsoft/perfview/issues/571)
-                            // So set it (this is what the symsrv code on Windows sets).   On NetStandard1.6 we give up since we dont' have this API available.  
-                            req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
-#endif
-                            var responseTask = req.GetResponseAsync();
+                            var responseTask = HttpClient.GetAsync(fullUri);
                             responseTask.Wait();
-                            var response = responseTask.Result;
+                            var response = responseTask.Result.EnsureSuccessStatusCode();
 
                             alive = true;
                             if (!canceled)
                             {
-                                if (contentTypeFilter != null && !contentTypeFilter(response.ContentType))
+                                var contentType = response.Content.Headers.ContentType;
+                                if (contentTypeFilter != null && contentType != null && !contentTypeFilter(contentType.ToString()))
                                 {
-                                    throw new InvalidOperationException("Bad File Content type " + response.ContentType + " for " + fullDestPath);
+                                    throw new InvalidOperationException("Bad File Content type " + contentType + " for " + fullDestPath);
                                 }
 
-                                using (var fromStream = response.GetResponseStream())
+                                var responseStreamTask = response.Content.ReadAsStreamAsync();
+                                responseStreamTask.Wait();
+
+                                using (var fromStream = responseStreamTask.Result)
                                 {
                                     if (CopyStreamToFile(fromStream, fullUri, fullDestPath, ref canceled) == 0)
                                     {
@@ -1071,21 +1089,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             if (!canceled)
                             {
-                                var asWeb = e as WebException;
-                                var sentMessage = false;
-                                if (asWeb != null)
-                                {
-                                    var asHttpResonse = asWeb.Response as HttpWebResponse;
-                                    if (asHttpResonse != null && asHttpResonse.StatusCode == HttpStatusCode.NotFound)
-                                    {
-                                        sentMessage = true;
-                                        m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
-                                    }
-                                }
-                                if (!sentMessage)
-                                {
-                                    m_log.WriteLine("FindSymbolFilePath: Probe of {0} failed: {1}", fullUri, e.Message);
-                                }
+                                m_log.WriteLine("FindSymbolFilePath: Probe of {0} failed: {1}", fullUri, e.Message);
                             }
                         }
                     }
@@ -1121,12 +1125,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 });
 
-                // Wait 10 seconds allowing for interruptions.  
-                var limit = 100;
-                if (serverPath.StartsWith(@"\\symbols", StringComparison.OrdinalIgnoreCase))     // This server is pretty slow.  
-                {
-                    limit = 250;
-                }
+                // Wait 25 seconds allowing for interruptions.
+                var limit = 250;
 
                 for (int i = 0; i < limit; i++)
                 {
@@ -2006,42 +2006,34 @@ namespace Microsoft.Diagnostics.Symbols
             string url = Url;
             if (url != null)
             {
-                using (var httpClient = new HttpClient())
+                var httpClient = _symbolModule.SymbolReader.HttpClient;
+                HttpResponseMessage response = httpClient.GetAsync(url).Result;
+
+                response.EnsureSuccessStatusCode();
+                Stream content = response.Content.ReadAsStreamAsync().Result;
+
+                if (this._sha256 == null)
                 {
-                    var authorizationHeader = this._symbolModule.SymbolReader.AuthorizationHeaderForSourceLink;
-                    if (authorizationHeader != null)
+                    this._sha256 = SHA256.Create();
+                }
+
+                string cachedLocation = Path.Combine(
+                    _symbolModule.SymbolReader.SourceCacheDirectory,
+                    BitConverter.ToString(this._sha256.ComputeHash(Encoding.UTF8.GetBytes(url.ToUpperInvariant())))
+                        .Replace("-", string.Empty));
+                if (cachedLocation != null)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(cachedLocation));
+                    using (FileStream file = File.Create(cachedLocation))
                     {
-                        httpClient.DefaultRequestHeaders.Add("Authorization", authorizationHeader);
+                        content.CopyTo(file);
                     }
 
-                    HttpResponseMessage response = httpClient.GetAsync(url).Result;
-
-                    response.EnsureSuccessStatusCode();
-                    Stream content = response.Content.ReadAsStreamAsync().Result;
-
-                    if (this._sha256 == null)
-                    {
-                        this._sha256 = SHA256.Create();
-                    }
-
-                    string cachedLocation = Path.Combine(
-                        _symbolModule.SymbolReader.SourceCacheDirectory,
-                        BitConverter.ToString(this._sha256.ComputeHash(Encoding.UTF8.GetBytes(url.ToUpperInvariant())))
-                            .Replace("-", string.Empty));
-                    if (cachedLocation != null)
-                    {
-                        Directory.CreateDirectory(Path.GetDirectoryName(cachedLocation));
-                        using (FileStream file = File.Create(cachedLocation))
-                        {
-                            content.CopyTo(file);
-                        }
-
-                        return cachedLocation;
-                    }
-                    else
-                    {
-                        _log.WriteLine("Warning: SourceCache not set, giving up fetching source from the network.");
-                    }
+                    return cachedLocation;
+                }
+                else
+                {
+                    _log.WriteLine("Warning: SourceCache not set, giving up fetching source from the network.");
                 }
             }
             return null;
