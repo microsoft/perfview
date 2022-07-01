@@ -1125,12 +1125,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 });
 
-                // Wait 10 seconds allowing for interruptions.  
-                var limit = 100;
-                if (serverPath.StartsWith(@"\\symbols", StringComparison.OrdinalIgnoreCase))     // This server is pretty slow.  
-                {
-                    limit = 250;
-                }
+                // Wait 25 seconds allowing for interruptions.
+                var limit = 250;
 
                 for (int i = 0; i < limit; i++)
                 {
