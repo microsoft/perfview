@@ -12696,6 +12696,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         None = 0,
         DesktopClr = 0x1,
         CoreClr = 0x2,
+        Mono = 0x4,
     }
     [Flags]
     public enum ExceptionThrownFlags
