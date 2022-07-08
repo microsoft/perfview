@@ -3660,7 +3660,7 @@ namespace PerfView
                     log.WriteLine("Parsing ETW Provider Spec: {0}", providerSpec);
                 }
 
-                TraceEventProviderOptions options = inputOptions.Clone() ?? new TraceEventProviderOptions();
+                TraceEventProviderOptions options = inputOptions?.Clone() ?? new TraceEventProviderOptions();
                 TraceEventLevel level = TraceEventLevel.Verbose;
                 ulong matchAnyKeywords = unchecked((ulong)-1);
 
