@@ -12950,7 +12950,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         QuickJit = 0x1,
         QuickJitForLoops = 0x2,
         TieredPGO = 0x4,
-        ReadyToRun = 0x8,
+        ReadyToRun = 0x8,/
     }
 
     // [SecuritySafeCritical]
