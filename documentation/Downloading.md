@@ -35,7 +35,7 @@ the Digital Signatures page for perfView by
 
 * Selecting PerfView -> right click -> Properties -> Digital Signatures.
 
-You will see a sha1 and sha256 signature from the 'Microsoft Corporation'.
+You will see a sha256 signature from the 'Microsoft Corporation'.
 This confirms that software is authentic. You can also do this by running the signtool command
 ```
  signtool verify /pa /all  PerfView.exe

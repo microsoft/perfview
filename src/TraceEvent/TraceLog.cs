@@ -4462,6 +4462,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             unhandledEventTemplate.traceEventSource = TraceLog;
             userData = TraceLog.UserData;
             this.ownsItsTraceLog = ownsItsTraceLog;
+            CopyFrom(TraceLog);
         }
 
         private TraceEvents events;

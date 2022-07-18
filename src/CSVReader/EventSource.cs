@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -66,6 +67,10 @@ namespace EventSources
         /// Optionally you can provide a list of columns available.  
         /// </summary>
         public virtual ICollection<string> AllColumnNames(List<string> eventNames) { return null; }
+        /// <summary>
+        /// An optional filter query expression tree that'll be used to filter different events. 
+        /// </summary>
+        public FilterQueryExpressionTree FilterQueryExpressionTree { get; set; } = null;
 
         /// <summary>
         /// The number of fields that are NOT put in the 'rest' column.  Defaults to 4
@@ -90,7 +95,7 @@ namespace EventSources
 
         /// <summary>
         /// Utility function that takes a specification for columns (which can include *) and the raw list of
-        /// all possible columns and returns the list that match the specification. 
+        /// all possible columns and returns the list that match the specification. This function also extracts the event filter query and creates a FilterQueryExpressionTree.
         /// </summary>
         public static List<string> ParseColumns(string columnSpec, ICollection<string> columnNames)
         {

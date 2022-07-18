@@ -18,6 +18,7 @@ namespace PerfView
     public partial class PerfDataGrid : UserControl
     {
         public static bool NoPadOnCopyToClipboard = false;
+        public static bool DoNotCompressStackFrames = false;
 
         public PerfDataGrid()
         {
@@ -241,6 +242,12 @@ namespace PerfView
         private string CompressContent(string content)
         {
             if (content.Length < 70)
+            {
+                return content;
+            }
+
+            // Check if the user option is set to not compress stack frames when copying
+            if (DoNotCompressStackFrames)
             {
                 return content;
             }

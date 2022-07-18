@@ -299,8 +299,7 @@ public class GCHeapDumper
     {
         List<ClrRuntime> runtimes = new List<ClrRuntime>();
 
-        DataTarget dataTarget = null;
-
+        DataTarget dataTarget;
         if (string.IsNullOrWhiteSpace(processDumpFile))
         {
             try
@@ -314,7 +313,12 @@ public class GCHeapDumper
         }
         else
         {
-            dataTarget = DataTarget.LoadDump(processDumpFile, new CacheOptions { MaxDumpCacheSize = 0x8_0000_0000 });
+            CacheOptions cacheOptions = new CacheOptions()
+            {
+                UseOSMemoryFeatures = false // disable AWE
+            };
+
+            dataTarget = DataTarget.LoadDump(processDumpFile, cacheOptions);
         }
 
         if (dataTarget.DataReader.PointerSize != IntPtr.Size)
@@ -1532,7 +1536,7 @@ public class GCHeapDumper
                     m_children.Clear();
                 }
 
-                foreach (var childObj in obj.EnumerateReferences(carefully: true, considerDependantHandles: true))
+                foreach (ulong childObj in obj.EnumerateReferenceAddresses(carefully: true, considerDependantHandles: true))
                     m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(childObj));
 
                 var objNodeIdx = m_gcHeapDump.MemoryGraph.GetNodeIndex(obj);

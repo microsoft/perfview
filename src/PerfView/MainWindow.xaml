@@ -106,6 +106,7 @@
                 </MenuItem>
                 <MenuItem Header="_Options">
                     <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
+                    <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Main View" Command="Help" CommandParameter="MainViewerQuickStart" />
