@@ -19,9 +19,9 @@ jobs:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 2.1.505'
+      displayName: 'Use .NET Core SDK 3.1'
       inputs:
-        version: 2.1.505
+        version: 3.1.x
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
@@ -74,9 +74,9 @@ jobs:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 2.1.505'
+      displayName: 'Use .NET Core SDK 3.1'
       inputs:
-        version: 2.1.505
+        version: 3.1.x
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
