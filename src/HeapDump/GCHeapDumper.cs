@@ -279,98 +279,6 @@ public class GCHeapDumper
         }
     }
 
-    private sealed class DataReaderWrapper : IDisposable, IDataReader
-    {
-        private readonly IDataReader dataReader;
-
-        public DataReaderWrapper(IDataReader dataReader)
-        {
-            this.dataReader = dataReader;
-        }
-
-        public bool IsMinidump => dataReader.IsMinidump;
-
-        public void Close()
-        {
-            dataReader.Close();
-        }
-
-        public void Dispose()
-        {
-            (dataReader as IDisposable)?.Dispose();
-        }
-
-        public IEnumerable<uint> EnumerateAllThreads()
-        {
-            return dataReader.EnumerateAllThreads();
-        }
-
-        public IList<ModuleInfo> EnumerateModules()
-        {
-            return dataReader.EnumerateModules();
-        }
-
-        public void Flush()
-        {
-            dataReader.Flush();
-        }
-
-        public Microsoft.Diagnostics.Runtime.Architecture GetArchitecture()
-        {
-            return dataReader.GetArchitecture();
-        }
-
-        public uint GetPointerSize()
-        {
-            return dataReader.GetPointerSize();
-        }
-
-        public bool GetThreadContext(uint threadID, uint contextFlags, uint contextSize, IntPtr context)
-        {
-            return dataReader.GetThreadContext(threadID, contextFlags, contextSize, context);
-        }
-
-        public bool GetThreadContext(uint threadID, uint contextFlags, uint contextSize, byte[] context)
-        {
-            return dataReader.GetThreadContext(threadID, contextFlags, contextSize, context);
-        }
-
-        public ulong GetThreadTeb(uint thread)
-        {
-            return dataReader.GetThreadTeb(thread);
-        }
-
-        public void GetVersionInfo(ulong baseAddress, out VersionInfo version)
-        {
-            dataReader.GetVersionInfo(baseAddress, out version);
-        }
-
-        public uint ReadDwordUnsafe(ulong addr)
-        {
-            return dataReader.ReadDwordUnsafe(SignExtend(addr));
-        }
-
-        public bool ReadMemory(ulong address, byte[] buffer, int bytesRequested, out int bytesRead)
-        {
-            return dataReader.ReadMemory(SignExtend(address), buffer, bytesRequested, out bytesRead);
-        }
-
-        public bool ReadMemory(ulong address, IntPtr buffer, int bytesRequested, out int bytesRead)
-        {
-            return dataReader.ReadMemory(SignExtend(address), buffer, bytesRequested, out bytesRead);
-        }
-
-        public ulong ReadPointerUnsafe(ulong addr)
-        {
-            return dataReader.ReadPointerUnsafe(SignExtend(addr));
-        }
-
-        public bool VirtualQuery(ulong addr, out VirtualQueryData vq)
-        {
-            return dataReader.VirtualQuery(addr, out vq);
-        }
-    }
-
     private static ulong SignExtend(ulong address)
     {
         unsafe
@@ -406,14 +314,10 @@ public class GCHeapDumper
         }
         else
         {
-            #error dataTarget = DataTarget.LoadDump(processDumpFile);
-            var reader = (IDataReader)Activator.CreateInstance(typeof(DataTarget).Assembly.GetType("Microsoft.Diagnostics.Runtime.DbgEngDataReader"), processDumpFile);
-            var debugInterface = reader.GetType().GetProperty("DebuggerInterface", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(reader);
-            var wrapper = new DataReaderWrapper(reader);
-            target = (DataTarget)typeof(DataTarget).GetMethod("CreateFromReader", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new[] { wrapper, debugInterface });
+            dataTarget = DataTarget.LoadDump(processDumpFile, new CacheOptions { MaxDumpCacheSize = 0x8_0000_0000 });
         }
 
-        if (target.PointerSize != IntPtr.Size)
+        if (dataTarget.DataReader.PointerSize != IntPtr.Size)
         {
             if (IntPtr.Size == 8)
             {
@@ -1329,7 +1233,7 @@ public class GCHeapDumper
 
             DumpCCW(reader, childNode, obj, ccwInfo);
 
-            GrowableArray<NodeIndex> ccwChildren = new GrowableArray<NodeIndex>();
+            var ccwChildren = new HashSet<NodeIndex>();
             ccwChildren.Add(childNode);
 
             if (comPtr != 0)
@@ -1660,18 +1564,21 @@ public class GCHeapDumper
                     DumpRCW(dataTarget.DataReader, objNodeIdx, obj, rcwData);
                 }
 
-                if (type.Name == "Microsoft.Win32.SafeHandles.SafeMemoryMappedViewHandle")
+                if (obj.Type.Name == "Microsoft.Win32.SafeHandles.SafeMemoryMappedViewHandle")
                 {
                     // If the handle is not closed, adjust the size
-                    var field = type.GetFieldByName("_state");
-                    var stateObj = field?.GetValue(objAddr);
-                    if (stateObj is int && (((int)stateObj) & 1) != 1)
+                    var field = obj.Type.GetFieldByName("_state");
+                    if (field is { Type: { ElementType: ClrElementType.Int32 } })
                     {
-                        field = type.GetFieldByName("_numBytes");
-                        var mappedSizeObj = field?.GetValue(objAddr);
-                        if (mappedSizeObj is ulong)
+                        var state = field.Read<int>(obj.Address, interior: false);
+                        if ((state & 1) != 1)
                         {
-                            objSizeAsInt += (int)(ulong)mappedSizeObj;
+                            field = obj.Type.GetFieldByName("_numBytes");
+                            if (field is { Type: { ElementType: ClrElementType.NativeUInt } })
+                            {
+                                var mappedSizeObj = field.Read<nuint>(obj.Address, interior: false);
+                                objSizeAsInt += (int)(ulong)mappedSizeObj;
+                            }
                         }
                     }
                 }
