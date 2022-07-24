@@ -1832,13 +1832,13 @@ namespace Microsoft.Diagnostics.Symbols
         /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
         /// point exists this property will return null.   
         /// </summary>
-        public virtual string Url 
-        { 
-            get 
+        public virtual string Url
+        {
+            get
             {
                 this.GetSourceLinkInfo(out string url, out _);
                 return url;
-            } 
+            }
         }
 
         /// <summary>
@@ -2099,7 +2099,153 @@ namespace Microsoft.Diagnostics.Symbols
             using (var fileStream = File.OpenRead(filePath))
             {
                 byte[] computedHash = _hashAlgorithm.ComputeHash(fileStream);
-                return ArrayEquals(computedHash, _hash);
+                if (ArrayEquals(computedHash, _hash))
+                {
+                    return true;
+                }
+
+                // It's possible we have a line ending mismatch (e.g. the hash was computed
+                // with Windows (CR+LF) line endings, but the source control system
+                // converted to Unix (LF) endings or vice versa). So try the other line ending.
+                fileStream.Position = 0;
+                computedHash = ComputeHashWithSwappedLineEndings(fileStream);
+                if (ArrayEquals(computedHash, _hash))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private byte[] ComputeHashWithSwappedLineEndings(FileStream fs)
+        {
+            // Use a stream reader to determine the encoding. 
+            // The underlying stream is not closed. Default to UTF8 is heuristic
+            Encoding encoding = Encoding.UTF8;
+            using (var streamReader = new StreamReader(fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 8, leaveOpen: true))
+            {
+                streamReader.Peek(); // required to set the encoding
+                encoding = streamReader.CurrentEncoding;
+            }
+
+            // StreamReader.Peek does not change the position of the stream reader but does change the position
+            // of the underlying stream. Reset it
+            fs.Position = 0;
+
+            // If the file is not a common encoding don't bother attempting to normalize
+            if (!(encoding is UTF8Encoding) &&
+                !(encoding is UnicodeEncoding) &&
+                !(encoding is ASCIIEncoding))
+            {
+                return null;
+            }
+
+            using (var reader = new BinaryReader(fs, encoding, leaveOpen: true))
+            {
+                const char CRchar = '\r';
+                const char LFchar = '\n';
+
+                // Determine first line ending
+                LineEnding lineEnding = LineEnding.CRLF;
+                try
+                {
+                    // Using a label and a goto in the default case
+                    // so that we can easily break out of the other
+                    // case statements.
+                    loop: switch (reader.ReadChar())
+                    {
+                        case CRchar:
+                            lineEnding = LineEnding.CRLF;
+                            break;
+
+                        case LFchar:
+                            lineEnding = LineEnding.LF;
+                            break;
+
+                        default:
+                            goto loop;
+                    }
+                }
+                catch (EndOfStreamException)
+                {
+                    // no line ending in file. loop below will be fine
+                }
+
+                // Use an IncrementalHash and append data line at a time so
+                // we can modify the line endings as we go.
+                fs.Position = 0;
+                using (var hasher = IncrementalHash.CreateHash(new HashAlgorithmName(ChecksumAlgorithm)))
+                {
+
+                    // These will capture the characters of the file which we will serialize to bytes
+                    // using the Encoding and append to the incremental hash on each line ending
+                    StringBuilder line = new StringBuilder();
+
+                    // Local function to append a line's worth of data to the hasher.
+                    void AppendLine()
+                    {
+                        byte[] data = encoding.GetBytes(line.ToString());
+                        hasher.AppendData(data, 0, data.Length);
+                    }
+
+                    try
+                    {
+                        while (true) // Loop until EndOfStreamException
+                        {
+                            char nextChar = reader.ReadChar();
+                            switch (nextChar)
+                            {
+                                default:
+                                    line.Append(nextChar);
+                                    break;
+
+                                case CRchar:
+                                    // We found a CR. Assume this file is CRLF and we want to normalize to LF
+                                    if (lineEnding == LineEnding.LF)
+                                    {
+                                        // Mixed line endings
+                                        return null;
+                                    }
+
+                                    nextChar = reader.ReadChar();
+                                    if (nextChar != LFchar)
+                                    {
+                                        // CR not followed by LF
+                                        return null;
+                                    }
+
+                                    line.Append(LFchar);
+                                    AppendLine();
+                                    line.Clear();
+                                    break;
+
+                                case LFchar:
+                                    // We found an LF. Assume this file is LF and want to normalize to CRLF
+                                    if (lineEnding == LineEnding.CRLF)
+                                    {
+                                        // Mixed line endings
+                                        return null;
+                                    }
+
+                                    line.Append(CRchar);
+                                    line.Append(LFchar);
+                                    AppendLine();
+                                    line.Clear();
+                                    break;
+                            }
+                        }
+                    }
+                    catch (EndOfStreamException)
+                    {
+                        // We succesfully normalized the entire file.
+                        // Grab remaining bytes in the case that the file does not end
+                        // with a line ending character.
+                        AppendLine();
+                    }
+
+                    return hasher.GetHashAndReset();
+                }
             }
         }
 
@@ -2131,6 +2277,18 @@ namespace Microsoft.Diagnostics.Symbols
         protected string _filePath;
         private bool _getSourceCalled;
         private bool _checksumMatches;
+
+        /// <summary>
+        /// The different line endings we support for computing file hashes.
+        /// </summary>
+        private enum LineEnding
+        {
+            // Windows-style CR LF (\r\n)
+            CRLF,
+
+            // Unix-style LF (\n)
+            LF
+        }
         #endregion
     }
 }
