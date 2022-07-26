@@ -7854,7 +7854,7 @@
     </p>
     <ol>
         <li>
-            &nbsp; A simple file system path.&nbsp; These can be relative, but absolute paths
+            A simple file system path. These can be relative, but absolute paths
             are recommended
         </li>
         <li>
@@ -7871,6 +7871,22 @@
         Typically if you don't get unmanaged symbols when you do the &#39;Lookup Symbols&#39;,
         you check the log and if necessary add new paths to the symbol path.&nbsp;&nbsp;
         See also <a href="#SymbolResolution">symbol resolution</a>.
+    </p>
+    <p>
+        PerfView supports Azure DevOps symbol servers and it will automatically authenticate either using 
+        local  development credentials (Visual Studio or VSCode) or by prompting you to sign in.
+        <ul>
+            <li>
+                <code>
+                    SRV*localPath*https://<strong>yourorg</strong>.artifacts.visualstudio.com/_apis/Symbol/symsrv
+                </code>
+            </li>
+            <li>
+                <code>
+                    SRV*localPath*https://artifacts.dev.azure.com/<strong>yourorg</strong>/_apis/symbol/symsrv
+                </code>
+            </li>
+        </ul>
     </p>
     <!--  ******** -->
     <h4>Summary</h4>
@@ -7947,6 +7963,19 @@
                     their code with source server support. In this case the PDB symbol file has embedded
                     within it the exact version information needed to find exactly the right version
                     of the source in the source code control system.
+                </li>
+                <li>
+                    If the code was built with <a href="http://aka.ms/sourcelink">Source Link</a> support
+                    then PerfView will attempt to download the source file from the linked repository.
+                    For public repos on GitHub.com, for example, this should just work. For private
+                    GitHub repos and Azure DevOps repos, you may be prompted for authorization.
+                    For Azure DevOps repos, PerfView will try to share credentials with Visual Studio
+                    or VSCode by using <a href="https://devblogs.microsoft.com/azure-sdk/authentication-and-the-azure-sdk/">DefaultAzureCredential</a> 
+                    from the Azure SDK. For GitHub private repos, PerfView will use prompt for Device
+                    Flow authentication. This is backed by an OAuth application in the Microsoft
+                    organization. In either case, if you take too long to sign in, the source look-up
+                    will time out. In that case, just retry the "Go to source" command and it should
+                    succeed.
                 </li>
                 <li>
                     You have set the _NT_SOURCE_PATH environment variable to be a semicolon list of
@@ -8585,7 +8614,7 @@
             <ul>
                 <li>
                     Added support for SourceLink for 'Goto Source' functionality.
-                    Symlink is a technique of finding source files by placing a mapping from built time file name to URL into the
+                    SourceLink is a technique of finding source files by placing a mapping from built time file name to URL into the
                     symbol file so that the source code can be fetched by URL at debug/profiling time.
                     .NET Core annotates all its symbol files this way.   The result is that 'Goto Source' on .NET Core assemblies
                     (that is the framework and ASP.NET) just work in PerfView (it will bring up the relevant source).
