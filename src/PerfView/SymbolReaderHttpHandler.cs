@@ -460,6 +460,11 @@ namespace PerfView
         private readonly TokenCredential _tokenCredential;
 
         /// <summary>
+        /// Protect <see cref="_tokenCredential"/> against concurrent access.
+        /// </summary>
+        private readonly SemaphoreSlim _tokenCredentialGate = new SemaphoreSlim(initialCount: 1);
+
+        /// <summary>
         /// Cache of access tokens per authority. We cache tokens for both
         /// Azure DevOps instances and OAuth authorization endpoints.
         /// </summary>
@@ -543,10 +548,23 @@ namespace PerfView
                     return;
                 }
 
-                // Use the token credential provider to acquire a new token.
-                WriteLog("Asking for authorization to access {0}", authority);
-                TokenRequestContext requestContext = new TokenRequestContext(s_scopes, tenantId: GetTenantIdFromAuthority(authorizationUri));
-                token = await _tokenCredential.GetTokenAsync(requestContext, cancellationToken).ConfigureAwait(false);
+                await _tokenCredentialGate.WaitAsync(cancellationToken);
+                try
+                {
+                    // Use the token credential provider to acquire a new token.
+                    WriteLog("Asking for authorization to access {0}", authority);
+                    TokenRequestContext requestContext = new TokenRequestContext(s_scopes, tenantId: GetTenantIdFromAuthority(authorizationUri));
+                    token = await _tokenCredential.GetTokenAsync(requestContext, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    WriteLog("Exception getting token. {0}", ex);
+                    throw;
+                }
+                finally
+                {
+                    _tokenCredentialGate.Release();
+                }
 
                 // Store the token in the cache for both the AzDevOps authority and the OAuth authority.
                 _tokenCache[authority] = token;
@@ -558,8 +576,19 @@ namespace PerfView
 
         /// <summary>
         /// Try to find the authority endpoint for an Azure DevOps instance
-        /// given a full URI.
+        /// given a full URI. The authority endpoint is where we go to discover
+        /// the tenant prior to signing in.
         /// </summary>
+        /// <example>
+        /// For https://artifacts.dev.azure.com/yourorg/_apis/Symbols/etc
+        /// or  https://dev.azure.com/yourorg/yourproject/_apis/git/repositories/yourrepo/etc
+        /// this generates https://dev.azure.com/yourorg
+        /// </example>
+        /// <example>
+        /// For https://yourorg.artifacts.visualstudio.com/_apis/Symbol/symsrv/etc
+        /// or https://yourorg.visualstudio.com/yourproject/_apis/git/repositories/yourrepo/etc
+        /// this generates https://yourorg.visualstudio.com
+        /// </example>
         /// <param name="uri">The request URI.</param>
         /// <param name="authority">The authortiy, if found.</param>
         /// <returns>True if <paramref name="uri"/> represents a path to a
@@ -567,40 +596,29 @@ namespace PerfView
         private static bool TryGetAzureDevOpsAuthority(Uri uri, out Uri authority)
         {
             // Extract the authority URI from a full Azure DevOps URI.
-            if (IsDevAzureCom(uri))
+            string host = uri.Host;
+            if (host.Equals("dev.azure.com", StringComparison.OrdinalIgnoreCase) ||
+                host.Equals("artifacts.dev.azure.com", StringComparison.OrdinalIgnoreCase))
             {
                 // For dev.azure.com, the organization is the first part of the path.
-                authority = new Uri(uri, "/" + uri.Segments[1]);
+                authority = new Uri("https://dev.azure.com/" + uri.Segments[1]);
                 return true;
             }
 
-            if (IsVisualStudioDotComUri(uri))
+            if (host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase))
             {
                 // For *.visualstudio.com, the organization is included in the host name.
-                authority = new Uri(uri, "/");
+                // e.g. yourorg.visualstudio.com
+                // or   yourorg.artifacts.visualstudio.com
+                string org = host.Substring(0, host.IndexOf('.'));
+                authority = new Uri("https://" + org + ".visualstudio.com");
                 return true;
             }
 
+            // Not an Azure DevOps URI.
             authority = null;
             return false;
         }
-
-        /// <summary>
-        /// Is the given URI of the form "{org}.visualstudio.com"
-        /// </summary>
-        /// <param name="uri">The URI to test.</param>
-        /// <returns>True if <paramref name="uri"/> is a visualstudio.com address.</returns>
-        private static bool IsVisualStudioDotComUri(Uri uri)
-            => uri.Host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Is the given URI of the form "dev.azure.com" or "{service}.dev.azure.com"
-        /// </summary>
-        /// <param name="uri">The URI to test.</param>
-        /// <returns>True if <paramref name="uri"/> is a dev.azure.com address.</returns>
-        private static bool IsDevAzureCom(Uri uri)
-            => uri.Host.Equals("dev.azure.com", StringComparison.OrdinalIgnoreCase)
-            || uri.Host.EndsWith(".dev.azure.com", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
