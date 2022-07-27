@@ -774,8 +774,7 @@ namespace PerfView
                 using (var sharedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
                     // Automatically cancel after the device code expires.
-                    TimeSpan deviceCodeExpiresIn = TimeSpan.FromSeconds(deviceFlowResponse.ExpiresIn);
-                    sharedCancellationTokenSource.CancelAfter(deviceCodeExpiresIn);
+                    sharedCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(deviceFlowResponse.ExpiresIn));
 
                     // There are three ways to exit the device flow:
                     // 1. Closing the dialog will cancel the polling task.
@@ -788,7 +787,7 @@ namespace PerfView
                     WriteLog("Showing device flow dialog so you can log into GitHub.");
                     await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        var deviceCodeDialog = new GitHubDeviceFlowDialog(Application.Current.MainWindow, deviceFlowResponse.VerificationUri, deviceFlowResponse.UserCode, deviceCodeExpiresIn, sharedCancellationToken);
+                        var deviceCodeDialog = new GitHubDeviceFlowDialog(Application.Current.MainWindow, deviceFlowResponse.VerificationUri, deviceFlowResponse.UserCode, sharedCancellationToken);
                         _ = deviceCodeDialog.ShowDialog();
                     });
 
