@@ -111,7 +111,7 @@ namespace PerfView
         /// </summary>
         /// <param name="log">A logger.</param>
         /// <returns>This instance for fluent chaining.</returns>
-        public SymbolReaderHttpHandler WithGitHubDeviceCodeAuthentication(TextWriter log) 
+        public SymbolReaderHttpHandler WithGitHubDeviceCodeAuthentication(TextWriter log)
             => WithHandler(new GitHubHandler(log));
     }
 
@@ -455,6 +455,21 @@ namespace PerfView
         private const string LogPrefix = "[AzDOAuth] ";
 
         /// <summary>
+        /// The suffix of the host name in URIs such as https://yourorg.visualstudio.com
+        /// </summary>
+        private const string VisualStudioDotComSuffix = ".visualstudio.com";
+
+        /// <summary>
+        /// The host name for Azure DevOps.
+        /// </summary>
+        private const string AzureDevOpsHost = "dev.azure.com";
+
+        /// <summary>
+        /// The host name for Azure DevOps' artifacts endpoint.
+        /// </summary>
+        private const string AzureDevOpsArtifactsHost = "artifacts." + AzureDevOpsHost;
+
+        /// <summary>
         /// A provider of access tokens.
         /// </summary>
         private readonly TokenCredential _tokenCredential;
@@ -471,9 +486,9 @@ namespace PerfView
         private readonly ConcurrentDictionary<Uri, AccessToken> _tokenCache = new ConcurrentDictionary<Uri, AccessToken>();
 
         /// <summary>
-        /// A client used to discover the tenant for an Azure Dev Ops instance.
+        /// An HTTP client used to discover the authority (login endpoint and tenant) for an Azure Dev Ops instance.
         /// </summary>
-        private readonly HttpClient _nonRedirectingHttpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+        private readonly HttpClient _httpClient = new HttpClient();
 
         /// <summary>
         /// Construct a new <see cref="AzureDevOpsHandler"/> instance.
@@ -499,7 +514,11 @@ namespace PerfView
                 && TryGetAzureDevOpsAuthority(request.RequestUri, out Uri authority) // Is an Azure DevOps request
                 )
             {
-                await AddAuthHeaderAsync(request, authority, cancellationToken).ConfigureAwait(false);
+                AccessToken? token = await GetAzureDevOpsAccessTokenAsync(authority, cancellationToken).ConfigureAwait(false);
+                if (token.HasValue)
+                {
+                    AddBearerToken(request, token.Value);
+                }
             }
 
             // Call the next handler.
@@ -507,34 +526,32 @@ namespace PerfView
         }
 
         /// <summary>
-        /// Try to add an authorization header to the request.
+        /// Get a token to access the given Azure DevOps instance.
         /// </summary>
-        /// <param name="request">The request to modify.</param>
-        /// <param name="authority">The Azure DevOps authority.</param>
+        /// <param name="authority">The Azure DevOps instance.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        /// <returns>A task that completes when the request has been modified.</returns>
-        private async Task AddAuthHeaderAsync(HttpRequestMessage request, Uri authority, CancellationToken cancellationToken)
+        /// <returns>An access token, or null if one could not be obtained.</returns>
+        private async Task<AccessToken?> GetAzureDevOpsAccessTokenAsync(Uri authority, CancellationToken cancellationToken)
         {
             // First check the token cache.
             if (_tokenCache.TryGetValue(authority, out AccessToken token))
             {
                 if (AccessTokenIsStillGood(token))
                 {
-                    AddBearerToken(request, token);
-                    return;
+                    return token;
                 }
 
-                WriteLog("Existing authorization token for {0} has expired (or is close to expiration).");
+                WriteLog("The current authorization token for {0} has expired (or is close to expiration).");
                 _tokenCache.TryRemove(authority, out _);
             }
 
-            // Query the authority for the OAuth authorization endpoint.
-            using (HttpResponseMessage challenge = await _nonRedirectingHttpClient.GetAsync(authority, cancellationToken).ConfigureAwait(false))
+            // Generate an authentication challenge from the Azure Dev Ops authority.
+            using (HttpResponseMessage challenge = await GetChallengeAsync(authority, cancellationToken).ConfigureAwait(false))
             {
-                if (challenge.IsSuccessStatusCode || !TryGetBearerAuthority(challenge.Headers.WwwAuthenticate, out Uri authorizationUri))
+                if (!TryGetBearerAuthority(challenge.Headers.WwwAuthenticate, out Uri authorizationUri))
                 {
-                    WriteLog("We expected a sign-in challenge from the DevOps authority, but we didn't get one.");
-                    return;
+                    WriteLog("We expected a sign-in challenge from Azure DevOps, but we didn't get one. The response status code was {0}.", challenge.StatusCode);
+                    return null;
                 }
 
                 // Check our authority cache again. This helps in the case where you have
@@ -544,34 +561,18 @@ namespace PerfView
                 // or "{org}.artifacts.visualstudio.com" and "{org}.visualstudio.com"
                 if (_tokenCache.TryGetValue(authorizationUri, out token) && AccessTokenIsStillGood(token))
                 {
-                    request.Headers.Authorization = new AuthenticationHeaderValue(BearerScheme, token.Token);
-                    return;
+                    return token;
                 }
 
-                await _tokenCredentialGate.WaitAsync(cancellationToken);
-                try
-                {
-                    // Use the token credential provider to acquire a new token.
-                    WriteLog("Asking for authorization to access {0}", authority);
-                    TokenRequestContext requestContext = new TokenRequestContext(s_scopes, tenantId: GetTenantIdFromAuthority(authorizationUri));
-                    token = await _tokenCredential.GetTokenAsync(requestContext, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    WriteLog("Exception getting token. {0}", ex);
-                    throw;
-                }
-                finally
-                {
-                    _tokenCredentialGate.Release();
-                }
+                // Get a new access token from the credential provider.
+                WriteLog("Asking for authorization to access {0}", authority);
+                token = await GetTokenAsync(authorizationUri, cancellationToken).ConfigureAwait(false);
 
                 // Store the token in the cache for both the AzDevOps authority and the OAuth authority.
                 _tokenCache[authority] = token;
                 _tokenCache[authorizationUri] = token;
+                return token;
             }
-
-            AddBearerToken(request, token);
         }
 
         /// <summary>
@@ -595,29 +596,91 @@ namespace PerfView
         /// resource in an Azure DevOps instance.</returns>
         private static bool TryGetAzureDevOpsAuthority(Uri uri, out Uri authority)
         {
-            // Extract the authority URI from a full Azure DevOps URI.
+            UriBuilder builder = null;
             string host = uri.Host;
-            if (host.Equals("dev.azure.com", StringComparison.OrdinalIgnoreCase) ||
-                host.Equals("artifacts.dev.azure.com", StringComparison.OrdinalIgnoreCase))
+            if (host.Equals(AzureDevOpsHost, StringComparison.OrdinalIgnoreCase) ||
+                host.Equals(AzureDevOpsArtifactsHost, StringComparison.OrdinalIgnoreCase))
             {
                 // For dev.azure.com, the organization is the first part of the path.
-                authority = new Uri("https://dev.azure.com/" + uri.Segments[1]);
-                return true;
+                var segments = uri.Segments;
+                if (segments.Length >= 2)
+                {
+                    builder = new UriBuilder
+                    {
+                        Host = AzureDevOpsHost,
+                        Path = segments[1]
+                    };
+                }
             }
 
-            if (host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase))
+            if (host.EndsWith(VisualStudioDotComSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 // For *.visualstudio.com, the organization is included in the host name.
                 // e.g. yourorg.visualstudio.com
                 // or   yourorg.artifacts.visualstudio.com
-                string org = host.Substring(0, host.IndexOf('.'));
-                authority = new Uri("https://" + org + ".visualstudio.com");
-                return true;
+                string org = host.Substring(0, host.Length - VisualStudioDotComSuffix.Length);
+                builder = new UriBuilder
+                {
+                    Host = org + VisualStudioDotComSuffix
+                };
             }
 
-            // Not an Azure DevOps URI.
-            authority = null;
-            return false;
+            if (builder is null)
+            {
+                // Not an Azure DevOps URI.
+                authority = null;
+                return false;
+            }
+
+            builder.Scheme = uri.Scheme;
+            if (!uri.IsDefaultPort)
+            {
+                builder.Port = uri.Port;
+            }
+
+            authority = builder.Uri;
+            return true;
+        }
+
+        /// <summary>
+        /// Send a HEAD request to the given authority in order to generate an
+        /// authentication challenge.
+        /// </summary>
+        /// <param name="authority">The Azure DevOps authority (e.g. https://dev.azure.com/yourorg)</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>The challenge response.</returns>
+        private async Task<HttpResponseMessage> GetChallengeAsync(Uri authority, CancellationToken cancellationToken)
+        {
+            using (var challengeRequest = new HttpRequestMessage(HttpMethod.Head, authority))
+            {
+                return await _httpClient.SendAsync(challengeRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Get a new access token for Azure DevOps from the <see cref="TokenCredential"/>.
+        /// </summary>
+        /// <param name="authorizationUri">The authorization URI. Usually https://login.microsoftonline.com/{tenantId}</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>The access token.</returns>
+        private async Task<AccessToken> GetTokenAsync(Uri authorizationUri, CancellationToken cancellationToken)
+        {
+            await _tokenCredentialGate.WaitAsync(cancellationToken);
+            try
+            {
+                // Use the token credential provider to acquire a new token.
+                TokenRequestContext requestContext = new TokenRequestContext(s_scopes, tenantId: GetTenantIdFromAuthority(authorizationUri));
+                return await _tokenCredential.GetTokenAsync(requestContext, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                WriteLog("Exception getting token. {0}", ex);
+                throw;
+            }
+            finally
+            {
+                _tokenCredentialGate.Release();
+            }
         }
     }
 
