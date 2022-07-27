@@ -34,7 +34,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Grid.RowSpan="2" Source="pack://application:,,,/Images/GitHubLogo.png" Margin="15" />
+            <Image Grid.Column="0" Grid.RowSpan="2" Source="pack://application:,,,/Images/GitHub_Logo.png" Margin="15" />
             <TextBox Grid.Column="1" BorderBrush="Transparent" IsReadOnly="True" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding UserCode, Mode=OneWay}" />
             <Button Grid.Column="1" Width="90" Margin="10" Grid.Row="1" Click="CopyButton_Click">_Copy code</Button>
         </Grid>

@@ -629,11 +629,7 @@ namespace PerfView
         /// <summary>
         /// This is the OAuth client ID for the PerfView application.
         /// </summary>
-        /// <remarks>
-        /// TODO: The 4520.. ID is pharring's private OAuth app for testing.
-        /// We need to create a new PerfView app in the Microsoft org.
-        /// </remarks>
-        private const string PerfViewClientId = "4520149fed66fbfa8579";
+        private const string PerfViewClientId = "19ac885cec7949d42a72";
 
         /// <summary>
         /// The scope requested. We need repo access to fetch source code from private repos.
