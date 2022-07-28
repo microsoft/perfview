@@ -1011,6 +1011,7 @@ namespace PerfViewExtensibility
             catch
             {
                 // Ignore failures.
+                GuiState.Log = string.Empty;
             }
 #endif
 
