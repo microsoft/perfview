@@ -1004,7 +1004,15 @@ namespace PerfViewExtensibility
             // TODO remember the status log even when we don't have a gui. 
 #if !PERFVIEW_COLLECT
             if (GuiApp.MainWindow != null)
+            try
+            {
                 GuiState.Log = File.ReadAllText(App.LogFileName);
+            }
+            catch
+            {
+                // Ignore failures.
+                GuiState.Log = string.Empty;
+            }
 #endif
 
             Action<XmlWriter> additionalData = null;
