@@ -138,6 +138,10 @@ namespace Graphs
                     {
                         typeName = string.Format("LOH: {0}", nodeType.Name);
                     }
+                    else if (generation == 4)
+                    {
+                        typeName = string.Format("POH: {0}", nodeType.Name);
+                    }
                     else
                     {
                         typeName = string.Format("Gen{0}: {1}", generation, nodeType.Name);

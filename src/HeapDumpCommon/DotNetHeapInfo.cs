@@ -52,6 +52,11 @@ public class DotNetHeapInfo : IFastSerializable
             }
         }
 
+        if (obj < m_lastSegment.Gen4End)
+        {
+            return 4;
+        }
+
         if (obj < m_lastSegment.Gen3End)
         {
             return 3;
@@ -126,6 +131,7 @@ public class GCHeapDumpSegment : IFastSerializable
         serializer.Write((long)Gen1End);
         serializer.Write((long)Gen2End);
         serializer.Write((long)Gen3End);
+        serializer.Write((long)Gen4End);
     }
 
     void IFastSerializable.FromStream(Deserializer deserializer)
@@ -136,6 +142,16 @@ public class GCHeapDumpSegment : IFastSerializable
         Gen1End = (Address)deserializer.ReadInt64();
         Gen2End = (Address)deserializer.ReadInt64();
         Gen3End = (Address)deserializer.ReadInt64();
+        // 
+        // TODO: Backward compatibility - changing serialization format should require bumping version and code paths to deal with 
+        // missing values. How?
+        //
+        // In case this value was not saved, there could be two cases:
+        // Case 1: We are running on a runtime without POH, in that case, initializing that to Start works.
+        // Case 2: We are running on a runtime with POH, in that case, POH segments were saved as if
+        //         they were Gen2, there is no way to differentiate, so just pretend they are Gen2.
+        //
+        Gen4End = (Address)deserializer.ReadInt64();
     }
     #endregion
 }
