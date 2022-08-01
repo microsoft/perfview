@@ -41,6 +41,7 @@ namespace Stats
             writer.WriteLine("<LI>Total CPU Time: {0:n0} msec</LI>", stats.CPUMSec);
             writer.WriteLine("<LI>Total GC CPU Time: {0:n0} msec</LI>", runtime.GC.Stats().TotalCpuMSec);
             writer.WriteLine("<LI>Total Allocs  : {0:n3} MB</LI>", runtime.GC.Stats().TotalAllocatedMB);
+            writer.WriteLine("<LI>Number of Heaps: {0}</LI>", runtime.GC.Stats().HeapCount);
             writer.WriteLine("<LI>GC CPU MSec/MB Alloc : {0:n3} MSec/MB</LI>", runtime.GC.Stats().TotalCpuMSec / runtime.GC.Stats().TotalAllocatedMB);
             writer.WriteLine("<LI>Total GC Pause: {0:n1} msec</LI>", runtime.GC.Stats().TotalPauseTimeMSec);
             writer.WriteLine("<LI>% Time paused for Garbage Collection: {0:f1}%</LI>", runtime.GC.Stats().GetGCPauseTimePercentage());
