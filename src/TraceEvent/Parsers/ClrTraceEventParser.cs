@@ -9108,6 +9108,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         public ContentionFlags ContentionFlags { get { if (Version >= 1) return (ContentionFlags)GetByteAt(0); return (ContentionFlags)0; } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(1); return 0; } }
+        public Address LockObjectID { get { if (Version >= 2) return GetAddressAt(3); return 0; } }
+        public Address LockOwnerThreadID { get { if (Version >= 2) return GetAddressAt(HostOffset(7, 1)); return 0; } }
 
         #region Private
         internal ContentionStartTraceData(Action<ContentionStartTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -9124,7 +9126,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             // Not sure if hand editing is appropriate but the start event is size 3 whereas the stop event is size 11
             // and both of them come here
             Debug.Assert(!(Version == 1 && EventDataLength != 3 && EventDataLength != 11));
-            Debug.Assert(!(Version > 1 && EventDataLength < 3));
+            Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(11, 2)));
+            Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(11, 2)));
         }
         protected internal override Delegate Target
         {
@@ -9136,6 +9139,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Prefix(sb);
             XmlAttrib(sb, "ContentionFlags", ContentionFlags);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttribHex(sb, "LockObjectID", LockObjectID);
+            XmlAttribHex(sb, "LockOwnerThreadID", LockOwnerThreadID);
             sb.Append("/>");
             return sb;
         }
@@ -9145,7 +9150,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContentionFlags", "ClrInstanceID" };
+                    payloadNames = new string[] { "ContentionFlags", "ClrInstanceID", "LockObjectID", "LockOwnerThreadID" };
                 return payloadNames;
             }
         }
@@ -9158,6 +9163,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return ContentionFlags;
                 case 1:
                     return ClrInstanceID;
+                case 2:
+                    return LockObjectID;
+                case 3:
+                    return LockOwnerThreadID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
