@@ -1048,13 +1048,24 @@ public class GCHeapDumper
                 End = seg.End
             };
 
-            if (seg.IsLargeObjectSegment)
+            // ClrMD returns UOH segments with seg.Generation2.Start == seg.Start and seg.Generation2.End == seg.End
+            // To make it easy to determine the real generation of the object, augmenting the object with Gen3End and
+            // Gen4End as follows such that DotNetHeapInfo.GenerationFor works.
+            if (seg.IsPinnedObjectSegment)
             {
-                // Everything is Gen3 (large objects)
                 gcHeapDumpSegment.Gen0End = seg.End;
                 gcHeapDumpSegment.Gen1End = seg.End;
                 gcHeapDumpSegment.Gen2End = seg.End;
                 gcHeapDumpSegment.Gen3End = seg.End;
+                gcHeapDumpSegment.Gen4End = seg.End;
+            }
+            else if (seg.IsLargeObjectSegment)
+            {
+                gcHeapDumpSegment.Gen0End = seg.End;
+                gcHeapDumpSegment.Gen1End = seg.End;
+                gcHeapDumpSegment.Gen2End = seg.End;
+                gcHeapDumpSegment.Gen3End = seg.End;
+                gcHeapDumpSegment.Gen4End = seg.Start;
             }
             else
             {
@@ -1062,6 +1073,7 @@ public class GCHeapDumper
                 gcHeapDumpSegment.Gen1End = seg.Generation1.End;
                 gcHeapDumpSegment.Gen2End = seg.Generation2.End;
                 gcHeapDumpSegment.Gen3End = seg.Start;
+                gcHeapDumpSegment.Gen4End = seg.Start;
             }
 
             gcHeapDumpSegments.Add(gcHeapDumpSegment);
@@ -2177,7 +2189,7 @@ internal static class GCRootNames
             case CorElementType.ELEMENT_TYPE_ARRAY:
                 corType.GetRank(out rank);
                 Debug.Assert(rank >= 1);
-                DO_ARRAY:
+            DO_ARRAY:
                 ICorDebugType elemType;
                 corType.GetFirstTypeParameter(out elemType);
                 var elemName = GetTypeName(elemType, out moduleFilePath, out metaDataOut, buffer);

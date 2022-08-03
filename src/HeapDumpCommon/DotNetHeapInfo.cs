@@ -52,6 +52,11 @@ public class DotNetHeapInfo : IFastSerializable
             }
         }
 
+        if (obj < m_lastSegment.Gen4End)
+        {
+            return 4;
+        }
+
         if (obj < m_lastSegment.Gen3End)
         {
             return 3;
@@ -107,7 +112,7 @@ public class DotNetHeapInfo : IFastSerializable
     #endregion
 }
 
-public class GCHeapDumpSegment : IFastSerializable
+public class GCHeapDumpSegment : IFastSerializable, IFastSerializableVersion
 {
     public Address Start { get; internal set; }
     public Address End { get; internal set; }
@@ -116,6 +121,12 @@ public class GCHeapDumpSegment : IFastSerializable
     public Address Gen2End { get; internal set; }
     public Address Gen3End { get; internal set; }
     public Address Gen4End { get; internal set; }
+
+    public int Version => 1;
+
+    public int MinimumVersionCanRead => 0;
+
+    public int MinimumReaderVersion => 1;
 
     #region private
     void IFastSerializable.ToStream(Serializer serializer)
@@ -126,6 +137,7 @@ public class GCHeapDumpSegment : IFastSerializable
         serializer.Write((long)Gen1End);
         serializer.Write((long)Gen2End);
         serializer.Write((long)Gen3End);
+        serializer.Write((long)Gen4End);
     }
 
     void IFastSerializable.FromStream(Deserializer deserializer)
@@ -136,6 +148,10 @@ public class GCHeapDumpSegment : IFastSerializable
         Gen1End = (Address)deserializer.ReadInt64();
         Gen2End = (Address)deserializer.ReadInt64();
         Gen3End = (Address)deserializer.ReadInt64();
+        if (deserializer.VersionBeingRead >= 1)
+        {
+            Gen4End = (Address)deserializer.ReadInt64();
+        }
     }
     #endregion
 }
