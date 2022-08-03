@@ -112,7 +112,7 @@ public class DotNetHeapInfo : IFastSerializable
     #endregion
 }
 
-public class GCHeapDumpSegment : IFastSerializable
+public class GCHeapDumpSegment : IFastSerializable, IFastSerializableVersion
 {
     public Address Start { get; internal set; }
     public Address End { get; internal set; }
@@ -121,6 +121,12 @@ public class GCHeapDumpSegment : IFastSerializable
     public Address Gen2End { get; internal set; }
     public Address Gen3End { get; internal set; }
     public Address Gen4End { get; internal set; }
+
+    public int Version => 1;
+
+    public int MinimumVersionCanRead => 0;
+
+    public int MinimumReaderVersion => 1;
 
     #region private
     void IFastSerializable.ToStream(Serializer serializer)
@@ -142,16 +148,10 @@ public class GCHeapDumpSegment : IFastSerializable
         Gen1End = (Address)deserializer.ReadInt64();
         Gen2End = (Address)deserializer.ReadInt64();
         Gen3End = (Address)deserializer.ReadInt64();
-        // 
-        // TODO: Backward compatibility - changing serialization format should require bumping version and code paths to deal with 
-        // missing values. How?
-        //
-        // In case this value was not saved, there could be two cases:
-        // Case 1: We are running on a runtime without POH, in that case, initializing that to Start works.
-        // Case 2: We are running on a runtime with POH, in that case, POH segments were saved as if
-        //         they were Gen2, there is no way to differentiate, so just pretend they are Gen2.
-        //
-        Gen4End = (Address)deserializer.ReadInt64();
+        if (deserializer.VersionBeingRead >= 1)
+        {
+            Gen4End = (Address)deserializer.ReadInt64();
+        }
     }
     #endregion
 }
