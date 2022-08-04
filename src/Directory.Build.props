@@ -22,9 +22,9 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <FastSerializationVersion>3.0.2</FastSerializationVersion>
-    <PerfViewVersion>3.0.2</PerfViewVersion>
-    <TraceEventVersion>3.0.2</TraceEventVersion>
+    <FastSerializationVersion>3.0.3</FastSerializationVersion>
+    <PerfViewVersion>3.0.3</PerfViewVersion>
+    <TraceEventVersion>3.0.3</TraceEventVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
