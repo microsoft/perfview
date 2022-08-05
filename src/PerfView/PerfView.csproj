@@ -55,7 +55,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.6.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="6.22.0" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all" />
 
@@ -429,6 +431,97 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Dia2Lib.dll</LogicalName>
       <Link>Dia2Lib.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Azure.Core\1.24.0\lib\net461\Azure.Core.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Azure.Core.dll</LogicalName>
+      <Link>Azure.Core.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Azure.Identity\1.6.0\lib\netstandard2.0\Azure.Identity.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Azure.Identity.dll</LogicalName>
+      <Link>Azure.Identity.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Identity.Client\4.39.0\lib\net461\Microsoft.Identity.Client.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Identity.Client.dll</LogicalName>
+      <Link>Microsoft.Identity.Client.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Identity.Client.Extensions.Msal\2.19.3\lib\net45\Microsoft.Identity.Client.Extensions.Msal.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Identity.Client.Extensions.Msal.dll</LogicalName>
+      <Link>Microsoft.Identity.Client.Extensions.Msal.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.IdentityModel.JsonWebTokens\6.22.0\lib\net461\Microsoft.IdentityModel.JsonWebTokens.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.IdentityModel.JsonWebTokens.dll</LogicalName>
+      <Link>Microsoft.IdentityModel.JsonWebTokens.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.IdentityModel.Tokens\6.22.0\lib\net461\Microsoft.IdentityModel.Tokens.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.IdentityModel.Tokens.dll</LogicalName>
+      <Link>Microsoft.IdentityModel.Tokens.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Buffers\4.5.1\lib\net461\System.Buffers.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Buffers.dll</LogicalName>
+      <Link>System.Buffers.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Diagnostics.DiagnosticSource\4.6.0\lib\net46\System.Diagnostics.DiagnosticSource.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Diagnostics.DiagnosticSource.dll</LogicalName>
+      <Link>System.Diagnostics.DiagnosticSource.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Memory\4.5.4\lib\net461\System.Memory.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Memory.dll</LogicalName>
+      <Link>System.Memory.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Numerics.Vectors\4.5.0\lib\net46\System.Numerics.Vectors.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
+      <Link>System.Numerics.Vectors.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Text.Encodings.Web\4.7.2\lib\net461\System.Text.Encodings.Web.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Text.Encodings.Web.dll</LogicalName>
+      <Link>System.Text.Encodings.Web.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Text.Json\4.7.2\lib\net461\System.Text.Json.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Text.Json.dll</LogicalName>
+      <Link>System.Text.Json.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Threading.Tasks.Extensions\4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
+      <Link>System.Threading.Tasks.Extensions.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\tutorial.exe">
