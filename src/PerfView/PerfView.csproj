@@ -454,6 +454,13 @@
       <Link>Microsoft.Identity.Client.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Identity.Client.Extensions.Msal\2.19.3\lib\net45\Microsoft.Identity.Client.Extensions.Msal.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Identity.Client.Extensions.Msal.dll</LogicalName>
+      <Link>Microsoft.Identity.Client.Extensions.Msal.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.IdentityModel.JsonWebTokens\6.22.0\lib\net461\Microsoft.IdentityModel.JsonWebTokens.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
