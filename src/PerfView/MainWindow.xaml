@@ -47,6 +47,9 @@
         <CommandBinding Command="{x:Static src:MainWindow.HeapSnapshotFromDumpCommand}" Executed="DoTakeHeapShapshotFromProcessDump"/>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp"/>
         <CommandBinding Command="{x:Static src:MainWindow.FocusDirectoryCommand}" Executed="DoFocusDirectory"/>
+        <CommandBinding Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" Executed="UseGCMAuth_Executed" CanExecute="UseGCMAuth_CanExecute" />
+        <CommandBinding Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" Executed="UseDeveloperIdentityAuth_Executed" />
+        <CommandBinding Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" Executed="UseGitHubDeviceFlowAuth_Executed" />
     </Window.CommandBindings>
     <Window.InputBindings>
         <KeyBinding Gesture="CTRL+L" Command="{x:Static src:MainWindow.FocusDirectoryCommand}" />
@@ -107,6 +110,11 @@
                 <MenuItem Header="_Options">
                     <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
                     <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
+                    <MenuItem Header="_Authentication">
+                        <MenuItem Header="Use _Git Credential Manager" x:Name="Authentication_UseGitCredentialManager" IsChecked="{Binding Path=AuthenticationViewModel.IsGitCredentialManagerEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" ToolTip="Use the Git Credential Manager to authenticate to GitHub and Azure DevOps."/>
+                        <MenuItem Header="Use _Developer Identity for Azure DevOps"  x:Name="Authentication_UseManagedIdentityForAzureDevOps" IsChecked="{Binding Path=AuthenticationViewModel.IsDeveloperIdentityEnabled}" Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" ToolTip="Use Visual Studio or VS Code sign-in information to authenticate to Azure DevOps instances."/>
+                        <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Main View" Command="Help" CommandParameter="MainViewerQuickStart" />

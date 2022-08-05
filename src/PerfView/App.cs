@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -758,6 +759,13 @@ namespace PerfView
             }
         }
 
+#if !PERFVIEW_COLLECT
+        /// <summary>
+        /// A provider for HTTP handlers used to authenticate requests to symbol or source servers.
+        /// </summary>
+        internal static Func<TextWriter, DelegatingHandler> SymbolReaderHandlerProvider;
+#endif
+
         /// <summary>
         /// A SymbolReader contains all the context (symbol path, symbol lookup preferences ...) needed
         /// to look up PDB files needed to give events in the TraceLog symbolic names.  Note that by 
@@ -858,7 +866,11 @@ namespace PerfView
 
             log.WriteLine("    }");
             log.WriteLine("This can be set using the File -> Set Symbol Path dialog on the Stack Viewer.");
+#if PERFVIEW_COLLECT
             SymbolReader ret = new SymbolReader(log, symPath.ToString());
+#else
+            SymbolReader ret = new SymbolReader(log, symPath.ToString(), SymbolReaderHandlerProvider?.Invoke(log));
+#endif
             ret.SourcePath = sourcePath;
             ret.Options = symbolFlags;
 
@@ -891,7 +903,7 @@ namespace PerfView
             return ret;
         }
 
-        #region private
+#region private
         /// <summary>
         /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
         /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
@@ -1054,7 +1066,7 @@ namespace PerfView
         private static string m_SymbolPath;
         private static string m_SourcePath;
 
-        #region CreateConsole
+#region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
         private extern static int AllocConsole();
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
@@ -1146,8 +1158,8 @@ namespace PerfView
         private static int s_controlCPressed = 0;
 #endif
 
-        #endregion
-        #endregion
+#endregion
+#endregion
     }
 
     /// <summary>
@@ -1331,7 +1343,7 @@ namespace PerfView
             }
         }
 
-        #region private
+#region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1380,7 +1392,7 @@ namespace PerfView
             }
             return false;
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1426,9 +1438,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-        #region private
+#region private
         private TextWriter m_verboseLog;
         private TextWriter m_terseLog;
-        #endregion
+#endregion
     }
 }

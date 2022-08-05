@@ -1,0 +1,52 @@
+﻿<src:WindowBase x:Class="PerfView.Dialogs.GitHubDeviceFlowDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:PerfView"
+        Background="#FFA7A7A7" 
+        Title="GitHub Device Authentication" Height="280" Width="500"
+        ResizeMode="NoResize">
+    <src:WindowBase.CommandBindings>
+        <CommandBinding Command="NavigationCommands.GoToPage" Executed="NavigateTo_Executed" />
+        <CommandBinding Command="ApplicationCommands.Copy" Executed="Copy_Executed" />
+        <CommandBinding Command="ApplicationCommands.Close" Executed="Close_Executed" />
+    </src:WindowBase.CommandBindings>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Margin="10" TextWrapping="Wrap">
+            <Run Text="You're trying to access source code in a private GitHub repo."/>
+            <Run Text="If you have a GitHub account, please allow PerfView to sign in and access that repo." />
+            <Run Text="Go to" />
+            <Hyperlink Command="NavigationCommands.GoToPage" CommandParameter="{Binding VerificationUri, Mode=OneWay}"><TextBlock Text="{Binding VerificationUri, Mode=OneWay}" /></Hyperlink>
+            <Run Text="in a web browser, or click on the GitHub logo, and enter the code below."/>
+            <Run Text="Follow the instructions on GitHub.com to sign in." />
+            <Run Text="This dialog will automatically close when you have signed in."/>
+        </TextBlock>
+        <Grid Grid.Row="1" Background="White">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Grid.RowSpan="2" Command="NavigationCommands.GoToPage" CommandParameter="{Binding VerificationUri, Mode=OneWay}">
+                <Button.Template>
+                    <ControlTemplate>
+                        <Image Source="pack://application:,,,/Images/GitHub_Logo.png" Margin="15" Cursor="Hand" />
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <TextBox Grid.Column="1" BorderBrush="Transparent" IsReadOnly="True" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding UserCode, Mode=OneWay}" />
+            <Button Grid.Column="1" Width="90" Margin="10" Grid.Row="1" Command="ApplicationCommands.Copy" CommandParameter="{Binding UserCode, Mode=OneWay}">_Copy code</Button>
+        </Grid>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" FlowDirection="RightToLeft">
+            <Button Margin="10" Width="80" Content="Cancel" Command="ApplicationCommands.Close" />
+        </StackPanel>
+    </Grid>
+</src:WindowBase>

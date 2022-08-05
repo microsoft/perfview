@@ -11,7 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -1050,6 +1050,11 @@ namespace PerfView
         // TODO FIX NOW do a better job keeping track of open windows
         public int NumWindowsNeedingSaving;
 
+        /// <summary>
+        /// The view model for the user's choice of authentication providers.
+        /// </summary>
+        public AuthenticationViewModel AuthenticationViewModel { get; }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -1079,6 +1084,10 @@ namespace PerfView
 
             Height = App.UserConfigData.GetDouble("MainWindowHeight", Height);
             Width = App.UserConfigData.GetDouble("MainWindowWidth", Width);
+
+            // Initialize the authentication view model from user config
+            AuthenticationViewModel = new AuthenticationViewModel(App.UserConfigData);
+            App.SymbolReaderHandlerProvider = GetSymbolReaderHandler;
 
             Loaded += delegate (object sender1, RoutedEventArgs e2)
             {
@@ -1945,7 +1954,7 @@ namespace PerfView
 
         private void DoOpenContainingFolder(object sender, ExecutedRoutedEventArgs e)
         {
-            var file =  (PerfViewFile)TreeView.SelectedItem;
+            var file = (PerfViewFile)TreeView.SelectedItem;
 
             ShellExecute("explorer.exe", $"/select,\"{file.FilePath}\"");
         }
@@ -2368,6 +2377,105 @@ namespace PerfView
             }
 
             return source as TreeViewItem;
+        }
+
+        /// <summary>
+        /// Handler for when <see cref="AuthenticationCommands.UseGitCredentialManager"/> command is executed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void UseGCMAuth_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            AuthenticationViewModel.IsGitCredentialManagerEnabled = !AuthenticationViewModel.IsGitCredentialManagerEnabled;
+            UpdateSymbolReaderHandler();
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Handler to determine if <see cref="AuthenticationCommands.UseGitCredentialManager"/> should be enabled.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void UseGCMAuth_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = GitCredentialManagerHandler.IsGitCredentialManagerInstalled;
+        }
+
+        /// <summary>
+        /// Handler for when <see cref="AuthenticationCommands.UseDeveloperIdentity"/> command is executed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void UseDeveloperIdentityAuth_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            AuthenticationViewModel.IsDeveloperIdentityEnabled = !AuthenticationViewModel.IsDeveloperIdentityEnabled;
+            UpdateSymbolReaderHandler();
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Handler for when <see cref="AuthenticationCommands.UseGitHubDeviceFlow"/> command is executed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void UseGitHubDeviceFlowAuth_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            AuthenticationViewModel.IsGitHubDeviceFlowEnabled = !AuthenticationViewModel.IsGitHubDeviceFlowEnabled;
+            UpdateSymbolReaderHandler();
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// A cached instance of <see cref="SymbolReaderHttpHandler"/>.
+        /// We can't just keep a singleton because the App's SymbolReader 
+        /// occasionally gets recreated from scratch. We need a way to
+        /// both configure an existing, live instance (when you enable
+        /// or disable existing authentication providers) and to create
+        /// new, configured handlers on demand.
+        /// </summary>
+        private SymbolReaderHttpHandler _cachedSymbolReaderHandler;
+
+        /// <summary>
+        /// Update the current handler, if there is one. If the
+        /// current instance has been disposed, then nothing happens.
+        /// A a new one will be created and configured in the
+        /// <see cref="GetSymbolReaderHandler(TextWriter)"/> callback.
+        /// </summary>
+        private void UpdateSymbolReaderHandler()
+        {
+            SymbolReaderHttpHandler handler = _cachedSymbolReaderHandler;
+            if (handler != null)
+            {
+                if (handler.IsDisposed)
+                {
+                    _cachedSymbolReaderHandler = null;
+                }
+                else
+                {
+                    handler.Configure(AuthenticationViewModel, App.CommandProcessor.LogFile, this);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Provides an instance of a <see cref="DelegatingHandler"/> to use
+        /// in the <see cref="Microsoft.Diagnostics.Symbols.SymbolReader"/> constructor.
+        /// This is called when we construct a new symbol reader
+        /// in <see cref="App.GetSymbolReader(string, Microsoft.Diagnostics.Symbols.SymbolReaderOptions)"/>.
+        /// </summary>
+        /// <param name="log">The logger to use.</param>
+        /// <returns>The handler.</returns>
+        private DelegatingHandler GetSymbolReaderHandler(TextWriter log)
+        {
+            SymbolReaderHttpHandler handler = _cachedSymbolReaderHandler;
+            if (handler == null || handler.IsDisposed)
+            {
+                log?.WriteLine("Creating authentication handler for {0}.", AuthenticationViewModel);
+                handler = _cachedSymbolReaderHandler = new SymbolReaderHttpHandler();
+            }
+
+            handler.Configure(AuthenticationViewModel, log, this);
+            return handler;
         }
     }
 }
