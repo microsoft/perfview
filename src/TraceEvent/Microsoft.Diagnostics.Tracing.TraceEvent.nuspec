@@ -24,19 +24,19 @@
       See https://github.com/Microsoft/perfview/blob/master/documentation/TraceEvent/TraceEventLibrary.md for more.
     </description>
     <summary>TraceEvent is a .NET Framework library for capturing and analyzing ETW events.</summary>
-    <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/T$version$</releaseNotes>
+    <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/v$version$</releaseNotes>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
 
     <dependencies>
       <group targetFramework=".NETFramework4.6.2">
-        <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.5.3" />
+        <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
       </group>
       <group targetFramework=".NETStandard1.6">
-        <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.5.3" />
+        <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
       </group>
       <group targetFramework=".NETStandard2.0">
-        <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.5.3" />
+        <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
       </group>
     </dependencies>
   </metadata>
