@@ -231,6 +231,27 @@ namespace PerfViewExtensibility
         }
 
         /// <summary>
+        /// Save the entire CPU stacks from 'etlFileName' as a csv.  If the /process qualifier is present use it to narrow what
+        /// is put into the file to a single process.
+        /// </summary>
+        public void SaveCPUStacksAsCsv(string etlFileName, string processName = null)
+        {
+            using (var etlFile = OpenETLFile(etlFileName))
+            {
+                TraceProcess process = null;
+                if (processName != null)
+                {
+                    process = etlFile.Processes.ProcessWithGreatestCpuMSec(processName);
+                    if (process == null)
+                    {
+                        throw new ApplicationException("Could not find process named " + processName);
+                    }
+                }
+                SaveCPUStacksForProcessAsCsv(etlFile, process);
+            }
+        }
+
+        /// <summary>
         /// Save the CPU stacks for a set of traces.
         /// 
         /// If 'scenario' is an XML file, it will be used as a configuration file.
@@ -1510,6 +1531,37 @@ namespace PerfViewExtensibility
             else
                 events = etlFile.TraceLog.Events;           // All events in the process.
             return events;
+        }
+
+        /// <summary>
+        /// Save the CPU stacks for an ETL file into a perfView.xml.zip file.
+        /// </summary>
+        /// <param name="etlFile">The ETL file to save.</param>
+        /// <param name="process">The process to save. If null, save all processes.</param>
+        /// <param name="filter">The filter to apply to the stacks. If null, apply no filter.</param>
+        /// <param name="outputName">The name of the file to output data to. If null, use the default.</param>
+        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null, FilterParams filter = null, string outputName = null)
+        {
+            // Focus on a particular process if the user asked for it via command line args.
+            if (process != null)
+            {
+                etlFile.SetFilterProcess(process);
+            }
+
+            if (filter == null)
+            {
+                filter = new FilterParams();
+            }
+
+            var stacks = etlFile.CPUStacks();
+            stacks.Filter = filter;
+            stacks.LookupWarmSymbols(10); // Look up symbols (even on the symbol server) for modules with more than 50 inclusive samples
+            stacks.GuiState.Notes = string.Format("Created by SaveCPUStacksAsCsv from {0} on {1}", etlFile.FilePath, DateTime.Now);
+
+            // Derive the output file name from the input file name.
+            var stackSourceFileName = PerfViewFile.ChangeExtension(etlFile.FilePath, ".perfView.csv");
+            stacks.SaveAsCsvByName(outputName ?? stackSourceFileName);
+            LogFile.WriteLine("[Saved {0} to {1}]", etlFile.FilePath, stackSourceFileName);
         }
 
         /// <summary>

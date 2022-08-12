@@ -5301,6 +5301,36 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return null;
         }
+
+        /// <summary>
+        /// Returns the process with the most amount of CpuMsec time.  Should this time be equal, the oldest ID is prioritized
+        /// </summary>
+        /// <param name="processName"> The process name to look for in the stacks </param>
+        /// <returns> The process with the greatest cpuMSec, or the oldest process if there was a tie. </returns>
+        public TraceProcess ProcessWithGreatestCpuMSec(string processName)
+        {
+            float greatestMSec = 0.0f;
+            TraceProcess ret = null;
+            for (int i = 0; i < Count; i++)
+            {
+                TraceProcess process = processes[i];
+                if (string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    if (greatestMSec == process.CPUMSec && (ret == null || process.ProcessID < ret.ProcessID))
+                    {
+                        ret = process;
+                        greatestMSec = process.CPUMSec;
+                    }
+                    else if (greatestMSec < process.CPUMSec)
+                    {
+                        ret = process;
+                        greatestMSec = process.CPUMSec;
+                    }
+                }
+            }
+            return ret;
+        }
+
         /// <summary>
         /// Find the last process in the trace that has the process name 'processName' and whose process
         /// start time is after the given point in time.
