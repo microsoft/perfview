@@ -29,6 +29,12 @@
             is put into the file to a single process.  
             </summary>
         </member>
+		<member name="M:PerfViewExtensibility.Commands.SaveCPUStacksAsCsv(System.String,System.String)">
+            <summary>
+            Save the CPU stacks from 'etlFileName' as a CSV list to allow for easier to parse data.
+			If the /process qualifier is present use it to narrow what is put into the file to a single process.  
+            </summary>
+        </member>
         <member name="M:PerfViewExtensibility.Commands.SaveScenarioCPUStacks(System.String)">
             <summary>
             Save the CPU stacks for a set of traces.
