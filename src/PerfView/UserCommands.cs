@@ -1539,8 +1539,7 @@ namespace PerfViewExtensibility
         /// <param name="etlFile">The ETL file to save.</param>
         /// <param name="process">The process to save. If null, save all processes.</param>
         /// <param name="filter">The filter to apply to the stacks. If null, apply no filter.</param>
-        /// <param name="outputName">The name of the file to output data to. If null, use the default.</param>
-        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null, FilterParams filter = null, string outputName = null)
+        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null, FilterParams filter = null)
         {
             // Focus on a particular process if the user asked for it via command line args.
             if (process != null)
@@ -1555,12 +1554,12 @@ namespace PerfViewExtensibility
 
             var stacks = etlFile.CPUStacks();
             stacks.Filter = filter;
-            stacks.LookupWarmSymbols(10); // Look up symbols (even on the symbol server) for modules with more than 50 inclusive samples
+            stacks.LookupWarmSymbols(10); // Look up symbols (even on the symbol server) for modules with more than 10 inclusive samples
             stacks.GuiState.Notes = string.Format("Created by SaveCPUStacksAsCsv from {0} on {1}", etlFile.FilePath, DateTime.Now);
 
             // Derive the output file name from the input file name.
             var stackSourceFileName = PerfViewFile.ChangeExtension(etlFile.FilePath, ".perfView.csv");
-            stacks.SaveAsCsvByName(outputName ?? stackSourceFileName);
+            stacks.SaveAsCsvByName(stackSourceFileName);
             LogFile.WriteLine("[Saved {0} to {1}]", etlFile.FilePath, stackSourceFileName);
         }
 
