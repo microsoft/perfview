@@ -1538,8 +1538,7 @@ namespace PerfViewExtensibility
         /// </summary>
         /// <param name="etlFile">The ETL file to save.</param>
         /// <param name="process">The process to save. If null, save all processes.</param>
-        /// <param name="filter">The filter to apply to the stacks. If null, apply no filter.</param>
-        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null, FilterParams filter = null)
+        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null)
         {
             // Focus on a particular process if the user asked for it via command line args.
             if (process != null)
@@ -1547,13 +1546,8 @@ namespace PerfViewExtensibility
                 etlFile.SetFilterProcess(process);
             }
 
-            if (filter == null)
-            {
-                filter = new FilterParams();
-            }
-
             var stacks = etlFile.CPUStacks();
-            stacks.Filter = filter;
+            stacks.Filter = new FilterParams();
             stacks.LookupWarmSymbols(10); // Look up symbols (even on the symbol server) for modules with more than 10 inclusive samples
             stacks.GuiState.Notes = string.Format("Created by SaveCPUStacksAsCsv from {0} on {1}", etlFile.FilePath, DateTime.Now);
 
