@@ -1000,6 +1000,11 @@ namespace PerfViewExtensibility
         /// <param name="outputFileName"> The file name the data will be written to </param>
         public void SaveAsCsvByName(string outputFileName)
         {
+            if (string.IsNullOrEmpty(outputFileName))
+            {
+                throw new ArgumentException($"{nameof(outputFileName)} is null or empty.");
+            }
+
             if (File.Exists(outputFileName))
             {
                 File.Delete(outputFileName);
@@ -1011,15 +1016,14 @@ namespace PerfViewExtensibility
                 foreach (var callTreeNode in callTree)
                 {
                     var frameUpdated = callTreeNode.Name.Replace(",", ";");
-                    csvFile.Write("{0},{1},{2},{3},{4},{5},{6},{7}\r\n",
-                        frameUpdated,
-                        callTreeNode.ExclusiveMetric,
-                        callTreeNode.ExclusiveMetricPercent,
-                        callTreeNode.InclusiveCount,
-                        callTreeNode.InclusiveMetricPercent,
-                        callTreeNode.ExclusiveFoldedMetric,
-                        callTreeNode.FirstTimeRelativeMSec,
-                        callTreeNode.LastTimeRelativeMSec);
+                    csvFile.WriteLine($"{frameUpdated}," +
+                        $"{callTreeNode.ExclusiveMetric}," +
+                        $"{callTreeNode.ExclusiveMetricPercent}," +
+                        $"{callTreeNode.InclusiveCount}," +
+                        $"{callTreeNode.InclusiveMetricPercent}," +
+                        $"{callTreeNode.ExclusiveFoldedMetric}," +
+                        $"{callTreeNode.FirstTimeRelativeMSec}," +
+                        $"{callTreeNode.LastTimeRelativeMSec}");
                 }
             }
         }
