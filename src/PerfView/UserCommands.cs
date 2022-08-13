@@ -234,7 +234,7 @@ namespace PerfViewExtensibility
         /// Save the entire CPU stacks from 'etlFileName' as a csv.  If the /process qualifier is present use it to narrow what
         /// is put into the file to a single process.
         /// </summary>
-        public void SaveCPUStacksAsCsv(string etlFileName, string processName = null)
+        public void SaveCPUStacksAsCsv(string etlFileName, string processName = null, string warmSymbolLookupMinimumValue = "10")
         {
             using (var etlFile = OpenETLFile(etlFileName))
             {
@@ -247,7 +247,7 @@ namespace PerfViewExtensibility
                         throw new ApplicationException("Could not find process named " + processName);
                     }
                 }
-                SaveCPUStacksForProcessAsCsv(etlFile, process);
+                SaveCPUStacksForProcessAsCsv(etlFile, process, Int32.Parse(warmSymbolLookupMinimumValue));
             }
         }
 
@@ -1538,7 +1538,8 @@ namespace PerfViewExtensibility
         /// </summary>
         /// <param name="etlFile">The ETL file to save.</param>
         /// <param name="process">The process to save. If null, save all processes.</param>
-        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null)
+        /// <param name="warmSymbolLookupMinimumValue"> The number of samples needed to warrant looking up the symbols on the sample server. </param>
+        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null, int warmSymbolLookupMinimumValue = 10)
         {
             // Focus on a particular process if the user asked for it via command line args.
             if (process != null)
@@ -1548,7 +1549,9 @@ namespace PerfViewExtensibility
 
             var stacks = etlFile.CPUStacks();
             stacks.Filter = new FilterParams();
-            stacks.LookupWarmSymbols(10); // Look up symbols (even on the symbol server) for modules with more than 10 inclusive samples
+
+            // Look up symbols (even on the symbol server) for modules with more than the requested number of samples
+            stacks.LookupWarmSymbols(warmSymbolLookupMinimumValue);
             stacks.GuiState.Notes = string.Format("Created by SaveCPUStacksAsCsv from {0} on {1}", etlFile.FilePath, DateTime.Now);
 
             // Derive the output file name from the input file name.
