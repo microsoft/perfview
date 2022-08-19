@@ -231,17 +231,63 @@ namespace PerfViewExtensibility
         }
 
         /// <summary>
-        /// Save the entire CPU stacks from 'etlFileName' as a csv.  If the /process qualifier is present use it to narrow what
-        /// is put into the file to a single process.
+        /// Returns the process with the most amount of CpuMsec time.  Should this time be equal, the oldest ID is prioritized
         /// </summary>
-        public void SaveCPUStacksAsCsv(string etlFileName, string processName = null, string warmSymbolLookupMinimumValue = "10")
+        /// <param name="processName"> The process name to look for in the stacks </param>
+        /// <returns> The process with the greatest cpuMSec, or the oldest process if there was a tie. </returns>
+        TraceProcess ProcessWithGreatestCpuMSec(ETLDataFile etlDataFile, string processName)
+        {
+            if (etlDataFile == null || string.IsNullOrWhiteSpace(processName))
+            {
+                return null;
+            }
+            float greatestMSec = 0.0f;
+            TraceProcess ret = null;
+            for (int i = 0; i < etlDataFile.Processes.Count; i++)
+            {
+                TraceProcess process = etlDataFile.Processes[(ProcessIndex)i];
+                if (string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    if (greatestMSec == process.CPUMSec && (ret == null || process.ProcessID < ret.ProcessID))
+                    {
+                        ret = process;
+                        greatestMSec = process.CPUMSec;
+                    }
+                    else if (greatestMSec < process.CPUMSec)
+                    {
+                        ret = process;
+                        greatestMSec = process.CPUMSec;
+                    }
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Save the entire CPU stacks from 'etlFileName' as a csv.  If the /process qualifier is present use it to narrow what
+        /// is put into the file to a single process.  If warmSymbolLookupMinimumValue is present, then PerfView will lookup symbols 
+        /// if that many trace events from a library are found.  If processLookupMethod can be specified as GreatestMSec to
+        /// instead get the process with the greatest msec as opposed to the last process with a name.
+        /// </summary>
+        /// <param name="etlFileName"> The name of the etl file to convert to a csv </param>
+        /// <param name="processName"> The process name to filter on </param>
+        /// <param name="warmSymbolLookupMinimumValue"> The number of trace events needed to lookup symbols </param>
+        /// <param name="processLookupMethod"> The lookup method to use to filter processes </param>
+        public void SaveCPUStacksAsCsv(string etlFileName, string processName = null, string warmSymbolLookupMinimumValue = "10", string processLookupMethod = "LastProcess")
         {
             using (var etlFile = OpenETLFile(etlFileName))
             {
                 TraceProcess process = null;
                 if (processName != null)
                 {
-                    process = etlFile.Processes.ProcessWithGreatestCpuMSec(processName);
+                    if (processLookupMethod == "GreatestMSec")
+                    {
+                        process = ProcessWithGreatestCpuMSec(etlFile, processName);
+                    }
+                    else
+                    {
+                        process = etlFile.Processes.LastProcessWithName(processName);
+                    }
                     if (process == null)
                     {
                         throw new ApplicationException("Could not find process named " + processName);
@@ -1548,7 +1594,6 @@ namespace PerfViewExtensibility
             }
 
             var stacks = etlFile.CPUStacks();
-            stacks.Filter = new FilterParams();
 
             // Look up symbols (even on the symbol server) for modules with more than the requested number of samples
             stacks.LookupWarmSymbols(warmSymbolLookupMinimumValue);
