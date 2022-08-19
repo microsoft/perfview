@@ -70,6 +70,42 @@ namespace PerfViewExtensibility
                 LogFile.WriteLine("[Converted {0} to {1}  Use https://www.speedscope.app/ to view.]", netPerfFileName, outputName);
             }
         }
+        
+        /// <summary>
+        /// Converts an etl file to the SpeedScope json format.  If processToFilterOn is specified,
+        /// that process will be the only process that will be saved to the SpeedScope file.
+        /// </summary>
+        /// <param name="etlFileName"> The etl file to be converted </param>
+        /// <param name="lookupWarmSymbolsMinimumValue"> The minimum number of trace events needed to lookup symbols before processing </param>
+        /// <param name="processToFilterOn"> The process to filter the trace data on </param>
+        public void EtlToSpeedScope(string etlFileName, string processToFilterOn = null, string lookupWarmSymbolsMinimumValue = "10")
+        {
+            string outputName = Path.ChangeExtension(etlFileName, ".speedscope.json");
+            using (var etlFile = new ETLDataFile(etlFileName))
+            {
+                if (processToFilterOn != null)
+                {
+                    var process = etlFile.Processes.LastProcessWithName(processToFilterOn);
+                    if (process == null)
+                    {
+                        throw new ApplicationException("No process with name" + processToFilterOn);
+                    }
+                    etlFile.SetFilterProcess(process);
+
+                    if (lookupWarmSymbolsMinimumValue == null || string.IsNullOrWhiteSpace(lookupWarmSymbolsMinimumValue))
+                    {
+                        throw new ApplicationException("Invalid number to lookup with.");
+                    }
+                    int warmSymbolLookupThreshold = int.Parse(lookupWarmSymbolsMinimumValue);
+                    if (warmSymbolLookupThreshold <= 0)
+                    {
+                        throw new ApplicationException("Invalid number to lookup with.");
+                    }
+                    etlFile.CPUStacks().LookupWarmSymbols(warmSymbolLookupThreshold);
+                }
+                SpeedScopeStackSourceWriter.WriteStackViewAsJson(etlFile.CPUStacks().StackSource, outputName);
+            }
+        }
 #if false // TODO Ideally you don't need Linux Specific versions, and it should be based
           // on eventPipe.   You can delete after 1/2018
         public void LinuxGCStats(string traceFileName)
