@@ -48,33 +48,33 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tools you need to build PerfView are Visual Studio 2019 and the .NET Core SDK.   The
-[Visual Studio 2019 Community Edition](https://www.visualstudio.com/vs/community/) can be downloaded *for free* and,
+The only tools you need to build PerfView are Visual Studio 2022 and the .NET Core SDK.   The
+[Visual Studio 2022 Community Edition](https://www.visualstudio.com/vs/community/) can be downloaded *for free* and,
 along with the .NET Core SDK, has everything you need to fetch PerfView from GitHub, build and test it. We expect you
-to download Visual Studio 2019 Community Edition if you don't already have Visual Studio 2019.
+to download Visual Studio 2022 Community Edition if you don't already have Visual Studio 2022.
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
 (The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
-If you downloaded the Visual Studio 2019 Community Edition, it does not install the C++ compilation tools by default and
+If you downloaded the Visual Studio 2022 Community Edition, it does not install the C++ compilation tools by default and
 it also does not include the Windows 10.0.17763.0 SDK by default (we build PerfView so it can run on Win8 as well as Win10).  Thus
-when you install Visual Studio 2019 check the 'Desktop Development with C++' option and then look the right pane to see
+when you install Visual Studio 2022 check the 'Desktop Development with C++' option and then look the right pane to see
 the optional sub-components, and make sure the Windws 10.0.17763.0 SDK is also checked (it typically is not).   If you have
-already installed VS 2019, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2019, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 10.0.17763.0 SDK. 
+already installed Visual Studio 2022, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2022, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 10.0.17763.0 SDK. 
 If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 10.0.17763.0 SDK.  See 
 the troubleshooting sections below for more if you need it.  
 
-The .NET Core SDK should be part of the default VS 2019 installation now, but if not it can be installed easily from [here](https://www.microsoft.com/net/download/windows).
+The .NET Core SDK should be part of the default Visual Studio 2022 installation now, but if not it can be installed easily from [here](https://www.microsoft.com/net/download/windows).
 
 ### Cloning the PerfView GitHub Repository. 
 
 The first step in getting started with the PerfView source code is to clone the PerfView GitHub repository.
-If you are already familiar with how GIT, GitHub, and Visual Studio 2019 GIT support works, then you can skip this section.
-However, if not, the [Setting up a Local GitHub repository with Visual Studio 2019](documentation/SettingUpRepoInVS.md) document
-will lead you through the basics of doing this. All it assumes is that you have Visual Studio 2019 installed.
+If you are already familiar with how GIT, GitHub, and Visual Studio 2022 GIT support works, then you can skip this section.
+However, if not, the [Setting up a Local GitHub repository with Visual Studio 2022](documentation/SettingUpRepoInVS.md) document
+will lead you through the basics of doing this. All it assumes is that you have Visual Studio 2022 installed.
 
 ### How to Build and Debug PerfView 
 
-PerfView is developed in Visual Studio 2019 using features through C# 6.
+PerfView is developed in Visual Studio 2022 using features through C# 6.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build the 
@@ -109,16 +109,16 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   explicit 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found'
   issues in the 'Global' project.  These can be ignored until you get every other part of the build working.
 
-  * One of the invariants of the repo is that if you are running Visual Studio 2019 and you simply sync and build the
+  * One of the invariants of the repo is that if you are running Visual Studio 2022 and you simply sync and build the
   PerfView.sln file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then
   we need to either fix the repo or update the advice above. Thus it is reasonable to open a GitHub issue. If you
   do this, the goal is to fix the problem, which means you have to put enough information into the issue to do that.
   This includes exactly what you tried, and what the error messages were.
   
-  * You can also build PerfView from the command line (but you still need VS 2019 installed).   It is a two step process.
+  * You can also build PerfView from the command line (but you still need Visual Studio 2022 installed).   It is a two step process.
   First you must restore all the needed nuget packages, then you do the build itself. To do this:
     1. Open a developer command prompt.  You can do this by hitting the windows key (by the space bar) and type
-       'Developer command prompt'.  You should see a entry for this that you can select (if VS 2019 is installed).
+       'Developer command prompt'.  You should see a entry for this that you can select (if Visual Studio 2022 is installed).
     2. Change directory to the base of your PerfView source tree (where PerfView.sln lives). 
     3. Restore the nuget packages by typing the command 'msbuild /t:restore'
     4. Build perfView by typing the command 'msbuild'
