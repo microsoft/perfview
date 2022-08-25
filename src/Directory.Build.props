@@ -30,7 +30,7 @@
   <!-- versions of dependencies that more than one project use -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.23</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.24</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
     <MicrosoftDiagnosticsRuntimeVersion>2.1.327703</MicrosoftDiagnosticsRuntimeVersion>
     <XunitVersion>2.4.0</XunitVersion>
