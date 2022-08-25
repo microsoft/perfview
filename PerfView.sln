@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30104.5
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.32821.20
 MinimumVisualStudioVersion = 15.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView", "src\PerfView\PerfView.csproj", "{6BAC7496-6953-41B8-9042-AAE45405A095}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -33,11 +33,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4068F9B-607A-4531-98A8-DE9B392C2D2C}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
 		CONTRIBUTING.md = CONTRIBUTING.md
 		src\Directory.Build.props = src\Directory.Build.props
 		src\Directory.Build.targets = src\Directory.Build.targets
-		.nuget\packages.config = .nuget\packages.config
 		src\PerfViewCollect\PerfViewCollect.csproj = src\PerfViewCollect\PerfViewCollect.csproj
 		README.md = README.md
 	EndProjectSection
@@ -227,18 +225,6 @@ Global
 		{19281902-FBC4-48C0-962B-9FDADAF5C783}.Release|x64.Build.0 = Release|Any CPU
 		{19281902-FBC4-48C0-962B-9FDADAF5C783}.Release|x86.ActiveCfg = Release|Any CPU
 		{19281902-FBC4-48C0-962B-9FDADAF5C783}.Release|x86.Build.0 = Release|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|x64.Build.0 = Debug|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|x86.Build.0 = Debug|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|x64.ActiveCfg = Release|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|x64.Build.0 = Release|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|x86.ActiveCfg = Release|Any CPU
-		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|x86.Build.0 = Release|Any CPU
 		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Debug|x64.ActiveCfg = Debug|Any CPU
