@@ -985,6 +985,7 @@ namespace PerfView
         {
             m_formatName = formatName;
             m_fileExtensions = fileExtensions;
+            m_Children = new List<PerfViewTreeItem>();
         }
 
         public override string FormatName { get { return m_formatName; } }
