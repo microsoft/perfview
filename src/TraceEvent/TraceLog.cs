@@ -8721,11 +8721,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
                     return false;
                 }
-                if (file.Header.SizeOfImage != (uint)moduleFile.ImageSize)
-                {
-                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
-                    return false;
-                }
             }
             return true;
         }
