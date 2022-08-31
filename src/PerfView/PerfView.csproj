@@ -302,6 +302,13 @@
       <Link>HeapDump\System.ValueTuple.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Runtime.InteropServices.RuntimeInformation.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Runtime.InteropServices.RuntimeInformation.dll</LogicalName>
+      <Link>HeapDump\System.Runtime.InteropServices.RuntimeInformation.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
