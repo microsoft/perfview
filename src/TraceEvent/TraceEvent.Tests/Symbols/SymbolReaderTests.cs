@@ -20,6 +20,7 @@ namespace TraceEventTests
     {
         private const string SymbolReaderTestInput = "SymbolReaderTestInput";
         private const string FileName_CsPortablePdb1 = "CsPortablePdb1.pdb";
+        private const string FileName_CsPortableEmbeddedSource = "CsPortableEmbeddedSource.pdb";
         private const string FileName_CppConPdb = "CppCon.pdb";
         private const string FileName_CsDesktopPdbWithSourceLink = "CsDesktopWithSourceLink.pdb";
 
@@ -207,6 +208,56 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void EmbeddedSourceCanBeLoaded()
+        {
+            string pdbName = FileName_CsPortableEmbeddedSource;
+            var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, pdbName));
+            using (pdbFile as IDisposable)
+            {
+                const uint assemblyInfoToken = 0x06000001;
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(assemblyInfoToken, ilOffset: 0);
+                Assert.NotNull(sourceLocation);
+
+                var sourceFile = sourceLocation.SourceFile;
+                Assert.NotNull(sourceFile);
+
+                string renamedSourceFile = null;
+                string downloadedPath = null;
+                try
+                {
+                    // You may be running tests with C:\PerfViewTestData contents on your
+                    // local disk and we don't want source look-up to succeed there. So
+                    // we temporarily rename any existing file at the BuildPath location.
+                    if (File.Exists(sourceFile.BuildTimeFilePath))
+                    {
+                        renamedSourceFile = Path.ChangeExtension(sourceFile.BuildTimeFilePath, ".orig");
+                        File.Move(sourceFile.BuildTimeFilePath, renamedSourceFile);
+                    }
+
+                    downloadedPath = sourceFile.GetSourceFile(requireChecksumMatch: true);
+                    Assert.NotEqual(downloadedPath, sourceFile.BuildTimeFilePath); // Should not be using BuildTimeFilePath
+                    Assert.True(sourceFile.ChecksumMatches);
+
+                    // Check the contents
+                    string fileContents = File.ReadAllText(downloadedPath);
+                    Assert.Contains("Console.WriteLine(\"Hello from CsPortableEmbeddedSource!\");\r\n", fileContents, StringComparison.Ordinal);
+                }
+                finally
+                {
+                    if (downloadedPath != null)
+                    {
+                        File.Delete(downloadedPath);
+                    }
+
+                    if (renamedSourceFile != null)
+                    {
+                        File.Move(renamedSourceFile, sourceFile.BuildTimeFilePath);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Read all the text from the given file path into a string,
         /// preserving any byte order mark.
@@ -314,6 +365,7 @@ namespace TraceEventTests
                         {
                             Directory.Delete(symbolReaderDataDir, recursive: true);
                         }
+
                         ZipFile.ExtractToDirectory(zipFile, symbolReaderDataDir);
                     }
 
