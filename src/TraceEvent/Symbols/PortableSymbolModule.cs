@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -82,19 +83,40 @@ namespace Microsoft.Diagnostics.Symbols
             return Enumerable.Empty<string>();
         }
 
+        private bool TryGetEmbeddedSource(DocumentHandle documentHandle, out BlobHandle sourceBlobHandle)
+        {
+            foreach (CustomDebugInformationHandle customDebugInformationHandle in _metaData.GetCustomDebugInformation(documentHandle))
+            {
+                CustomDebugInformation customDebugInformation = _metaData.GetCustomDebugInformation(customDebugInformationHandle);
+                if (_metaData.GetGuid(customDebugInformation.Kind) == EmbeddedSourceKind)
+                {
+                    sourceBlobHandle = customDebugInformation.Value;
+                    return true;
+                }
+            }
+
+            sourceBlobHandle = default;
+            return false;
+        }
+
         private SourceFile GetSourceFile(DocumentHandle documentHandle)
         {
-            return new PortablePdbSourceFile(_metaData.GetDocument(documentHandle), this);
+            if (TryGetEmbeddedSource(documentHandle, out BlobHandle sourceBlobHandle))
+            {
+                return new EmbeddedSourceFile(documentHandle, sourceBlobHandle, this);
+            }
+
+            return new PortablePdbSourceFile(documentHandle, this);
         }
 
         private class PortablePdbSourceFile : SourceFile
         {
-            internal PortablePdbSourceFile(Document sourceFileDocument, PortableSymbolModule portablePdb) : base(portablePdb)
+            internal PortablePdbSourceFile(DocumentHandle documentHandle, PortableSymbolModule portablePdb) : base(portablePdb)
             {
-                _sourceFileDocument = sourceFileDocument;
-                _portablePdb = portablePdb;
+                MetadataReader metaData = portablePdb._metaData;
+                Document sourceFileDocument = metaData.GetDocument(documentHandle);
 
-                Guid hashAlgorithmGuid = _portablePdb._metaData.GetGuid(_sourceFileDocument.HashAlgorithm);
+                Guid hashAlgorithmGuid = metaData.GetGuid(sourceFileDocument.HashAlgorithm);
                 if (hashAlgorithmGuid == HashAlgorithmSha1)
                 {
                     _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
@@ -106,24 +128,61 @@ namespace Microsoft.Diagnostics.Symbols
 
                 if (_hashAlgorithm != null)
                 {
-                    _hash = _portablePdb._metaData.GetBlobBytes(_sourceFileDocument.Hash);
+                    _hash = metaData.GetBlobBytes(sourceFileDocument.Hash);
                 }
 
-                BuildTimeFilePath = _portablePdb._metaData.GetString(_sourceFileDocument.Name);
+                BuildTimeFilePath = metaData.GetString(sourceFileDocument.Name);
                 _log.WriteLine("Opened Portable Pdb Source File: {0}", BuildTimeFilePath);
             }
 
             #region private 
-            private static Guid HashAlgorithmSha1 = Guid.Parse("ff1816ec-aa5e-4d10-87f7-6f4963833460");
-            private static Guid HashAlgorithmSha256 = Guid.Parse("8829d00f-11b8-4213-878b-770e8597ac16");
-
-            // Fields 
-            private Document _sourceFileDocument;
-            private PortableSymbolModule _portablePdb;
+            private static readonly Guid HashAlgorithmSha1 = Guid.Parse("ff1816ec-aa5e-4d10-87f7-6f4963833460");
+            private static readonly Guid HashAlgorithmSha256 = Guid.Parse("8829d00f-11b8-4213-878b-770e8597ac16");
             #endregion
         }   // Class PortablePdbSourceFile
 
-        private static Guid SourceLinkKind = Guid.Parse("CC110556-A091-4D38-9FEC-25AB9A351A6A");
+        private class EmbeddedSourceFile : PortablePdbSourceFile
+        {
+            public EmbeddedSourceFile(DocumentHandle documentHandle, BlobHandle sourceHandle, PortableSymbolModule portablePdb) : base(documentHandle, portablePdb)
+            {
+                _metaData = portablePdb._metaData;
+                _sourceHandle = sourceHandle;
+            }
+
+            protected unsafe override string GetSourceFromSrcServer()
+            {
+                BlobReader blobReader = _metaData.GetBlobReader(_sourceHandle);
+
+                // Skip the first 4 bytes. They indicate the uncompressed size.
+                _ = blobReader.ReadInt32();
+
+                string sourceCacheDirectory = _symbolModule.SymbolReader.SourceCacheDirectory;
+                if (string.IsNullOrEmpty(sourceCacheDirectory))
+                {
+                    sourceCacheDirectory = Path.GetTempPath();
+                }
+
+                Directory.CreateDirectory(sourceCacheDirectory);
+                string cachedLocation = Path.Combine(sourceCacheDirectory, Path.GetRandomFileName());
+                using (FileStream file = File.Create(cachedLocation))
+                using (var compressedSource = new UnmanagedMemoryStream(blobReader.CurrentPointer, blobReader.RemainingBytes))
+                using (var deflater = new DeflateStream(compressedSource, CompressionMode.Decompress))
+                {
+                    deflater.CopyTo(file);
+                }
+
+                return cachedLocation;
+            }
+
+            #region private 
+            // Fields
+            private readonly MetadataReader _metaData;
+            private readonly BlobHandle _sourceHandle;
+            #endregion
+        }
+
+        private static readonly Guid SourceLinkKind = Guid.Parse("CC110556-A091-4D38-9FEC-25AB9A351A6A");
+        private static readonly Guid EmbeddedSourceKind = Guid.Parse("0E8A571B-6926-466E-B4AD-8AB04611F5FE");
 
         // Needed by other things to look up data
         internal MetadataReader _metaData;
