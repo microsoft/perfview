@@ -5301,6 +5301,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return null;
         }
+
         /// <summary>
         /// Find the last process in the trace that has the process name 'processName' and whose process
         /// start time is after the given point in time.
