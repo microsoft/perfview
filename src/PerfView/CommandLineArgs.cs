@@ -69,7 +69,9 @@ namespace PerfView
         public bool SaveETL;                // Save the ETL file when dumping the JS heap
         public bool DumpData;               // Dump the heap data as well as the connectivity info
         public bool Freeze;                 // Freeze the process while the dump is taken
+#if FEATURE_SAMPLING
         public int MaxDumpCountK = 250;     // Maximum size of the File to generate.   We sample aggressively enough to try to hit this count of objects in the file
+#endif
         public int MaxNodeCountK;           // Maximum size to even look at in the heap 
 
 #if CROSS_GENERATION_LIVENESS
@@ -628,8 +630,10 @@ namespace PerfView
             parser.DefineParameter("Process", ref ProcessParam, "The process ID or Process Name (Exe without extension) of the process  take a heap snapshot.");
             parser.DefineOptionalParameter("DataFile", ref DataFile, "The name of the file to place the heap snapshot.");
             parser.DefineOptionalQualifier("SaveETL", ref SaveETL, "Save an ETL file along with the GCDump file when dumping the JS Heap.");
+#if FEATURE_SAMPING
             parser.DefineOptionalQualifier("MaxDumpCountK", ref MaxDumpCountK,
                 "The maximum number of objects (in K or thousands) to place int the .gcDump file.   Sample sufficiently to hit this metric.");
+#endif
             parser.DefineOptionalQualifier("Freeze", ref Freeze, "Freeze the dump while data is taken.");
 
             parser.DefineParameterSet("ForceGC", ref DoCommand, App.CommandProcessor.ForceGC,

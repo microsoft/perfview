@@ -31,7 +31,9 @@ namespace PerfView.Dialogs
             FreezeCheckBox.IsChecked = m_args.Freeze;
             SaveETLCheckBox.IsChecked = m_args.SaveETL;
             // DumpDataCheckBox.IsChecked = m_args.DumpData;
+#if FEATURE_SAMPLING
             MaxDumpTextBox.Text = m_args.MaxDumpCountK.ToString();
+#endif
 
             if (args.ProcessDumpFile != null)
             {
@@ -140,6 +142,7 @@ namespace PerfView.Dialogs
             m_args.Freeze = FreezeCheckBox.IsChecked ?? false;
             m_args.SaveETL = SaveETLCheckBox.IsChecked ?? false;
             m_args.DumpData = false;  // TODO FIX NOW actually use
+#if FEATURE_SAMPLING
             if (!int.TryParse(MaxDumpTextBox.Text, out m_args.MaxDumpCountK))
             {
                 StatusBar.LogError("Could not parse MaxDump " + MaxDumpTextBox.Text);
@@ -160,6 +163,7 @@ namespace PerfView.Dialogs
                     return;
                 }
             }
+#endif
 
             m_args.NoView = true;
             m_tookASnapshot = true;

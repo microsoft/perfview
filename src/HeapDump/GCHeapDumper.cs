@@ -44,7 +44,7 @@ public class GCHeapDumper
         m_copyOfLog = new StringWriter();
         m_log = new TeeTextWriter(m_copyOfLog, m_origLog);
 
-        MaxDumpCountK = 250;
+        MaxDumpCountK = -1;
     }
 
     /// <summary>
@@ -371,6 +371,7 @@ public class GCHeapDumper
     /// TODO current does nothing. 
     /// </summary>
     public bool DumpData;
+
     /// <summary>
     /// The maximum number of heap objects to dump(in kiloObjects).  Above this number we start sampling to keep
     /// file size and viewer processing time under control.  
@@ -976,59 +977,25 @@ public class GCHeapDumper
         m_log.WriteLine("{0,5:f1}s: Starting heap dump {1}", m_sw.Elapsed.TotalSeconds, DateTime.Now);
 
         ulong totalGCSize = (ulong)allSegments.Sum(s => (long)s.Length);
-        if (MaxDumpCountK != 0 && MaxDumpCountK < 10)   // Having fewer than 10K is probably wrong.
+
+        if (MaxDumpCountK >= 0 && MaxDumpCountK < 10)   // Having fewer than 10K is probably wrong.
             MaxDumpCountK = 10;
 
+        if (MaxNodeCountK > 0)
+        {
+            m_maxNodeCount = MaxNodeCountK * 1000;
+        }
+
         m_log.WriteLine("{0,5:f1}s: Size of heap = {1:f3} GB", m_sw.Elapsed.TotalSeconds, ((double)totalGCSize) / 1000000000.0);
-
-        // We have an overhead of about 52 bytes per object (24 for the hash table, 28 for the rest)
-        // we have 1GB in a 32 bit process 
-        m_maxNodeCount = 1000000000 / 52;       // 20 Meg objects;
-        if (EnvironmentUtilities.Is64BitOperatingSystem)
-        {
-            m_maxNodeCount *= 3;                // We have 4GB instead of 2GB, so we 3GB instead of 1GB available for us to use in 32 bit processes = 60Meg objects
-        }
-
-        // On 64 bit process we are limited by the fact that the graph node is in a MemoryStream and its byte array is limited to 2 gig.  Most objects will
-        // be represented by 10 bytes in this array and we round this up to 16 = 128Meg
-        if (EnvironmentUtilities.Is64BitProcess)
-        {
-            m_maxNodeCount = int.MaxValue / 16 - 11;      // Limited to 128Meg objects.  (We are limited by the size of the stream)
-            m_log.WriteLine("In a 64 bit process.  Increasing the max node count to {0:f1} Meg", m_maxNodeCount / 1000000.0);
-        }
-        m_log.WriteLine("Implicitly limit the number of nodes to {0:f1} Meg to avoid arrays that are too large", m_maxNodeCount / 1000000.0);
-
-        // Can force it smaller in case our estimate is not good enough.  
-        var explicitMax = MaxNodeCountK * 1000;
-        if (0 < explicitMax)
-        {
-            m_maxNodeCount = Math.Min(m_maxNodeCount, explicitMax);
-            m_log.WriteLine("Explicit object count maximum {0:n0}, resulting max {1:n0}", explicitMax, m_maxNodeCount);
-        }
-
-        if (retryScale != 1)
-        {
-            m_maxNodeCount = (int)(m_maxNodeCount / retryScale);
-            m_log.WriteLine("We are retrying the dump so we scale the max by {0} to the value {1}", retryScale, m_maxNodeCount);
-        }
 
         // We assume that object on average are 8 object pointers.      
         int estimatedObjectCount = (int)(totalGCSize / ((uint)(8 * IntPtr.Size)));
         m_log.WriteLine("Estimated number of objects = {0:n0}", estimatedObjectCount);
 
-        // We force the node count to be this max node count if we are within a factor of 2.  
-        // This ensures that we don't have an issue where growing algorithms overshoot the amount
-        // of memory available and fail.   Note we do this on 64 bit too 
-        if (estimatedObjectCount >= m_maxNodeCount / 2)
-        {
-            m_log.WriteLine("Limiting object count to {0:n0}", m_maxNodeCount);
-            estimatedObjectCount = m_maxNodeCount + 2;
-        }
-
         // Allocate a memory graph if we have not already.  
         if (m_gcHeapDump.MemoryGraph == null)
         {
-            m_gcHeapDump.MemoryGraph = new MemoryGraph(estimatedObjectCount);
+            m_gcHeapDump.MemoryGraph = new MemoryGraph(estimatedObjectCount, isVeryLargeGraph: true);
         }
 
         m_gcHeapDump.MemoryGraph.Is64Bit = EnvironmentUtilities.Is64BitProcess;
@@ -1279,29 +1246,36 @@ public class GCHeapDumper
         // Allow reading.  
         m_gcHeapDump.MemoryGraph.AllowReading();
 
-        var maxDumpCount = MaxDumpCountK * 1000;
-        if (maxDumpCount != 0 && maxDumpCount < m_gcHeapDump.MemoryGraph.NodeCount)
+        if (MaxDumpCountK > 0)
         {
-            m_log.WriteLine("Object count {0}K > MaxDumpCount = {1}K, sampling", m_gcHeapDump.MemoryGraph.NodeCount / 1000, MaxDumpCountK);
+            var maxDumpCount = MaxDumpCountK * 1000;
+            if (maxDumpCount != 0 && maxDumpCount < m_gcHeapDump.MemoryGraph.NodeCount)
+            {
+                m_log.WriteLine("Object count {0}K > MaxDumpCount = {1}K, sampling", m_gcHeapDump.MemoryGraph.NodeCount / 1000, MaxDumpCountK);
 
-            m_log.WriteLine("{0,5:f1}s:   Started Sampling.", m_sw.Elapsed.TotalSeconds);
-            var graphSampler = new GraphSampler(m_gcHeapDump.MemoryGraph, maxDumpCount, m_log);
-            var sampledGraph = graphSampler.GetSampledGraph();
-            m_log.WriteLine("{0,5:f1}s:   Done Sampling.", m_sw.Elapsed.TotalSeconds);
+                m_log.WriteLine("{0,5:f1}s:   Started Sampling.", m_sw.Elapsed.TotalSeconds);
+                var graphSampler = new GraphSampler(m_gcHeapDump.MemoryGraph, maxDumpCount, m_log);
+                var sampledGraph = graphSampler.GetSampledGraph();
+                m_log.WriteLine("{0,5:f1}s:   Done Sampling.", m_sw.Elapsed.TotalSeconds);
 
-            m_gcHeapDump.CountMultipliersByType = graphSampler.CountScalingByType;
-            m_gcHeapDump.AverageCountMultiplier = (float)((double)m_gcHeapDump.MemoryGraph.NodeCount / sampledGraph.NodeCount);
-            m_gcHeapDump.AverageSizeMultiplier = (float)((double)m_gcHeapDump.MemoryGraph.TotalSize / sampledGraph.TotalSize);
-            m_log.WriteLine("Average Count Multiplier: {0,6:f2}", m_gcHeapDump.AverageCountMultiplier);
-            m_log.WriteLine("Average Size Multiplier:  {0,6:f2}", m_gcHeapDump.AverageSizeMultiplier);
+                m_gcHeapDump.CountMultipliersByType = graphSampler.CountScalingByType;
+                m_gcHeapDump.AverageCountMultiplier = (float)((double)m_gcHeapDump.MemoryGraph.NodeCount / sampledGraph.NodeCount);
+                m_gcHeapDump.AverageSizeMultiplier = (float)((double)m_gcHeapDump.MemoryGraph.TotalSize / sampledGraph.TotalSize);
+                m_log.WriteLine("Average Count Multiplier: {0,6:f2}", m_gcHeapDump.AverageCountMultiplier);
+                m_log.WriteLine("Average Size Multiplier:  {0,6:f2}", m_gcHeapDump.AverageSizeMultiplier);
 
-            m_gcHeapDump.MemoryGraph = sampledGraph;
-            m_log.WriteLine("After sampling Object Count {0}K    Total GC Heap Size {1:f1} MB ",
-                m_gcHeapDump.MemoryGraph.NodeCount, m_gcHeapDump.MemoryGraph.TotalSize / 1000000.0);
+                m_gcHeapDump.MemoryGraph = sampledGraph;
+                m_log.WriteLine("After sampling Object Count {0}K    Total GC Heap Size {1:f1} MB ",
+                    m_gcHeapDump.MemoryGraph.NodeCount, m_gcHeapDump.MemoryGraph.TotalSize / 1000000.0);
+            }
+            else
+            {
+                m_log.WriteLine("Object count {0}K less than {1}K, Dumped all objects.", m_gcHeapDump.MemoryGraph.NodeCount / 1000, MaxDumpCountK);
+            }
         }
         else
         {
-            m_log.WriteLine("Object count {0}K less than {1}K, Dumped all objects.", m_gcHeapDump.MemoryGraph.NodeCount / 1000, MaxDumpCountK);
+            m_log.WriteLine("Skipped sampling.  The entire graph will be saved.");
         }
 
         if (logLiveStats)
@@ -1349,7 +1323,7 @@ public class GCHeapDumper
         if (m_outputFileName != null)
         {
             m_log.WriteLine("{0,5:f1}s:   Started Writing to file.", m_sw.Elapsed.TotalSeconds);
-            var serializer = new Serializer(new IOStreamStreamWriter(m_outputFileName, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }), m_gcHeapDump);
+            var serializer = new Serializer(new IOStreamStreamWriter(m_outputFileName, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }), m_gcHeapDump);
             serializer.Close();
 
             m_log.WriteLine("Actual file size = {0:f3}MB", new FileInfo(m_outputFileName).Length / 1000000.0);
@@ -1358,7 +1332,7 @@ public class GCHeapDumper
         if (m_outputStream != null)
         {
             m_log.WriteLine("{0,5:f1}s:   Started Writing to stream.", m_sw.Elapsed.TotalSeconds);
-            var serializer = new Serializer(new IOStreamStreamWriter(m_outputStream, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }), m_gcHeapDump);
+            var serializer = new Serializer(new IOStreamStreamWriter(m_outputStream, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }), m_gcHeapDump);
             serializer.Close();
         }
 
@@ -1541,13 +1515,14 @@ public class GCHeapDumper
 
                 if (obj > nextStatusUpdateObj)
                 {
-                    m_log.WriteLine("{0,5:f1}s: Dumped {1:n0} objects, max_dump_limit {2:n0} Dumper heap Size {3:n0}MB",
-                        m_sw.Elapsed.TotalSeconds, m_gcHeapDump.MemoryGraph.NodeCount, m_maxNodeCount, GC.GetTotalMemory(false) / 1000000.0);
+                    m_log.WriteLine("{0,5:f1}s: Dumped {1:n0} objects, Dumper heap Size {2:n0}MB",
+                        m_sw.Elapsed.TotalSeconds, m_gcHeapDump.MemoryGraph.NodeCount, GC.GetTotalMemory(false) / 1000000.0);
                     nextStatusUpdateObj = obj + 1000000;        // log a message every 1 Meg 
                 }
 
-                if (m_gcHeapDump.MemoryGraph.NodeCount >= m_maxNodeCount ||
-                    m_gcHeapDump.MemoryGraph.DistinctRefCount + m_children.Count > m_maxNodeCount)
+                if (m_maxNodeCount > 0 &&
+                    (m_gcHeapDump.MemoryGraph.NodeCount >= m_maxNodeCount ||
+                     m_gcHeapDump.MemoryGraph.DistinctRefCount + m_children.Count > m_maxNodeCount))
                 {
                     m_log.WriteLine("[WARNING, exceeded the maximum number of node allowed {0}]", m_maxNodeCount);
                     m_log.WriteLine("{0,5:f1}s: Truncating heap dump.", m_sw.Elapsed.TotalSeconds);
@@ -1745,7 +1720,7 @@ public class GCHeapDumper
     private GCHeapDump m_gcHeapDump;        // The image of what we are putting in the file
     private NodeIndex m_JSRoot = NodeIndex.Invalid;     // The root of the JS heap
     private NodeIndex m_dotNetRoot = NodeIndex.Invalid; // The root of the .NET heap
-    private int m_maxNodeCount;             // The maximum node count (to keep from getting out of memory exceptions)
+    private int m_maxNodeCount = -1;             // The maximum node count (to keep from getting out of memory exceptions)
 
     private bool m_gotJScriptData;          // Did we find a JScript heap?
     private bool m_gotDotNetData;           // Did we find a .NET heap?
