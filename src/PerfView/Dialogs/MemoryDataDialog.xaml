@@ -118,10 +118,10 @@
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="5,0,5,0" ToolTip="If the heap has more object than this (in Kilo objects) than this, only a sample is taken." >
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="5,0,5,0" ToolTip="If the heap has more object than this (in Kilo objects) than this, only a sample is taken." >
                         <Hyperlink Command="Help" CommandParameter="MaxDumpTextBox">Max Dump<LineBreak/>K Objs:</Hyperlink>
             </TextBlock>
-            <TextBox Grid.Column="2" Name="MaxDumpTextBox" VerticalAlignment="Center" Width="50" Margin="5,0"/> -->
+            <TextBox Grid.Column="2" Name="MaxDumpTextBox" VerticalAlignment="Center" Width="50" Margin="5,0"/>
 
             <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked the process will be frozen during the dump.">
                     <Hyperlink Command="Help" CommandParameter="FreezeCheckBox">Freeze:</Hyperlink>

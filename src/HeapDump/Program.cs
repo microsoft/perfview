@@ -253,13 +253,8 @@ internal class Program
             }
             return 0;
             Usage:
-#if FEATURE_SAMPLING
             Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n /Freeze] ProcessIdOrName OutputHeapDumpFile");
             Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n] /processDump  DumpFile OutputHeapDumpFile");
-#else
-            Console.WriteLine("Usage: HeapDump [/Freeze] ProcessIdOrName OutputHeapDumpFile");
-            Console.WriteLine("Usage: HeapDump /processDump  DumpFile OutputHeapDumpFile");
-#endif
             Console.WriteLine("Usage: HeapDump /forceGC ProcessIdOrName");
             return 1;
         }

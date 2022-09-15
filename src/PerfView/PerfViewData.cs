@@ -8410,7 +8410,23 @@ table {
                     }
                     else
                     {
-                        m_gcDump = new GCHeapDump(FilePath);
+                        try
+                        {
+                            m_gcDump = new GCHeapDump(FilePath);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.WriteLine($"Error loading gcdump file '{FilePath}' as a 64-bit file.\nException: {ex}");
+
+                            // Attempt to load the dump as a 32-bit file.
+                            log.WriteLine("Attempting to load the gcdump as a 32-bit file.");
+                            m_gcDump = new GCHeapDump(
+                                FilePath,
+                                new FastSerialization.SerializationConfiguration()
+                                {
+                                    StreamLabelWidth = FastSerialization.StreamLabelWidth.FourBytes
+                                });
+                        }
 
                         // set it up so we resolve any types 
                         var resolver = new TypeNameSymbolResolver(FilePath, log);

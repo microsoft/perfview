@@ -1806,12 +1806,10 @@ namespace PerfView
                 qualifiers += " /DumpData";
             }
 
-#if FEATURE_SAMPLING
-            if (parsedArgs.MaxDumpCountK > 0)
+            if (parsedArgs.MaxDumpCountK != -1)
             {
                 qualifiers += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             }
-#endif
 
             if (parsedArgs.MaxNodeCountK > 0)
             {
@@ -3134,14 +3132,12 @@ namespace PerfView
                 cmdLineArgs += " /DumpData";
             }
 
-#if FEATURE_SAMPLING
-            if (parsedArgs.MaxDumpCountK != 250)
+            if (parsedArgs.MaxDumpCountK != -1)
             {
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             }
-#endif
 
-            if (parsedArgs.MaxNodeCountK != 0)
+            if (parsedArgs.MaxNodeCountK != -1)
             {
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
             }

@@ -69,9 +69,7 @@ namespace PerfView
         public bool SaveETL;                // Save the ETL file when dumping the JS heap
         public bool DumpData;               // Dump the heap data as well as the connectivity info
         public bool Freeze;                 // Freeze the process while the dump is taken
-#if FEATURE_SAMPLING
-        public int MaxDumpCountK = 250;     // Maximum size of the File to generate.   We sample aggressively enough to try to hit this count of objects in the file
-#endif
+        public int MaxDumpCountK = -1;     // Maximum size of the File to generate.   We sample aggressively enough to try to hit this count of objects in the file
         public int MaxNodeCountK;           // Maximum size to even look at in the heap 
 
 #if CROSS_GENERATION_LIVENESS

@@ -16,13 +16,20 @@ using Address = System.UInt64;
 /// </summary>
 public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 {
-    public GCHeapDump(string inputFileName) :
-        this(new Deserializer(inputFileName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }))
-    { }
+    private static SerializationConfiguration DefaultSerializationConfiguration = new SerializationConfiguration()
+    {
+        StreamLabelWidth = StreamLabelWidth.EightBytes
+    };
 
-    public GCHeapDump(Stream inputStream, string streamName) :
-        this(new Deserializer(inputStream, streamName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }))
-    { }
+    public GCHeapDump(string inputFileName, SerializationConfiguration serializationConfiguration = null) :
+        this(new Deserializer(inputFileName, serializationConfiguration ?? DefaultSerializationConfiguration), serializationConfiguration)
+    {
+    }
+
+    public GCHeapDump(Stream inputStream, string streamName, SerializationConfiguration serializationConfiguration = null) :
+        this(new Deserializer(inputStream, streamName, serializationConfiguration ?? DefaultSerializationConfiguration), serializationConfiguration)
+    {
+    }
 
     /// <summary>
     /// Writes the memory graph 'graph' as a .gcump file to 'outputFileName'
@@ -207,16 +214,16 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     // For serialization
     private GCHeapDump() { }
 
-    private GCHeapDump(Deserializer deserializer)
+    private GCHeapDump(Deserializer deserializer, SerializationConfiguration serializationConfiguration)
     {
-        // Version 11+ are serialized as large graphs.
-        if (deserializer.VersionBeingRead < 11)
+        serializationConfiguration = serializationConfiguration ?? DefaultSerializationConfiguration;
+        if (serializationConfiguration.StreamLabelWidth == StreamLabelWidth.EightBytes)
+        {
             deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1, isVeryLargeGraph: true); });
+        }
         else
         {
-            // TODO: Hack
             deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1, isVeryLargeGraph: false); });
-            ((IOStreamStreamReader)deserializer.Reader).SerializationConfiguration.StreamLabelWidth = StreamLabelWidth.FourBytes;
         }
         deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
         deserializer.RegisterFactory(typeof(InteropInfo), delegate () { return new InteropInfo(); });
@@ -416,6 +423,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
     private MemoryGraph m_graph;
     private InteropInfo m_interop;
+
     #endregion
 }
 
