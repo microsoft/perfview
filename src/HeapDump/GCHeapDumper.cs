@@ -809,7 +809,7 @@ public class GCHeapDumper
     private bool TryGetJavaScriptDump(int processID)
     {
         m_log.WriteLine("*****  Attempting a ETW based JavaScript Heap Dump.");
-        m_gcHeapDump.MemoryGraph = new MemoryGraph(10000);     // TODO Can we be more accurate?  
+        m_gcHeapDump.MemoryGraph = new MemoryGraph(10000, isVeryLargeGraph:true);     // TODO Can we be more accurate?  
         // m_gotJScriptData = JavaScriptHeapDumper.Dump(processID, m_gcHeapDump.MemoryGraph, m_log);
 
         if (SaveETL)
@@ -848,7 +848,7 @@ public class GCHeapDumper
 
         if (m_gcHeapDump.MemoryGraph == null)
         {
-            m_gcHeapDump.MemoryGraph = new MemoryGraph(10000);     // TODO Can we be more accurate?  
+            m_gcHeapDump.MemoryGraph = new MemoryGraph(10000, isVeryLargeGraph: true);     // TODO Can we be more accurate?  
         }
 
         m_gcHeapDump.DotNetHeapInfo = new DotNetHeapInfo();
