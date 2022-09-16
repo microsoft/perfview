@@ -2,6 +2,7 @@
 using System.IO;
 using Xunit;
 using System.Linq;
+using FastSerialization;
 using PerfView.TestUtilities;
 
 namespace PerfViewTests.GraphSerialization
@@ -21,7 +22,13 @@ namespace PerfViewTests.GraphSerialization
         {
             PrepareTestData();
 
-            GCHeapDump gcDump = new GCHeapDump($"{TestDataDir}\\{gcDumpFileName}.gcdump");
+            // The test inputs are 32-bit files, so specify that here.
+            GCHeapDump gcDump = new GCHeapDump(
+                $"{TestDataDir}\\{gcDumpFileName}.gcdump",
+                new SerializationConfiguration()
+                {
+                    StreamLabelWidth = StreamLabelWidth.FourBytes
+                });
 
             string xmlFile = $"{OutputDir}\\{gcDumpFileName}.gcdump.xml";
             using (StreamWriter writer = File.CreateText(xmlFile))
