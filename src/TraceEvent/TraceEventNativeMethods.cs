@@ -820,6 +820,18 @@ namespace Microsoft.Diagnostics.Tracing
             public long MatchAllKeyword;
         };
 
+        internal struct TRACE_GROUP_INFO
+        {
+            public ulong InstanceCount;
+            public ulong TraceEnableInfos;
+        };
+
+        internal struct TRACE_GROUP_INFO_GUIDS
+        {
+            public ulong GuidCount;
+            public ulong ProviderGuids;
+        };
+
         [DllImport("advapi32.dll")]
         internal static extern int EnumerateTraceGuidsEx(
         TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
