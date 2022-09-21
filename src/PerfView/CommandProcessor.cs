@@ -3498,12 +3498,11 @@ namespace PerfView
                     if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.None)
                     {
                         // Always enable minimal rundown, which ensures that we get the runtime start event.
-                        // We use the keyword 0x800000000000 which does not match any valid keyword in the rundown provider.
-                        // Choosing 0 results in enabling all keywords based on the logic that checks for keyword status in the runtime.
-                        // NOTE: This used to be 0x40000000 which matched the ClrStack keyword in the main provider.  This resulted in
-                        // lots of ClrStack/Walk events that couldn't be matched with Clr events, because for V2 rundown, we enable
-                        // the Clr provider.
-                        var rundownKeywords = (ClrRundownTraceEventParser.Keywords)0x800000000000;
+                        // .NET Core requires that StartEnumeration or ForceEndRundown is specified in order
+                        // to get the runtime start event.  For minimal rundown, just enabling ForceEndRundown
+                        // should be enough to get the rundown event for both .NET Framework and .NET Core
+                        // without going down any expensive rundown codepaths.
+                        var rundownKeywords = ClrRundownTraceEventParser.Keywords.ForceEndRundown;
 
                         // Only consider forcing suppression of these keywords if full rundown is enabled.
                         if (!parsedArgs.NoRundown && !parsedArgs.NoClrRundown)
