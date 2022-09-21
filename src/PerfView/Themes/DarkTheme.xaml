@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary x:Class="REghZyFramework.Themes.DarkTheme"
                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:perfview="clr-namespace:Controls"
                     xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
     <!-- Window Colours. Background, Border and TitleBar colours. -->
     <SolidColorBrush x:Key="BackgroundColour" Color="#FF232323" />
@@ -630,6 +631,7 @@
     </ControlTemplate>
     <Style x:Key="ComboBoxEditableTextBox" TargetType="{x:Type TextBox}">
         <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
+        <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
         <Setter Property="SelectionBrush" Value="{StaticResource ControlBrightPrimaryColourBackground}" />
         <Setter Property="CaretBrush" Value="{StaticResource ControlGlythColour}" />
         <Setter Property="OverridesDefaultStyle" Value="true" />
@@ -4471,7 +4473,7 @@
             </Trigger>
         </Style.Triggers>
     </Style>
-    
+
     <Style TargetType="{x:Type DataGrid}">
         <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
         <Setter Property="BorderBrush" Value="{StaticResource ControlBrightDefaultBorderBrush}" />
@@ -4624,6 +4626,13 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Inherit ComboBox style for HistoryComboBox -->
+    <Style TargetType="{x:Type perfview:HistoryComboBox}"
+           BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
+        <Setter Property="Template" Value="{StaticResource ComboBoxEditableTemplate}" />
     </Style>
 
     <!--Style and template for the DataGridColumnHeadersPresenter.-->

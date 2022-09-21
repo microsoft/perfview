@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary x:Class="REghZyFramework.Themes.LightTheme"
                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:perfview="clr-namespace:Controls"
                     xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
     <!-- Window Colours. Background, Border and TitleBar colours. -->
     <SolidColorBrush x:Key="BackgroundColour" Color="#FFF8F8F8" />
@@ -4455,6 +4456,11 @@
                 </Setter>
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- Inherit ComboBox style for HistoryComboBox -->
+    <Style TargetType="{x:Type perfview:HistoryComboBox}"
+           BasedOn="{StaticResource {x:Type ComboBox}}">
     </Style>
 
     <!-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_- -->

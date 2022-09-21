@@ -1054,6 +1054,7 @@ namespace PerfView
         /// The view model for the user's choice of authentication providers.
         /// </summary>
         public AuthenticationViewModel AuthenticationViewModel { get; }
+        public ThemeViewModel ThemeViewModel { get; }
 
         public MainWindow()
         {
@@ -1087,6 +1088,7 @@ namespace PerfView
 
             // Initialize the authentication view model from user config
             AuthenticationViewModel = new AuthenticationViewModel(App.UserConfigData);
+            ThemeViewModel = new ThemeViewModel(App.UserConfigData);
             App.SymbolReaderHandlerProvider = GetSymbolReaderHandler;
 
             Loaded += delegate (object sender1, RoutedEventArgs e2)
@@ -2422,6 +2424,13 @@ namespace PerfView
         {
             AuthenticationViewModel.IsGitHubDeviceFlowEnabled = !AuthenticationViewModel.IsGitHubDeviceFlowEnabled;
             UpdateSymbolReaderHandler();
+            e.Handled = true;
+        }
+
+        private void SetTheme_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            Theme theme = ((ThemeViewModel.SetThemeCommand)e.Command).Theme;
+            ThemeViewModel.SetTheme(theme);
             e.Handled = true;
         }
 
