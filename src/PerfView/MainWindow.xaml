@@ -16,7 +16,7 @@
         <BitmapImage x:Key="HtmlReportBitmapImage"  UriSource="images/VSProject_html.png"/>
         <BitmapImage x:Key="ChartBitmapImage"  UriSource="images/Chart.png"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <Style TargetType="MenuItem">
+        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
             <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Converter={StaticResource BooleanToVisibilityConverter }}" />
         </Style>
     </Window.Resources>
@@ -68,7 +68,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Menu Grid.Column="0" Background="#FFD1D1D1">
+            <Menu Grid.Column="0" Background="{StaticResource ControlDefaultBackground}">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Clear Temp Files" Click="DoClearTempFiles" ToolTip="Some operations create temporary files.  This command clears all of these."/>
                     <MenuItem Header="Clear User Config" Click="DoClearUserConfig" ToolTip="Reset all user preferences back to their defaults when PerfView was first installed."/>
@@ -135,7 +135,7 @@
                     <MenuItem Header="_About" Click="DoAbout"/>
                 </MenuItem>
             </Menu>
-            <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="#FFD1D1D1"/>
+            <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="{StaticResource ControlDefaultBackground}"/>
             <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
                 <Hyperlink Command="Help" CommandParameter="MainViewerQuickStart">Main View Help (F1)</Hyperlink>
             </TextBlock>
@@ -174,7 +174,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="100*"/>
                     </Grid.ColumnDefinitions>
-                    <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="#FFD1D1D1"/>
+                    <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="{StaticResource ControlDefaultBackground}"/>
                     <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only files that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="FileFilterTextBox">Filter:</Hyperlink>
                     </TextBlock>
@@ -184,7 +184,7 @@
                           ToolTip="Double Click to open.  Right click contains additional help and additional options."
                           IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" AllowDrop="True" Drop="DoDrop">
                     <TreeView.ItemContainerStyle>
-                        <Style TargetType="TreeViewItem">
+                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                             <Setter Property="IsExpanded" Value="{Binding Path=IsExpanded, Mode=TwoWay}" />
                             <Setter Property="IsSelected" Value="{Binding Path=IsSelected, Mode=TwoWay}" />
                         </Style>

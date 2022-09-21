@@ -36,6 +36,12 @@ namespace PerfView
         /// </summary>
         private void ApplicationStarted()
         {
+            if (!Enum.TryParse(App.UserConfigData["Theme"], out Theme theme))
+            {
+                theme = Theme.Light;
+            }
+            SetTheme(theme);
+
             MainWindow = new MainWindow();
             var logFile = File.CreateText(App.LogFileName);
             StatusBar.AttachWriterToLogStream(logFile);
@@ -155,6 +161,35 @@ namespace PerfView
                 var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.ExceptionObject, feedbackSent);
                 var ret = dialog.ShowDialog();
             });
+        }
+
+        public enum Theme { Light, Dark, System }
+
+        public void SetTheme(Theme newTheme)
+        {
+            App.UserConfigData["Theme"] = newTheme.ToString();
+
+            Resources.Clear();
+            Resources.MergedDictionaries.Clear();
+            if (newTheme == Theme.Light)
+                ApplyResources("Themes/LightTheme.xaml");
+            else if (newTheme == Theme.Dark)
+                ApplyResources("Themes/DarkTheme.xaml");
+
+            void ApplyResources(string src)
+            {
+                var dict = new ResourceDictionary() { Source = new Uri(src, UriKind.Relative) };
+
+                foreach (var mergeDict in dict.MergedDictionaries)
+                {
+                    Resources.MergedDictionaries.Add(mergeDict);
+                }
+
+                foreach (var key in dict.Keys)
+                {
+                    Resources[key] = dict[key];
+                }
+            }
         }
     }
 }
