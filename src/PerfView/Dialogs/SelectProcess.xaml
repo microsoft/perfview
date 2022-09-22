@@ -5,15 +5,6 @@
         Style="{DynamicResource CustomWindowStyle}"
         xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         Title="Select Process Window" Height="369" Width="695">
-    <Window.Resources>
-        <!-- Shared Styles -->
-        <Style x:Key="RightAlign">
-            <Setter Property="TextBlock.TextAlignment" Value="Right" />
-        </Style>
-        <Style x:Key="CenterAlign">
-            <Setter Property="TextBlock.TextAlignment" Value="Center" />
-        </Style>
-    </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
@@ -66,41 +57,39 @@
               AutoGenerateColumns="False"
               MouseDoubleClick="OKClicked"
               IsReadOnly="True">
+                <WPFToolKit:DataGrid.Resources>
+                    <Style x:Key="RightAlign">
+                        <Setter Property="TextBlock.TextAlignment" Value="Right"/>
+                    </Style>
+                </WPFToolKit:DataGrid.Resources>
                 <WPFToolKit:DataGrid.Columns>
                     <WPFToolKit:DataGridTextColumn
                 Header="Name"
-                Binding="{Binding Name}"
-                HeaderStyle="{StaticResource CenterAlign}" />
+                Binding="{Binding Name}" />
                     <WPFToolKit:DataGridTextColumn
                 Header="ID"
                 Binding="{Binding ProcessID}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="Parent"
                 Binding="{Binding ParentID}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="CPU MSec"
                 Binding="{Binding CPUTimeMSec, StringFormat={}{0:n0}}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="Start"
                 Binding="{Binding StartTime, StringFormat={}{0:yy-MM-dd HH:mm:ss}}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="Duration"
                 Binding="{Binding Duration}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="CommandLine"
                 Width="*"
-                Binding="{Binding CommandLine}"
-                HeaderStyle="{StaticResource CenterAlign}" />
+                Binding="{Binding CommandLine}" />
                 </WPFToolKit:DataGrid.Columns>
             </WPFToolKit:DataGrid>
         </Grid>

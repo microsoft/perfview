@@ -3,7 +3,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:perfview="clr-namespace:Controls"
                     xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero2">
+                    xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero">
     <!-- Window Colours. Background, Border and TitleBar colours. -->
     <SolidColorBrush x:Key="BackgroundColour" Color="#FFF8F8F8" />
     <SolidColorBrush x:Key="WindowBorderColour" Color="#FFE0E0E0" />
