@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
-        Background="#FFA7A7A7" 
+        Style="{DynamicResource CustomWindowStyle}"
+        Background="{StaticResource ControlDarkerBackground}"
         Title="GitHub Device Authentication" Height="280" Width="500"
         ResizeMode="NoResize">
     <src:WindowBase.CommandBindings>

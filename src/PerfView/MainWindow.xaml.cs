@@ -1054,10 +1054,15 @@ namespace PerfView
         /// The view model for the user's choice of authentication providers.
         /// </summary>
         public AuthenticationViewModel AuthenticationViewModel { get; }
+
+        /// <summary>
+        /// The view model for the application theme.
+        /// </summary>
         public ThemeViewModel ThemeViewModel { get; }
 
         public MainWindow()
         {
+            ThemeViewModel = new ThemeViewModel(App.UserConfigData);
             InitializeComponent();
             Directory.HistoryLength = 25;
             DataContext = this;
@@ -1088,7 +1093,6 @@ namespace PerfView
 
             // Initialize the authentication view model from user config
             AuthenticationViewModel = new AuthenticationViewModel(App.UserConfigData);
-            ThemeViewModel = new ThemeViewModel(App.UserConfigData);
             App.SymbolReaderHandlerProvider = GetSymbolReaderHandler;
 
             Loaded += delegate (object sender1, RoutedEventArgs e2)
@@ -2427,6 +2431,11 @@ namespace PerfView
             e.Handled = true;
         }
 
+        /// <summary>
+        /// Handler for when <see cref="ThemeViewModel.SetThemeCommand"/> command is executed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void SetTheme_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             Theme theme = ((ThemeViewModel.SetThemeCommand)e.Command).Theme;

@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
-        xmlns:controls="clr-namespace:Controls" 
-        Background="#FFA7A7A7" 
+        xmlns:controls="clr-namespace:Controls"
+        Style="{DynamicResource CustomWindowStyle}"
+        Background="{StaticResource ControlDarkerBackground}"
         Title="Executing User Defined Command" Height="116" Width="669">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
@@ -20,7 +21,7 @@
                 <TextBlock Name="TitleHyperLinkText" Text="Help on Invoking User Defined Commands"/>
             </Hyperlink>
         </TextBlock>
-        <controls:HistoryComboBox x:Name="CommandTextBox" Grid.Row="1"  Margin="10,2,10,2" 
+        <controls:HistoryComboBox x:Name="CommandTextBox" Grid.Row="1"  Margin="10,2,10,2"
                          ToolTip="Enter User define command. Tab will commit completion." Enter="OKClicked" />
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" FlowDirection="RightToLeft">

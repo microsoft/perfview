@@ -19,7 +19,7 @@ namespace PerfView
             m_flattenedTree = new ObservableCollectionEx<CallTreeViewNode>();
             m_perfGrid = perfGrid;
             m_perfGrid.Grid.ItemsSource = m_flattenedTree;
-            DisplayPrimaryOnly = true;          // we assume we are a non-memory window, which has no secondary.  
+            DisplayPrimaryOnly = true;          // we assume we are a non-memory window, which has no secondary.
 
             // Make the name column have tree control behavior
             var nameColumn = perfGrid.Grid.Columns[0] as DataGridTemplateColumn;
@@ -35,7 +35,7 @@ namespace PerfView
         public CallTreeNode Root { get { return m_root; } }
         /// <summary>
         /// I did not make this a property because it is too profound an operation (heavy)
-        /// This sets the root of the tree.  This is how you change the display to a new tree.  
+        /// This sets the root of the tree.  This is how you change the display to a new tree.
         /// </summary>
         public void SetRoot(CallTreeNode root)
         {
@@ -54,7 +54,7 @@ namespace PerfView
                 node.Dispose();
             }
 
-            // Update the whole tree with the new tree. 
+            // Update the whole tree with the new tree.
             m_flattenedTree.ReplaceRange(0, m_flattenedTree.Count, newFlattenedTree);
             Validate();
             m_root = root;
@@ -66,8 +66,8 @@ namespace PerfView
             rootView.IsExpanded = true;
         }
         /// <summary>
-        /// Finds the .NET Regular expression 'pat' (case insensitive) in the call tree (does not matter if the node is visible or not).  
-        /// Returns true if found.  
+        /// Finds the .NET Regular expression 'pat' (case insensitive) in the call tree (does not matter if the node is visible or not).
+        /// Returns true if found.
         /// </summary>
         public bool Find(string pat)
         {
@@ -130,7 +130,7 @@ namespace PerfView
             }
         }
         /// <summary>
-        /// Gets the first CallTreeViewNode for selected cells.   Returns null if there is no selected nodes. 
+        /// Gets the first CallTreeViewNode for selected cells.   Returns null if there is no selected nodes.
         /// </summary>
         public CallTreeViewNode SelectedNode
         {
@@ -146,7 +146,7 @@ namespace PerfView
             }
         }
         /// <summary>
-        /// Highlights (Selects) the given node.   This is how you navigate.  
+        /// Highlights (Selects) the given node.   This is how you navigate.
         /// </summary>
         public bool Select(CallTreeNode node)
         {
@@ -162,7 +162,7 @@ namespace PerfView
             return true;
         }
         /// <summary>
-        /// If this set only primary nodes are displayed.   
+        /// If this set only primary nodes are displayed.
         /// </summary>
         public bool DisplayPrimaryOnly { get; set; }
 
@@ -233,7 +233,7 @@ namespace PerfView
             }
 
             CallTreeViewNode caller = InsureVisible(treeNode.Caller);
-            if (caller == null)         // should never happen, but we can fall back to giving up. 
+            if (caller == null)         // should never happen, but we can fall back to giving up.
             {
                 return null;
             }
@@ -261,12 +261,12 @@ namespace PerfView
             return null;
         }
 
-        // Iterates through CallTreeNodes in preorder (parent first, then children), this 'flattens' the tree.  
+        // Iterates through CallTreeNodes in preorder (parent first, then children), this 'flattens' the tree.
         private CallTreeNode NextNode(CallTreeNode node)
         {
             // After me is my first child (if it exists)
 
-            // In the search, we assume that graph nodes have no children.  This avoids infinite search.  
+            // In the search, we assume that graph nodes have no children.  This avoids infinite search.
             if (!node.IsGraphNode)
             {
                 var callees = DisplayCallees(node);
@@ -314,7 +314,7 @@ namespace PerfView
         /// <returns></returns>
         private int IndexInParent(CallTreeNode node)
         {
-            // TODO avoid search 
+            // TODO avoid search
             var callerCallees = DisplayCallees(node.Caller);
             int i = 0;
             while (i < callerCallees.Count)
@@ -334,16 +334,16 @@ namespace PerfView
         internal PerfDataGrid m_perfGrid;                                       // The GridControl where we display the data (depends on check-boxes)
         internal ObservableCollectionEx<CallTreeViewNode> m_flattenedTree;      // The list that the GridControl displays
 
-        // Find Support 
+        // Find Support
         private Regex m_findPat;                    // The pattern that FindNext will look for
-        private CallTreeNode m_curPosition;         // The position the selection (where FindNext starts) 
-        private CallTreeNode m_endPosition;         // The position where FindNext will stop searching (it wrapped around).  
+        private CallTreeNode m_curPosition;         // The position the selection (where FindNext starts)
+        private CallTreeNode m_endPosition;         // The position where FindNext will stop searching (it wrapped around).
 
         #endregion
     }
 
     /// <summary>
-    /// This is basically a CallTreeNode with extra state (state of expand boxes) associated needed for the viewer 
+    /// This is basically a CallTreeNode with extra state (state of expand boxes) associated needed for the viewer
     /// </summary>
     public class CallTreeViewNode
     {
@@ -363,7 +363,7 @@ namespace PerfView
         public string BackgroundColor { get; set; }
 
         /// <summary>
-        /// Is the node expanded or not.  
+        /// Is the node expanded or not.
         /// </summary>
         public bool IsExpanded
         {
@@ -395,13 +395,13 @@ namespace PerfView
 
             ValidateTree();
 
-            // We are trying to expand the treeNode, add the children after me. 
+            // We are trying to expand the treeNode, add the children after me.
             var children = MakeChildren();
             m_treeView.m_flattenedTree.InsertRange(MyIndex + 1, children);
             m_isExpanded = true;
 
             ValidateTree();
-            // Auto expand nodes that have only one real child.  (Don't do this for graph nodes as it may not terminate.  
+            // Auto expand nodes that have only one real child.  (Don't do this for graph nodes as it may not terminate.
             if (children.Count == 1 && !Data.IsGraphNode)
             {
                 var onlyChild = children[0];
@@ -443,23 +443,23 @@ namespace PerfView
             m_treeView.m_flattenedTree.RemoveRange(firstChild, lastChild - firstChild);
             m_isExpanded = false;
 
-            // set the selected node to my caller (if available) or myself if there is none.  
+            // set the selected node to my caller (if available) or myself if there is none.
             m_treeView.Select(Data.Caller ?? Data);
 
             ValidateTree();
         }
 
-        // The actual Tree node that this OpenStacks node represents.  
+        // The actual Tree node that this OpenStacks node represents.
         public CallTreeNode Data { get; set; }
         /// <summary>
-        /// The TreeVieeNode uses the nodes DisplayName (which has a suffix string (surrounded by []) with extra information. 
+        /// The TreeVieeNode uses the nodes DisplayName (which has a suffix string (surrounded by []) with extra information.
         /// </summary>
         public string Name { get { return Data.DisplayName; } }        /// <summary>
-                                                                       /// This is IndentString followed by the display name.  
+                                                                       /// This is IndentString followed by the display name.
                                                                        /// </summary>
         public string IndentedName { get { return (IndentString + " " + Data.DisplayName); } }
         /// <summary>
-        /// Creates a string that has spaces | and + signs that represent the indentation level 
+        /// Creates a string that has spaces | and + signs that represent the indentation level
         /// for the tree node.  (Called from XAML)
         /// </summary>
         public string IndentString { get { return Data.IndentString(m_treeView.DisplayPrimaryOnly); } }
@@ -515,8 +515,8 @@ namespace PerfView
             }
         }
 
-        // TODO FIX NOW use or remove 
-#if false 
+        // TODO FIX NOW use or remove
+#if false
         public InlineCollection NameContent
         {
             get
@@ -530,7 +530,7 @@ namespace PerfView
 #endif
         /// <summary>
         /// Returns the list of code:CallTreeViewNode (rather than just code:CallTreeNode) associated
-        /// with the children of this node (thus invible nodes are not present).   
+        /// with the children of this node (thus invible nodes are not present).
         /// </summary>
         public IList<CallTreeViewNode> VisibleChildren
         {
@@ -569,7 +569,7 @@ namespace PerfView
         public string InclusiveMetricByTimeString
         {
             get { return Data.InclusiveMetricByTimeString; }
-            set { } // TODO See if there is a better way of getting the GUI working.  
+            set { } // TODO See if there is a better way of getting the GUI working.
         }
         public Histogram InclusiveMetricByScenario { get { return Data.InclusiveMetricByScenario; } }
         public string InclusiveMetricByScenarioString
@@ -583,7 +583,7 @@ namespace PerfView
         public double DurationMSec { get { return Data.DurationMSec; } }
 
         /// <summary>
-        /// Set 'IsExpanded of all nodes to a certain depth.  
+        /// Set 'IsExpanded of all nodes to a certain depth.
         /// </summary>
         /// <param name="maxDepth">Maximum depth to expand</param>
         /// <param name="expandGraphNodes">If true graph nodes (which are not guarnteed to terminate) are expanded. </param>
@@ -609,13 +609,13 @@ namespace PerfView
 
 
 #if DEBUG   // WPF calles the ToString nodes sometimes to do automation.   Don't waste time in retail builds!
-        public override string ToString()
-        {
+        //public override string ToString()
+        //{
 
-            if (Data == null)
-                return "";
-            return Data.ToString();
-        }
+        //    if (Data == null)
+        //        return "";
+        //    return Data.ToString();
+        //}
 #endif
         public virtual void Dispose()
         {
@@ -632,7 +632,7 @@ namespace PerfView
         }
 
         /// <summary>
-        /// Returns the sampleIndex in the flattened tree (m_flattenedTree) of this tree node.  
+        /// Returns the sampleIndex in the flattened tree (m_flattenedTree) of this tree node.
         /// </summary>
         internal int MyIndex
         {
@@ -649,7 +649,7 @@ namespace PerfView
         }
         /// <summary>
         /// An Unexpanded CallTreeViewNode does not have any children even if the Data (CallTreeNode) does
-        /// This routine will make the necessary children (it is part of expanding the node).  
+        /// This routine will make the necessary children (it is part of expanding the node).
         /// </summary>
         private List<CallTreeViewNode> MakeChildren()
         {
@@ -672,10 +672,10 @@ namespace PerfView
         }
 
         /// <summary>
-        /// It is assumed that the node oldFlattenedTree[oldIndex] and newFlattenedTree[newIndex] coorespond 
-        /// to one another (have the same path to root) 
-        /// Copies the expandedness of the node 'oldFlattenedTree[oldIndex]' to the new node at 
-        /// newFlattenedTree[newIndex], as well as all the state for child node.  
+        /// It is assumed that the node oldFlattenedTree[oldIndex] and newFlattenedTree[newIndex] coorespond
+        /// to one another (have the same path to root)
+        /// Copies the expandedness of the node 'oldFlattenedTree[oldIndex]' to the new node at
+        /// newFlattenedTree[newIndex], as well as all the state for child node.
         /// </summary>
         internal static void CopyExpandedStateForNode(List<CallTreeViewNode> newFlattenedTree, int newIndex,
             ObservableCollectionEx<CallTreeViewNode> oldFlattenedTree, int oldIndex)
@@ -695,8 +695,8 @@ namespace PerfView
                         var newChild = children[i];
                         newFlattenedTree.Add(newChild);
 
-                        // This is N squared so can take a long time if there are many children 
-                        // We can simply give up in that case.  
+                        // This is N squared so can take a long time if there are many children
+                        // We can simply give up in that case.
                         if (i < 50)
                         {
                             int oldChildIndex = FindChild(oldFlattenedTree, oldNode, oldIndex, newChild.Data.DisplayName);
@@ -740,9 +740,9 @@ namespace PerfView
             return -1;
         }
 
-        private CallTreeView m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree). 
-        internal bool m_isExpanded;                     // Is this node expanded.  
-        private int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but wortch checking  
+        private CallTreeView m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree).
+        internal bool m_isExpanded;                     // Is this node expanded.
+        private int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but wortch checking
         internal int m_depth;                           // My nesting level from root.   (root == 0);
         #endregion
     }
