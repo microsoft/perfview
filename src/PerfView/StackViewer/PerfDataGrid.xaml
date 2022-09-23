@@ -23,21 +23,13 @@
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
-        <Style x:Key="customDataGridRowStyle" BasedOn="{StaticResource {x:Type DataGridRow}}" TargetType="{x:Type DataGridRow}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding BackgroundColor, Converter={StaticResource converter}}" Value="true">
-                    <Setter Property="Background" Value="{Binding BackgroundColor}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
         <Style x:Key="dataGridStyle" BasedOn="{StaticResource {x:Type DataGrid}}" TargetType="DataGrid">
-            <Setter Property="AlternatingRowBackground" Value="#FFF2F1A4"/>
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource AlternateRowBackground}"/>
             <Setter Property="AutoGenerateColumns" Value="False"/>
         </Style>
     </UserControl.Resources>
     <WPFToolKit:DataGrid Name="Grid"
         Style="{StaticResource dataGridStyle}"
-        RowStyle ="{StaticResource customDataGridRowStyle}"
         SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
         SelectedCellsChanged="SelectedCellsChanged"
         CanUserSortColumns="False"

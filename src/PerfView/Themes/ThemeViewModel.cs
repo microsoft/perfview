@@ -73,7 +73,6 @@ namespace PerfView
             _userConfigData["Theme"] = newTheme.ToString();
             CurrentTheme = newTheme;
 
-            Application.Current.Resources.MergedDictionaries.Clear();
             if (newTheme == Theme.Light)
                 ApplyResources("Themes/LightTheme.xaml");
             else// if (newTheme == Theme.Dark)
@@ -82,16 +81,7 @@ namespace PerfView
             void ApplyResources(string src)
             {
                 var dict = new ResourceDictionary() { Source = new Uri(src, UriKind.Relative) };
-
-                foreach (var mergeDict in dict.MergedDictionaries)
-                {
-                    Application.Current.Resources.MergedDictionaries.Add(mergeDict);
-                }
-
-                foreach (var key in dict.Keys)
-                {
-                    Application.Current.Resources[key] = dict[key];
-                }
+                Application.Current.Resources.MergedDictionaries[0] = dict;
             }
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs($"Is{oldTheme}Theme"));
