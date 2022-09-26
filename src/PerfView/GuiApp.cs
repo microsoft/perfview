@@ -37,6 +37,7 @@ namespace PerfView
         private void ApplicationStarted()
         {
             MainWindow = new MainWindow();
+            MainWindow.ThemeViewModel.InitTheme();
             var logFile = File.CreateText(App.LogFileName);
             StatusBar.AttachWriterToLogStream(logFile);
             App.CommandProcessor.LogFile = MainWindow.StatusBar.LogWriter;

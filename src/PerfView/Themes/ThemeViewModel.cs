@@ -63,14 +63,12 @@ namespace PerfView
                 theme = Theme.Light;
             }
 
-            InitTheme(theme);
+            CurrentTheme = theme;
         }
 
-        public void InitTheme(Theme theme)
+        public void InitTheme()
         {
-            CurrentTheme = theme;
-
-            if (theme == Theme.Light)
+            if (CurrentTheme == Theme.Light)
                 ApplyResources("Themes/LightTheme.xaml");
             else// if (newTheme == Theme.Dark)
                 ApplyResources("Themes/DarkTheme.xaml");
