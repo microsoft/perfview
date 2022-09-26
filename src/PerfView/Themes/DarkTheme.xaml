@@ -4630,6 +4630,9 @@
                             <Trigger Property="SortDirection" Value="Descending">
                                 <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
                             </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="columnHeaderBorder" Property="Background" Value="{StaticResource ControlMouseOverBackground}" />
+                            </Trigger>
                         </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
