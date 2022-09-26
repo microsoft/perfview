@@ -13,10 +13,10 @@ namespace PerfView
 {
     /// <summary>
     /// TreeViewGrid if a reusable, multi-column grid view where the first column can be a tree.  That first column can be
-    /// expanded like a tree view and the other columns work as expected.
-    ///
+    /// expanded like a tree view and the other columns work as expected. 
+    /// 
     /// All of this is controlled by the ITreeViewController interface.  By implementing this interface, and then passing
-    /// an instance of this interface to SetController, you wire up data to the TreeViewGrid.
+    /// an instance of this interface to SetController, you wire up data to the TreeViewGrid.  
     /// </summary>
     public partial class TreeViewGrid : UserControl
     {
@@ -24,7 +24,7 @@ namespace PerfView
         {
             InitializeComponent();
 
-            // Create a list of items to put in the view (will be populated in SetController() call.
+            // Create a list of items to put in the view (will be populated in SetController() call.  
             m_flattenedTree = new ObservableCollectionEx<TreeViewGridNode>();
             Grid.ItemsSource = m_flattenedTree;
 
@@ -77,8 +77,8 @@ namespace PerfView
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
                     }
 
-                    // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience
-                    // for ranges.
+                    // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
+                    // for ranges.  
                     if (m_clipboardRangeEnd != m_clipboardRangeStart)  // If we have just 2 things selected (and I can tell them apart)
                     {
                         if (VeryClose(morphedContent, m_clipboardRangeStart))
@@ -99,9 +99,9 @@ namespace PerfView
             };
         }
 
-        // TODO FIX NOW use re remove.
+        // TODO FIX NOW use re remove. 
         /// <summary>
-        /// Gets the object (the model   Returns null if there is no selected nodes.
+        /// Gets the object (the model   Returns null if there is no selected nodes. 
         /// </summary>
         public object SelectedNode
         {
@@ -121,7 +121,7 @@ namespace PerfView
         /// Typically the GUI instantiates the TreeViewGrid as part of some XAML.   However to do its job that
         /// object needs to know what data it is operating on.  This is what 'SetController' does.   By defining
         /// an object implementing ITreeViewController and passing it to this method, you populate the TreeViewGrid
-        /// with data.
+        /// with data.  
         /// </summary>
         public void SetController(ITreeViewController controller)
         {
@@ -155,7 +155,7 @@ namespace PerfView
                 node.Dispose();
             }
 
-            // Update the whole tree with the new tree.
+            // Update the whole tree with the new tree. 
             m_flattenedTree.ReplaceRange(0, m_flattenedTree.Count, newFlattenedTree);
             Validate();
 
@@ -175,7 +175,7 @@ namespace PerfView
             }
             Grid.ScrollIntoView(item);
 
-            // TODO This stuff feels like a hack.  At some point review.
+            // TODO This stuff feels like a hack.  At some point review.  
             var row = (DataGridRow)Grid.ItemContainerGenerator.ContainerFromItem(item);
             if (row != null)
             {
@@ -221,7 +221,7 @@ namespace PerfView
                 return content;
             }
 
-            // Trim out generic parameters
+            // Trim out generic parameters 
             for (; ; )
             {
                 var result = Regex.Replace(content, @"(\w+)<[^>]+>", "$1");
@@ -242,7 +242,7 @@ namespace PerfView
 
         /// <summary>
         /// given the content string, and the columnIndex, return a string that is propertly padded
-        /// so that when displayed the rows will line up by columns nicely
+        /// so that when displayed the rows will line up by columns nicely  
         /// </summary>
         private string PadForColumn(string content, int columnIndex)
         {
@@ -264,8 +264,8 @@ namespace PerfView
                     var idx = cellInfo.Column.DisplayIndex;
                     var contents = GetCellStringValue(cellInfo);
                     contents = CompressContent(contents);
-                    // TODO the +1 is a bit of a hack.   In treeviews we seem to loose a space
-                    // near the checkbox making this estimate 1 too short.
+                    // TODO the +1 is a bit of a hack.   In treeviews we seem to loose a space 
+                    // near the checkbox making this estimate 1 too short.   
                     m_maxColumnInSelection[idx] = Math.Max(m_maxColumnInSelection[idx], contents.Length + 1);
                 }
                 maxString = m_maxColumnInSelection[columnIndex];
@@ -317,7 +317,7 @@ namespace PerfView
         }
 
         // TODO this is a bit of a hack.  remove the context menu from the textBox so that you get
-        // my context menu.
+        // my context menu. 
         private void Grid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
         {
             var asTextBox = e.EditingElement as TextBox;
@@ -330,7 +330,7 @@ namespace PerfView
             }
         }
 
-        // TODO FIX NOW.  This is an ugly hack.
+        // TODO FIX NOW.  This is an ugly hack.  
         private static TextBox EditingBox;
 
         private static string GoodPrecision(double num, DataGridColumn column)
@@ -394,10 +394,10 @@ namespace PerfView
             m_clipboardRangeEnd = "";
 
             var window = Helpers.AncestorOfType<StackWindow>(this);
-            // If the visual tree changes, we may not get our parent.  This just give up.
+            // If the visual tree changes, we may not get our parent.  This just give up.  
             if (window != null)
             {
-                // We don't want the header for single values, or for 2 (for cutting and pasting ranges).
+                // We don't want the header for single values, or for 2 (for cutting and pasting ranges).  
                 int numSelectedCells = window.SelectedCellsChanged(sender, e);
                 if (numSelectedCells <= 2)
                 {
@@ -428,7 +428,7 @@ namespace PerfView
 
         /// <summary>
         /// If we have only two cells selected, even if they are on differnet rows we want to morph them
-        /// to a single row.  These variables are for detecting this situation.
+        /// to a single row.  These variables are for detecting this situation.  
         /// </summary>
         private string m_clipboardRangeStart;
         private string m_clipboardRangeEnd;
@@ -481,7 +481,7 @@ namespace PerfView
 
             throw new NotImplementedException();
             TreeViewGridNode caller = InsureVisible(treeNode.Caller);
-            if (caller == null)         // should never happen, but we can fall back to giving up.
+            if (caller == null)         // should never happen, but we can fall back to giving up. 
                 return null;
             caller.IsExpanded = true;
             caller.ValidateTree();
@@ -502,12 +502,12 @@ namespace PerfView
             return null;
         }
 
-        // Iterates through TreeViewGridNodes in preorder (parent first, then children), this 'flattens' the tree.
+        // Iterates through TreeViewGridNodes in preorder (parent first, then children), this 'flattens' the tree.  
         private TreeViewGridNode NextNode(TreeViewGridNode node)
         {
             // After me is my first child (if it exists)
 
-            // In the search, we assume that graph nodes have no children.  This avoids infinite search.
+            // In the search, we assume that graph nodes have no children.  This avoids infinite search.  
             if (!node.IsGraphNode)
             {
                 var callees = callees;
@@ -544,7 +544,7 @@ namespace PerfView
         /// <returns></returns>
         private int IndexInParent(TreeViewGridNode node)
         {
-            // TODO avoid search
+            // TODO avoid search 
             var callerCallees = DisplayCallees(node.Caller);
             int i = 0;
             while (i < callerCallees.Count)
@@ -559,12 +559,12 @@ namespace PerfView
 #endif
 
         /// <summary>
-        /// This is basically a TreeViewGridNode with extra state (state of expand boxes) associated needed for the viewer
+        /// This is basically a TreeViewGridNode with extra state (state of expand boxes) associated needed for the viewer 
         /// </summary>
         private class TreeViewGridNode
         {
             /// <summary>
-            /// Is the node expanded or not.
+            /// Is the node expanded or not.  
             /// </summary>
             public bool IsExpanded
             {
@@ -581,7 +581,7 @@ namespace PerfView
                     if (value == true)
                     {
 
-                        // We are trying to expand the treeNode, add the children after me.
+                        // We are trying to expand the treeNode, add the children after me. 
                         var children = MakeChildren();
                         m_treeView.m_flattenedTree.InsertRange(MyIndex + 1, children);
                         m_isExpanded = true;
@@ -590,7 +590,7 @@ namespace PerfView
                     }
                     else
                     {
-                        // Get the index ranges of all my children.
+                        // Get the index ranges of all my children. 
                         int firstChild = MyIndex + 1;
                         int lastChild = firstChild;
                         int myDepth = m_depth;
@@ -604,7 +604,7 @@ namespace PerfView
                             lastChild++;
                         }
 
-                        // And remove them from the array.
+                        // And remove them from the array.  
                         m_treeView.m_flattenedTree.RemoveRange(firstChild, lastChild - firstChild);
                         m_isExpanded = false;
                     }
@@ -612,8 +612,8 @@ namespace PerfView
                 }
             }
 
-            // The actual data object that this node represents.   These object get passed to the ITreeViewController to get information
-            // about them.
+            // The actual data object that this node represents.   These object get passed to the ITreeViewController to get information 
+            // about them.  
             public object Data { get; set; }
 
             /// <summary>
@@ -626,7 +626,7 @@ namespace PerfView
             /// </summary>
             public string IndentedName { get { return (IndentString + " " + Name); } }
             /// <summary>
-            /// Creates a string that has spaces | and + signs that represent the indentation level
+            /// Creates a string that has spaces | and + signs that represent the indentation level 
             /// for the tree node.  (Called from XAML)
             /// </summary>
             public string IndentString
@@ -666,7 +666,7 @@ namespace PerfView
             }
 
             /// <summary>
-            /// Returns the list of code:TreeViewGridNode associated with the children of this node (thus invisible nodes are not present).
+            /// Returns the list of code:TreeViewGridNode associated with the children of this node (thus invisible nodes are not present).   
             /// </summary>
             public IList<TreeViewGridNode> VisibleChildren
             {
@@ -694,7 +694,7 @@ namespace PerfView
             }
 
             /// <summary>
-            /// Set 'IsExpanded of all nodes to a certain depth.
+            /// Set 'IsExpanded of all nodes to a certain depth.  
             /// </summary>
             /// <param name="maxDepth">Maximum depth to expand</param>
             /// <param name="expandGraphNodes">If true graph nodes (which are not guaranteed to terminate) are expanded. </param>
@@ -712,7 +712,7 @@ namespace PerfView
                 }
             }
 
-            // The properties are for binding in the GUI.
+            // The properties are for binding in the GUI.   
             // set property is a hack to allow selection in the GUI (which wants two way binding for that case)
             public string DisplayField1 { get { return m_treeView.m_controller.ColumnValue(Data, 0); } set { } }
             public string DisplayField2 { get { return m_treeView.m_controller.ColumnValue(Data, 1); } set { } }
@@ -723,12 +723,12 @@ namespace PerfView
 
 
 #if DEBUG   // WPF calls the ToString nodes sometimes to do automation.   Don't waste time in retail builds!
-            //public override string ToString()
-            //{
-            //    if (Data == null)
-            //        return "";
-            //    return Data.ToString();
-            //}
+            public override string ToString()
+            {
+                if (Data == null)
+                    return "";
+                return Data.ToString();
+            }
 #endif
             public virtual void Dispose()
             {
@@ -749,13 +749,13 @@ namespace PerfView
             }
 
             /// <summary>
-            /// Returns the sampleIndex in the flattened tree (m_flattenedTree) of this tree node.
+            /// Returns the sampleIndex in the flattened tree (m_flattenedTree) of this tree node.  
             /// </summary>
             internal int MyIndex
             {
                 get
                 {
-                    // See if our cached index is still accurate.
+                    // See if our cached index is still accurate. 
                     if (m_treeView.m_flattenedTree.Count <= m_indexGuess || !m_treeView.m_flattenedTree[m_indexGuess].Equals(this))
                     {
                         if (m_parent != null)
@@ -781,7 +781,7 @@ namespace PerfView
             }
             /// <summary>
             /// An Unexpanded TreeViewGridNode does not have any children even if the Data (TreeViewGridNode) does
-            /// This routine will make the necessary children (it is part of expanding the node).
+            /// This routine will make the necessary children (it is part of expanding the node).  
             /// </summary>
             private List<TreeViewGridNode> MakeChildren()
             {
@@ -798,10 +798,10 @@ namespace PerfView
             }
 
             /// <summary>
-            /// It is assumed that the node oldFlattenedTree[oldIndex] and newFlattenedTree[newIndex] correspond
-            /// to one another (have the same path to root)
-            /// Copies the expandedness of the node 'oldFlattenedTree[oldIndex]' to the new node at
-            /// newFlattenedTree[newIndex], as well as all the state for child node.
+            /// It is assumed that the node oldFlattenedTree[oldIndex] and newFlattenedTree[newIndex] correspond 
+            /// to one another (have the same path to root) 
+            /// Copies the expandedness of the node 'oldFlattenedTree[oldIndex]' to the new node at 
+            /// newFlattenedTree[newIndex], as well as all the state for child node.  
             /// </summary>
             internal static void CopyExpandedStateForNode(List<TreeViewGridNode> newFlattenedTree, int newIndex,
                 ObservableCollectionEx<TreeViewGridNode> oldFlattenedTree, int oldIndex)
@@ -860,14 +860,14 @@ namespace PerfView
                 return -1;
             }
 
-            private TreeViewGrid m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree).
-            internal bool m_isExpanded;                     // Is this node expanded.
-            private string m_indentString;                          // The + and | that make it look like a tree.
-            private int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but worth checking
+            private TreeViewGrid m_treeView;                        // The view represents the 'root' of the entire tree (owns m_flattenedTree). 
+            internal bool m_isExpanded;                     // Is this node expanded.  
+            private string m_indentString;                          // The + and | that make it look like a tree. 
+            private int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but worth checking  
 
             internal int m_depth;                           // My nesting level from root.   (root == 0);
-            private bool m_isLastChild;                             // Am I the last child of my parent.
-            private TreeViewGridNode m_parent;                      // My parent.
+            private bool m_isLastChild;                             // Am I the last child of my parent.  
+            private TreeViewGridNode m_parent;                      // My parent.  
             #endregion
         }
 
@@ -880,27 +880,27 @@ namespace PerfView
     /// <summary>
     /// A TreeViewController allow contains all the necessary callback that the TreeView needs to perform its job.
     /// This is what hooks up the TreeView to its model.   Basically it lets you define what the name of
-    /// each node of the tree is as well as how to get the children of a node (as well as the root node).
-    ///
+    /// each node of the tree is as well as how to get the children of a node (as well as the root node).  
+    /// 
     /// It also lets you get a the column names and values.    Note that what node is represented by is
     /// completely arbitrary (it can be any object).  All that is necessary is that implementer of this
-    /// interface know what to do with that object to get the necessary data.
+    /// interface know what to do with that object to get the necessary data.  
     /// </summary>
     public interface ITreeViewController
     {
         // Getting the root (starting point)
         object Root { get; }
 
-        // Getting the tree info about a node (its name and children)
+        // Getting the tree info about a node (its name and children) 
         string Name(object node);
         int ChildCount(object node);
         IEnumerable<object> Children(object node);
 
-        // Getting the other columns associated with the node.
+        // Getting the other columns associated with the node.  
         IList<string> ColumnNames { get; }
         string ColumnValue(object node, int columnNumber);
 
-        // GUI support.
+        // GUI support.  
         void HelpForColumn(int columnNumber);
     }
 }
