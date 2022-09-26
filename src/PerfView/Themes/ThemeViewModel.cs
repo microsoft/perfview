@@ -64,16 +64,14 @@ namespace PerfView
                 theme = Theme.Light;
             }
 
-            SetTheme(theme);
+            InitTheme(theme);
         }
 
-        public void SetTheme(Theme newTheme)
+        public void InitTheme(Theme theme)
         {
-            Theme oldTheme = CurrentTheme;
-            _userConfigData["Theme"] = newTheme.ToString();
-            CurrentTheme = newTheme;
+            CurrentTheme = theme;
 
-            if (newTheme == Theme.Light)
+            if (theme == Theme.Light)
                 ApplyResources("Themes/LightTheme.xaml");
             else// if (newTheme == Theme.Dark)
                 ApplyResources("Themes/DarkTheme.xaml");
@@ -83,9 +81,20 @@ namespace PerfView
                 var dict = new ResourceDictionary() { Source = new Uri(src, UriKind.Relative) };
                 Application.Current.Resources.MergedDictionaries[0] = dict;
             }
+        }
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs($"Is{oldTheme}Theme"));
+        public void SetTheme(Theme newTheme)
+        {
+            if (newTheme == CurrentTheme)
+                return;
+
+            Theme oldTheme = CurrentTheme;
+
+            _userConfigData["Theme"] = newTheme.ToString();
+            CurrentTheme = newTheme;
+
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs($"Is{newTheme}Theme"));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs($"Is{oldTheme}Theme"));
         }
     }
 }

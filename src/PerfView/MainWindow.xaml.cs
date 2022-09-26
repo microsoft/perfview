@@ -2357,7 +2357,7 @@ namespace PerfView
 
         private string m_openNextFileName;
 
-        /// <summary>
+        /// <summary>/
         /// When you right click an item in the TreeView it doesn't automatically change to the TreeViewItem you clicked on.
         /// This helper method changes focus so that the right-click menu items commands are bound to the right TreeViewItem
         /// </summary>
@@ -2440,6 +2440,9 @@ namespace PerfView
         {
             Theme theme = ((ThemeViewModel.SetThemeCommand)e.Command).Theme;
             ThemeViewModel.SetTheme(theme);
+
+            MessageBox.Show("Restart PerfView to apply theme changes.");
+
             e.Handled = true;
         }
 

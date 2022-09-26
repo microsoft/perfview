@@ -122,7 +122,6 @@
                     <MenuItem Header="Theme">
                         <MenuItem Header="Light" x:Name="Theme_Light" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>
                         <MenuItem Header="Dark" x:Name="Theme_Dark" IsChecked="{Binding Path=ThemeViewModel.IsDarkTheme}" Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}"/>
-                        <MenuItem Header="System" x:Name="Theme_System" IsChecked="{Binding Path=ThemeViewModel.IsSystemTheme}" Command="{x:Static src:ThemeViewModel.SetSystemThemeCommand}"/>
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help">
