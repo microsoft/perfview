@@ -57,18 +57,11 @@ namespace PerfView
         public ThemeViewModel(ConfigData userConfigData)
         {
             _userConfigData = userConfigData;
-
-            if (!Enum.TryParse(userConfigData["Theme"], out Theme theme))
-            {
-                theme = Theme.Light;
-            }
-
-            CurrentTheme = theme;
         }
 
-        public void InitTheme()
+        public static void InitTheme(Theme theme)
         {
-            if (CurrentTheme == Theme.Light)
+            if (theme == Theme.Light)
                 ApplyResources("Themes/LightTheme.xaml");
             else// if (newTheme == Theme.Dark)
                 ApplyResources("Themes/DarkTheme.xaml");

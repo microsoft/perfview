@@ -36,8 +36,16 @@ namespace PerfView
         /// </summary>
         private void ApplicationStarted()
         {
+            if (!Enum.TryParse(App.UserConfigData["Theme"], out Theme theme))
+            {
+                theme = Theme.Light;
+            }
+
+            // initialize theme before creating any window
+            ThemeViewModel.InitTheme(theme);
             MainWindow = new MainWindow();
-            MainWindow.ThemeViewModel.InitTheme();
+            MainWindow.ThemeViewModel.SetTheme(theme);
+
             var logFile = File.CreateText(App.LogFileName);
             StatusBar.AttachWriterToLogStream(logFile);
             App.CommandProcessor.LogFile = MainWindow.StatusBar.LogWriter;
