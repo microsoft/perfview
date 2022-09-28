@@ -1,10 +1,10 @@
-﻿<UserControl 
+﻿<UserControl
         x:Class="PerfView.TreeViewGrid"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-        mc:Ignorable="d" 
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
         d:DesignHeight="223" d:DesignWidth="600">
 
     <UserControl.Resources>
@@ -21,20 +21,20 @@
             </StackPanel>
         </DataTemplate>
     </UserControl.Resources>
-    <DataGrid Name="Grid" 
-        AutoGenerateColumns="False" 
+    <DataGrid Name="Grid"
+        AutoGenerateColumns="False"
         Background="White"
-        AlternatingRowBackground="#FFF2F1A4"
-        SelectionMode="Extended" SelectionUnit="CellOrRowHeader" 
-        SelectedCellsChanged="SelectedCellsChanged" 
-        CanUserSortColumns="False" 
-        ClipboardCopyMode="IncludeHeader" 
+        AlternatingRowBackground="{DynamicResource AlternateRowBackground}"
+        SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
+        SelectedCellsChanged="SelectedCellsChanged"
+        CanUserSortColumns="False"
+        ClipboardCopyMode="IncludeHeader"
         Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit" >
         <DataGrid.Columns>
-            <DataGridTemplateColumn 
+            <DataGridTemplateColumn
                 HeaderStyle="{StaticResource CenterAlign}"
                 IsReadOnly="True"
-                Width="*" 
+                Width="*"
                 ClipboardContentBinding="{Binding Name}">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
@@ -47,39 +47,39 @@
                     </TextBlock>
                 </DataGridTemplateColumn.Header>
             </DataGridTemplateColumn>
-            <DataGridTextColumn 
-                Header="Field1" 
+            <DataGridTextColumn
+                Header="Field1"
                 Visibility="Hidden"
                 Binding="{Binding DisplayField1, Mode=TwoWay}"
                 Width="Auto"
                 HeaderStyle="{StaticResource CenterAlign}" />
-            <DataGridTextColumn 
-                Header="Field2" 
+            <DataGridTextColumn
+                Header="Field2"
                 Visibility="Hidden"
                 Binding="{Binding DisplayField2, Mode=TwoWay}"
                 Width="Auto"
                 HeaderStyle="{StaticResource CenterAlign}" />
-            <DataGridTextColumn 
+            <DataGridTextColumn
                 Visibility="Hidden"
-                Header="Field3" 
+                Header="Field3"
                 Binding="{Binding DisplayField3, Mode=TwoWay}"
                 Width="Auto"
                 HeaderStyle="{StaticResource CenterAlign}" />
-            <DataGridTextColumn 
+            <DataGridTextColumn
                 Visibility="Hidden"
-                Header="Field4" 
+                Header="Field4"
                 Binding="{Binding DisplayField4, Mode=TwoWay}"
                 Width="Auto"
                 HeaderStyle="{StaticResource CenterAlign}" />
-            <DataGridTextColumn 
+            <DataGridTextColumn
                 Visibility="Hidden"
-                Header="Field5" 
+                Header="Field5"
                 Binding="{Binding DisplayField5, Mode=TwoWay}"
                 Width="Auto"
                 HeaderStyle="{StaticResource CenterAlign}" />
-            <DataGridTextColumn 
+            <DataGridTextColumn
                 Visibility="Hidden"
-                Header="Field6" 
+                Header="Field6"
                 Binding="{Binding DisplayField6, Mode=TwoWay}"
                 Width="Auto"
                 HeaderStyle="{StaticResource CenterAlign}" />

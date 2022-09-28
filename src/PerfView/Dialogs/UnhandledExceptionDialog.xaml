@@ -5,7 +5,7 @@
         Style="{DynamicResource CustomWindowStyle}"
         Title="Unhandled Exception" Height="408" Width="590">
     <DockPanel>
-        <Grid DockPanel.Dock="Bottom" Background="#FFB0B0B0">
+        <Grid DockPanel.Dock="Bottom" Background="{DynamicResource BackgroundColour}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

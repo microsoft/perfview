@@ -24,7 +24,7 @@
         <controls:TextEditorControl Grid.Row="0" Margin="5,5" MinHeight="80" x:Name="Names"/>
 
         <!-- Help message at top -->
-        <RichTextBox Grid.Row="1" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="1" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
@@ -63,7 +63,7 @@
         <DataGrid Name="Grid" Grid.Row="4"
         AutoGenerateColumns="False"
         Background="White"
-        AlternatingRowBackground="#FFF2F1A4"
+        AlternatingRowBackground="{DynamicResource AlternateRowBackground}"
         SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
         CanUserSortColumns="False"
         Height="100" >
