@@ -60,7 +60,9 @@ SOFTWARE.
     <SolidColorBrush x:Key="ControlMouseOverGlythColour" Color="#FF212121" />
     <SolidColorBrush x:Key="ControlSelectedGlythColour" Color="#FF191919" />
     <SolidColorBrush x:Key="ControlDisabledGlythColour" Color="#FF666666" />
+
     <SolidColorBrush x:Key="AlternateRowBackground" Color="#FFF2F1A4" />
+    <SolidColorBrush x:Key="HelpRibbonBackground" Color="#FFE2E8F8" />
 
     <!-- Colourful theme  Colours -->
 
