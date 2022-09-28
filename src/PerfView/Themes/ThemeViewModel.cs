@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -61,6 +62,24 @@ namespace PerfView
 
         public static void InitTheme(Theme theme)
         {
+            if (theme == Theme.System)
+            {
+                // Check current system theme via registry
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                {
+                    object value = key.GetValue("AppsUseLightTheme");
+                    if (value is int i)
+                    {
+                        theme = i != 0 ? Theme.Light : Theme.Dark;
+                    }
+                    else
+                    {
+                        // registry key not found or is not int, use Light theme by default
+                        theme = Theme.Light;
+                    }
+                }
+            }
+
             if (theme == Theme.Light)
                 ApplyResources("Themes/LightTheme.xaml");
             else// if (newTheme == Theme.Dark)
