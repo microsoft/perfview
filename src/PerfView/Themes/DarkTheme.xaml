@@ -2141,29 +2141,7 @@ SOFTWARE.
     <!-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_- -->
 
     <!-- RichTextBox -->
-    <Style TargetType="{x:Type RichTextBox}">
-        <Style.Resources>
-            <Style x:Key="{x:Type FlowDocument}" TargetType="{x:Type FlowDocument}">
-                <Setter Property="OverridesDefaultStyle" Value="true" />
-            </Style>
-            <Style x:Key="{x:Type Hyperlink}" BasedOn="{StaticResource {x:Type Hyperlink}}" TargetType="{x:Type Hyperlink}">
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="true">
-                        <Setter Property="Foreground" Value="Blue" />
-                    </Trigger>
-                    <Trigger Property="IsEnabled" Value="false">
-                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-        </Style.Resources>
-        <Setter Property="MinWidth" Value="10" />
-        <Style.BasedOn>
-            <StaticResource ResourceKey="{x:Type TextBoxBase}" />
-        </Style.BasedOn>
-    </Style>
-
-    <Style x:Key="{x:Type TextBoxBase}" TargetType="{x:Type TextBoxBase}">
+    <Style x:Key="TextBoxBaseStyle" TargetType="{x:Type TextBoxBase}">
         <Setter Property="Background" Value="{StaticResource ContainerBackground}" />
         <Setter Property="BorderBrush" Value="{StaticResource ControlDefaultBorderBrush}" />
         <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
@@ -2205,6 +2183,24 @@ SOFTWARE.
                 <Setter Property="SelectionBrush" Value="{StaticResource ControlDisabledGlythColour}" />
             </MultiTrigger>
         </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type RichTextBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
+        <Style.Resources>
+            <Style x:Key="{x:Type FlowDocument}" TargetType="{x:Type FlowDocument}">
+                <Setter Property="OverridesDefaultStyle" Value="true" />
+            </Style>
+            <Style x:Key="{x:Type Hyperlink}" BasedOn="{StaticResource {x:Type Hyperlink}}" TargetType="{x:Type Hyperlink}">
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="true">
+                        <Setter Property="Foreground" Value="{StaticResource ControlBrightPrimaryColourBackground}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Style.Resources>
     </Style>
 
     <Style x:Key="{x:Type Hyperlink}" TargetType="{x:Type Hyperlink}">

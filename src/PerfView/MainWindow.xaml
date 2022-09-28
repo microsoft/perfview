@@ -219,10 +219,9 @@
                 </TreeView>
             </DockPanel>
             <GridSplitter Grid.Column="1" Width="3"  HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
-            <RichTextBox Name="Body" Grid.Column="2" Background="{DynamicResource BackgroundColor}" IsReadOnly="True" IsDocumentEnabled="True"
-            BorderBrush="{DynamicResource ControlDefaultBorderBrush}"
-            Foreground="{DynamicResource ControlDefaultForeground}"
-                         IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" VerticalScrollBarVisibility="auto" >
+            <RichTextBox Name="Body" Grid.Column="2" IsReadOnly="True" IsDocumentEnabled="True"
+                         IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}"
+                         VerticalScrollBarVisibility="auto" >
                 <RichTextBox.Resources>
                     <Style TargetType="{x:Type Paragraph}">
                         <Setter Property="Margin" Value="0"/>
