@@ -27,7 +27,7 @@
                 <Hyperlink Command="Help" CommandParameter="ProcessDumpTextBox">Help</Hyperlink>
         </TextBlock>
 
-        <RichTextBox Grid.Row="0" Grid.Column="1" Margin="0,5,5,0" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="0" Grid.Column="1" Margin="0,5,5,0" IsReadOnly="True" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph Name="InstructionParagraph">

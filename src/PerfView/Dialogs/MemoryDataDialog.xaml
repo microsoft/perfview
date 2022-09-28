@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <!-- Help message at top -->
-        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>

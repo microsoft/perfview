@@ -13,7 +13,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True" Margin="10,5">
+        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" IsDocumentEnabled="True" Margin="10,5">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph Margin="0,3,0,0">

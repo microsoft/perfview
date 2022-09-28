@@ -9,7 +9,7 @@
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
     <DockPanel>
-        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>

@@ -11,7 +11,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <RichTextBox Grid.Row="0" Background="#FFE2E8F8">
+        <RichTextBox Grid.Row="0" Background="{DynamicResource HelpRibbonBackground}">
             <RichTextBox.Resources>
                 <Style TargetType="{x:Type Paragraph}">
                     <Setter Property="Margin" Value="2"/>

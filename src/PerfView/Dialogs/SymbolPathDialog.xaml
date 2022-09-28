@@ -22,7 +22,7 @@
             </Hyperlink>
         </TextBlock>
         <TextBox Grid.Row="1" Name="SymbolPathTextBox"  Margin="10,2,10,2" KeyDown="DoKeyDown" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" TextChanged="DoTextChanged" />
-        <TextBox Grid.Row="2" Name="EnvVarTextBox"  Margin="10,2,10,10" IsReadOnly="True" Background="#FFC7C7C7" />
+        <TextBox Grid.Row="2" Name="EnvVarTextBox"  Margin="10,2,10,10" IsReadOnly="True" />
         <StackPanel Grid.Row="3" Orientation="Horizontal" FlowDirection="RightToLeft">
 
         <Button Margin="10,2,10,5" Width="80" Content="OK" Click="OKClicked"/>
