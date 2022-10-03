@@ -23,6 +23,11 @@ jobs:
       inputs:
         version: 3.1.x
 
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet.exe'
+      inputs:
+        versionSpec: 6.3.0
+
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
       inputs:
@@ -77,6 +82,11 @@ jobs:
       displayName: 'Use .NET Core SDK 3.1'
       inputs:
         version: 3.1.x
+
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet.exe'
+      inputs:
+        versionSpec: 6.3.0
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
