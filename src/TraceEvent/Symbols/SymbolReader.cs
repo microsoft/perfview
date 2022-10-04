@@ -1680,7 +1680,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (buildTimeFilePath.StartsWith(path, StringComparison.OrdinalIgnoreCase))
                     {
                         relativeFilePath = buildTimeFilePath.Substring(path.Length, buildTimeFilePath.Length - path.Length).Replace('\\', '/');
-                        url = urlReplacement.Replace("*", relativeFilePath);
+                        url = urlReplacement.Replace("*", string.Join("/", relativeFilePath.Split('/').Select(Uri.EscapeDataString)));
                         return true;
                     }
                 }

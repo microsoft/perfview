@@ -23,6 +23,7 @@ namespace TraceEventTests
         private const string FileName_CsPortableEmbeddedSource = "CsPortableEmbeddedSource.pdb";
         private const string FileName_CppConPdb = "CppCon.pdb";
         private const string FileName_CsDesktopPdbWithSourceLink = "CsDesktopWithSourceLink.pdb";
+        private const string FileName_CsPortablePdbEscapeSourceLink = "CsPortableEscapeSourceLink.pdb";
 
         private static readonly object s_fileLock = new object();
         private static string s_inputPdbDir;
@@ -131,6 +132,24 @@ namespace TraceEventTests
                 Assert.Equal("CsPortablePdb1/Program.cs", relativePath);
 
                 Assert.Equal(9, sourceLocation.LineNumber);
+            }
+        }
+
+        [Fact]
+        public void SourceLinkUrlsAreEscaped()
+        {
+            var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, FileName_CsPortablePdbEscapeSourceLink));
+            using (pdbFile as IDisposable)
+            {
+                const int tokenMain = 0x06000001;
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(tokenMain, ilOffset: 0);
+                Assert.NotNull(sourceLocation);
+
+                var sourceFile = sourceLocation.SourceFile;
+                Assert.NotNull(sourceFile);
+                Assert.True(sourceFile.GetSourceLinkInfo(out string url, out string relativePath));
+                Assert.Equal("https://contoso.com/fake-source-link-url/CsPortableEscapeSourceLink/%23Directory/Program.cs", url);
+                Assert.Equal("CsPortableEscapeSourceLink/#Directory/Program.cs", relativePath);
             }
         }
 
