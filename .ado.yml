@@ -8,6 +8,9 @@ trigger:
 pr:
   - main
 
+variables:
+  Codeql.Enabled: true
+
 jobs:
   - job: PerfView_Debug
     pool:
