@@ -1877,6 +1877,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         public int HeapCount { get; private set; } = -1;
         /// <summary>
+        /// Number of Generations (0,1,2,LOH,[POH]), which is either 4 or 5 depending on version
+        /// </summary>
+        public int GenerationCount { get { return this.PerHeapHistories?.FirstOrDefault()?.GenData?.Length ?? 0; } }
+        /// <summary>
         /// Calculate the size of all pinned objects
         /// </summary>
         /// <returns></returns>
