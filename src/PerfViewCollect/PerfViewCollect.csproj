@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>PerfView</RootNamespace>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>3.1.29</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <PropertyGroup>
