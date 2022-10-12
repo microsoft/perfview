@@ -33,7 +33,7 @@ public class DotNetHeapDumpGraphReader
     public MemoryGraph Read(string etlFilePath, string processNameOrId = null, double startTimeRelativeMSec = 0)
     {
         m_etlFilePath = etlFilePath;
-        var ret = new MemoryGraph(10000);
+        var ret = new MemoryGraph(10000, isVeryLargeGraph: true);  // OK for this to be a very large graph because it doesn't get written to disk.
         Append(ret, etlFilePath, processNameOrId, startTimeRelativeMSec);
         ret.AllowReading();
         return ret;
