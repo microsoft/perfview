@@ -33,7 +33,7 @@ public class DotNetHeapDumpGraphReader
     public MemoryGraph Read(string etlFilePath, string processNameOrId = null, double startTimeRelativeMSec = 0)
     {
         m_etlFilePath = etlFilePath;
-        var ret = new MemoryGraph(10000);
+        var ret = new MemoryGraph(10000, isVeryLargeGraph: true);  // OK for this to be a very large graph because it doesn't get written to disk.
         Append(ret, etlFilePath, processNameOrId, startTimeRelativeMSec);
         ret.AllowReading();
         return ret;
@@ -506,8 +506,6 @@ public class DotNetHeapDumpGraphReader
     /// </summary>
     internal unsafe void ConvertHeapDataToGraph()
     {
-        int maxNodeCount = 10_000_000;
-
         if (m_converted)
         {
             return;
@@ -714,14 +712,6 @@ public class DotNetHeapDumpGraphReader
 
             Debug.Assert(!m_graph.IsDefined(nodeIdx));
             m_graph.SetNode(nodeIdx, typeIdx, objSize, m_children);
-
-            if (m_graph.NodeCount >= maxNodeCount)
-            {
-                doCompletionCheck = false;
-                var userMessage = string.Format("Exceeded max node count {0}", maxNodeCount);
-                m_log.WriteLine("[WARNING: ]", userMessage);
-                break;
-            }
         }
 
         if (doCompletionCheck && m_curEdgeBlock != null && m_curEdgeBlock.Count != m_curEdgeIdx)
