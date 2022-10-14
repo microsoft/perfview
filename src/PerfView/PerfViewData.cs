@@ -391,6 +391,22 @@ namespace PerfView
             return ret;
         }
 
+        public static void AddTemplate(PerfViewFile file)
+        {
+            foreach (string extension in file.FileExtensions)
+            {
+                foreach (PerfViewFile potentalFormat in Formats)
+                {
+                    if (potentalFormat.IsMyFormat(extension))
+                    {
+                        throw new Exception($"The file extension '{extension}' is already handled by {potentalFormat.GetType().FullName}");
+                    }
+                }
+            }
+
+            Formats.Add(file);
+        }
+
         /// <summary>
         /// Declares that the user command 'userCommand' (that takes one string argument) 
         /// should be called when the file is opened.  
@@ -985,6 +1001,7 @@ namespace PerfView
         {
             m_formatName = formatName;
             m_fileExtensions = fileExtensions;
+            m_Children = new List<PerfViewTreeItem>();
         }
 
         public override string FormatName { get { return m_formatName; } }

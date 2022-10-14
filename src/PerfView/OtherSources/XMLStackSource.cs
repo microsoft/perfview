@@ -189,7 +189,7 @@ namespace Diagnostics.Tracing.StackSources
                 }
                 else
                 {
-                    XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
+                    XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true, CheckCharacters = false };
                     reader = XmlTextReader.Create(xmlStream, settings);
                 }
 
