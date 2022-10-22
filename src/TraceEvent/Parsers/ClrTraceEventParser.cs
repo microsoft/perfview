@@ -9476,6 +9476,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             m_target = target;
+            eventName = "LockCreated"; // override the event name since TraceEvent.EventName's default behavior does not match the event name
         }
         protected internal override void Dispatch()
         {

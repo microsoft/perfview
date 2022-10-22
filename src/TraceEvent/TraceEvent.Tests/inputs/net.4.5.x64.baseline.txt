@@ -312,7 +312,7 @@ EVENT 13,550.296: System.Threading.Tasks.TplEventSource/TaskScheduled/Send PID=5
 EVENT 13,550.298: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolEnqueueWork PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=8; workID=203,885,220; 
 EVENT 13,550.325: System.Threading.Tasks.TplEventSource/TaskScheduled/Send PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=20; OriginatingTaskSchedulerID=1; OriginatingTaskID=1; TaskID=4; CreatingTaskID=0; TaskCreationOptions=8,192; 
 EVENT 13,550.327: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolEnqueueWork PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=8; workID=203,885,292; 
-EVENT 13,550.332: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; 
+EVENT 13,550.332: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; LockID=0x00000000; AssociatedObjectID=0x00000000; LockOwnerThreadID=0; 
 EVENT 13,550.347: Microsoft-Windows-DotNETRuntime/Contention/Stop PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; DurationNs=0.000; 
 EVENT 13,550.438: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolDequeueWork PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=8; workID=203,885,148; 
 EVENT 13,550.444: System.Threading.Tasks.TplEventSource/TaskExecute/Start PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=12; OriginatingTaskSchedulerID=1; OriginatingTaskID=0; TaskID=2; 
@@ -322,14 +322,14 @@ EVENT 13,550.497: System.Threading.Tasks.TplEventSource/TaskExecute/Start PID=50
 EVENT 13,550.552: Microsoft-Windows-DotNETRuntime/ThreadPoolWorkerThread/Start PID=5076; TID=908; PName=PerfView; ProceNum=4; DataLen=10; ActiveWorkerThreadCount=6; RetiredWorkerThreadCount=0; ClrInstanceID=11; 
 EVENT 13,550.628: Microsoft-Windows-DotNETRuntime/ThreadPoolWorkerThread/Start PID=5076; TID=3348; PName=PerfView; ProceNum=0; DataLen=10; ActiveWorkerThreadCount=6; RetiredWorkerThreadCount=0; ClrInstanceID=11; 
 EVENT 13,550.653: Microsoft-Windows-DotNETRuntime/ThreadPoolWorkerThread/Start PID=5076; TID=1296; PName=PerfView; ProceNum=5; DataLen=10; ActiveWorkerThreadCount=6; RetiredWorkerThreadCount=0; ClrInstanceID=11; 
-EVENT 13,550.870: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=3968; PName=PerfView; ProceNum=6; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; 
-EVENT 13,551.049: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; 
+EVENT 13,550.870: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=3968; PName=PerfView; ProceNum=6; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; LockID=0x00000000; AssociatedObjectID=0x00000000; LockOwnerThreadID=0; 
+EVENT 13,551.049: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; LockID=0x00000000; AssociatedObjectID=0x00000000; LockOwnerThreadID=0; 
 EVENT 13,551.466: Microsoft-Windows-DotNETRuntime/Contention/Stop PID=5076; TID=3968; PName=PerfView; ProceNum=6; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; DurationNs=0.000; 
-EVENT 13,551.485: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=3968; PName=PerfView; ProceNum=6; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; 
+EVENT 13,551.485: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=3968; PName=PerfView; ProceNum=6; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; LockID=0x00000000; AssociatedObjectID=0x00000000; LockOwnerThreadID=0; 
 EVENT 13,551.560: Microsoft-Windows-DotNETRuntime/Contention/Stop PID=5076; TID=3968; PName=PerfView; ProceNum=6; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; DurationNs=0.000; 
 EVENT 13,551.614: Microsoft-Windows-DotNETRuntime/Exception/Start PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=170; ExceptionType=System.IO.FileNotFou...; ExceptionMessage=The session PerfView...; ExceptionEIP=0x05e7985d; ExceptionHRESULT=-2,147,024,894; ExceptionFlags=CLSCompliant; ClrInstanceID=11; 
 EVENT 13,551.625: Microsoft-Windows-DotNETRuntime/Contention/Stop PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; DurationNs=0.000; 
-EVENT 13,551.640: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; 
+EVENT 13,551.640: Microsoft-Windows-DotNETRuntime/Contention/Start PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; LockID=0x00000000; AssociatedObjectID=0x00000000; LockOwnerThreadID=0; 
 EVENT 13,551.663: System.Threading.Tasks.TplEventSource/TaskExecute/Stop PID=5076; TID=2600; PName=PerfView; ProceNum=2; DataLen=16; OriginatingTaskSchedulerID=1; OriginatingTaskID=1; TaskID=4; IsExceptional=False; 
 EVENT 13,552.249: Microsoft-Windows-DotNETRuntime/Contention/Stop PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=3; ContentionFlags=Native; ClrInstanceID=11; DurationNs=0.000; 
 EVENT 13,644.310: Windows Kernel/SystemConfig/CPU PID=5076; TID=1380; PName=PerfView; ProceNum=1; DataLen=828; MHz=3,592; NumberOfProcessors=8; MemSize=4,096; PageSize=4,096; AllocationGranularity=65,536; ComputerName=BRIANROB-W8; DomainName=; HyperThreadingFlag=0x00000000; 
