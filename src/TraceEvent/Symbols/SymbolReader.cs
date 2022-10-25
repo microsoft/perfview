@@ -1204,12 +1204,15 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// This just copies a stream to a file path with logging.  
+        /// This just copies a stream to a file path with logging.
         /// </summary>
-        private int CopyStreamToFile(Stream fromStream, string fromUri, string fullDestPath, ref bool canceled)
+        /// <returns>
+        /// The total number of bytes copied.
+        /// </returns>
+        private long CopyStreamToFile(Stream fromStream, string fromUri, string fullDestPath, ref bool canceled)
         {
             bool completed = false;
-            int byteCount = 0;
+            long byteCount = 0;
             var copyToFileName = fullDestPath + ".new";
             try
             {
@@ -1217,11 +1220,11 @@ namespace Microsoft.Diagnostics.Symbols
                 Directory.CreateDirectory(dirName);
                 m_log.WriteLine("CopyStreamToFile: Copying {0} to {1}", fromUri, copyToFileName);
                 var sw = Stopwatch.StartNew();
-                int lastMeg = 0;
-                int last10K = 0;
+                long lastMeg = 0;
+                long last10K = 0;
                 using (Stream toStream = File.Create(copyToFileName))
                 {
-                    byte[] buffer = new byte[8192];
+                    byte[] buffer = new byte[81920];
                     for (; ; )
                     {
                         int count = fromStream.Read(buffer, 0, buffer.Length);
@@ -1238,16 +1241,18 @@ namespace Microsoft.Diagnostics.Symbols
                             m_log.Write(".");
                             last10K += 10000;
                         }
+
                         if (byteCount - lastMeg >= 1000000)
                         {
                             m_log.WriteLine(" {0:f1} Meg", byteCount / 1000000.0);
                             m_log.Flush();
                             lastMeg += 1000000;
                         }
+
                         if (sw.Elapsed.TotalMilliseconds > 100)
                         {
                             m_log.Flush();
-                            System.Threading.Thread.Sleep(0);       // allow interruption.
+                            Thread.Sleep(0);       // allow interruption.
                             sw.Restart();
                         }
 
@@ -1257,6 +1262,7 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                     }
                 }
+
                 if (!canceled)
                 {
                     completed = true;
@@ -1276,6 +1282,7 @@ namespace Microsoft.Diagnostics.Symbols
                     FileUtilities.ForceDelete(copyToFileName);
                 }
             }
+
             return byteCount;
         }
 
