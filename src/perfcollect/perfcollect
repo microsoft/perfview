@@ -854,24 +854,36 @@ DiscoverCommands()
         $perfcmd --version > /dev/null 2>&1
         if [ "$?" == "1" ]
         then
-            perf49Cmd=`GetCommandFullPath "perf_4.9"`
-            $perf49Cmd --version > /dev/null 2>&1
-            if [ "$?" == "0" ]
+            perfoutput=$($perfcmd 2>&1)
+            if [ $? -eq 1 ]
             then
-                perfcmd=$perf49Cmd
-            else
-                perf419Cmd=`GetCommandFullPath "perf_4.19"`
-                $perf419Cmd --version > /dev/null 2>&1
-                if [ "$?" == "0" ]
+                perfMarker="perf_"
+                if [[ "$perfoutput" == *"$perfMarker"* ]]
                 then
-                    perfcmd=$perf419Cmd
-                else
-                    perf316Cmd=`GetCommandFullPath "perf_3.16"`
-                    $perf316Cmd --version > /dev/null 2>&1
-                    if [ "$?" == "0" ]
+                    foundWorkingPerf=0
+                    WriteWarning "Perf is installed, but does not exactly match the version of the running kernel."
+                    WriteWarning "This is often OK, and we'll try to workaround this."
+                    WriteStatus "Attempting to find a working copy of perf."
+                    # Attempt to find an existing version of perf to use.
+                    # Order the search by newest directory first.
+                    baseDir="/usr/bin"
+                    searchPath="$baseDir/perf_*"
+                    for fileName in $(ls -d --sort=time $searchPath)
+                    do
+                        $($fileName > /dev/null 2>&1)
+                        if [ $? -eq 1 ]
+                        then
+                            # If $? == 1, then use this copy of perf.
+                            perfcmd=$fileName
+                            foundWorkingPerf=1
+                            break;
+                        fi
+                    done
+                    if [ $foundWorkingPerf -eq 0 ]
                     then
-                        perfcmd=$perf316Cmd
+                        FatalError "Unable to find a working copy of perf.  Try re-installing via ./perfcollect install."
                     fi
+                    WriteStatus "...FINISHED"
                 fi
             fi
         fi
