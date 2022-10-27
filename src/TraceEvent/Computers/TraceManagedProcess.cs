@@ -572,16 +572,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                     if (procThread.ThreadInfo.StartsWith(".NET Server GC"))
                                     {
                                         mang.GC.m_stats.HeapCount++;
-                                    }
 
-                                    if (procThread.ThreadInfo.StartsWith(".NET Server GC Thread"))
-                                    {
-                                        int startIndex = procThread.ThreadInfo.IndexOf('(');
-                                        int endIndex = procThread.ThreadInfo.IndexOf(')');
-                                        string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
-                                        int heapNum = int.Parse(heapNumString);
-                                        mang.GC.m_stats.serverGCThreads[procThread.ThreadID] = heapNum;
-                                        mang.GC.m_stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                        // When the heap # is available, use it.
+                                        if (procThread.ThreadInfo.StartsWith(".NET Server GC Thread"))
+                                        {
+                                            int startIndex = procThread.ThreadInfo.IndexOf('(');
+                                            int endIndex = procThread.ThreadInfo.IndexOf(')');
+                                            string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
+                                            int heapNum = int.Parse(heapNumString);
+                                            mang.GC.m_stats.serverGCThreads[procThread.ThreadID] = heapNum;
+                                            mang.GC.m_stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                        }
                                     }
                                 }
                             }
