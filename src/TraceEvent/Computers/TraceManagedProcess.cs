@@ -562,10 +562,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                                 foreach (var procThread in traceProc.Threads)
                                 {
-                                    if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC Thread")))
+                                    if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC")))
                                     {
                                         mang.GC.m_stats.HeapCount++;
+                                    }
 
+                                    if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC Thread")))
+                                    {
                                         int startIndex = procThread.ThreadInfo.IndexOf('(');
                                         int endIndex = procThread.ThreadInfo.IndexOf(')');
                                         string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
