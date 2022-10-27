@@ -562,16 +562,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                                 foreach (var procThread in traceProc.Threads)
                                 {
-                                    if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC Thread")))
+                                    if (procThread.ThreadInfo == null)
+                                    {
+                                        continue;
+                                    }
+
+                                    // .NET Server Threads' ThreadInfo can be either ".NET Server GC Thread (#)" or ".NET Server GC".
+                                    // Both should be accumulated to correctly compute the heap count. 
+                                    if (procThread.ThreadInfo.StartsWith(".NET Server GC"))
                                     {
                                         mang.GC.m_stats.HeapCount++;
 
-                                        int startIndex = procThread.ThreadInfo.IndexOf('(');
-                                        int endIndex = procThread.ThreadInfo.IndexOf(')');
-                                        string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
-                                        int heapNum = int.Parse(heapNumString);
-                                        mang.GC.m_stats.serverGCThreads[procThread.ThreadID] = heapNum;
-                                        mang.GC.m_stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                        // When the heap # is available, use it.
+                                        if (procThread.ThreadInfo.StartsWith(".NET Server GC Thread"))
+                                        {
+                                            int startIndex = procThread.ThreadInfo.IndexOf('(');
+                                            int endIndex = procThread.ThreadInfo.IndexOf(')');
+                                            string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
+                                            int heapNum = int.Parse(heapNumString);
+                                            mang.GC.m_stats.serverGCThreads[procThread.ThreadID] = heapNum;
+                                            mang.GC.m_stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                        }
                                     }
                                 }
                             }
