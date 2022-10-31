@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.ComponentModel;
+using System.Security;
 using System.Windows;
 using System.Windows.Input;
 using Utilities;
@@ -64,19 +65,27 @@ namespace PerfView
         {
             if (theme == Theme.System)
             {
-                // Check current system theme via registry
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                try
                 {
-                    object value = key.GetValue("AppsUseLightTheme");
-                    if (value is int i)
+                    // Check current system theme via registry
+                    using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
                     {
-                        theme = i != 0 ? Theme.Light : Theme.Dark;
+                        object value = key.GetValue("AppsUseLightTheme");
+                        if (value is int i)
+                        {
+                            theme = i != 0 ? Theme.Light : Theme.Dark;
+                        }
+                        else
+                        {
+                            // registry key not found or is not int, use Light theme by default
+                            theme = Theme.Light;
+                        }
                     }
-                    else
-                    {
-                        // registry key not found or is not int, use Light theme by default
-                        theme = Theme.Light;
-                    }
+                }
+                catch (SecurityException)
+                {
+                    // We don't have access to registry
+                    theme = Theme.Light;
                 }
             }
 
