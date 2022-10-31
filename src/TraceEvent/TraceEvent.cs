@@ -240,14 +240,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The time when session started logging. 
         /// </summary>
-        public DateTime SessionStartTime
-        {
-            get
-            {
-                var ret = QPCTimeToDateTimeUTC(sessionStartTimeQPC);
-                return ret.ToLocalTime();
-            }
-        }
+        public DateTime SessionStartTime => SessionStartTimeUTC.ToLocalTime();
+
+        /// <summary>
+        /// The time when session started logging in UTC format.
+        /// </summary>
+        public DateTime SessionStartTimeUTC => QPCTimeToDateTimeUTC(sessionStartTimeQPC);
+
 
         /// <summary>
         /// The time that the session stopped logging.
@@ -256,11 +255,25 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                var ret = QPCTimeToDateTimeUTC(sessionEndTimeQPC).ToLocalTime();
+                var ret = SessionEndTimeUTC.ToLocalTime();
                 Debug.Assert(SessionStartTime <= ret);
                 return ret;
             }
         }
+
+        /// <summary>
+        /// The time that the session stopped logging.
+        /// </summary>
+        public DateTime SessionEndTimeUTC
+        {
+            get
+            {
+                var ret = QPCTimeToDateTimeUTC(sessionEndTimeQPC);
+                Debug.Assert(SessionStartTimeUTC <= ret);
+                return ret;
+            }
+        }
+
         /// <summary>
         /// The Session End time expressed as milliseconds from the start of the session
         /// </summary>
@@ -277,7 +290,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The difference between SessionEndTime and SessionStartTime;
         /// </summary>
-        public TimeSpan SessionDuration { get { return SessionEndTime - SessionStartTime; } }
+        public TimeSpan SessionDuration { get { return SessionEndTimeUTC - SessionStartTimeUTC; } }
 
         /// <summary>
         /// The size of the trace, if it is known.  Will return 0 if it is not known.  
@@ -797,8 +810,18 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public DateTime TimeStamp
         {
-            get { return traceEventSource.QPCTimeToDateTimeUTC(TimeStampQPC).ToLocalTime(); }
+            get { return TimeStampUTC.ToLocalTime(); }
         }
+
+        /// <summary>
+        /// The time of the event in UTC format. This has much lower overhead than TimeStamp
+        /// because it saves a timezone conversion.
+        /// </summary>
+        public DateTime TimeStampUTC
+        {
+            get { return traceEventSource.QPCTimeToDateTimeUTC(TimeStampQPC); }
+        }
+
         /// <summary>
         /// Returns a double representing the number of milliseconds since the beginning of the session.     
         /// </summary>
