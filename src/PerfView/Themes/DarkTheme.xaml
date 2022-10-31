@@ -4694,23 +4694,6 @@ SOFTWARE.
                                 <VisualState x:Name="Unfocused" />
                                 <VisualState x:Name="Focused" />
                             </VisualStateGroup>
-                            <VisualStateGroup x:Name="CurrentStates">
-                                <VisualState x:Name="Regular" />
-                                <VisualState x:Name="Current">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="border"
-                                                Storyboard.TargetProperty="(Border.BorderBrush)">
-                                            <DiscreteObjectKeyFrame KeyTime="0"
-                                         Value="{StaticResource ControlPrimaryColourBorderBrush}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="border"
-                                                Storyboard.TargetProperty="(Border.Background)">
-                                            <DiscreteObjectKeyFrame KeyTime="0"
-                                         Value="{StaticResource ControlPrimaryColourBackground}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                            </VisualStateGroup>
                             <VisualStateGroup x:Name="SelectionStates">
                                 <VisualState x:Name="Unselected" />
                                 <VisualState x:Name="Selected">
