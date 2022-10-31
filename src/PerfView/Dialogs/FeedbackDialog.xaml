@@ -1,8 +1,11 @@
 ﻿<src:WindowBase x:Class="PerfView.Dialogs.FeedbackDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:src="clr-namespace:PerfView" 
-        Title="Enter Feedback" Background="#FFA7A7A7" Height="443" Width="722">
+        xmlns:src="clr-namespace:PerfView"
+        Title="Enter Feedback"
+        Style="{DynamicResource CustomWindowStyle}"
+        Background="{StaticResource ControlDarkerBackground}"
+        Height="443" Width="722">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -10,20 +13,20 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True" Margin="10,5">
+        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" IsDocumentEnabled="True" Margin="10,5">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph Margin="0,3,0,0">
-                        If you are reporting a bug, please make sure that you have included enough 
-                        information that the bug can be reproduced.   You may upload data files to \\clrmain\public\writable\perfView\repros 
+                        If you are reporting a bug, please make sure that you have included enough
+                        information that the bug can be reproduced.   You may upload data files to \\clrmain\public\writable\perfView\repros
                         to allow your repro instructions to include your exact data.
                     </Paragraph>
                     <Paragraph Margin="0,3,0,0">
-                        If you are requesting a feature or new behavior be sure to describe the feature well.  
+                        If you are requesting a feature or new behavior be sure to describe the feature well.
                     </Paragraph>
                     <Paragraph Margin="0,3,0,0">
                         If you simply have a question that was not answered in the docs, you may wish to send mail to
-                        <Bold>PerfViewUsers@microsoft.com</Bold>.  
+                        <Bold>PerfViewUsers@microsoft.com</Bold>.
                     </Paragraph>
                     <Paragraph Margin="0,3,0,0">
                         <Bold>
@@ -33,7 +36,7 @@
                 </FlowDocument>
             </RichTextBox.Document>
         </RichTextBox>
-        <TextBox Grid.Row="1" Name="TextBox"  Margin="10,2,10,2" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FFE5E5E5" SelectionBrush="White" />
+        <TextBox Grid.Row="1" Name="TextBox"  Margin="10,2,10,2" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
         <Grid Grid.Row="3" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

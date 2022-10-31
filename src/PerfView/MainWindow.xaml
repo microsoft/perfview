@@ -2,10 +2,11 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
-        xmlns:WPFToolKit="http://schemas.microsoft.com/wpf/2008/toolkit" 
-        xmlns:controls="clr-namespace:Controls" 
+        xmlns:WPFToolKit="http://schemas.microsoft.com/wpf/2008/toolkit"
+        xmlns:controls="clr-namespace:Controls"
         Closed="Window_Closed"
-        Title="PerfView" Height="535" Width="1000">
+        Title="PerfView" Height="535" Width="1000"
+        Style="{DynamicResource CustomWindowStyle}">
     <Window.Resources>
         <BitmapImage x:Key="FileBitmapImage"  UriSource="images/VSProject_genericfile.png"/>
         <BitmapImage x:Key="HeapFileBitmapImage"  UriSource="images/VSProject_schema.png"/>
@@ -15,7 +16,7 @@
         <BitmapImage x:Key="HtmlReportBitmapImage"  UriSource="images/VSProject_html.png"/>
         <BitmapImage x:Key="ChartBitmapImage"  UriSource="images/Chart.png"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <Style TargetType="MenuItem">
+        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
             <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Converter={StaticResource BooleanToVisibilityConverter }}" />
         </Style>
     </Window.Resources>
@@ -50,6 +51,9 @@
         <CommandBinding Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" Executed="UseGCMAuth_Executed" CanExecute="UseGCMAuth_CanExecute" />
         <CommandBinding Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" Executed="UseDeveloperIdentityAuth_Executed" />
         <CommandBinding Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" Executed="UseGitHubDeviceFlowAuth_Executed" />
+        <CommandBinding Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}" Executed="SetTheme_Executed" />
+        <CommandBinding Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}" Executed="SetTheme_Executed" />
+        <CommandBinding Command="{x:Static src:ThemeViewModel.SetSystemThemeCommand}" Executed="SetTheme_Executed" />
     </Window.CommandBindings>
     <Window.InputBindings>
         <KeyBinding Gesture="CTRL+L" Command="{x:Static src:MainWindow.FocusDirectoryCommand}" />
@@ -67,7 +71,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Menu Grid.Column="0" Background="#FFD1D1D1">
+            <Menu Grid.Column="0" Background="{DynamicResource ControlDefaultBackground}">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Clear Temp Files" Click="DoClearTempFiles" ToolTip="Some operations create temporary files.  This command clears all of these."/>
                     <MenuItem Header="Clear User Config" Click="DoClearUserConfig" ToolTip="Reset all user preferences back to their defaults when PerfView was first installed."/>
@@ -115,6 +119,11 @@
                         <MenuItem Header="Use _Developer Identity for Azure DevOps"  x:Name="Authentication_UseManagedIdentityForAzureDevOps" IsChecked="{Binding Path=AuthenticationViewModel.IsDeveloperIdentityEnabled}" Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" ToolTip="Use Visual Studio or VS Code sign-in information to authenticate to Azure DevOps instances."/>
                         <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
                     </MenuItem>
+                    <MenuItem Header="Theme">
+                        <MenuItem Header="Light" x:Name="Theme_Light" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>
+                        <MenuItem Header="Dark" x:Name="Theme_Dark" IsChecked="{Binding Path=ThemeViewModel.IsDarkTheme}" Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}"/>
+                        <MenuItem Header="System" x:Name="Theme_System" IsChecked="{Binding Path=ThemeViewModel.IsSystemTheme}" Command="{x:Static src:ThemeViewModel.SetSystemThemeCommand}"/>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Main View" Command="Help" CommandParameter="MainViewerQuickStart" />
@@ -134,7 +143,7 @@
                     <MenuItem Header="_About" Click="DoAbout"/>
                 </MenuItem>
             </Menu>
-            <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="#FFD1D1D1"/>
+            <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="{DynamicResource ControlDefaultBackground}"/>
             <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
                 <Hyperlink Command="Help" CommandParameter="MainViewerQuickStart">Main View Help (F1)</Hyperlink>
             </TextBlock>
@@ -166,14 +175,14 @@
                 <ColumnDefinition Width="619*"/>
             </Grid.ColumnDefinitions>
             <DockPanel Background="Gray" Grid.Column="0">
-                <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top" 
+                <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top"
                          ToolTip="This is the directory to search for performance data files." TextEntered="DoTextEnteredInDirectoryTextBox" />
                 <Grid DockPanel.Dock="Top" >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="100*"/>
                     </Grid.ColumnDefinitions>
-                    <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="#FFD1D1D1"/>
+                    <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="{DynamicResource ControlDefaultBackground}"/>
                     <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only files that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="FileFilterTextBox">Filter:</Hyperlink>
                     </TextBlock>
@@ -182,12 +191,6 @@
                 <TreeView x:Name="TreeView" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView" PreviewMouseRightButtonDown="TreeView_PreviewMouseRightButtonDown"
                           ToolTip="Double Click to open.  Right click contains additional help and additional options."
                           IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" AllowDrop="True" Drop="DoDrop">
-                    <TreeView.ItemContainerStyle>
-                        <Style TargetType="TreeViewItem">
-                            <Setter Property="IsExpanded" Value="{Binding Path=IsExpanded, Mode=TwoWay}" />
-                            <Setter Property="IsSelected" Value="{Binding Path=IsSelected, Mode=TwoWay}" />
-                        </Style>
-                    </TreeView.ItemContainerStyle>
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                             <StackPanel Orientation="Horizontal">
@@ -216,8 +219,9 @@
                 </TreeView>
             </DockPanel>
             <GridSplitter Grid.Column="1" Width="3"  HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
-            <RichTextBox Name="Body" Grid.Column="2" Background="White" IsReadOnly="True" IsDocumentEnabled="True" 
-                         IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" VerticalScrollBarVisibility="auto" >
+            <RichTextBox Name="Body" Grid.Column="2" IsReadOnly="True" IsDocumentEnabled="True"
+                         IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}"
+                         VerticalScrollBarVisibility="auto" >
                 <RichTextBox.Resources>
                     <Style TargetType="{x:Type Paragraph}">
                         <Setter Property="Margin" Value="0"/>
@@ -233,11 +237,11 @@
                         </Paragraph>
 
                         <Paragraph Margin="0,4,0,0">Pressing the
-                            <Bold>F1</Bold> key will give you help for current view. 
-                            Any blue hyperlinks in the UI also take you to help. 
+                            <Bold>F1</Bold> key will give you help for current view.
+                            Any blue hyperlinks in the UI also take you to help.
                             For an overview of PerfView see the
                             <Hyperlink Command="Help" CommandParameter="UsersGuide">User's Guide</Hyperlink> .
-                            If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, 
+                            If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report,
                             see the
                             <Hyperlink Command="Help" CommandParameter="Feedback">feedback instructions</Hyperlink> in the documentation.
                         </Paragraph>
@@ -253,10 +257,10 @@
                         <Paragraph>PerfView can collect a time based ETW trace for investigating
                             <Bold>
                                 <Hyperlink Command="Help" CommandParameter="CpuInvestigation">CPU</Hyperlink>
-                            </Bold> and 
+                            </Bold> and
                             <Bold>
                                 <Hyperlink Command="Help" CommandParameter="MakingServerInvestigationEasy">Server Response Time</Hyperlink>
-                            </Bold>, as well as 
+                            </Bold>, as well as
                             <Hyperlink Command="Help" CommandParameter="BlockedTimeInvestigation">Wall Clock / Blocked Time</Hyperlink> ,
                             <Hyperlink Command="Help" CommandParameter="UnmanagedMemoryAnalysis">Unmanaged memory</Hyperlink> or
                             <Hyperlink Command="Help" CommandParameter="GCHeapNetMemStacks">Managed memory</Hyperlink> .
@@ -310,7 +314,7 @@
                         <Paragraph Margin="0,4,0,0">If the file contains more than one view of the data then double clicking on the object
                             populates children nodes in the treeview.  Double clicking on one of the children will open the viewer for that
                             view.
-                            <Bold>Right clicking and selecting 'Help on Item'</Bold> will take you to the help for that particular entry in the viewer.  
+                            <Bold>Right clicking and selecting 'Help on Item'</Bold> will take you to the help for that particular entry in the viewer.
                             There are two main viewers of profile data:
                         </Paragraph>
                         <List Margin="0,2,0,0">
@@ -323,11 +327,11 @@
                         </List>
                         <Paragraph/>
                         <Paragraph FontWeight="Bold">Diffing Profile Data</Paragraph>
-                        <Paragraph Margin="0,4,0,0">PerfView has the ability to determine the difference between two traces, 
-                            which is very useful in doing regression analysis.    To use the Diff functionality first 
-                            view both traces in separate stack view windows and (if necessary) filter out all but the region 
-                            that represents an equivalent amount of work in each view.  
-                            Then use the Diff menu on the stack view window of the 'regressed' trace and to select the other 
+                        <Paragraph Margin="0,4,0,0">PerfView has the ability to determine the difference between two traces,
+                            which is very useful in doing regression analysis.    To use the Diff functionality first
+                            view both traces in separate stack view windows and (if necessary) filter out all but the region
+                            that represents an equivalent amount of work in each view.
+                            Then use the Diff menu on the stack view window of the 'regressed' trace and to select the other
                             window as its baseline.   See
                             <Hyperlink Command="Help" CommandParameter="Diff">Diff Help</Hyperlink> for more.
                         </Paragraph>

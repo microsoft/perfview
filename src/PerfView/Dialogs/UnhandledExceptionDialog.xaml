@@ -2,9 +2,10 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
+        Style="{DynamicResource CustomWindowStyle}"
         Title="Unhandled Exception" Height="408" Width="590">
     <DockPanel>
-        <Grid DockPanel.Dock="Bottom" Background="#FFB0B0B0">
+        <Grid DockPanel.Dock="Bottom" Background="{DynamicResource BackgroundColour}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

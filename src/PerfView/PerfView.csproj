@@ -46,6 +46,7 @@
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationFramework.Aero" />
     <Reference Include="ReachFramework" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Management" />

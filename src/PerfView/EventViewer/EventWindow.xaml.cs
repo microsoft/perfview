@@ -99,8 +99,8 @@ namespace PerfView
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
                     }
 
-                    // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
-                    // for ranges.  
+                    // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience
+                    // for ranges.
                     if (m_clipboardRangeEnd != m_clipboardRangeStart)  // If we have just 2 things selected (and I can tell them apart)
                     {
                         if (PerfDataGrid.VeryClose(morphedContent, m_clipboardRangeStart))
@@ -203,10 +203,10 @@ namespace PerfView
 
                     csvFile.WriteLine();
 
-                    // Write out events 
+                    // Write out events
                     m_source.ForEach(delegate (EventRecord _event)
                     {
-                        // We have exceeded MaxRet, skip it.  
+                        // We have exceeded MaxRet, skip it.
                         if (_event.EventName == null)
                         {
                             return false;
@@ -237,7 +237,7 @@ namespace PerfView
         public void SaveDataToXmlFile(string xmlFileName)
         {
             // Sadly, streamWriter does not have a way of setting the IFormatProvider property
-            // So we have to do it in this ugly, global variable way.  
+            // So we have to do it in this ugly, global variable way.
             var savedCulture = Thread.CurrentThread.CurrentCulture;
             try
             {
@@ -249,7 +249,7 @@ namespace PerfView
                     xmlFile.WriteLine("<Events>");
                     m_source.ForEach(delegate (EventRecord _event)
                     {
-                        // We have exceeded MaxRet, skip it.  
+                        // We have exceeded MaxRet, skip it.
                         if (_event.EventName == null)
                         {
                             return false;
@@ -276,13 +276,13 @@ namespace PerfView
                             if (rest.Contains("\\\"") || rest.IndexOfAny(xmlExcapesExceptQuote) >= 0)
                             {
                                 // Rest contains name="XXXX"  and we have determined that the XXX has either
-                                // XML special characters or quoted quotes e.g. \"   
-                                // So we need to transform this to legal XML data.  
+                                // XML special characters or quoted quotes e.g. \"
+                                // So we need to transform this to legal XML data.
 
-                                // TODO painfully slow, fragile, trickly 
+                                // TODO painfully slow, fragile, trickly
                                 rest = XmlUtilities.XmlEscape(_event.Rest);                      // First escape all XML special chars (including quotes)
                                 rest = rest.Replace("&quot;", "\"");                             // Put back all the quotes
-                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quote;");        // But escape the escaped quotes.  
+                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quote;");        // But escape the escaped quotes.
                             }
                             xmlFile.Write(" ");
                             xmlFile.Write(rest);
@@ -331,7 +331,7 @@ namespace PerfView
                 }
                 catch (InvalidOperationException)
                 {
-                    // This means the window was closed, fix our parent to skip it.  
+                    // This means the window was closed, fix our parent to skip it.
                     var asStackWindow = ParentWindow as PerfView.StackWindow;
                     if (asStackWindow != null)
                     {
@@ -393,10 +393,10 @@ namespace PerfView
         }
         private void OpenStacks(string stackSourceName)
         {
-            // TODO this could be confusing as we have filtered out everything before a range and can't get it back.  
+            // TODO this could be confusing as we have filtered out everything before a range and can't get it back.
             if (DataSource != null)
             {
-                // If we have selected exactly two items, use that as the time limits, otherwise use what is the my dialog.  
+                // If we have selected exactly two items, use that as the time limits, otherwise use what is the my dialog.
                 var startTimeRelativeMSec = m_source.StartTimeRelativeMSec;
                 var endTimeRelativeMSec = m_source.EndTimeRelativeMSec;
                 var selectedCells = Grid.SelectedCells;
@@ -427,7 +427,7 @@ namespace PerfView
                             }
                         }
 
-                        // Make sure that start < end 
+                        // Make sure that start < end
                         if (endTimeRelativeMSec < startTimeRelativeMSec)
                         {
                             var tmp = startTimeRelativeMSec;
@@ -437,11 +437,11 @@ namespace PerfView
                     }
                 }
 
-                // TODO FIX NOW: this should call a routine that does the opening of the stack view 
+                // TODO FIX NOW: this should call a routine that does the opening of the stack view
                 // (m_lookedUpCachedSymbolsForETLData should not be needed ...)
                 StatusBar.StartWork("Reading " + DataSource.Name, delegate ()
                 {
-                    // This is where the work gets done.  
+                    // This is where the work gets done.
 
                     PerfViewStackSource dataSource = null;
                     var dataFile = DataSource.DataFile;
@@ -463,7 +463,7 @@ namespace PerfView
 
                     if (!m_lookedUpCachedSymbolsForETLData)
                     {
-                        // Lookup all the symbols you can from the cache.  
+                        // Lookup all the symbols you can from the cache.
                         m_lookedUpCachedSymbolsForETLData = true;
                         StatusBar.Log("Quick Looking up symbols from PDB cache.");
                         var etlDataFile = dataFile as ETLPerfViewData;
@@ -473,7 +473,7 @@ namespace PerfView
                             using (var reader = etlDataFile.GetSymbolReader(StatusBar.LogWriter,
                                 SymbolReaderOptions.CacheOnly | SymbolReaderOptions.NoNGenSymbolCreation))
                             {
-                                // TODO FIX NOW, make this so that it uses the stacks in the view.  
+                                // TODO FIX NOW, make this so that it uses the stacks in the view.
                                 var moduleFiles = ETLPerfViewData.GetInterestingModuleFiles(etlDataFile, 5.0, StatusBar.LogWriter, null);
                                 foreach (var moduleFile in moduleFiles)
                                 {
@@ -485,7 +485,7 @@ namespace PerfView
                     }
                     StatusBar.EndWork(delegate ()
                     {
-                        App.CommandProcessor.NoExitOnElevate = true;        // Don't exit because we might have state 
+                        App.CommandProcessor.NoExitOnElevate = true;        // Don't exit because we might have state
 
                         var stackWindow = new PerfView.StackWindow(this, dataSource);
                         stackWindow.StatusBar.Log("Read " + DataSource.Name);
@@ -1003,7 +1003,7 @@ namespace PerfView
                 if (double.TryParse(GetCellStringValue(cells[0]), out min) &&
                     double.TryParse(GetCellStringValue(cells[cells.Count - 1]), out max))
                 {
-                    // Swap them if necessary.  
+                    // Swap them if necessary.
                     if (max < min)
                     {
                         var tmp = max;
@@ -1231,7 +1231,7 @@ namespace PerfView
                 return;
             }
 
-            // See if we are pasting a range.  
+            // See if we are pasting a range.
             if (string.IsNullOrWhiteSpace(StartTextBox.Text))
             {
                 m_source.StartTimeRelativeMSec = 0;
@@ -1295,7 +1295,7 @@ namespace PerfView
             try
             {
                 string columnSpec = FilterQueryUtilities.TryExtractFilterQueryExpression(ColumnsToDisplayTextBox.Text, out FilterQueryExpressionTree tree);
-                m_source.FilterQueryExpressionTree = tree; 
+                m_source.FilterQueryExpressionTree = tree;
                 m_source.ColumnsToDisplay = EventSource.ParseColumns(columnSpec, m_source.AllColumnNames(eventFilter));
             }
 
@@ -1303,17 +1303,17 @@ namespace PerfView
             catch (FilterQueryExpressionTreeParsingException fqpEx)
             {
                 StatusBar.LogError(fqpEx.Message);
-                m_source.FilterQueryExpressionTree = null; 
+                m_source.FilterQueryExpressionTree = null;
             }
             catch (FilterQueryExpressionParsingException fqepEx)
             {
                 StatusBar.LogError(fqepEx.Message);
-                m_source.FilterQueryExpressionTree = null; 
+                m_source.FilterQueryExpressionTree = null;
             }
             catch(Exception ex)
             {
                 StatusBar.LogError(ex.Message);
-                m_source.FilterQueryExpressionTree = null; 
+                m_source.FilterQueryExpressionTree = null;
             }
 
             for (int i = 0; i < m_userDefinedColumns.Count; i++)
@@ -1323,7 +1323,7 @@ namespace PerfView
                     m_userDefinedColumns[i].Visibility = System.Windows.Visibility.Visible;
                     // For some reason underscores in the name of the column header get removed
                     // (it probably means something special to the Grid), we fix this by replacing
-                    // them with __.  
+                    // them with __.
                     m_userDefinedColumns[i].Header = m_source.ColumnsToDisplay[i].Replace("_", "__");
                 }
                 else
@@ -1332,16 +1332,15 @@ namespace PerfView
                 }
             }
 
-            // Change 'spin.exe (32434)' into 'spin.exe \(32434\)'   
+            // Change 'spin.exe (32434)' into 'spin.exe \(32434\)'
             m_source.ProcessFilterRegex = Regex.Replace(ProcessFilterTextBox.Text, @"\\*\((\d+)\\*\)", @"\($1\)");
             m_source.TextFilterRegex = TextFilterTextBox.Text;
 
-            // Can make this incremental by using an ObservableCollection.  
+            // Can make this incremental by using an ObservableCollection.
             var events = new ObservableCollection<EventRecord>();
             Grid.ItemsSource = events;
-            Grid.Background = Brushes.Gray;
-            EventTypes.Background = Brushes.Gray;
-            Grid.RowBackground = new SolidColorBrush(Color.FromArgb(255, 200, 200, 200));
+            Grid.IsEnabled = false;
+            EventTypes.IsEnabled = false;
             Histogram.Text = "";
 
             StatusBar.StartWork("Scanning Events", delegate ()
@@ -1361,7 +1360,7 @@ namespace PerfView
                         Add(events, event_);
                     }
 
-                    // Compute the histogram of counts over time for the events.  
+                    // Compute the histogram of counts over time for the events.
                     var bucketNum = (int)((event_.TimeStampRelatveMSec - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                     if (bucketNum < 0)
                     {
@@ -1379,7 +1378,7 @@ namespace PerfView
                         maxBucketCount = bucketVal;
                     }
 
-                    // When we move on to a new bucket, update the Histogram string.   
+                    // When we move on to a new bucket, update the Histogram string.
                     if (lastBucketNum < bucketNum)
                     {
                         Dispatcher.BeginInvoke((Action)delegate ()
@@ -1418,7 +1417,7 @@ namespace PerfView
                         sb.Append("  WARNING: TextFilter is active.");
                     }
 
-                    // Display any column sums that are available.  
+                    // Display any column sums that are available.
                     if (m_source.ColumnSums != null && m_source.ColumnsToDisplay != null)
                     {
                         bool first = true;
@@ -1439,11 +1438,10 @@ namespace PerfView
                     sb.AppendLine("]");
                     StatusBar.Log(sb.ToString());
                 });
-            }, delegate ()       // This is the finally clause.  Happens even on exceptions and cancelations.  
+            }, delegate ()       // This is the finally clause.  Happens even on exceptions and cancelations.
             {
-                Grid.Background = Brushes.White;
-                Grid.RowBackground = Brushes.White;
-                EventTypes.Background = Brushes.White;
+                Grid.IsEnabled = true;
+                EventTypes.IsEnabled = true;
             });
         }
 
@@ -1484,7 +1482,7 @@ namespace PerfView
 
         /// <summary>
         /// given the content string, and the columnIndex, return a string that is propertly padded
-        /// so that when displayed the rows will line up by columns nicely  
+        /// so that when displayed the rows will line up by columns nicely
         /// </summary>
         public string PadForColumn(string content, int columnIndex)
         {
@@ -1509,7 +1507,7 @@ namespace PerfView
                 maxString = m_maxColumnInSelection[columnIndex];
             }
 
-            // TODO use the alignment attribute 
+            // TODO use the alignment attribute
             if (columnIndex == 1)
             {
                 return content.PadLeft(maxString);
@@ -1554,7 +1552,7 @@ namespace PerfView
                     }
                 }
             }
-            // Fallback see if we can scrape it from the GUI object.  
+            // Fallback see if we can scrape it from the GUI object.
             FrameworkElement contents = cell.Column.GetCellContent(cell.Item);
             if (contents == null)
             {
@@ -1623,7 +1621,7 @@ namespace PerfView
             {
                 return "";
             }
-            // If you don't have a comma, you are OK (we are losing leading and trailing whitespace but I don't care about that. 
+            // If you don't have a comma, you are OK (we are losing leading and trailing whitespace but I don't care about that.
             if (str.IndexOf(listSeparator) < 0)
             {
                 return str;
@@ -1694,7 +1692,7 @@ namespace PerfView
                     }
                     if (firstCell)
                     {
-                        if (count == 0)     // Give up if the first cell is not a double.  
+                        if (count == 0)     // Give up if the first cell is not a double.
                         {
                             break;
                         }
@@ -1732,7 +1730,7 @@ namespace PerfView
                 }
             }
 
-            // TODO: we really need to combine PerfDataGrid and EventViewer so that all this ugly logic is in one place. 
+            // TODO: we really need to combine PerfDataGrid and EventViewer so that all this ugly logic is in one place.
             if (cells.Count <= 2)
             {
                 if (cells.Count == 2)
@@ -1810,8 +1808,8 @@ namespace PerfView
         /// </summary>
         private void Add(ObservableCollection<EventRecord> events, EventRecord event_)
         {
-            // TODO we currently have a problem where we make the GUI unresponsive because we flood it with BeginInvoke request here.  
-            // We fix this currently by sleeping every 20 adds, we should probably batch these but that complicates the interface.  
+            // TODO we currently have a problem where we make the GUI unresponsive because we flood it with BeginInvoke request here.
+            // We fix this currently by sleeping every 20 adds, we should probably batch these but that complicates the interface.
             --m_adds;
             if (m_adds <= 0)
             {
@@ -1829,7 +1827,7 @@ namespace PerfView
 
         /// <summary>
         /// If we have only two cells selected, even if they are on different rows we want to morph them
-        /// to a single row.  These variables are for detecting this situation.  
+        /// to a single row.  These variables are for detecting this situation.
         /// </summary>
         private string m_clipboardRangeStart;
         private string m_clipboardRangeEnd;
@@ -1839,7 +1837,7 @@ namespace PerfView
         private bool m_lookedUpCachedSymbolsForETLData;       // have we try to resolve symbols
         private EventSource m_source;
         private List<DataGridColumn> m_userDefinedColumns;
-        private float[] m_buckets;                              // Keep track of the counts of events.  
+        private float[] m_buckets;                              // Keep track of the counts of events.
         private double m_bucketTimeMSec;                        // Size for each bucket
         #endregion
     }

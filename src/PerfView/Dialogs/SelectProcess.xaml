@@ -2,26 +2,18 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
-        xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+        Style="{DynamicResource CustomWindowStyle}"
+        xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         Title="Select Process Window" Height="369" Width="695">
-    <Window.Resources>
-        <!-- Shared Styles -->
-        <Style x:Key="RightAlign">
-            <Setter Property="TextBlock.TextAlignment" Value="Right" />
-        </Style>
-        <Style x:Key="CenterAlign">
-            <Setter Property="TextBlock.TextAlignment" Value="Center" />
-        </Style>
-    </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
     <DockPanel>
-        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
-                        The data that was collect was machine wide, but typically you are interested in only one process.
+                        The data collected was machine wide, but typically you are interested in only one process.
                         This dialog box allows you to choose a particular process to focus on by either double clicking on a
                         process or by selecting a process and hitting OK.
                         The 'All Procs' button can be used if you wish to look at all data.
@@ -36,13 +28,13 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="100*"/>
             </Grid.ColumnDefinitions>
-            <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="#FFD1D1D1"/>
+            <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="{DynamicResource ControlDefaultBackground}"/>
             <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only processes that match this filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox">Filter:</Hyperlink>
             </TextBlock>
             <TextBox Name="ProcessFilterTextBox" TextChanged="FilterTextChanged" Grid.Column="1" Margin="5,2,2,2" />
         </Grid>
-        <Grid DockPanel.Dock="Bottom" Background="#FFB0B0B0" >
+        <Grid DockPanel.Dock="Bottom" Background="{DynamicResource BackgroundColour}" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -60,45 +52,44 @@
         </Grid>
         <Grid PreviewKeyDown="GridKeyDownHander">
             <WPFToolKit:DataGrid Name="Grid"
-              AlternatingRowBackground="#FFF2F1A4"
-              AutoGenerateColumns="False" 
+              AlternatingRowBackground="{DynamicResource AlternateRowBackground}"
+              Background="{DynamicResource BackgroundColour}"
+              AutoGenerateColumns="False"
               MouseDoubleClick="OKClicked"
               IsReadOnly="True">
+                <WPFToolKit:DataGrid.Resources>
+                    <Style x:Key="RightAlign">
+                        <Setter Property="TextBlock.TextAlignment" Value="Right"/>
+                    </Style>
+                </WPFToolKit:DataGrid.Resources>
                 <WPFToolKit:DataGrid.Columns>
-                    <WPFToolKit:DataGridTextColumn 
-                Header="Name" 
-                Binding="{Binding Name}" 
-                HeaderStyle="{StaticResource CenterAlign}" />
-                    <WPFToolKit:DataGridTextColumn 
-                Header="ID" 
-                Binding="{Binding ProcessID}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                    <WPFToolKit:DataGridTextColumn
+                Header="Name"
+                Binding="{Binding Name}" />
+                    <WPFToolKit:DataGridTextColumn
+                Header="ID"
+                Binding="{Binding ProcessID}"
                 ElementStyle="{StaticResource RightAlign}"/>
-                    <WPFToolKit:DataGridTextColumn 
-                Header="Parent" 
-                Binding="{Binding ParentID}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                    <WPFToolKit:DataGridTextColumn
+                Header="Parent"
+                Binding="{Binding ParentID}"
                 ElementStyle="{StaticResource RightAlign}"/>
-                    <WPFToolKit:DataGridTextColumn 
-                Header="CPU MSec" 
-                Binding="{Binding CPUTimeMSec, StringFormat={}{0:n0}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                    <WPFToolKit:DataGridTextColumn
+                Header="CPU MSec"
+                Binding="{Binding CPUTimeMSec, StringFormat={}{0:n0}}"
                 ElementStyle="{StaticResource RightAlign}"/>
-                    <WPFToolKit:DataGridTextColumn 
-                Header="Start" 
-                Binding="{Binding StartTime, StringFormat={}{0:yy-MM-dd HH:mm:ss}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                    <WPFToolKit:DataGridTextColumn
+                Header="Start"
+                Binding="{Binding StartTime, StringFormat={}{0:yy-MM-dd HH:mm:ss}}"
                 ElementStyle="{StaticResource RightAlign}"/>
-                    <WPFToolKit:DataGridTextColumn 
-                Header="Duration" 
+                    <WPFToolKit:DataGridTextColumn
+                Header="Duration"
                 Binding="{Binding Duration}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}"/>
-                    <WPFToolKit:DataGridTextColumn 
-                Header="CommandLine" 
+                    <WPFToolKit:DataGridTextColumn
+                Header="CommandLine"
                 Width="*"
-                Binding="{Binding CommandLine}" 
-                HeaderStyle="{StaticResource CenterAlign}" />
+                Binding="{Binding CommandLine}" />
                 </WPFToolKit:DataGrid.Columns>
             </WPFToolKit:DataGrid>
         </Grid>

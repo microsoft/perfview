@@ -1,21 +1,18 @@
-﻿<UserControl 
+﻿<UserControl
         x:Class="PerfView.PerfDataGrid"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-        xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:converter="clr-namespace:PerfView.StackViewer"
-        mc:Ignorable="d" 
+        mc:Ignorable="d"
         d:DesignHeight="223" d:DesignWidth="600">
     <UserControl.Resources>
         <converter:ColorValidatorConverter x:Key="converter" />
         <!-- Shared Styles -->
         <Style x:Key="RightAlign">
             <Setter Property="TextBlock.TextAlignment" Value="Right" />
-        </Style>
-        <Style x:Key="CenterAlign">
-            <Setter Property="TextBlock.TextAlignment" Value="Center" />
         </Style>
         <Style x:Key="HistogramCell" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Courier New"/>
@@ -26,32 +23,20 @@
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
-        <Style x:Key="customDataGridRowStyle" TargetType="{x:Type DataGridRow}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding BackgroundColor, Converter={StaticResource converter}}" Value="true">
-                    <Setter Property="Background" Value="{Binding BackgroundColor}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="dataGridStyle" TargetType="DataGrid">
-            <Setter Property="AlternatingRowBackground" Value="#FFF2F1A4"/>
-            <Setter Property="AutoGenerateColumns" Value="False"/>
-        </Style>
     </UserControl.Resources>
-    <WPFToolKit:DataGrid Name="Grid" 
-        Style="{StaticResource dataGridStyle}"
-        RowStyle ="{StaticResource customDataGridRowStyle}"
-        SelectionMode="Extended" SelectionUnit="CellOrRowHeader" 
-        SelectedCellsChanged="SelectedCellsChanged" 
-        CanUserSortColumns="False" 
-        ClipboardCopyMode="IncludeHeader" 
+    <WPFToolKit:DataGrid Name="Grid"
+        SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
+        SelectedCellsChanged="SelectedCellsChanged"
+        AutoGenerateColumns="False"
+        AlternatingRowBackground="{DynamicResource AlternateRowBackground}"
+        CanUserSortColumns="False"
+        ClipboardCopyMode="IncludeHeader"
         Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit" >
         <WPFToolKit:DataGrid.Columns>
-            <WPFToolKit:DataGridTemplateColumn 
+            <WPFToolKit:DataGridTemplateColumn
                 x:Name="DisplayNameColumn"
-                HeaderStyle="{StaticResource CenterAlign}"
                 IsReadOnly="True"
-                Width="*" 
+                Width="*"
                 ClipboardContentBinding="{Binding Name}">
                 <WPFToolKit:DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
@@ -63,50 +48,47 @@
                         Name <Hyperlink Click="DoHyperlinkHelp" Tag="NameColumn">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                      The name of the method or group (see GroupPat dialog box).    
+                                      The name of the method or group (see GroupPat dialog box).
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTemplateColumn.Header>
             </WPFToolKit:DataGridTemplateColumn>
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding InclusiveMetricPercent, StringFormat={}{0:n1}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding InclusiveMetricPercent, StringFormat={}{0:n1}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="IncPercentColumn">
                        Inc % <Hyperlink  Click="DoHyperlinkHelp" Tag="IncPercentColumn">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                     The % of the total sample metric that occurred in this item or any of its callees.   
+                                     The % of the total sample metric that occurred in this item or any of its callees.
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding InclusiveMetric, StringFormat={}{0:n1}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding InclusiveMetric, StringFormat={}{0:n1}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header >
                     <TextBlock Margin="0,0,5,0" Name="IncColumn">
                         Inc <Hyperlink Click="DoHyperlinkHelp" Tag="IncColumn">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                     The sum of the sample metric that occurred in this item or any of its callees.   
+                                     The sum of the sample metric that occurred in this item or any of its callees.
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
 
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 CanUserSort="False"
                 IsReadOnly="True"
                 Binding="{Binding AverageInclusiveMetric, StringFormat={}{0:n1}}"
-                HeaderStyle="{StaticResource CenterAlign}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="IncAvgColumn">
@@ -120,10 +102,9 @@
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
 
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding InclusiveCount, StringFormat={}{0:n0}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding InclusiveCount, StringFormat={}{0:n0}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="IncCountColumn">
@@ -137,85 +118,80 @@
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
 
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding ExclusiveMetricPercent, StringFormat={}{0:n1}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding ExclusiveMetricPercent, StringFormat={}{0:n1}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="ExcPercentColumn">
                         Exc % <Hyperlink Click="DoHyperlinkHelp" Tag="ExcPercentColumn">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                    The % of the total sample metric that occurred in this item exclusively (not its children, does include folding).  
+                                    The % of the total sample metric that occurred in this item exclusively (not its children, does include folding).
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
-            
-            <WPFToolKit:DataGridTextColumn 
+
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding ExclusiveMetric, StringFormat={}{0:n0}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding ExclusiveMetric, StringFormat={}{0:n0}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="ExcColumn">
                         Exc <Hyperlink Click="DoHyperlinkHelp" Tag="ExcColumn">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                    The sum of the sample metric that occurred in this item exclusively (not its children, does include folding).  
+                                    The sum of the sample metric that occurred in this item exclusively (not its children, does include folding).
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
 
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding ExclusiveCount, StringFormat={}{0:n0}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding ExclusiveCount, StringFormat={}{0:n0}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="ExcCountColumn">
                         Exc Ct <Hyperlink Click="DoHyperlinkHelp" Tag="ExcCountColumn ">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                    The count of the instances in item (excluding its children, does include folding) 
+                                    The count of the instances in item (excluding its children, does include folding)
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
 
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding ExclusiveFoldedMetric, StringFormat={}{0:n0}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding ExclusiveFoldedMetric, StringFormat={}{0:n0}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="FoldColumn">
                         Fold <Hyperlink Click="DoHyperlinkHelp" Tag="FoldColumn">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                    The exclusive metric that have been folded into this node (by FoldPat or Fold %).  
+                                    The exclusive metric that have been folded into this node (by FoldPat or Fold %).
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
 
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 IsReadOnly="True"
-                Binding="{Binding ExclusiveFoldedCount, StringFormat={}{0:n0}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding ExclusiveFoldedCount, StringFormat={}{0:n0}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="FoldCountColumn">
                         Fold Ct <Hyperlink Click="DoHyperlinkHelp" Tag="FoldCountColumn ">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
-                                    The count that have been folded into this node (by FoldPat or Fold %). 
+                                    The count that have been folded into this node (by FoldPat or Fold %).
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
@@ -224,9 +200,8 @@
             <!-- TODO promote ReadOnly to the table as a whole -->
             <WPFToolKit:DataGridTextColumn
                 x:Name="TimeHistogramColumn"
-                IsReadOnly="False"  
-                Binding="{Binding InclusiveMetricByTimeString}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                IsReadOnly="False"
+                Binding="{Binding InclusiveMetricByTimeString}"
                 ElementStyle="{StaticResource HistogramCell}"
                 EditingElementStyle="{StaticResource HistogramEditCell}">
                 <WPFToolKit:DataGridTextColumn.Header>
@@ -242,7 +217,7 @@
                                     _ = No samples<LineBreak/>
                                     . =  0% &lt; X &lt; .1%<LineBreak/>
                                     o =  .1% &lt; X &lt; 1%<LineBreak/>
-                                    0 =  1% &lt; X &lt; 10%<LineBreak/> 
+                                    0 =  1% &lt; X &lt; 10%<LineBreak/>
                                     1 = 10% &lt; X &lt; 20%<LineBreak/>
                                     2 = 20% &lt; X &lt; 30%<LineBreak/>
                                     ... <LineBreak/>
@@ -257,7 +232,7 @@
                                     z = -260% &lt; X &lt; -250%<LineBreak/>
                                     @ = X &lt; -260%<LineBreak/>
                                     <LineBreak/>
-                                    Selecting this text in the status window and use SetRange (Alt-R) to set range. 
+                                    Selecting this text in the status window and use SetRange (Alt-R) to set range.
                                 </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
@@ -265,9 +240,8 @@
             </WPFToolKit:DataGridTextColumn>
             <WPFToolKit:DataGridTextColumn
                 x:Name="ScenarioHistogramColumn"
-                IsReadOnly="False"  
-                Binding="{Binding InclusiveMetricByScenarioString}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                IsReadOnly="False"
+                Binding="{Binding InclusiveMetricByScenarioString}"
                 ElementStyle="{StaticResource HistogramCell}"
                 EditingElementStyle="{StaticResource HistogramEditCell}">
                 <WPFToolKit:DataGridTextColumn.Header>
@@ -282,7 +256,7 @@
                                     _ = No samples<LineBreak/>
                                     . =  0% &lt; X &lt; .1%<LineBreak/>
                                     o =  .1% &lt; X &lt; 1%<LineBreak/>
-                                    0 =  1% &lt; X &lt; 10%<LineBreak/> 
+                                    0 =  1% &lt; X &lt; 10%<LineBreak/>
                                     1 = 10% &lt; X &lt; 20%<LineBreak/>
                                     2 = 20% &lt; X &lt; 30%<LineBreak/>
                                     ... <LineBreak/>
@@ -303,11 +277,10 @@
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 x:Name="FirstTimeColumn"
                 IsReadOnly="True"
-                Binding="{Binding FirstTimeRelativeMSec, StringFormat={}{0:n3}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding FirstTimeRelativeMSec, StringFormat={}{0:n3}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="FirstColumn">
@@ -320,11 +293,10 @@
                     </TextBlock>
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
-            <WPFToolKit:DataGridTextColumn 
+            <WPFToolKit:DataGridTextColumn
                 x:Name="LastTimeColumn"
                 IsReadOnly="True"
-                Binding="{Binding LastTimeRelativeMSec, StringFormat={}{0:n3}}" 
-                HeaderStyle="{StaticResource CenterAlign}"
+                Binding="{Binding LastTimeRelativeMSec, StringFormat={}{0:n3}}"
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="LastColumn">
