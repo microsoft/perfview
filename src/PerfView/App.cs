@@ -31,8 +31,12 @@ namespace PerfView
         /// <summary>
         /// At the top most level, Main simply calls 'DoMain' ensuring that all error messages get to the user.  
         /// Main is also responsible for doing the 'install On First launch' logic that unpacks the EXE if needed.  
-        /// </summary>  
+        /// </summary>
+#if PERFVIEW_COLLECT
+        [System.MTAThreadAttribute()]  // Windows Server Nano does not support UIs and no STA Threads!
+#else
         [System.STAThreadAttribute()]
+#endif
         // [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static int Main(string[] args)
         {
