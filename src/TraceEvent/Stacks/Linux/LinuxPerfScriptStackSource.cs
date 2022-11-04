@@ -439,7 +439,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
             Frame currentFrame = frameIterator.Current;
 
-            if (currentFrame.Kind == FrameKind.ProcessFrame)
+            if (currentFrame != null && currentFrame.Kind == FrameKind.ProcessFrame)
             {
                 ProcessFrame processFrame = (ProcessFrame)currentFrame;
 
