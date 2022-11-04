@@ -274,6 +274,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             this.doThreadTime = doThreadTime;
             currentStackIndex = 0;
 
+            Interner.FrameNameLookup = new Func<StackSourceFrameIndex, bool, string>((frameIndex, fullModule) =>
+            {
+                // The frame index is reliably off by one in this lookup.
+                return processNameBuilder.GetProcessName(frameIndex + 1);
+            });
+
             ZipArchive archive;
             using (Stream stream = GetPerfScriptStream(path, out archive))
             {
@@ -390,6 +396,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         protected readonly FastStream masterSource;
         protected readonly bool doThreadTime;
         protected readonly int BufferSize = 262144;
+        internal readonly LinuxPerfScriptProcessNameBuilder processNameBuilder = new LinuxPerfScriptProcessNameBuilder();
 
         #region private
         private void InternAllLinuxEvents(Stream stream)
@@ -430,7 +437,25 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 frameDisplayName = frameIterator.Current.DisplayName;
             }
 
-            frameIndex = InternFrame(frameDisplayName);
+            Frame currentFrame = frameIterator.Current;
+
+            if (currentFrame != null && currentFrame.Kind == FrameKind.ProcessFrame)
+            {
+                ProcessFrame processFrame = (ProcessFrame)currentFrame;
+
+                // Intern a name-agnostic frame so that all process frames for a PID intern to the same index.
+                frameIndex = InternFrame($"Process {processFrame.ID}");
+
+                // Re-intern the frame as a derived frame, so that on resolution, FrameNameLookup() gets called.
+                frameIndex = Interner.FrameIntern(frameIndex, string.Empty);
+
+                // Map the frameIndex to the candidate process name.  This gets consumed in FrameNameLookup().
+                processNameBuilder.SaveProcessName(frameIndex, processFrame.Name, processFrame.ID);
+            }
+            else
+            {
+                frameIndex = InternFrame(frameDisplayName);
+            }
 
             stackIndex = InternCallerStack(frameIndex, InternFrames(frameIterator, stackIndex, processID));
 
