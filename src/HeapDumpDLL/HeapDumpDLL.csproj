@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462</TargetFrameworks>
+    <TargetFrameworks>net462;netstandard20</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.HeapDump</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.HeapDump</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -11,6 +11,7 @@
     <Company>Microsoft</Company>
     <Description>General Utility library</Description>
     <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>$(HeapDumpDllVersion)</Version>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -34,17 +35,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\HeapDump\*.cs" />
+    <Compile Include="..\HeapDump\GCHeapDump.cs" />
     <Compile Include="..\HeapDump\Utilities\*.cs" />
-    <Compile Include="..\HeapDump\Debugger\**\*.cs" />
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
     <Compile Include="..\PerfView\PerfViewLogger.cs" />
-    <Compile Include="..\PerfView\Triggers.cs" />
     <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
     <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
+  </ItemGroup>
+
+  <!-- Only include these files in the net462 version because there are some non-netstandard dependencies. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <Compile Include="..\HeapDump\CollectionMetadata.cs" />
+    <Compile Include="..\HeapDump\Debugger\**\*.cs" />
+    <Compile Include="..\HeapDump\GCHeapDumper.cs" />
+    <Compile Include="..\HeapDump\HeapDumpException.cs" />
+    <Compile Include="..\HeapDump\HeapDumpHResult.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
   </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->

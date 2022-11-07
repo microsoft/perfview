@@ -10,6 +10,7 @@
     <Company>Microsoft</Company>
     <Description>Utility library</Description>
     <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>$(UtilitiesVersion)</Version>
   </PropertyGroup>
 
   <PropertyGroup>
