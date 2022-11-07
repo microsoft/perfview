@@ -23,8 +23,11 @@
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
     <FastSerializationVersion>3.0.5</FastSerializationVersion>
+    <HeapDumpDllVersion>3.0.5</HeapDumpDllVersion>
+    <MemoryGraphVersion>3.0.5</MemoryGraphVersion>
     <PerfViewVersion>3.0.5</PerfViewVersion>
     <TraceEventVersion>3.0.5</TraceEventVersion>
+    <UtilitiesVersion>3.0.5</UtilitiesVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
