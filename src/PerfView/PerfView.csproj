@@ -389,7 +389,14 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'" Include="$(MicrosoftDiagnosticsRuntimePath)">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
+      <Link>x86\Microsoft.Diagnostics.Runtime.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
