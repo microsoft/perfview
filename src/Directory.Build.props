@@ -36,6 +36,12 @@
     <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.24</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
     <MicrosoftDiagnosticsRuntimeVersion>2.2.343001</MicrosoftDiagnosticsRuntimeVersion>
+    <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
+    <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
+    <!--
+    <MicrosoftDiagnosticsRuntimeVersion>local</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimePath>$(MSBuildThisFileDirectory)\..\..\clrmd\artifacts\bin\Microsoft.Diagnostics.Runtime\$(Configuration)\netstandard2.0\Microsoft.Diagnostics.Runtime.dll</MicrosoftDiagnosticsRuntimePath>
+    -->
     <XunitVersion>2.4.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
   </PropertyGroup>

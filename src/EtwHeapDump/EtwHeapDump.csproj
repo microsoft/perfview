@@ -28,7 +28,16 @@
     </FilesToSign>
 
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <Reference Include="Microsoft.Diagnostics.Runtime">
+      <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

@@ -27,13 +27,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
 
     <!-- These are required for ClrMD and are here so that we can embed the assemblies into PerfView. -->
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
+    <Reference Include="Microsoft.Diagnostics.Runtime">
+      <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
