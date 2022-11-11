@@ -1456,6 +1456,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 HLSLType
             };
 
+            // See https://learn.microsoft.com/visualstudio/debugger/debug-interface-access/basictype
             private enum BasicType
             {
                 btNoType = 0,
