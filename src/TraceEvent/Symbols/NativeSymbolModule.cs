@@ -1408,7 +1408,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                             case BasicType.btFloat:
                                 return symbol.length == 4 ? "float" : "double";
                             default:
-                                return BaseTypes[symbol.baseType];
+                                return BaseTypes.Length > symbol.baseType ? BaseTypes[symbol.baseType] : $"base type {symbol.baseType}";
                         }
                 }
 
@@ -1456,6 +1456,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 HLSLType
             };
 
+            // See https://learn.microsoft.com/visualstudio/debugger/debug-interface-access/basictype
             private enum BasicType
             {
                 btNoType = 0,
@@ -1478,42 +1479,46 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 btHresult = 31,
                 btChar16 = 32,  // char16_t
                 btChar32 = 33,  // char32_t
+                btChar8 = 34,   // char8_t
             };
 
             private static readonly string[] BaseTypes = new[]
             {
-                 "<NoType>",                         // btNoType = 0,
-                 "void",                             // btVoid = 1,
-                 "char",                             // btChar = 2,
-                 "wchar_t",                          // btWChar = 3,
-                 "signed char",
-                 "unsigned char",
-                 "int",                              // btInt = 6,
-                 "unsigned int",                     // btUInt = 7,
-                 "float",                            // btFloat = 8,
-                 "<BCD>",                            // btBCD = 9,
-                 "bool",                             // btBool = 10,
-                 "short",
-                 "unsigned short",
-                 "long",                             // btLong = 13,
-                 "unsigned long",                    // btULong = 14,
-                 "__int8",
-                 "__int16",
-                 "__int32",
-                 "__int64",
-                 "__int128",
-                 "unsigned __int8",
-                 "unsigned __int16",
-                 "unsigned __int32",
-                 "unsigned __int64",
-                 "unsigned __int128",
-                 "<currency>",                       // btCurrency = 25,
-                 "<date>",                           // btDate = 26,
-                 "VARIANT",                          // btVariant = 27,
-                 "<complex>",                        // btComplex = 28,
-                 "<bit>",                            // btBit = 29,
-                 "BSTR",                             // btBSTR = 30,
-                 "HRESULT"                           // btHresult = 31
+                "<NoType>",             // btNoType = 0,
+                "void",                 // btVoid = 1,
+                "char",                 // btChar = 2,
+                "wchar_t",              // btWChar = 3,
+                "signed char",
+                "unsigned char",
+                "int",                  // btInt = 6,
+                "unsigned int",         // btUInt = 7,
+                "float",                // btFloat = 8,
+                "<BCD>",                // btBCD = 9,
+                "bool",                 // btBool = 10,
+                "short",
+                "unsigned short",
+                "long",                 // btLong = 13,
+                "unsigned long",        // btULong = 14,
+                "__int8",
+                "__int16",
+                "__int32",
+                "__int64",
+                "__int128",
+                "unsigned __int8",
+                "unsigned __int16",
+                "unsigned __int32",
+                "unsigned __int64",
+                "unsigned __int128",
+                "<currency>",           // btCurrency = 25,
+                "<date>",               // btDate = 26,
+                "VARIANT",              // btVariant = 27,
+                "<complex>",            // btComplex = 28,
+                "<bit>",                // btBit = 29,
+                "BSTR",                 // btBSTR = 30,
+                "HRESULT",              // btHresult = 31,
+                "char16_t",             // btChar16 = 32,
+                "char32_t",             // btChar32 = 33,
+                "char8_t",              // btChar8 = 34
             };
         }
 
