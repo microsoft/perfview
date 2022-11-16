@@ -255,21 +255,23 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal enum TRACE_INFO_CLASS
         {
-            TraceGuidQueryList,                     // Get Guids of all providers registered on the computer
-            TraceGuidQueryInfo,                     // Query information that each session a particular provider.  
-            TraceGuidQueryProcess,                  // Query an array of GUIDs of the providers that registered themselves in the same process as the calling process
-            TraceStackTracingInfo,                  // This is the last one supported on Win7
+            TraceGuidQueryList = 0,                     // Get Guids of all providers registered on the computer
+            TraceGuidQueryInfo = 1,                     // Query information that each session a particular provider.  
+            TraceGuidQueryProcess = 2,                  // Query an array of GUIDs of the providers that registered themselves in the same process as the calling process
+            TraceStackTracingInfo = 3,                  // This is the last one supported on Win7
             // Win 8 
-            TraceSystemTraceEnableFlagsInfo,        // Turns on kernel event logger
-            TraceSampledProfileIntervalInfo,        // TRACE_PROFILE_INTERVAL (allows you to set the sampling interval) (Set, Get)
+            TraceSystemTraceEnableFlagsInfo = 4,        // Turns on kernel event logger
+            TraceSampledProfileIntervalInfo = 5,        // TRACE_PROFILE_INTERVAL (allows you to set the sampling interval) (Set, Get)
 
-            TraceProfileSourceConfigInfo,           // int array, turns on all listed sources.  (Set)
-            TraceProfileSourceListInfo,             // PROFILE_SOURCE_INFO linked list (converts names to source numbers) (Get)
+            TraceProfileSourceConfigInfo = 6,           // int array, turns on all listed sources.  (Set)
+            TraceProfileSourceListInfo = 7,             // PROFILE_SOURCE_INFO linked list (converts names to source numbers) (Get)
 
             // Used to collect extra info on other events (currently only context switch).  
-            TracePmcEventListInfo,                  // CLASSIC_EVENT_ID array (Works like TraceStackTracingInfo)
-            TracePmcCounterListInfo,                // int array
-            MaxTraceSetInfoClass
+            TracePmcEventListInfo = 8,                  // CLASSIC_EVENT_ID array (Works like TraceStackTracingInfo)
+            TracePmcCounterListInfo = 9,                // int array
+
+            TraceLbrConfigurationInfo = 20,             // Filter flags
+            TraceLbrEventListInfo = 21,                 // int array
         };
 
         internal struct CLASSIC_EVENT_ID
