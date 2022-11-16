@@ -56,11 +56,11 @@ to download Visual Studio 2022 Community Edition if you don't already have Visua
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
 (The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
 If you downloaded the Visual Studio 2022 Community Edition, it does not install the C++ compilation tools by default and
-it also does not include the Windows 10.0.17763.0 SDK by default (we build PerfView so it can run on Win8 as well as Win10).  Thus
+it also does not include the Windows 10 SDK by default (we build PerfView so it can run on Win8 as well as Win10).  Thus
 when you install Visual Studio 2022 check the 'Desktop Development with C++' option and then look the right pane to see
-the optional sub-components, and make sure the Windws 10.0.17763.0 SDK is also checked (it typically is not).   If you have
-already installed Visual Studio 2022, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2022, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 10.0.17763.0 SDK. 
-If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 10.0.17763.0 SDK.  See 
+the optional sub-components, and make sure the Windows 10 SDK is also checked (it typically is not).  Installing the latest version should be OK.   If you have
+already installed Visual Studio 2022, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2022, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 10 SDK. 
+If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 10.0 SDK.  See 
 the troubleshooting sections below for more if you need it.  
 
 The .NET Core SDK should be part of the default Visual Studio 2022 installation now, but if not it can be installed easily from [here](https://www.microsoft.com/net/download/windows).
