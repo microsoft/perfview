@@ -64,7 +64,7 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all" />
 
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

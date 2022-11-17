@@ -42,6 +42,7 @@
     <MicrosoftDiagnosticsRuntimeVersion>local</MicrosoftDiagnosticsRuntimeVersion>
     <MicrosoftDiagnosticsRuntimePath>$(MSBuildThisFileDirectory)\..\..\clrmd\artifacts\bin\Microsoft.Diagnostics.Runtime\$(Configuration)\netstandard2.0\Microsoft.Diagnostics.Runtime.dll</MicrosoftDiagnosticsRuntimePath>
     -->
+    <MicrosoftSourceLinkGitHubVersion>1.1.1</MicrosoftSourceLinkGitHubVersion>
     <XunitVersion>2.4.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
   </PropertyGroup>
