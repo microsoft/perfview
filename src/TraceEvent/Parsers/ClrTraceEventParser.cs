@@ -193,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
-            Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
+            Default = GC | Type | GCHeapSurvivalAndMovement | Loader | Jit | NGen | SupressNGen
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
                          | ThreadTransfer | GCHeapAndTypeNames | Codesymbols | Compilation,
 
