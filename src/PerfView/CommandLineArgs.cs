@@ -745,7 +745,7 @@ namespace PerfView
                 switch (entry.ToLowerInvariant())
                 {
                     case "stackmode": flags |= LbrFilterFlags.CallstackEnable; break;
-                    case "conditionalbranches": flags |= LbrFilterFlags.FilterNearRelCall; break;
+                    case "conditionalbranches": flags |= LbrFilterFlags.FilterJcc; break;
                     case "nearrelativecalls": flags |= LbrFilterFlags.FilterNearRelCall; break;
                     case "nearindirectcalls": flags |= LbrFilterFlags.FilterNearIndCall; break;
                     case "nearreturns": flags |= LbrFilterFlags.FilterNearRet; break;
