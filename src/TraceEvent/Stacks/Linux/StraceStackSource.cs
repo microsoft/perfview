@@ -20,6 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         private const char LatencyEndChar = '>';
         private const char ArgumentsStartChar = '(';
         private const char ArgumentsEndChar = ')';
+        private const char ReturnCodePrefixChar = '=';
 
         private double _currentTimeStampInMs = 0;
         private StraceRecord _currentRecord = new StraceRecord();
@@ -143,9 +144,26 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             string latencyStr = record.Substring(startIndex + 1, endIndex - startIndex - 1);
             double latency = double.Parse(latencyStr);
 
+            // Walk backwards to get the return code.
+            endIndex = startIndex;
+            while (record[startIndex] != ReturnCodePrefixChar)
+            {
+                startIndex--;
+            }
+
+            string returnCode = record.Substring(startIndex + 1, endIndex - startIndex - 1);
+            returnCode = returnCode.Trim();
+
+            // Capture the arguments.
+            string argumentPayload = record.Substring(cur, startIndex - cur - 1);
+            argumentPayload = argumentPayload.Trim();
+            Debug.Assert(argumentPayload[0] == ArgumentsStartChar && argumentPayload[argumentPayload.Length - 1] == ArgumentsEndChar);
+
             // Update the current record.
-            _currentRecord.TimeStampRelativeMs = _currentTimeStampInMs;
             _currentRecord.SyscallName = name;
+            _currentRecord.ArgumentPayload = argumentPayload;
+            _currentRecord.ReturnCode = returnCode;
+            _currentRecord.TimeStampRelativeMs = _currentTimeStampInMs;
             _currentRecord.LatencyInMilliseconds = latency * 1000;
 
             DispatchRecord(_currentRecord);
@@ -153,8 +171,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         private void DispatchRecord(StraceRecord record)
         {
-            StackSourceFrameIndex frameIndex = Interner.FrameIntern($"Syscall: {record.SyscallName}");
+            StackSourceFrameIndex frameIndex = Interner.FrameIntern($"Return Code: {record.ReturnCode}");
             _sample.StackIndex = Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
+            frameIndex = Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
+            _sample.StackIndex = Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            frameIndex = Interner.FrameIntern($"Syscall: {record.SyscallName}");
+            _sample.StackIndex = Interner.CallStackIntern(frameIndex, _sample.StackIndex);
             _sample.TimeRelativeMSec = record.TimeStampRelativeMs;
             _sample.Metric = (float) record.LatencyInMilliseconds;
             AddSample(_sample);
@@ -163,8 +185,10 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
     internal sealed class StraceRecord
     {
-        public double TimeStampRelativeMs { get; set; }
         public string SyscallName { get; set; }
+        public string ArgumentPayload { get; set; }
+        public string ReturnCode { get; set; }
+        public double TimeStampRelativeMs { get; set; }
         public double LatencyInMilliseconds { get; set; }
     }
 }
