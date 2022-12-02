@@ -52,7 +52,15 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
                 if (ContainsEndOfRecord(line))
                 {
-                    ProcessRecord(recordBuilder);
+                    try
+                    {
+                        ProcessRecord(recordBuilder);
+                    }
+                    catch
+                    {
+                        // Skip and allow for processing of the next record.
+                    }
+
                     recordBuilder.Clear();
                 }
             }
@@ -89,6 +97,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         {
             int cur = 0;
             string record = recordBuilder.ToString();
+
+            // Skip lines that start with "strace:"
+            if (record.StartsWith("strace:"))
+            {
+                return;
+            }
 
             // Skip whitespace at the beginning of the record.
             while (cur < record.Length && char.IsWhiteSpace(record[cur]))
