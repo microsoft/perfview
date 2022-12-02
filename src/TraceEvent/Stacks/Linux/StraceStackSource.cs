@@ -214,6 +214,17 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 case "lseek":
                 case "pread64":
                 case "access":
+                case "fstat":
+                case "getdents64":
+                case "write":
+                case "flock":
+                case "fadvise64":
+                case "ioctl":
+                case "lstat":
+                case "readlink":
+                case "unlink":
+                case "mknod":
+                case "stat":
                     return _ioHandler;
                 default:
                     return _defaultHandler;
@@ -307,6 +318,39 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     break;
                 case "access":
                     HandleAccessSyscall(record);
+                    break;
+                case "fstat":
+                    HandleFstatSyscall(record);
+                    break;
+                case "getdents64":
+                    HandleGetdents64Syscall(record);
+                    break;
+                case "write":
+                    HandleWriteSyscall(record);
+                    break;
+                case "flock":
+                    HandleFlockSyscall(record);
+                    break;
+                case "fadvise64":
+                    HandleFadvise64Syscall(record);
+                    break;
+                case "ioctl":
+                    HandleIoctlSyscall(record);
+                    break;
+                case "lstat":
+                    HandleLstatSyscall(record);
+                    break;
+                case "readlink":
+                    HandleReadlinkSyscall(record);
+                    break;
+                case "unlink":
+                    HandleUnlinkSyscall(record);
+                    break;
+                case "mknod":
+                    HandleMknodSyscall(record);
+                    break;
+                case "stat":
+                    HandleStatSyscall(record);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(record.SyscallName));
@@ -421,6 +465,122 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         }
 
         private void HandleAccessSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            int indexOfArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string filePath = record.ArgumentPayload.Substring(1, indexOfArgumentSeparator - 1 - 1); // Strip off the comma and the surrounding quotes.
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleFstatSyscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleGetdents64Syscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleWriteSyscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleFlockSyscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleFadvise64Syscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleIoctlSyscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleLstatSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            int indexOfArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string filePath = record.ArgumentPayload.Substring(1, indexOfArgumentSeparator - 1 - 1); // Strip off the comma and the surrounding quotes.
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleReadlinkSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            int indexOfArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string filePath = record.ArgumentPayload.Substring(1, indexOfArgumentSeparator - 1 - 1); // Strip off the comma and the surrounding quotes.
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleUnlinkSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            string filePath = record.ArgumentPayload.Substring(1, record.ArgumentPayload.Length - 2); // Strip off the comma and the surrounding quotes.
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleMknodSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            int indexOfArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string filePath = record.ArgumentPayload.Substring(1, indexOfArgumentSeparator - 1 - 1); // Strip off the comma and the surrounding quotes.
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleStatSyscall(StraceRecord record)
         {
             // Get the file path.
             int indexOfArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
