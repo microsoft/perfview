@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     using System.Collections.Generic;
 
     /* Parsers defined in this file */
-    // ClrTraceEventParser, ClrRundownTraceEventParser, ClrStressTraceEventParser 
+    // ClrTraceEventParser, ClrRundownTraceEventParser, ClrStressTraceEventParser
     /* ClrPrivateTraceEventParser  #ClrPrivateProvider */
     // [SecuritySafeCritical]
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
@@ -27,7 +27,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public static readonly string ProviderName = "Microsoft-Windows-DotNETRuntime";
         public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xe13c0d23), unchecked((short)0xccbc), unchecked((short)0x4e12), 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4);
 
-        // Project N and the Desktop have separate guids.  
+        // Project N and the Desktop have separate guids.
         public static readonly Guid NativeProviderGuid = new Guid(0x47c3ba0c, 0x77f1, 0x4eb0, 0x8d, 0x4d, 0xae, 0xf4, 0x47, 0xf1, 0x6a, 0x85);
 
         /// <summary>
@@ -37,9 +37,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public enum Keywords : long
         {
             None = 0,
-            All = ~StartEnumeration,        // All does not include start-enumeration.  It just is not that useful.  
+            All = ~StartEnumeration,        // All does not include start-enumeration.  It just is not that useful.
             /// <summary>
-            /// Logging when garbage collections and finalization happen. 
+            /// Logging when garbage collections and finalization happen.
             /// </summary>
             GC = 0x1,
             /// <summary>
@@ -48,11 +48,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             GCHandle = 0x2,
             Binder = 0x4,
             /// <summary>
-            /// Logging when modules actually get loaded and unloaded. 
+            /// Logging when modules actually get loaded and unloaded.
             /// </summary>
             Loader = 0x8,
             /// <summary>
-            /// Logging when Just in time (JIT) compilation occurs. 
+            /// Logging when Just in time (JIT) compilation occurs.
             /// </summary>
             Jit = 0x10,
             /// <summary>
@@ -76,12 +76,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             AppDomainResourceManagement = 0x800,
             /// <summary>
-            /// Logging of the internal workings of the Just In Time compiler.  This is fairly verbose.  
-            /// It details decisions about interesting optimization (like inlining and tail call) 
+            /// Logging of the internal workings of the Just In Time compiler.  This is fairly verbose.
+            /// It details decisions about interesting optimization (like inlining and tail call)
             /// </summary>
             JitTracing = 0x1000,
             /// <summary>
-            /// Log information about code thunks that transition between managed and unmanaged code. 
+            /// Log information about code thunks that transition between managed and unmanaged code.
             /// </summary>
             Interop = 0x2000,
             /// <summary>
@@ -89,15 +89,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Contention = 0x4000,
             /// <summary>
-            /// Log exception processing.  
+            /// Log exception processing.
             /// </summary>
             Exception = 0x8000,
             /// <summary>
-            /// Log events associated with the threadpool, and other threading events.  
+            /// Log events associated with the threadpool, and other threading events.
             /// </summary>
             Threading = 0x10000,
             /// <summary>
-            /// Dump the native to IL mapping of any method that is JIT compiled.  (V4.5 runtimes and above).  
+            /// Dump the native to IL mapping of any method that is JIT compiled.  (V4.5 runtimes and above).
             /// </summary>
             JittedMethodILToNativeMap = 0x20000,
             /// <summary>
@@ -113,17 +113,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             GCHeapDump = 0x100000,
             /// <summary>
-            /// Enables allocation sampling with the 'fast'.  Sample to limit to 100 allocations per second per type.  
+            /// Enables allocation sampling with the 'fast'.  Sample to limit to 100 allocations per second per type.
             /// This is good for most detailed performance investigations.   Note that this DOES update the allocation
-            /// path to be slower and only works if the process start with this on. 
+            /// path to be slower and only works if the process start with this on.
             /// </summary>
             GCSampledObjectAllocationHigh = 0x200000,
             /// <summary>
-            /// Enables events associate with object movement or survival with each GC.  
+            /// Enables events associate with object movement or survival with each GC.
             /// </summary>
             GCHeapSurvivalAndMovement = 0x400000,
             /// <summary>
-            /// Triggers a GC.  Can pass a 64 bit value that will be logged with the GC Start event so you know which GC you actually triggered.  
+            /// Triggers a GC.  Can pass a 64 bit value that will be logged with the GC Start event so you know which GC you actually triggered.
             /// </summary>
             GCHeapCollect = 0x800000,
             /// <summary>
@@ -131,20 +131,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             GCHeapAndTypeNames = 0x1000000,
             /// <summary>
-            /// Enables allocation sampling with the 'slow' rate, Sample to limit to 5 allocations per second per type.  
+            /// Enables allocation sampling with the 'slow' rate, Sample to limit to 5 allocations per second per type.
             /// This is reasonable for monitoring.    Note that this DOES update the allocation path to be slower
-            /// and only works if the process start with this on.  
+            /// and only works if the process start with this on.
             /// </summary>
             GCSampledObjectAllocationLow = 0x2000000,
             /// <summary>
             /// Turns on capturing the stack and type of object allocation made by the .NET Runtime.   This is only
             /// supported after V4.5.3 (Late 2014)   This can be very verbose and you should seriously using  GCSampledObjectAllocationHigh
-            /// instead (and GCSampledObjectAllocationLow for production scenarios).  
+            /// instead (and GCSampledObjectAllocationLow for production scenarios).
             /// </summary>
             GCAllObjectAllocation = GCSampledObjectAllocationHigh | GCSampledObjectAllocationLow,
             /// <summary>
-            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
-            /// bit and also does not have NGEN PDBS).  
+            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this
+            /// bit and also does not have NGEN PDBS).
             /// </summary>
             SupressNGen = 0x40000,
             /// <summary>
@@ -164,11 +164,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Debugger = 0x100000000,
             /// <summary>
-            /// Events intended for monitoring on an ongoing basis.  
+            /// Events intended for monitoring on an ongoing basis.
             /// </summary>
             Monitoring = 0x200000000,
             /// <summary>
-            /// Events that will dump PDBs of dynamically generated assemblies to the ETW stream.  
+            /// Events that will dump PDBs of dynamically generated assemblies to the ETW stream.
             /// </summary>
             Codesymbols = 0x400000000,
             /// <summary>
@@ -191,26 +191,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             TypeDiagnostic = 0x8000000000,
 
             /// <summary>
-            /// Recommend default flags (good compromise on verbosity).  
+            /// Recommend default flags (good compromise on verbosity).
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
                          | ThreadTransfer | GCHeapAndTypeNames | Codesymbols | Compilation,
 
             /// <summary>
-            /// What is needed to get symbols for JIT compiled code.  
+            /// What is needed to get symbols for JIT compiled code.
             /// </summary>
             JITSymbols = Jit | StopEnumeration | JittedMethodILToNativeMap | SupressNGen | Loader,
 
             /// <summary>
-            /// This provides the flags commonly needed to take a heap .NET Heap snapshot with ETW.  
+            /// This provides the flags commonly needed to take a heap .NET Heap snapshot with ETW.
             /// </summary>
             GCHeapSnapshot = GC | GCHeapCollect | GCHeapDump | GCHeapAndTypeNames | Type,
         };
         public ClrTraceEventParser(TraceEventSource source) : base(source)
         {
 
-            // Subscribe to the GCBulkType events and remember the TypeID -> TypeName mapping. 
+            // Subscribe to the GCBulkType events and remember the TypeID -> TypeName mapping.
             ClrTraceEventParserState state = State;
             AddCallbackForEvents<GCBulkTypeTraceData>(delegate (GCBulkTypeTraceData data)
             {
@@ -220,7 +220,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     string typeName = value.TypeName;
                     // The GCBulkType events are logged after the event that needed it.  It really
                     // should be before, but we compensate by setting the startTime to 0
-                    // Ideally the CLR logs the types before they are used.  
+                    // Ideally the CLR logs the types before they are used.
                     state.SetTypeIDToName(data.ProcessID, value.TypeID, 0, typeName);
                 }
             });
@@ -231,7 +231,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Fetch the state object associated with this parser and cast it to
         /// the ClrTraceEventParserState type.   This state object contains any
         /// information that you need from one event to another to decode events.
-        /// (typically ID->Name tables).  
+        /// (typically ID->Name tables).
         /// </summary>
         internal ClrTraceEventParserState State
         {
@@ -1987,7 +1987,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 12, JitInstrumentationDataTaskGuid);
             }
         }
-        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointExecutionCheckpoint {
+        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointExecutionCheckpoint
+        {
             add
             {
                 RegisterTemplate(ExecutionCheckpointTemplate(value));
@@ -2241,7 +2242,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[104] = ExceptionStopTemplate(null);
                 templates[105] = CodeSymbolsStartTemplate(null);
 
-                // Some more old style 
+                // Some more old style
                 templates[106] = new ThreadStartWorkTraceData(null, 70, 24, "Thread", ThreadTaskGuid, 11, "Creating", ProviderGuid, ProviderName);
                 templates[107] = new ThreadStartWorkTraceData(null, 71, 24, "Thread", ThreadTaskGuid, 12, "Running", ProviderGuid, ProviderName);
                 templates[108] = new ThreadPoolWorkingThreadCountTraceData(null, 60, 22, "ThreadPoolWorkingThreadCount", ThreadPoolWorkingThreadCountTaskGuid, 1, "Start", ProviderGuid, ProviderName);
@@ -2270,10 +2271,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[129] = TieredCompilationBackgroundJitStartTemplate(null);
                 templates[130] = TieredCompilationBackgroundJitStopTemplate(null);
 
-                templates[131]  = R2RGetEntryPointStartTemplate(null);
-                templates[132]  = TypeLoadStartTemplate(null);
-                templates[133]  = TypeLoadStopTemplate(null);
-                templates[134]  = MethodMemoryAllocatedForJitCodeTemplate(null);
+                templates[131] = R2RGetEntryPointStartTemplate(null);
+                templates[132] = TypeLoadStartTemplate(null);
+                templates[133] = TypeLoadStopTemplate(null);
+                templates[134] = MethodMemoryAllocatedForJitCodeTemplate(null);
                 templates[135] = GenAwareBeginTemplate(null);
                 templates[136] = GenAwareEndTemplate(null);
                 templates[137] = JitInstrumentationDataTemplate(null);
@@ -2296,9 +2297,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // The eventsToObserve delegate could filter to select only one of them, but if
                     // it doesn't then select one on a first-come-first-served basis
                     bool match = false;
-                    foreach(var prevTemplate in enumeratedTemplates)
+                    foreach (var prevTemplate in enumeratedTemplates)
                     {
-                        if(prevTemplate.Matches(template))
+                        if (prevTemplate.Matches(template))
                         {
                             match = true;
                             break;
@@ -2354,17 +2355,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
         private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
 
-        // TODO remove if project N's Guids are harmonized with the desktop 
+        // TODO remove if project N's Guids are harmonized with the desktop
         private void RegisterTemplate(TraceEvent template)
         {
-            Debug.Assert(template.ProviderGuid == ClrTraceEventParser.ProviderGuid);        // It is the desktop GUID 
+            Debug.Assert(template.ProviderGuid == ClrTraceEventParser.ProviderGuid);        // It is the desktop GUID
             var projectNTemplate = template.Clone();
             projectNTemplate.providerGuid = ClrTraceEventParser.NativeProviderGuid;
 
             source.RegisterEventTemplate(template);
             source.RegisterEventTemplate(projectNTemplate);
 
-            // TODO FIX NOW also have to unregister the project N templates.  
+            // TODO FIX NOW also have to unregister the project N templates.
         }
 
         #endregion
@@ -2679,7 +2680,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength < 8));       // FIXed manually to be < 8 
+            Debug.Assert(!(Version == 0 && EventDataLength < 8));       // FIXed manually to be < 8
             Debug.Assert(!(Version == 1 && EventDataLength != 18));
             Debug.Assert(!(Version > 1 && EventDataLength < 18));
         }
@@ -2874,7 +2875,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3 + TotalPromotedSize4; } }
         /// <summary>
         /// Note that this field is derived from the TotalPromotedSize* fields.  If nothing was promoted, it is possible
-        /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
+        /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.
         /// </summary>
         public int Depth
         {
@@ -3184,7 +3185,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength < 2));       // HAND_MODIFIED 
+            Debug.Assert(!(Version == 0 && EventDataLength < 2));       // HAND_MODIFIED
             Debug.Assert(!(Version == 1 && EventDataLength != 10));
             Debug.Assert(!(Version > 1 && EventDataLength < 10));
         }
@@ -3399,7 +3400,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         public long GetAllocAmount(ref bool seenBadAllocTick)
         {
-            // We get bad values in old runtimes.   once we see a bad value 'fix' all values. 
+            // We get bad values in old runtimes.   once we see a bad value 'fix' all values.
             // TODO warn the user...
             long amount = AllocationAmount64; // AllocationAmount is truncated for allocation larger than 2Gb, use 64-bit value if available.
 
@@ -3415,7 +3416,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
             if (seenBadAllocTick)
             {
-                // Clap this between 90K and 110K (for small objs) and 90K to 2Meg (for large obects).  
+                // Clap this between 90K and 110K (for small objs) and 90K to 2Meg (for large obects).
                 amount = Math.Max(amount, 90 * OneKB);
                 amount = Math.Min(amount, (AllocationKind == GCAllocationKind.Small) ? 110 * OneKB : 2 * OneMB);
             }
@@ -3707,8 +3708,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(4); } }
 
         /// <summary>
-        /// Returns the edge at the given zero-based index (index less than Count).   The returned BulkTypeValues 
-        /// points the the data in GCBulkRootEdgeTraceData so it cannot live beyond that lifetime.  
+        /// Returns the edge at the given zero-based index (index less than Count).   The returned BulkTypeValues
+        /// points the the data in GCBulkRootEdgeTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkTypeValues Values(int index) { return new GCBulkTypeValues(this, OffsetForIndexInValuesArray(index)); }
 
@@ -3731,9 +3732,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            m_lastIdx = 0xFFFF; // Invalidate the cache     
+            m_lastIdx = 0xFFFF; // Invalidate the cache
             Debug.Assert(!(Version == 0 && EventDataLength != OffsetForIndexInValuesArray(Count)));
-            Debug.Assert(Count == 0 || Values(Count - 1).TypeParameterCount < 256);     // This just makes the asserts in the BulkType kick in 
+            Debug.Assert(Count == 0 || Values(Count - 1).TypeParameterCount < 256);     // This just makes the asserts in the BulkType kick in
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -3809,12 +3810,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(6 <= offset);
             while (idx < targetIdx)
             {
-                // Get to to type parameter count 
+                // Get to to type parameter count
                 int typeParamCountOffset = SkipUnicodeString(offset + 25);
                 // fetch it
                 int typeParamCount = GetInt32At(typeParamCountOffset);
                 Debug.Assert(typeParamCount < 256);
-                // skip the count and the type parameters.  
+                // skip the count and the type parameters.
                 offset = typeParamCount * 8 + 4 + typeParamCountOffset;
                 idx++;
             }
@@ -3835,7 +3836,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the BulkTypeTraceData.  It can only be used as long as
-    /// the BulkTypeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the BulkTypeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkTypeValues
     {
@@ -3873,7 +3874,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 }
 
                 int ret = m_data.GetInt32At(m_typeParamCountOffset);
-                Debug.Assert(0 <= ret && ret <= 128);           // Not really true, but it deserves investigation.  
+                Debug.Assert(0 <= ret && ret <= 128);           // Not really true, but it deserves investigation.
                 return ret;
             }
         }
@@ -3911,7 +3912,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             m_data = data; m_baseOffset = (ushort)baseOffset; m_typeParamCountOffset = 0;
             Debug.Assert(CorElementType < 64);
-            Debug.Assert(0 <= CorElementType && CorElementType <= 128);           // Sanity checks.  Not really true, but it deserves investigation.  
+            Debug.Assert(0 <= CorElementType && CorElementType <= 128);           // Sanity checks.  Not really true, but it deserves investigation.
             Debug.Assert(0 <= TypeParameterCount && TypeParameterCount < 128);
             Debug.Assert((TypeID & 0xFF00000000000001L) == 0);
             Debug.Assert((ModuleID & 0xFF00000000000003L) == 0);
@@ -3932,7 +3933,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         /// <summary>
         /// Returns the edge at the given zero-based index (index less than Count).   The returned GCBulkRootEdgeValues
-        /// points the the data in GCBulkRootEdgeTraceData so it cannot live beyond that lifetime.  
+        /// points the the data in GCBulkRootEdgeTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkRootEdgeValues Values(int index) { return new GCBulkRootEdgeValues(this, 10 + index * HostOffset(13, 2)); }
         #region Private
@@ -3952,7 +3953,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            // The != 12 was added because I think we accidentally used the same event ID for a update of the runtime. 
+            // The != 12 was added because I think we accidentally used the same event ID for a update of the runtime.
             Debug.Assert(!(Version == 0 && EventDataLength != (Count * HostOffset(13, 2)) + 10 && EventDataLength != 12));
             Debug.Assert(!(Version > 0 && EventDataLength < (Count * HostOffset(13, 2)) + 10));
         }
@@ -4007,7 +4008,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkEdgeTraceData.  It can only be used as long as
-    /// the GCBulkEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkRootEdgeValues
     {
@@ -4052,8 +4053,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(8); } }
 
         /// <summary>
-        /// Returns the range at the given zero-based index (index less than Count).   The returned GCBulkRootConditionalWeakTableElementEdgeValues 
-        /// points the the data in GCBulkRootConditionalWeakTableElementEdgeTraceData so it cannot live beyond that lifetime.  
+        /// Returns the range at the given zero-based index (index less than Count).   The returned GCBulkRootConditionalWeakTableElementEdgeValues
+        /// points the the data in GCBulkRootConditionalWeakTableElementEdgeTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkRootConditionalWeakTableElementEdgeValues Values(int index)
         {
@@ -4130,7 +4131,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkRootConditionalWeakTableElementEdgeTraceData.  It can only be used as long as
-    /// the GCBulkRootConditionalWeakTableElementEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkRootConditionalWeakTableElementEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkRootConditionalWeakTableElementEdgeValues
     {
@@ -4173,13 +4174,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(8); } }
 
         /// <summary>
-        /// Returns the node at the given zero-based index (idx less than Count).   The returned GCBulkNodeNodes 
-        /// points the the data in GCBulkNodeTraceData so it cannot live beyond that lifetime.  
+        /// Returns the node at the given zero-based index (idx less than Count).   The returned GCBulkNodeNodes
+        /// points the the data in GCBulkNodeTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkNodeValues Values(int index) { return new GCBulkNodeValues(this, 10 + index * HostOffset(28, 1)); }
 
         /// <summary>
-        /// This unsafe interface may go away.   Use the 'Nodes(idx)' instead 
+        /// This unsafe interface may go away.   Use the 'Nodes(idx)' instead
         /// </summary>
         public unsafe GCBulkNodeUnsafeNodes* UnsafeNodes(int arrayIdx, GCBulkNodeUnsafeNodes* buffer)
         {
@@ -4279,7 +4280,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkNodeTraceData.  It can only be used as long as
-    /// the GCBulkNodeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkNodeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkNodeValues
     {
@@ -4343,8 +4344,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(8); } }
 
         /// <summary>
-        /// Returns the 'idx' th edge.  
-        /// The returned GCBulkEdgeEdges cannot live beyond the TraceEvent that it comes from.  
+        /// Returns the 'idx' th edge.
+        /// The returned GCBulkEdgeEdges cannot live beyond the TraceEvent that it comes from.
         /// </summary>
         public GCBulkEdgeValues Values(int index) { return new GCBulkEdgeValues(this, 10 + (index * HostOffset(8, 1))); }
 
@@ -4419,7 +4420,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkNodeTraceData.  It can only be used as long as
-    /// the GCBulkNodeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkNodeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkEdgeValues
     {
@@ -4535,8 +4536,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(8); } }
 
         /// <summary>
-        /// Returns the range at the given zero-based index (index less than Count).   The returned GCBulkSurvivingObjectRangesValues 
-        /// points the the data in GCBulkSurvivingObjectRangesTraceData so it cannot live beyond that lifetime.  
+        /// Returns the range at the given zero-based index (index less than Count).   The returned GCBulkSurvivingObjectRangesValues
+        /// points the the data in GCBulkSurvivingObjectRangesTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkSurvivingObjectRangesValues Values(int index) { return new GCBulkSurvivingObjectRangesValues(this, 10 + (index * HostOffset(12, 1))); }
         #region Private
@@ -4610,7 +4611,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkEdgeTraceData.  It can only be used as long as
-    /// the GCBulkEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkSurvivingObjectRangesValues
     {
@@ -4650,8 +4651,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(8); } }
 
         /// <summary>
-        /// Returns the range at the given zero-based index (index less than Count).   The returned GCBulkSurvivingObjectRangesValues 
-        /// points the the data in GCBulkSurvivingObjectRangesTraceData so it cannot live beyond that lifetime.  
+        /// Returns the range at the given zero-based index (index less than Count).   The returned GCBulkSurvivingObjectRangesValues
+        /// points the the data in GCBulkSurvivingObjectRangesTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkMovedObjectRangesValues Values(int index) { return new GCBulkMovedObjectRangesValues(this, 10 + (index * HostOffset(16, 2))); }
         #region Private
@@ -4725,7 +4726,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkEdgeTraceData.  It can only be used as long as
-    /// the GCBulkEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkEdgeTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkMovedObjectRangesValues
     {
@@ -4990,7 +4991,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
     /// <summary>
-    /// We keep Heap history for every Generation in 'Gens' 
+    /// We keep Heap history for every Generation in 'Gens'
     /// </summary>
     public enum Gens
     {
@@ -4999,7 +5000,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Gen2,
         GenLargeObj,
         GenPinObj,
-        MaxGenCount, 
+        MaxGenCount,
     }
 
     /// <summary>
@@ -5058,9 +5059,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///    +0x0cc mechanisms          : [2] Uint4B  : 204 (expand), 208 (compact)
     ///    +0x0d4 gen_condemn_reasons : Uint4B      : 212
     ///    +0x0d8 heap_index          : Uint4B      : 216
-    ///  
+    ///
     ///    clrInstanceId              : byte        : 220
-    /// 
+    ///
     /// Version 0, PreciseVersion 0.2: .NET 4.0
     /// 0:000> dt -r2 clr!WKS::gc_history_per_heap
     ///    +0x000 gen_data         : [5] WKS::gc_generation_data
@@ -5078,17 +5079,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///     +0x0cc mechanisms       : [3] Uint4B    : 204 (expand), 208 (compact), 212 (concurrent_compact)
     ///    +0x0d8 gen_condemn_reasons : Uint4B      : 216
     ///    +0x0dc heap_index       : Uint4B         : 220
-    ///    
+    ///
     ///    clrInstanceId              : byte        : 224
-    /// 
+    ///
     /// vm\gcrecord.h
     /// Etw_GCDataPerHeapSpecial(...)
     /// ...
     ///     EventDataDescCreate(EventData[0], gc_data_per_heap, datasize);
     ///     EventDataDescCreate(EventData[1], ClrInstanceId, sizeof(ClrInstanceId));
-    /// 
+    ///
     /// Version 1: ???
-    /// 
+    ///
     /// Version 2, PreciseVersion 2.1: .NET 4.5 (x86)
     /// 0:000> dt -r2 WKS::gc_history_per_heap
     ///  clr!WKS::gc_history_per_heap
@@ -5109,13 +5110,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     /// +0x0d0 mem_pressure     : Uint4B                : 208
     /// +0x0d4 mechanisms       : [2] Uint4B            : 212 (expand), 216 (compact)
     /// +0x0dc heap_index       : Uint4B                : 220
-    /// 
+    ///
     /// vm\gcrecord.h
     /// Etw_GCDataPerHeapSpecial(...)
     /// ...
     ///     EventDataDescCreate(EventData[0], gc_data_per_heap, datasize);
     ///     EventDataDescCreate(EventData[1], ClrInstanceId, sizeof(ClrInstanceId));
-    /// 
+    ///
     /// Version 2, PreciseVersion 2.2: .NET 4.5.2 (x86)
     /// 0:000> dt -r2 WKS::gc_history_per_heap
     ///  clr!WKS::gc_history_per_heap
@@ -5137,47 +5138,47 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     /// +0x0d4 mechanisms       : [2] Uint4B            : 212 (expand), 216 (compact)
     /// +0x0dc heap_index       : Uint4B                : 220
     /// +0x0e0 extra_gen0_committed : Uint8B            : 224
-    /// 
+    ///
     /// vm\gcrecord.h
     /// Etw_GCDataPerHeapSpecial(...)
     /// ...
     ///     EventDataDescCreate(EventData[0], gc_data_per_heap, datasize);
     ///     EventDataDescCreate(EventData[1], ClrInstanceId, sizeof(ClrInstanceId));
-    /// 
+    ///
     /// Version 3: .NET 4.6 (x86)
     /// 0:000> dt -r2 WKS::gc_history_per_heap
     /// clr!WKS::gc_history_per_heap
-    ///    +0x000 gen_data         : [4]                                
-    ///     WKS::gc_generation_data                                     
-    ///       +0x000 size_before      : Uint4B/8B                          
-    ///       +0x004 free_list_space_before : Uint4B/8B                    
-    ///       +0x008 free_obj_space_before : Uint4B/8B                     
-    ///       +0x00c size_after       : Uint4B/8B                          
+    ///    +0x000 gen_data         : [4]
+    ///     WKS::gc_generation_data
+    ///       +0x000 size_before      : Uint4B/8B
+    ///       +0x004 free_list_space_before : Uint4B/8B
+    ///       +0x008 free_obj_space_before : Uint4B/8B
+    ///       +0x00c size_after       : Uint4B/8B
     ///       +0x010 free_list_space_after : Uint4B/8B
     ///       +0x014 free_obj_space_after : Uint4B/8B
     ///       +0x018 in               : Uint4B/8B
     ///       +0x01c pinned_surv      : Uint4B/8B
     ///       +0x020 npinned_surv     : Uint4B/8B
     ///       +0x024 new_allocation   : Uint4B/8B
-    ///    +0x0a0 maxgen_size_info : WKS::maxgen_size_increase          
-    ///       +0x000 free_list_allocated : Uint4B/8B                       
-    ///       +0x004 free_list_rejected : Uint4B/8B                        
-    ///       +0x008 end_seg_allocated : Uint4B/8B                         
-    ///       +0x00c condemned_allocated : Uint4B/8B                       
-    ///       +0x010 pinned_allocated : Uint4B/8B                          
-    ///       +0x014 pinned_allocated_advance : Uint4B/8B                  
-    ///       +0x018 running_free_list_efficiency : Uint4B/8B              
-    ///    +0x0bc gen_to_condemn_reasons : WKS::gen_to_condemn_tuning   
-    ///       +0x000 condemn_reasons_gen : Uint4B                       
-    ///       +0x004 condemn_reasons_condition : Uint4B                 
-    ///    +0x0c4 mechanisms       : [2] Uint4B                         
-    ///    +0x0cc machanism_bits   : Uint4B                             
-    ///    +0x0d0 heap_index       : Uint4B                             
-    ///    +0x0d4 extra_gen0_committed : Uint4B/8B                         
-    /// 
+    ///    +0x0a0 maxgen_size_info : WKS::maxgen_size_increase
+    ///       +0x000 free_list_allocated : Uint4B/8B
+    ///       +0x004 free_list_rejected : Uint4B/8B
+    ///       +0x008 end_seg_allocated : Uint4B/8B
+    ///       +0x00c condemned_allocated : Uint4B/8B
+    ///       +0x010 pinned_allocated : Uint4B/8B
+    ///       +0x014 pinned_allocated_advance : Uint4B/8B
+    ///       +0x018 running_free_list_efficiency : Uint4B/8B
+    ///    +0x0bc gen_to_condemn_reasons : WKS::gen_to_condemn_tuning
+    ///       +0x000 condemn_reasons_gen : Uint4B
+    ///       +0x004 condemn_reasons_condition : Uint4B
+    ///    +0x0c4 mechanisms       : [2] Uint4B
+    ///    +0x0cc machanism_bits   : Uint4B
+    ///    +0x0d0 heap_index       : Uint4B
+    ///    +0x0d4 extra_gen0_committed : Uint4B/8B
+    ///
     /// pal\src\eventprovider\lttng\eventprovdotnetruntime.cpp
     /// FireEtXplatGCPerHeapHistory_V3(...)
-    /// 
+    ///
     ///      tracepoint(
     ///         DotNETRuntime,
     ///         GCPerHeapHistory_V3,                      x86 offsets
@@ -5203,9 +5204,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///         Arg15_Struct_Len_,                      : ?? not really sent
     ///         (const int*) Arg15_Struct_Pointer_      : [58 - 98), ...
     ///         );
-    /// 
+    ///
     /// Version 3 is now setup to allow "add to the end" scenarios
-    /// 
+    ///
     /// </summary>
     public sealed class GCPerHeapHistoryTraceData : TraceEvent
     {
@@ -5552,7 +5553,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 else if (Version >= 3)
                 {
                     Debug.Assert(ret < Environment.ProcessorCount); // This is really GCGlobalHeapHistoryTraceData.NumHeaps, but we don't have access to that here
-                                                                    // It is VERY unlikely that we make more heaps than there are processors.   
+                                                                    // It is VERY unlikely that we make more heaps than there are processors.
                 }
 
                 if (ret < 0)
@@ -5645,14 +5646,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         /// <summary>
         /// genNumber is a number from 0 to maxGenData-1.  These are for generation 0, 1, 2, 3 = Large Object Heap
-        /// genNumber = 4 is that second pass for Gen 0.  
+        /// genNumber = 4 is that second pass for Gen 0.
         /// </summary>
         public GCPerHeapHistoryGenData GenData(Gens genNumber)
         {
             if (Version == 0 || Version == 2)
             {
                 Debug.Assert((int)genNumber < maxGenData);
-                // each GenData structure contains 10 pointers sized integers 
+                // each GenData structure contains 10 pointers sized integers
                 return new GCPerHeapHistoryGenData(Version, GetIntPtrArray(SizeOfGenData * (int)genNumber, EntriesInGenData));
             }
             else if (Version >= 3)
@@ -5692,7 +5693,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             if (Version == 0)
             {
                 size = (SizeOfGenData * 5) + 25;
-                // For silverlight, there is one less mechanism.  It only affects the layout of gen_condemended_reasons. 
+                // For silverlight, there is one less mechanism.  It only affects the layout of gen_condemended_reasons.
                 if (base.EventDataLength == (size - sizeof(int)))
                 {
                     mversion = 1; // Silverlight
@@ -6076,9 +6077,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///    +0x01c new_allocation   : Uint4B/8B
     ///    +0x020 surv             : Uint4B/8B
     ///    +0x024 growth           : Uint4B/8B
-    ///    
+    ///
     /// Version 1: ???
-    /// 
+    ///
     /// Version 2, PreciseVersion 2.1: .NET 4.5 (x86), .NET 4.5.2 (x86)
     ///  [5] WKS::gc_generation_data
     ///    +0x000 size_before            : Uint4B/8B
@@ -6091,13 +6092,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///    +0x01c out                    : Uint4B/8B
     ///    +0x020 new_allocation         : Uint4B/8B
     ///    +0x024 surv                   : Uint4B/8B
-    /// 
+    ///
     /// Version 3: .NET 4.6 (x86)
-    /// [4] WKS::gc_generation_data                                     
-    ///    +0x000 size_before            : Uint4B/8B                          
-    ///    +0x004 free_list_space_before : Uint4B/8B                    
-    ///    +0x008 free_obj_space_before  : Uint4B/8B                     
-    ///    +0x00c size_after             : Uint4B/8B                          
+    /// [4] WKS::gc_generation_data
+    ///    +0x000 size_before            : Uint4B/8B
+    ///    +0x004 free_list_space_before : Uint4B/8B
+    ///    +0x008 free_obj_space_before  : Uint4B/8B
+    ///    +0x00c size_after             : Uint4B/8B
     ///    +0x010 free_list_space_after  : Uint4B/8B
     ///    +0x014 free_obj_space_after   : Uint4B/8B
     ///    +0x018 in                     : Uint4B/8B
@@ -6147,7 +6148,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
         /// <summary>
-        /// Size occupied by objects at the beginning of the GC, discounting fragmentation. 
+        /// Size occupied by objects at the beginning of the GC, discounting fragmentation.
         /// Only exits on 4.5 RC and beyond.
         /// </summary>
         public long ObjSpaceBefore
@@ -6536,7 +6537,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// Version 0: ???
-    /// 
+    ///
     /// Version 1: Silverlight (x86), .NET 4.0, .NET 4.5, .NET 4.5.2
     /// VM\gc.cpp
     /// 0:041> dt -r3 WKS::gc_history_global
@@ -6545,7 +6546,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///    +0x004 num_heaps        : Uint4B
     ///    +0x008 condemned_generation : Int4B
     ///    +0x00c gen0_reduction_count : Int4B
-    ///    +0x010 reason           : 
+    ///    +0x010 reason           :
     ///     reason_alloc_soh = 0n0
     ///     reason_induced = 0n1
     ///     reason_lowmemory = 0n2
@@ -6557,7 +6558,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///     reason_gcstress = 0n8
     ///     reason_max = 0n9
     ///    +0x014 global_mechanims_p : Uint4B
-    ///   
+    ///
     /// FireEtwGCGlobalHeapHistory_V1(gc_data_global.final_youngest_desired, // upcast on 32bit to __int64
     ///                          gc_data_global.num_heaps,
     ///                          gc_data_global.condemned_generation,
@@ -6571,7 +6572,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///    +0x004 num_heaps        : Uint4B
     ///    +0x008 condemned_generation : Int4B
     ///    +0x00c gen0_reduction_count : Int4B
-    ///    +0x010 reason           : 
+    ///    +0x010 reason           :
     ///     reason_alloc_soh = 0n0
     ///     reason_induced = 0n1
     ///     reason_lowmemory = 0n2
@@ -6588,7 +6589,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///    +0x014 pause_mode       : Int4B
     ///    +0x018 mem_pressure     : Uint4B
     ///    +0x01c global_mechanims_p : Uint4B
-    /// 
+    ///
     /// FireEtwGCGlobalHeapHistory_V2(gc_data_global.final_youngest_desired, // upcast on 32bit to __int64
     ///                          gc_data_global.num_heaps,
     ///                          gc_data_global.condemned_generation,
@@ -6596,9 +6597,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     ///                          gc_data_global.reason,
     ///                          gc_data_global.global_mechanims_p,
     ///                          GetClrInstanceId());
-    ///                          gc_data_global.pause_mode, 
+    ///                          gc_data_global.pause_mode,
     ///                          gc_data_global.mem_pressure);
-    ///                          
+    ///
     /// </summary>
     public sealed class GCGlobalHeapHistoryTraceData : TraceEvent
     {
@@ -7078,7 +7079,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public Address HandleID { get { return GetAddressAt(0); } }
         public Address ObjectID { get { return GetAddressAt(HostOffset(4, 1)); } }
         public long ObjectSize { get { return GetInt64At(HostOffset(8, 2)); } }
-        // TODO you can remove the length test after 2104.  It was an old internal case 
+        // TODO you can remove the length test after 2104.  It was an old internal case
         public string TypeName { get { if (HostOffset(16, 2) < EventDataLength) { return GetUnicodeStringAt(HostOffset(16, 2)); } return ""; } }
         public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(HostOffset(16, 2))); } }
 
@@ -7294,7 +7295,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 int len = EventDataLength;
                 int ret = GetInt32At(0);
-                // V4.5.1 uses this same event for somethings else.  Ignore it by setting the count to 0.  
+                // V4.5.1 uses this same event for somethings else.  Ignore it by setting the count to 0.
                 if (EventDataLength < ret * 40 + 6)
                 {
                     ret = 0;
@@ -7306,8 +7307,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(4); } }
 
         /// <summary>
-        /// Returns the CCW at the given zero-based index (index less than Count).   The returned GCBulkRootCCWValues 
-        /// points the the data in GCBulkRootCCWTraceData so it cannot live beyond that lifetime.  
+        /// Returns the CCW at the given zero-based index (index less than Count).   The returned GCBulkRootCCWValues
+        /// points the the data in GCBulkRootCCWTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkRootCCWValues Values(int index) { return new GCBulkRootCCWValues(this, 6 + index * ValueSize); }
         #region Private
@@ -7327,7 +7328,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (Count * ValueSize) + 6 && Count != 0)); // The Count==0 fixes a old bad event using the same ID. 
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (Count * ValueSize) + 6 && Count != 0)); // The Count==0 fixes a old bad event using the same ID.
             Debug.Assert(!(Version > 0 && EventDataLength < (Count * ValueSize) + 6));
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -7374,7 +7375,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         private event Action<GCBulkRootCCWTraceData> Action;
         /// <summary>
-        /// Computes the size of one GCBulkRootCCWValues structure.  
+        /// Computes the size of one GCBulkRootCCWValues structure.
         /// TODO FIX NOW Can rip out and make a constant 44 after 6/2014
         /// </summary>
         private int ValueSize
@@ -7384,7 +7385,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 if (m_valueSize == 0)
                 {
                     m_valueSize = 44;
-                    // Project N rounds up on 64 bit It did go out for build in 4/2014 but soon we won't care.  
+                    // Project N rounds up on 64 bit It did go out for build in 4/2014 but soon we won't care.
                     if (EventDataLength == (Count * 48) + 6)
                     {
                         Debug.Assert(PointerSize == 8);
@@ -7401,7 +7402,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkRootCCWTraceData.  It can only be used as long as
-    /// the GCBulkRootCCWTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkRootCCWTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkRootCCWValues
     {
@@ -7456,7 +7457,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 int len = EventDataLength;
                 int ret = GetInt32At(0);
-                // V4.5.1 uses this same event for somethings else.  Ignore it by setting the count to 0.  
+                // V4.5.1 uses this same event for somethings else.  Ignore it by setting the count to 0.
                 if (EventDataLength < ret * 40 + 6)
                 {
                     ret = 0;
@@ -7468,8 +7469,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(4); } }
 
         /// <summary>
-        /// Returns the edge at the given zero-based index (index less than Count).   The returned GCBulkRCWValues 
-        /// points the the data in GCBulkRCWTraceData so it cannot live beyond that lifetime.  
+        /// Returns the edge at the given zero-based index (index less than Count).   The returned GCBulkRCWValues
+        /// points the the data in GCBulkRCWTraceData so it cannot live beyond that lifetime.
         /// </summary>
         public GCBulkRCWValues Values(int index) { return new GCBulkRCWValues(this, 6 + index * 40); }
 
@@ -7490,7 +7491,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (Count * 40) + 6 && Count != 0)); // The Count==0 fixes a old bad event using the same ID. 
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (Count * 40) + 6 && Count != 0)); // The Count==0 fixes a old bad event using the same ID.
             Debug.Assert(!(Version > 0 && EventDataLength < 0 + (Count * 40) + 6));
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -7541,7 +7542,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkRCWTraceData.  It can only be used as long as
-    /// the GCBulkRCWTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkRCWTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkRCWValues
     {
@@ -7592,9 +7593,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(12); } }
 
         /// <summary>
-        /// Returns 'idx'th static root.   
-        /// The returned GCBulkRootStaticVarStatics cannot live beyond the TraceEvent that it comes from.  
-        /// The implementation is highly tuned for sequential access.  
+        /// Returns 'idx'th static root.
+        /// The returned GCBulkRootStaticVarStatics cannot live beyond the TraceEvent that it comes from.
+        /// The implementation is highly tuned for sequential access.
         /// </summary>
         public GCBulkRootStaticVarValues Values(int index)
         {
@@ -7609,7 +7610,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Dispatch()
         {
-            m_lastIdx = 0xFFFF; // Invalidate the cache    
+            m_lastIdx = 0xFFFF; // Invalidate the cache
             Action(this);
         }
         protected internal override Delegate Target
@@ -7619,9 +7620,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            m_lastIdx = 0xFFFF; // Invalidate the cache    
+            m_lastIdx = 0xFFFF; // Invalidate the cache
             Debug.Assert(!(EventDataLength != OffsetForIndexInValuesArray(Count)));
-            Debug.Assert(Count == 0 || (int)Values(Count - 1).Flags < 256);     // This just makes the asserts in the BulkType kick in 
+            Debug.Assert(Count == 0 || (int)Values(Count - 1).Flags < 256);     // This just makes the asserts in the BulkType kick in
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7694,7 +7695,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(m_lastIdx == targetIdx && m_lastOffset == offset);     // No truncation
             return offset;
         }
-        // These remember the last offset of the element in Statics to optimize a linear scan.  
+        // These remember the last offset of the element in Statics to optimize a linear scan.
         private ushort m_lastIdx;
         private ushort m_lastOffset;
 
@@ -7704,7 +7705,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// This structure just POINTS at the data in the GCBulkRootStaticVarTraceData.  It can only be used as long as
-    /// the GCBulkRootStaticVarTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.  
+    /// the GCBulkRootStaticVarTraceData is alive which (unless you cloned it) is only for the lifetime of the callback.
     /// </summary>
     public struct GCBulkRootStaticVarValues
     {
@@ -7737,7 +7738,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert((GCRootID & 0xFF00000000000003L) == 0);
             Debug.Assert((ObjectID & 0xFF00000000000003L) == 0);
             Debug.Assert((TypeID & 0xFF00000000000001L) == 0);
-            Debug.Assert(((int)Flags & 0xFFFFFFF0) == 0);      // We don't use the upper bits presently so we can assert they are not used as a validity check. 
+            Debug.Assert(((int)Flags & 0xFFFFFFF0) == 0);      // We don't use the upper bits presently so we can assert they are not used as a validity check.
         }
 
         private TraceEvent m_data;
@@ -8056,7 +8057,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "MinWorkerThreads", "MaxWorkerThreads", "MinIOCompletionThreads", "MaxIOCompletionThreads", "ClrInstanceID"};
+                    payloadNames = new string[] { "MinWorkerThreads", "MaxWorkerThreads", "MinIOCompletionThreads", "MaxIOCompletionThreads", "ClrInstanceID" };
                 }
 
                 return payloadNames;
@@ -9594,7 +9595,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long ReJITID { get { return GetInt64At(8); } }
         public int MethodExtent { get { return GetByteAt(16); } }
         public int CountOfMapEntries { get { return GetInt16At(17); } }
-        // May also return the special values ILProlog (-2) and ILEpilog (-3) 
+        // May also return the special values ILProlog (-2) and ILEpilog (-3)
         public int ILOffset(int index) { return GetInt32At(index * 4 + 19); }
         public int NativeOffset(int index) { return GetInt32At((CountOfMapEntries + index) * 4 + 19); }
         public int ClrInstanceID { get { return GetInt16At(CountOfMapEntries * 8 + 19); } }
@@ -9685,7 +9686,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int FrameCount { get { return GetInt32At(4); } }
         /// <summary>
         /// Fetches the instruction pointer of a eventToStack frame 0 is the deepest frame, and the maximum should
-        /// be a thread offset routine (if you get a complete eventToStack).  
+        /// be a thread offset routine (if you get a complete eventToStack).
         /// </summary>
         /// <param name="index">The index of the frame to fetch.  0 is the CPU EIP, 1 is the Caller of that
         /// routine ...</param>
@@ -11229,7 +11230,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string NativePdbBuildPath { get { if (Version >= 2) { return GetUnicodeStringAt(GetNativePdbSigStart + 20); } return ""; } }
 
         /// <summary>
-        /// This is simply the file name part of the ModuleILPath.  It is a convenience method. 
+        /// This is simply the file name part of the ModuleILPath.  It is a convenience method.
         /// </summary>
         public string ModuleILFileName { get { return System.IO.Path.GetFileName(ModuleILPath); } }
         #region Private
@@ -12572,7 +12573,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(2) + 8));
             Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(2) + 8));
         }
-        protected internal override Delegate Target {
+        protected internal override Delegate Target
+        {
             get { return Action; }
             set { Action = (Action<ExecutionCheckpointTraceData>)value; }
         }
@@ -12586,7 +12588,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return sb;
         }
 
-        public override string[] PayloadNames {
+        public override string[] PayloadNames
+        {
             get
             {
                 if (payloadNames == null)
@@ -12745,7 +12748,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         None = 0,
         Delegate = 0x1,
         Finalizable = 0x2,
-        ExternallyImplementedCOMObject = 0x4,       // RCW.  
+        ExternallyImplementedCOMObject = 0x4,       // RCW.
         Array = 0x8,
         ModuleBaseAddress = 0x10,
 
@@ -12805,9 +12808,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     }
     public enum GCType
     {
-        NonConcurrentGC = 0x0,      // A 'blocking' GC.  
+        NonConcurrentGC = 0x0,      // A 'blocking' GC.
         BackgroundGC = 0x1,         // A Gen 2 GC happening while code continues to run
-        ForegroundGC = 0x2,         // A Gen 0 or Gen 1 blocking GC which is happening when a Background GC is in progress.  
+        ForegroundGC = 0x2,         // A Gen 0 or Gen 1 blocking GC which is happening when a Background GC is in progress.
     }
     public enum GCReason
     {
@@ -12970,16 +12973,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             ForceEndRundown = 0x100,
             AppDomainResourceManagement = 0x800,
             /// <summary>
-            /// Log events associated with the threadpool, and other threading events.  
+            /// Log events associated with the threadpool, and other threading events.
             /// </summary>
             Threading = 0x10000,
             /// <summary>
-            /// Dump the native to IL mapping of any method that is JIT compiled.  (V4.5 runtimes and above).  
+            /// Dump the native to IL mapping of any method that is JIT compiled.  (V4.5 runtimes and above).
             /// </summary>
             JittedMethodILToNativeMap = 0x20000,
             /// <summary>
-            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this 
-            /// bit and also does not have NGEN PDBS).  
+            /// This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0 (which does not know about this
+            /// bit and also does not have NGEN PDBS).
             /// </summary>
             SupressNGen = 0x40000,
             /// <summary>
@@ -12988,7 +12991,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             PerfTrack = 0x20000000,
             Stack = 0x40000000,
             /// <summary>
-            /// Dump PDBs for dynamically generated modules.  
+            /// Dump PDBs for dynamically generated modules.
             /// </summary>
             CodeSymbolsRundown = 0x80000000,
             /// <summary>
@@ -13300,7 +13303,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 source.UnregisterEventTemplate(value, 11, TieredCompilationRundownTaskGuid);
             }
         }
-        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointRundownExecutionCheckpointDCEnd {
+        public event Action<ExecutionCheckpointTraceData> ExecutionCheckpointRundownExecutionCheckpointDCEnd
+        {
             add
             {
                 source.RegisterEventTemplate(ExecutionCheckpointDCEndTemplate(value));
@@ -13614,8 +13618,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     /// ClrTraceEventParserState holds all information that is shared among all events that is
     /// needed to decode Clr events.   This class is registered with the source so that it will be
     /// persisted.  Things in here include
-    /// 
-    ///     * TypeID to TypeName mapping, 
+    ///
+    ///     * TypeID to TypeName mapping,
     /// </summary>
     internal class ClrTraceEventParserState : IFastSerializable
     {
@@ -13642,7 +13646,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return ret;
         }
 
-        #region private 
+        #region private
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
@@ -13693,7 +13697,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         private DeferedRegion lazyTypeIDToName;
         private HistoryDictionary<Address, string> _typeIDToName;
-        #endregion // private 
+        #endregion // private
     }
     #endregion  // private types
 
