@@ -10143,6 +10143,8 @@ table {
             stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
             stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
 
+            stackWindow.CallTreeTab.IsSelected = true;      // start with the call tree view
+
             ConfigureGroupRegExTextBox(stackWindow, windows: false);
         }
     }

@@ -283,13 +283,18 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             //    |
             //     -Return Code
 
-            StackSourceFrameIndex frameIndex = StackSource.Interner.FrameIntern($"Return Code: {record.ReturnCode}");
-            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
-            frameIndex = StackSource.Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
+            _sample.StackIndex = StackSourceCallStackIndex.Invalid;
+
+            StackSourceFrameIndex frameIndex = StackSource.Interner.FrameIntern($"Raw Syscalls");
             _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
             frameIndex = StackSource.Interner.FrameIntern($"Syscall: {record.SyscallName}");
             _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
-            
+            frameIndex = StackSource.Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            frameIndex = StackSource.Interner.FrameIntern($"Return Code: {record.ReturnCode}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+
+
             _sample.TimeRelativeMSec = record.TimeStampRelativeMs;
             _sample.Metric = (float)record.LatencyInMilliseconds;
             
@@ -619,14 +624,17 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 filePath = "<Unknown>";
             }
 
-            StackSourceFrameIndex frameIndex = StackSource.Interner.FrameIntern($"Return Code: {record.ReturnCode}");
-            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
-            frameIndex = StackSource.Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
+            _sample.StackIndex = StackSourceCallStackIndex.Invalid;
+
+            StackSourceFrameIndex frameIndex = StackSource.Interner.FrameIntern($"Path: {filePath}");
             _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
             frameIndex = StackSource.Interner.FrameIntern($"Syscall: {record.SyscallName}");
             _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
-            frameIndex = StackSource.Interner.FrameIntern($"Path: {filePath}");
+            frameIndex = StackSource.Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
             _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            frameIndex = StackSource.Interner.FrameIntern($"Return Code: {record.ReturnCode}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+
 
             _sample.TimeRelativeMSec = record.TimeStampRelativeMs;
             _sample.Metric = (float)record.LatencyInMilliseconds;
