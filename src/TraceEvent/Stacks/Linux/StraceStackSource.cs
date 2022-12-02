@@ -1,8 +1,9 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.Diagnostics.Tracing.Utilities;
 
 namespace Microsoft.Diagnostics.Tracing.StackSources
 {
@@ -24,15 +25,15 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         private double _currentTimeStampInMs = 0;
         private StraceRecord _currentRecord = new StraceRecord();
-        private StackSourceSample _sample;
+
+        private StraceRecordHandlerFactory _handlerFactory;
 
         public StraceStackSource(string path)
         {
-            _sample = new StackSourceSample(this);
+            _handlerFactory = new StraceRecordHandlerFactory(this);
 
             using (StreamReader reader = new StreamReader(path))
             {
-                //FastStream fastStream = new FastStream(stream, BufferSize);
                 ProcessStream(reader);
                 Interner.DoneInterning();
             }
@@ -157,7 +158,10 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             // Capture the arguments.
             string argumentPayload = record.Substring(cur, startIndex - cur - 1);
             argumentPayload = argumentPayload.Trim();
+
+            // Confirm that the argument payload starts and ends with parenthesis, and then strip them off.
             Debug.Assert(argumentPayload[0] == ArgumentsStartChar && argumentPayload[argumentPayload.Length - 1] == ArgumentsEndChar);
+            argumentPayload = argumentPayload.Substring(1, argumentPayload.Length - 2);
 
             // Update the current record.
             _currentRecord.SyscallName = name;
@@ -171,15 +175,9 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         private void DispatchRecord(StraceRecord record)
         {
-            StackSourceFrameIndex frameIndex = Interner.FrameIntern($"Return Code: {record.ReturnCode}");
-            _sample.StackIndex = Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
-            frameIndex = Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
-            _sample.StackIndex = Interner.CallStackIntern(frameIndex, _sample.StackIndex);
-            frameIndex = Interner.FrameIntern($"Syscall: {record.SyscallName}");
-            _sample.StackIndex = Interner.CallStackIntern(frameIndex, _sample.StackIndex);
-            _sample.TimeRelativeMSec = record.TimeStampRelativeMs;
-            _sample.Metric = (float) record.LatencyInMilliseconds;
-            AddSample(_sample);
+            StraceRecordHandler recordHandler = _handlerFactory.GetHandler(record);
+            Debug.Assert(recordHandler != null);
+            recordHandler.Execute(record);
         }
     }
 
@@ -190,5 +188,276 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         public string ReturnCode { get; set; }
         public double TimeStampRelativeMs { get; set; }
         public double LatencyInMilliseconds { get; set; }
+    }
+
+    internal sealed class StraceRecordHandlerFactory
+    {
+        private DefaultHandler _defaultHandler;
+        private IOHandler _ioHandler;
+
+        public StraceRecordHandlerFactory(StraceStackSource stackSource)
+        {
+            _defaultHandler = new DefaultHandler(stackSource);
+            _ioHandler = new IOHandler(stackSource);
+        }
+
+        public StraceRecordHandler GetHandler(StraceRecord record)
+        {
+            _syscallNames.Add(record.SyscallName);
+
+            switch(record.SyscallName)
+            {
+                case "openat":
+                case "close":
+                case "fcntl":
+                case "read":
+                case "lseek":
+                case "pread64":
+                case "access":
+                    return _ioHandler;
+                default:
+                    return _defaultHandler;
+            }
+        }
+
+        private HashSet<string> _syscallNames = new HashSet<string>();
+    }
+
+    internal abstract class StraceRecordHandler
+    {
+        public StraceRecordHandler(StraceStackSource stackSource)
+        {
+            StackSource = stackSource;
+        }
+
+        protected StraceStackSource StackSource
+        {
+            get; private set;
+        }
+
+        public abstract void Execute(StraceRecord record);
+    }
+
+    internal sealed class DefaultHandler : StraceRecordHandler
+    {
+        private StackSourceSample _sample;
+
+        public DefaultHandler(StraceStackSource stackSource)
+            : base(stackSource)
+        {
+            _sample = new StackSourceSample(stackSource);
+        }
+
+        public override void Execute(StraceRecord record)
+        {
+            // Stack:
+            //
+            // Syscall
+            // |
+            //  -Arguments
+            //    |
+            //     -Return Code
+
+            StackSourceFrameIndex frameIndex = StackSource.Interner.FrameIntern($"Return Code: {record.ReturnCode}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
+            frameIndex = StackSource.Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            frameIndex = StackSource.Interner.FrameIntern($"Syscall: {record.SyscallName}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            
+            _sample.TimeRelativeMSec = record.TimeStampRelativeMs;
+            _sample.Metric = (float)record.LatencyInMilliseconds;
+            
+            StackSource.AddSample(_sample);
+        }
+    }
+
+    internal sealed class IOHandler : StraceRecordHandler
+    {
+        private Dictionary<string, string> _fdToPathMap = new Dictionary<string, string>();
+        private StackSourceSample _sample;
+
+        public IOHandler(StraceStackSource stackSource)
+            :base(stackSource)
+        {
+            _sample = new StackSourceSample(stackSource);
+        }
+
+        public override void Execute(StraceRecord record)
+        {
+            switch(record.SyscallName)
+            {
+                case "openat":
+                    HandleOpenAtSyscall(record);
+                    break;
+                case "close":
+                    HandleCloseSyscall(record);
+                    break;
+                case "fcntl":
+                    HandleFcntlSyscall(record);
+                    break;
+                case "read":
+                    HandleReadSyscall(record);
+                    break;
+                case "lseek":
+                    HandleLseekSyscall(record);
+                    break;
+                case "pread64":
+                    HandlePread64Syscall(record);
+                    break;
+                case "access":
+                    HandleAccessSyscall(record);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(record.SyscallName));
+            }
+        }
+
+        private const char ArgumentSeparator = ',';
+        private static readonly char[] ArgumentSeparators = new char[]
+        {
+            ArgumentSeparator,
+        };
+
+        private void HandleOpenAtSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            int indexOfFirstComma = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            int indexOfLastComma = record.ArgumentPayload.LastIndexOf(ArgumentSeparator);
+            string filePath = record.ArgumentPayload.Substring(
+                indexOfFirstComma + 1,
+                indexOfLastComma - indexOfFirstComma - 1);
+            filePath = filePath.Trim();
+            filePath = filePath.Substring(1, filePath.Length - 2);
+
+            // Get the file descriptor.
+            string fd = record.ReturnCode;
+
+            // Only save valid file descriptors.
+            if (!fd.StartsWith("-1"))
+            {
+                Debug.Assert(!_fdToPathMap.ContainsKey(fd));
+                _fdToPathMap[fd] = filePath;
+            }
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleCloseSyscall(StraceRecord record)
+        {
+            string fd = record.ArgumentPayload.Trim();
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+            Debug.Assert(_fdToPathMap.ContainsKey(fd));
+            _fdToPathMap.Remove(fd);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleFcntlSyscall(StraceRecord record)
+        {
+            // Split the arguments.
+            string[] arguments = record.ArgumentPayload.Split(ArgumentSeparators);
+            Debug.Assert(arguments.Length >= 2);
+            string fd = arguments[0].Trim();
+            string cmd = arguments[1].Trim();
+
+            if (cmd.StartsWith("F_DUPFD"))
+            {
+                string newfd = record.ReturnCode;
+                // Only save valid file descriptors.
+                if (!newfd.StartsWith("-1"))
+                {
+                    // Get the file name from the map.
+                    if (_fdToPathMap.TryGetValue(fd, out string path))
+                    {
+                        // Save the path alongside the new descriptor.
+                        _fdToPathMap[newfd] = path;
+                    }
+
+                    // TODO: Should we remove the old fd?
+                }
+            }
+
+            // Get the file path to write with the sample.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleReadSyscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleLseekSyscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandlePread64Syscall(StraceRecord record)
+        {
+            // Get the fd.
+            int indexOfFirstArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string fd = record.ArgumentPayload.Substring(0, indexOfFirstArgumentSeparator);
+
+            // Get the file name.
+            _fdToPathMap.TryGetValue(fd, out string filePath);
+
+            AddSample(record, filePath);
+        }
+
+        private void HandleAccessSyscall(StraceRecord record)
+        {
+            // Get the file path.
+            int indexOfArgumentSeparator = record.ArgumentPayload.IndexOf(ArgumentSeparator);
+            string filePath = record.ArgumentPayload.Substring(1, indexOfArgumentSeparator - 1 - 1); // Strip off the comma and the surrounding quotes.
+
+            AddSample(record, filePath);
+        }
+
+        private void AddSample(StraceRecord record, string filePath)
+        {
+            // Stack:
+            // FilePath
+            // |
+            //  -Syscall
+            //   |
+            //    -Arguments
+            //     |
+            //      -Return Code
+
+            if (string.IsNullOrEmpty(filePath))
+            {
+                filePath = "<Unknown>";
+            }
+
+            StackSourceFrameIndex frameIndex = StackSource.Interner.FrameIntern($"Return Code: {record.ReturnCode}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, StackSourceCallStackIndex.Invalid);
+            frameIndex = StackSource.Interner.FrameIntern($"Arguments: {record.ArgumentPayload}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            frameIndex = StackSource.Interner.FrameIntern($"Syscall: {record.SyscallName}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+            frameIndex = StackSource.Interner.FrameIntern($"Path: {filePath}");
+            _sample.StackIndex = StackSource.Interner.CallStackIntern(frameIndex, _sample.StackIndex);
+
+            _sample.TimeRelativeMSec = record.TimeStampRelativeMs;
+            _sample.Metric = (float)record.LatencyInMilliseconds;
+
+            StackSource.AddSample(_sample);
+        }
     }
 }
