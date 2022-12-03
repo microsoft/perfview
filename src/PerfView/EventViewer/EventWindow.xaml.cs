@@ -571,12 +571,12 @@ namespace PerfView
         }
 
         private const string PayloadToken = "Payload=\"{";
-        private const string PayloadTokenNetCore = "Payload:{";
-        private const string NameToken = "Name:";
-        private const string DisplayNameToken = "DisplayName:";
-        private const string MeanToken = "Mean:";
-        private const string IncrementToken = "Increment:";
-        private const string IntervalToken = "IntervalSec:";
+        private const string PayloadTokenNetCore = "Payload\":{";
+        private const string NameToken = "Name\":";
+        private const string DisplayNameToken = "DisplayName\":";
+        private const string MeanToken = "Mean\":";
+        private const string IncrementToken = "Increment\":";
+        private const string IntervalToken = "IntervalSec\":";
 
         private Dictionary<string, List<Tuple<double, double>>> BuildCounters(EventSource source)
         {
