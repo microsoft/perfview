@@ -496,7 +496,7 @@
       <Link>Microsoft.IdentityModel.Tokens.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Buffers\4.5.1\lib\net461\System.Buffers.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\\System.Buffers\4.5.1\lib\net461\System.Buffers.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Buffers.dll</LogicalName>
@@ -510,7 +510,7 @@
       <Link>System.Diagnostics.DiagnosticSource.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Memory\4.5.4\lib\net461\System.Memory.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\\System.Memory\4.5.4\lib\net461\System.Memory.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Memory.dll</LogicalName>
