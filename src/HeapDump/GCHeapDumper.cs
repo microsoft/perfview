@@ -1190,6 +1190,22 @@ public class GCHeapDumper
                         name = "COM/WinRT Objects";
                         break;
 
+                    case ClrRootKind.AsyncPinnedHandle:
+                        name = "AsyncPinned handles";
+                        break;
+
+                    case ClrRootKind.FinalizerQueue:
+                        name = "finalization handles";
+                        break;
+
+                    case ClrRootKind.StrongHandle:
+                        name = "Strong handles";
+                        break;
+
+                    case ClrRootKind.PinnedHandle:
+                        name = "Pinned handles";
+                        break;
+
                     default:
                         name = kind.ToString();
                         break;
