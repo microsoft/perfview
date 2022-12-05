@@ -2,9 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>PerfView</RootNamespace>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>3.1.29</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -47,7 +48,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All"/>
   </ItemGroup>
 
   <!-- Ensure that the native components of TraceEvent are restored into the target and publish directories so that TraceEvent can pinvoke into them. -->

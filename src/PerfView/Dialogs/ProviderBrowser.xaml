@@ -2,9 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
-        xmlns:controls="clr-namespace:Controls"
-        Background="#FFA7A7A7" 
-         MinHeight="210" MinWidth="750"
+        Style="{DynamicResource CustomWindowStyle}"
+        Background="{StaticResource ControlDarkerBackground}"
+        MinHeight="210" MinWidth="750"
         Title="ProviderBrowser" Height="481.064" Width="991.23">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />

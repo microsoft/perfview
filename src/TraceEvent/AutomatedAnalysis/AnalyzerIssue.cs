@@ -5,7 +5,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     /// <summary>
     /// An issue identified by an Analyzer.
     /// </summary>
-    public sealed class AnalyzerIssue
+    public class AnalyzerIssue
     {
         /// <summary>
         /// Create a new instance of AnalyzerIssue.
@@ -40,16 +40,16 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <summary>
         /// The title of the issue.
         /// </summary>
-        public string Title { get; private set; }
+        public virtual string Title { get; protected set; }
 
         /// <summary>
         /// The description of the issue.
         /// </summary>
-        public string Description { get; private set; }
+        public virtual string Description { get; protected set; }
 
         /// <summary>
         /// A URL pointing to further documentation on the issue.
         /// </summary>
-        public string URL { get; private set; }
+        public virtual string URL { get; protected set; }
     }
 }

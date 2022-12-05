@@ -1,8 +1,8 @@
 ﻿<src:WindowBase x:Class="PerfView.Dialogs.EULADialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:src="clr-namespace:PerfView" 
-        Background="#FFA7A7A7" 
+        xmlns:src="clr-namespace:PerfView"
+        Style="{DynamicResource CustomWindowStyle}"
         Title="EULA Acceptance" Height="400" Width="700" MinHeight="200" MinWidth="400">
     <Grid>
         <Grid.RowDefinitions>

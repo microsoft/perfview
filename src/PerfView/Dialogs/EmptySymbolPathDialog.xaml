@@ -1,8 +1,8 @@
 ﻿<src:WindowBase x:Class="PerfView.Dialogs.EmptySymbolPathDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:src="clr-namespace:PerfView" 
-        Background="#FFA7A7A7" 
+        xmlns:src="clr-namespace:PerfView"
+        Style="{DynamicResource CustomWindowStyle}"
         Title="Empty Symbol Path" Height="269" Width="486" MinHeight="230" MinWidth="475">
     <Grid>
         <Grid.RowDefinitions>
@@ -11,7 +11,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <RichTextBox Grid.Row="0" Background="#FFE2E8F8">
+        <RichTextBox Grid.Row="0" Background="{DynamicResource HelpRibbonBackground}">
             <RichTextBox.Resources>
                 <Style TargetType="{x:Type Paragraph}">
                     <Setter Property="Margin" Value="2"/>
@@ -20,7 +20,7 @@
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
-                        The search locations for symbolic information has not been set up.  
+                        The search locations for symbolic information has not been set up.
                     </Paragraph>
                     <Paragraph>
                         You have two choices.
@@ -28,12 +28,12 @@
                     <List Margin="0,2,0,0">
                         <ListItem>
                             <Paragraph>
-                                <Bold>Use the Microsoft symbol server.</Bold>  This will allow you to see the 
+                                <Bold>Use the Microsoft symbol server.</Bold>  This will allow you to see the
                                 symbolic names for code developed by Microsoft, including the operating system
                                 DLLs as well as the .NET framework.   To do this PerfView try to contact the
-                                Microsoft symbol server on the web when 'Lookup Symbols' command are executed 
+                                Microsoft symbol server on the web when 'Lookup Symbols' command are executed
                                 to retrieve the necessary symbolic infom
-                                This is the recommended option.  
+                                This is the recommended option.
                             </Paragraph>
                         </ListItem>
                         <ListItem>

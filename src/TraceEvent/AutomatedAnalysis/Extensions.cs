@@ -28,10 +28,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         public static bool ManagedProcess(this TraceProcess process)
         {
-            return process.LoadedModules.Where(module =>
+            return process.LoadedModules.Any(module =>
+                    module is TraceManagedModule ||
                     module.Name.Equals("clr", StringComparison.OrdinalIgnoreCase) ||
                     module.Name.Equals("coreclr", StringComparison.OrdinalIgnoreCase) ||
-                    module.Name.Equals("mscorwks", StringComparison.OrdinalIgnoreCase)).Count() > 0;
+                    module.Name.Equals("mscorwks", StringComparison.OrdinalIgnoreCase) ||
+                    module.Name.Equals("System.Private.CoreLib", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

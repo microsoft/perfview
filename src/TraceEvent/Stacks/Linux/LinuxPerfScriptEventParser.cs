@@ -326,7 +326,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         private IEnumerable<LinuxEvent> NextEvent(Regex regex, FastStream source)
         {
-
+            StringBuilder sb = new StringBuilder();
             string line = string.Empty;
 
             while (true)
@@ -337,8 +337,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     break;
 
                 EventKind eventKind = EventKind.Cpu;
-
-                StringBuilder sb = new StringBuilder();
 
                 // Fetch Command (processName) - Stops when it sees the pattern \s+\d+/\d
                 int idx = FindEndOfProcessCommand(source);

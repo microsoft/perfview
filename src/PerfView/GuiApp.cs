@@ -13,7 +13,7 @@ namespace PerfView
     public partial class GuiApp : Application
     {
         /// <summary>
-        /// The one and only main GUI window of the application.  
+        /// The one and only main GUI window of the application.
         /// </summary>
         public static new MainWindow MainWindow;
 
@@ -21,27 +21,38 @@ namespace PerfView
         {
             Startup += delegate (object sender, StartupEventArgs e) { ApplicationStarted(); };
 
+            InitializeComponent();
+
             if (installUnhandledExceptionHandlers)
             {
-                // Setup unhanded exception handlers 
+                // Setup unhanded exception handlers
                 AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
                 DispatcherUnhandledException += OnGuiUnhandledException;
             }
         }
 
         /// <summary>
-        /// Called when the application is started.  
+        /// Called when the application is started.
         /// </summary>
         private void ApplicationStarted()
         {
+            if (!Enum.TryParse(App.UserConfigData["Theme"], out Theme theme))
+            {
+                theme = Theme.Light;
+            }
+
+            // initialize theme before creating any window
+            ThemeViewModel.InitTheme(theme);
             MainWindow = new MainWindow();
+            MainWindow.ThemeViewModel.SetTheme(theme);
+
             var logFile = File.CreateText(App.LogFileName);
             StatusBar.AttachWriterToLogStream(logFile);
             App.CommandProcessor.LogFile = MainWindow.StatusBar.LogWriter;
 
-            // Work around for Non-English/US locale (e.g. French) where among other things the decimal point is a comma.    
+            // Work around for Non-English/US locale (e.g. French) where among other things the decimal point is a comma.
             // WPF never uses the CurrentCulture when it formats numbers (it always uses US)
-            // This sets the default to the current culture.  
+            // This sets the default to the current culture.
             // see http://serialseb.blogspot.com/2007/04/wpf-tips-1-have-all-your-dates-times.html
             FrameworkElement.LanguageProperty.OverrideMetadata(
               typeof(FrameworkElement),
@@ -67,7 +78,7 @@ namespace PerfView
                     Environment.Exit(-10);
                 }
 
-                App.AcceptEula();       // Remember that we have accepted the EULA for next time. 
+                App.AcceptEula();       // Remember that we have accepted the EULA for next time.
             }
 
             MainWindow.Loaded += delegate (object sender, RoutedEventArgs ev)
@@ -109,7 +120,7 @@ namespace PerfView
                     continuation = null;
                 }
 
-                // Run commands in the PerfViewExtensions\PerfViewStartup file.   
+                // Run commands in the PerfViewExtensions\PerfViewStartup file.
                 PerfViewExtensibility.Extensions.RunUserStartupCommands(MainWindow.StatusBar);
                 MainWindow.OpenPreviouslyOpened();
                 MainWindow.ExecuteCommand(commandName, App.CommandLineArgs.DoCommand, null, continuation);
@@ -118,7 +129,7 @@ namespace PerfView
         }
 
         /// <summary>
-        /// Called when exception happens in a GUI routine 
+        /// Called when exception happens in a GUI routine
         /// </summary>
         private void OnGuiUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
@@ -136,17 +147,17 @@ namespace PerfView
                 var feedbackSent = AppLog.SendFeedback("Unhandled Exception in GUI\r\n" + e.Exception.ToString(), true);
                 var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.Exception, feedbackSent);
                 var ret = dialog.ShowDialog();
-                // If it returns, it means that the user has opted to continue.  
+                // If it returns, it means that the user has opted to continue.
                 e.Handled = true;
             }
         }
 
         /// <summary>
-        /// Fallback if we happen to take an exception in a non-gui routine (shouldn't happen!) 
+        /// Fallback if we happen to take an exception in a non-gui routine (shouldn't happen!)
         /// </summary>
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            // TODO discriminate between the GUI and Non_GUI case.  
+            // TODO discriminate between the GUI and Non_GUI case.
             var feedbackSent = AppLog.SendFeedback("Unhandled Exception\r\n" + e.ExceptionObject.ToString(), true);
             MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {

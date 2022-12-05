@@ -1,8 +1,8 @@
 ﻿<src:WindowBase x:Class="PerfView.GuiUtilities.WebBrowserWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:src="clr-namespace:PerfView"        
-        Background="#FFAAAAAA"
+        xmlns:src="clr-namespace:PerfView"
+        Style="{DynamicResource CustomWindowStyle}"
         Closing="Window_Closing"
         Title="Web Browser" Height="700" Width="1100">
     <DockPanel>
@@ -13,7 +13,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Margin="5,2,5,3" Click="BackClick" IsEnabled="{Binding Path=CanGoBack}" Content="Back" 
+            <Button Grid.Column="0" Margin="5,2,5,3" Click="BackClick" IsEnabled="{Binding Path=CanGoBack}" Content="Back"
                     ToolTip="Go back (Alt-LeftArrow)"/>
             <Button Grid.Column="1" Margin="5,2,5,3" Click="ForwardClick"  IsEnabled="{Binding Path=CanGoForward}" Content="Forward"
                     ToolTip="Go forward (Alt-RightArrow)"/>

@@ -127,7 +127,10 @@ namespace Microsoft.Diagnostics.Tracing
 
         protected override void Dispose(bool disposing)
         {
-            _deserializer.Dispose();
+            if (_deserializer != null)
+            {
+                _deserializer.Dispose();
+            }
 
             base.Dispose(disposing);
         }

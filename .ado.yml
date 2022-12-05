@@ -8,10 +8,13 @@ trigger:
 pr:
   - main
 
+variables:
+  Codeql.Enabled: true
+
 jobs:
   - job: PerfView_Debug
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
       name: Azure Pipelines
       demands:
       - msbuild
@@ -19,9 +22,14 @@ jobs:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 2.1.505'
+      displayName: 'Use .NET Core SDK 3.1'
       inputs:
-        version: 2.1.505
+        version: 3.1.x
+
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet.exe'
+      inputs:
+        versionSpec: 6.3.0
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'
@@ -66,7 +74,7 @@ jobs:
 
   - job: PerfView_Release
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
       name: Azure Pipelines
       demands:
       - msbuild
@@ -74,9 +82,14 @@ jobs:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 2.1.505'
+      displayName: 'Use .NET Core SDK 3.1'
       inputs:
-        version: 2.1.505
+        version: 3.1.x
+
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet.exe'
+      inputs:
+        versionSpec: 6.3.0
 
     - task: NuGetCommand@2
       displayName: 'NuGet Restore PerfView.sln'

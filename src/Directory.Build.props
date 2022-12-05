@@ -22,17 +22,27 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <FastSerializationVersion>3.0.2</FastSerializationVersion>
-    <PerfViewVersion>3.0.2</PerfViewVersion>
-    <TraceEventVersion>3.0.2</TraceEventVersion>
+    <FastSerializationVersion>3.0.6</FastSerializationVersion>
+    <HeapDumpDllVersion>3.0.6</HeapDumpDllVersion>
+    <MemoryGraphVersion>3.0.6</MemoryGraphVersion>
+    <PerfViewVersion>3.0.6</PerfViewVersion>
+    <TraceEventVersion>3.0.6</TraceEventVersion>
+    <UtilitiesVersion>3.0.6</UtilitiesVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.23</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.24</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>2.1.327703</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>2.2.343001</MicrosoftDiagnosticsRuntimeVersion>
+    <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
+    <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
+    <!--
+    <MicrosoftDiagnosticsRuntimeVersion>local</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimePath>$(MSBuildThisFileDirectory)\..\..\clrmd\artifacts\bin\Microsoft.Diagnostics.Runtime\$(Configuration)\netstandard2.0\Microsoft.Diagnostics.Runtime.dll</MicrosoftDiagnosticsRuntimePath>
+    -->
+    <MicrosoftSourceLinkGitHubVersion>1.1.1</MicrosoftSourceLinkGitHubVersion>
     <XunitVersion>2.4.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
   </PropertyGroup>

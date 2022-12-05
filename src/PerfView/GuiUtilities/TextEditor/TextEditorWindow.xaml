@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
-        Closing="Window_Closing" 
+        Style="{DynamicResource CustomWindowStyle}"
+        Closing="Window_Closing"
         Title="TextEditorWindow" Height="900" Width="1300">
     <controls:TextEditorControl x:Name="m_TextEditor"/>
 </src:WindowBase>

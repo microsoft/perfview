@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
-        Background="#FFA7A7A7"  
+        Style="{DynamicResource CustomWindowStyle}"
+        Background="{StaticResource ControlDarkerBackground}"
         Title="Source Name Lookup" Height="339" Width="619">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp"/>
@@ -18,12 +19,12 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
+
         <!-- Main TextBox -->
         <controls:TextEditorControl Grid.Row="0" Margin="5,5" MinHeight="80" x:Name="Names"/>
-        
+
         <!-- Help message at top -->
-        <RichTextBox Grid.Row="1" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="1" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
@@ -60,11 +61,11 @@
         </Grid>
         <!--  -->
         <DataGrid Name="Grid" Grid.Row="4"
-        AutoGenerateColumns="False" 
+        AutoGenerateColumns="False"
         Background="White"
-        AlternatingRowBackground="#FFF2F1A4"
-        SelectionMode="Extended" SelectionUnit="CellOrRowHeader" 
-        CanUserSortColumns="False" 
+        AlternatingRowBackground="{DynamicResource AlternateRowBackground}"
+        SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
+        CanUserSortColumns="False"
         Height="100" >
             <DataGrid.Columns>
                 <DataGridTextColumn Header="File"/>

@@ -12801,6 +12801,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         Small = 0x0,
         Large = 0x1,
+        Pinned = 0x2
     }
     public enum GCType
     {
@@ -12949,6 +12950,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         None = 0x0,
         QuickJit = 0x1,
         QuickJitForLoops = 0x2,
+        TieredPGO = 0x4,
+        ReadyToRun = 0x8,
     }
 
     // [SecuritySafeCritical]

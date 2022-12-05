@@ -108,6 +108,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new FileNotFoundException("The session " + sessionName + " is not active.");  // Not really a file, but not bad. 
                 }
 
+                m_SessionHandle = properties->Wnode.HistoricalContext;
                 m_SessionId = (int)properties->Wnode.HistoricalContext;
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 if (properties->LogFileNameOffset != 0)
@@ -139,6 +140,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     m_NoPerProcessBuffering = true;
                 }
+                m_enabledProviders = GetEnabledProvidersForSession(properties->Wnode.HistoricalContext);
             }
             else
             {
@@ -1027,7 +1029,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Can only capture state on user mode sessions.");
                 }
 
-                EnsureStarted();
                 var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
                 var filter = new TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR();
                 parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
@@ -2289,6 +2290,93 @@ namespace Microsoft.Diagnostics.Tracing.Session
             return properties;
         }
 
+        private static unsafe Dictionary<Guid, ulong> GetEnabledProvidersForSession(ulong sessionId)
+        {
+            int buffSize = 48 * 1024;     // An initial guess that probably works most of the time.
+            byte* buffer;
+            for (; ; )
+            {
+                var space = stackalloc byte[buffSize];
+                buffer = space;
+                var hr = TraceEventNativeMethods.EnumerateTraceGuidsEx(TraceEventNativeMethods.TRACE_QUERY_INFO_CLASS.TraceGuidQueryList,
+                    null, 0, buffer, buffSize, ref buffSize);
+                if (hr == 0)
+                {
+                    break;
+                }
+
+                if (hr != 122)      // Error 122 means buffer not big enough.   For that one retry, everything else simply fail.
+                {
+                    return null;
+                }
+            }
+
+            var ret = new Dictionary<Guid, ulong>();
+            byte* bufferEnd = buffer + buffSize;
+            Guid* providerGuids = (Guid*)buffer;
+            for (int i = 0; &providerGuids[i] < bufferEnd; i++)
+            {
+                Guid* providerId = &providerGuids[i];
+                long? matchAnyKeyword = GetEnabledKeywordsForProviderAndSession(providerId, sessionId);
+                if (matchAnyKeyword != null)
+                {
+                    ret.Add(*providerId, (ulong)matchAnyKeyword);
+                }
+            }
+
+            return ret;
+        }
+
+        private static unsafe long? GetEnabledKeywordsForProviderAndSession(Guid *providerId, ulong sessionId)
+        {
+            int buffSize = 256;     // An initial guess that probably works most of the time.
+            byte* buffer;
+            for (; ; )
+            {
+                var space = stackalloc byte[buffSize];
+                buffer = space;
+                var hr = TraceEventNativeMethods.EnumerateTraceGuidsEx(TraceEventNativeMethods.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
+                    providerId, sizeof(Guid), buffer, buffSize, ref buffSize);
+                if (hr == 0)
+                {
+                    break;
+                }
+
+                else if (hr != 122)      // Error 122 means buffer not big enough.   For that one retry, everything else simply fail.
+                {
+                    return null;
+                }
+            }
+
+            long? matchAnyKeyword = null;
+
+            TraceEventNativeMethods.TRACE_GUID_INFO* guidInfo = (TraceEventNativeMethods.TRACE_GUID_INFO*)buffer;
+            byte *pCurrent = buffer + sizeof(TraceEventNativeMethods.TRACE_GUID_INFO);
+            for (int i = 0; i < guidInfo->InstanceCount; i++)
+            {
+                TraceEventNativeMethods.TRACE_PROVIDER_INSTANCE_INFO* pInstanceInfo = (TraceEventNativeMethods.TRACE_PROVIDER_INSTANCE_INFO*)pCurrent;
+                pCurrent += sizeof(TraceEventNativeMethods.TRACE_PROVIDER_INSTANCE_INFO);
+                for (int j = 0; j < pInstanceInfo->EnableCount; j++)
+                {
+                    TraceEventNativeMethods.TRACE_ENABLE_INFO* pEnableInfo = &((TraceEventNativeMethods.TRACE_ENABLE_INFO*)pCurrent)[j];
+                    if (pEnableInfo->LoggerId == sessionId)
+                    {
+                        if (matchAnyKeyword == null)
+                        {
+                            matchAnyKeyword = pEnableInfo->MatchAnyKeyword;
+                        }
+                        else
+                        {
+                            matchAnyKeyword |= pEnableInfo->MatchAnyKeyword;
+                        }
+                    }
+                }
+                pCurrent += sizeof(TraceEventNativeMethods.TRACE_ENABLE_INFO) * pInstanceInfo->EnableCount;
+            }
+
+            return matchAnyKeyword;
+        }
+
         private static unsafe void CopyStringToPtr(char* toPtr, string str)
         {
             fixed (char* fromPtr = str)
@@ -2336,9 +2424,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // on Win 7.   We only do this for real time sessions that are using TraceLog.  
         internal bool m_associatedWithTraceLog;     // Currently we only allow m_kernelSession to be used if you are using TraceLog on the session. 
 
-        // TODO: we track the enabled providers but it is better to get it from the 
-        // by asking the OS (using EnumerateTraceGuidsEx), but that is a bit of a pain.  
-        // When we do that, we don't need this.  
         private readonly Dictionary<Guid, ulong> m_enabledProviders = new Dictionary<Guid, ulong>();
 
         #endregion

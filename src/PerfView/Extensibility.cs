@@ -1045,6 +1045,40 @@ namespace PerfViewExtensibility
         }
 
         /// <summary>
+        /// Saves the stacks as a CSV in the same format as it would appear in the CPUStacks GUI
+        /// </summary>
+        /// <param name="outputFileName"> The file name the data will be written to </param>
+        public void SaveAsCsvByName(string outputFileName)
+        {
+            if (string.IsNullOrEmpty(outputFileName))
+            {
+                throw new ArgumentException($"{nameof(outputFileName)} is null or empty.");
+            }
+
+            if (File.Exists(outputFileName))
+            {
+                File.Delete(outputFileName);
+            }
+            using (var csvFile = File.CreateText(outputFileName))
+            {
+                csvFile.Write("Name,Exc,Exc%,Inc,Inc%,Fold,First,Last\r\n");
+                var callTree = ByName;
+                foreach (var callTreeNode in callTree)
+                {
+                    var frameUpdated = callTreeNode.Name.Replace(",", ";");
+                    csvFile.WriteLine($"{frameUpdated}," +
+                        $"{callTreeNode.ExclusiveMetric}," +
+                        $"{callTreeNode.ExclusiveMetricPercent}," +
+                        $"{callTreeNode.InclusiveCount}," +
+                        $"{callTreeNode.InclusiveMetricPercent}," +
+                        $"{callTreeNode.ExclusiveFoldedMetric}," +
+                        $"{callTreeNode.FirstTimeRelativeMSec}," +
+                        $"{callTreeNode.LastTimeRelativeMSec}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Saves the stacks as a XML file (or a ZIPed XML file).  Only samples that pass the filter are saved.
         /// Also all interesting symbolic names should be resolved first because it is impossible to resolve them 
         /// later.   The saved samples CAN be regrouped later, however.  
@@ -1054,8 +1088,14 @@ namespace PerfViewExtensibility
             // TODO remember the status log even when we don't have a gui. 
 #if !PERFVIEW_COLLECT
             if (GuiApp.MainWindow != null)
+            try
             {
                 GuiState.Log = File.ReadAllText(App.LogFileName);
+            }
+            catch
+            {
+                // Ignore failures.
+                GuiState.Log = string.Empty;
             }
 #endif
 

@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
-        Background="#FFA7A7A7" 
-        Title="Collecting Memory Data" 
+        Style="{DynamicResource CustomWindowStyle}"
+        Background="{StaticResource ControlDarkerBackground}"
+        Title="Collecting Memory Data"
         Width="900" MinWidth="500" Height="400">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp"/>
@@ -18,13 +19,13 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
+
         <!-- Help message at top -->
-        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="#FFE2E8F8" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
-                        This dialog give options for collecting Memory (GC Heap) data.   Typically simply typing a few characters 
+                        This dialog give options for collecting Memory (GC Heap) data.   Typically simply typing a few characters
                         of the process name in the Filter text box and hitting &lt;Enter&gt; is enough.  See
                         <Hyperlink Command="Help" CommandParameter="CollectingDataGCHeap">Collecting GC Heap Data.</Hyperlink> and
                         <Hyperlink Command="Help" CommandParameter="UnderstandingPerfDataGCHeap">Understanding GC Heap Data.</Hyperlink>
@@ -33,7 +34,7 @@
                 </FlowDocument>
             </RichTextBox.Document>
         </RichTextBox>
-        
+
         <!-- Option 1 capturing memory from dmp files -->
         <Grid Grid.Row="1" Name="ProcessDumpRow">
             <Grid.ColumnDefinitions>
@@ -93,7 +94,7 @@
                 <Hyperlink Command="Help" CommandParameter="GCHeapDataFileNameTextBox">Output Data File:</Hyperlink>
             </TextBlock>
             <TextBox Grid.Column="1"  Name="DataFileNameTextBox" VerticalAlignment="Center" KeyDown="DataFileKeyDown" />
-            <Button Grid.Column="2" Content="..."  Width="25" Margin="5,5" 
+            <Button Grid.Column="2" Content="..."  Width="25" Margin="5,5"
                 VerticalAlignment="Center" Click="DataFileButtonClick" ToolTip="Click to select the file name in a file chooser dialog." />
         </Grid>
 
@@ -123,19 +124,19 @@
                         <Hyperlink Command="Help" CommandParameter="MaxDumpTextBox">Max Dump<LineBreak/>K Objs:</Hyperlink>
             </TextBlock>
             <TextBox Grid.Column="2" Name="MaxDumpTextBox" VerticalAlignment="Center" Width="50" Margin="5,0"/>
-            
+
             <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked the process will be frozen during the dump.">
                     <Hyperlink Command="Help" CommandParameter="FreezeCheckBox">Freeze:</Hyperlink>
             </TextBlock>
             <CheckBox Grid.Column="4" Name="FreezeCheckBox" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            
-            <!-- TODO FIX NOW Add DumpData back in.  
+
+            <!-- TODO FIX NOW Add DumpData back in.
             <TextBlock Grid.Column="5" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked the data in objects as well as the connectivity information is dumped.">
             <Hyperlink Command="Help" CommandParameter="DumpDataCheckBox">Dump<LineBreak/>Data:</Hyperlink>
             </TextBlock>
             <CheckBox Grid.Column="6" Name="DumpDataCheckBox" VerticalAlignment="Center" Margin="0,0,10,0"/>
             -->
-            
+
             <TextBlock Grid.Column="7" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked Dump will be in Clr Profiler format.">
                 <Hyperlink Command="Help" CommandParameter="SaveETLCheckBox">Save<LineBreak/>ETL:</Hyperlink>
             </TextBlock>

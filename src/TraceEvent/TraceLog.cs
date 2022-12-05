@@ -5308,6 +5308,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return null;
         }
+
         /// <summary>
         /// Find the last process in the trace that has the process name 'processName' and whose process
         /// start time is after the given point in time.
@@ -8723,11 +8724,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (moduleFile.ImageId != 0 && file.Header.TimeDateStampSec != moduleFile.ImageId)
                 {
                     log.WriteLine("The local file {0} has a mismatched Timestamp value found {1} != expected {2}", moduleFilePath, file.Header.TimeDateStampSec, moduleFile.ImageId);
-                    return false;
-                }
-                if (file.Header.SizeOfImage != (uint)moduleFile.ImageSize)
-                {
-                    log.WriteLine("The local file {0} has a mismatched size found {1} != expected {2}", moduleFilePath, file.Header.SizeOfImage, moduleFile.ImageSize);
                     return false;
                 }
             }

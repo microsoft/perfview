@@ -987,7 +987,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     baseName = "Frame " + ((int)baseFrameIndex).ToString();
                 }
 
-                return baseName + " " + frameName;
+                if(!string.IsNullOrEmpty(frameName))
+                {
+                    return baseName + " " + frameName;
+                }
+
+                return baseName;
             }
             var moduleName = m_moduleIntern[m_frameIntern[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
             if (moduleName.Length == 0)
