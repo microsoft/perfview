@@ -54,6 +54,7 @@
 collect_cpu=1
 collect_threadTime=0
 collect_offcpu=0
+collect_system=0
 
 ######################################
 ## .NET Event Categories
@@ -1397,6 +1398,9 @@ ProcessArguments()
             # Perf doesn't support capturing cpu-clock events and sched events concurrently.
             collect_cpu=0
             collect_offcpu=1
+        elif [ "-system" == "$arg" ]
+        then
+            collect_system=1
         elif [ "-hwevents" == "$arg" ]
         then
             collect_HWevents=1
@@ -1951,6 +1955,11 @@ BuildPerfRecordArgs()
         then
             collectionArgs="$collectionArgs -F 1000"
         fi
+    fi
+
+    if [ $collect_system -eq 1 ]
+    then
+        collectionArgs="$collectionArgs -e major-faults -e minor-faults"
     fi
 
     # Enable HW counters event collection
