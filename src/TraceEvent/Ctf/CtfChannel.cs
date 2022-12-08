@@ -49,12 +49,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 {
                     // Zip filestream can't seek, we have to read the rest of the packet.
 
-                    int curr = _buffer.Length < _packetSize ? _buffer.Length : (int)_packetSize;
-                    _stream.Read(_buffer, 0, curr);
-                    _packetSize -= curr;
+                    int toRead = _buffer.Length <= _packetSize ? _buffer.Length : (int)_packetSize;
+                    int read = _stream.Read(_buffer, 0, toRead);
+                    _packetSize -= read;
 #if DEBUG
-                    _fileOffset += curr;
+                    _fileOffset += read;
 #endif
+                    if (read != toRead)
+                    {
+                        return false;
+                    }
                 }
 
                 if (!ReadTraceHeader())
@@ -99,7 +103,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             streamIdOffset /= 8;
             traceHeaderSize /= 8;
 
-            if (_stream.Read(_buffer, 0, traceHeaderSize) != traceHeaderSize)
+            if (TryReadExactlyCount(_buffer, 0, traceHeaderSize) != traceHeaderSize)
             {
                 return false;
             }
@@ -147,7 +151,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             contentSizeOffset /= 8;
             packetSizeOffset /= 8;
 
-            if (_stream.Read(_buffer, 0, packetContextSize) != packetContextSize)
+            if (TryReadExactlyCount(_buffer, 0, packetContextSize) != packetContextSize)
             {
                 return false;
             }
@@ -171,7 +175,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private bool ReadStruct<T>(out T result) where T : struct
         {
             int size = Marshal.SizeOf(typeof(T));
-            int read = _stream.Read(_buffer, 0, size);
+            int read = TryReadExactlyCount(_buffer, 0, size);
 
 #if DEBUG
             _fileOffset += read;
@@ -218,32 +222,37 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int read = 0;
-            while (read < count)
+            if (_contentSize == 0 && !ReadContext())
             {
-                if (_contentSize == 0 && !ReadContext())
-                {
-                    break;
-                }
-
-                int toRead = count > _contentSize ? (int)_contentSize : count;
-                int curr = _stream.Read(buffer, offset + read, toRead);
-
-                _contentSize -= curr;
-                _packetSize -= curr;
-                read += curr;
-
-#if DEBUG
-                _fileOffset += curr;
-#endif
-
-                if (curr != toRead)
-                {
-                    break;
-                }
+                return 0;
             }
 
+            int toRead = count > _contentSize ? (int)_contentSize : count;
+            int read = TryReadExactlyCount(buffer, offset, toRead);
+
+            _contentSize -= read;
+            _packetSize -= read;
+
+#if DEBUG
+            _fileOffset += read;
+#endif
+
             return read;
+        }
+
+        private int TryReadExactlyCount(byte[] buffer, int offset, int count)
+        {
+            int totalRead = 0;
+            while (totalRead < count)
+            {
+                var read = _stream.Read(buffer, offset + totalRead, count - totalRead);
+                if (read == 0)
+                {
+                    return totalRead;
+                }
+                totalRead += read;
+            }
+            return totalRead;
         }
 
         #region Not Implemented
