@@ -91,8 +91,8 @@
                     <MenuItem Header="Merge and Zip All" Click="DoMergeAndZipAll" ToolTip="Merge and zip all unmerged traces in the current folder."/>
                 </MenuItem>
                 <MenuItem Header="_Memory">
-                    <MenuItem Header="_Take Heap Snapshot" Command="{x:Static src:MainWindow.HeapSnapshotCommand}" ToolTip="Take a snapshot of of the CLR GC Heap."/>
-                    <MenuItem Header="Take Heap Snapshot From Dump" Command="{x:Static src:MainWindow.HeapSnapshotFromDumpCommand}" ToolTip="Take a snapshot of of the CLR GC Heap from a process Dump."/>
+                    <MenuItem Header="_Take Heap Snapshot" Command="{x:Static src:MainWindow.HeapSnapshotCommand}" ToolTip="Take a snapshot of the CLR GC Heap."/>
+                    <MenuItem Header="Take Heap Snapshot From Dump" Command="{x:Static src:MainWindow.HeapSnapshotFromDumpCommand}" ToolTip="Take a snapshot of the CLR GC Heap from a process Dump."/>
                 </MenuItem>
                 <MenuItem Header="Si_ze">
                     <MenuItem Header="_DirectorySize"  Command="{x:Static src:MainWindow.DirectorySizeCommand}" ToolTip="Computes the disk usage (recursively) for a directory.">
