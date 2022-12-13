@@ -99,10 +99,11 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         // Implementation of ICorDebugDataTarget.ReadVirtual
         public uint ReadVirtual(ulong address, IntPtr buffer, uint bytesRequested)
         {
-            uint result = m_reader.ReadPartialMemory(address, buffer, bytesRequested);
-            byte[] data = new byte[bytesRequested];
-            Marshal.Copy(buffer, data, 0, (int)bytesRequested);
-            return result;
+            uint bytesRead = m_reader.ReadPartialMemory(address, buffer, bytesRequested);
+            if (bytesRead == 0)
+                throw new COMException("Could not read memory requested at address " + address + ".");
+
+            return bytesRead;
         }
 
         // Implementation of ICorDebugDataTarget.GetThreadContext
