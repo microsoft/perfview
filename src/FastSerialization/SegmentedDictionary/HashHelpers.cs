@@ -106,7 +106,7 @@ namespace Microsoft.Diagnostics.FastSerialization
 
             // This is equivalent of (uint)Math.BigMul(multiplier * value, divisor, out _). This version
             // is faster than BigMul currently because we only need the high bits.
-            var highbits = (uint)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
+            var highbits = unchecked((uint)(((((multiplier * value) >> 32) + 1) * divisor) >> 32));
 
             Debug.Assert(highbits == value % divisor);
             return highbits;

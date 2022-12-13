@@ -1522,7 +1522,7 @@ public class GCHeapDumper
                 InteropInfo.InteropModuleInfo infoModule = new InteropInfo.InteropModuleInfo();
                 infoModule.baseAddress = module.ImageBase;
                 infoModule.fileSize = (uint)module.IndexFileSize;
-                infoModule.timeStamp = (uint)module.IndexTimeStamp;
+                infoModule.timeStamp = unchecked((uint)module.IndexTimeStamp);
                 infoModule.fileName = module.FileName;
                 m_gcHeapDump.InteropInfo.AddModule(infoModule);
             }

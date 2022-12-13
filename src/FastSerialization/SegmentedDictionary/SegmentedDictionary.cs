@@ -107,7 +107,7 @@ namespace System.Collections.Generic
                 {
                     // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                     // Test in if to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Capacity)
+                    if (unchecked((uint)i) >= (uint)entries.Capacity)
                     {
                         return false;
                     }
@@ -159,7 +159,7 @@ namespace System.Collections.Generic
             {
                 // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                 // Test uint in if rather than loop condition to drop range check for following array access
-                if ((uint)i >= (uint)entries.Capacity)
+                if (unchecked((uint)i) >= (uint)entries.Capacity)
                 {
                     break;
                 }
