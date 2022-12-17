@@ -247,7 +247,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<GenAwareBeginTraceData> GCGenAwareStart
+        public event Action<GenAwareTemplateTraceData> GCGenAwareBegin
         {
             add
             {
@@ -261,7 +261,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<GenAwareEndTraceData> GCGenAwareEnd
+        public event Action<GenAwareTemplateTraceData> GCGenAwareEnd
         {
             add
             {
@@ -272,6 +272,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 source.UnregisterEventTemplate(value, 207, ProviderGuid);
                 source.UnregisterEventTemplate(value, 207, GCTaskGuid);
+            }
+        }
+
+        public event Action<GCLOHCompactTraceData> GCLOHCompact
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(GCLOHCompactTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 208, ProviderGuid);
+                source.UnregisterEventTemplate(value, 208, GCTaskGuid);
+            }
+        }
+
+        public event Action<GCFitBucketInfoTraceData> GCFitBucketInfo
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(GCFitBucketInfoTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 209, ProviderGuid);
+                source.UnregisterEventTemplate(value, 209, GCTaskGuid);
             }
         }
 
@@ -2086,13 +2114,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new MethodJitMemoryAllocatedForCodeTraceData(action, 146, 9, "Method", Guid.Empty, 103, "MemoryAllocatedForJitCode", ProviderGuid, ProviderName);
         }
-        static private GenAwareBeginTraceData GenAwareBeginTemplate(Action<GenAwareBeginTraceData> action)
+        static private GenAwareTemplateTraceData GenAwareBeginTemplate(Action<GenAwareTemplateTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GenAwareBeginTraceData(action, 206, 1, "GC", GCTaskGuid, 1, "GenAwareStart", ProviderGuid, ProviderName);
+            return new GenAwareTemplateTraceData(action, 206, 1, "GC", GCTaskGuid, 206, "GenAwareBegin", ProviderGuid, ProviderName);
         }
-        static private GenAwareEndTraceData GenAwareEndTemplate(Action<GenAwareEndTraceData> action)
+        static private GenAwareTemplateTraceData GenAwareEndTemplate(Action<GenAwareTemplateTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GenAwareEndTraceData(action, 207, 1, "GC", GCTaskGuid, 2, "GenAwareEnd", ProviderGuid, ProviderName);
+            return new GenAwareTemplateTraceData(action, 207, 1, "GC", GCTaskGuid, 207, "GenAwareEnd", ProviderGuid, ProviderName);
+        }
+        static private GCLOHCompactTraceData GCLOHCompactTemplate(Action<GCLOHCompactTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new GCLOHCompactTraceData(action, 208, 1, "GC", GCTaskGuid, 208, "LOHCompact", ProviderGuid, ProviderName);
+        }
+        static private GCFitBucketInfoTraceData GCFitBucketInfoTemplate(Action<GCFitBucketInfoTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new GCFitBucketInfoTraceData(action, 209, 1, "GC", GCTaskGuid, 209, "FitBucketInfo", ProviderGuid, ProviderName);
         }
         static private R2RGetEntryPointStartTraceData R2RGetEntryPointStartTemplate(Action<R2RGetEntryPointStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
@@ -2132,7 +2168,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[142];
+                var templates = new TraceEvent[144];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2284,6 +2320,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[140] = YieldProcessorMeasurementTemplate(null);
 
                 templates[141] = ThreadPoolMinMaxThreadsTemplate(null);
+                templates[142] = GCLOHCompactTemplate(null);
+                templates[143] = GCFitBucketInfoTemplate(null);
 
                 s_templates = templates;
             }
@@ -2534,13 +2572,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<JitInstrumentationDataVerboseTraceData> m_target;
         #endregion
     }
-    public sealed class GenAwareBeginTraceData : TraceEvent
+    public sealed class GenAwareTemplateTraceData : TraceEvent
     {
         public int Count { get { return GetInt32At(0); } }
         public int ClrInstanceID { get { return GetInt16At(4); } }
 
         #region Private
-        internal GenAwareBeginTraceData(Action<GenAwareBeginTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal GenAwareTemplateTraceData(Action<GenAwareTemplateTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             m_target = target;
@@ -2556,7 +2594,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<GenAwareBeginTraceData>)value; }
+            set { m_target = (Action<GenAwareTemplateTraceData>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -2591,16 +2629,107 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        private event Action<GenAwareBeginTraceData> m_target;
+        private event Action<GenAwareTemplateTraceData> m_target;
         #endregion
     }
-    public sealed class GenAwareEndTraceData : TraceEvent
+
+    public sealed class GCLOHCompactInfo
     {
-        public int Count { get { return GetInt32At(0); } }
-        public int ClrInstanceID { get { return GetInt16At(4); } }
+        /// <summary>
+        /// The time spent on planing the LOH for compaction
+        /// </summary>
+        public int TimePlan
+        {
+            get
+            {
+                return m_timePlan;
+
+            }
+        }
+
+        /// <summary>
+        /// The time spent on copying objects during LOH compaction
+        /// </summary>
+        public int TimeCompact
+        {
+            get
+            {
+                return m_timeCompact;
+
+            }
+        }
+
+        /// <summary>
+        /// The time spent on relocating pointers during LOH compaction
+        /// </summary>
+        public int TimeRelocate
+        {
+            get
+            {
+                return m_timeRelocate;
+            }
+        }
+
+        /// <summary>
+        /// The total number of pointers found in the LOH during LOH compaction
+        /// </summary>
+        public long TotalRefs
+        {
+            get
+            {
+                return m_totalRefs;
+            }
+        }
+
+        /// <summary>
+        /// The total number of pointers found pointing to null in the LOH during LOH compaction
+        /// </summary>
+        public long ZeroRefs
+        {
+            get
+            {
+                return m_zeroRefs;
+            }
+        }
+
+        #region private
+        internal GCLOHCompactInfo(int timePlan, int timeCompact, int timeRelocate, long totalRefs, long zeroRefs)
+        {
+            m_timePlan = timePlan;
+            m_timeCompact = timeCompact;
+            m_timeRelocate = timeRelocate;
+            m_totalRefs = totalRefs;
+            m_zeroRefs = zeroRefs;
+        }
+
+        private int m_timePlan;
+        private int m_timeCompact;
+        private int m_timeRelocate;
+        private long m_totalRefs;
+        private long m_zeroRefs;
+        #endregion
+    }
+
+    public class GCLOHCompactTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+
+        public int Count { get { return GetInt16At(2); } }
+
+        public GCLOHCompactInfo Info(int heapIndex)
+        {
+            Debug.Assert(0 <= heapIndex && heapIndex < Count);
+            int baseAddress = 4 + SizeOfGCLOHCompactInfo * heapIndex;
+            int timePlan = GetInt32At(baseAddress);
+            int timeCompact = GetInt32At(baseAddress + 4);
+            int timeRelocate = GetInt32At(baseAddress + 8);
+            long totalRefs = (PointerSize == 8) ? GetInt64At(baseAddress + 16) : (long)GetInt32At(12);
+            long zeroRefs = (PointerSize == 8) ? GetInt64At(baseAddress + 24) : (long)GetInt32At(16);
+            return new GCLOHCompactInfo(timePlan, timeCompact, timeRelocate, totalRefs, zeroRefs);
+        }
 
         #region Private
-        internal GenAwareEndTraceData(Action<GenAwareEndTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal GCLOHCompactTraceData(Action<GCLOHCompactTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             m_target = target;
@@ -2611,18 +2740,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != 6));
+            Debug.Assert(!(Version == 0 && EventDataLength != 4 + SizeOfGCLOHCompactInfo * Count));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<GenAwareEndTraceData>)value; }
+            set { m_target = (Action<GCLOHCompactTraceData>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "Count", Count);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "Count", Count);
             sb.Append("/>");
             return sb;
         }
@@ -2632,7 +2761,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "ClrInstanceID" };
+                    payloadNames = new string[] { "ClrInstanceID", "Count" };
                 return payloadNames;
             }
         }
@@ -2642,16 +2771,198 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             switch (index)
             {
                 case 0:
-                    return Count;
-                case 1:
                     return ClrInstanceID;
+                case 1:
+                    return Count;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<GenAwareEndTraceData> m_target;
+        private int SizeOfGCLOHCompactInfo
+        {
+            get
+            {
+                return PointerSize == 8 ? 32 : 20;
+            }
+        }
+
+        private event Action<GCLOHCompactTraceData> m_target;
+        #endregion
+    }
+
+    public class GCFitBucket
+    {
+        #region private
+        internal GCFitBucket(int index, int count, long size)
+        {
+            m_index = index;
+            m_count = count;
+            m_size = size;
+        }
+
+        /// <summary>
+        /// The index of the bucket. This is required because bucket of zero size is not reported.
+        /// </summary>
+        public int Index
+        {
+            get
+            {
+                return m_index;
+            }
+        }
+
+        /// <summary>
+        /// The number of items in the bucket.
+        /// </summary>
+        public int Count
+        {
+            get
+            {
+                return m_count;                
+            }
+        }
+
+        /// <summary>
+        /// The total size of items in the bucket.
+        /// </summary>
+        public long Size
+        {
+            get
+            {
+                return m_size;
+            }
+        }
+
+        private int m_index;
+        private int m_count;
+        private long m_size;
+        #endregion
+    }
+
+    /// <summary>
+    /// BucketKind is used to describe the type of the GCFitBucketInfo events.
+    /// </summary>
+    public enum BucketKind
+    {
+        /// <summary>
+        /// When the BucketKind is LargestFreeListItems, the free list items in Gen2 are counted and reported
+        /// The counting has a couple of heuristics that avoid spending too much time counting.
+        /// </summary>
+        LargestFreeListItems = 0,
+
+        /// <summary>
+        /// When the BucketKind is PlugsInCondemned, the buckets in the associated GCFitBucketInfo events
+        /// represents plugs that we found during the plan phase of a Gen1 GC where it is planned to fit in the 
+        /// current (i.e. condemned) generation. 
+        /// </summary>
+        PlugsInCondemned = 1
+    }
+
+    public class GCFitBucketInfoTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+
+        /// <summary>
+        /// The kind of the buckets (see the comments for the enum BucketKind for more information)
+        /// </summary>
+        public BucketKind BucketKind { get { return (BucketKind)GetInt16At(2); } }
+
+        /// <summary>
+        /// The total size of all buckets.
+        /// </summary>
+        public long TotalSize { get { return GetInt64At(4); } }
+
+        /// <summary>
+        /// The number of buckets.
+        /// </summary>
+        public int Count { get { return GetInt16At(12); } }
+
+        public GCFitBucket Buckets(int bucketIndex)
+        {
+            Debug.Assert(0 <= bucketIndex && bucketIndex < Count);
+            int baseAddress = 14 + SizeOfGCFitBucket * bucketIndex;
+            int index = GetInt32At(baseAddress);
+            int count = GetInt32At(baseAddress + 4);
+            long size = (PointerSize == 8) ? GetInt64At(baseAddress + 8) : (long)GetInt32At(baseAddress + 8);
+            return new GCFitBucket(index, count, size);
+        }
+
+
+        #region Private
+        internal GCFitBucketInfoTraceData(Action<GCFitBucketInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<GCFitBucketInfoTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            int size0 = 14 + Count * SizeOfGCFitBucket;
+            Debug.Assert(!(Version == 0 && EventDataLength != size0));
+            Debug.Assert(!(Version > 0 && EventDataLength < size0));
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "BucketKind", BucketKind);
+            XmlAttrib(sb, "TotalSize", TotalSize);
+            XmlAttrib(sb, "Count", Count);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "ClrInstanceID", "BucketKind", "TotalSize", "Count" };
+                }
+
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                case 1:
+                    return BucketKind;
+                case 2:
+                    return TotalSize;
+                case 3:
+                    return Count;
+
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private int SizeOfGCFitBucket
+        {
+            get
+            {
+                return PointerSize == 8 ? 16 : 12;
+            }
+        }
+
+        private event Action<GCFitBucketInfoTraceData> Action;
         #endregion
     }
     public sealed class GCStartTraceData : TraceEvent
@@ -3314,6 +3625,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string TypeName { get { if (Version >= 2) { return GetUnicodeStringAt(18 + PointerSize); } return ""; } }
         public int HeapIndex { get { if (Version >= 2) { return GetInt32At(SkipUnicodeString(18 + PointerSize)); } return 0; } }
         public Address Address { get { if (Version >= 3) { return GetAddressAt(SkipUnicodeString(HostOffset(22, 1)) + 4); } return 0; } }
+        public long ObjectSize { get { if (Version >= 4) { return GetInt64At(SkipUnicodeString(HostOffset(22, 1)) + 4 + PointerSize); } return 0; } }
         #region Private
         internal GCAllocationTickTraceData(Action<GCAllocationTickTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -3350,6 +3662,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 if (Version >= 3)
                 {
                     XmlAttribHex(sb, "Address", Address);
+                    if (Version >= 4)
+                    {
+                        XmlAttribHex(sb, "ObjectSize", ObjectSize);
+                    }
                 }
             }
             sb.Append("/>");
@@ -3362,7 +3678,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "AllocationAmount", "AllocationKind", "ClrInstanceID", "AllocationAmount64", "TypeID", "TypeName", "HeapIndex", "Address" };
+                    payloadNames = new string[] { "AllocationAmount", "AllocationKind", "ClrInstanceID", "AllocationAmount64", "TypeID", "TypeName", "HeapIndex", "Address", "ObjectSize" };
                 }
 
                 return payloadNames;
@@ -3389,6 +3705,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return HeapIndex;
                 case 7:
                     return Address;
+                case 8:
+                    return ObjectSize;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -6619,6 +6937,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public bool HasCondemnReasons0 { get { return (Version >= 3); } }
         public int CondemnReasons1 { get { if (Version >= 3) { return GetInt32At(42); } return 0; } }
         public bool HasCondemnReasons1 { get { return (Version >= 3); } }
+        public bool HasCount { get { return (Version >= 4); } }
+        public int Count { get { if (Version >= 4) { return GetInt32At(46); } return 0; } }
+        public int[] Times { get { if (Version >= 4) { return GetInt32ArrayAt(50, Count); } return null; } }
+
         #region Private
         internal GCGlobalHeapHistoryTraceData(Action<GCGlobalHeapHistoryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -6662,7 +6984,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure", "CondemnReasons0", "CondemnReasons1" };
+                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure", "CondemnReasons0", "CondemnReasons1", "Count" };
                 }
 
                 return payloadNames;
@@ -6730,6 +7052,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     if (HasCondemnReasons1)
                     {
                         return CondemnReasons1;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+                case 11:
+                    if (HasCount)
+                    {
+                        return Count;
                     }
                     else
                     {
@@ -9583,6 +9915,96 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<TypeLoadStopTraceData> m_target;
+        #endregion
+    }
+
+    public sealed class GCSettingsRundownTraceData : TraceEvent
+    {
+        public long HardLimit { get { return GetInt64At(0); } }
+        public long LOHThreshold { get { return GetInt64At(8); } }
+        public long PhysicalMemoryConfig { get { return GetInt64At(16); } }
+        public long Gen0MinBudgetConfig { get { return GetInt64At(24); } }
+        public long Gen0MaxBudgetConfig { get { return GetInt64At(32); } }
+        public int HighMemPercentConfig { get { return GetInt32At(40); } }
+        public int BitSettings { get { return GetInt32At(44); } }
+        public int ClrInstanceID { get { return GetInt16At(48); } }
+
+        #region Private
+        internal GCSettingsRundownTraceData(Action<GCSettingsRundownTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<GCSettingsRundownTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(Version != 0 || EventDataLength == 50);
+            Debug.Assert(Version > 0 || EventDataLength >= 50);
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "HardLimit", HardLimit);
+            XmlAttrib(sb, "LOHThreshold", LOHThreshold);
+            XmlAttrib(sb, "PhysicalMemoryConfig", PhysicalMemoryConfig);
+            XmlAttrib(sb, "Gen0MinBudgetConfig", Gen0MinBudgetConfig);
+            XmlAttrib(sb, "Gen0MaxBudgetConfig", Gen0MaxBudgetConfig);
+            XmlAttrib(sb, "HighMemPercentConfig", HighMemPercentConfig);
+            XmlAttrib(sb, "BitSettings", BitSettings);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.AppendLine(">");
+            sb.Append("</Event>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "HardLimit", "LOHThreshold", "PhysicalMemoryConfig", "Gen0MinBudgetConfig", "Gen0MaxBudgetConfig", "HighMemPercentConfig", "BitSettings", "ClrInstanceID" };
+                }
+
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return HardLimit;
+                case 1:
+                    return LOHThreshold;
+                case 2:
+                    return PhysicalMemoryConfig;
+                case 3:
+                    return Gen0MinBudgetConfig;
+                case 4:
+                    return Gen0MaxBudgetConfig;
+                case 5:
+                    return HighMemPercentConfig;
+                case 6:
+                    return BitSettings;
+                case 7:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<GCSettingsRundownTraceData> Action;
         #endregion
     }
 
@@ -12799,6 +13221,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         SmallObjectHeap = 0x0,
         LargeObjectHeap = 0x1,
         ReadOnlyHeap = 0x2,
+        PinnedObjectHeap = 0x3,
     }
     public enum GCAllocationKind
     {
@@ -12965,6 +13388,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xa669021c), unchecked((short)0xc450), unchecked((short)0x4609), 0xa0, 0x35, 0x5a, 0xf5, 0x9a, 0xf4, 0xdf, 0x18);
         public enum Keywords : long
         {
+            GC = 0x1,
             Loader = 0x8,
             Jit = 0x10,
             NGen = 0x20,
@@ -12999,7 +13423,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             Compilation = 0x1000000000,
 
-            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Loader + CodeSymbolsRundown +
+            Default = GC + ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Loader + CodeSymbolsRundown +
                       Compilation,
         };
 
@@ -13314,6 +13738,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 source.UnregisterEventTemplate(value, 300, ExecutionCheckpointRundownTaskGuid);
             }
         }
+        public event Action<GCSettingsRundownTraceData> GCSettingsRundown
+        {
+            add
+            {
+                source.RegisterEventTemplate(GCSettingsRundownTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10, GCTaskGuid);
+            }
+        }
 
         #region Event ID Definitions
         private const TraceEventID ClrStackWalkEventID = (TraceEventID)0;
@@ -13410,12 +13845,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return new ExecutionCheckpointTraceData(action, 300, 35, "ExecutionCheckpointRundown", ExecutionCheckpointRundownTaskGuid, 11, "ExecutionCheckpointDCEnd", ProviderGuid, ProviderName);
         }
 
+        static private GCSettingsRundownTraceData GCSettingsRundownTemplate(Action<GCSettingsRundownTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new GCSettingsRundownTraceData(action, 10, 40, "GC", GCTaskGuid, 10, "SettingsRundown", ProviderGuid, ProviderName);
+        }
+
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[24];
+                var templates = new TraceEvent[25];
                 templates[0] = new MethodILToNativeMapTraceData(null, 149, 1, "Method", MethodTaskGuid, 41, "ILToNativeMapDCStart", ProviderGuid, ProviderName);
                 templates[1] = new MethodILToNativeMapTraceData(null, 150, 1, "Method", MethodTaskGuid, 42, "ILToNativeMapDCStop", ProviderGuid, ProviderName);
                 templates[2] = new ClrStackWalkTraceData(null, 0, 11, "ClrStack", ClrStackTaskGuid, 82, "Walk", ProviderGuid, ProviderName);
@@ -13441,8 +13881,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
                 // New style
                 templates[22] = TieredCompilationSettingsDCStartTemplate(null);
-
                 templates[23] = ExecutionCheckpointDCEndTemplate(null);
+                templates[24] = GCSettingsRundownTemplate(null);
 
                 s_templates = templates;
             }
@@ -13451,6 +13891,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     callback(template);
         }
 
+        private static readonly Guid GCTaskGuid = new Guid(unchecked((int)0x51b6c146), unchecked((short)0x777f), unchecked((short)0x4375), 0xa0, 0xf8, 0x13, 0x49, 0xd0, 0x76, 0xe2, 0x15);
         private static readonly Guid MethodTaskGuid = new Guid(unchecked((int)0x0bcd91db), unchecked((short)0xf943), unchecked((short)0x454a), 0xa6, 0x62, 0x6e, 0xdb, 0xcf, 0xbb, 0x76, 0xd2);
         private static readonly Guid LoaderTaskGuid = new Guid(unchecked((int)0x5a54f4df), unchecked((short)0xd302), unchecked((short)0x4fee), 0xa2, 0x11, 0x6c, 0x2c, 0x0c, 0x1d, 0xcb, 0x1a);
         private static readonly Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);

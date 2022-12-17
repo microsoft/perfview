@@ -892,6 +892,44 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
+                source.Clr.GCLOHCompact += delegate (GCLOHCompactTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
+                    if (_gc != null)
+                    {
+                        for (int i = 0; i < data.Count; i++)
+                        {
+                            _gc.LOHCompactInfos.Add(data.Info(i));
+                        }
+                    }
+                };
+
+                source.Clr.GCFitBucketInfo += delegate (GCFitBucketInfoTraceData data)
+                {
+                    BucketKind bucketKind = data.BucketKind;
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
+                    if (_gc != null)
+                    {
+                        for (int i = 0; i < data.Count; i++)
+                        {
+                            if (bucketKind == BucketKind.LargestFreeListItems)
+                            {
+                                _gc.LargestFreeListItemsBuckets.Add(data.Buckets(i));
+                            }
+                            else if (bucketKind == BucketKind.PlugsInCondemned)
+                            {
+                                _gc.PlugsInCondemnedBuckets.Add(data.Buckets(i));
+                            }
+                            else
+                            {
+                                Debug.Assert(false);
+                            }
+                        }
+                    }
+                };
+
                 clrPrivate.GCPinPlugAtGCTime += delegate (PinPlugAtGCTimeTraceData data)
                 {
                     var stats = currentManagedProcess(data);
@@ -1212,6 +1250,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             1;
                 };
 
+                clrRundownParser.GCSettingsRundown += delegate (GCSettingsRundownTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    stats.GC.m_gcSettings = new GCSettings(data.HardLimit, data.LOHThreshold, data.PhysicalMemoryConfig, data.Gen0MinBudgetConfig, data.Gen0MaxBudgetConfig, data.HighMemPercentConfig, data.BitSettings);
+                };
             }
 
             //
@@ -1505,6 +1548,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Process view of GC statistics
         /// </summary>
         public GCStats Stats() { Calculate(); return m_stats; }
+
         /// <summary>
         /// Process view of GC generational statistics
         /// </summary>
@@ -1514,6 +1558,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Process view of all GCs
         /// </summary>
         public List<TraceGC> GCs { get { return m_gcs; } }
+
+        /// <summary>
+        /// Settings for the GC
+        /// </summary>
+        public GCSettings GCSettings { get { return m_gcSettings; } }
 
         #region private
         internal static TraceGC GetCurrentGC(TraceLoadedDotNetRuntime proc)
@@ -1539,6 +1588,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         private int m_prvcount = 0;
         private int m_prvCompleted = 0;
         internal double NextRelativeTimeStampMsec;
+        internal GCSettings m_gcSettings;
 
         private void Calculate()
         {
@@ -1753,6 +1803,36 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
 namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 {
+    public class GCSettings
+    {
+        public long HardLimit { get { return m_HardLimit; } }
+        public long LOHThreshold { get { return m_LOHThreshold; } }
+        public long PhysicalMemoryConfig { get { return m_PhysicalMemoryConfig; } }
+        public long Gen0MinBudgetConfig { get { return m_Gen0MinBudgetConfig; } }
+        public long Gen0MaxBudgetConfig { get { return m_Gen0MaxBudgetConfig; } }
+        public int HighMemPercentConfig { get { return m_HighMemPercentConfig; } }
+        public int BitSettings { get { return m_BitSettings; } }
+
+        public GCSettings(long HardLimit, long LOHThreshold, long PhysicalMemoryConfig, long Gen0MinBudgetConfig, long Gen0MaxBudgetConfig, int HighMemPercentConfig, int BitSettings)
+        {
+            m_HardLimit = HardLimit;
+            m_LOHThreshold = LOHThreshold;
+            m_PhysicalMemoryConfig = PhysicalMemoryConfig;
+            m_Gen0MinBudgetConfig = Gen0MinBudgetConfig;
+            m_Gen0MaxBudgetConfig = Gen0MaxBudgetConfig;
+            m_HighMemPercentConfig = HighMemPercentConfig;
+            m_BitSettings = BitSettings;
+        }
+
+        private long m_HardLimit;
+        private long m_LOHThreshold;
+        private long m_PhysicalMemoryConfig;
+        private long m_Gen0MinBudgetConfig;
+        private long m_Gen0MaxBudgetConfig;
+        private int m_HighMemPercentConfig;
+        private int m_BitSettings;
+    }
+
     /// <summary>
     ///
     /// </summary>
@@ -2459,6 +2539,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// This represents the percentage time spent paused for this GC since the last GC completed.
         /// </summary>
         public double PauseTimePercentageSinceLastGC;
+        /// <summary>
+        /// LOH Compaction Data
+        /// </summary>
+        public List<GCLOHCompactInfo> LOHCompactInfos = new List<GCLOHCompactInfo>();
+        /// <summary>
+        /// The buckets associated with the GCFitBucketInfoTraceData with BucketType == LargestFreeListItem
+        /// See the document of BucketKind for more details
+        /// </summary>
+        public List<GCFitBucket> LargestFreeListItemsBuckets = new List<GCFitBucket>();
+        /// <summary>
+        /// The buckets associated with the GCFitBucketInfoTraceData with BucketType == PlugsInCondemned
+        /// See the document of BucketKind for more details
+        /// </summary>
+        public List<GCFitBucket> PlugsInCondemnedBuckets = new List<GCFitBucket>();
 
         #region private
         internal void OnEnd(TraceGarbageCollector details)

@@ -226,6 +226,16 @@ namespace Stats
             writer.Write("{0}<GCProcess", indent);
             writer.Write(" Process={0}", StringUtilities.QuotePadLeft(stats.Name, 10));
             writer.Write(" ProcessID={0}", StringUtilities.QuotePadLeft(stats.ProcessID.ToString(), 5));
+            if (runtime.GC.GCSettings != null)
+            {
+                writer.Write(" HardLimit=\"{0}\"", runtime.GC.GCSettings.HardLimit);
+                writer.Write(" LOHThreshold=\"{0}\"", runtime.GC.GCSettings.LOHThreshold);
+                writer.Write(" PhysicalMemoryConfig=\"{0}\"", runtime.GC.GCSettings.PhysicalMemoryConfig);
+                writer.Write(" Gen0MinBudgetConfig=\"{0}\"", runtime.GC.GCSettings.Gen0MinBudgetConfig);
+                writer.Write(" Gen0MaxBudgetConfig=\"{0}\"", runtime.GC.GCSettings.Gen0MaxBudgetConfig);
+                writer.Write(" HighMemPercentConfig=\"{0}\"", runtime.GC.GCSettings.HighMemPercentConfig);
+                writer.Write(" BitSettings=\"{0}\"", runtime.GC.GCSettings.BitSettings);
+            }
             if (stats.CPUMSec != 0)
             {
                 writer.Write(" ProcessCpuTimeMsec={0}", StringUtilities.QuotePadLeft(stats.CPUMSec.ToString("f0"), 5));
@@ -536,6 +546,15 @@ namespace Stats
                                 }
                             }
                         }
+                        if (gc.LOHCompactInfos.Count > 0)
+                        {
+                            GCLOHCompactInfo lohCompactInfo = gc.LOHCompactInfos[HeapNum];
+                            writer.Write(" LohTimePlan =\"{0:n3}\" ", lohCompactInfo.TimePlan);
+                            writer.Write(" LohTimeCompact =\"{0:n3}\" ", lohCompactInfo.TimeCompact);
+                            writer.Write(" LohTimeRelocate =\"{0:n3}\" ", lohCompactInfo.TimeRelocate);
+                            writer.Write(" LohTotalRefs =\"{0}\" ", lohCompactInfo.TotalRefs);
+                            writer.Write(" LohZeroRefs =\"{0}\" ", lohCompactInfo.ZeroRefs);
+                        }
                     }
                     else
                     {
@@ -555,6 +574,26 @@ namespace Stats
                     HeapNum++;
                 }
                 writer.WriteLine("      </PerHeapHistories>");
+            }
+            if (gc.LargestFreeListItemsBuckets.Count > 0)
+            {
+                writer.WriteLine("      <LargestFreeListItemsBuckets>");
+                for (int i = 0; i < gc.LargestFreeListItemsBuckets.Count; i++)
+                {
+                    GCFitBucket bucket = gc.LargestFreeListItemsBuckets[i];
+                    writer.WriteLine("        <Bucket Index=\"{0}\" Count=\"{1}\" Size=\"{2}\" />", bucket.Index, bucket.Count, bucket.Size);
+                }
+                writer.WriteLine("      </LargestFreeListItemsBuckets>");
+            }
+            if (gc.PlugsInCondemnedBuckets.Count > 0)
+            {
+                writer.WriteLine("      <PlugsInCondemnedBuckets>");
+                for (int i = 0; i < gc.PlugsInCondemnedBuckets.Count; i++)
+                {
+                    GCFitBucket bucket = gc.PlugsInCondemnedBuckets[i];
+                    writer.WriteLine("        <Bucket Index=\"{0}\" Count=\"{1}\" Size=\"{2}\" />", bucket.Index, bucket.Count, bucket.Size);
+                }
+                writer.WriteLine("      </PlugsInCondemnedBuckets>");
             }
             writer.WriteLine("   </GCEvent>");
         }
