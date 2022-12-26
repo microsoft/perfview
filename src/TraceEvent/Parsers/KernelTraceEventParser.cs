@@ -2756,7 +2756,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 32, "CreateHandle", ProviderGuid, ProviderName, State));
+                source.RegisterEventTemplate(new ObjectHandleTraceData(value, 0xFFFF, 0, "Object", ObjectTaskGuid, 32, "CreateHandle", ProviderGuid, ProviderName, State));
             }
             remove
             {
@@ -2767,7 +2767,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 33, "CloseHandle", ProviderGuid, ProviderName, State));
+                source.RegisterEventTemplate(new ObjectHandleTraceData(value, 0xFFFF, 0, "Object", ObjectTaskGuid, 33, "CloseHandle", ProviderGuid, ProviderName, State));
             }
             remove
             {
@@ -2778,7 +2778,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 34, "DuplicateHandle", ProviderGuid, ProviderName, State));
+                source.RegisterEventTemplate(new ObjectDuplicateHandleTraceData(value, 0xFFFF, 0, "Object", ObjectTaskGuid, 34, "DuplicateHandle", ProviderGuid, ProviderName, State));
             }
             remove
             {
@@ -2789,7 +2789,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null));
+                source.RegisterEventTemplate(new ObjectNameTraceData(value, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null));
             }
             remove
             {
@@ -2800,7 +2800,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new ObjectTypeNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 37, "TypeDCEnd", ProviderGuid, ProviderName, null));
+                source.RegisterEventTemplate(new ObjectTypeNameTraceData(value, 0xFFFF, 0, "Object", ObjectTaskGuid, 37, "TypeDCEnd", ProviderGuid, ProviderName, null));
             }
             remove
             {
