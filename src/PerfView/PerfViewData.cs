@@ -7471,11 +7471,7 @@ table {
 
             memory.Children.Add(new PerfViewGCStats(this));
 
-            // TODO currently this is experimental enough that we don't show it publicly.  
-            if (AppLog.InternalUser)
-            {
-                memory.Children.Add(new MemoryAnalyzer(this));
-            }
+            memory.Children.Add(new MemoryAnalyzer(this));
 
             if (hasJSHeapDumps || hasDotNetHeapDumps)
             {
