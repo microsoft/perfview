@@ -11685,7 +11685,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal VirtualAllocTraceData(Action<VirtualAllocTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            NeedsFixup = true;
             Action = action;
             this.state = state;
         }
@@ -11700,13 +11699,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             Action(this);
         }
 
-        internal override unsafe void FixupData()
-        {
-            // We always choose the process ID to be the process where for the allocation happens 
-            // TODO Is this really a good idea?  
-            // Debug.Assert(eventRecord->EventHeader.ProcessId == -1 || eventRecord->EventHeader.ProcessId == GetInt32At(HostOffset(8, 2)));
-            eventRecord->EventHeader.ProcessId = GetInt32At(HostOffset(8, 2));
-        }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
