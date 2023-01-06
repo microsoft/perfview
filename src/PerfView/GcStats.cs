@@ -234,7 +234,11 @@ namespace Stats
                 writer.Write(" Gen0MinBudgetConfig=\"{0}\"", runtime.GC.GCSettings.Gen0MinBudgetConfig);
                 writer.Write(" Gen0MaxBudgetConfig=\"{0}\"", runtime.GC.GCSettings.Gen0MaxBudgetConfig);
                 writer.Write(" HighMemPercentConfig=\"{0}\"", runtime.GC.GCSettings.HighMemPercentConfig);
-                writer.Write(" BitSettings=\"{0}\"", runtime.GC.GCSettings.BitSettings);
+                writer.Write(" GCSettingsConcurrent=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsConcurrent));
+                writer.Write(" GCSettingsLargePages=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsLargePages));
+                writer.Write(" GCSettingsFrozenSegs=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsFrozenSegs));
+                writer.Write(" GCSettingsHardLimitConfig=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsHardLimitConfig));
+                writer.Write(" GCSettingsNoAffinitize=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsNoAffinitize));
             }
             if (stats.CPUMSec != 0)
             {
@@ -549,11 +553,11 @@ namespace Stats
                         if (gc.LOHCompactInfos.Count > 0)
                         {
                             GCLOHCompactInfo lohCompactInfo = gc.LOHCompactInfos[HeapNum];
-                            writer.Write(" LohTimePlan =\"{0:n3}\" ", lohCompactInfo.TimePlan);
-                            writer.Write(" LohTimeCompact =\"{0:n3}\" ", lohCompactInfo.TimeCompact);
-                            writer.Write(" LohTimeRelocate =\"{0:n3}\" ", lohCompactInfo.TimeRelocate);
-                            writer.Write(" LohTotalRefs =\"{0}\" ", lohCompactInfo.TotalRefs);
-                            writer.Write(" LohZeroRefs =\"{0}\" ", lohCompactInfo.ZeroRefs);
+                            writer.Write(" LOHTimePlan =\"{0:n3}\" ", lohCompactInfo.TimePlan);
+                            writer.Write(" LOHTimeCompact =\"{0:n3}\" ", lohCompactInfo.TimeCompact);
+                            writer.Write(" LOHTimeRelocate =\"{0:n3}\" ", lohCompactInfo.TimeRelocate);
+                            writer.Write(" LOHTotalRefs =\"{0}\" ", lohCompactInfo.TotalRefs);
+                            writer.Write(" LOHZeroRefs =\"{0}\" ", lohCompactInfo.ZeroRefs);
                         }
                     }
                     else

@@ -2638,58 +2638,44 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         /// <summary>
         /// The time spent on planing the LOH for compaction
         /// </summary>
-        public int TimePlan
-        {
-            get
-            {
-                return m_timePlan;
-
-            }
-        }
+        public int TimePlan { get { return m_timePlan; } }
 
         /// <summary>
         /// The time spent on copying objects during LOH compaction
         /// </summary>
-        public int TimeCompact
-        {
-            get
-            {
-                return m_timeCompact;
-
-            }
-        }
+        public int TimeCompact { get { return m_timeCompact; } }
 
         /// <summary>
         /// The time spent on relocating pointers during LOH compaction
         /// </summary>
-        public int TimeRelocate
-        {
-            get
-            {
-                return m_timeRelocate;
-            }
-        }
+        public int TimeRelocate { get { return m_timeRelocate; } }
 
         /// <summary>
         /// The total number of pointers found in the LOH during LOH compaction
         /// </summary>
-        public long TotalRefs
-        {
-            get
-            {
-                return m_totalRefs;
-            }
-        }
+        public long TotalRefs { get { return m_totalRefs; } }
 
         /// <summary>
         /// The total number of pointers found pointing to null in the LOH during LOH compaction
         /// </summary>
-        public long ZeroRefs
+        public long ZeroRefs { get { return m_zeroRefs; } }
+
+        public override string ToString()
         {
-            get
-            {
-                return m_zeroRefs;
-            }
+            StringBuilder sb = new StringBuilder();
+            return ToXml(sb).ToString();
+        }
+
+        public StringBuilder ToXml(StringBuilder sb)
+        {
+            sb.Append(" <GCLOHCompactInfo ");
+            TraceEvent.XmlAttrib(sb, "TimePlan", TimePlan);
+            TraceEvent.XmlAttrib(sb, "TimeCompact", TimeCompact);
+            TraceEvent.XmlAttrib(sb, "TimeRelocate", TimeRelocate);
+            TraceEvent.XmlAttrib(sb, "TotalRefs", TotalRefs);
+            TraceEvent.XmlAttrib(sb, "ZeroRefs", ZeroRefs);
+            sb.Append("/>");
+            return sb;
         }
 
         #region private
@@ -2710,7 +2696,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
-    public class GCLOHCompactTraceData : TraceEvent
+    public sealed class GCLOHCompactTraceData : TraceEvent
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
 
@@ -2752,7 +2738,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Prefix(sb);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
             XmlAttrib(sb, "Count", Count);
-            sb.Append("/>");
+            sb.AppendLine(">");
+            for (int i = 0; i < Count; i++)
+            {
+                Info(i).ToXml(sb).AppendLine();
+            }
+            sb.Append("</Event>");
             return sb;
         }
 
@@ -2780,6 +2771,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
+        // <struct name="Values"   count="Count"  >
+        //     <data name="TimePlan" inType="win:UInt32" />
+        //     <data name="TimeCompact" inType="win:UInt32" />
+        //     <data name="TimeRelocate" inType="win:UInt32" />
+        //     <data name="TotalRefs" inType="win:Pointer" />
+        //     <data name="ZeroRefs" inType="win:Pointer" />
+        // </struct>
         private int SizeOfGCLOHCompactInfo
         {
             get
@@ -2792,7 +2790,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
-    public class GCFitBucket
+    public sealed class GCFitBucket
     {
         #region private
         internal GCFitBucket(int index, int count, long size)
@@ -2805,34 +2803,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         /// <summary>
         /// The index of the bucket. This is required because bucket of zero size is not reported.
         /// </summary>
-        public int Index
-        {
-            get
-            {
-                return m_index;
-            }
-        }
+        public int Index { get { return m_index; } }
 
         /// <summary>
         /// The number of items in the bucket.
         /// </summary>
-        public int Count
-        {
-            get
-            {
-                return m_count;                
-            }
-        }
+        public int Count { get { return m_count; } }
 
         /// <summary>
         /// The total size of items in the bucket.
         /// </summary>
-        public long Size
+        public long Size { get { return m_size; } }
+
+        public override string ToString()
         {
-            get
-            {
-                return m_size;
-            }
+            StringBuilder sb = new StringBuilder();
+            return ToXml(sb).ToString();
+        }
+
+        public StringBuilder ToXml(StringBuilder sb)
+        {
+            sb.Append(" <GCFitBucket ");
+            TraceEvent.XmlAttrib(sb, "Index", Index);
+            TraceEvent.XmlAttrib(sb, "Count", Count);
+            TraceEvent.XmlAttrib(sb, "Size", Size);
+            sb.Append("/>");
+            return sb;
         }
 
         private int m_index;
@@ -2854,13 +2850,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         /// <summary>
         /// When the BucketKind is PlugsInCondemned, the buckets in the associated GCFitBucketInfo events
-        /// represents plugs that we found during the plan phase of a Gen1 GC where it is planned to fit in the 
-        /// current (i.e. condemned) generation. 
+        /// represents plugs that we found during the plan phase of a Gen1 GC where it is planned to fit in the
+        /// current (i.e. condemned) generation.
         /// </summary>
         PlugsInCondemned = 1
     }
 
-    public class GCFitBucketInfoTraceData : TraceEvent
+    public sealed class GCFitBucketInfoTraceData : TraceEvent
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
 
@@ -2907,9 +2903,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            int size0 = 14 + Count * SizeOfGCFitBucket;
-            Debug.Assert(!(Version == 0 && EventDataLength != size0));
-            Debug.Assert(!(Version > 0 && EventDataLength < size0));
+            int size = 14 + Count * SizeOfGCFitBucket;
+            Debug.Assert(!(Version == 0 && EventDataLength != size));
+            Debug.Assert(!(Version > 0 && EventDataLength < size));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -2918,7 +2914,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "BucketKind", BucketKind);
             XmlAttrib(sb, "TotalSize", TotalSize);
             XmlAttrib(sb, "Count", Count);
-            sb.Append("/>");
+            sb.AppendLine(">");
+            for (int i = 0; i < Count; i++)
+            {
+                Buckets(i).ToXml(sb).AppendLine();
+            }
+            sb.Append("</Event>");
             return sb;
         }
 
@@ -2954,6 +2955,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
+        // <struct name="Values"   count="Count"  >
+        //     <data name="Index" inType="win:UInt16" />
+        //     <data name="Count" inType="win:UInt32" />
+        //     <data name="Size" inType="win:Pointer" outType="win:HexInt64" />
+        // </struct>
         private int SizeOfGCFitBucket
         {
             get
@@ -6974,6 +6980,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "Reason", Reason);
             XmlAttrib(sb, "GlobalMechanisms", GlobalMechanisms);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            if (Version >= 4)
+            {
+                XmlAttrib(sb, "Count", Count);
+                XmlAttrib(sb, "Times", string.Join(",", Times ?? Array.Empty<int>()));
+            }
             sb.Append("/>");
             return sb;
         }
@@ -9918,6 +9929,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
+    [Flags]
+    public enum GCSettingsFlags : int
+    {
+        GCSettingsConcurrent =      0x00000001,
+        GCSettingsLargePages =      0x00000002,
+        GCSettingsFrozenSegs =      0x00000004,
+        GCSettingsHardLimitConfig = 0x00000008,
+        GCSettingsNoAffinitize =    0x00000010,
+    };
+
     public sealed class GCSettingsRundownTraceData : TraceEvent
     {
         public long HardLimit { get { return GetInt64At(0); } }
@@ -9926,7 +9947,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long Gen0MinBudgetConfig { get { return GetInt64At(24); } }
         public long Gen0MaxBudgetConfig { get { return GetInt64At(32); } }
         public int HighMemPercentConfig { get { return GetInt32At(40); } }
-        public int BitSettings { get { return GetInt32At(44); } }
+        public GCSettingsFlags BitSettings { get { return (GCSettingsFlags)GetInt32At(44); } }
         public int ClrInstanceID { get { return GetInt16At(48); } }
 
         #region Private

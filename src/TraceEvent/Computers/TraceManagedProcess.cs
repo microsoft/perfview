@@ -1811,9 +1811,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public long Gen0MinBudgetConfig { get { return m_Gen0MinBudgetConfig; } }
         public long Gen0MaxBudgetConfig { get { return m_Gen0MaxBudgetConfig; } }
         public int HighMemPercentConfig { get { return m_HighMemPercentConfig; } }
-        public int BitSettings { get { return m_BitSettings; } }
+        public GCSettingsFlags BitSettings { get { return m_BitSettings; } }
 
-        public GCSettings(long HardLimit, long LOHThreshold, long PhysicalMemoryConfig, long Gen0MinBudgetConfig, long Gen0MaxBudgetConfig, int HighMemPercentConfig, int BitSettings)
+        public GCSettings(long HardLimit, long LOHThreshold, long PhysicalMemoryConfig, long Gen0MinBudgetConfig, long Gen0MaxBudgetConfig, int HighMemPercentConfig, GCSettingsFlags BitSettings)
         {
             m_HardLimit = HardLimit;
             m_LOHThreshold = LOHThreshold;
@@ -1830,7 +1830,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         private long m_Gen0MinBudgetConfig;
         private long m_Gen0MaxBudgetConfig;
         private int m_HighMemPercentConfig;
-        private int m_BitSettings;
+        private GCSettingsFlags m_BitSettings;
     }
 
     /// <summary>
