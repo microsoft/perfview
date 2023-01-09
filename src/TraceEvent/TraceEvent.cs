@@ -323,6 +323,14 @@ namespace Microsoft.Diagnostics.Tracing
         public bool DataLifetimeEnabled() { return DataLifetimeMsec > 0; }
 
         /// <summary>
+        /// Finalizer
+        /// </summary>
+        ~TraceEventSource()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
         /// Closes any files and cleans up any resources associated with this TraceEventSource
         /// </summary>
         public void Dispose()
