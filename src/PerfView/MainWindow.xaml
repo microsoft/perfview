@@ -140,6 +140,7 @@
                     <MenuItem Header="Viewing External Data" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="ViewingExternalData"/>
                     <MenuItem Header="Using EventSources" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsingEventSources"/>
                     <MenuItem Header="_Release Notes" Click="DoReleaseNotes"/>
+                    <MenuItem Header="Privacy Policy" Click="DoPrivacyPolicy" />
                     <MenuItem Header="_About" Click="DoAbout"/>
                 </MenuItem>
             </Menu>
