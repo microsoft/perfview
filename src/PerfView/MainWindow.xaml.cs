@@ -2029,6 +2029,12 @@ namespace PerfView
             Directory.Focus();
         }
 
+        private void DoPrivacyPolicy(object sender, RoutedEventArgs e)
+        {
+            StatusBar.Log("Displaying the privacy policy.");
+            Process.Start("https://privacy.microsoft.com/en-us/privacystatement");
+        }
+
         private void UpdateFileFilter()
         {
             var filterText = FileFilterTextBox.Text;
