@@ -6035,9 +6035,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (_skipCount == 0)
             {
                 CheckJitTables();
-                Debug.Assert(preCount + 1 == JitTableCount());
+                Debug.Assert(preCount + 1 == JitTableCount(), "JitTableCount mismatch");
                 _skipCount = 32;
             }
+
             --_skipCount;
 #endif
         }
@@ -6063,7 +6064,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// time a method is added. This field counts down each time <see cref="InsertJITTEDMethod"/> is called; when it
         /// reaches zero the sanity checks are run and it is reset to an unspecified positive value.
         /// </summary>
-        private static int _skipCount;
+        private int _skipCount;
 
         private int JitTableCount()
         {
