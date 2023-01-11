@@ -1273,7 +1273,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new InvalidOperationException("Property can't be changed after a provider has started.");
                 }
 
-                m_LastBranchRecordingProfileSources = (uint[])value.Clone();
+                m_LastBranchRecordingProfileSources = (uint[])value?.Clone();
             }
         }
 
