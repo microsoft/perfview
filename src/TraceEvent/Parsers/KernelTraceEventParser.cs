@@ -2322,11 +2322,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new LastBranchRecordTraceData(value, 0xFFFF, 0, "LastBranchRecording", LbrProviderGuid, 32, "Sample", ProviderGuid, ProviderName, State));
+                source.RegisterEventTemplate(new LastBranchRecordTraceData(value, 0xFFFF, 0, "LastBranchRecording", LbrTaskGuid, 32, "Sample", ProviderGuid, ProviderName, State));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, LbrProviderGuid);
+                source.UnregisterEventTemplate(value, 0, LbrTaskGuid);
             }
         }
 
@@ -3096,7 +3096,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[191] = new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null);
                 templates[192] = new ISRTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 50, "ISR", ProviderGuid, ProviderName, null);
                 templates[193] = new ThreadSetNameTraceData(null, 0xFFFF, 2, "Thread", ThreadTaskGuid, 72, "SetName", ProviderGuid, ProviderName);
-                templates[194] = new LastBranchRecordTraceData(null, 0xFFFF, 0, "LastBranchRecording", LbrProviderGuid, 32, "Sample", ProviderGuid, ProviderName, null);
+                templates[194] = new LastBranchRecordTraceData(null, 0xFFFF, 0, "LastBranchRecording", LbrTaskGuid, 32, "Sample", ProviderGuid, ProviderName, null);
 
                 s_templates = templates;
             }
@@ -3154,7 +3154,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal static readonly Guid ReadyThreadTaskGuid = new Guid(unchecked((int)0x3d6fa8d1), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
         internal static readonly Guid SysConfigTaskGuid = new Guid(unchecked((int)0x9b79ee91), unchecked((short)0xb5fd), 0x41c0, 0xa2, 0x43, 0x42, 0x48, 0xe2, 0x66, 0xe9, 0xD0);
         internal static readonly Guid ObjectTaskGuid = new Guid(unchecked((int)0x89497f50), unchecked((short)0xeffe), 0x4440, 0x8c, 0xf2, 0xce, 0x6b, 0x1c, 0xdc, 0xac, 0xa7);
-        internal static readonly Guid LbrProviderGuid = new Guid(unchecked((int)0x99134383), unchecked((short)0x5248), 0x43fc, 0x83, 0x4b, 0x52, 0x94, 0x54, 0xe7, 0x5d, 0xf3);
+        internal static readonly Guid LbrTaskGuid = new Guid(unchecked((int)0x99134383), unchecked((short)0x5248), 0x43fc, 0x83, 0x4b, 0x52, 0x94, 0x54, 0xe7, 0x5d, 0xf3);
         #endregion
     }
     #region private types
@@ -13913,10 +13913,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private const int HeaderSize32 = 8 + 4 + 4 + 4;
         private const int HeaderSize64 = 8 + 4 + 4 + 4 + /* alignment */ 4;
 
-        public new DateTime TimeStamp => traceEventSource.QPCTimeToDateTimeUTC(GetInt64At(0)).ToLocalTime();
-        public new double TimeStampRelativeMSec => traceEventSource.QPCTimeToRelMSec(GetInt64At(0));
+        /// <summary>
+        /// Gets the timestamp at which the branches were recorded from the CPU.
+        /// </summary>
+        public DateTime CaptureTimeStamp => traceEventSource.QPCTimeToDateTimeUTC(GetInt64At(0)).ToLocalTime();
+
+        /// <summary>
+        /// Gets the timestamp at which the branches were recorded from the CPU.
+        /// </summary>
+        public double CaptureTimeStampRelativeMSec => traceEventSource.QPCTimeToRelMSec(GetInt64At(0));
+
+        /// <summary>
+        /// Gets the filters that were active when the branches were recorded.
+        /// </summary>
         public LbrFilterFlags Filters => (LbrFilterFlags)GetInt32At(16);
 
+        /// <summary>
+        /// Gets the number of branches contained in this event.
+        /// </summary>
         public int NumBranches
         {
             get
@@ -13936,6 +13950,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// Insert all the branches from this event into the specified span.
         /// Branches are in chronological order with the most recent taken branch first.
         /// </summary>
+        /// <param name="branches">The span to insert into.</param>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="branches"/> is not of length <see cref="NumBranches"/>.</exception>
         public unsafe void GetBranches(Span<Branch> branches)
         {
             if (PointerSize == 8)
@@ -13970,6 +13986,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
 
+        /// <summary>
+        /// Get all the branches contained in this record. Branches
+        /// are in chronological order with the most recent taken branch first.
+        /// </summary>
         public Branch[] GetBranches()
         {
             Branch[] branches = new Branch[NumBranches];
@@ -13977,11 +13997,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             return branches;
         }
 
+        /// <summary>
+        /// Gets a specific branch.
+        /// </summary>
+        /// <param name="index">The index of branch. Index 0 is the most recently taken branch.</param>
+        /// <returns>The branch.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="index"/> is negative or not less than <see cref="NumBranches"/>.</exception>
         public unsafe Branch GetBranch(int index)
         {
-            if (index >= NumBranches)
+            if (index <= 0 || index >= NumBranches)
             {
-                throw new ArgumentOutOfRangeException("The branch index must be less than the number of branches", nameof(index));
+                throw new ArgumentOutOfRangeException("The branch index must be non-negative and less than the number of branches", nameof(index));
             }
 
             if (PointerSize == 8)
