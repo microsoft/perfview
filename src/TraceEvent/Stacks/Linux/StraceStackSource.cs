@@ -399,7 +399,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             // Only save valid file descriptors.
             if (!fd.StartsWith("-1"))
             {
-                Debug.Assert(!_fdToPathMap.ContainsKey(fd));
                 _fdToPathMap[fd] = filePath;
             }
 
@@ -410,7 +409,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         {
             string fd = record.ArgumentPayload.Trim();
             _fdToPathMap.TryGetValue(fd, out string filePath);
-            Debug.Assert(_fdToPathMap.ContainsKey(fd));
             _fdToPathMap.Remove(fd);
 
             AddSample(record, filePath);
