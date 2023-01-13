@@ -161,8 +161,23 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
             // Walk backwards to get the return code.
             endIndex = startIndex;
-            while (record[startIndex] != ReturnCodePrefixChar)
+            int parenthesisLevel = 0;
+            while (startIndex >= 0)
             {
+                char currentChar = record[startIndex];
+                if (currentChar == ReturnCodePrefixChar && parenthesisLevel == 0)
+                {
+                    break;
+                }
+                else if (currentChar == ')')
+                {
+                    parenthesisLevel++;
+                }
+                else if (currentChar == '(')
+                {
+                    parenthesisLevel--;
+                    Debug.Assert(parenthesisLevel >= 0);
+                }
                 startIndex--;
             }
 
