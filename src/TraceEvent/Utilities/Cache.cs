@@ -133,7 +133,7 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Sets the maxiumum number of key-value pairs the cache will keep.  (after that old ones are remvoed). 
+        /// Sets the maximum number of key-value pairs the cache will keep.  (after that old ones are removed). 
         /// </summary>
         public int MaxEntries
         {

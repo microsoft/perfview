@@ -1724,7 +1724,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         }
                     }
 
-                    // Now that we have closed the enumeration handle, we can delete all the enties we have accumulated.  
+                    // Now that we have closed the enumeration handle, we can delete all the entries we have accumulated.  
                     foreach (var providerToClearData in providersToClearData)
                     {
                         SetFilterDataForEtwSession(providerToClearData.Key, null, providerToClearData.Value);
@@ -1760,7 +1760,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// is removed.
         /// 
         /// If 'allSesions' is true it means that you want 'old style' data filtering that affects all ETW sessions
-        /// This is present only used for compatibilty 
+        /// This is present only used for compatibility 
         /// </summary>
         /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>
         private void SetFilterDataForEtwSession(string providerGuid, byte[] data, bool V4_5EventSource = false)
@@ -3093,8 +3093,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// Sets a single Profile Source (CPU machine counters) that will be used if PMC (Precise Machine Counters)
         /// are turned on.   The profileSourceID is the ID field from the ProfileSourceInfo returned from 'GetInfo()'.
-        /// and the profileSourceInterval is the interval between sampples (the number of events before a stack
-        /// is recoreded.    If you need more that one (the OS allows up to 4 I think), use the variation of this
+        /// and the profileSourceInterval is the interval between samples (the number of events before a stack
+        /// is recorded.    If you need more that one (the OS allows up to 4 I think), use the variation of this
         /// routine that takes two int[].   Calling this will clear all Profiler sources previously set (it is NOT
         /// additive).  
         /// </summary>
