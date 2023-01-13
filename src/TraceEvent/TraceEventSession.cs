@@ -750,6 +750,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
             if (sources == null || sources.Length == 0)
                 return;
 
+            if (!OperatingSystemVersion.AtLeast(OperatingSystemVersion.Win10))
+            {
+                throw new NotSupportedException("Last branch recording is only supported on Windows 10 19H1+ and Windows Server 1903+");
+            }
+
             uint filters = (uint)m_LastBranchRecordingFilters;
             int error = TraceEventNativeMethods.TraceSetInformation(m_SessionHandle, TraceEventNativeMethods.TRACE_INFO_CLASS.TraceLbrConfigurationInfo, &filters, sizeof(uint));
             Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(error));
