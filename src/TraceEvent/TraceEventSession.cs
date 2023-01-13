@@ -63,7 +63,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
             EnableProviderTimeoutMSec = 0;         // Currently by default it is async (TODO change to 10000? by default)
             m_BufferSizeMB = Math.Max(64, System.Environment.ProcessorCount * 2);       // The default size.  
             m_BufferQuantumKB = 64;
-            m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
             m_FileName = fileName;               // filename = null means real time session
             m_SessionName = sessionName;
             m_Create = true;
@@ -94,7 +93,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
             m_SessionName = sessionName;
             StopOnDispose = true;
             CaptureStateOnSetFileName = true;
-            m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
             if ((options & TraceEventSessionOptions.Attach) != 0)
             {
                 // Attaching to an existing session 
@@ -108,7 +106,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new FileNotFoundException("The session " + sessionName + " is not active.");  // Not really a file, but not bad. 
                 }
 
-                m_SessionHandle = properties->Wnode.HistoricalContext;
+                m_SessionHandle = new TraceEventNativeMethods.SafeTraceHandle(properties->Wnode.HistoricalContext);
                 m_SessionId = (int)properties->Wnode.HistoricalContext;
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 if (properties->LogFileNameOffset != 0)
@@ -454,15 +452,15 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         uint eventControlCode = (valueDataType == ControllerCommand.SendManifest
                                                      ? TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
-                        hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, ref providerGuid,
-                            eventControlCode, (byte)providerLevel,
+                        hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, providerGuid,
+                            eventControlCode, providerLevel,
                             matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (TypeLoadException)
                     {
                         // OK that did not work, try the VISTA API
-                        hr = TraceEventNativeMethods.EnableTraceEx(ref providerGuid, null, m_SessionHandle, 1,
-                            (byte)providerLevel, matchAnyKeywords, matchAllKeywords, 0, filterDescrPtr);
+                        hr = TraceEventNativeMethods.EnableTraceEx(providerGuid, null, m_SessionHandle, true,
+                            providerLevel, matchAnyKeywords, matchAllKeywords, 0, filterDescrPtr);
                     }
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
@@ -617,7 +615,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Kernel Event Tracing is only supported on Windows 6.0 (Vista) and above.");
                 }
 
-                if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE || m_kernelSession != null)
+                if (IsValidSession || m_kernelSession != null)
                 {
                     throw new Exception("The kernel provider must be enabled first and only once in a session.");
                 }
@@ -714,15 +712,17 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     properties->Wnode.Guid = KernelTraceEventParser.ProviderGuid;
                     properties->EnableFlags = (uint)flags;
 
-                    dwErr = ETWKernelControl.StartKernelSession(out m_SessionHandle, properties, PropertiesSize, stackTracingIds, numIDs);
+                    dwErr = ETWKernelControl.StartKernelSession(out ulong kernelSessionHandle, properties, PropertiesSize, stackTracingIds, numIDs);
                     if (dwErr == 0xB7) // STIERR_HANDLEEXISTS
                     {
                         ret = true;
                         Stop();
                         m_Stopped = false;
                         Thread.Sleep(100);  // Give it some time to stop. 
-                        dwErr = ETWKernelControl.StartKernelSession(out m_SessionHandle, properties, PropertiesSize, stackTracingIds, numIDs);
+                        dwErr = ETWKernelControl.StartKernelSession(out kernelSessionHandle, properties, PropertiesSize, stackTracingIds, numIDs);
                     }
+
+                    m_SessionHandle = new TraceEventNativeMethods.SafeTraceHandle(kernelSessionHandle);
                 }
 
                 if (dwErr == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
@@ -735,12 +735,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 if (OperatingSystemVersion.AtLeast(62) && StackCompression)
                 {
-                    ETWControl.EnableStackCaching(m_SessionHandle);
+                    ETWControl.EnableStackCaching(m_SessionHandle.DangerousGetHandle());
                 }
 
                 return ret;
             }
         }
+
+        private bool IsValidSession => m_SessionHandle != null && m_SessionHandle.IsValid;
 
         // OS Heap Provider support.  
         /// <summary>
@@ -748,7 +750,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public void EnableWindowsHeapProvider(int pid)
         {
-            if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+            if (IsValidSession)
             {
                 throw new ApplicationException("Heap Provider can only be used in its own session.");
             }
@@ -756,9 +758,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
             var propertiesBuff = stackalloc byte[PropertiesSize];
             var properties = GetProperties(propertiesBuff);
 
-            int dwErr = ETWKernelControl.StartWindowsHeapSession(out m_SessionHandle, properties, PropertiesSize, pid);
+            int dwErr = ETWKernelControl.StartWindowsHeapSession(out ulong heapSessionHandle, properties, PropertiesSize, pid);
             Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
-
+            m_SessionHandle = new TraceEventNativeMethods.SafeTraceHandle(heapSessionHandle);
             m_IsActive = true;
         }
         /// <summary>
@@ -768,7 +770,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="exeFileName"></param>
         public void EnableWindowsHeapProvider(string exeFileName)
         {
-            if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+            if (IsValidSession)
             {
                 throw new ApplicationException("Heap Provider can only be used in its own session.");
             }
@@ -776,9 +778,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
             var propertiesBuff = stackalloc byte[PropertiesSize];
             var properties = GetProperties(propertiesBuff);
 
-            int dwErr = ETWKernelControl.StartWindowsHeapSession(out m_SessionHandle, properties, PropertiesSize, exeFileName);
+            int dwErr = ETWKernelControl.StartWindowsHeapSession(out ulong heapSessionHandle, properties, PropertiesSize, exeFileName);
             Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
-
+            m_SessionHandle = new TraceEventNativeMethods.SafeTraceHandle(heapSessionHandle);
             m_IsActive = true;
         }
 
@@ -797,19 +799,19 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         // Try the Win7 API
                         var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
                         hr = TraceEventNativeMethods.EnableTraceEx2(
-                            m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
+                            m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
                             0, 0, 0, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (TypeLoadException)
                     {
                         // OK that did not work, try the VISTA API
-                        hr = TraceEventNativeMethods.EnableTraceEx(ref providerGuid, null, m_SessionHandle, 0, 0, 0, 0, 0, null);
+                        hr = TraceEventNativeMethods.EnableTraceEx(providerGuid, null, m_SessionHandle, false, 0, 0, 0, 0, null);
                     }
                 }
                 catch (TypeLoadException)
                 {
                     // Try with the old pre-vista API
-                    hr = TraceEventNativeMethods.EnableTrace(0, 0, 0, ref providerGuid, m_SessionHandle);
+                    hr = TraceEventNativeMethods.EnableTrace(0, 0, 0, providerGuid, m_SessionHandle);
                 }
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
             }
@@ -893,11 +895,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                 }
 
-                // TODO need safe handles
-                if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                if (m_SessionHandle != null)
                 {
-                    TraceEventNativeMethods.CloseTrace(m_SessionHandle);
-                    m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
+                    m_SessionHandle.Dispose();
+                    m_SessionHandle = null;
                 }
 
                 // If we have a source, dispose of that too. 
@@ -1053,8 +1054,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         filter.Ptr = filterDataPtr;
                     }
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
-                        m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);
+                        m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
+                        TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }
@@ -1271,7 +1272,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         throw new InvalidOperationException("Can only use Kernel events in real time sessions on Windows 7 if you use TraceLog.CreateFromTraceEventSession");
                     }
 
-                    if (m_SessionHandle == TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                    if (!IsValidSession)
                     {
                         if (m_SessionName == KernelTraceEventParser.KernelSessionName)
                         {
@@ -2172,7 +2173,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             // Already initialized, nothing to do.  
-            if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+            if (IsValidSession)
             {
                 return;
             }
@@ -2183,24 +2184,22 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 properties = GetProperties(propertiesBuff);
             }
 
-            int retCode = TraceEventNativeMethods.StartTraceW(out m_SessionHandle, m_SessionName, properties);
+            int retCode = TraceEventNativeMethods.StartTrace(out m_SessionHandle, m_SessionName, properties);
             if (retCode == 0xB7 && m_ResartIfExist)      // STIERR_HANDLEEXISTS
             {
                 m_restarted = true;
                 Stop();
                 m_Stopped = false;
-                Thread.Sleep(100);  // Give it some time to stop. 
-                retCode = TraceEventNativeMethods.StartTraceW(out m_SessionHandle, m_SessionName, properties);
+                Thread.Sleep(100);  // Give it some time to stop.
+                retCode = TraceEventNativeMethods.StartTrace(out m_SessionHandle, m_SessionName, properties);
             }
             if (retCode == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
             {
-                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE; // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
             }
 
             if (retCode != 0)
             {
-                m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;  // StartTrace sets to 0 on failure.  We use INVALID_HANDLE_VALUE to represent failure
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
             }
 
@@ -2416,7 +2415,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         private bool m_IsActive;                  // Session is active (InsureSession has been called)
         private bool m_Stopped;                   // The Stop() method was called (avoids reentrant)
         private bool m_StopOnDispose;             // Should we Stop() when the object is destroyed?
-        private ulong m_SessionHandle;            // OS handle
+        private TraceEventNativeMethods.SafeTraceHandle m_SessionHandle; // OS handle
         private ETWTraceEventSource m_source;     // Sessions can have a source associated with them. 
 
         internal TraceEventSession m_kernelSession; // Only needed in Windows 7.   Before windows 8 you could not enable Kernel
