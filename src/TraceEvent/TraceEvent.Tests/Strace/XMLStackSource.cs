@@ -456,10 +456,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                             {
                                 m_stacks = new GrowableArray<Frame>(int.Parse(count));
                             }
-#if DEBUG
-                            for (int i = 0; i < m_stacks.Count; i++)
-                                m_stacks[i] = new Frame(int.MinValue, int.MinValue);
-#endif
                         }
                         else if (reader.Name == "Samples")
                         {
@@ -552,17 +548,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 }
             }
             Done:;
-#if DEBUG
-            for (int i = 0; i < m_samples.Count; i++)
-                Debug.Assert(m_samples[i] != null);
-            for (int i = 0; i < m_frames.Count; i++)
-                Debug.Assert(m_frames[i] != null);
-            for (int i = 0; i < m_stacks.Count; i++)
-            {
-                Debug.Assert(m_stacks[i].frameID >= 0);
-                Debug.Assert(m_stacks[i].callerID >= -1);
-            }
-#endif
         }
 
         private void InitInterner()
