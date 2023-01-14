@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <StackWindow>
  <StackSource>
-  <Frames Count="165">
+  <Frames Count="167">
    <Frame ID="0">ROOT</Frame>
    <Frame ID="1">BROKEN</Frame>
    <Frame ID="2">?!?</Frame>
@@ -167,8 +167,10 @@
    <Frame ID="162">Syscall: write</Frame>
    <Frame ID="163">Arguments: 1, "dotnet-info.strace  ls.strace  p"..., 43</Frame>
    <Frame ID="164">Return Code: 43</Frame>
+   <Frame ID="165">Arguments: 1</Frame>
+   <Frame ID="166">Arguments: 2</Frame>
   </Frames>
-  <Stacks Count="255">
+  <Stacks Count="260">
    <Stack ID="0" CallerID="-1" FrameID="4" />
    <Stack ID="1" CallerID="0" FrameID="5" />
    <Stack ID="2" CallerID="1" FrameID="6" />
@@ -424,8 +426,13 @@
    <Stack ID="252" CallerID="228" FrameID="162" />
    <Stack ID="253" CallerID="252" FrameID="163" />
    <Stack ID="254" CallerID="253" FrameID="164" />
+   <Stack ID="255" CallerID="228" FrameID="27" />
+   <Stack ID="256" CallerID="255" FrameID="165" />
+   <Stack ID="257" CallerID="256" FrameID="7" />
+   <Stack ID="258" CallerID="255" FrameID="166" />
+   <Stack ID="259" CallerID="258" FrameID="7" />
   </Stacks>
-  <Samples Count="100">
+  <Samples Count="102">
    <Sample ID="0" Time="0.000" StackID="3" Metric="1.195" />
    <Sample ID="1" Time="1.847" StackID="6" Metric="0.354" />
    <Sample ID="2" Time="2.677" StackID="9" Metric="0.303" />
@@ -526,6 +533,8 @@
    <Sample ID="97" Time="33.139" StackID="248" Metric="0.089" />
    <Sample ID="98" Time="33.328" StackID="251" Metric="0.048" />
    <Sample ID="99" Time="33.475" StackID="254" Metric="0.104" />
+   <Sample ID="100" Time="33.682" StackID="257" Metric="0.049" />
+   <Sample ID="101" Time="33.833" StackID="259" Metric="0.047" />
   </Samples>
  </StackSource>
 </StackWindow>
