@@ -12,12 +12,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     /// <summary>
     /// A Histogram is logically an array of floating point values.  Often they
     /// represent frequency, but it can be some other metric.  The X axis can 
-    /// represent different things (time, scenario).  It is the HisogramContoller
+    /// represent different things (time, scenario).  It is the HistogramController
     /// which understands what the X axis is.   Histograms know their HistogramController
     /// but not the reverse.  
     /// 
-    /// Often Histograms are sparse (most array elements are zero), so the represnetation
-    /// is designed to optimzed for this case (an array of non-zero index, value pairs). 
+    /// Often Histograms are sparse (most array elements are zero), so the representation
+    /// is designed to optimized for this case (an array of non-zero index, value pairs). 
     /// </summary>
     public class Histogram : IEnumerable<float>
     {
@@ -168,14 +168,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
-        /// Implementes IEnumerable interface
+        /// Implements IEnumerable interface
         /// </summary>
         public IEnumerator<float> GetEnumerator()
         {
             return GetEnumerable().GetEnumerator();
         }
         /// <summary>
-        /// Implementes IEnumerable interface
+        /// Implements IEnumerable interface
         /// </summary>
         IEnumerator IEnumerable.GetEnumerator() { throw new NotImplementedException(); }
 
@@ -205,13 +205,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     }
 
     /// <summary>
-    /// A Histogram is conceputually an array of floating point values.   A Histogram Controller
+    /// A Histogram is conceptually an array of floating point values.   A Histogram Controller
     /// contains all the information besides the values themselves need to understand the array
     /// of floating point value.   There are a lot of Histograms, however they all tend to share
     /// the same histogram controller.   Thus Histograms know their Histogram controller, but not
     /// the reverse.  
     /// 
-    /// Thus HistogramContoller is a abstract class (we have one for time, and one for scenarios).  
+    /// Thus HistogramController is a abstract class (we have one for time, and one for scenarios).  
     ///
     /// HistogramControllers are responsible for:
     /// 
@@ -244,7 +244,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public int BucketCount { get; protected set; }
         /// <summary>
         /// The number of characters in the display string for histograms controlled by this HistogramController.
-        /// Buckets are a logial concept, where CharacterCount is a visual concept (how many you can see on the 
+        /// Buckets are a logical concept, where CharacterCount is a visual concept (how many you can see on the 
         /// screen right now).  
         /// </summary>
         public int CharacterCount { get; protected set; }
@@ -339,7 +339,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 else if (metric < 0)
                 {
                     valueBucket = -valueBucket;
-                    // TODO we are not symetric, we use digits on the positive side but not negative.  
+                    // TODO we are not symmetric, we use digits on the positive side but not negative.  
                     if (valueBucket < 25)
                     {
                         val = (char)('a' + valueBucket);          // We go through the alphabet too.

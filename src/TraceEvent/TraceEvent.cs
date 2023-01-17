@@ -88,7 +88,7 @@ using Address = System.UInt64;
 // used by user code WITHOUT changing the code associated with TraceEventSource. Unfortunately, it
 // has a discoverability drawback. Given a TraceEventSource (like ETWTraceEventSource), it is difficult
 // discover that you need classes like KernelTraceEventParser to do anything useful with the
-// source. As a concession to discoverabilty, TraceEventSource provides properties ('Kernel' and CLR)
+// source. As a concession to discoverability, TraceEventSource provides properties ('Kernel' and CLR)
 // for two 'well known' parsers. Thus the above example can be written
 // 
 // * ETWTraceEventSource source = new ETWTraceEventSource("output.etl"); // open an ETL file
@@ -4399,7 +4399,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// There is some work needed to prepare the generic unhandledTraceEvent that we defer
         /// late (since we often don't care about unhandled events)  
         /// 
-        /// TODO this is probably not worht the complexity...
+        /// TODO this is probably not worth the complexity...
         /// </summary>
         internal void PrepForCallback()
         {
@@ -4519,7 +4519,7 @@ namespace Microsoft.Diagnostics.Tracing
     public static class ObservableExtensions
     {
         /// <summary>
-        /// Returns an IObjservable that observes all events that 'parser' knows about that  return a T.  If eventName is
+        /// Returns an IObservable that observes all events that 'parser' knows about that  return a T.  If eventName is
         /// non-null, the event's name must match 'eventName', but if eventName is null, any event that returns a T is observed. 
         /// <para>
         /// This means that Observe{TraceEvent}(parser) will observe all events that the parser can parse.  
@@ -4533,7 +4533,7 @@ namespace Microsoft.Diagnostics.Tracing
             return parser.Observe<T>(s => s == eventName);
         }
         /// <summary>
-        /// Returns an IObjservable that observes all events that 'parser' knows about that return a T and whose event
+        /// Returns an IObservable that observes all events that 'parser' knows about that return a T and whose event
         /// name matches the 'eventNameFilter' predicate.  
         /// 
         /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
@@ -4651,7 +4651,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                     // Add the event callback handler
                     m_observable.m_addHander(m_callback, this);
-                    // And the comleted callback handler
+                    // And the completed callback handler
                     m_observable.m_source.Completed += m_completedCallback;
                 }
                 public void Dispose()

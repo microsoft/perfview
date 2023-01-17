@@ -10,9 +10,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     internal static class StackSourceWriterHelper
     {
         /// <summary>
-        /// we want to identify the thread for every sample to prevent from 
-        /// overlaping of samples for the concurrent code so we group the samples by Threads
-        /// this method also sorts the samples by relative time (ascending)
+        /// We want to identify the thread for every sample to prevent the 
+        /// overlapping of samples for the concurrent code so we group the samples by Threads.
+        /// This method also sorts the samples by relative time (ascending).
         /// </summary>
         internal static IReadOnlyDictionary<ThreadInfo, List<Sample>> GetSortedSamplesPerThread(StackSource stackSource)
         {

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
-    /// TraceLoggingEvnetId is a class that manages assigning event IDs (small 64k numbers)
+    /// TraceLoggingEventId is a class that manages assigning event IDs (small 64k numbers)
     /// to TraceLogging Style events (which don't have them).  Because TraceEvent uses EventIDs
     /// so fundamentally this deficiency is very problematic.   
     /// 
@@ -181,7 +181,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        // Given partciular provider, opcode and tracelogging meta-data blob, look up the assigned ID
+        // Given particular provider, opcode and tracelogging meta-data blob, look up the assigned ID
         private Dictionary<ProviderMetaDataKey, ushort> m_traceLoggingEventMap;
 
         // For each provider look up the next unassigned eventID that can be used. 

@@ -38,7 +38,7 @@ namespace Utilities
         public const int Infinite = System.Threading.Timeout.Infinite;
 
         /// <summary>
-        /// CommanOptions holds a set of options that can be passed to the constructor
+        /// CommandOptions holds a set of options that can be passed to the constructor
         /// to the Command Class as well as Command.Run*
         /// </summary>
         public CommandOptions()
@@ -62,7 +62,7 @@ namespace Utilities
         public bool NoThrow { get { return noThrow; } set { noThrow = value; } }
 
         /// <summary>
-        /// Updates the NoThrow propery and returns the updated commandOptions.
+        /// Updates the NoThrow property and returns the updated commandOptions.
         /// <returns>Updated command options</returns>
         /// </summary>
         public CommandOptions AddNoThrow()
@@ -77,7 +77,7 @@ namespace Utilities
         public bool Start { get { return useShellExecute; } set { useShellExecute = value; noWait = value; } }
 
         /// <summary>
-        /// Updates the Start propery and returns the updated commandOptions.
+        /// Updates the Start property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddStart()
         {
@@ -93,7 +93,7 @@ namespace Utilities
         public bool UseShellExecute { get { return useShellExecute; } set { useShellExecute = value; } }
 
         /// <summary>
-        /// Updates the Start propery and returns the updated commandOptions.
+        /// Updates the Start property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddUseShellExecute()
         {
@@ -107,7 +107,7 @@ namespace Utilities
         public bool NoWindow { get { return noWindow; } set { noWindow = value; } }
 
         /// <summary>
-        /// Updates the NoWindow propery and returns the updated commandOptions.
+        /// Updates the NoWindow property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddNoWindow()
         {
@@ -121,7 +121,7 @@ namespace Utilities
         public bool NoWait { get { return noWait; } set { noWait = value; } }
 
         /// <summary>
-        /// Updates the NoWait propery and returns the updated commandOptions.
+        /// Updates the NoWait property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddNoWait()
         {
@@ -130,12 +130,12 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Indicates that the command must run at elevated Windows privledges (causes a new command window)
+        /// Indicates that the command must run at elevated Windows privileges (causes a new command window)
         /// </summary>
         public bool Elevate { get { return elevate; } set { elevate = value; } }
 
         /// <summary>
-        /// Updates the Elevate propery and returns the updated commandOptions.
+        /// Updates the Elevate property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddElevate()
         {
@@ -145,13 +145,13 @@ namespace Utilities
         /// <summary>
         /// By default commands have a 10 minute timeout (600,000 msec), If this
         /// is inappropriate, the Timeout property can change this.  Like all
-        /// timouts in .NET, it is in units of milliseconds, and you can use
+        /// timeouts in .NET, it is in units of milliseconds, and you can use
         /// CommandOptions.Infinite to indicate no timeout. 
         /// </summary>
         public int Timeout { get { return timeoutMSec; } set { timeoutMSec = value; } }
 
         /// <summary>
-        /// Updates the Timeout propery and returns the updated commandOptions.
+        /// Updates the Timeout property and returns the updated commandOptions.
         /// CommandOptions.Infinite can be used for infinite
         /// </summary>
         public CommandOptions AddTimeout(int milliseconds)
@@ -165,7 +165,7 @@ namespace Utilities
         /// </summary>
         public string Input { get { return input; } set { input = value; } }
         /// <summary>
-        /// Updates the Input propery and returns the updated commandOptions.
+        /// Updates the Input property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddInput(string input)
         {
@@ -178,7 +178,7 @@ namespace Utilities
         /// </summary>
         public string CurrentDirectory { get { return currentDirectory; } set { currentDirectory = value; } }
         /// <summary>
-        /// Updates the CurrentDirectory propery and returns the updated commandOptions.
+        /// Updates the CurrentDirectory property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddCurrentDirectory(string directoryPath)
         {
@@ -208,7 +208,7 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Updates the OutputFile propery and returns the updated commandOptions.
+        /// Updates the OutputFile property and returns the updated commandOptions.
         /// </summary>
         public CommandOptions AddOutputFile(string outputFile)
         {
@@ -267,7 +267,7 @@ namespace Utilities
 
         /// <summary>
         /// Adds the environment variable with the give value to the set of 
-        /// environmetn variables to be passed to the sub-process and returns the 
+        /// environment variables to be passed to the sub-process and returns the 
         /// updated commandOptions.   Any time a string
         /// of the form %VAR% is found in a value of a environment variable it is
         /// replaced with the value of the environment variable at the time the
@@ -300,7 +300,7 @@ namespace Utilities
 
     /// <summary>
     /// Command represents a running of a command lineNumber process.  It is basically
-    /// a wrapper over System.Diagnostics.Process, which hides the complexitity
+    /// a wrapper over System.Diagnostics.Process, which hides the complexity
     /// of System.Diagnostics.Process, and knows how to capture output and otherwise
     /// makes calling commands very easy.
     /// </summary>
@@ -372,7 +372,7 @@ namespace Utilities
 
         /// <summary>
         /// Run 'commandLine', sending the output to the console, and wait for the command to complete.
-        /// This simulates what batch filedo when executing their commands.  It is a bit more verbose
+        /// This simulates what batch files do when executing their commands.  It is a bit more verbose
         /// by default, however 
         /// </summary>
         /// <param variable="commandLine">The command lineNumber to run as a subprocess</param>
@@ -420,7 +420,7 @@ namespace Utilities
 
         /// <summary>
         /// Launch a new command and returns the Command object that can be used to monitor
-        /// the restult.  It does not wait for the command to complete, however you 
+        /// the result.  It does not wait for the command to complete, however you 
         /// can call 'Wait' to do that, or use the 'Run' or 'RunToConsole' methods. */
         /// </summary>
         /// <param variable="commandLine">The command lineNumber to run as a subprocess</param>
@@ -494,7 +494,7 @@ namespace Utilities
                 foreach (string key in options.environmentVariables.Keys)
                 {
 
-                    // look for %VAR% strings in the value and subtitute the appropriate environment variable. 
+                    // look for %VAR% strings in the value and substitute the appropriate environment variable. 
                     string value = options.environmentVariables[key];
                     if (value != null)
                     {
@@ -567,7 +567,7 @@ namespace Utilities
 
             if (!startInfo.UseShellExecute)
             {
-                // startInfo asyncronously collecting output
+                // startInfo asynchronously collecting output
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
             }
@@ -694,7 +694,7 @@ namespace Utilities
         public System.Diagnostics.Process Process { get { return process; } }
 
         /// <summary>
-        /// Kill the process (and any child processses (recursively) associated with the 
+        /// Kill the process (and any child processes (recursively) associated with the 
         /// running command).   Note that it may not be able to kill everything it should
         /// if the child-parent' chain is broken by a child that creates a subprocess and
         /// then dies itself.   This is reasonably uncommon, however. 
