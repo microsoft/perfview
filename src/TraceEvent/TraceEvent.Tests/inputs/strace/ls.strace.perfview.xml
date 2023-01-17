@@ -1,0 +1,540 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<StackWindow>
+ <StackSource>
+  <Frames Count="167">
+   <Frame ID="0">ROOT</Frame>
+   <Frame ID="1">BROKEN</Frame>
+   <Frame ID="2">?!?</Frame>
+   <Frame ID="3">OVERHEAD</Frame>
+   <Frame ID="4">Raw Syscalls</Frame>
+   <Frame ID="5">Syscall: execve</Frame>
+   <Frame ID="6">Arguments: "/usr/bin/ls", ["ls"], 0x7fff93c6e390 /* 27 vars */</Frame>
+   <Frame ID="7">Return Code: 0</Frame>
+   <Frame ID="8">Syscall: brk</Frame>
+   <Frame ID="9">Arguments: NULL</Frame>
+   <Frame ID="10">Return Code: 0x55ace26bf000</Frame>
+   <Frame ID="11">Syscall: arch_prctl</Frame>
+   <Frame ID="12">Arguments: 0x3001 /* ARCH_??? */, 0x7ffe0a6933a0</Frame>
+   <Frame ID="13">Return Code: -1 EINVAL (Invalid argument)</Frame>
+   <Frame ID="14">Path: /etc/ld.so.preload</Frame>
+   <Frame ID="15">Syscall: access</Frame>
+   <Frame ID="16">Arguments: "/etc/ld.so.preload", R_OK</Frame>
+   <Frame ID="17">Return Code: -1 ENOENT (No such file or directory)</Frame>
+   <Frame ID="18">Path: /etc/ld.so.cache</Frame>
+   <Frame ID="19">Syscall: openat</Frame>
+   <Frame ID="20">Arguments: AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="21">Return Code: 3</Frame>
+   <Frame ID="22">Syscall: fstat</Frame>
+   <Frame ID="23">Arguments: 3, {st_mode=S_IFREG|0644, st_size=92428, ...}</Frame>
+   <Frame ID="24">Syscall: mmap</Frame>
+   <Frame ID="25">Arguments: NULL, 92428, PROT_READ, MAP_PRIVATE, 3, 0</Frame>
+   <Frame ID="26">Return Code: 0x7fe68d3c8000</Frame>
+   <Frame ID="27">Syscall: close</Frame>
+   <Frame ID="28">Arguments: 3</Frame>
+   <Frame ID="29">Path: /lib/x86_64-linux-gnu/libselinux.so.1</Frame>
+   <Frame ID="30">Arguments: AT_FDCWD, "/lib/x86_64-linux-gnu/libselinux.so.1", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="31">Syscall: read</Frame>
+   <Frame ID="32">Arguments: 3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0@p\0\0\0\0\0\0"..., 832</Frame>
+   <Frame ID="33">Return Code: 832</Frame>
+   <Frame ID="34">Arguments: 3, {st_mode=S_IFREG|0644, st_size=163200, ...}</Frame>
+   <Frame ID="35">Arguments: NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0</Frame>
+   <Frame ID="36">Return Code: 0x7fe68d3c6000</Frame>
+   <Frame ID="37">Arguments: NULL, 174600, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0</Frame>
+   <Frame ID="38">Return Code: 0x7fe68d39b000</Frame>
+   <Frame ID="39">Syscall: mprotect</Frame>
+   <Frame ID="40">Arguments: 0x7fe68d3a1000, 135168, PROT_NONE</Frame>
+   <Frame ID="41">Arguments: 0x7fe68d3a1000, 102400, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000</Frame>
+   <Frame ID="42">Return Code: 0x7fe68d3a1000</Frame>
+   <Frame ID="43">Arguments: 0x7fe68d3ba000, 28672, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1f000</Frame>
+   <Frame ID="44">Return Code: 0x7fe68d3ba000</Frame>
+   <Frame ID="45">Arguments: 0x7fe68d3c2000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x26000</Frame>
+   <Frame ID="46">Return Code: 0x7fe68d3c2000</Frame>
+   <Frame ID="47">Arguments: 0x7fe68d3c4000, 6664, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0</Frame>
+   <Frame ID="48">Return Code: 0x7fe68d3c4000</Frame>
+   <Frame ID="49">Path: /lib/x86_64-linux-gnu/libc.so.6</Frame>
+   <Frame ID="50">Arguments: AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="51">Arguments: 3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0\300A\2\0\0\0\0\0"..., 832</Frame>
+   <Frame ID="52">Syscall: pread64</Frame>
+   <Frame ID="53">Arguments: 3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64</Frame>
+   <Frame ID="54">Return Code: 784</Frame>
+   <Frame ID="55">Arguments: 3, "\4\0\0\0\20\0\0\0\5\0\0\0GNU\0\2\0\0\300\4\0\0\0\3\0\0\0\0\0\0\0", 32, 848</Frame>
+   <Frame ID="56">Return Code: 32</Frame>
+   <Frame ID="57">Arguments: 3, "\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\30x\346\264ur\f|Q\226\236i\253-'o"..., 68, 880</Frame>
+   <Frame ID="58">Return Code: 68</Frame>
+   <Frame ID="59">Arguments: 3, {st_mode=S_IFREG|0755, st_size=2029592, ...}</Frame>
+   <Frame ID="60">Arguments: NULL, 2037344, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0</Frame>
+   <Frame ID="61">Return Code: 0x7fe68d1a9000</Frame>
+   <Frame ID="62">Arguments: 0x7fe68d1cb000, 1540096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x22000</Frame>
+   <Frame ID="63">Return Code: 0x7fe68d1cb000</Frame>
+   <Frame ID="64">Arguments: 0x7fe68d343000, 319488, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x19a000</Frame>
+   <Frame ID="65">Return Code: 0x7fe68d343000</Frame>
+   <Frame ID="66">Arguments: 0x7fe68d391000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1e7000</Frame>
+   <Frame ID="67">Return Code: 0x7fe68d391000</Frame>
+   <Frame ID="68">Arguments: 0x7fe68d397000, 13920, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0</Frame>
+   <Frame ID="69">Return Code: 0x7fe68d397000</Frame>
+   <Frame ID="70">Path: /lib/x86_64-linux-gnu/libpcre2-8.so.0</Frame>
+   <Frame ID="71">Arguments: AT_FDCWD, "/lib/x86_64-linux-gnu/libpcre2-8.so.0", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="72">Arguments: 3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0\340\"\0\0\0\0\0\0"..., 832</Frame>
+   <Frame ID="73">Arguments: 3, {st_mode=S_IFREG|0644, st_size=588488, ...}</Frame>
+   <Frame ID="74">Arguments: NULL, 590632, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0</Frame>
+   <Frame ID="75">Return Code: 0x7fe68d118000</Frame>
+   <Frame ID="76">Arguments: 0x7fe68d11a000, 413696, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000</Frame>
+   <Frame ID="77">Return Code: 0x7fe68d11a000</Frame>
+   <Frame ID="78">Arguments: 0x7fe68d17f000, 163840, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x67000</Frame>
+   <Frame ID="79">Return Code: 0x7fe68d17f000</Frame>
+   <Frame ID="80">Arguments: 0x7fe68d1a7000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8e000</Frame>
+   <Frame ID="81">Return Code: 0x7fe68d1a7000</Frame>
+   <Frame ID="82">Path: /lib/x86_64-linux-gnu/libdl.so.2</Frame>
+   <Frame ID="83">Arguments: AT_FDCWD, "/lib/x86_64-linux-gnu/libdl.so.2", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="84">Arguments: 3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0 \22\0\0\0\0\0\0"..., 832</Frame>
+   <Frame ID="85">Arguments: 3, {st_mode=S_IFREG|0644, st_size=18848, ...}</Frame>
+   <Frame ID="86">Arguments: NULL, 20752, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0</Frame>
+   <Frame ID="87">Return Code: 0x7fe68d112000</Frame>
+   <Frame ID="88">Arguments: 0x7fe68d113000, 8192, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1000</Frame>
+   <Frame ID="89">Return Code: 0x7fe68d113000</Frame>
+   <Frame ID="90">Arguments: 0x7fe68d115000, 4096, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000</Frame>
+   <Frame ID="91">Return Code: 0x7fe68d115000</Frame>
+   <Frame ID="92">Arguments: 0x7fe68d116000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000</Frame>
+   <Frame ID="93">Return Code: 0x7fe68d116000</Frame>
+   <Frame ID="94">Path: /lib/x86_64-linux-gnu/libpthread.so.0</Frame>
+   <Frame ID="95">Arguments: AT_FDCWD, "/lib/x86_64-linux-gnu/libpthread.so.0", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="96">Arguments: 3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0\220q\0\0\0\0\0\0"..., 832</Frame>
+   <Frame ID="97">Arguments: 3, "\4\0\0\0\24\0\0\0\3\0\0\0GNU\0{E6\364\34\332\245\210\204\10\350-\0106\343="..., 68, 824</Frame>
+   <Frame ID="98">Arguments: 3, {st_mode=S_IFREG|0755, st_size=157224, ...}</Frame>
+   <Frame ID="99">Arguments: NULL, 140408, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0</Frame>
+   <Frame ID="100">Return Code: 0x7fe68d0ef000</Frame>
+   <Frame ID="101">Arguments: 0x7fe68d0f5000, 69632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000</Frame>
+   <Frame ID="102">Return Code: 0x7fe68d0f5000</Frame>
+   <Frame ID="103">Arguments: 0x7fe68d106000, 24576, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x17000</Frame>
+   <Frame ID="104">Return Code: 0x7fe68d106000</Frame>
+   <Frame ID="105">Arguments: 0x7fe68d10c000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1c000</Frame>
+   <Frame ID="106">Return Code: 0x7fe68d10c000</Frame>
+   <Frame ID="107">Arguments: 0x7fe68d10e000, 13432, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0</Frame>
+   <Frame ID="108">Return Code: 0x7fe68d10e000</Frame>
+   <Frame ID="109">Return Code: 0x7fe68d0ed000</Frame>
+   <Frame ID="110">Arguments: ARCH_SET_FS, 0x7fe68d0ee400</Frame>
+   <Frame ID="111">Arguments: 0x7fe68d391000, 16384, PROT_READ</Frame>
+   <Frame ID="112">Arguments: 0x7fe68d10c000, 4096, PROT_READ</Frame>
+   <Frame ID="113">Arguments: 0x7fe68d116000, 4096, PROT_READ</Frame>
+   <Frame ID="114">Arguments: 0x7fe68d1a7000, 4096, PROT_READ</Frame>
+   <Frame ID="115">Arguments: 0x7fe68d3c2000, 4096, PROT_READ</Frame>
+   <Frame ID="116">Arguments: 0x55ace1bdc000, 4096, PROT_READ</Frame>
+   <Frame ID="117">Arguments: 0x7fe68d40c000, 4096, PROT_READ</Frame>
+   <Frame ID="118">Syscall: munmap</Frame>
+   <Frame ID="119">Arguments: 0x7fe68d3c8000, 92428</Frame>
+   <Frame ID="120">Syscall: set_tid_address</Frame>
+   <Frame ID="121">Arguments: 0x7fe68d0ee6d0</Frame>
+   <Frame ID="122">Return Code: 28669</Frame>
+   <Frame ID="123">Syscall: set_robust_list</Frame>
+   <Frame ID="124">Arguments: 0x7fe68d0ee6e0, 24</Frame>
+   <Frame ID="125">Syscall: rt_sigaction</Frame>
+   <Frame ID="126">Arguments: SIGRTMIN, {sa_handler=0x7fe68d0f5bf0, sa_mask=[], sa_flags=SA_RESTORER|SA_SIGINFO, sa_restorer=0x7fe68d103420}, NULL, 8</Frame>
+   <Frame ID="127">Arguments: SIGRT_1, {sa_handler=0x7fe68d0f5c90, sa_mask=[], sa_flags=SA_RESTORER|SA_RESTART|SA_SIGINFO, sa_restorer=0x7fe68d103420}, NULL, 8</Frame>
+   <Frame ID="128">Syscall: rt_sigprocmask</Frame>
+   <Frame ID="129">Arguments: SIG_UNBLOCK, [RTMIN RT_1], NULL, 8</Frame>
+   <Frame ID="130">Syscall: prlimit64</Frame>
+   <Frame ID="131">Arguments: 0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}</Frame>
+   <Frame ID="132">Syscall: statfs</Frame>
+   <Frame ID="133">Arguments: "/sys/fs/selinux", 0x7ffe0a6932f0</Frame>
+   <Frame ID="134">Arguments: "/selinux", 0x7ffe0a6932f0</Frame>
+   <Frame ID="135">Arguments: 0x55ace26e0000</Frame>
+   <Frame ID="136">Return Code: 0x55ace26e0000</Frame>
+   <Frame ID="137">Path: /proc/filesystems</Frame>
+   <Frame ID="138">Arguments: AT_FDCWD, "/proc/filesystems", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="139">Arguments: 3, {st_mode=S_IFREG|0444, st_size=0, ...}</Frame>
+   <Frame ID="140">Arguments: 3, "nodev\tsysfs\nnodev\ttmpfs\nnodev\tbd"..., 1024</Frame>
+   <Frame ID="141">Return Code: 480</Frame>
+   <Frame ID="142">Arguments: 3, "", 1024</Frame>
+   <Frame ID="143">Path: /etc/selinux/config</Frame>
+   <Frame ID="144">Arguments: "/etc/selinux/config", F_OK</Frame>
+   <Frame ID="145">Path: /usr/lib/locale/locale-archive</Frame>
+   <Frame ID="146">Arguments: AT_FDCWD, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC</Frame>
+   <Frame ID="147">Arguments: 3, {st_mode=S_IFREG|0644, st_size=5699248, ...}</Frame>
+   <Frame ID="148">Arguments: NULL, 5699248, PROT_READ, MAP_PRIVATE, 3, 0</Frame>
+   <Frame ID="149">Return Code: 0x7fe68cb7d000</Frame>
+   <Frame ID="150">Path: &lt;Unknown&gt;</Frame>
+   <Frame ID="151">Syscall: ioctl</Frame>
+   <Frame ID="152">Arguments: 1, TCGETS, {B38400 opost isig icanon echo ...}</Frame>
+   <Frame ID="153">Arguments: 1, TIOCGWINSZ, {ws_row=97, ws_col=159, ws_xpixel=0, ws_ypixel=0}</Frame>
+   <Frame ID="154">Path: .</Frame>
+   <Frame ID="155">Arguments: AT_FDCWD, ".", O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY</Frame>
+   <Frame ID="156">Arguments: 3, {st_mode=S_IFDIR|0775, st_size=4096, ...}</Frame>
+   <Frame ID="157">Syscall: getdents64</Frame>
+   <Frame ID="158">Arguments: 3, /* 5 entries */, 32768</Frame>
+   <Frame ID="159">Return Code: 152</Frame>
+   <Frame ID="160">Arguments: 3, /* 0 entries */, 32768</Frame>
+   <Frame ID="161">Arguments: 1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0x2), ...}</Frame>
+   <Frame ID="162">Syscall: write</Frame>
+   <Frame ID="163">Arguments: 1, "dotnet-info.strace  ls.strace  p"..., 43</Frame>
+   <Frame ID="164">Return Code: 43</Frame>
+   <Frame ID="165">Arguments: 1</Frame>
+   <Frame ID="166">Arguments: 2</Frame>
+  </Frames>
+  <Stacks Count="260">
+   <Stack ID="0" CallerID="-1" FrameID="4" />
+   <Stack ID="1" CallerID="0" FrameID="5" />
+   <Stack ID="2" CallerID="1" FrameID="6" />
+   <Stack ID="3" CallerID="2" FrameID="7" />
+   <Stack ID="4" CallerID="0" FrameID="8" />
+   <Stack ID="5" CallerID="4" FrameID="9" />
+   <Stack ID="6" CallerID="5" FrameID="10" />
+   <Stack ID="7" CallerID="0" FrameID="11" />
+   <Stack ID="8" CallerID="7" FrameID="12" />
+   <Stack ID="9" CallerID="8" FrameID="13" />
+   <Stack ID="10" CallerID="-1" FrameID="14" />
+   <Stack ID="11" CallerID="10" FrameID="15" />
+   <Stack ID="12" CallerID="11" FrameID="16" />
+   <Stack ID="13" CallerID="12" FrameID="17" />
+   <Stack ID="14" CallerID="-1" FrameID="18" />
+   <Stack ID="15" CallerID="14" FrameID="19" />
+   <Stack ID="16" CallerID="15" FrameID="20" />
+   <Stack ID="17" CallerID="16" FrameID="21" />
+   <Stack ID="18" CallerID="14" FrameID="22" />
+   <Stack ID="19" CallerID="18" FrameID="23" />
+   <Stack ID="20" CallerID="19" FrameID="7" />
+   <Stack ID="21" CallerID="0" FrameID="24" />
+   <Stack ID="22" CallerID="21" FrameID="25" />
+   <Stack ID="23" CallerID="22" FrameID="26" />
+   <Stack ID="24" CallerID="14" FrameID="27" />
+   <Stack ID="25" CallerID="24" FrameID="28" />
+   <Stack ID="26" CallerID="25" FrameID="7" />
+   <Stack ID="27" CallerID="-1" FrameID="29" />
+   <Stack ID="28" CallerID="27" FrameID="19" />
+   <Stack ID="29" CallerID="28" FrameID="30" />
+   <Stack ID="30" CallerID="29" FrameID="21" />
+   <Stack ID="31" CallerID="27" FrameID="31" />
+   <Stack ID="32" CallerID="31" FrameID="32" />
+   <Stack ID="33" CallerID="32" FrameID="33" />
+   <Stack ID="34" CallerID="27" FrameID="22" />
+   <Stack ID="35" CallerID="34" FrameID="34" />
+   <Stack ID="36" CallerID="35" FrameID="7" />
+   <Stack ID="37" CallerID="21" FrameID="35" />
+   <Stack ID="38" CallerID="37" FrameID="36" />
+   <Stack ID="39" CallerID="21" FrameID="37" />
+   <Stack ID="40" CallerID="39" FrameID="38" />
+   <Stack ID="41" CallerID="0" FrameID="39" />
+   <Stack ID="42" CallerID="41" FrameID="40" />
+   <Stack ID="43" CallerID="42" FrameID="7" />
+   <Stack ID="44" CallerID="21" FrameID="41" />
+   <Stack ID="45" CallerID="44" FrameID="42" />
+   <Stack ID="46" CallerID="21" FrameID="43" />
+   <Stack ID="47" CallerID="46" FrameID="44" />
+   <Stack ID="48" CallerID="21" FrameID="45" />
+   <Stack ID="49" CallerID="48" FrameID="46" />
+   <Stack ID="50" CallerID="21" FrameID="47" />
+   <Stack ID="51" CallerID="50" FrameID="48" />
+   <Stack ID="52" CallerID="27" FrameID="27" />
+   <Stack ID="53" CallerID="52" FrameID="28" />
+   <Stack ID="54" CallerID="53" FrameID="7" />
+   <Stack ID="55" CallerID="-1" FrameID="49" />
+   <Stack ID="56" CallerID="55" FrameID="19" />
+   <Stack ID="57" CallerID="56" FrameID="50" />
+   <Stack ID="58" CallerID="57" FrameID="21" />
+   <Stack ID="59" CallerID="55" FrameID="31" />
+   <Stack ID="60" CallerID="59" FrameID="51" />
+   <Stack ID="61" CallerID="60" FrameID="33" />
+   <Stack ID="62" CallerID="55" FrameID="52" />
+   <Stack ID="63" CallerID="62" FrameID="53" />
+   <Stack ID="64" CallerID="63" FrameID="54" />
+   <Stack ID="65" CallerID="62" FrameID="55" />
+   <Stack ID="66" CallerID="65" FrameID="56" />
+   <Stack ID="67" CallerID="62" FrameID="57" />
+   <Stack ID="68" CallerID="67" FrameID="58" />
+   <Stack ID="69" CallerID="55" FrameID="22" />
+   <Stack ID="70" CallerID="69" FrameID="59" />
+   <Stack ID="71" CallerID="70" FrameID="7" />
+   <Stack ID="72" CallerID="21" FrameID="60" />
+   <Stack ID="73" CallerID="72" FrameID="61" />
+   <Stack ID="74" CallerID="21" FrameID="62" />
+   <Stack ID="75" CallerID="74" FrameID="63" />
+   <Stack ID="76" CallerID="21" FrameID="64" />
+   <Stack ID="77" CallerID="76" FrameID="65" />
+   <Stack ID="78" CallerID="21" FrameID="66" />
+   <Stack ID="79" CallerID="78" FrameID="67" />
+   <Stack ID="80" CallerID="21" FrameID="68" />
+   <Stack ID="81" CallerID="80" FrameID="69" />
+   <Stack ID="82" CallerID="55" FrameID="27" />
+   <Stack ID="83" CallerID="82" FrameID="28" />
+   <Stack ID="84" CallerID="83" FrameID="7" />
+   <Stack ID="85" CallerID="-1" FrameID="70" />
+   <Stack ID="86" CallerID="85" FrameID="19" />
+   <Stack ID="87" CallerID="86" FrameID="71" />
+   <Stack ID="88" CallerID="87" FrameID="21" />
+   <Stack ID="89" CallerID="85" FrameID="31" />
+   <Stack ID="90" CallerID="89" FrameID="72" />
+   <Stack ID="91" CallerID="90" FrameID="33" />
+   <Stack ID="92" CallerID="85" FrameID="22" />
+   <Stack ID="93" CallerID="92" FrameID="73" />
+   <Stack ID="94" CallerID="93" FrameID="7" />
+   <Stack ID="95" CallerID="21" FrameID="74" />
+   <Stack ID="96" CallerID="95" FrameID="75" />
+   <Stack ID="97" CallerID="21" FrameID="76" />
+   <Stack ID="98" CallerID="97" FrameID="77" />
+   <Stack ID="99" CallerID="21" FrameID="78" />
+   <Stack ID="100" CallerID="99" FrameID="79" />
+   <Stack ID="101" CallerID="21" FrameID="80" />
+   <Stack ID="102" CallerID="101" FrameID="81" />
+   <Stack ID="103" CallerID="85" FrameID="27" />
+   <Stack ID="104" CallerID="103" FrameID="28" />
+   <Stack ID="105" CallerID="104" FrameID="7" />
+   <Stack ID="106" CallerID="-1" FrameID="82" />
+   <Stack ID="107" CallerID="106" FrameID="19" />
+   <Stack ID="108" CallerID="107" FrameID="83" />
+   <Stack ID="109" CallerID="108" FrameID="21" />
+   <Stack ID="110" CallerID="106" FrameID="31" />
+   <Stack ID="111" CallerID="110" FrameID="84" />
+   <Stack ID="112" CallerID="111" FrameID="33" />
+   <Stack ID="113" CallerID="106" FrameID="22" />
+   <Stack ID="114" CallerID="113" FrameID="85" />
+   <Stack ID="115" CallerID="114" FrameID="7" />
+   <Stack ID="116" CallerID="21" FrameID="86" />
+   <Stack ID="117" CallerID="116" FrameID="87" />
+   <Stack ID="118" CallerID="21" FrameID="88" />
+   <Stack ID="119" CallerID="118" FrameID="89" />
+   <Stack ID="120" CallerID="21" FrameID="90" />
+   <Stack ID="121" CallerID="120" FrameID="91" />
+   <Stack ID="122" CallerID="21" FrameID="92" />
+   <Stack ID="123" CallerID="122" FrameID="93" />
+   <Stack ID="124" CallerID="106" FrameID="27" />
+   <Stack ID="125" CallerID="124" FrameID="28" />
+   <Stack ID="126" CallerID="125" FrameID="7" />
+   <Stack ID="127" CallerID="-1" FrameID="94" />
+   <Stack ID="128" CallerID="127" FrameID="19" />
+   <Stack ID="129" CallerID="128" FrameID="95" />
+   <Stack ID="130" CallerID="129" FrameID="21" />
+   <Stack ID="131" CallerID="127" FrameID="31" />
+   <Stack ID="132" CallerID="131" FrameID="96" />
+   <Stack ID="133" CallerID="132" FrameID="33" />
+   <Stack ID="134" CallerID="127" FrameID="52" />
+   <Stack ID="135" CallerID="134" FrameID="97" />
+   <Stack ID="136" CallerID="135" FrameID="58" />
+   <Stack ID="137" CallerID="127" FrameID="22" />
+   <Stack ID="138" CallerID="137" FrameID="98" />
+   <Stack ID="139" CallerID="138" FrameID="7" />
+   <Stack ID="140" CallerID="21" FrameID="99" />
+   <Stack ID="141" CallerID="140" FrameID="100" />
+   <Stack ID="142" CallerID="21" FrameID="101" />
+   <Stack ID="143" CallerID="142" FrameID="102" />
+   <Stack ID="144" CallerID="21" FrameID="103" />
+   <Stack ID="145" CallerID="144" FrameID="104" />
+   <Stack ID="146" CallerID="21" FrameID="105" />
+   <Stack ID="147" CallerID="146" FrameID="106" />
+   <Stack ID="148" CallerID="21" FrameID="107" />
+   <Stack ID="149" CallerID="148" FrameID="108" />
+   <Stack ID="150" CallerID="127" FrameID="27" />
+   <Stack ID="151" CallerID="150" FrameID="28" />
+   <Stack ID="152" CallerID="151" FrameID="7" />
+   <Stack ID="153" CallerID="37" FrameID="109" />
+   <Stack ID="154" CallerID="7" FrameID="110" />
+   <Stack ID="155" CallerID="154" FrameID="7" />
+   <Stack ID="156" CallerID="41" FrameID="111" />
+   <Stack ID="157" CallerID="156" FrameID="7" />
+   <Stack ID="158" CallerID="41" FrameID="112" />
+   <Stack ID="159" CallerID="158" FrameID="7" />
+   <Stack ID="160" CallerID="41" FrameID="113" />
+   <Stack ID="161" CallerID="160" FrameID="7" />
+   <Stack ID="162" CallerID="41" FrameID="114" />
+   <Stack ID="163" CallerID="162" FrameID="7" />
+   <Stack ID="164" CallerID="41" FrameID="115" />
+   <Stack ID="165" CallerID="164" FrameID="7" />
+   <Stack ID="166" CallerID="41" FrameID="116" />
+   <Stack ID="167" CallerID="166" FrameID="7" />
+   <Stack ID="168" CallerID="41" FrameID="117" />
+   <Stack ID="169" CallerID="168" FrameID="7" />
+   <Stack ID="170" CallerID="0" FrameID="118" />
+   <Stack ID="171" CallerID="170" FrameID="119" />
+   <Stack ID="172" CallerID="171" FrameID="7" />
+   <Stack ID="173" CallerID="0" FrameID="120" />
+   <Stack ID="174" CallerID="173" FrameID="121" />
+   <Stack ID="175" CallerID="174" FrameID="122" />
+   <Stack ID="176" CallerID="0" FrameID="123" />
+   <Stack ID="177" CallerID="176" FrameID="124" />
+   <Stack ID="178" CallerID="177" FrameID="7" />
+   <Stack ID="179" CallerID="0" FrameID="125" />
+   <Stack ID="180" CallerID="179" FrameID="126" />
+   <Stack ID="181" CallerID="180" FrameID="7" />
+   <Stack ID="182" CallerID="179" FrameID="127" />
+   <Stack ID="183" CallerID="182" FrameID="7" />
+   <Stack ID="184" CallerID="0" FrameID="128" />
+   <Stack ID="185" CallerID="184" FrameID="129" />
+   <Stack ID="186" CallerID="185" FrameID="7" />
+   <Stack ID="187" CallerID="0" FrameID="130" />
+   <Stack ID="188" CallerID="187" FrameID="131" />
+   <Stack ID="189" CallerID="188" FrameID="7" />
+   <Stack ID="190" CallerID="0" FrameID="132" />
+   <Stack ID="191" CallerID="190" FrameID="133" />
+   <Stack ID="192" CallerID="191" FrameID="17" />
+   <Stack ID="193" CallerID="190" FrameID="134" />
+   <Stack ID="194" CallerID="193" FrameID="17" />
+   <Stack ID="195" CallerID="4" FrameID="135" />
+   <Stack ID="196" CallerID="195" FrameID="136" />
+   <Stack ID="197" CallerID="-1" FrameID="137" />
+   <Stack ID="198" CallerID="197" FrameID="19" />
+   <Stack ID="199" CallerID="198" FrameID="138" />
+   <Stack ID="200" CallerID="199" FrameID="21" />
+   <Stack ID="201" CallerID="197" FrameID="22" />
+   <Stack ID="202" CallerID="201" FrameID="139" />
+   <Stack ID="203" CallerID="202" FrameID="7" />
+   <Stack ID="204" CallerID="197" FrameID="31" />
+   <Stack ID="205" CallerID="204" FrameID="140" />
+   <Stack ID="206" CallerID="205" FrameID="141" />
+   <Stack ID="207" CallerID="204" FrameID="142" />
+   <Stack ID="208" CallerID="207" FrameID="7" />
+   <Stack ID="209" CallerID="197" FrameID="27" />
+   <Stack ID="210" CallerID="209" FrameID="28" />
+   <Stack ID="211" CallerID="210" FrameID="7" />
+   <Stack ID="212" CallerID="-1" FrameID="143" />
+   <Stack ID="213" CallerID="212" FrameID="15" />
+   <Stack ID="214" CallerID="213" FrameID="144" />
+   <Stack ID="215" CallerID="214" FrameID="17" />
+   <Stack ID="216" CallerID="-1" FrameID="145" />
+   <Stack ID="217" CallerID="216" FrameID="19" />
+   <Stack ID="218" CallerID="217" FrameID="146" />
+   <Stack ID="219" CallerID="218" FrameID="21" />
+   <Stack ID="220" CallerID="216" FrameID="22" />
+   <Stack ID="221" CallerID="220" FrameID="147" />
+   <Stack ID="222" CallerID="221" FrameID="7" />
+   <Stack ID="223" CallerID="21" FrameID="148" />
+   <Stack ID="224" CallerID="223" FrameID="149" />
+   <Stack ID="225" CallerID="216" FrameID="27" />
+   <Stack ID="226" CallerID="225" FrameID="28" />
+   <Stack ID="227" CallerID="226" FrameID="7" />
+   <Stack ID="228" CallerID="-1" FrameID="150" />
+   <Stack ID="229" CallerID="228" FrameID="151" />
+   <Stack ID="230" CallerID="229" FrameID="152" />
+   <Stack ID="231" CallerID="230" FrameID="7" />
+   <Stack ID="232" CallerID="229" FrameID="153" />
+   <Stack ID="233" CallerID="232" FrameID="7" />
+   <Stack ID="234" CallerID="-1" FrameID="154" />
+   <Stack ID="235" CallerID="234" FrameID="19" />
+   <Stack ID="236" CallerID="235" FrameID="155" />
+   <Stack ID="237" CallerID="236" FrameID="21" />
+   <Stack ID="238" CallerID="234" FrameID="22" />
+   <Stack ID="239" CallerID="238" FrameID="156" />
+   <Stack ID="240" CallerID="239" FrameID="7" />
+   <Stack ID="241" CallerID="234" FrameID="157" />
+   <Stack ID="242" CallerID="241" FrameID="158" />
+   <Stack ID="243" CallerID="242" FrameID="159" />
+   <Stack ID="244" CallerID="241" FrameID="160" />
+   <Stack ID="245" CallerID="244" FrameID="7" />
+   <Stack ID="246" CallerID="234" FrameID="27" />
+   <Stack ID="247" CallerID="246" FrameID="28" />
+   <Stack ID="248" CallerID="247" FrameID="7" />
+   <Stack ID="249" CallerID="228" FrameID="22" />
+   <Stack ID="250" CallerID="249" FrameID="161" />
+   <Stack ID="251" CallerID="250" FrameID="7" />
+   <Stack ID="252" CallerID="228" FrameID="162" />
+   <Stack ID="253" CallerID="252" FrameID="163" />
+   <Stack ID="254" CallerID="253" FrameID="164" />
+   <Stack ID="255" CallerID="228" FrameID="27" />
+   <Stack ID="256" CallerID="255" FrameID="165" />
+   <Stack ID="257" CallerID="256" FrameID="7" />
+   <Stack ID="258" CallerID="255" FrameID="166" />
+   <Stack ID="259" CallerID="258" FrameID="7" />
+  </Stacks>
+  <Samples Count="102">
+   <Sample ID="0" Time="0.000" StackID="3" Metric="1.195" />
+   <Sample ID="1" Time="1.847" StackID="6" Metric="0.354" />
+   <Sample ID="2" Time="2.677" StackID="9" Metric="0.303" />
+   <Sample ID="3" Time="3.716" StackID="13" Metric="0.364" />
+   <Sample ID="4" Time="4.555" StackID="17" Metric="0.382" />
+   <Sample ID="5" Time="5.386" StackID="20" Metric="0.350" />
+   <Sample ID="6" Time="6.177" StackID="23" Metric="0.358" />
+   <Sample ID="7" Time="7.173" StackID="26" Metric="0.350" />
+   <Sample ID="8" Time="7.971" StackID="30" Metric="0.373" />
+   <Sample ID="9" Time="8.785" StackID="33" Metric="0.354" />
+   <Sample ID="10" Time="9.584" StackID="36" Metric="0.351" />
+   <Sample ID="11" Time="10.377" StackID="38" Metric="0.359" />
+   <Sample ID="12" Time="11.130" StackID="40" Metric="0.493" />
+   <Sample ID="13" Time="12.061" StackID="43" Metric="0.372" />
+   <Sample ID="14" Time="12.861" StackID="45" Metric="0.380" />
+   <Sample ID="15" Time="13.675" StackID="47" Metric="0.378" />
+   <Sample ID="16" Time="14.488" StackID="49" Metric="0.446" />
+   <Sample ID="17" Time="15.380" StackID="51" Metric="0.354" />
+   <Sample ID="18" Time="16.118" StackID="54" Metric="0.293" />
+   <Sample ID="19" Time="16.778" StackID="58" Metric="0.310" />
+   <Sample ID="20" Time="17.425" StackID="61" Metric="0.262" />
+   <Sample ID="21" Time="18.047" StackID="64" Metric="0.298" />
+   <Sample ID="22" Time="18.705" StackID="66" Metric="0.267" />
+   <Sample ID="23" Time="19.340" StackID="68" Metric="0.304" />
+   <Sample ID="24" Time="20.010" StackID="71" Metric="0.284" />
+   <Sample ID="25" Time="20.664" StackID="64" Metric="0.217" />
+   <Sample ID="26" Time="21.173" StackID="66" Metric="0.239" />
+   <Sample ID="27" Time="21.694" StackID="68" Metric="0.236" />
+   <Sample ID="28" Time="22.214" StackID="73" Metric="0.249" />
+   <Sample ID="29" Time="22.741" StackID="75" Metric="0.253" />
+   <Sample ID="30" Time="23.251" StackID="77" Metric="0.222" />
+   <Sample ID="31" Time="23.717" StackID="79" Metric="0.222" />
+   <Sample ID="32" Time="24.207" StackID="81" Metric="0.226" />
+   <Sample ID="33" Time="24.700" StackID="84" Metric="0.213" />
+   <Sample ID="34" Time="25.167" StackID="88" Metric="0.205" />
+   <Sample ID="35" Time="25.605" StackID="91" Metric="0.164" />
+   <Sample ID="36" Time="25.890" StackID="94" Metric="0.093" />
+   <Sample ID="37" Time="26.094" StackID="96" Metric="0.096" />
+   <Sample ID="38" Time="26.296" StackID="98" Metric="0.098" />
+   <Sample ID="39" Time="26.505" StackID="100" Metric="0.101" />
+   <Sample ID="40" Time="26.689" StackID="102" Metric="0.074" />
+   <Sample ID="41" Time="26.942" StackID="105" Metric="0.102" />
+   <Sample ID="42" Time="27.144" StackID="109" Metric="0.085" />
+   <Sample ID="43" Time="27.293" StackID="112" Metric="0.083" />
+   <Sample ID="44" Time="27.440" StackID="115" Metric="0.081" />
+   <Sample ID="45" Time="27.623" StackID="117" Metric="0.091" />
+   <Sample ID="46" Time="27.777" StackID="119" Metric="0.081" />
+   <Sample ID="47" Time="27.921" StackID="121" Metric="0.081" />
+   <Sample ID="48" Time="28.096" StackID="123" Metric="0.075" />
+   <Sample ID="49" Time="28.261" StackID="126" Metric="0.039" />
+   <Sample ID="50" Time="28.355" StackID="130" Metric="0.043" />
+   <Sample ID="51" Time="28.451" StackID="133" Metric="0.039" />
+   <Sample ID="52" Time="28.542" StackID="136" Metric="0.039" />
+   <Sample ID="53" Time="28.633" StackID="139" Metric="0.038" />
+   <Sample ID="54" Time="28.725" StackID="136" Metric="0.039" />
+   <Sample ID="55" Time="28.815" StackID="141" Metric="0.041" />
+   <Sample ID="56" Time="28.907" StackID="143" Metric="0.044" />
+   <Sample ID="57" Time="29.002" StackID="145" Metric="0.043" />
+   <Sample ID="58" Time="29.096" StackID="147" Metric="0.042" />
+   <Sample ID="59" Time="29.192" StackID="149" Metric="0.041" />
+   <Sample ID="60" Time="29.289" StackID="152" Metric="0.038" />
+   <Sample ID="61" Time="29.383" StackID="153" Metric="0.040" />
+   <Sample ID="62" Time="29.480" StackID="155" Metric="0.038" />
+   <Sample ID="63" Time="29.598" StackID="157" Metric="0.043" />
+   <Sample ID="64" Time="29.694" StackID="159" Metric="0.042" />
+   <Sample ID="65" Time="29.799" StackID="161" Metric="0.042" />
+   <Sample ID="66" Time="29.892" StackID="163" Metric="0.041" />
+   <Sample ID="67" Time="29.987" StackID="165" Metric="0.041" />
+   <Sample ID="68" Time="30.101" StackID="167" Metric="0.041" />
+   <Sample ID="69" Time="30.194" StackID="169" Metric="0.042" />
+   <Sample ID="70" Time="30.285" StackID="172" Metric="0.047" />
+   <Sample ID="71" Time="30.383" StackID="175" Metric="0.036" />
+   <Sample ID="72" Time="30.465" StackID="178" Metric="0.035" />
+   <Sample ID="73" Time="30.551" StackID="181" Metric="0.037" />
+   <Sample ID="74" Time="30.639" StackID="183" Metric="0.036" />
+   <Sample ID="75" Time="30.726" StackID="186" Metric="0.043" />
+   <Sample ID="76" Time="30.841" StackID="189" Metric="0.036" />
+   <Sample ID="77" Time="30.962" StackID="192" Metric="0.041" />
+   <Sample ID="78" Time="31.057" StackID="194" Metric="0.037" />
+   <Sample ID="79" Time="31.173" StackID="6" Metric="0.036" />
+   <Sample ID="80" Time="31.256" StackID="196" Metric="0.037" />
+   <Sample ID="81" Time="31.344" StackID="200" Metric="0.041" />
+   <Sample ID="82" Time="31.437" StackID="203" Metric="0.036" />
+   <Sample ID="83" Time="31.523" StackID="206" Metric="0.048" />
+   <Sample ID="84" Time="31.626" StackID="208" Metric="0.037" />
+   <Sample ID="85" Time="31.711" StackID="211" Metric="0.038" />
+   <Sample ID="86" Time="31.797" StackID="215" Metric="0.039" />
+   <Sample ID="87" Time="31.901" StackID="219" Metric="0.040" />
+   <Sample ID="88" Time="31.991" StackID="222" Metric="0.036" />
+   <Sample ID="89" Time="32.077" StackID="224" Metric="0.038" />
+   <Sample ID="90" Time="32.166" StackID="227" Metric="0.036" />
+   <Sample ID="91" Time="32.304" StackID="231" Metric="0.048" />
+   <Sample ID="92" Time="32.456" StackID="233" Metric="0.048" />
+   <Sample ID="93" Time="32.602" StackID="237" Metric="0.084" />
+   <Sample ID="94" Time="32.745" StackID="240" Metric="0.040" />
+   <Sample ID="95" Time="32.848" StackID="243" Metric="0.081" />
+   <Sample ID="96" Time="33.034" StackID="245" Metric="0.048" />
+   <Sample ID="97" Time="33.139" StackID="248" Metric="0.089" />
+   <Sample ID="98" Time="33.328" StackID="251" Metric="0.048" />
+   <Sample ID="99" Time="33.475" StackID="254" Metric="0.104" />
+   <Sample ID="100" Time="33.682" StackID="257" Metric="0.049" />
+   <Sample ID="101" Time="33.833" StackID="259" Metric="0.047" />
+  </Samples>
+ </StackSource>
+</StackWindow>

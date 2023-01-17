@@ -879,7 +879,8 @@ namespace PerfView
             new DiagSessionPerfViewFile(),
             new LinuxPerfViewData(),
             new XmlTreeFile(),
-            new EventPipePerfViewData()
+            new EventPipePerfViewData(),
+            new StracePerfViewData()
         };
 
         #region private
@@ -10083,6 +10084,64 @@ table {
             }
 
             return newResources;
+        }
+    }
+
+    public partial class StracePerfViewData : PerfViewFile
+    {
+        private string[] StreamNames = new string[]
+        {
+            "Syscalls",
+        };
+
+        public override string FormatName { get { return "strace"; } }
+
+        public override string[] FileExtensions { get { return new string[] { ".strace" }; } }
+
+        public override bool SupportsProcesses => false;
+
+        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
+        {
+            if (StreamNames.Contains(streamName))
+            {
+                string xmlPath;
+
+                xmlPath = CacheFiles.FindFile(FilePath, $"{streamName}.strace.xml.zip");
+
+#if !DEBUG
+                if (!CacheFiles.UpToDate(xmlPath, FilePath))
+#endif
+                {
+                    XmlStackSourceWriter.WriteStackViewAsZippedXml(
+                        new StraceStackSource(FilePath), xmlPath);
+                }
+
+                return new XmlStackSource(xmlPath, null);
+            }
+
+            return null;
+        }
+
+        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+        {
+            m_Children = new List<PerfViewTreeItem>()
+            {
+                new PerfViewStackSource(this, "Syscalls"),
+            };
+
+            return null;
+        }
+
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+
+        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+        {
+            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+            stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+
+            stackWindow.CallTreeTab.IsSelected = true;      // start with the call tree view
+
+            ConfigureGroupRegExTextBox(stackWindow, windows: false);
         }
     }
 }
