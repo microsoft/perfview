@@ -738,8 +738,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     ETWControl.EnableStackCaching(m_SessionHandle);
                 }
 
+                EnableLastBranchRecordingIfConfigured();
+
                 return ret;
             }
+        }
+
+        private unsafe void EnableLastBranchRecordingIfConfigured()
+        {
+            uint[] sources = m_LastBranchRecordingProfileSources;
+            if (sources == null || sources.Length == 0)
+                return;
+
+            if (!OperatingSystemVersion.AtLeast(OperatingSystemVersion.Win10))
+            {
+                throw new NotSupportedException("Last branch recording is only supported on Windows 10 19H1+ and Windows Server 1903+");
+            }
+
+            uint filters = (uint)m_LastBranchRecordingFilters;
+            int error = TraceEventNativeMethods.TraceSetInformation(m_SessionHandle, TraceEventNativeMethods.TRACE_INFO_CLASS.TraceLbrConfigurationInfo, &filters, sizeof(uint));
+            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(error));
+
+            fixed (uint* pSources = sources)
+            {
+                error = TraceEventNativeMethods.TraceSetInformation(m_SessionHandle, TraceEventNativeMethods.TRACE_INFO_CLASS.TraceLbrEventListInfo, pSources, sources.Length * sizeof(uint));
+            }
+
+            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(error));
         }
 
         // OS Heap Provider support.  
@@ -1229,6 +1254,48 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
 
                 m_StackCompression = value;
+            }
+        }
+
+        /// <summary>
+        /// The profile sources to use for capturing LBR with the kernel
+        /// provider. Last branch recording is enabled when this array is
+        /// non-empty. Supported on Windows 10 19H1+ and Windows Server 1903+.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// At most <see cref="GetMaxLastBranchRecordingSources()"/> sources
+        /// can be specified at the same time. See <see cref="LbrSource"/> for
+        /// an incomplete list of valid sources.
+        /// </remarks>
+        public uint[] LastBranchRecordingProfileSources
+        {
+            get { return m_LastBranchRecordingProfileSources; }
+            set
+            {
+                if (IsActive)
+                {
+                    throw new InvalidOperationException("Property can't be changed after a provider has started.");
+                }
+
+                m_LastBranchRecordingProfileSources = (uint[])value?.Clone();
+            }
+        }
+
+        /// <summary>
+        /// Filters to use for LBR sampling. Can be <see cref="LbrFilterFlags.None"/>.
+        /// </summary>
+        public LbrFilterFlags LastBranchRecordingFilters
+        {
+            get { return m_LastBranchRecordingFilters; }
+            set
+            {
+                if (IsActive)
+                {
+                    throw new InvalidOperationException("Property can't be changed after a provider has started.");
+                }
+
+                m_LastBranchRecordingFilters = value;
             }
         }
 
@@ -2391,6 +2458,15 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
         }
 
+        /// <summary>
+        /// Get the max number of last branch recording sources that can be specified at the same time.
+        /// </summary>
+        public static int GetMaxLastBranchRecordingSources()
+        {
+            const int ETW_MAX_LBR_EVENTS = 4;
+            return ETW_MAX_LBR_EVENTS;
+        }
+
         internal const int MaxNameSize = 1024;
         private const int MaxExtensionSize = 256;
         private static readonly int PropertiesSize = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + 2 * MaxNameSize * sizeof(char) + MaxExtensionSize;
@@ -2407,6 +2483,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         private float m_CpuSampleIntervalMSec;
         private bool m_StackCompression;
+        private uint[] m_LastBranchRecordingProfileSources;
+        private LbrFilterFlags m_LastBranchRecordingFilters;
+
         private bool m_restarted;
 
         // Internal state
@@ -3190,6 +3269,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Take a stack trace with the event
         /// </summary>
         Stacks = 1,
+    }
+
+    /// <summary>
+    /// Incomplete list of sources that can specify LBR recording (same sources as for stack walking).
+    /// </summary>
+    public enum LbrSource
+    {
+        PmcInterrupt = 0x0F00 | 0x2F, // EVENT_TRACE_GROUP_PERFINFO | 0x2f
+    }
+
+    /// <summary>
+    /// Filters what branches are recorded with LBR.
+    /// </summary>
+    [Flags]
+    public enum LbrFilterFlags
+    {
+        None = 0,
+        FilterKernel = 1 << 0,
+        FilterUser = 1 << 1,
+        FilterJcc = 1 << 2,
+        FilterNearRelCall = 1 << 3,
+        FilterNearIndCall = 1 << 4,
+        FilterNearRet = 1 << 5,
+        FilterNearIndJmp = 1 << 6,
+        FilterNearRelJmp = 1 << 7,
+        FilterFarBranch = 1 << 8,
+        CallstackEnable = 1 << 9,
     }
 }
 
