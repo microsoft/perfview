@@ -3,11 +3,13 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Utilities;
@@ -2315,6 +2317,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 47, PerfInfoTaskGuid);
             }
         }
+        public event Action<LastBranchRecordTraceData> LastBranchRecordingSample
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new LastBranchRecordTraceData(value, 0xFFFF, 0, "LastBranchRecording", LbrTaskGuid, 32, "Sample", ProviderGuid, ProviderName, State));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 0, LbrTaskGuid);
+            }
+        }
+
 #if false       // TODO FIX NOW remove (it is not used and is not following conventions on array fields.   
         public event Action<BatchedSampledProfileTraceData> PerfInfoBatchedSample
         {
@@ -2881,7 +2896,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[194];
+                var templates = new TraceEvent[195];
                 templates[0] = new EventTraceHeaderTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 0, "Header", ProviderGuid, ProviderName, null);
                 templates[1] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 5, "Extension", ProviderGuid, ProviderName, null);
                 templates[2] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 32, "EndExtension", ProviderGuid, ProviderName, null);
@@ -3081,6 +3096,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[191] = new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null);
                 templates[192] = new ISRTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 50, "ISR", ProviderGuid, ProviderName, null);
                 templates[193] = new ThreadSetNameTraceData(null, 0xFFFF, 2, "Thread", ThreadTaskGuid, 72, "SetName", ProviderGuid, ProviderName);
+                templates[194] = new LastBranchRecordTraceData(null, 0xFFFF, 0, "LastBranchRecording", LbrTaskGuid, 32, "Sample", ProviderGuid, ProviderName, null);
+
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -3137,6 +3154,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal static readonly Guid ReadyThreadTaskGuid = new Guid(unchecked((int)0x3d6fa8d1), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
         internal static readonly Guid SysConfigTaskGuid = new Guid(unchecked((int)0x9b79ee91), unchecked((short)0xb5fd), 0x41c0, 0xa2, 0x43, 0x42, 0x48, 0xe2, 0x66, 0xe9, 0xD0);
         internal static readonly Guid ObjectTaskGuid = new Guid(unchecked((int)0x89497f50), unchecked((short)0xeffe), 0x4440, 0x8c, 0xf2, 0xce, 0x6b, 0x1c, 0xdc, 0xac, 0xa7);
+        internal static readonly Guid LbrTaskGuid = new Guid(unchecked((int)0x99134383), unchecked((short)0x5248), 0x43fc, 0x83, 0x4b, 0x52, 0x94, 0x54, 0xe7, 0x5d, 0xf3);
         #endregion
     }
     #region private types
@@ -13865,5 +13883,244 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         private Action<VolumeMappingTraceData> Action;
         #endregion
+    }
+
+    public sealed class LastBranchRecordTraceData : TraceEvent
+    {
+        // Event is:
+        //
+        // ulong TimeStamp
+        // uint ProcessId
+        // uint ThreadId
+        // LbrFilterFlags Filters
+        // LbrEntry Entries[]; <- rest of event
+        //
+        // where LbrEntry is
+        // Ptr FromAddress
+        // Ptr ToAddress
+        // Ptr Reserved
+        //
+        // Note that LbrEntry is thus pointer aligned inside the event.
+
+        private const int HeaderSize32 = 8 + 4 + 4 + 4;
+        private const int HeaderSize64 = 8 + 4 + 4 + 4 + /* alignment */ 4;
+
+        /// <summary>
+        /// Gets the timestamp at which the branches were recorded from the CPU.
+        /// </summary>
+        public DateTime CaptureTimeStamp => traceEventSource.QPCTimeToDateTimeUTC(GetInt64At(0)).ToLocalTime();
+
+        /// <summary>
+        /// Gets the timestamp at which the branches were recorded from the CPU.
+        /// </summary>
+        public double CaptureTimeStampRelativeMSec => traceEventSource.QPCTimeToRelMSec(GetInt64At(0));
+
+        /// <summary>
+        /// Gets the filters that were active when the branches were recorded.
+        /// </summary>
+        public LbrFilterFlags Filters => (LbrFilterFlags)GetInt32At(16);
+
+        /// <summary>
+        /// Gets the number of branches contained in this event.
+        /// </summary>
+        public int NumBranches
+        {
+            get
+            {
+                if (PointerSize == 8)
+                {
+                    return (EventDataLength - HeaderSize64) / (sizeof(ulong) * 3);
+                }
+                else
+                {
+                    return (EventDataLength - HeaderSize32) / (sizeof(uint) * 3);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Insert all the branches from this event into the specified span.
+        /// Branches are in chronological order with the most recent taken branch first.
+        /// </summary>
+        /// <param name="branches">The span to insert into.</param>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="branches"/> is not of length <see cref="NumBranches"/>.</exception>
+        public unsafe void GetBranches(Span<Branch> branches)
+        {
+            if (PointerSize == 8)
+            {
+                int numBranches = (EventDataLength - HeaderSize64) / (sizeof(ulong) * 3);
+                if (branches.Length != numBranches)
+                {
+                    throw new ArgumentException($"Expected span of {numBranches} branches", nameof(branches));
+                }
+
+                ulong* pBranch = (ulong*)(DataStart + HeaderSize64);
+                for (int i = 0; i < branches.Length; i++)
+                {
+                    branches[i] = new Branch(Unsafe.ReadUnaligned<ulong>(&pBranch[0]), Unsafe.ReadUnaligned<ulong>(&pBranch[1]));
+                    pBranch += 3;
+                }
+            }
+            else
+            {
+                int numBranches = (EventDataLength - HeaderSize32) / (sizeof(uint) * 3);
+                if (branches.Length != numBranches)
+                {
+                    throw new ArgumentException($"Expected span of {numBranches} branches", nameof(branches));
+                }
+
+                uint* pBranch = (uint*)(DataStart + HeaderSize32);
+                for (int i = 0; i < branches.Length; i++)
+                {
+                    branches[i] = new Branch(Unsafe.ReadUnaligned<uint>(&pBranch[0]), Unsafe.ReadUnaligned<uint>(&pBranch[1]));
+                    pBranch += 3;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get all the branches contained in this record. Branches
+        /// are in chronological order with the most recent taken branch first.
+        /// </summary>
+        public Branch[] GetBranches()
+        {
+            Branch[] branches = new Branch[NumBranches];
+            GetBranches(branches);
+            return branches;
+        }
+
+        /// <summary>
+        /// Gets a specific branch.
+        /// </summary>
+        /// <param name="index">The index of branch. Index 0 is the most recently taken branch.</param>
+        /// <returns>The branch.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="index"/> is negative or not less than <see cref="NumBranches"/>.</exception>
+        public unsafe Branch GetBranch(int index)
+        {
+            if (index <= 0 || index >= NumBranches)
+            {
+                throw new ArgumentOutOfRangeException("The branch index must be non-negative and less than the number of branches", nameof(index));
+            }
+
+            if (PointerSize == 8)
+            {
+                ulong* pBranch = (ulong*)(DataStart + HeaderSize64) + (index * 3);
+                return new Branch(Unsafe.ReadUnaligned<ulong>(&pBranch[0]), Unsafe.ReadUnaligned<ulong>(&pBranch[1]));
+            }
+            else
+            {
+                uint* pBranch = (uint*)(DataStart + HeaderSize32) + (index * 3);
+                return new Branch(Unsafe.ReadUnaligned<uint>(&pBranch[0]), Unsafe.ReadUnaligned<uint>(&pBranch[1]));
+            }
+        }
+
+        #region Private
+        internal LastBranchRecordTraceData(Action<LastBranchRecordTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            NeedsFixup = true;
+            Action = action;
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<LastBranchRecordTraceData>)value; }
+        }
+        protected internal override void Dispatch()
+        {
+            Debug.Assert(Version >= 2);
+#if DEBUG
+            int headerSize = PointerSize == 8 ? HeaderSize64 : HeaderSize32;
+            Debug.Assert(EventDataLength >= headerSize && (EventDataLength - headerSize) % (PointerSize * 3) == 0);
+#endif
+            Action(this);
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Filters", Filters.ToString());
+            XmlAttrib(sb, "NumBranches", NumBranches);
+            sb.AppendLine(">");
+
+            Span<Branch> branches = stackalloc Branch[NumBranches];
+            GetBranches(branches);
+            foreach (Branch branch in branches)
+            {
+                sb.Append("  <Branch");
+                XmlAttribHex(sb, "Source", branch.Source);
+                XmlAttribHex(sb, "Target", branch.Target);
+                sb.AppendLine(" />");
+            }
+            sb.Append("</Event>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "Filters", "NumBranches", };
+                }
+
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Filters;
+                case 1:
+                    return NumBranches;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<LastBranchRecordTraceData> Action;
+        protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
+        private KernelTraceEventParserState state;
+
+        internal override bool LogCodeAddresses(Func<TraceEvent, ulong, bool> callBack)
+        {
+            bool result = true;
+            Span<Branch> branches = stackalloc Branch[NumBranches];
+            GetBranches(branches);
+            foreach (Branch branch in branches)
+            {
+                result &= callBack(this, branch.Source);
+                result &= callBack(this, branch.Target);
+            }
+
+            return result;
+        }
+
+        internal override unsafe void FixupData()
+        {
+            Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
+            eventRecord->EventHeader.ProcessId = GetInt32At(8);
+            eventRecord->EventHeader.ThreadId = GetInt32At(12);
+        }
+
+        #endregion
+    }
+
+    public struct Branch
+    {
+        public Address Source { get; }
+        public Address Target { get; }
+
+        public Branch(Address source, Address target)
+        {
+            Source = source;
+            Target = target;
+        }
+
+        public override string ToString() => $"{Source} -> {Target}";
     }
 }

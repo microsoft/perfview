@@ -480,6 +480,8 @@ namespace PerfView
 
                     kernelModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
                     kernelModeSession.StackCompression = parsedArgs.StackCompression;
+                    kernelModeSession.LastBranchRecordingProfileSources = parsedArgs.LastBranchRecordingSources?.Parsed;
+                    kernelModeSession.LastBranchRecordingFilters = parsedArgs.LastBranchRecordingFilters?.Parsed ?? LbrFilterFlags.None;
                     kernelModeSession.CpuSampleIntervalMSec = parsedArgs.CpuSampleMSec;
                     if (parsedArgs.CircularMB != 0)
                     {
@@ -2795,6 +2797,16 @@ namespace PerfView
             if (parsedArgs.StackCompression)
             {
                 cmdLineArgs += " /StackCompression";
+            }
+
+            if (parsedArgs.LastBranchRecordingSources != null)
+            {
+                cmdLineArgs += " " + Command.Quote("/LbrSources:" + parsedArgs.LastBranchRecordingSources.Text);
+            }
+
+            if (parsedArgs.LastBranchRecordingFilters != null)
+            {
+                cmdLineArgs += " " + Command.Quote("/LbrFilters:" + parsedArgs.LastBranchRecordingFilters.Text);
             }
 
             if (parsedArgs.CircularMB != 0)

@@ -232,7 +232,7 @@ namespace Diagnostics.Tracing.StackSources
     }
 
     /// <summary>
-    /// A FilterStackSouce morphs one stack filters or groups the stacks of one stack source to form a new
+    /// A FilterStackSource morphs one stack filters or groups the stacks of one stack source to form a new
     /// stack source.   It is very powerful mechanism.  
     /// </summary>
     public class FilterStackSource : StackSource
@@ -293,7 +293,7 @@ namespace Diagnostics.Tracing.StackSources
             m_frameIdToFrameInfo = new FrameInfo[m_baseStackSource.CallFrameIndexLimit];
             m_GroupNameToFrameInfo = new Dictionary<string, StackSourceFrameIndex>();
 
-            // Intialize the StackInfo cache (and the IncPathsMatchedSoFarStorage variable)
+            // Initialize the StackInfo cache (and the IncPathsMatchedSoFarStorage variable)
             m_stackInfoCache = new StackInfo[StackInfoCacheSize];
             for (int i = 0; i < m_stackInfoCache.Length; i++)
             {
@@ -867,7 +867,7 @@ namespace Diagnostics.Tracing.StackSources
                 var pat = new Regex(ToDotNetRegEx(patStr), RegexOptions.IgnoreCase);    // TODO perf bad if you compile!
                 groups[i] = new GroupPattern(pat, replaceStr, op);
 
-                // TODO IsModuleEntry is an experiemental thing.  Remove after gathering data.  
+                // TODO IsModuleEntry is an experimental thing.  Remove after gathering data.  
                 if (stringGroup == "{%}!=>module $1")
                 {
                     groups[i].IsModuleEntry = true;
@@ -894,7 +894,7 @@ namespace Diagnostics.Tracing.StackSources
                     continue;
                 }
 
-                // TODO IsModuleEntry is an experiemental thing.  Remove after gathering data.  
+                // TODO IsModuleEntry is an experimental thing.  Remove after gathering data.  
                 if (candidateGroup.IsModuleEntry)
                 {
                     int bangIdx = frameName.IndexOf('!');
@@ -1066,7 +1066,7 @@ namespace Diagnostics.Tracing.StackSources
             str = Regex.Escape(str);                // Assume everything is ordinary
             str = str.Replace(@"%", @"[.\w\d?]*");  // % means any number of alpha-numeric chars. 
             str = str.Replace(@"\*", @".*");        // * means any number of any characters.  
-            str = str.Replace(@"\^", @"^");         // ^ means anchor at the begining.  
+            str = str.Replace(@"\^", @"^");         // ^ means anchor at the beginning.  
             str = str.Replace(@"\|", @"|");         // | means is the or operator  
             str = str.Replace(@"\{", "(");
             str = str.Replace("}", ")");

@@ -449,7 +449,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         #region private
         /// <summary>
         /// Returns a list of modules for the stack 'stackIdx'.  It also updates the interning table stackModuleLists, so 
-        /// that the entry cooresponding to stackIdx remembers the answer.  This can speed up processing a lot since many
+        /// that the entry corresponding to stackIdx remembers the answer.  This can speed up processing a lot since many
         /// stacks have the same prefixes to root.  
         /// </summary>
         private ModuleList GetModulesForStack(ModuleList[] stackModuleLists, StackSourceCallStackIndex stackIdx)
@@ -613,7 +613,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     // Encode the code address for the given thread.  
                     int pseudoStackIndex = GetPseudoStack(thread.ThreadIndex, codeAddrIdx);
-                    // Psuedostacks happen after all the others.  
+                    // PseudoStacks happen after all the others.  
                     if (0 <= pseudoStackIndex)
                     {
                         ret = m_log.CallStacks.Count + 2 * m_log.Threads.Count + m_log.Processes.Count + pseudoStackIndex;
@@ -709,8 +709,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_Interner.FrameNameLookup = GetFrameName;
         }
         /// <summary>
-        /// After creating a MultableTraceEventStackSource, you add the samples you want using this AddSample API (you can reuse 'sample' 
-        /// used as an argument to this routine.   It makes a copy.  The samples do NOT need to be added in time order (the MultableTraceEventStackSource
+        /// After creating a MutableTraceEventStackSource, you add the samples you want using this AddSample API (you can reuse 'sample' 
+        /// used as an argument to this routine.   It makes a copy.  The samples do NOT need to be added in time order (the MutableTraceEventStackSource
         /// will sort them).   When you done DoneAddingSamples must be called before using the
         /// the MutableTraceEventStackSource as a stack source.  
         /// </summary>
