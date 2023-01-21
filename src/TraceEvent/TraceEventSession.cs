@@ -454,7 +454,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
                         hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, providerGuid,
                             eventControlCode, providerLevel,
-                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);
+                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, parameters);
                     }
                     catch (TypeLoadException)
                     {
@@ -825,7 +825,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
                         hr = TraceEventNativeMethods.EnableTraceEx2(
                             m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);
+                            0, 0, 0, EnableProviderTimeoutMSec, parameters);
                     }
                     catch (TypeLoadException)
                     {
@@ -1080,7 +1080,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);
+                        TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }

@@ -15,7 +15,6 @@ using TRACEHANDLE = System.UInt64; // TRACEHANDLE handle type is a ULONG64 in ev
 // This moduleFile contains Internal PINVOKE declarations and has no public API surface. 
 namespace Microsoft.Diagnostics.Tracing
 {
-    // TODO use SafeHandles. 
     #region Private Classes
 
     /// <summary>
@@ -587,7 +586,7 @@ namespace Microsoft.Diagnostics.Tracing
             [In][Out] ref int sessionCount);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int StartTraceW(
+        private static extern int StartTraceW(
             [Out] out TRACEHANDLE sessionHandle,
             [In] string sessionName,
             EVENT_TRACE_PROPERTIES* properties);
@@ -598,47 +597,36 @@ namespace Microsoft.Diagnostics.Tracing
             EVENT_TRACE_PROPERTIES* properties)
         {
             int dwErr = StartTraceW(out TRACEHANDLE dangerousHandle, sessionName, properties);
-            if (dwErr == 0)
-            {
-                sessionHandle = new SafeTraceHandle(dangerousHandle);
-                return dwErr;
-            }
-
-            if (IsValidTraceHandle(dangerousHandle))
-            {
-                CloseTrace(dangerousHandle);
-            }
-
-            sessionHandle = null;
+            sessionHandle = dwErr == 0 ? new SafeTraceHandle(dangerousHandle) : null;
             return dwErr;
         }
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int EnableTrace(
+        private static extern int EnableTrace(
             [In] uint enable,
             [In] int enableFlag,
             [In] int enableLevel,
-            [In] ref Guid controlGuid,
+            [In] in Guid controlGuid,
             [In] TRACEHANDLE sessionHandle);
 
         internal static int EnableTrace(
             uint enable,
             int enableFlag,
             int enableLevel,
-            Guid controlGuid,
+            in Guid controlGuid,
             SafeTraceHandle sessionHandle)
         {
             return EnableTrace(
                 enable,
                 enableFlag,
                 enableLevel,
-                ref controlGuid,
+                controlGuid,
                 sessionHandle.DangerousGetHandle());
         }
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int EnableTraceEx(
-            [In] ref Guid ProviderId,
+        private static extern int EnableTraceEx(
+            [In] in Guid ProviderId,
             [In] Guid* SourceId,
             [In] TRACEHANDLE TraceHandle,
             [In] int IsEnabled,
@@ -649,7 +637,7 @@ namespace Microsoft.Diagnostics.Tracing
             [In] EVENT_FILTER_DESCRIPTOR* filterData);
 
         internal static int EnableTraceEx(
-            Guid ProviderId,
+            in Guid ProviderId,
             Guid* SourceId,
             SafeTraceHandle TraceHandle,
             bool IsEnabled,
@@ -660,7 +648,7 @@ namespace Microsoft.Diagnostics.Tracing
             EVENT_FILTER_DESCRIPTOR* filterData)
         {
             return EnableTraceEx(
-                ref ProviderId,
+                ProviderId,
                 SourceId,
                 TraceHandle.DangerousGetHandle(),
                 IsEnabled ? 1 : 0,
@@ -673,34 +661,35 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int EnableTraceEx2(
+        private static extern int EnableTraceEx2(
             [In] TRACEHANDLE TraceHandle,
-            [In] ref Guid ProviderId,
+            [In] in Guid ProviderId,
             [In] uint ControlCode,          // See EVENT_CONTROL_CODE_*
             [In] byte Level,
             [In] ulong MatchAnyKeyword,
             [In] ulong MatchAllKeyword,
             [In] int Timeout,
-            [In] ref ENABLE_TRACE_PARAMETERS EnableParameters);
+            [In] in ENABLE_TRACE_PARAMETERS EnableParameters);
 
         internal static int EnableTraceEx2(
             SafeTraceHandle TraceHandle,
-            Guid ProviderId,
+            in Guid ProviderId,
             uint ControlCode,          // See EVENT_CONTROL_CODE_*
             TraceEventLevel Level,
             ulong MatchAnyKeyword,
             ulong MatchAllKeyword,
             int Timeout,
-            ref ENABLE_TRACE_PARAMETERS EnableParameters)
+            in ENABLE_TRACE_PARAMETERS EnableParameters)
         {
             return EnableTraceEx2(
                 TraceHandle.DangerousGetHandle(),
-                ref ProviderId, ControlCode,
+                ProviderId,
+                ControlCode,
                 (byte)Level,
                 MatchAnyKeyword,
                 MatchAllKeyword,
                 Timeout,
-                ref EnableParameters);
+                EnableParameters);
         }
 
         // Values for ENABLE_TRACE_PARAMETERS.Version
