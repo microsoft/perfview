@@ -5547,11 +5547,11 @@ table {
                         }
                     }
 
-                    ADD_EVENT_FRAME:
+                ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                    ADD_SAMPLE:
+                ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -5661,6 +5661,18 @@ table {
             {
                 ServerRequestScenarioConfiguration scenarioConfiguration = new ServerRequestScenarioConfiguration(eventLog);
                 ComputingResourceStateMachine stateMachine = new ComputingResourceStateMachine(stackSource, scenarioConfiguration, ComputingResourceViewType.Allocations);
+                stateMachine.Execute();
+            }
+            else if (streamName == "UserCrit Held CPU")
+            {
+                UserCritScenarioConfiguration scenarioConfiguration = new UserCritScenarioConfiguration(eventLog);
+                ComputingResourceStateMachine stateMachine = new ComputingResourceStateMachine(stackSource, scenarioConfiguration, ComputingResourceViewType.CPU);
+                stateMachine.Execute();
+            }
+            else if (streamName == "UserCrit Held ThreadTime")
+            {
+                UserCritScenarioConfiguration scenarioConfiguration = new UserCritScenarioConfiguration(eventLog);
+                ComputingResourceStateMachine stateMachine = new ComputingResourceStateMachine(stackSource, scenarioConfiguration, ComputingResourceViewType.ThreadTime);
                 stateMachine.Execute();
             }
             else if (streamName == "Execution Tracing")
@@ -6227,7 +6239,7 @@ table {
                 eventSource.Process();
                 return stackSource;
             }
-            else if(streamName == "Anti-Malware Real-Time Scan")
+            else if (streamName == "Anti-Malware Real-Time Scan")
             {
                 RealtimeAntimalwareComputer computer = new RealtimeAntimalwareComputer(eventSource, stackSource);
                 computer.Execute();
@@ -7068,6 +7080,7 @@ table {
             var advanced = new PerfViewTreeGroup("Advanced");
             var memory = new PerfViewTreeGroup("Memory");
             var frameworkAspNetWcf = new PerfViewTreeGroup(".NET Framework ASP.NET/WCF");
+            var ui = new PerfViewTreeGroup("UI");
             var experimental = new PerfViewTreeGroup("Experimental");
             m_Children = new List<PerfViewTreeItem>();
 
@@ -7103,6 +7116,7 @@ table {
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
             bool hasJIT = false;
+            bool hasUserCrit = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -7174,6 +7188,10 @@ table {
                 if (name.StartsWith("Loader/AssemblyLoad"))
                 {
                     hasAssemblyLoad = true;
+                }
+                if (name.EndsWith("UserCrit"))
+                {
+                    hasUserCrit = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -7405,6 +7423,19 @@ table {
                 }
             }
 
+            if (hasUserCrit)
+            {
+                if (hasCPUStacks)
+                {
+                    ui.Children.Add(new PerfViewStackSource(this, "UserCrit Held CPU"));
+                }
+
+                if (hasCSwitchStacks)
+                {
+                    ui.Children.Add(new PerfViewStackSource(this, "UserCrit Held ThreadTime"));
+                }
+            }
+
             if ((hasAspNet) || (hasWCFRequests))
             {
                 if (hasCPUStacks)
@@ -7504,6 +7535,11 @@ table {
             if (0 < frameworkAspNetWcf.Children.Count)
             {
                 m_Children.Add(frameworkAspNetWcf);
+            }
+
+            if (0 < ui.Children.Count)
+            {
+                m_Children.Add(ui);
             }
 
             if (AppLog.InternalUser && 0 < experimental.Children.Count)

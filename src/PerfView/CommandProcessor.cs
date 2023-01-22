@@ -928,6 +928,11 @@ namespace PerfView
                             parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents, options);
                     }
 
+                    if (parsedArgs.UserCritContention)
+                    {
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-Win32k", new Guid("8C416C79-D49B-4F01-A467-E56D3AA8234C"), TraceEventLevel.Verbose, 0x10000000, options);
+                    }
+
                     // Start network monitoring capture if needed
                     if (parsedArgs.NetMonCapture)
                     {
@@ -3162,6 +3167,11 @@ namespace PerfView
             if (parsedArgs.RuntimeLoading)
             {
                 cmdLineArgs += " /RuntimeLoading";
+            }
+
+            if (parsedArgs.UserCritContention)
+            {
+                cmdLineArgs += " /UserCritContention";
             }
 
             if(parsedArgs.ImageIDsOnly)
