@@ -1328,7 +1328,7 @@ ProcessArguments()
     action=$1
 
     # Actions with no arguments.
-    if [ "$action" == "livetrace" ]
+    if [ "$action" == "livetrace" ] || [ "$action" == "setenv" ]
     then
         return
     fi
@@ -2119,6 +2119,14 @@ PropSymbolsAndMapFilesForView()
     done
 }
 
+SetEnvironment()
+{
+    WriteStatus "Starting a new shell configured for profiling."
+    WriteStatus "When done, type 'exit' to exit the profiling shell."
+    bash -c 'export COMPlus_PerfMapEnabled=1;export COMPlus_EnableEventLog=1; exec bash'
+    WriteStatus "Profiling shell exited."
+}
+
 DoView()
 {
     # Generate a temp directory to extract the trace files into.
@@ -2211,6 +2219,9 @@ then
 elif [ "$action" == "stop" ]
 then
     EndCollect
+elif [ "$action" == "setenv" ]
+then
+    SetEnvironment
 elif [ "$action" == "view" ]
 then
     DoView
