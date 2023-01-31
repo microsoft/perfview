@@ -424,6 +424,14 @@ namespace FastSerialization
         }
 
         /// <summary>
+        /// Finalizer.
+        /// </summary>
+        ~MemoryStreamWriter()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
         /// Dispose pattern
         /// </summary>
         public void Dispose()
@@ -1076,7 +1084,7 @@ namespace FastSerialization
         /// Create a IOStreamStreamWriter that writes its data to a given file that it creates
         /// </summary>
         /// <param name="fileName"></param>
-        public IOStreamStreamWriter(string fileName, SerializationConfiguration config = null) : this(new FileStream(fileName, FileMode.Create), config: config) { }
+        public IOStreamStreamWriter(string fileName, SerializationConfiguration config = null, FileShare share = FileShare.Read) : this(new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, share), config: config) { }
 
         /// <summary>
         /// Create a IOStreamStreamWriter that writes its data to a System.IO.Stream

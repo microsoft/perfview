@@ -780,38 +780,33 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
             }
 
-            TraceLog newLog = new TraceLog();
-            newLog.rawEventSourceToConvert = source;
-            newLog.options = options;
-
-            // Parse the metadata.
-            source.ParseMetadata();
-
-            // Get all the users data from the original source.   Note that this happens by reference, which means
-            // that even though we have not built up the state yet (since we have not scanned the data yet), it will
-            // still work properly (by the time we look at this user data, it will be updated).
-            foreach (string key in source.UserData.Keys)
+            using (TraceLog newLog = new TraceLog())
             {
-                newLog.UserData[key] = source.UserData[key];
-            }
+                newLog.rawEventSourceToConvert = source;
+                newLog.options = options;
 
-            // Avoid partially written files by writing to a temp and moving atomically to the final destination.
-            string etlxTempPath = etlxFilePath + ".new";
-            try
-            {
-                //****************************************************************************************************
-                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
-                if (File.Exists(etlxFilePath))
+                // Parse the metadata.
+                source.ParseMetadata();
+
+                // Get all the users data from the original source.   Note that this happens by reference, which means
+                // that even though we have not built up the state yet (since we have not scanned the data yet), it will
+                // still work properly (by the time we look at this user data, it will be updated).
+                foreach (string key in source.UserData.Keys)
                 {
-                    File.Delete(etlxFilePath);
+                    newLog.UserData[key] = source.UserData[key];
                 }
 
-                File.Move(etlxTempPath, etlxFilePath);
-            }
-            finally
-            {
-                if (File.Exists(etlxTempPath))
+                // Avoid partially written files by writing to a temp and moving atomically to the final destination.
+                string etlxTempPath = etlxFilePath + ".new";
+                try
+                {
+                    //****************************************************************************************************
+                    // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                    using (Serializer serializer = new Serializer(etlxTempPath, newLog, FileShare.Read | FileShare.Delete)) { }
+                    File.Delete(etlxFilePath);
+                    File.Move(etlxTempPath, etlxFilePath);
+                }
+                finally
                 {
                     File.Delete(etlxTempPath);
                 }
@@ -825,37 +820,33 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
             }
 
-            TraceLog newLog = new TraceLog();
-            newLog.rawEventSourceToConvert = source;
-            newLog.options = options;
-
-            var dynamicParser = source.Dynamic;
-
-            // Get all the users data from the original source.   Note that this happens by reference, which means
-            // that even though we have not built up the state yet (since we have not scanned the data yet), it will
-            // still work properly (by the time we look at this user data, it will be updated).
-            foreach (string key in source.UserData.Keys)
+            using (TraceLog newLog = new TraceLog())
             {
-                newLog.UserData[key] = source.UserData[key];
-            }
+                newLog.rawEventSourceToConvert = source;
+                newLog.options = options;
 
-            // Avoid partially written files by writing to a temp and moving atomically to the final destination.
-            string etlxTempPath = etlxFilePath + ".new";
-            try
-            {
-                //****************************************************************************************************
-                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
-                if (File.Exists(etlxFilePath))
+                var dynamicParser = source.Dynamic;
+
+                // Get all the users data from the original source.   Note that this happens by reference, which means
+                // that even though we have not built up the state yet (since we have not scanned the data yet), it will
+                // still work properly (by the time we look at this user data, it will be updated).
+                foreach (string key in source.UserData.Keys)
                 {
-                    File.Delete(etlxFilePath);
+                    newLog.UserData[key] = source.UserData[key];
                 }
 
-                File.Move(etlxTempPath, etlxFilePath);
-            }
-            finally
-            {
-                if (File.Exists(etlxTempPath))
+                // Avoid partially written files by writing to a temp and moving atomically to the final destination.
+                string etlxTempPath = etlxFilePath + ".new";
+                try
+                {
+                    //****************************************************************************************************
+                    // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                    using (Serializer serializer = new Serializer(etlxTempPath, newLog, FileShare.Read | FileShare.Delete)) { }
+
+                    File.Delete(etlxFilePath);
+                    File.Move(etlxTempPath, etlxFilePath);
+                }
+                finally
                 {
                     File.Delete(etlxTempPath);
                 }
@@ -895,7 +886,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             using (TraceLog newLog = new TraceLog())
             {
                 newLog.rawEventSourceToConvert = source;
-
                 newLog.options = options;
 
                 if (options.ExplicitManifestDir != null && Directory.Exists(options.ExplicitManifestDir))
@@ -906,6 +896,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         options.ConversionLog.WriteLine("Looking for WPP metaData in {0}", tmfDir);
                         new WppTraceEventParser(newLog, tmfDir);
                     }
+
                     options.ConversionLog.WriteLine("Looking for explicit manifests in {0}", options.ExplicitManifestDir);
                     source.Dynamic.ReadAllManifests(options.ExplicitManifestDir);
                 }
@@ -936,20 +927,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     //****************************************************************************************************
                     // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                    using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
-                    if (File.Exists(etlxFilePath))
-                    {
-                        File.Delete(etlxFilePath);
-                    }
-
+                    using (Serializer serializer = new Serializer(etlxTempPath, newLog, FileShare.Read | FileShare.Delete)) { }
+                    File.Delete(etlxFilePath);
                     File.Move(etlxTempPath, etlxFilePath);
                 }
                 finally
                 {
-                    if (File.Exists(etlxTempPath))
-                    {
-                        File.Delete(etlxTempPath);
-                    }
+                    File.Delete(etlxTempPath);
                 }
             }
         }
@@ -993,7 +977,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if ((ulong)eventRecord->ExtendedData > 0)
             {
                 int idIndex;
-                if(IntPtr.Size == 8)
+                if (IntPtr.Size == 8)
                 {
                     idIndex = (int)((ulong)eventRecord->ExtendedData >> 4);
                 }
@@ -1011,10 +995,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal override unsafe string GetContainerID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            if(eventRecord->ExtendedDataCount > 0)
+            if (eventRecord->ExtendedDataCount > 0)
             {
                 int index = eventRecord->ExtendedDataCount;
-                if(index < containerIDs.Count)
+                if (index < containerIDs.Count)
                 {
                     return containerIDs[index];
                 }
@@ -1614,6 +1598,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                     var lastEmitStackOnExitFromKernelQPC = thread.lastEmitStackOnExitFromKernelQPC;
                     var loggedUserStack = false;    // Have we logged this stack at all
+
                     // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
                     // and we use this as the 'top' of the stack for all kernel fragments on this thread.
                     if (!process.IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
@@ -1963,7 +1948,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     options.ConversionLog.WriteLine("WARNING, events out of order! This breaks event search.  Jumping from {0:n3} back to {1:n3} for {2} EventID {3} Thread {4}",
                         QPCTimeToRelMSec(lastQPCEventTime), data.TimeStampRelativeMSec, data.ProviderName, data.ID, data.ThreadID);
-                    firstTimeInversion = (EventIndex) (uint) eventCount;
+                    firstTimeInversion = (EventIndex)(uint)eventCount;
                 }
 
                 lastQPCEventTime = data.TimeStampQPC;
@@ -2092,7 +2077,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
 
             // EventPipe doesn't set EventsLost until after Process is called.
-            if(rawEvents is EventPipeEventSource)
+            if (rawEvents is EventPipeEventSource)
             {
                 eventsLost = rawEvents.EventsLost;
             }
@@ -2917,7 +2902,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Put the thread that owns 'data' in to the category 'category.
         /// </summary>
-        private void CategorizeThread(TraceEvent data, string category, bool overwrite=false)
+        private void CategorizeThread(TraceEvent data, string category, bool overwrite = false)
         {
             if (string.IsNullOrWhiteSpace(category))
             {
@@ -3043,7 +3028,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
                 }
-                else if(extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
                 {
                     containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
                 }
@@ -3051,7 +3036,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (relatedActivityIDPtr != null)
             {
-                if(relatedActivityIDs.Count == 0)
+                if (relatedActivityIDs.Count == 0)
                 {
                     // Insert a synthetic value since 0 represents "no related activity ID".
                     relatedActivityIDs.Add(Guid.Empty);
@@ -3074,7 +3059,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 data.eventRecord->ExtendedData = null;
             }
 
-            if(containerID != null)
+            if (containerID != null)
             {
                 // TODO This is a bit of a hack.   We wack this field in place.
                 // We encode this as index into the containerIDs GrowableArray.
@@ -3086,9 +3071,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 // Look for the container ID.
                 bool found = false;
-                for(int i=0; i<containerIDs.Count; i++)
+                for (int i = 0; i < containerIDs.Count; i++)
                 {
-                    if(containerIDs[i] == containerID)
+                    if (containerIDs[i] == containerID)
                     {
                         data.eventRecord->ExtendedDataCount = (ushort)i;
                         found = true;
@@ -3139,6 +3124,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             base.Dispose(disposing);
         }
+
         private static unsafe void WriteBlob(IntPtr source, IStreamWriter writer, int byteCount)
         {
             // TODO: currently most uses the source aligned so
@@ -3662,7 +3648,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             serializer.Log("<WriteCollection name=\"containerIDs\" count=\"" + containerIDs.Count + "\">\r\n");
             serializer.Write(containerIDs.Count);
-            for(int i=0; i<containerIDs.Count; i++)
+            for (int i = 0; i < containerIDs.Count; i++)
             {
                 serializer.Write(containerIDs[i]);
             }
@@ -3670,7 +3656,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
-            serializer.Write((int) firstTimeInversion);
+            serializer.Write((int)firstTimeInversion);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -3825,16 +3811,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 deserializer.Read(out guid);
                 relatedActivityIDs.Add(guid);
             }
+
             containerIDs.Clear();
             count = deserializer.ReadInt();
             string containerID;
-            for(int i=0; i<count; i++)
+            for (int i = 0; i < count; i++)
             {
                 deserializer.Read(out containerID);
                 containerIDs.Add(containerID);
             }
+
             deserializer.Read(out truncated);
-            firstTimeInversion = (EventIndex) (uint) deserializer.ReadInt();
+            firstTimeInversion = (EventIndex)(uint)deserializer.ReadInt();
         }
         int IFastSerializableVersion.Version
         {
@@ -6029,7 +6017,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 jitMethods.UnderlyingArray[index].Add(onInsert());
             }
 
-            RETURN:;
+        RETURN:;
 #if DEBUG
             // Confirm that we did not break anything.
             if (_skipCount == 0)
@@ -8614,7 +8602,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     pdbFileName = symReader.FindSymbolFilePathForModule(moduleFile.FilePath);
                 }
             }
-            if(pdbFileName == null)
+
+            if (pdbFileName == null)
             {
                 // Check to see if the file is inside of an existing Windows container.
                 // Create a new instance of WindowsDeviceToVolumeMap to avoid situations where the mappings have changed but we haven't noticed.

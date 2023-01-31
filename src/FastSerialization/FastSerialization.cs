@@ -511,9 +511,12 @@ namespace FastSerialization
     sealed class Serializer : IDisposable
     {
         /// <summary>
-        /// Create a serializer writes 'entryObject' to a file.  
+        /// Create a serializer that writes 'entryObject' to a file.
         /// </summary>
-        public Serializer(string filePath, IFastSerializable entryObject) : this(new IOStreamStreamWriter(filePath), entryObject) { }
+        /// <param name="filePath">The destination file.</param>
+        /// <param name="entryObject">The object to serialize.</param>
+        /// <param name="share">Optional sharing mode for the destination file. Defaults to <see cref="FileShare.Read"/>.</param>
+        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, share: share), entryObject) { }
 
         /// <summary>
         /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The serializer
