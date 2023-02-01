@@ -2989,6 +2989,11 @@ namespace PerfView
                 cmdLineArgs += " /ShowOptimizationTiers";
             }
 
+            if (parsedArgs.DisableDotNetVersionLogging)
+            {
+                cmdLineArgs += " /DisableVersionLogging";
+            }
+
             if (parsedArgs.ContinueOnError)
             {
                 cmdLineArgs += " /ContinueOnError";

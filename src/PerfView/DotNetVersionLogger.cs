@@ -120,6 +120,11 @@ namespace PerfView
 
         public static void Start()
         {
+            if (App.CommandLineArgs.DisableDotNetVersionLogging)
+            {
+                return;
+            }
+
             Stop();
 
             _loggerInstance = new VersionLogger();
@@ -136,6 +141,11 @@ namespace PerfView
 
         public static void Stop()
         {
+            if (App.CommandLineArgs.DisableDotNetVersionLogging)
+            {
+                return;
+            }
+
             if (_loggerInstance != null)
             {
                 _loggerInstance.Stop();
