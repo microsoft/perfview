@@ -14086,20 +14086,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
 
-        internal override bool LogCodeAddresses(Func<TraceEvent, ulong, bool> callBack)
-        {
-            bool result = true;
-            Span<Branch> branches = stackalloc Branch[NumBranches];
-            GetBranches(branches);
-            foreach (Branch branch in branches)
-            {
-                result &= callBack(this, branch.Source);
-                result &= callBack(this, branch.Target);
-            }
-
-            return result;
-        }
-
         internal override unsafe void FixupData()
         {
             Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
