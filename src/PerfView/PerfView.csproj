@@ -512,7 +512,7 @@
       <Link>System.Memory.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(_NugetFallbackFolder)\System.Numerics.Vectors\4.5.0\lib\net46\System.Numerics.Vectors.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)\System.Numerics.Vectors\4.5.0\lib\net46\System.Numerics.Vectors.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
