@@ -744,7 +744,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     var info = new TraceEventNativeMethods.TRACE_STACK_CACHING_INFO{ Enabled = 1 };
                     TraceEventNativeMethods.TraceSetInformation(
-                        m_SessionHandle.DangerousGetHandle(),
+                        m_SessionHandle,
                         TraceEventNativeMethods.TRACE_INFO_CLASS.TraceStackCachingInfo,
                         &info,
                         sizeof(TraceEventNativeMethods.TRACE_STACK_CACHING_INFO));

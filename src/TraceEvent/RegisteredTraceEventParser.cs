@@ -133,7 +133,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             for (; ; )
             {
                 int size = buffer.Length;
-                status = TdhEnumerateManifestProviderEvents(ref eventRecord.EventHeader.ProviderId, buffer, ref size);
+                status = TdhEnumerateManifestProviderEvents(eventRecord.EventHeader.ProviderId, buffer, ref size);
                 if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
                 {
                     break;
@@ -155,12 +155,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 foreach (var descriptor in descriptors)
                 {
-                    var descriptorCopy = descriptor;
-
                     for (; ; )
                     {
                         int size = buffer.Length;
-                        status = TdhGetManifestEventInformation(ref eventRecord.EventHeader.ProviderId, ref descriptorCopy, buffer, ref size);
+                        status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
                         if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
                         {
                             break;
@@ -998,18 +996,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         [DllImport("tdh.dll")]
         internal static extern int TdhEnumerateManifestProviderEvents(
-            [In] ref Guid Guid,
-            [Out] byte[] pBuffer, // Actually PROVIDER_EVENT_INFO*
+            in Guid Guid,
+            [Out] byte[] pBuffer, // PROVIDER_EVENT_INFO*
             ref int pBufferSize
         );
 
         [DllImport("tdh.dll")]
         internal static extern int TdhGetManifestEventInformation(
-            [In] ref Guid Guid,
-            [In] ref EVENT_DESCRIPTOR eventDesc,
-            [Out] byte[] pBuffer,
-            [In, Out] ref int pBufferSize // size in bytes
-            );
+            in Guid Guid,
+            in EVENT_DESCRIPTOR eventDesc,
+            [Out] byte[] pBuffer, // TRACE_EVENT_INFORMATION*
+            ref int pBufferSize
+        );
 
         [Flags]
         internal enum MAP_FLAGS
