@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
     /// <summary>
     /// A class that maps contiguous indices from various sources from and to a single range of contiguous indices.

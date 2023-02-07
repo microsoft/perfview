@@ -12,7 +12,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Utilities;
+using Microsoft.Diagnostics.Utilities;
 using Address = System.UInt64;
 
 /* This file was generated with the command */

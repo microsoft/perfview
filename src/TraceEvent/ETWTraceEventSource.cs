@@ -14,7 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Utilities;
+using Microsoft.Diagnostics.Utilities;
 using Address = System.UInt64;
 
 // code:System.Diagnostics.ETWTraceEventSource definition.

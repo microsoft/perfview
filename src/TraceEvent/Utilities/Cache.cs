@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
     /// <summary>
     /// A finite cache based with a least recently used algorithm for replacement.   
