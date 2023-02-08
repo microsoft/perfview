@@ -10,6 +10,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <summary>
         /// Create a new instance of AnalyzerIssue.
         /// </summary>
+        /// <param name="id">A durable id, in form of GUID, to uniquely identify a performance issue.</param>
         /// <param name="title">A string title.</param>
         /// <param name="description">A string description.</param>
         /// <param name="url">A URL pointing to further documentation.</param>
@@ -42,7 +43,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <summary>
         /// Gets the id of the issue.
         /// </summary>
-        /// <value></value>
         public Guid Id { get; protected set; }
         
         /// <summary>
