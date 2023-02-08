@@ -869,7 +869,7 @@ namespace Microsoft.Diagnostics.Tracing
 #if !NOT_WINDOWS
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
-            bool success = OpenProcessToken(process.GetHandle(), TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
+            bool success = OpenProcessToken(process.Handle, TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
             if (!success)
             {
                 throw new Win32Exception();
@@ -897,7 +897,7 @@ namespace Microsoft.Diagnostics.Tracing
 #if !NOT_WINDOWS 
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
-            if (!OpenProcessToken(process.GetHandle(), TOKEN_QUERY, out tokenHandle))
+            if (!OpenProcessToken(process.Handle, TOKEN_QUERY, out tokenHandle))
             {
                 return null;
             }

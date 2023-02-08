@@ -642,13 +642,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 return 8;
             }
-#if !NETSTANDARD1_6
+
             bool is64bitOS = Environment.Is64BitOperatingSystem;
-#else
-            // Sadly this API does not work properly on V4.7.1 of the Desktop framework.   See https://github.com/Microsoft/perfview/issues/478 for more.  
-            // However with this partial fix, (works on everything not NetSTandard, and only in 32 bit processes), that we can wait for the fix.
-            bool is64bitOS = (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64);
-#endif
             return is64bitOS ? 8 : 4;
         }
 
