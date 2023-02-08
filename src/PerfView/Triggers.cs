@@ -330,7 +330,7 @@ namespace Triggers
         private TextWriter m_log;
         public event Action<PerformanceCounterTrigger> m_triggered;
 #if PERFVIEW
-        private Utilities.Command m_cmd;
+        private Microsoft.Diagnostics.Utilities.Command m_cmd;
 #endif
 
         private Task m_task;
