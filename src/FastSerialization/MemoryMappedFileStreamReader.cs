@@ -187,11 +187,7 @@ namespace FastSerialization
         public T Read<T>()
             where T : struct
         {
-#if NET45
-            int size = Marshal.SizeOf(typeof(T));
-#else
             int size = Marshal.SizeOf<T>();
-#endif
             if (_offset + size > _capacity)
             {
                 Resize(size);
