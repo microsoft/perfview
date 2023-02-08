@@ -79,7 +79,7 @@ namespace TraceEventTests
             if (processContext.Process.DisplayID == PID && ProcessDescription.Equals(processContext.Process.Description))
             {
                 Assert.Null(Issue);
-                Issue = new AnalyzerIssue("Test Title", "Test Description", "http://test-url");
+                Issue = new AnalyzerIssue(Guid.NewGuid(), "Test Title", "Test Description", "http://test-url");
                 processContext.AddIssue(Issue);
             }
 

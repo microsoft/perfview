@@ -15,6 +15,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <param name="url">A URL pointing to further documentation.</param>
         /// <exception cref="InvalidOperationException">Instances of AnalyzerIssue can only be created during Analyzer execution.</exception>
         public AnalyzerIssue(
+            Guid id,
             string title,
             string description,
             string url)
@@ -30,6 +31,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             Title = title;
             Description = description;
             URL = url;
+            Id = id;
         }
 
         /// <summary>
@@ -37,6 +39,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// </summary>
         public Analyzer Analyzer { get; private set; }
 
+        /// <summary>
+        /// Gets the id of the issue.
+        /// </summary>
+        /// <value></value>
+        public Guid Id { get; protected set; }
+        
         /// <summary>
         /// The title of the issue.
         /// </summary>
