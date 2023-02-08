@@ -591,13 +591,18 @@ namespace TraceEventTests
     /// Test code to ensure that the TraceEventDispatcher works properly in the face of lots of
     /// adds and deletes.   
     /// </summary>
-    public class DispatcherTester
+    public class DispatcherTester : IDisposable
     {
         public DispatcherTester(ITestOutputHelper output)
         {
             // Create a real time session, however we 
             m_dispatcher = new ETWTraceEventSource("TestDispatcher", TraceEventSourceType.Session);
             Output = output;
+        }
+
+        public void Dispose()
+        {
+            this.m_dispatcher.Dispose();
         }
 
         private ITestOutputHelper Output
