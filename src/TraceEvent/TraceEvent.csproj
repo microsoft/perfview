@@ -35,7 +35,7 @@
   </Target>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2;CONTAINER_WORKAROUND_NOT_NEEDED</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2;CONTAINER_WORKAROUND_NOT_NEEDED;SYNC_SYMBOLREADER_LOG</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
@@ -43,7 +43,7 @@
     Unconditional use of PackageReference would work if we targeted net462, but the reference APIs do not include
     support for net462 targets. Work around the issue by using conditional references.
   -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard1.6'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
@@ -63,10 +63,6 @@
     <Reference Include="System.Web" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard1.6'">
-    <DefineConstants>$(DefineConstants);SYNC_SYMBOLREADER_LOG</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
@@ -105,11 +101,6 @@
     <Compile Remove="Ctf/CtfTracing.Tests/**/*.*" />
     <Compile Remove="TraceEvent.Tests/**/*.*" />
     <Compile Remove="Samples/**/*.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
-    <Compile Remove="Utilities/FastStream.cs" />
-    <Compile Remove="Stacks/Linux/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -196,11 +187,11 @@
     <!-- *********************************************************** -->
     <!-- Copying three managed binaries explicitly should not be needed because the 
          dependency logic should just do it for us, but for some reason ths only
-         works for the net462 target framework and not the netstandard1.6.  and netstanard2.0 
+         works for the net462 target framework and not the netstanard2.0 
          We work around it here by copying the files explicitly. 
 	 We don't have version for 2.0 so we use the 1.6 versions.  -->
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard1.6'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <None Include="$(TraceEventSupportFilesBase)\netstandard1.6\Dia2Lib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>

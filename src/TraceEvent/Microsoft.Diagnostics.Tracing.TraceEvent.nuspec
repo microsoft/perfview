@@ -32,9 +32,6 @@
       <group targetFramework=".NETFramework4.6.2">
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
       </group>
-      <group targetFramework=".NETStandard1.6">
-        <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
-      </group>
       <group targetFramework=".NETStandard2.0">
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
       </group>
@@ -81,23 +78,7 @@
     <file src="$OutDir$netstandard2.0\TraceReloggerLib.dll" target="lib\netstandard2.0" />
     <file src="$OutDir$netstandard2.0\OSExtensions.dll" target="lib\netstandard2.0" />
 
-    <!-- NetStandard 1.6 Framework -->
-	
-    <!-- Built libraries -->
-    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\netstandard1.6" />
-
-    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.xml" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard1.6" />
-
-    <!-- Support Dlls -->
-    <file src="$OutDir$netstandard1.6\Dia2Lib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\TraceReloggerLib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\OSExtensions.dll" target="lib\netstandard1.6" />
-
-    <!-- NET 4.5 Framework -->
+    <!-- NET 4.6.2 Framework -->
 
     <!-- Built libraries -->
     <file src="$OutDir$net462\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net462" />
