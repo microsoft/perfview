@@ -15,7 +15,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
 
     /// <summary>

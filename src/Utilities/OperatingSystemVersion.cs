@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
     // This class is a helper that hides the OS Version tests that you might have done with Evironment.OSVersion
     // but can't because this API was removed in .NET COre. 

@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Utilities;
+using Microsoft.Diagnostics.Utilities;
 
 namespace Microsoft.Diagnostics.Symbols
 {

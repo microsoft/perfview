@@ -117,6 +117,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Directory.CreateDirectory(directoryPath);
             foreach (var providerManifest in DynamicProviders)
             {
+                
                 var filePath = Path.Combine(directoryPath, providerManifest.Name + ".manifest.xml");
                 providerManifest.WriteToFile(filePath);
             }
