@@ -1,7 +1,6 @@
 ﻿//     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Compatibility;
-using Microsoft.Diagnostics.Tracing.Extensions;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
@@ -88,7 +87,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public static string GetManifestForRegisteredProvider(Guid providerGuid)
         {
             int buffSize = 84000;       // Still in the small object heap.  
-            byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+            var buffer = new byte[buffSize]; // Still in the small object heap.
             byte* enumBuffer = null;
 
             TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
@@ -129,32 +128,53 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            for (int ver = 0; ver <= 255; ver++)
-            {
-                eventRecord.EventHeader.Version = (byte) ver;
-                int count;
-                int status;
-                for (; ; )
-                {
-                    int dummy;
-                    status = ETWParsing.TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out dummy, out count, buffer, ref buffSize);
-                    if (status != 122 || 20000000 < buffSize) // 122 == Insufficient buffer keep it under 2Meg
-                    {
-                        break;
-                    }
+            int status;
 
-                    Marshal.FreeHGlobal((IntPtr)buffer);
-                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
+            for (; ; )
+            {
+                int size = buffer.Length;
+                status = TdhEnumerateManifestProviderEvents(eventRecord.EventHeader.ProviderId, buffer, ref size);
+                if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                {
+                    break;
                 }
 
-                // TODO FIX NOW deal with too small of a buffer.  
-                if (status == 0)
+                buffer = new byte[size];
+            }
+
+            if (status == 0)
+            {
+                const int NumberOfEventsOffset = 0;
+                const int FirstDescriptorOffset = 8;
+                int eventCount = BitConverter.ToInt32(buffer, NumberOfEventsOffset);
+                var descriptors = new EVENT_DESCRIPTOR[eventCount];
+                fixed (EVENT_DESCRIPTOR* pDescriptors = descriptors)
                 {
-                    TRACE_EVENT_INFO** eventInfos = (TRACE_EVENT_INFO**)buffer;
-                    for (int i = 0; i < count; i++)
+                    Marshal.Copy(buffer, FirstDescriptorOffset, (IntPtr)pDescriptors, descriptors.Length * sizeof(EVENT_DESCRIPTOR));
+                }
+
+                foreach (var descriptor in descriptors)
+                {
+                    for (; ; )
                     {
-                        TRACE_EVENT_INFO* eventInfo = eventInfos[i];
-                        byte* eventInfoBuff = (byte*)eventInfo;
+                        int size = buffer.Length;
+                        status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
+                        if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                        {
+                            break;
+                        }
+
+                        buffer = new byte[size];
+                    }
+
+                    if (status != 0)
+                    {
+                        continue;
+                    }
+
+                    fixed (byte* eventInfoBuff = buffer)
+                    {
+                        var eventInfo = (TRACE_EVENT_INFO*)eventInfoBuff;
                         EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
 
                         if (providerName == null)
@@ -406,17 +426,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         eventWriter.WriteLine("/>");
                     }
                 }
-                else if (status == 1168 && ver != 0)        // Not Found give up
-                {
-                    break;
-                }
             }
             if (enumBuffer != null)
             {
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
             }
 
-            System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             if (providerName == null)
             {
                 throw new ApplicationException("Could not find provider with at GUID of " + providerGuid.ToString());
@@ -977,6 +992,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             string pMapName,
             EVENT_MAP_INFO* info,
             ref int infoSize
+        );
+
+        [DllImport("tdh.dll")]
+        internal static extern int TdhEnumerateManifestProviderEvents(
+            in Guid Guid,
+            [Out] byte[] pBuffer, // PROVIDER_EVENT_INFO*
+            ref int pBufferSize
+        );
+
+        [DllImport("tdh.dll")]
+        internal static extern int TdhGetManifestEventInformation(
+            in Guid Guid,
+            in EVENT_DESCRIPTOR eventDesc,
+            [Out] byte[] pBuffer, // TRACE_EVENT_INFORMATION*
+            ref int pBufferSize
         );
 
         [Flags]

@@ -275,6 +275,9 @@ namespace Microsoft.Diagnostics.Tracing
 
             TraceLbrConfigurationInfo = 20,             // Filter flags
             TraceLbrEventListInfo = 21,                 // int array
+
+            // Win 10 build 19582+
+            TraceStackCachingInfo = 24,                 // TRACE_STACK_CACHING_INFO
         };
 
         internal struct CLASSIC_EVENT_ID
@@ -289,6 +292,16 @@ namespace Microsoft.Diagnostics.Tracing
             public int Source;
             public int Interval;
         };
+
+        internal struct TRACE_STACK_CACHING_INFO
+        {
+            public byte Enabled;
+            public byte Padding1;
+            public byte Padding2;
+            public byte Padding3;
+            public int CacheSize;
+            public int BucketCount;
+        }
 
         internal struct PROFILE_SOURCE_INFO
         {
