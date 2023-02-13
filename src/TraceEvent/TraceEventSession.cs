@@ -15,11 +15,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Microsoft.Diagnostics.Utilities;
 
-using STACK_TRACING_EVENT_ID = Microsoft.Diagnostics.Tracing.Extensions.STACK_TRACING_EVENT_ID; // Same as CLASSIC_EVENT_ID
-using EVENT_TRACE_MERGE_EXTENDED_DATA = Microsoft.Diagnostics.Tracing.Extensions.EVENT_TRACE_MERGE_EXTENDED_DATA;
-using ETWKernelControl = Microsoft.Diagnostics.Tracing.Extensions.ETWKernelControl;
+using STACK_TRACING_EVENT_ID = Microsoft.Diagnostics.Tracing.STACK_TRACING_EVENT_ID; // Same as CLASSIC_EVENT_ID
+using EVENT_TRACE_MERGE_EXTENDED_DATA = Microsoft.Diagnostics.Tracing.EVENT_TRACE_MERGE_EXTENDED_DATA;
+using ETWKernelControl = Microsoft.Diagnostics.Tracing.ETWKernelControl;
 
 namespace Microsoft.Diagnostics.Tracing.Session
 {

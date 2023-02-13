@@ -79,7 +79,6 @@
     <!-- Support Dlls -->
     <file src="$OutDir$netstandard2.0\Dia2Lib.dll" target="lib\netstandard2.0" />
     <file src="$OutDir$netstandard2.0\TraceReloggerLib.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\OSExtensions.dll" target="lib\netstandard2.0" />
 
     <!-- NetStandard 1.6 Framework -->
 	
@@ -95,7 +94,6 @@
     <!-- Support Dlls -->
     <file src="$OutDir$netstandard1.6\Dia2Lib.dll" target="lib\netstandard1.6" />
     <file src="$OutDir$netstandard1.6\TraceReloggerLib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$netstandard1.6\OSExtensions.dll" target="lib\netstandard1.6" />
 
     <!-- NET 4.5 Framework -->
 
@@ -111,7 +109,6 @@
     <!-- Support Dlls -->
     <file src="$OutDir$net462\Dia2Lib.dll" target="lib\net462" />
     <file src="$OutDir$net462\TraceReloggerLib.dll" target="lib\net462" />
-    <file src="$OutDir$net462\OSExtensions.dll" target="lib\net462" />
 
     <!-- Source code (All Frameworks *) -->
     <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />
