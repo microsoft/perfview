@@ -1282,32 +1282,29 @@ namespace PerfViewExtensibility
         /// </summary>
         public void ServerGCReport(string etlFile)
         {
-            if (PerfView.AppLog.InternalUser)
+            CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
+
+            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> gcStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            using (TraceLog tracelog = TraceLog.OpenOrConvert(etlFile))
             {
-                CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
-
-                List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> gcStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-                using (TraceLog tracelog = TraceLog.OpenOrConvert(etlFile))
+                using (var source = tracelog.Events.GetSource())
                 {
-                    using (var source = tracelog.Events.GetSource())
-                    {
-                        Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-                        Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc => { proc.Log = tracelog; });
-                        source.Process();
-                        foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                            if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
-                    }
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc => { proc.Log = tracelog; });
+                    source.Process();
+                    foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                        if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
                 }
-
-                var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
-                using (var output = File.CreateText(outputFileName))
-                {
-                    LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
-                    Stats.ClrStats.ToHtml(output, gcStats, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC, false, true /* do server report */);
-                }
-                if (!App.CommandLineArgs.NoGui)
-                    OpenHtmlReport(outputFileName, "GCStats report");
             }
+
+            var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
+            using (var output = File.CreateText(outputFileName))
+            {
+                LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
+                Stats.ClrStats.ToHtml(output, gcStats, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC, false, true /* do server report */);
+            }
+            if (!App.CommandLineArgs.NoGui)
+                OpenHtmlReport(outputFileName, "GCStats report");
         }
 
         /// <summary>

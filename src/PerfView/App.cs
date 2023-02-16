@@ -645,12 +645,6 @@ namespace PerfView
                 return false;
             }
 
-            // Internal users implicitly accept the EULA
-            if (AppLog.InternalUser)
-            {
-                return false;
-            }
-
             return true;
         }
         public static void AcceptEula()
@@ -693,16 +687,7 @@ namespace PerfView
                     }
 
                     bool persistSymPath = true;
-
-                    // If we still don't have anything, add a default one
-                    // Since the default goes off machine, if we are outside of Microsoft, we have to ask
-                    // the user for permission. 
-                    if (AppLog.InternalUser)
-                    {
-                        symPath.Add("SRV*http://symweb.corp.microsoft.com");
-                        symPath.Add(Microsoft.Diagnostics.Symbols.SymbolPath.MicrosoftSymbolServerPath);
-                    }
-                    else if (symPath.Elements.Count == 0)
+                    if (symPath.Elements.Count == 0)
                     {
                         if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm || App.CommandLineArgs.NoGui)
                         {
@@ -879,7 +864,7 @@ namespace PerfView
             ret.Options = symbolFlags;
 
 #if !PERFVIEW_COLLECT
-            if (!AppLog.InternalUser && !App.CommandLineArgs.TrustPdbs)
+            if (!App.CommandLineArgs.TrustPdbs)
             {
                 ret.SecurityCheck = delegate (string pdbFile)
                 {
@@ -1225,21 +1210,6 @@ namespace PerfView
             }
         }
         /// <summary>
-        /// Are we internal to Microsoft (and thus can have experimental features. 
-        /// </summary>
-        public static bool InternalUser
-        {
-            get
-            {
-                if (!s_InternalUser.HasValue)
-                {
-                    s_InternalUser = s_IsUnderTest || SymbolPath.ComputerNameExists(FeedbackServer, 400);
-                }
-
-                return s_InternalUser.Value;
-            }
-        }
-        /// <summary>
         /// Log that the event 'eventName' with an optional string arg happened.  Will
         /// get stamped with the time, user, and session ID.  
         /// </summary>
@@ -1364,7 +1334,6 @@ namespace PerfView
 
         private static DateTime s_startTime;    // used as a unique ID for the launch of the program (for SQM style logging)    
         internal static bool s_IsUnderTest; // set from tests: indicates we're in a test
-        private static bool? s_InternalUser;
 #if !PUBLIC_BUILD
         private static DateTime s_ProbedForFeedbackAt;
         private static bool? s_CanSendFeedback;

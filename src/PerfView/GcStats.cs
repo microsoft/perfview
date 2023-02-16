@@ -191,11 +191,7 @@ namespace Stats
             writer.WriteLine("<H4><A Name=\"Events_{0}\">All GC Events for Process {1,5}: {2}<A></H4>", stats.ProcessID, stats.ProcessID, stats.Name);
             PrintEventTable(writer, stats, runtime, Math.Max(0, runtime.GC.GCs.Count - 1000));
             PrintEventCondemnedReasonsTable(writer, stats, runtime, Math.Max(0, runtime.GC.GCs.Count - 1000));
-
-            if (PerfView.AppLog.InternalUser)
-            {
-                RenderServerGcConcurrencyGraphs(writer, stats, runtime, doServerGCReport);
-            }
+            RenderServerGcConcurrencyGraphs(writer, stats, runtime, doServerGCReport);
 
             if (runtime.GC.Stats().FinalizedObjects.Count > 0)
             {
@@ -563,7 +559,7 @@ namespace Stats
 
         private static bool ShowPinnedInformation(GCStats stats)
         {
-            if ((PerfView.AppLog.InternalUser) && (stats.NumWithPinEvents > 0))
+            if (stats.NumWithPinEvents > 0)
             {
                 return true;
             }
