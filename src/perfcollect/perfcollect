@@ -942,6 +942,34 @@ GetCommandFullPath()
 ######################################
 # Prerequisite Installation
 ######################################
+
+IsMariner()
+{
+    local mariner=0
+    if [ -f /etc/lsb-release ]
+    then
+        local flavor=`cat /etc/lsb-release | grep DISTRIB_ID`
+        if [ "$flavor" == "DISTRIB_ID=\"Mariner\"" ]
+        then
+            mariner=1
+        fi
+    fi
+
+    echo $mariner
+}
+
+InstallPerf_Mariner()
+{
+    # Disallow non-root users.
+    EnsureRoot
+
+    # Install perf
+    tdnf install -y kernel-tools
+
+    # Install zip and unzip
+    tdnf install -y zip unzip
+}
+
 IsAlpine()
 {
     local alpine=0
@@ -1095,6 +1123,9 @@ InstallPerf()
     elif [ "$(IsAlpine)" == "1" ]
     then
         InstallPerf_Alpine
+    elif [ "$(IsMariner)" == "1" ]
+    then
+        InstallPerf_Mariner
     else
         FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
     fi
@@ -1230,6 +1261,9 @@ InstallLTTng()
     elif [ "$(IsRHEL)" == "1" ]
     then
         InstallLTTng_RHEL
+    elif [ "$(IsMariner)" == "1" ]
+    then
+        echo "Collection of events from lttng-ust is not supported on Mariner for .NET workloads, so no lttng-ust events will be collected."
     elif [ "$(IsAlpine)" == "1" ]
     then
         echo "lttng-tools is not available on Alpine Linux, so no lttng-ust events will be collected."
@@ -1241,7 +1275,7 @@ InstallLTTng()
 SupportsAutoInstall()
 {
     local supportsAutoInstall=0
-    if [ "$(IsUbuntu)" == "1" ] || [ "$(IsSUSE)" == "1" ]
+    if [ "$(IsUbuntu)" == "1" ] || [ "$(IsSUSE)" == "1" ] || [ "$(IsMariner)" == "1" ]
     then
         supportsAutoInstall=1
     fi
@@ -1267,8 +1301,8 @@ EnsurePrereqsInstalled()
         exit 1
     fi
 
-    # Disable LTTng use if running on Alpine.
-    if [ "$(IsAlpine)" == "1" ]
+    # Disable LTTng use if running on Alpine or Mariner.
+    if [ "$(IsAlpine)" == "1" ] || [ "$(IsMariner)" == "1" ]
     then
         useLTTng=0
     fi
