@@ -1011,7 +1011,7 @@ namespace PerfView
                         heapSession.StopOnDispose = false;
                     }
 
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                 }
             }
         }
@@ -1198,7 +1198,7 @@ namespace PerfView
                 LogFile.WriteLine("Stopping tracing for sessions '" + s_KernelessionName +
                     "' and '" + s_UserModeSessionName + "'.");
 
-                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                 PerfViewLogger.Log.StopTracing();
                 PerfViewLogger.StopTime = DateTime.UtcNow;
                 PerfViewLogger.Log.StartAndStopTimes();
@@ -3576,7 +3576,7 @@ namespace PerfView
                     WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, rundownFile);
 
                     // Complete perfview rundown.
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                     PerfViewLogger.Log.StartAndStopTimes();
                     PerfViewLogger.Log.StopRundown();
                 }

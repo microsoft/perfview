@@ -66,7 +66,7 @@ namespace PerfView
             }
 
             MainWindow.StatusBar.LogWriter.WriteLine("Started with command line: {0}", Environment.CommandLine);
-            MainWindow.StatusBar.LogWriter.WriteLine("PerfView Version: {0}  BuildDate: {1}", AppLog.VersionNumber, AppLog.BuildDate);
+            MainWindow.StatusBar.LogWriter.WriteLine("PerfView Version: {0}  BuildDate: {1}", AppInfo.VersionNumber, AppInfo.BuildDate);
             MainWindow.StatusBar.LogWriter.WriteLine("PerfView Start Time {0}", DateTime.Now);
 
             if (App.NeedsEulaConfirmation(App.CommandLineArgs))
@@ -144,8 +144,7 @@ namespace PerfView
             }
             else
             {
-                var feedbackSent = AppLog.SendFeedback("Unhandled Exception in GUI\r\n" + e.Exception.ToString(), true);
-                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.Exception, feedbackSent);
+                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.Exception);
                 var ret = dialog.ShowDialog();
                 // If it returns, it means that the user has opted to continue.
                 e.Handled = true;
@@ -158,10 +157,9 @@ namespace PerfView
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             // TODO discriminate between the GUI and Non_GUI case.
-            var feedbackSent = AppLog.SendFeedback("Unhandled Exception\r\n" + e.ExceptionObject.ToString(), true);
             MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
-                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.ExceptionObject, feedbackSent);
+                var dialog = new PerfView.Dialogs.UnhandledExceptionDialog(MainWindow, e.ExceptionObject);
                 var ret = dialog.ShowDialog();
             });
         }

@@ -130,7 +130,6 @@
                     <MenuItem Header="_Users Guide" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
                     <MenuItem Name ="VideoMenuEntry" Header="Getting started _Videos" Click="DoVideoClick"/>
                     <MenuItem Header="Get the _Latest Version" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="LatestVersion"/>
-                    <MenuItem Header="Give _Feedback or Ask a question" Click="DoFeedbackClick"/>
                     <MenuItem Header="_Reference Guide" Click="DoReferenceGuide"/>
                     <MenuItem Header="_Command Line Help" Click="DoCommandLineHelp"/>
                     <MenuItem Header="User Command Help" Click="DoUserCommandHelp"/>
@@ -165,8 +164,6 @@
             </TextBlock>
             <Button Name="WikiButton" Grid.Column="7" Margin="5,1,10,1" Content="Wiki" FontSize="9"
                     ToolTip="Goto the PerfView Wiki." Click="DoWikiClick"/>
-            <Button Name="FeedbackButton" Grid.Column="8" Margin="5,1,10,1" Content="Feedback" FontSize="9"
-                    ToolTip="Send feedback to the maintainers of PerfView." Click="DoFeedbackClick"/>
         </Grid>
         <src:StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom"/>
         <Grid>
