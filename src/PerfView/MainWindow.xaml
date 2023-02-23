@@ -118,6 +118,9 @@
                         <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
                     </MenuItem>
                     <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
+                    <MenuItem Header="_Experimental">
+                        <MenuItem Header="Show experimental GC features." x:Name="Option_ExperimentalGCFeatures" IsCheckable="true" Click="ToggleExperimentalGCFeatures" ToolTip="Enable or disable experimental GC features."/>
+                    </MenuItem>
                     <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
                     <MenuItem Header="Theme">
                         <MenuItem Header="Light" x:Name="Theme_Light" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>

@@ -16,6 +16,8 @@ namespace Stats
 {
     internal static class GcStats
     {
+        internal static bool EnableExperimentalFeatures;
+
         public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, string fileName, bool doServerGCReport = false)
         {
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
@@ -191,7 +193,11 @@ namespace Stats
             writer.WriteLine("<H4><A Name=\"Events_{0}\">All GC Events for Process {1,5}: {2}<A></H4>", stats.ProcessID, stats.ProcessID, stats.Name);
             PrintEventTable(writer, stats, runtime, Math.Max(0, runtime.GC.GCs.Count - 1000));
             PrintEventCondemnedReasonsTable(writer, stats, runtime, Math.Max(0, runtime.GC.GCs.Count - 1000));
-            RenderServerGcConcurrencyGraphs(writer, stats, runtime, doServerGCReport);
+
+            if (EnableExperimentalFeatures)
+            {
+                RenderServerGcConcurrencyGraphs(writer, stats, runtime, doServerGCReport);
+            }
 
             if (runtime.GC.Stats().FinalizedObjects.Count > 0)
             {

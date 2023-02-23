@@ -1194,6 +1194,16 @@ namespace PerfView
             PerfDataGrid.DoNotCompressStackFrames = newValue;
         }
 
+        public void ToggleExperimentalGCFeatures(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["ExperimentalGCFeatures"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["ExperimentalGCFeatures"] = newValue.ToString();
+            Option_ExperimentalGCFeatures.IsChecked = newValue;
+            Stats.GcStats.EnableExperimentalFeatures = newValue;
+        }
+
         /// <summary>
         /// Set the left pane to the specified directory.  If it is a file name, then that file name is opened
         /// </summary>
