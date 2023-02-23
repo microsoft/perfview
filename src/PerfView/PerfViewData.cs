@@ -7393,7 +7393,7 @@ table {
                 advanced.Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
             }
 
-            if (hasGCEvents && hasCPUStacks && AppLog.InternalUser)
+            if (hasGCEvents && hasCPUStacks)
             {
                 memory.Children.Add(new PerfViewStackSource(this, "Server GC"));
             }
@@ -7491,7 +7491,7 @@ table {
                 advanced.Children.Add(new PerfViewIisStats(this));
             }
 
-            if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
+            if (hasProjectNExecutionTracingEvents)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
@@ -7542,7 +7542,7 @@ table {
                 m_Children.Add(ui);
             }
 
-            if (AppLog.InternalUser && 0 < experimental.Children.Count)
+            if (0 < experimental.Children.Count)
             {
                 m_Children.Add(experimental);
             }
@@ -8720,7 +8720,7 @@ table {
                 m_Children.Add(advanced);
             }
 
-            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            if(experimental.Children.Count > 0)
             {
                 m_Children.Add(experimental);
             }
