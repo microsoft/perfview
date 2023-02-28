@@ -119,7 +119,7 @@ namespace Microsoft.Diagnostics.Symbols
                 Guid hashAlgorithmGuid = metaData.GetGuid(sourceFileDocument.HashAlgorithm);
                 if (hashAlgorithmGuid == HashAlgorithmSha1)
                 {
-                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
                 }
                 else if (hashAlgorithmGuid == HashAlgorithmSha256)
                 {
