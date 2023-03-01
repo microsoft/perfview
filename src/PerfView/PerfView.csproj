@@ -339,49 +339,56 @@
       <Link>PerfView.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+    <EmbeddedResource Include="$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\FastSerialization\$(OutDir)Microsoft.Diagnostics.FastSerialization.dll">
+    <EmbeddedResource Include="$(OutDir)Microsoft.Diagnostics.FastSerialization.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.InteropServices.RuntimeInformation.dll">
+    <EmbeddedResource Include="$(OutDir)Microsoft.Win32.Registry.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Win32.Registry.dll</LogicalName>
+      <Link>Microsoft.Win32.Registry.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutDir)System.Runtime.InteropServices.RuntimeInformation.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Runtime.InteropServices.RuntimeInformation.dll</LogicalName>
       <Link>System.Runtime.InteropServices.RuntimeInformation.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Collections.Immutable.dll">
+    <EmbeddedResource Include="$(OutDir)System.Collections.Immutable.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Collections.Immutable.dll</LogicalName>
       <Link>System.Collections.Immutable.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Reflection.Metadata.dll">
+    <EmbeddedResource Include="$(OutDir)System.Reflection.Metadata.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Reflection.Metadata.dll</LogicalName>
       <Link>System.Reflection.Metadata.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.CompilerServices.Unsafe.dll">
+    <EmbeddedResource Include="$(OutDir)System.Runtime.CompilerServices.Unsafe.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
       <Link>System.Runtime.CompilerServices.Unsafe.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
+    <EmbeddedResource Include="$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>

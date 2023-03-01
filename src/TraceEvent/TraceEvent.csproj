@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk"> 
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard1.6;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -43,7 +43,7 @@
     Unconditional use of PackageReference would work if we targeted net462, but the reference APIs do not include
     support for net462 targets. Work around the issue by using conditional references.
   -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard1.6'">
+  <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
@@ -57,16 +57,6 @@
     <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
     <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Web" />
-    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard1.6'">
-    <DefineConstants>$(DefineConstants);SYNC_SYMBOLREADER_LOG</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
@@ -200,7 +190,7 @@
          We work around it here by copying the files explicitly. 
 	 We don't have version for 2.0 so we use the 1.6 versions.  -->
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard1.6'">
+  <ItemGroup>
     <None Include="$(TraceEventSupportFilesBase)\netstandard1.6\Dia2Lib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>

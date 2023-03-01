@@ -28,11 +28,9 @@ namespace Microsoft.Diagnostics.Symbols
         public SymbolReader(TextWriter log, string nt_symbol_path = null, DelegatingHandler httpClientDelegatingHandler = null)
         {
             m_log = log;
-#if SYNC_SYMBOLREADER_LOG
             // Make sure that accesses to the log are synchronized to avoid races due to the fact that System.Diagnostics.Process
             // uses AsyncStreamReader to read from the stdout/stderr and so it's possible to have concurrent writes to this log.
             m_log = TextWriter.Synchronized(log);
-#endif
             m_symbolModuleCache = new Cache<string, ManagedSymbolModule>(10);
             m_pdbPathCache = new Cache<PdbSignature, string>(10);
 
