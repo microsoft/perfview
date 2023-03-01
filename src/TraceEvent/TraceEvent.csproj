@@ -93,11 +93,6 @@
     <Compile Remove="Samples/**/*.*" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
-    <Compile Remove="Utilities/FastStream.cs" />
-    <Compile Remove="Stacks/Linux/*.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <None Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
       <Link>amd64\KernelTraceControl.dll</Link>

@@ -1,5 +1,4 @@
-﻿#if NET462 || NETSTANDARD2_0
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
@@ -44,4 +43,3 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         }
     }
 }
-#endif

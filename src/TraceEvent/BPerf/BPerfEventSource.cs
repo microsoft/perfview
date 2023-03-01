@@ -428,11 +428,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 long length = fs.Length;
 
-#if NET462
-                using (var mmapedFile = MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.Read, null, HandleInheritability.None, true))
-#else
                 using (var mmapedFile = MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
-#endif
                 {
                     var accessor = mmapedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
                     byte* ptr = (byte*)0;
