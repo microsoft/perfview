@@ -1279,7 +1279,7 @@ namespace PerfView
         /// <summary>
         /// An HTTP client used to discover the authority (login endpoint and tenant) for an Azure Dev Ops instance.
         /// </summary>
-        private readonly HttpClient _httpClient = new HttpClient();
+        private readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true });
 
         /// <summary>
         /// Construct a new <see cref="AzureDevOpsHandler"/> instance.
@@ -1556,7 +1556,7 @@ namespace PerfView
         /// <summary>
         /// An HTTP client for making device flow calls
         /// </summary>
-        private readonly HttpClient _httpClient = new HttpClient();
+        private readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true });
 
         /// <summary>
         /// Gate to protect against multiple calls to the device flow.
