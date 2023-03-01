@@ -8,9 +8,6 @@ trigger:
 pr:
   - main
 
-variables:
-  Codeql.Enabled: true
-
 jobs:
   - job: PerfView_Debug
     pool:
@@ -19,6 +16,8 @@ jobs:
       demands:
       - msbuild
       - vstest
+    variables:
+      Codeql.Enabled: true
 
     steps:
     - task: UseDotNet@2
