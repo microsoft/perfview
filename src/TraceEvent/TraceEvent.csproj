@@ -39,10 +39,6 @@
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
-  <!--
-    Unconditional use of PackageReference would work if we targeted net462, but the reference APIs do not include
-    support for net462 targets. Work around the issue by using conditional references.
-  -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
@@ -182,13 +178,6 @@
     <None Include="EventPipe\EventSerialization.md" />
     <None Include="EventPipe\NetPerfFormat.md" />
   </ItemGroup>
-
-    <!-- *********************************************************** -->
-    <!-- Copying three managed binaries explicitly should not be needed because the 
-         dependency logic should just do it for us, but for some reason ths only
-         works for the net462 target framework and not the netstandard1.6.  and netstanard2.0 
-         We work around it here by copying the files explicitly. 
-	 We don't have version for 2.0 so we use the 1.6 versions.  -->
 
   <ItemGroup>
     <None Include="$(TraceEventSupportFilesBase)\netstandard1.6\Dia2Lib.dll">
