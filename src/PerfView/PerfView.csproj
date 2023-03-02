@@ -391,7 +391,7 @@
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Win32_Registry)\lib\netstandard2.0\Microsoft.Win32.Registry.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_Win32_Registry)\lib\net461\Microsoft.Win32.Registry.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Win32.Registry.dll</LogicalName>
