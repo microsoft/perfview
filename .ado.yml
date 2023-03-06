@@ -18,6 +18,7 @@ jobs:
       - vstest
     variables:
       Codeql.Enabled: true
+      Codeql.BuildIdentifier: PerfView
 
     steps:
     - task: UseDotNet@2
