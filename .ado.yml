@@ -131,7 +131,7 @@ jobs:
 
   - job: PerfCollect
     pool:
-      vmImage: 'ubuntu-18.04'
+      vmImage: 'ubuntu-latest'
       name: Azure Pipelines
 
     steps:
