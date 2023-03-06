@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.FastSerialization</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.FastSerialization</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -15,15 +15,6 @@
     <FileVersion>$(FastSerializationVersion)</FileVersion>
     <InformationalVersion>$(FastSerializationVersion)</InformationalVersion>
   </PropertyGroup>
-
-  <Choose>
-    <When Condition="'$(TargetFramework)' == 'netstandard1.3'">
-      <ItemGroup>
-        <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-      </ItemGroup>
-    </When>
-  </Choose>
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC;STREAMREADER_PUBLIC;FASTSERIALIZATION_PUBLIC</DefineConstants>
@@ -40,7 +31,7 @@
         <Authenticode>Microsoft400</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->

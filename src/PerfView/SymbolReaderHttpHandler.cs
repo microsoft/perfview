@@ -40,7 +40,7 @@ namespace PerfView
         /// <summary>
         /// Construct a new <see cref="SymbolReaderHttpHandler"/> instance.
         /// </summary>
-        public SymbolReaderHttpHandler() : base(new HttpClientHandler())
+        public SymbolReaderHttpHandler() : base(new HttpClientHandler() { CheckCertificateRevocationList = true })
         {
         }
 

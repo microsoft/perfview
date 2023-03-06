@@ -30,11 +30,51 @@
     <UtilitiesVersion>3.0.8</UtilitiesVersion>
   </PropertyGroup>
 
-  <!-- versions of dependencies that more than one project use -->
+  <!-- Support files and analyzers -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.25</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
+  </PropertyGroup>
+
+  <!-- External dependencies -->
+  <PropertyGroup>
+    <AzureCoreVersion>1.24.0</AzureCoreVersion>
+    <AzureIdentityVersion>1.6.0</AzureIdentityVersion>
+    <MicroBuildCoreVersion>0.2.0</MicroBuildCoreVersion>
+    <MicrosoftNETCorePortableCompatibilityVersion>1.0.1</MicrosoftNETCorePortableCompatibilityVersion>
+    <MicrosoftIdentityClientVersion>4.39.0</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>2.19.3</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityModelTokensVersion>6.22.0</MicrosoftIdentityModelTokensVersion>
+    <MicrosoftIdentityModelJsonWebTokensVersion>6.22.0</MicrosoftIdentityModelJsonWebTokensVersion>
+    <MicrosoftSourceLinkGitHubVersion>1.1.1</MicrosoftSourceLinkGitHubVersion>
+    <MicrosoftWin32RegistryVersion>4.4.0</MicrosoftWin32RegistryVersion>
+    <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
+    <SystemCollectionsImmutableVersion>1.7.1</SystemCollectionsImmutableVersion>
+    <SystemDiagnosticsDiagnosticSourceVersion>4.6.0</SystemDiagnosticsDiagnosticSourceVersion>
+    <SystemDiagnosticsProcessVersion>4.3.0</SystemDiagnosticsProcessVersion>
+    <SystemDiagnosticsTraceSourceVersion>4.3.0</SystemDiagnosticsTraceSourceVersion>
+    <SystemIOCompressionVersion>4.3.0</SystemIOCompressionVersion>
+    <SystemIOUnmanagedMemoryStreamVersion>4.3.0</SystemIOUnmanagedMemoryStreamVersion>
+    <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
+    <SystemNetNameResolutionVersion>4.3.0</SystemNetNameResolutionVersion>
+    <SystemNetRequestsVersion>4.3.0</SystemNetRequestsVersion>
+    <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
+    <SystemReflectionMetadataVersion>1.8.1</SystemReflectionMetadataVersion>
+    <SystemReflectionTypeExtensionsVersion>4.3.0</SystemReflectionTypeExtensionsVersion>
+    <SystemRuntimeVersion>4.3.0</SystemRuntimeVersion>
+    <SystemRuntimeCompilerServicesUnsafeVersion>5.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
+    <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
+    <SystemSecurityCryptographyAlgorithmsVersion>4.3.0</SystemSecurityCryptographyAlgorithmsVersion>
+    <SystemTextEncodingsWebVersion>4.7.2</SystemTextEncodingsWebVersion>
+    <SystemTextJsonVersion>4.7.2</SystemTextJsonVersion>
+    <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
+    <SystemThreadingTasksParallelVersion>4.3.0</SystemThreadingTasksParallelVersion>
+    <SystemThreadingThreadVersion>4.3.0</SystemThreadingThreadVersion>
+  </PropertyGroup>
+
+  <!-- ClrMD -->
+  <PropertyGroup>
     <MicrosoftDiagnosticsRuntimeVersion>2.3.405304</MicrosoftDiagnosticsRuntimeVersion>
     <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
     <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
@@ -42,9 +82,16 @@
     <MicrosoftDiagnosticsRuntimeVersion>local</MicrosoftDiagnosticsRuntimeVersion>
     <MicrosoftDiagnosticsRuntimePath>$(MSBuildThisFileDirectory)\..\..\clrmd\artifacts\bin\Microsoft.Diagnostics.Runtime\$(Configuration)\netstandard2.0\Microsoft.Diagnostics.Runtime.dll</MicrosoftDiagnosticsRuntimePath>
     -->
-    <MicrosoftSourceLinkGitHubVersion>1.1.1</MicrosoftSourceLinkGitHubVersion>
+  </PropertyGroup>
+
+  <!-- Test dependencies -->
+  <PropertyGroup>
+    <MicrosoftVisualStudioThreadingVersion>15.3.23</MicrosoftVisualStudioThreadingVersion>
     <XunitVersion>2.4.0</XunitVersion>
+    <XunitExtensibilityCoreVersion>2.4.0</XunitExtensibilityCoreVersion>
+    <XunitExtensibilityExecutionVersion>2.4.0</XunitExtensibilityExecutionVersion>
     <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
+    <XunitStaFactVersion>0.3.2</XunitStaFactVersion>
   </PropertyGroup>
 
   <PropertyGroup>

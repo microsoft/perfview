@@ -232,16 +232,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (!escapedNames.TryGetValue(name, out string escaped))
             {
-#if NETSTANDARD1_6 || DEBUG // the Debug check allows us to test this code path for other TFMs
-                // System.Web.HttpUtility.JavaScriptStringEncode is not part of the .NET Standard 1.6
-                // but it's part of .NET 4.0+. So we just use reflection to invoke it.
-                escaped = escapedNames[name] = (string)Type
-                    .GetType("System.Web.HttpUtility, System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
-                    .GetMethod("JavaScriptStringEncode", new Type[1] { typeof(string) })
-                    .Invoke(null, new object[] { name });
-#elif NETSTANDARD2_0 || NET462
                 escaped = escapedNames[name] = System.Web.HttpUtility.JavaScriptStringEncode(name);
-#endif
             }
 
             return escaped;
