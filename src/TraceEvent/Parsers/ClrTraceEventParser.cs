@@ -11440,6 +11440,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public bool IsDynamic { get { return (MethodFlags & MethodFlags.Dynamic) != 0; } }
         public bool IsGeneric { get { return (MethodFlags & MethodFlags.Generic) != 0; } }
         public bool IsJitted { get { return (MethodFlags & MethodFlags.Jitted) != 0; } }
+        public bool IsJitHelper { get { return (MethodFlags & MethodFlags.JitHelper) != 0; } }
 
         public OptimizationTier OptimizationTier
         {
