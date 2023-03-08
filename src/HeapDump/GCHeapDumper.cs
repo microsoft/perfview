@@ -400,6 +400,7 @@ public class GCHeapDumper
 
         // Start up ETW providers and trigger GCs.  
         bool dotNetHeapExists = false;
+        long dotNetGCUniqueSequenceNumber = 0xDEADBEEF;
         bool jsHeapExists = false;
         int jsGCs = 0;
         int dotNetGCs = 0;
@@ -420,7 +421,7 @@ public class GCHeapDumper
                 {
                     source.Clr.GCHeapStats += delegate (GCHeapStatsTraceData data)
                     {
-                        if (data.ProcessID == processID)
+                        if (dotNetHeapExists && data.ProcessID == processID)
                         {
                             dotNetGCCount++;
                             lastDotNetSurvived = curDotNetSurvived;
@@ -467,19 +468,18 @@ public class GCHeapDumper
                     };
 
                     // Set up the .NET heap listener
-                    var etwClrParser = new ETWClrProfilerTraceEventParser(source);
-                    etwClrParser.CaptureStateStop += delegate (EmptyTraceData data)
+                    source.Clr.GCStop += delegate (GCEndTraceData data)
                     {
-                        if (data.ProcessID == processID)
+                        if (dotNetHeapExists && data.ProcessID == processID)
                         {
                             m_log.WriteLine("{0,5:n1}s: .NET GC complete at {1:n2}s.", sw.Elapsed.TotalSeconds, (data.TimeStamp - startTime).TotalSeconds);
                             dotNetGCs++;
                         }
                     };
 
-                    etwClrParser.CaptureStateStart += delegate (EmptyTraceData data)
+                    source.Clr.GCStart += delegate (GCStartTraceData data)
                     {
-                        if (data.ProcessID == processID)
+                        if (data.ProcessID == processID && data.ClientSequenceNumber == dotNetGCUniqueSequenceNumber)
                         {
                             m_log.WriteLine("{0,5:n1}s: .NET GC Starting at {1:n2}s.", sw.Elapsed.TotalSeconds, (data.TimeStamp - startTime).TotalSeconds);
                             dotNetHeapExists = true;
@@ -489,10 +489,6 @@ public class GCHeapDumper
                     m_log.WriteLine("{0,5:n1}s: Enabling JScript Heap Provider", sw.Elapsed.TotalSeconds);
                     session.EnableProvider(JSDumpHeapTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
                         (ulong)JSDumpHeapTraceEventParser.Keywords.jsdumpheap);
-
-                    m_log.WriteLine("{0,5:n1}s: Enabling EtwClrProfiler", sw.Elapsed.TotalSeconds);
-                    session.EnableProvider(ETWClrProfilerTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
-                        (long)ETWClrProfilerTraceEventParser.Keywords.GCHeap);
 
                     m_log.WriteLine("{0,5:n1}s: Enabling CLR GC events", sw.Elapsed.TotalSeconds);
                     session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
@@ -517,7 +513,7 @@ public class GCHeapDumper
         // Note that because the ETW events are all triggered by a single thread, the 
         // GCs are guaranteed to be serialized (first the WHOLE JScript GC then the WHOLE .NET GC).
         int gcsTriggered = 1;
-        TriggerAllGCs(session, sw, processID);
+        TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
         double lastStatusUpdate = 0;
         for (; ; )
         {
@@ -577,8 +573,8 @@ public class GCHeapDumper
                 if (gcsTriggered == 1)
                 {
                     m_log.WriteLine("{0,5:n1}s: Detected .NET and JS heap, triggering two more GCs", sw.Elapsed.TotalSeconds);
-                    TriggerAllGCs(session, sw, processID);
-                    TriggerAllGCs(session, sw, processID);
+                    TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
+                    TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
                     gcsTriggered += 2;
                 }
 
@@ -600,16 +596,12 @@ public class GCHeapDumper
                     else
                     {
                         m_log.WriteLine("{0,5:n1}s: .NET promoted {1} != {2} prev Promoted, doing another GC", sw.Elapsed.TotalSeconds, curDotNetSurvived, lastDotNetSurvived);
-                        TriggerAllGCs(session, sw, processID);
+                        TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
                         gcsTriggered++;
                     }
                 }
             }
         }
-
-        // Unload the ETWClrProfiler 
-        m_log.WriteLine("{0,5:n1}s: Requesting ETWClrProfiler unload.", sw.Elapsed.TotalSeconds);
-        session.CaptureState(ETWClrProfilerTraceEventParser.ProviderGuid, (long)(ETWClrProfilerTraceEventParser.Keywords.Detach));
 
         // Stop our listener.  
         if (source != null)
@@ -620,27 +612,27 @@ public class GCHeapDumper
         // Stop the ETW providers
         m_log.WriteLine("{0,5:n1}s: Shutting down ETW session", sw.Elapsed.TotalSeconds);
         session.DisableProvider(JSDumpHeapTraceEventParser.ProviderGuid);
-        session.DisableProvider(ETWClrProfilerTraceEventParser.ProviderGuid);
+        session.DisableProvider(ClrTraceEventParser.ProviderGuid);
 
         m_log.WriteLine("[{0,5:n1}s: Done forcing GCs success={1}]", sw.Elapsed.TotalSeconds, success);
         return success;
     }
 
-    private void TriggerAllGCs(TraceEventSession session, Stopwatch sw, int processID)
+    private void TriggerAllGCs(TraceEventSession session, Stopwatch sw, int processID, long clientSequenceNumber)
     {
         m_log.WriteLine("{0,5:n1}s: Requesting a JScript GC", sw.Elapsed.TotalSeconds);
         session.CaptureState(JSDumpHeapTraceEventParser.ProviderGuid,
             (ulong)JSDumpHeapTraceEventParser.Keywords.jsdumpheap);
 
         m_log.WriteLine("{0,5:n1}s: Requesting a DotNet GC", sw.Elapsed.TotalSeconds);
-        session.CaptureState(ETWClrProfilerTraceEventParser.ProviderGuid,
-            (long)(ETWClrProfilerTraceEventParser.Keywords.GCHeap));
+        session.CaptureState(ClrTraceEventParser.ProviderGuid,
+            (long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.GCHeapCollect), 1, clientSequenceNumber);
 
         m_log.WriteLine("{0,5:n1}s: Requesting .NET Native GC", sw.Elapsed.TotalSeconds);
         try
         {
             session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
-                (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+                (long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.GCHeapCollect), 1, clientSequenceNumber);
         }
         catch
         {
