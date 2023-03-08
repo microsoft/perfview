@@ -8,9 +8,6 @@ using System.Threading.Tasks;
 using FastSerialization;
 using Graphs;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.Samples.Debugging.CorDebug.NativeApi;
-using Microsoft.Samples.Debugging.CorMetadata.NativeApi;
-using Profiler;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -255,19 +252,6 @@ public class GCHeapDumper
 
         using (DataTarget dataTarget = InitializeClrRuntime(processDumpFile, -1, out ClrRuntime[] runtimes))
         {
-            m_log.WriteLine("Creating a GC Dump from the dump file {0}", processDumpFile);
-            ICorDebugProcess proc = null;
-            try
-            {
-                m_log.WriteLine("Trying to get a ICorDebugProcess object.");
-                proc = Profiler.Debugger.GetDebuggerHandleFromProcessDump(processDumpFile, 0L);
-            }
-            catch (Exception e)
-            {
-                m_log.WriteLine("Warning: Failed to get a V4.0 debugger Message: {0}", e.Message);
-                m_log.WriteLine("Continuing with less accurate GC root information.");
-            }
-
             var collectionMetadata = new CollectionMetadata()
             {
                 Source = TargetSource.MiniDumpFile,
@@ -414,11 +398,9 @@ public class GCHeapDumper
         // If we are a win8 app make sure we are not suspended.  
         ResumeProcessIfNecessary(processID);
 
-        // Try to attach the .NET Profiler
-        bool loadedClrProfiler = LoadETWClrProfiler(processID, sw);
-
         // Start up ETW providers and trigger GCs.  
-        bool dotNetHeapExists = loadedClrProfiler;
+        bool dotNetHeapExists = false;
+        long dotNetGCUniqueSequenceNumber = 0xDEADBEEF;
         bool jsHeapExists = false;
         int jsGCs = 0;
         int dotNetGCs = 0;
@@ -439,7 +421,7 @@ public class GCHeapDumper
                 {
                     source.Clr.GCHeapStats += delegate (GCHeapStatsTraceData data)
                     {
-                        if (data.ProcessID == processID)
+                        if (dotNetHeapExists && data.ProcessID == processID)
                         {
                             dotNetGCCount++;
                             lastDotNetSurvived = curDotNetSurvived;
@@ -486,19 +468,18 @@ public class GCHeapDumper
                     };
 
                     // Set up the .NET heap listener
-                    var etwClrParser = new ETWClrProfilerTraceEventParser(source);
-                    etwClrParser.CaptureStateStop += delegate (EmptyTraceData data)
+                    source.Clr.GCStop += delegate (GCEndTraceData data)
                     {
-                        if (data.ProcessID == processID)
+                        if (dotNetHeapExists && data.ProcessID == processID)
                         {
                             m_log.WriteLine("{0,5:n1}s: .NET GC complete at {1:n2}s.", sw.Elapsed.TotalSeconds, (data.TimeStamp - startTime).TotalSeconds);
                             dotNetGCs++;
                         }
                     };
 
-                    etwClrParser.CaptureStateStart += delegate (EmptyTraceData data)
+                    source.Clr.GCStart += delegate (GCStartTraceData data)
                     {
-                        if (data.ProcessID == processID)
+                        if (data.ProcessID == processID && data.ClientSequenceNumber == dotNetGCUniqueSequenceNumber)
                         {
                             m_log.WriteLine("{0,5:n1}s: .NET GC Starting at {1:n2}s.", sw.Elapsed.TotalSeconds, (data.TimeStamp - startTime).TotalSeconds);
                             dotNetHeapExists = true;
@@ -508,10 +489,6 @@ public class GCHeapDumper
                     m_log.WriteLine("{0,5:n1}s: Enabling JScript Heap Provider", sw.Elapsed.TotalSeconds);
                     session.EnableProvider(JSDumpHeapTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
                         (ulong)JSDumpHeapTraceEventParser.Keywords.jsdumpheap);
-
-                    m_log.WriteLine("{0,5:n1}s: Enabling EtwClrProfiler", sw.Elapsed.TotalSeconds);
-                    session.EnableProvider(ETWClrProfilerTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
-                        (long)ETWClrProfilerTraceEventParser.Keywords.GCHeap);
 
                     m_log.WriteLine("{0,5:n1}s: Enabling CLR GC events", sw.Elapsed.TotalSeconds);
                     session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
@@ -536,7 +513,7 @@ public class GCHeapDumper
         // Note that because the ETW events are all triggered by a single thread, the 
         // GCs are guaranteed to be serialized (first the WHOLE JScript GC then the WHOLE .NET GC).
         int gcsTriggered = 1;
-        TriggerAllGCs(session, sw, processID);
+        TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
         double lastStatusUpdate = 0;
         for (; ; )
         {
@@ -596,8 +573,8 @@ public class GCHeapDumper
                 if (gcsTriggered == 1)
                 {
                     m_log.WriteLine("{0,5:n1}s: Detected .NET and JS heap, triggering two more GCs", sw.Elapsed.TotalSeconds);
-                    TriggerAllGCs(session, sw, processID);
-                    TriggerAllGCs(session, sw, processID);
+                    TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
+                    TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
                     gcsTriggered += 2;
                 }
 
@@ -619,16 +596,12 @@ public class GCHeapDumper
                     else
                     {
                         m_log.WriteLine("{0,5:n1}s: .NET promoted {1} != {2} prev Promoted, doing another GC", sw.Elapsed.TotalSeconds, curDotNetSurvived, lastDotNetSurvived);
-                        TriggerAllGCs(session, sw, processID);
+                        TriggerAllGCs(session, sw, processID, dotNetGCUniqueSequenceNumber);
                         gcsTriggered++;
                     }
                 }
             }
         }
-
-        // Unload the ETWClrProfiler 
-        m_log.WriteLine("{0,5:n1}s: Requesting ETWClrProfiler unload.", sw.Elapsed.TotalSeconds);
-        session.CaptureState(ETWClrProfilerTraceEventParser.ProviderGuid, (long)(ETWClrProfilerTraceEventParser.Keywords.Detach));
 
         // Stop our listener.  
         if (source != null)
@@ -639,27 +612,27 @@ public class GCHeapDumper
         // Stop the ETW providers
         m_log.WriteLine("{0,5:n1}s: Shutting down ETW session", sw.Elapsed.TotalSeconds);
         session.DisableProvider(JSDumpHeapTraceEventParser.ProviderGuid);
-        session.DisableProvider(ETWClrProfilerTraceEventParser.ProviderGuid);
+        session.DisableProvider(ClrTraceEventParser.ProviderGuid);
 
         m_log.WriteLine("[{0,5:n1}s: Done forcing GCs success={1}]", sw.Elapsed.TotalSeconds, success);
         return success;
     }
 
-    private void TriggerAllGCs(TraceEventSession session, Stopwatch sw, int processID)
+    private void TriggerAllGCs(TraceEventSession session, Stopwatch sw, int processID, long clientSequenceNumber)
     {
         m_log.WriteLine("{0,5:n1}s: Requesting a JScript GC", sw.Elapsed.TotalSeconds);
         session.CaptureState(JSDumpHeapTraceEventParser.ProviderGuid,
             (ulong)JSDumpHeapTraceEventParser.Keywords.jsdumpheap);
 
         m_log.WriteLine("{0,5:n1}s: Requesting a DotNet GC", sw.Elapsed.TotalSeconds);
-        session.CaptureState(ETWClrProfilerTraceEventParser.ProviderGuid,
-            (long)(ETWClrProfilerTraceEventParser.Keywords.GCHeap));
+        session.CaptureState(ClrTraceEventParser.ProviderGuid,
+            (long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.GCHeapCollect), 1, clientSequenceNumber);
 
         m_log.WriteLine("{0,5:n1}s: Requesting .NET Native GC", sw.Elapsed.TotalSeconds);
         try
         {
             session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
-                (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+                (long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.GCHeapCollect), 1, clientSequenceNumber);
         }
         catch
         {
@@ -703,102 +676,6 @@ public class GCHeapDumper
                 pkgDebugSettings.Resume(fullPackageName);
             }
         }
-    }
-
-    /// <summary>
-    /// Loads the ETWClrProfiler into the process 'processID'.   
-    /// </summary>
-    private bool LoadETWClrProfiler(int processID, Stopwatch sw)
-    {
-        m_log.WriteLine("Loading the ETWClrProfiler.");
-        m_log.WriteLine("Turning on debug privilege.");
-        TraceEventSession.SetDebugPrivilege();
-
-        CLRMetaHost mh = new CLRMetaHost();
-        CLRRuntimeInfo highestLoadedRuntime = null;
-        foreach (CLRRuntimeInfo runtime in mh.EnumerateLoadedRuntimes(processID))
-        {
-            if (highestLoadedRuntime == null ||
-                string.Compare(highestLoadedRuntime.GetVersionString(), runtime.GetVersionString(), StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                highestLoadedRuntime = runtime;
-            }
-        }
-        if (highestLoadedRuntime == null)
-        {
-            m_log.WriteLine("Could not enumerate .NET runtimes on the system.");
-            return false;
-        }
-
-        var version = highestLoadedRuntime.GetVersionString();
-        m_log.WriteLine("Highest Runtime in process is version {0}", version);
-        if (version.StartsWith("v2"))
-        {
-            throw new ApplicationException("Object logging only supported on V4.0 .NET runtimes.");
-        }
-
-        ICLRProfiling clrProfiler = highestLoadedRuntime.GetProfilingInterface();
-        if (clrProfiler == null)
-        {
-            throw new ApplicationException("Could not get Attach Profiler interface (target runtime must be at least V4.0))");
-        }
-
-        string myPath = Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName;
-        string myDir = Path.GetDirectoryName(myPath);
-        string EtwClrProfilerPath = Path.Combine(myDir, "EtwClrProfiler.dll");
-
-#if DEBUG
-        if (!File.Exists(EtwClrProfilerPath))
-        {
-            var buildPath = Path.Combine(myDir, @"..\..\..\..\ETWClrProfiler\Debug\x86\EtwClrProfiler.dll");
-            if (File.Exists(buildPath))
-                EtwClrProfilerPath = buildPath;
-        }
-#endif
-        if (!File.Exists(EtwClrProfilerPath))
-        {
-            throw new ApplicationException("Could not find profiler DLL " + EtwClrProfilerPath);
-        }
-
-        // Warn the user to unsuspend win8 apps if 3 seconds goes by 
-        bool attached = false;
-        ThreadPool.QueueUserWorkItem(delegate
-        {
-            Thread.Sleep(3000);
-            if (!attached)
-            {
-                m_log.WriteLine("[Can't Attach Yet... Bring Win8 Apps to the forground.]");
-                m_log.Flush();
-            }
-        });
-
-        try
-        {
-            // Wait 30 seconds because you may have to wake the process for win8 
-            m_log.WriteLine("{0,5:n1}s: Trying to attach a profiler.", sw.Elapsed.TotalSeconds);
-            // We use the provider guid as the GUID of the COM object for the profiler too. 
-            int ret = clrProfiler.AttachProfiler(processID, 30000, ETWClrProfilerTraceEventParser.ProviderGuid, EtwClrProfilerPath, IntPtr.Zero, 0);
-            attached = true;
-            m_log.WriteLine("{0,5:n1}s: Done Attaching ETLClrProfiler ret = {1}", sw.Elapsed.TotalSeconds, ret);
-        }
-        catch (COMException e)
-        {
-            if (e.ErrorCode == unchecked((int)0x800705B4))  // Timeout
-            {
-                throw new ApplicationException("Timeout: For Win8 Apps this may because they were suspended.  Make sure to switch to the app.");
-            }
-            // TODO Confirm this error code is what I think it is. 
-            if (e.ErrorCode == unchecked((int)0x8013136a))
-            {
-                throw new ApplicationException("A CLR Profiler has already been attached.  You cannot attach another. (a process restart will fix)");
-            }
-
-            m_log.WriteLine("Failure attaching profiler, see the Windows Application Event Log for details.");
-            throw;
-        }
-
-        m_log.WriteLine("Attached ETWClrProfiler.");
-        return true;
     }
 
     /// <summary>
@@ -1668,72 +1545,6 @@ public class GCHeapDumper
         return ret;
     }
 
-    /// <summary>
-    /// The debugger has a variety of callbacks.  This class is my 'hook' into these callbacks.  
-    /// </summary>
-    private class GCHeapDumpDebuggerCallbacks : Profiler.DebuggerCallBacks
-    {
-        public GCHeapDumpDebuggerCallbacks()
-        {
-            m_LastCallBackTimeUtc = DateTime.UtcNow;
-        }
-        public bool WaitForFullAttach(int timeout)
-        {
-            for (; ; )
-            {
-                Thread.Sleep(300);
-                var waitingMSec = (DateTime.UtcNow - m_LastCallBackTimeUtc).Milliseconds;
-                // Console.WriteLine("msec since last callback = {0}", waitingMSec);
-                if (waitingMSec > 300)
-                {
-                    if (m_AssembliesLoaded > 0 && m_ThreadsLoaded > 0)
-                    {
-                        return true;
-                    }
-
-                    if (waitingMSec > timeout)
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        #region private
-        public override void CreateProcess(ICorDebugProcess pProcess)
-        {
-            Console.WriteLine("CreateProcess");
-            m_LastCallBackTimeUtc = DateTime.UtcNow;
-            base.CreateProcess(pProcess);
-        }
-        public override void CreateThread(ICorDebugAppDomain pAppDomain, ICorDebugThread thread)
-        {
-            Console.WriteLine("CreateThread");
-            m_LastCallBackTimeUtc = DateTime.UtcNow;
-            m_ThreadsLoaded++;
-            base.CreateThread(pAppDomain, thread);
-        }
-        public override void LoadModule(ICorDebugAppDomain pAppDomain, ICorDebugModule pModule)
-        {
-            Console.WriteLine("LoadModule");
-            m_LastCallBackTimeUtc = DateTime.UtcNow;
-            base.LoadModule(pAppDomain, pModule);
-        }
-        public override void LoadAssembly(ICorDebugAppDomain pAppDomain, ICorDebugAssembly pAssembly)
-        {
-            Console.WriteLine("LoadAssembly");
-            m_LastCallBackTimeUtc = DateTime.UtcNow;
-            m_AssembliesLoaded++;
-            base.LoadAssembly(pAppDomain, pAssembly);
-        }
-
-
-        private DateTime m_LastCallBackTimeUtc;
-        private int m_ThreadsLoaded;
-        private int m_AssembliesLoaded;
-        #endregion
-    }
-
     private int m_processID;
     private string m_outputFileName;
     private Stream m_outputStream;
@@ -1779,694 +1590,6 @@ public class GCHeapDumper
 // These are not needed in V4.0 but for V2.0 they are not present. 
 public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6);
 public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
-
-/// <summary>
-/// This is a helper class that knows how to find local variables and static variable names for GC roots. 
-/// </summary>
-internal static class GCRootNames
-{
-    /// <summary>
-    /// Enumerates all threads and calls onLocalVar(objRef, localName, methodName, className, moduleName, threadID, appDomainName)
-    /// </summary>
-    public static ThreadContextSet EnumerateThreadRoots(ICorDebugProcess proc, Action<Address, string, string, string, string, int, string> onLocalVar)
-    {
-        Debug.Assert(pointerSize == 4 || pointerSize == 8);
-        var contextsForThreadLocalVars = new ThreadContextSet();
-
-        int runningOnEntry;
-        proc.IsRunning(out runningOnEntry);
-        Stopwatch timeStopped = null;
-        if (runningOnEntry != 0)
-        {
-            Console.WriteLine("Stopping in EnumerateThreadRoots");
-            Thread.Sleep(100);      // Ensure that the debuggee got some CPU recently
-            proc.Stop(5000);        // TODO FIX NOW failure?
-            timeStopped = Stopwatch.StartNew();
-        }
-        try
-        {
-            uint fetched;
-            StringBuilder buffer = new StringBuilder(1024);
-            char[] moduleNameBuffer = new Char[260];
-            int bufferSizeRet;
-
-            // Get all the threads (We dont' use the enumerator directly because we will let the process run.  
-            ICorDebugThreadEnum threadEnum;
-            proc.EnumerateThreads(out threadEnum);
-            var threadBuff = new ICorDebugThread[1];
-            var threads = new List<ICorDebugThread>(16);
-            for (; ; )      // For all threads
-            {
-                threadEnum.Next(1, threadBuff, out fetched);
-                if (fetched == 0)
-                {
-                    break;
-                }
-
-                threads.Add(threadBuff[0]);
-            }
-
-            // Enumerate the threads 
-            foreach (var thread in threads)
-            {
-                AllowProgramToRun(proc, runningOnEntry, timeStopped);
-                try
-                {
-                    uint threadID;
-                    thread.GetID(out threadID);
-
-                    ICorDebugChainEnum chainEnum;
-                    ICorDebugChain[] chains = new ICorDebugChain[1];
-                    thread.EnumerateChains(out chainEnum);
-                    for (; ; ) // For all Chains in the thread
-                    {
-                        chainEnum.Next(1, chains, out fetched);
-                        if (fetched == 0)
-                        {
-                            break;
-                        }
-
-                        ICorDebugFrameEnum frameEnum;
-                        ICorDebugFrame[] frames = new ICorDebugFrame[1];
-                        chains[0].EnumerateFrames(out frameEnum);
-                        for (; ; )  // For all frames in the chain
-                        {
-                            frameEnum.Next(1, frames, out fetched);
-                            if (fetched == 0)
-                            {
-                                break;
-                            }
-
-                            var ilFrame = frames[0] as ICorDebugILFrame;
-                            if (ilFrame == null)
-                            {
-                                continue;
-                            }
-
-                            var refLocalVars = new List<Address>();
-
-                            ICorDebugValueEnum valueEnum;
-                            ilFrame.EnumerateArguments(out valueEnum);
-                            EnumerateLocalVars(valueEnum, refLocalVars, proc, pointerSize);
-
-                            ilFrame.EnumerateLocalVariables(out valueEnum);
-                            EnumerateLocalVars(valueEnum, refLocalVars, proc, pointerSize);
-
-                            ICorDebugFunction function;
-                            frames[0].GetFunction(out function);
-
-                            ICorDebugModule module;
-                            function.GetModule(out module);
-
-                            ICorDebugAssembly assembly;
-                            module.GetAssembly(out assembly);
-
-                            ICorDebugAppDomain appDomain;
-                            assembly.GetAppDomain(out appDomain);
-
-                            uint nameSize;
-                            appDomain.GetName((uint)buffer.Capacity, out nameSize, buffer);
-                            var appDomainName = buffer.ToString().Replace(' ', '_');  // We don't want spaces.  
-                            contextsForThreadLocalVars.Add(appDomainName, (int)threadID, ilFrame);
-
-                            if (refLocalVars.Count > 0)
-                            {
-                                IMetadataImport metaData;
-                                var guid = new Guid("FCE5EFA0-8BBA-4f8e-A036-8F2022B08466");
-                                module.GetMetaDataInterface(guid, out metaData);
-
-                                module.GetName((uint)moduleNameBuffer.Length, out fetched, moduleNameBuffer);
-                                string moduleName = new String(moduleNameBuffer, 0, (int)(fetched - 1)); // Remove trailing null
-
-                                uint methodToken;
-                                function.GetToken(out methodToken);
-
-                                int methodTypeToken;
-                                uint methodAttr, sigBlobSize, codeRVA, implFlags;
-                                IntPtr sigBlob;
-                                buffer.Length = 0;
-                                metaData.GetMethodProps(methodToken, out methodTypeToken, buffer, buffer.Capacity, out bufferSizeRet,
-                                    out methodAttr, out sigBlob, out sigBlobSize, out codeRVA, out implFlags);
-                                string methodName = buffer.ToString();
-
-                                var className = Regex.Replace(GetMetaDataTypeName(metaData, methodTypeToken, buffer), @"`\d+", "");
-
-                                for (int i = 0; i < refLocalVars.Count; i++)
-                                {
-                                    onLocalVar(refLocalVars[i], "Local" + i, methodName, className, moduleName, (int)threadID, appDomainName);
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine("Error enumerating thread, continuing: {0}", e.Message);
-                    Console.WriteLine("Error enumerating thread, continuing: {0}", e.Message);       // TODO FIX NOW
-                }
-            }
-        }
-        finally
-        {
-            if (runningOnEntry != 0)
-            {
-                Console.WriteLine("Continuing in EnumerateThreadRoots");
-                proc.Continue(0);
-            }
-        }
-        return contextsForThreadLocalVars;
-    }
-
-    /// <summary>
-    /// Allows the program controlled by proc to run some of the time if 'runningOnEntry is non-zero. 
-    /// (otherwise it does nothing).  timeStopped is a stopwatch which was started when the program
-    /// was last stopped.  (we allow it only 5th of the time).  
-    /// </summary>
-    private static void AllowProgramToRun(ICorDebugProcess proc, int runningOnEntry, Stopwatch timeStopped)
-    {
-        if (runningOnEntry == 0)
-        {
-            return;
-        }
-
-        if (timeStopped.ElapsedMilliseconds > 50)
-        {
-            Console.WriteLine("Used 50 msec.  Letting proc run 200 msec");
-            proc.Continue(0);
-            Thread.Sleep(200);
-            proc.Stop(5000);
-            timeStopped.Reset();
-            timeStopped.Start();
-        }
-    }
-
-    /// <summary>
-    /// Enumerates all statics in a process and calls 'onStaticVar(objRef, fieldName, className, moduleName, threadID, appDomainName) on each. 
-    /// The 'threadID is 0 for normal statics and non-zero for a thread local [ThreadStatic] statics. 
-    /// 
-    /// TODO contextsForThreadLocalVars is a bit ugly.  
-    /// </summary>
-    public static void EnumerateStaticRoots(ICorDebugProcess proc, ThreadContextSet contextsForThreadLocalVars, Action<Address, string, string, string, int, string> onStaticVar,
-        Action<string, string> onClass = null)
-    {
-
-        int runningOnEntry;
-        proc.IsRunning(out runningOnEntry);
-        Stopwatch timeStopped = null;
-        if (runningOnEntry != 0)
-        {
-            Console.WriteLine("Stopping in EnumerateStaticRoots");
-            Thread.Sleep(100);      // Ensure that the debuggee got some CPU recently
-            proc.Stop(5000);        // TODO FIX NOW failure?
-            timeStopped = Stopwatch.StartNew();
-        }
-        try
-        {
-            uint fetched;
-            StringBuilder buffer = new StringBuilder(1024);
-            char[] moduleNameBuffer = new Char[260];
-            int bufferSizeRet;
-
-            ICorDebugAppDomainEnum appDomainEnum;
-            proc.EnumerateAppDomains(out appDomainEnum);
-            var appDomains = new ICorDebugAppDomain[1];
-            for (; ; )
-            {
-                appDomainEnum.Next(1, appDomains, out fetched);
-                if (fetched == 0)
-                {
-                    break;
-                }
-
-                uint nameSize;
-                appDomains[0].GetName((uint)buffer.Capacity, out nameSize, buffer);
-                var appDomainName = buffer.ToString().Replace(' ', '_');        // We don't want spaces 
-
-                ICorDebugAssemblyEnum assemblyEnum;
-                appDomains[0].EnumerateAssemblies(out assemblyEnum);
-                var assemblies = new ICorDebugAssembly[1];
-                for (; ; )
-                {
-                    assemblyEnum.Next(1, assemblies, out fetched);
-                    if (fetched == 0)
-                    {
-                        break;
-                    }
-
-                    ICorDebugModuleEnum moduleEnum;
-                    assemblies[0].EnumerateModules(out moduleEnum);
-                    var modules = new ICorDebugModule[1];
-                    for (; ; )      // For every module
-                    {
-                        moduleEnum.Next(1, modules, out fetched);
-                        if (fetched == 0)
-                        {
-                            break;
-                        }
-
-                        IMetadataImport metaData;
-                        var guid = new Guid("FCE5EFA0-8BBA-4f8e-A036-8F2022B08466");
-                        modules[0].GetMetaDataInterface(guid, out metaData);
-
-                        modules[0].GetName((uint)moduleNameBuffer.Length, out fetched, moduleNameBuffer);
-                        string moduleName = new String(moduleNameBuffer, 0, (int)(fetched - 1)); // Remove trailing null
-
-                        IntPtr typeEnum = IntPtr.Zero;
-                        int typeToken;
-                        for (; ; )     // For every type
-                        {
-                            metaData.EnumTypeDefs(ref typeEnum, out typeToken, 1, out fetched);
-                            if (fetched == 0)
-                            {
-                                break;
-                            }
-
-                            AllowProgramToRun(proc, runningOnEntry, timeStopped);
-                            try
-                            {
-                                ICorDebugClass class_ = null;
-                                modules[0].GetClassFromToken((uint)typeToken, out class_);
-
-                                var className = Regex.Replace(GetMetaDataTypeName(metaData, typeToken, buffer), @"`\d+", "");
-
-                                IntPtr fieldEnum = IntPtr.Zero;
-                                int fieldToken;
-                                for (; ; )      // For every field 
-                                {
-                                    metaData.EnumFields(ref fieldEnum, typeToken, out fieldToken, 1, out fetched);
-                                    if (fetched == 0)
-                                    {
-                                        break;
-                                    }
-
-                                    int fieldTypeToken, fieldAttr, sigBlobSize, cplusTypeFlab, fieldLiteralValSize;
-                                    IntPtr sigBlob, fieldLiteralVal;
-                                    metaData.GetFieldProps(fieldToken, out fieldTypeToken, null, 0, out bufferSizeRet,
-                                        out fieldAttr, out sigBlob, out sigBlobSize, out cplusTypeFlab, out fieldLiteralVal, out fieldLiteralValSize);
-
-                                    if ((FieldAttributes.Static & (FieldAttributes)fieldAttr) == 0)
-                                    {
-                                        continue;
-                                    }
-
-                                    if ((FieldAttributes.Literal & (FieldAttributes)fieldAttr) != 0)
-                                    {
-                                        continue;
-                                    }
-
-                                    // TODO check the sig blob and filter non-ref types.  
-
-                                    // Fetch the value, returns 0 if there is none, returns a special error code if it is a threadStatic var.  
-                                    var objRef = FetchStaticRefValue(class_, className, fieldToken, metaData, null);
-                                    if (!IsError(objRef))
-                                    {
-                                        var fieldName = GetFieldName(metaData, fieldToken, buffer);
-                                        // Console.WriteLine("Found static root 0x{0:x} {1}.{2} thread {3}", objRef, className, fieldName, 0);
-                                        onStaticVar(objRef, fieldName, className, moduleName, 0, appDomainName);
-                                    }
-                                    else if (objRef == PossibleThreadStaticRef)
-                                    {
-                                        // Thread local case.   
-                                        var fieldName = GetFieldName(metaData, fieldToken, buffer);
-                                        // Console.WriteLine("Seeing if {0}.{1} is thread local.", className, fieldName);
-                                        foreach (var contextForThreadLocalsVars in contextsForThreadLocalVars.Contexts)
-                                        {
-                                            if (appDomainName != contextForThreadLocalsVars.AppDomainName)
-                                            {
-                                                continue;
-                                            }
-
-                                            // Console.WriteLine("Trying appDomain {0} thread {1}", contextForThreadLocalsVars.AppDomainName, contextForThreadLocalsVars.ThreadId);
-                                            objRef = FetchStaticRefValue(class_, className, fieldToken, metaData, contextForThreadLocalsVars.Frame);
-                                            if (!IsError(objRef))
-                                            {
-                                                // Console.WriteLine("Found thread static root 0x{0:x} {1}.{2} appDomain {3} thread {4}", objRef, className, fieldName, contextForThreadLocalsVars.AppDomainName, contextForThreadLocalsVars.ThreadId);
-                                                onStaticVar(objRef, fieldName, className, moduleName, contextForThreadLocalsVars.ThreadId, contextForThreadLocalsVars.AppDomainName);
-                                            }
-                                            else if (objRef != 0)       // Only the 0 code is OK to continue.  
-                                            {
-                                                // Console.WriteLine("Told not to continue fetching thread statics.");
-                                                break;
-                                            }
-                                        }
-                                        // Console.WriteLine("Succeeded with thread local field {0}", fieldName);
-                                    }
-                                }
-
-                                onClass?.Invoke(className, moduleName);
-                            }
-                            catch (Exception e)
-                            {
-                                Debug.WriteLine("Error during static Enumeration ignoring: {0}", e.Message);
-                                Console.WriteLine("Error during static Enumeration ignoring: {0}", e.Message);     // TODO FIX NOW 
-                            }
-                        }
-                        metaData.CloseEnum(typeEnum);
-                    }
-                }
-            }
-        }
-        finally
-        {
-            if (runningOnEntry != 0)
-            {
-                Console.WriteLine("Continuing in EnumerateStaticRoots");
-                proc.Continue(0);
-            }
-        }
-    }
-
-    // The following functions don't really belong on GCRootNames, as they are general purpose, but given 
-    // that the class is internal, it does not matter much...
-    /// <summary>
-    /// Get the name for a type.  buffer is there efficiency (reusing a buffer)
-    /// metaDataOut returns a metaData pointer if it was needed to fetch the name.  (can be ignored if you don't need it). 
-    /// </summary>
-    internal static string GetTypeName(ICorDebugType corType, out string moduleFilePath, out IMetadataImport metaDataOut, StringBuilder buffer = null)
-    {
-        metaDataOut = null;
-        CorElementType corElemType;
-        corType.GetType(out corElemType);
-        uint rank;
-
-        moduleFilePath = "mscorlib.dll";    // TODO FIX NOW we need to do this better to get the full path.  
-        switch (corElemType)
-        {
-            case CorElementType.ELEMENT_TYPE_OBJECT:
-                return "System.Object";
-            case CorElementType.ELEMENT_TYPE_STRING:
-                return "System.String";
-            case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
-                return "System.TypedReference";
-            case CorElementType.ELEMENT_TYPE_I:
-                return "System.IntPtr";
-            case CorElementType.ELEMENT_TYPE_U:
-                return "System.UIntPtr";
-            case CorElementType.ELEMENT_TYPE_R8:
-                return "System.Double";
-            case CorElementType.ELEMENT_TYPE_R4:
-                return "System.Single";
-            case CorElementType.ELEMENT_TYPE_I8:
-                return "System.Int64";
-            case CorElementType.ELEMENT_TYPE_U8:
-                return "System.UInt64";
-            case CorElementType.ELEMENT_TYPE_I4:
-                return "System.Int32";
-            case CorElementType.ELEMENT_TYPE_U4:
-                return "System.UInt32";
-            case CorElementType.ELEMENT_TYPE_I2:
-                return "System.Int16";
-            case CorElementType.ELEMENT_TYPE_U2:
-                return "System.UInt16";
-            case CorElementType.ELEMENT_TYPE_I1:
-                return "System.Int8";
-            case CorElementType.ELEMENT_TYPE_U1:
-                return "System.UInt8";
-            case CorElementType.ELEMENT_TYPE_CHAR:
-                return "System.Char";
-            case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                return "System.Boolean";
-            case CorElementType.ELEMENT_TYPE_ARRAY:
-                corType.GetRank(out rank);
-                Debug.Assert(rank >= 1);
-            DO_ARRAY:
-                ICorDebugType elemType;
-                corType.GetFirstTypeParameter(out elemType);
-                var elemName = GetTypeName(elemType, out moduleFilePath, out metaDataOut, buffer);
-                return elemName + "[" + new string(',', (int)rank - 1) + "]";
-
-            case CorElementType.ELEMENT_TYPE_SZARRAY:
-                rank = 1;
-                goto DO_ARRAY;
-
-            case CorElementType.ELEMENT_TYPE_CLASS:
-            case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                break;
-            default:
-                return "UNKNOWN_TYPE(" + corElemType.ToString() + ")";
-        }
-
-        ICorDebugClass corClass = null;
-        ICorDebugModule corModule = null;
-        try
-        {
-            corType.GetClass(out corClass);
-            corClass.GetModule(out corModule);
-
-            // Get the module name
-            char[] moduleNameChars = new char[1024];
-            uint moduleNameLen;
-            corModule.GetName((uint)moduleNameChars.Length, out moduleNameLen, moduleNameChars);
-            moduleFilePath = new string(moduleNameChars, 0, (int)moduleNameLen - 1);  // -1 since the len includes the terminator;
-        }
-        catch (Exception)
-        {
-            Console.WriteLine("Error: looking up class for a type with element type {0} !, will have a poor name", corElemType);
-            moduleFilePath = "";
-            return "UNKNOWN_TYPE(" + corElemType.ToString() + ")";
-        }
-
-        if (buffer == null)
-        {
-            buffer = new StringBuilder(1024);
-        }
-
-        var guid = new Guid("FCE5EFA0-8BBA-4f8e-A036-8F2022B08466");
-        IMetadataImport metaData;
-        corModule.GetMetaDataInterface(ref guid, out metaData);
-        metaDataOut = metaData;
-
-        uint classToken;
-        corClass.GetToken(out classToken);
-
-        var ret = GCRootNames.GetMetaDataTypeName(metaData, (int)classToken, buffer);
-
-        // Is it a generic type TODO better way of detecting? 
-        // TODO FIX NOW issue with nested generic types 
-        var match = Regex.Match(ret, @"(.*)`\d+$");
-        if (match.Success)
-        {
-            ret = match.Groups[1].Value + "<";
-            ICorDebugTypeEnum typeEnum;
-            corType.EnumerateTypeParameters(out typeEnum);
-            var typeParams = new ICorDebugType[1];
-            uint fetched;
-            bool first = true;
-            for (; ; )
-            {
-                typeEnum.Next(1, typeParams, out fetched);
-                if (fetched == 0)
-                {
-                    break;
-                }
-
-                if (!first)
-                {
-                    ret += ",";
-                }
-
-                first = false;
-                string paramModulePath;
-                IMetadataImport paramMetaData;
-                ret += GetTypeName(typeParams[0], out paramModulePath, out paramMetaData, buffer);
-            }
-            ret += ">";
-        }
-        return ret;
-    }
-
-    public static readonly int pointerSize = IntPtr.Size;
-
-    public static bool IsReferenceType(CorElementType elementType)
-    {
-        switch (elementType)
-        {
-            case CorElementType.ELEMENT_TYPE_STRING:
-            case CorElementType.ELEMENT_TYPE_OBJECT:
-            case CorElementType.ELEMENT_TYPE_ARRAY:
-            case CorElementType.ELEMENT_TYPE_SZARRAY:
-            case CorElementType.ELEMENT_TYPE_CLASS:
-                return true;
-        }
-        return false;
-    }
-    public static bool IsPrimitiveType(CorElementType corElementType)
-    {
-        switch (corElementType)
-        {
-            case CorElementType.ELEMENT_TYPE_I:
-            case CorElementType.ELEMENT_TYPE_U:
-            case CorElementType.ELEMENT_TYPE_R8:
-            case CorElementType.ELEMENT_TYPE_R4:
-            case CorElementType.ELEMENT_TYPE_I8:
-            case CorElementType.ELEMENT_TYPE_U8:
-            case CorElementType.ELEMENT_TYPE_I4:
-            case CorElementType.ELEMENT_TYPE_U4:
-            case CorElementType.ELEMENT_TYPE_I2:
-            case CorElementType.ELEMENT_TYPE_U2:
-            case CorElementType.ELEMENT_TYPE_I1:
-            case CorElementType.ELEMENT_TYPE_U1:
-            case CorElementType.ELEMENT_TYPE_CHAR:
-            case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                return true;
-        }
-        return false;
-    }
-
-    #region private
-    /// <summary>
-    /// Stores a context needed to resolve a thread-static variable.  Basically it is a pair appdomain-thread.   
-    /// The context is a ICorDebugFrame that has that appdomain-thread combination.  
-    /// 
-    /// This type is really private to the GCRootNames class.  
-    /// </summary>
-    public class ThreadContextSet
-    {
-        public void Add(string appDomainName, int threadId, ICorDebugFrame frame)
-        {
-            var key = appDomainName + threadId.ToString();
-            ThreadContext ret;
-            if (m_contexts.TryGetValue(key, out ret))
-            {
-                return;
-            }
-            // Console.WriteLine("Interned context Appdomain: {0} ThreadID {1}", appDomainName, threadId);
-            m_contexts.Add(key, new ThreadContext { AppDomainName = appDomainName, ThreadId = threadId, Frame = frame });
-        }
-
-        public IEnumerable<ThreadContext> Contexts { get { return m_contexts.Values; } }
-
-        public class ThreadContext
-        {
-            public string AppDomainName;
-            public int ThreadId;
-            public ICorDebugFrame Frame;
-        }
-
-        #region private
-        private Dictionary<string, ThreadContext> m_contexts = new Dictionary<string, ThreadContext>();
-        #endregion
-    }
-
-    private const Address DoNotContinueError = 2;
-    private const Address PossibleThreadStaticRef = 1;
-    private static bool IsError(Address objRef) { return objRef < 8; }
-
-    private static Address FetchStaticRefValue(ICorDebugClass class_, string className, int fieldToken, IMetadataImport metaData, ICorDebugFrame context)
-    {
-        ICorDebugValue fieldValue;
-        try
-        {
-            class_.GetStaticFieldValue((uint)fieldToken, context, out fieldValue);
-        }
-        catch (Exception e)
-        {
-            var asCom = e as COMException;
-            if (asCom != null)
-            {
-                // 0x8013131A is the 'uniniitalized' error.  
-                // 0x80131303 is the 'class not loaded' error 
-                // We can safely skip both of these as the variable does not really exist yet, so it can't be root.  
-                if ((uint)asCom.ErrorCode == 0x8013131A || (uint)asCom.ErrorCode == 0x80131303)
-                {
-                    // Console.WriteLine("field not initialized.");
-                    return 0;
-                }
-            }
-            if (e is ArgumentException && context == null)
-            {
-                return PossibleThreadStaticRef;
-            }
-
-            Console.WriteLine("Error: looking up thread static {0}.{1} : {2}", className, GetFieldName(metaData, fieldToken, null), e.Message);
-            return DoNotContinueError;
-        }
-
-        CorElementType fieldElemType;
-        fieldValue.GetType(out fieldElemType);
-        if (!IsReferenceType(fieldElemType))
-        {
-            // Console.WriteLine("Field not a reference type.");
-            return DoNotContinueError;
-        }
-
-        var fieldRefValue = fieldValue as ICorDebugReferenceValue;
-        if (fieldRefValue == null)
-        {
-            Console.WriteLine("Could not dereference field value.");
-            return DoNotContinueError;
-        }
-
-        Address objRef;
-        fieldRefValue.GetValue(out objRef);
-        if (objRef == 0)
-        {
-            // Console.WriteLine("Null value.");
-            return 0;
-        }
-        return objRef;
-    }
-
-    private static string GetFieldName(IMetadataImport metaData, int fieldToken, StringBuilder buffer)
-    {
-        if (buffer == null)
-        {
-            buffer = new StringBuilder(1024);
-        }
-
-        int fieldTypeToken, fieldAttr, sigBlobSize, cplusTypeFlab, fieldLiteralValSize, bufferSizeRet;
-        IntPtr sigBlob, fieldLiteralVal;
-        metaData.GetFieldProps(fieldToken, out fieldTypeToken, buffer, buffer.Capacity, out bufferSizeRet,
-            out fieldAttr, out sigBlob, out sigBlobSize, out cplusTypeFlab, out fieldLiteralVal, out fieldLiteralValSize);
-        return buffer.ToString();
-    }
-
-    private static void EnumerateLocalVars(ICorDebugValueEnum valueEnum, List<Address> refLocalVars, ICorDebugProcess proc, int pointerSize)
-    {
-
-        uint fetched;
-        ICorDebugValue[] values = new ICorDebugValue[1];
-        for (; ; )
-        {
-            valueEnum.Next(1, values, out fetched);
-            if (fetched == 0)
-            {
-                break;
-            }
-
-            var refVal = values[0] as ICorDebugReferenceValue;
-            if (refVal != null)
-            {
-                Address heapRef;
-                refVal.GetValue(out heapRef);
-                refLocalVars.Add(heapRef);
-            }
-        }
-    }
-
-    /// <summary>
-    /// This version does not give type parmeters for a generic type.  It also has the '`\d* suffix for generic types.  
-    /// </summary>
-    private static string GetMetaDataTypeName(IMetadataImport metaData, int typeToken, StringBuilder buffer)
-    {
-        TypeAttributes typeAttr;
-        int extendsToken;
-        int typeNameLen;
-        metaData.GetTypeDefProps(typeToken, buffer, buffer.Capacity, out typeNameLen, out typeAttr, out extendsToken);
-        string className = buffer.ToString();
-
-        if ((typeAttr & TypeAttributes.VisibilityMask) >= TypeAttributes.NestedPublic)
-        {
-            int enclosingClassToken;
-            metaData.GetNestedClassProps(typeToken, out enclosingClassToken);
-            string enclosingClassName = GetMetaDataTypeName(metaData, enclosingClassToken, buffer);
-            className = enclosingClassName + "." + className;
-        }
-        return className;
-    }
-
-    #endregion
-}
 
 /// <summary>
 /// Gets at Win8 Package information.  

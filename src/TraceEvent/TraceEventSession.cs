@@ -1085,6 +1085,19 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     asArray[2] = (byte)(intVal >> 16);
                     asArray[3] = (byte)(intVal >> 24);
                 }
+                else if (data is long)
+                {
+                    long longVal = (long)data;
+                    asArray = new byte[8];
+                    asArray[0] = (byte)longVal;
+                    asArray[1] = (byte)(longVal >> 8);
+                    asArray[2] = (byte)(longVal >> 16);
+                    asArray[3] = (byte)(longVal >> 24);
+                    asArray[4] = (byte)(longVal >> 32);
+                    asArray[5] = (byte)(longVal >> 40);
+                    asArray[6] = (byte)(longVal >> 48);
+                    asArray[7] = (byte)(longVal >> 56);
+                }
                 fixed (byte* filterDataPtr = asArray)
                 {
                     if (asArray != null)
