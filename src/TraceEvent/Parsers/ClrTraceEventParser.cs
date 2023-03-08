@@ -12962,6 +12962,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xa669021c), unchecked((short)0xc450), unchecked((short)0x4609), 0xa0, 0x35, 0x5a, 0xf5, 0x9a, 0xf4, 0xdf, 0x18);
         public enum Keywords : long
         {
+            GC = 0x1,
             Loader = 0x8,
             Jit = 0x10,
             NGen = 0x20,
@@ -12996,7 +12997,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             Compilation = 0x1000000000,
 
-            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Loader + CodeSymbolsRundown +
+            Default = ForceEndRundown + GC + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Loader + CodeSymbolsRundown +
                       Compilation,
         };
 
