@@ -557,7 +557,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                             if (mang.GC.m_stats.IsServerGCUsed == 1)
                             {
-                                mang.GC.m_stats.HeapCount = 0;
                                 mang.GC.m_stats.serverGCThreads = new Dictionary<int, int>(2);
 
                                 foreach (var procThread in traceProc.Threads)
@@ -571,8 +570,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                     // Both should be accumulated to correctly compute the heap count. 
                                     if (procThread.ThreadInfo.StartsWith(".NET Server GC"))
                                     {
-                                        mang.GC.m_stats.HeapCount++;
-
                                         // When the heap # is available, use it.
                                         if (procThread.ThreadInfo.StartsWith(".NET Server GC Thread"))
                                         {
@@ -4538,19 +4535,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static void ProcessGlobalHistory(TraceLoadedDotNetRuntime proc, GCGlobalHeapHistoryTraceData data)
         {
-            if (proc.GC.m_stats.IsServerGCUsed == -1)
+            // We detected whether we are using Server GC now.
+            proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
+            if (proc.GC.m_stats.HeapCount == -1)
             {
-                // We detected whether we are using Server GC now.
-                proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
-                if (proc.GC.m_stats.HeapCount == -1)
-                {
-                    proc.GC.m_stats.HeapCount = data.NumHeaps;
-                }
-
-                if (proc.GC.m_stats.IsServerGCUsed == 1)
-                {
-                    proc.GC.m_stats.serverGCThreads = new Dictionary<int, int>(data.NumHeaps);
-                }
+                proc.GC.m_stats.HeapCount = data.NumHeaps;
             }
 
             TraceGC _event = GetLastGC(proc);

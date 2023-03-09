@@ -91,8 +91,8 @@
                     <MenuItem Header="Merge and Zip All" Click="DoMergeAndZipAll" ToolTip="Merge and zip all unmerged traces in the current folder."/>
                 </MenuItem>
                 <MenuItem Header="_Memory">
-                    <MenuItem Header="_Take Heap Snapshot" Command="{x:Static src:MainWindow.HeapSnapshotCommand}" ToolTip="Take a snapshot of of the CLR GC Heap."/>
-                    <MenuItem Header="Take Heap Snapshot From Dump" Command="{x:Static src:MainWindow.HeapSnapshotFromDumpCommand}" ToolTip="Take a snapshot of of the CLR GC Heap from a process Dump."/>
+                    <MenuItem Header="_Take Heap Snapshot" Command="{x:Static src:MainWindow.HeapSnapshotCommand}" ToolTip="Take a snapshot of the CLR GC Heap."/>
+                    <MenuItem Header="Take Heap Snapshot From Dump" Command="{x:Static src:MainWindow.HeapSnapshotFromDumpCommand}" ToolTip="Take a snapshot of the CLR GC Heap from a process Dump."/>
                 </MenuItem>
                 <MenuItem Header="Si_ze">
                     <MenuItem Header="_DirectorySize"  Command="{x:Static src:MainWindow.DirectorySizeCommand}" ToolTip="Computes the disk usage (recursively) for a directory.">
@@ -112,13 +112,16 @@
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Options">
-                    <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
-                    <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
                     <MenuItem Header="_Authentication">
                         <MenuItem Header="Use _Git Credential Manager" x:Name="Authentication_UseGitCredentialManager" IsChecked="{Binding Path=AuthenticationViewModel.IsGitCredentialManagerEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" ToolTip="Use the Git Credential Manager to authenticate to GitHub and Azure DevOps."/>
                         <MenuItem Header="Use _Developer Identity for Azure DevOps"  x:Name="Authentication_UseManagedIdentityForAzureDevOps" IsChecked="{Binding Path=AuthenticationViewModel.IsDeveloperIdentityEnabled}" Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" ToolTip="Use Visual Studio or VS Code sign-in information to authenticate to Azure DevOps instances."/>
                         <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
                     </MenuItem>
+                    <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
+                    <MenuItem Header="_Experimental">
+                        <MenuItem Header="Show experimental GC features." x:Name="Option_ExperimentalGCFeatures" IsCheckable="true" Click="ToggleExperimentalGCFeatures" ToolTip="Enable or disable experimental GC features."/>
+                    </MenuItem>
+                    <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
                     <MenuItem Header="Theme">
                         <MenuItem Header="Light" x:Name="Theme_Light" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>
                         <MenuItem Header="Dark" x:Name="Theme_Dark" IsChecked="{Binding Path=ThemeViewModel.IsDarkTheme}" Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}"/>
@@ -130,7 +133,6 @@
                     <MenuItem Header="_Users Guide" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
                     <MenuItem Name ="VideoMenuEntry" Header="Getting started _Videos" Click="DoVideoClick"/>
                     <MenuItem Header="Get the _Latest Version" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="LatestVersion"/>
-                    <MenuItem Header="Give _Feedback or Ask a question" Click="DoFeedbackClick"/>
                     <MenuItem Header="_Reference Guide" Click="DoReferenceGuide"/>
                     <MenuItem Header="_Command Line Help" Click="DoCommandLineHelp"/>
                     <MenuItem Header="User Command Help" Click="DoUserCommandHelp"/>
@@ -140,6 +142,7 @@
                     <MenuItem Header="Viewing External Data" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="ViewingExternalData"/>
                     <MenuItem Header="Using EventSources" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsingEventSources"/>
                     <MenuItem Header="_Release Notes" Click="DoReleaseNotes"/>
+                    <MenuItem Header="Privacy Policy" Click="DoPrivacyPolicy" />
                     <MenuItem Header="_About" Click="DoAbout"/>
                 </MenuItem>
             </Menu>
@@ -164,8 +167,6 @@
             </TextBlock>
             <Button Name="WikiButton" Grid.Column="7" Margin="5,1,10,1" Content="Wiki" FontSize="9"
                     ToolTip="Goto the PerfView Wiki." Click="DoWikiClick"/>
-            <Button Name="FeedbackButton" Grid.Column="8" Margin="5,1,10,1" Content="Feedback" FontSize="9"
-                    ToolTip="Send feedback to the maintainers of PerfView." Click="DoFeedbackClick"/>
         </Grid>
         <src:StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom"/>
         <Grid>

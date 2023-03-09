@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -264,8 +265,8 @@ namespace Triggers
                 string heapDumpExe = Path.Combine(Utilities.SupportFiles.SupportFileDir, @"AMD64\HeapDump.exe");
                 string commandLine = heapDumpExe + " /MinSecForTrigger:" + MinSecForTrigger + " \"/StopOnPerfCounter:" + m_spec + "\"";
                 m_log.WriteLine("Exec: {0}", commandLine);
-                var options = new Utilities.CommandOptions().AddNoThrow().AddTimeout(Utilities.CommandOptions.Infinite).AddOutputStream(m_log);
-                m_cmd = Utilities.Command.Run(commandLine, options);
+                var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite).AddOutputStream(m_log);
+                m_cmd = Command.Run(commandLine, options);
                 if (m_cmd.ExitCode != 0)
                 {
                     m_log.WriteLine("Error: heapdump failed with error code {0}", m_cmd.ExitCode);
@@ -330,7 +331,7 @@ namespace Triggers
         private TextWriter m_log;
         public event Action<PerformanceCounterTrigger> m_triggered;
 #if PERFVIEW
-        private Utilities.Command m_cmd;
+        private Microsoft.Diagnostics.Utilities.Command m_cmd;
 #endif
 
         private Task m_task;

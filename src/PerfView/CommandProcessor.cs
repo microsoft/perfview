@@ -480,6 +480,8 @@ namespace PerfView
 
                     kernelModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
                     kernelModeSession.StackCompression = parsedArgs.StackCompression;
+                    kernelModeSession.LastBranchRecordingProfileSources = parsedArgs.LastBranchRecordingSources?.Parsed;
+                    kernelModeSession.LastBranchRecordingFilters = parsedArgs.LastBranchRecordingFilters?.Parsed ?? LbrFilterFlags.None;
                     kernelModeSession.CpuSampleIntervalMSec = parsedArgs.CpuSampleMSec;
                     if (parsedArgs.CircularMB != 0)
                     {
@@ -926,6 +928,11 @@ namespace PerfView
                             parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents, options);
                     }
 
+                    if (parsedArgs.UserCritContention)
+                    {
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-Win32k", new Guid("8C416C79-D49B-4F01-A467-E56D3AA8234C"), TraceEventLevel.Verbose, 0x10000000, options);
+                    }
+
                     // Start network monitoring capture if needed
                     if (parsedArgs.NetMonCapture)
                     {
@@ -1004,7 +1011,7 @@ namespace PerfView
                         heapSession.StopOnDispose = false;
                     }
 
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                 }
             }
         }
@@ -1191,7 +1198,7 @@ namespace PerfView
                 LogFile.WriteLine("Stopping tracing for sessions '" + s_KernelessionName +
                     "' and '" + s_UserModeSessionName + "'.");
 
-                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                 PerfViewLogger.Log.StopTracing();
                 PerfViewLogger.StopTime = DateTime.UtcNow;
                 PerfViewLogger.Log.StartAndStopTimes();
@@ -2797,6 +2804,16 @@ namespace PerfView
                 cmdLineArgs += " /StackCompression";
             }
 
+            if (parsedArgs.LastBranchRecordingSources != null)
+            {
+                cmdLineArgs += " " + Command.Quote("/LbrSources:" + parsedArgs.LastBranchRecordingSources.Text);
+            }
+
+            if (parsedArgs.LastBranchRecordingFilters != null)
+            {
+                cmdLineArgs += " " + Command.Quote("/LbrFilters:" + parsedArgs.LastBranchRecordingFilters.Text);
+            }
+
             if (parsedArgs.CircularMB != 0)
             {
                 cmdLineArgs += " /CircularMB:" + parsedArgs.CircularMB;
@@ -3152,6 +3169,11 @@ namespace PerfView
                 cmdLineArgs += " /RuntimeLoading";
             }
 
+            if (parsedArgs.UserCritContention)
+            {
+                cmdLineArgs += " /UserCritContention";
+            }
+
             if(parsedArgs.ImageIDsOnly)
             {
                 cmdLineArgs += " /ImageIDsOnly";
@@ -3420,15 +3442,12 @@ namespace PerfView
                 LogFile.WriteLine("[Use /NoNGenRundown if you don't care about pre V4.0 runtimes]");
             }
 
-            Stopwatch sw = Stopwatch.StartNew();
-            TraceEventSession clrRundownSession = null;
             try
             {
-                try
+                Stopwatch sw = Stopwatch.StartNew();
+                var rundownFile = Path.ChangeExtension(fileName, ".clrRundown.etl");
+                using (TraceEventSession clrRundownSession = new TraceEventSession(sessionName + "Rundown", rundownFile))
                 {
-                    var rundownFile = Path.ChangeExtension(fileName, ".clrRundown.etl");
-                    clrRundownSession = new TraceEventSession(sessionName + "Rundown", rundownFile);
-
                     clrRundownSession.BufferSizeMB = Math.Max(parsedArgs.BufferSizeMB, 256);
 
                     TraceEventProviderOptions options = null;
@@ -3557,23 +3576,13 @@ namespace PerfView
                     WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, rundownFile);
 
                     // Complete perfview rundown.
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                     PerfViewLogger.Log.StartAndStopTimes();
                     PerfViewLogger.Log.StopRundown();
+                }
 
-                    // Disable the rundown provider.
-                    clrRundownSession.Stop();
-                    clrRundownSession = null;
-                    sw.Stop();
-                    LogFile.WriteLine("CLR Rundown took {0:f3} sec.", sw.Elapsed.TotalSeconds);
-                }
-                finally
-                {
-                    if (clrRundownSession != null)
-                    {
-                        clrRundownSession.Stop();
-                    }
-                }
+                sw.Stop();
+                LogFile.WriteLine("CLR Rundown took {0:f3} sec.", sw.Elapsed.TotalSeconds);
             }
             catch (Exception e)
             {

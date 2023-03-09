@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
     /// <summary>
     /// A finite cache based with a least recently used algorithm for replacement.   
@@ -133,7 +133,7 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Sets the maxiumum number of key-value pairs the cache will keep.  (after that old ones are remvoed). 
+        /// Sets the maximum number of key-value pairs the cache will keep.  (after that old ones are removed). 
         /// </summary>
         public int MaxEntries
         {

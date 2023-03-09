@@ -8,22 +8,13 @@ namespace PerfView.Dialogs
     /// </summary>
     public partial class UnhandledExceptionDialog : WindowBase
     {
-        public UnhandledExceptionDialog(Window parentWindow, object exception, bool feedbackSent) : base(parentWindow)
+        public UnhandledExceptionDialog(Window parentWindow, object exception) : base(parentWindow)
         {
             InitializeComponent();
 
-            string reporting;
-            if (feedbackSent)
-            {
-                reporting = "The fact that this exception went unhanded is a programmer error.   The fact that this failure "
-                          + "occured has been logged so it can be fixed.  You don't need to take any action.\r\n";
-            }
-            else
-            {
-                reporting = "The fact that this exception went unhanded is a programmer error.   It should be reported "
+            string reporting = "The fact that this exception went unhanded is a programmer error.   It should be reported "
                           + "so it can be fixed.  Please set along the following stack trace information which will be "
                           + "useful in diagnosing the problem.\r\n";
-            }
 
             Body.Text = "An unhanded exception occured.\r\n"
                       + "\r\n"

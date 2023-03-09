@@ -870,7 +870,8 @@ namespace PerfView
             new DiagSessionPerfViewFile(),
             new LinuxPerfViewData(),
             new XmlTreeFile(),
-            new EventPipePerfViewData()
+            new EventPipePerfViewData(),
+            new StracePerfViewData()
         };
 
         #region private
@@ -5537,11 +5538,11 @@ table {
                         }
                     }
 
-                    ADD_EVENT_FRAME:
+                ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                    ADD_SAMPLE:
+                ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -5651,6 +5652,18 @@ table {
             {
                 ServerRequestScenarioConfiguration scenarioConfiguration = new ServerRequestScenarioConfiguration(eventLog);
                 ComputingResourceStateMachine stateMachine = new ComputingResourceStateMachine(stackSource, scenarioConfiguration, ComputingResourceViewType.Allocations);
+                stateMachine.Execute();
+            }
+            else if (streamName == "UserCrit Held CPU")
+            {
+                UserCritScenarioConfiguration scenarioConfiguration = new UserCritScenarioConfiguration(eventLog);
+                ComputingResourceStateMachine stateMachine = new ComputingResourceStateMachine(stackSource, scenarioConfiguration, ComputingResourceViewType.CPU);
+                stateMachine.Execute();
+            }
+            else if (streamName == "UserCrit Held ThreadTime")
+            {
+                UserCritScenarioConfiguration scenarioConfiguration = new UserCritScenarioConfiguration(eventLog);
+                ComputingResourceStateMachine stateMachine = new ComputingResourceStateMachine(stackSource, scenarioConfiguration, ComputingResourceViewType.ThreadTime);
                 stateMachine.Execute();
             }
             else if (streamName == "Execution Tracing")
@@ -6217,7 +6230,7 @@ table {
                 eventSource.Process();
                 return stackSource;
             }
-            else if(streamName == "Anti-Malware Real-Time Scan")
+            else if (streamName == "Anti-Malware Real-Time Scan")
             {
                 RealtimeAntimalwareComputer computer = new RealtimeAntimalwareComputer(eventSource, stackSource);
                 computer.Execute();
@@ -7058,6 +7071,7 @@ table {
             var advanced = new PerfViewTreeGroup("Advanced");
             var memory = new PerfViewTreeGroup("Memory");
             var frameworkAspNetWcf = new PerfViewTreeGroup(".NET Framework ASP.NET/WCF");
+            var ui = new PerfViewTreeGroup("UI");
             var experimental = new PerfViewTreeGroup("Experimental");
             m_Children = new List<PerfViewTreeItem>();
 
@@ -7093,6 +7107,7 @@ table {
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
             bool hasJIT = false;
+            bool hasUserCrit = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -7164,6 +7179,10 @@ table {
                 if (name.StartsWith("Loader/AssemblyLoad"))
                 {
                     hasAssemblyLoad = true;
+                }
+                if (name.EndsWith("UserCrit"))
+                {
+                    hasUserCrit = true;
                 }
 
                 if (counts.StackCount > 0)
@@ -7365,7 +7384,7 @@ table {
                 advanced.Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
             }
 
-            if (hasGCEvents && hasCPUStacks && AppLog.InternalUser)
+            if (hasGCEvents && hasCPUStacks)
             {
                 memory.Children.Add(new PerfViewStackSource(this, "Server GC"));
             }
@@ -7392,6 +7411,19 @@ table {
                 {
                     advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinning"));
                     advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinned Object Allocation"));
+                }
+            }
+
+            if (hasUserCrit)
+            {
+                if (hasCPUStacks)
+                {
+                    ui.Children.Add(new PerfViewStackSource(this, "UserCrit Held CPU"));
+                }
+
+                if (hasCSwitchStacks)
+                {
+                    ui.Children.Add(new PerfViewStackSource(this, "UserCrit Held ThreadTime"));
                 }
             }
 
@@ -7450,7 +7482,7 @@ table {
                 advanced.Children.Add(new PerfViewIisStats(this));
             }
 
-            if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
+            if (hasProjectNExecutionTracingEvents)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
@@ -7462,11 +7494,7 @@ table {
 
             memory.Children.Add(new PerfViewGCStats(this));
 
-            // TODO currently this is experimental enough that we don't show it publicly.  
-            if (AppLog.InternalUser)
-            {
-                memory.Children.Add(new MemoryAnalyzer(this));
-            }
+            memory.Children.Add(new MemoryAnalyzer(this));
 
             if (hasJSHeapDumps || hasDotNetHeapDumps)
             {
@@ -7500,7 +7528,12 @@ table {
                 m_Children.Add(frameworkAspNetWcf);
             }
 
-            if (AppLog.InternalUser && 0 < experimental.Children.Count)
+            if (0 < ui.Children.Count)
+            {
+                m_Children.Add(ui);
+            }
+
+            if (0 < experimental.Children.Count)
             {
                 m_Children.Add(experimental);
             }
@@ -8630,7 +8663,7 @@ table {
                 m_Children.Add(advanced);
             }
 
-            if(AppLog.InternalUser && experimental.Children.Count > 0)
+            if(experimental.Children.Count > 0)
             {
                 m_Children.Add(experimental);
             }
@@ -10030,6 +10063,64 @@ table {
             }
 
             return newResources;
+        }
+    }
+
+    public partial class StracePerfViewData : PerfViewFile
+    {
+        private string[] StreamNames = new string[]
+        {
+            "Syscalls",
+        };
+
+        public override string FormatName { get { return "strace"; } }
+
+        public override string[] FileExtensions { get { return new string[] { ".strace" }; } }
+
+        public override bool SupportsProcesses => false;
+
+        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
+        {
+            if (StreamNames.Contains(streamName))
+            {
+                string xmlPath;
+
+                xmlPath = CacheFiles.FindFile(FilePath, $"{streamName}.strace.xml.zip");
+
+#if !DEBUG
+                if (!CacheFiles.UpToDate(xmlPath, FilePath))
+#endif
+                {
+                    XmlStackSourceWriter.WriteStackViewAsZippedXml(
+                        new StraceStackSource(FilePath), xmlPath);
+                }
+
+                return new XmlStackSource(xmlPath, null);
+            }
+
+            return null;
+        }
+
+        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+        {
+            m_Children = new List<PerfViewTreeItem>()
+            {
+                new PerfViewStackSource(this, "Syscalls"),
+            };
+
+            return null;
+        }
+
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+
+        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+        {
+            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+            stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+
+            stackWindow.CallTreeTab.IsSelected = true;      // start with the call tree view
+
+            ConfigureGroupRegExTextBox(stackWindow, windows: false);
         }
     }
 }

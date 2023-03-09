@@ -77,30 +77,14 @@
       <Visible>False</Visible>
     </None>
 
-    <!-- There are no static references to these so I need to copy them explicitly.  
-         The first two COM interop assemblies so they are the same for all targets, I pick netstandard1.6 pretty arbitraily 
-         OSExtensions is also the same for all targets.  It needs to be copied for the dev-time case since in that case it runs the DLLs from the .nuget cache
-         by default, and OSExtensions needs to be in the right relative location with respect to the native DLLs (since it loads them via relative path).   
-      -->
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\TraceReloggerLib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\TraceReloggerLib.dll">
+    <!-- There are no static references to these so they need to be copied explicitly.  They are COM interop assemblies so they are the same for all targets. -->
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard2.0\TraceReloggerLib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard2.0\TraceReloggerLib.dll">
       <Link>TraceReloggerLib.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\Dia2Lib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\Dia2Lib.dll">
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard2.0\Dia2Lib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard2.0\Dia2Lib.dll">
       <Link>Dia2Lib.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-
-	<!-- you have to pick the right version of this DLL because it depends on things besides System.Runtime.dll -->
-    <None Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' AND Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll">
-      <Link>OSExtensions.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' AND Exists('$(MSBuildThisFileDirectory)..\lib\net462\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\net462\OSExtensions.dll">
-      <Link>OSExtensions.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>

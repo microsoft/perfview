@@ -16,6 +16,8 @@ namespace Stats
 {
     internal static class GcStats
     {
+        internal static bool EnableExperimentalFeatures;
+
         public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, string fileName, bool doServerGCReport = false)
         {
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
@@ -192,7 +194,7 @@ namespace Stats
             PrintEventTable(writer, stats, runtime, Math.Max(0, runtime.GC.GCs.Count - 1000));
             PrintEventCondemnedReasonsTable(writer, stats, runtime, Math.Max(0, runtime.GC.GCs.Count - 1000));
 
-            if (PerfView.AppLog.InternalUser)
+            if (EnableExperimentalFeatures)
             {
                 RenderServerGcConcurrencyGraphs(writer, stats, runtime, doServerGCReport);
             }
@@ -563,7 +565,7 @@ namespace Stats
 
         private static bool ShowPinnedInformation(GCStats stats)
         {
-            if ((PerfView.AppLog.InternalUser) && (stats.NumWithPinEvents > 0))
+            if (stats.NumWithPinEvents > 0)
             {
                 return true;
             }

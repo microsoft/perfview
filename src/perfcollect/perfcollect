@@ -54,6 +54,7 @@
 collect_cpu=1
 collect_threadTime=0
 collect_offcpu=0
+collect_system=0
 
 ######################################
 ## .NET Event Categories
@@ -941,6 +942,34 @@ GetCommandFullPath()
 ######################################
 # Prerequisite Installation
 ######################################
+
+IsMariner()
+{
+    local mariner=0
+    if [ -f /etc/lsb-release ]
+    then
+        local flavor=`cat /etc/lsb-release | grep DISTRIB_ID`
+        if [ "$flavor" == "DISTRIB_ID=\"Mariner\"" ]
+        then
+            mariner=1
+        fi
+    fi
+
+    echo $mariner
+}
+
+InstallPerf_Mariner()
+{
+    # Disallow non-root users.
+    EnsureRoot
+
+    # Install perf
+    tdnf install -y kernel-tools
+
+    # Install zip and unzip
+    tdnf install -y zip unzip
+}
+
 IsAlpine()
 {
     local alpine=0
@@ -1094,6 +1123,9 @@ InstallPerf()
     elif [ "$(IsAlpine)" == "1" ]
     then
         InstallPerf_Alpine
+    elif [ "$(IsMariner)" == "1" ]
+    then
+        InstallPerf_Mariner
     else
         FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
     fi
@@ -1229,6 +1261,9 @@ InstallLTTng()
     elif [ "$(IsRHEL)" == "1" ]
     then
         InstallLTTng_RHEL
+    elif [ "$(IsMariner)" == "1" ]
+    then
+        echo "Collection of events from lttng-ust is not supported on Mariner for .NET workloads, so no lttng-ust events will be collected."
     elif [ "$(IsAlpine)" == "1" ]
     then
         echo "lttng-tools is not available on Alpine Linux, so no lttng-ust events will be collected."
@@ -1240,7 +1275,7 @@ InstallLTTng()
 SupportsAutoInstall()
 {
     local supportsAutoInstall=0
-    if [ "$(IsUbuntu)" == "1" ] || [ "$(IsSUSE)" == "1" ]
+    if [ "$(IsUbuntu)" == "1" ] || [ "$(IsSUSE)" == "1" ] || [ "$(IsMariner)" == "1" ]
     then
         supportsAutoInstall=1
     fi
@@ -1266,8 +1301,8 @@ EnsurePrereqsInstalled()
         exit 1
     fi
 
-    # Disable LTTng use if running on Alpine.
-    if [ "$(IsAlpine)" == "1" ]
+    # Disable LTTng use if running on Alpine or Mariner.
+    if [ "$(IsAlpine)" == "1" ] || [ "$(IsMariner)" == "1" ]
     then
         useLTTng=0
     fi
@@ -1327,7 +1362,7 @@ ProcessArguments()
     action=$1
 
     # Actions with no arguments.
-    if [ "$action" == "livetrace" ]
+    if [ "$action" == "livetrace" ] || [ "$action" == "setenv" ]
     then
         return
     fi
@@ -1397,6 +1432,9 @@ ProcessArguments()
             # Perf doesn't support capturing cpu-clock events and sched events concurrently.
             collect_cpu=0
             collect_offcpu=1
+        elif [ "-system" == "$arg" ]
+        then
+            collect_system=1
         elif [ "-hwevents" == "$arg" ]
         then
             collect_HWevents=1
@@ -1785,26 +1823,23 @@ ProcessCollectedData()
 
         outputDumpFile="perf.data.txt"
 
-        # I've not found a good way to get the behavior that we want here - running the command and redirecting the output
-        # when passing the command line to a function.  Thus, this case is hardcoded.
-
-        # There is a breaking change where the capitalization of the -f parameter changed.
-        LogAppend "Running $perfcmd script -i $inputFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
-        $perfcmd script -i $inputFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+        LogAppend "Running $perfcmd script -i $inputFile --fields comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+        $perfcmd script -i $inputFile --fields comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
         LogAppend
 
+        # Try capturing without the cpu field which is unavailable in some containerized environments.
         if [ $? -ne 0 ]
         then
-            LogAppend "Running $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
-            $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+            LogAppend "Running $perfcmd script -i $inputFile --fields comm,pid,tid,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+            $perfcmd script -i $inputFile --fields comm,pid,tid,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
             LogAppend
         fi
 
         # If the dump file is zero length, try to collect without the period field, which was added recently.
         if [ ! -s $outputDumpFile ]
         then
-            LogAppend "Running $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile"
-            $perfcmd script -i $inputFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+            LogAppend "Running $perfcmd script -i $inputFile --fields comm,pid,tid,time,event,ip,sym,dso,trace > $outputDumpFile"
+            $perfcmd script -i $inputFile --fields comm,pid,tid,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
             LogAppend
         fi
 
@@ -1951,6 +1986,11 @@ BuildPerfRecordArgs()
         then
             collectionArgs="$collectionArgs -F 1000"
         fi
+    fi
+
+    if [ $collect_system -eq 1 ]
+    then
+        collectionArgs="$collectionArgs -e major-faults -e minor-faults"
     fi
 
     # Enable HW counters event collection
@@ -2113,6 +2153,14 @@ PropSymbolsAndMapFilesForView()
     done
 }
 
+SetEnvironment()
+{
+    WriteStatus "Starting a new shell configured for profiling."
+    WriteStatus "When done, type 'exit' to exit the profiling shell."
+    bash -c 'export COMPlus_PerfMapEnabled=1;export COMPlus_EnableEventLog=1; exec bash'
+    WriteStatus "Profiling shell exited."
+}
+
 DoView()
 {
     # Generate a temp directory to extract the trace files into.
@@ -2205,6 +2253,9 @@ then
 elif [ "$action" == "stop" ]
 then
     EndCollect
+elif [ "$action" == "setenv" ]
+then
+    SetEnvironment
 elif [ "$action" == "view" ]
 then
     DoView

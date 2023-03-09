@@ -63,7 +63,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// By default ZippedETL file will zip the ETL file itself and the NGEN pdbs associated with it.
-        /// You can add additional files to the archive by calling AddFile.   In specififed 'archivePath' 
+        /// You can add additional files to the archive by calling AddFile.   In specified 'archivePath' 
         /// is the path in the archive and defaults to just the file name of the original file path.  
         /// </summary>
         public void AddFile(string filePath, string archivePath = null)
@@ -112,12 +112,10 @@ namespace Microsoft.Diagnostics.Tracing
             FileUtilities.ForceDelete(newFileName);
             try
             {
-#if !NETSTANDARD1_6
                 if (LowPriority)
                 {
                     Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                 }
-#endif
                 Log.WriteLine("[Zipping ETL file {0}]", m_etlFilePath);
                 using (var zipArchive = ZipFile.Open(newFileName, ZipArchiveMode.Create))
                 {
@@ -158,7 +156,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         foreach (Tuple<string, string> additionalFile in m_additionalFiles)
                         {
-                            // We dont use CreatEntryFromFile because it will not open files thar are open for writting.  
+                            // We dont use CreatEntryFromFile because it will not open files thar are open for writing.  
                             // Since a typical use of this is to write the log file, which will be open for writing, we 
                             // use File.Open and allow this case explicitly. 
                             using (Stream fs = File.Open(additionalFile.Item1, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -186,9 +184,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             finally
             {
-#if !NETSTANDARD1_6
                 Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                 FileUtilities.ForceDelete(newFileName);
             }
             return success;
@@ -197,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing
         // Overriding the normal defaults.  
         /// <summary>
         /// This is the symbol reader that is used to generate the NGEN Pdbs as needed
-        /// If it is not specififed one is created on the fly.  
+        /// If it is not specified one is created on the fly.  
         /// </summary>
         public SymbolReader SymbolReader { get; set; }
 
@@ -282,12 +278,10 @@ namespace Microsoft.Diagnostics.Tracing
                     if (Merge)
                     {
                         var startTime = DateTime.UtcNow;
-#if !NETSTANDARD1_6
                         if (LowPriority)
                         {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                         }
-#endif
                         try
                         {
                             Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
@@ -308,9 +302,7 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         finally
                         {
-#if !NETSTANDARD1_6
                             Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                         }
                     }
                     else
@@ -331,12 +323,10 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (NGenSymbolFiles)
                     {
-#if !NETSTANDARD1_6
                         if (LowPriority)
                         {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                         }
-#endif
                         try
                         {
                             var startTime = DateTime.UtcNow;
@@ -352,9 +342,7 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         finally
                         {
-#if !NETSTANDARD1_6
                             Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                         }
                     }
                     else

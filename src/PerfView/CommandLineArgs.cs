@@ -1,7 +1,9 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Utilities;
 
 namespace PerfView
@@ -108,6 +110,8 @@ namespace PerfView
 
         // Start options.
         public bool StackCompression = true;    // Use compresses stacks when collecting traces. 
+        public CommandLineLbrSources LastBranchRecordingSources;
+        public CommandLineLbrFilters LastBranchRecordingFilters;
         public int BufferSizeMB = 256;
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
@@ -133,6 +137,7 @@ namespace PerfView
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
         public bool CCWRefCount;            // Capture CCW references count increasing and decreasing
         public bool RuntimeLoading;         // Capture information about runtime loading such as R2R and type load events
+        public bool UserCritContention;     // Capture UserCrit contention events
 
         public bool Wpr;                    // Collect like WPR (no zip, puts NGEN pdbs in a .ngenpdbs directory).  
 
@@ -274,6 +279,13 @@ namespace PerfView
             parser.DefineOptionalQualifier("CircularMB", ref CircularMB, "Do Circular logging with a file size in MB.  Zero means non-circular.");
             parser.DefineOptionalQualifier("InMemoryCircularBuffer", ref InMemoryCircularBuffer, "Keeps the circular buffer in memory until the session is stopped.");
             parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller.");
+            parser.DefineOptionalQualifier("LbrSources", ref LastBranchRecordingSources,
+                $"Turn on LBR sampling from these sources (comma-separated numeric hex values with 0x prefix or 'PmcInterrupt'). At most {TraceEventSession.GetMaxLastBranchRecordingSources()} sources are supported.");
+            parser.DefineOptionalQualifier(
+                "LbrFilters",
+                ref LastBranchRecordingFilters,
+                "Filters to use with LBR sampling (comma-separated). Unspecified means no filtering. " +
+                "Valid filters are: StackMode, ConditionalBranches, NearRelativeCalls, NearIndirectCalls, NearReturns, NearIndirectJumps, NearRelativeJumps, FarBranches, Kernel, User");
             parser.DefineOptionalQualifier("MaxCollectSec", ref MaxCollectSec,
                 "Turn off collection (and kill the program if perfView started it) after this many seconds. Zero means no timeout.");
             parser.DefineOptionalQualifier("StopOnPerfCounter", ref StopOnPerfCounter,
@@ -524,6 +536,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
             parser.DefineOptionalQualifier("CCWRefCount", ref CCWRefCount, "Turns on logging of information about .NET Native CCW reference counting.");
             parser.DefineOptionalQualifier("RuntimeLoading", ref RuntimeLoading, "Turn on logging of runtime loading operations.");
+            parser.DefineOptionalQualifier("UserCritContention", ref UserCritContention, "Turn on UserCrit contention events.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
 
@@ -679,5 +692,91 @@ namespace PerfView
             parser.DefineOptionalParameter("DataFile", ref DataFile, "ETL or ETLX file containing profile data.");
         }
         #endregion
-    };
+    }
+
+    public class CommandLineLbrSources
+    {
+        public string Text { get; private set; }
+        public uint[] Parsed { get; private set; }
+
+        public static CommandLineLbrSources Parse(string text)
+        {
+            var sources = new List<uint>();
+            foreach (string entry in text.Split(','))
+            {
+                bool success;
+                uint source = 0;
+                string trimmed = entry.Trim();
+                if (trimmed.StartsWith("0x"))
+                {
+                    success = uint.TryParse(trimmed.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out source);
+                }
+                else
+                {
+                    success = Enum.TryParse(trimmed, true, out LbrSource enumSource);
+                    source = (uint)enumSource;
+                }
+
+                if (!success)
+                    throw new CommandLineParserException($"/LbrSources: Could not parse '{entry}'");
+
+                sources.Add(source);
+            }
+
+            int maxSources = TraceEventSession.GetMaxLastBranchRecordingSources();
+            if (sources.Count > maxSources)
+                throw new CommandLineParserException($"/LbrSources: At most {maxSources} sources can be specified");
+
+            return new CommandLineLbrSources { Text = text, Parsed = sources.ToArray() };
+        }
+
+        public override string ToString() => Text;
+    }
+
+    public class CommandLineLbrFilters
+    {
+        public string Text { get; private set; }
+        public LbrFilterFlags Parsed { get; private set; }
+
+        public static CommandLineLbrFilters Parse(string text)
+        {
+            LbrFilterFlags flags = 0;
+            foreach (string entry in text.Split(','))
+            {
+                // Parse using same names as xperf.
+                switch (entry.ToLowerInvariant())
+                {
+                    case "stackmode": flags |= LbrFilterFlags.CallstackEnable; break;
+                    case "conditionalbranches": flags |= LbrFilterFlags.FilterJcc; break;
+                    case "nearrelativecalls": flags |= LbrFilterFlags.FilterNearRelCall; break;
+                    case "nearindirectcalls": flags |= LbrFilterFlags.FilterNearIndCall; break;
+                    case "nearreturns": flags |= LbrFilterFlags.FilterNearRet; break;
+                    case "nearindirectjumps": flags |= LbrFilterFlags.FilterNearIndJmp; break;
+                    case "nearrelativejumps": flags |= LbrFilterFlags.FilterNearRelJmp; break;
+                    case "farbranches": flags |= LbrFilterFlags.FilterFarBranch; break;
+                    case "kernel": flags |= LbrFilterFlags.FilterKernel; break;
+                    case "user": flags |= LbrFilterFlags.FilterUser; break;
+                    default: throw new CommandLineParserException($"Could not parse '{entry}' as an LBR filter");
+                }
+            }
+
+            const LbrFilterFlags callstackAllowedFlags =
+                LbrFilterFlags.CallstackEnable | LbrFilterFlags.FilterKernel | LbrFilterFlags.FilterUser;
+            if ((flags & LbrFilterFlags.CallstackEnable) != 0 &&
+                (flags & ~callstackAllowedFlags) != 0)
+            {
+                throw new CommandLineParserException("/LbrFilters: Only 'Kernel' or 'User' can be specified alongside 'StackMode'");
+            }
+
+            const LbrFilterFlags kernelUser = LbrFilterFlags.FilterKernel | LbrFilterFlags.FilterUser;
+            if ((flags & kernelUser) == kernelUser)
+            {
+                throw new CommandLineParserException("/LbrFilters: Only one of 'Kernel' or 'User' can be specified");
+            }
+
+            return new CommandLineLbrFilters { Text = text, Parsed = flags };
+        }
+
+        public override string ToString() => Text;
+    }
 }

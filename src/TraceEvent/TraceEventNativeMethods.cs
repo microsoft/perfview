@@ -10,10 +10,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using TRACEHANDLE = System.UInt64; // TRACEHANDLE handle type is a ULONG64 in evntrace.h.
+
 // This moduleFile contains Internal PINVOKE declarations and has no public API surface. 
 namespace Microsoft.Diagnostics.Tracing
 {
-    // TODO use SafeHandles. 
     #region Private Classes
 
     /// <summary>
@@ -57,7 +58,9 @@ namespace Microsoft.Diagnostics.Tracing
         internal delegate void EventTraceEventCallback(
             [In] EVENT_RECORD* rawData);
 
-        internal const ulong INVALID_HANDLE_VALUE = unchecked((ulong)(-1));
+        internal const TRACEHANDLE INVALID_HANDLE_VALUE = unchecked((ulong)(-1));
+
+        private static bool IsValidTraceHandle(TRACEHANDLE handle) => handle != INVALID_HANDLE_VALUE;
 
         internal const uint EVENT_TRACE_REAL_TIME_MODE = 0x00000100;
         // private sessions or private logger information.   Sadly, these are not very useful because they don't work for real time.  
@@ -255,21 +258,26 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal enum TRACE_INFO_CLASS
         {
-            TraceGuidQueryList,                     // Get Guids of all providers registered on the computer
-            TraceGuidQueryInfo,                     // Query information that each session a particular provider.  
-            TraceGuidQueryProcess,                  // Query an array of GUIDs of the providers that registered themselves in the same process as the calling process
-            TraceStackTracingInfo,                  // This is the last one supported on Win7
+            TraceGuidQueryList = 0,                     // Get Guids of all providers registered on the computer
+            TraceGuidQueryInfo = 1,                     // Query information that each session a particular provider.  
+            TraceGuidQueryProcess = 2,                  // Query an array of GUIDs of the providers that registered themselves in the same process as the calling process
+            TraceStackTracingInfo = 3,                  // This is the last one supported on Win7
             // Win 8 
-            TraceSystemTraceEnableFlagsInfo,        // Turns on kernel event logger
-            TraceSampledProfileIntervalInfo,        // TRACE_PROFILE_INTERVAL (allows you to set the sampling interval) (Set, Get)
+            TraceSystemTraceEnableFlagsInfo = 4,        // Turns on kernel event logger
+            TraceSampledProfileIntervalInfo = 5,        // TRACE_PROFILE_INTERVAL (allows you to set the sampling interval) (Set, Get)
 
-            TraceProfileSourceConfigInfo,           // int array, turns on all listed sources.  (Set)
-            TraceProfileSourceListInfo,             // PROFILE_SOURCE_INFO linked list (converts names to source numbers) (Get)
+            TraceProfileSourceConfigInfo = 6,           // int array, turns on all listed sources.  (Set)
+            TraceProfileSourceListInfo = 7,             // PROFILE_SOURCE_INFO linked list (converts names to source numbers) (Get)
 
             // Used to collect extra info on other events (currently only context switch).  
-            TracePmcEventListInfo,                  // CLASSIC_EVENT_ID array (Works like TraceStackTracingInfo)
-            TracePmcCounterListInfo,                // int array
-            MaxTraceSetInfoClass
+            TracePmcEventListInfo = 8,                  // CLASSIC_EVENT_ID array (Works like TraceStackTracingInfo)
+            TracePmcCounterListInfo = 9,                // int array
+
+            TraceLbrConfigurationInfo = 20,             // Filter flags
+            TraceLbrEventListInfo = 21,                 // int array
+
+            // Win 10 build 19582+
+            TraceStackCachingInfo = 24,                 // TRACE_STACK_CACHING_INFO
         };
 
         internal struct CLASSIC_EVENT_ID
@@ -285,6 +293,16 @@ namespace Microsoft.Diagnostics.Tracing
             public int Interval;
         };
 
+        internal struct TRACE_STACK_CACHING_INFO
+        {
+            public byte Enabled;
+            public byte Padding1;
+            public byte Padding2;
+            public byte Padding3;
+            public int CacheSize;
+            public int BucketCount;
+        }
+
         internal struct PROFILE_SOURCE_INFO
         {
             public int NextEntryOffset;             // relative to the start of this structure, 0 indicates end.  
@@ -295,16 +313,74 @@ namespace Microsoft.Diagnostics.Tracing
             // char Description[ANYSIZE_ARRAY]; 
         };
 
+        /// <summary>
+        /// A safe wrapper around a TRACEHANDLE returned from OpenTrace
+        /// </summary>
+        /// <remarks>
+        /// Unfortunately, we can't derive from <see cref="SafeHandle"/>
+        /// because TRACEHANDLE is a ULONG64 (64-bit), not a pointer-sized
+        /// handle. The important thing is that we have a GC-tracked object
+        /// with a finalizer so we don't leak Win32 TRACEHANDLEs if some code
+        /// neglects to call <see cref="Dispose"/>.
+        /// </remarks>
+        internal sealed class SafeTraceHandle : IDisposable
+        {
+            private TRACEHANDLE _handle;
+
+            public SafeTraceHandle(TRACEHANDLE handle)
+            {
+                _handle = handle;
+            }
+
+            public TRACEHANDLE DangerousGetHandle() => _handle;
+
+            public bool IsValid => IsValidTraceHandle(_handle);
+
+            public void Dispose()
+            {
+                DisposeNative();
+                GC.SuppressFinalize(this);
+            }
+
+            ~SafeTraceHandle()
+            {
+                Debug.Assert(false, "Leaking a SafeTraceHandle");
+                DisposeNative();
+            }
+
+            private void DisposeNative()
+            {
+                if (IsValid)
+                {
+                    CloseTrace(_handle);
+                    _handle = INVALID_HANDLE_VALUE;
+                }
+            }
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int TraceSetInformation(
-            [In] UInt64 traceHandle,
+            [In] TRACEHANDLE traceHandle,
             [In] TRACE_INFO_CLASS InformationClass,
             [In] void* TraceInformation,
             [In] int InformationLength);
 
+        internal static int TraceSetInformation(
+            SafeTraceHandle traceHandle,
+            TRACE_INFO_CLASS InformationClass,
+            void* TraceInformation,
+            int InformationLength)
+        {
+            return TraceSetInformation(
+                traceHandle.DangerousGetHandle(),
+                InformationClass,
+                TraceInformation,
+                InformationLength);
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int TraceQueryInformation(
-            [In] UInt64 traceHandle,
+            [In] TRACEHANDLE traceHandle,
             [In] TRACE_INFO_CLASS InformationClass,
             [Out] void* TraceInformation,
             [In] int InformationLength,
@@ -470,24 +546,51 @@ namespace Microsoft.Diagnostics.Tracing
         #endregion
 
         #region ETW tracing functions
-        //	TRACEHANDLE handle type is a ULONG64 in evntrace.h.  Use UInt64 here.
         [DllImport("advapi32.dll",
             EntryPoint = "OpenTraceW",
             CharSet = CharSet.Unicode,
             SetLastError = true)]
-        internal static extern UInt64 OpenTrace(
+        private static extern TRACEHANDLE DangerousOpenTrace(
             [In][Out] ref EVENT_TRACE_LOGFILEW logfile);
 
+        internal static SafeTraceHandle OpenTrace(ref EVENT_TRACE_LOGFILEW logfile)
+        {
+            TRACEHANDLE dangerousHandle = DangerousOpenTrace(ref logfile);
+            if (!IsValidTraceHandle(dangerousHandle))
+            {
+                Marshal.ThrowExceptionForHR(GetHRForLastWin32Error());
+                return null;
+            }
+
+            return new SafeTraceHandle(dangerousHandle);
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int ProcessTrace(
-            [In] UInt64[] handleArray,
+        private static extern int ProcessTrace(
+            [In] TRACEHANDLE[] handleArray,
             [In] uint handleCount,
             [In] IntPtr StartTime,
             [In] IntPtr EndTime);
 
+        internal static int ProcessTrace(
+            SafeTraceHandle[] handleArray,
+            IntPtr StartTime,
+            IntPtr EndTime
+            )
+        {
+            int handleCount = handleArray.Length;
+            TRACEHANDLE[] dangerousHandles = new TRACEHANDLE[handleCount];
+            for (int i = 0; i < handleCount; i++)
+            {
+                dangerousHandles[i] = handleArray[i].DangerousGetHandle();
+            }
+
+            return ProcessTrace(dangerousHandles, (uint)handleCount, StartTime, EndTime);
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int CloseTrace(
-            [In] UInt64 traceHandle);
+            [In] TRACEHANDLE traceHandle);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int QueryAllTraces(
@@ -496,24 +599,49 @@ namespace Microsoft.Diagnostics.Tracing
             [In][Out] ref int sessionCount);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int StartTraceW(
-            [Out] out UInt64 sessionHandle,
+        private static extern int StartTraceW(
+            [Out] out TRACEHANDLE sessionHandle,
             [In] string sessionName,
             EVENT_TRACE_PROPERTIES* properties);
 
+        internal static int StartTrace(
+            out SafeTraceHandle sessionHandle,
+            string sessionName,
+            EVENT_TRACE_PROPERTIES* properties)
+        {
+            int dwErr = StartTraceW(out TRACEHANDLE dangerousHandle, sessionName, properties);
+            sessionHandle = dwErr == 0 ? new SafeTraceHandle(dangerousHandle) : null;
+            return dwErr;
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int EnableTrace(
+        private static extern int EnableTrace(
             [In] uint enable,
             [In] int enableFlag,
             [In] int enableLevel,
-            [In] ref Guid controlGuid,
-            [In] ulong sessionHandle);
+            [In] in Guid controlGuid,
+            [In] TRACEHANDLE sessionHandle);
+
+        internal static int EnableTrace(
+            uint enable,
+            int enableFlag,
+            int enableLevel,
+            in Guid controlGuid,
+            SafeTraceHandle sessionHandle)
+        {
+            return EnableTrace(
+                enable,
+                enableFlag,
+                enableLevel,
+                controlGuid,
+                sessionHandle.DangerousGetHandle());
+        }
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int EnableTraceEx(
-            [In] ref Guid ProviderId,
+        private static extern int EnableTraceEx(
+            [In] in Guid ProviderId,
             [In] Guid* SourceId,
-            [In] ulong TraceHandle,
+            [In] TRACEHANDLE TraceHandle,
             [In] int IsEnabled,
             [In] byte Level,
             [In] ulong MatchAnyKeyword,
@@ -521,16 +649,61 @@ namespace Microsoft.Diagnostics.Tracing
             [In] uint EnableProperty,
             [In] EVENT_FILTER_DESCRIPTOR* filterData);
 
+        internal static int EnableTraceEx(
+            in Guid ProviderId,
+            Guid* SourceId,
+            SafeTraceHandle TraceHandle,
+            bool IsEnabled,
+            TraceEventLevel Level,
+            ulong MatchAnyKeyword,
+            ulong MatchAllKeyword,
+            uint EnableProperty,
+            EVENT_FILTER_DESCRIPTOR* filterData)
+        {
+            return EnableTraceEx(
+                ProviderId,
+                SourceId,
+                TraceHandle.DangerousGetHandle(),
+                IsEnabled ? 1 : 0,
+                (byte)Level,
+                MatchAnyKeyword,
+                MatchAllKeyword,
+                EnableProperty,
+                filterData
+                );
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int EnableTraceEx2(
-            [In] ulong TraceHandle,
-            [In] ref Guid ProviderId,
+        private static extern int EnableTraceEx2(
+            [In] TRACEHANDLE TraceHandle,
+            [In] in Guid ProviderId,
             [In] uint ControlCode,          // See EVENT_CONTROL_CODE_*
             [In] byte Level,
             [In] ulong MatchAnyKeyword,
             [In] ulong MatchAllKeyword,
             [In] int Timeout,
-            [In] ref ENABLE_TRACE_PARAMETERS EnableParameters);
+            [In] in ENABLE_TRACE_PARAMETERS EnableParameters);
+
+        internal static int EnableTraceEx2(
+            SafeTraceHandle TraceHandle,
+            in Guid ProviderId,
+            uint ControlCode,          // See EVENT_CONTROL_CODE_*
+            TraceEventLevel Level,
+            ulong MatchAnyKeyword,
+            ulong MatchAllKeyword,
+            int Timeout,
+            in ENABLE_TRACE_PARAMETERS EnableParameters)
+        {
+            return EnableTraceEx2(
+                TraceHandle.DangerousGetHandle(),
+                ProviderId,
+                ControlCode,
+                (byte)Level,
+                MatchAnyKeyword,
+                MatchAllKeyword,
+                Timeout,
+                EnableParameters);
+        }
 
         // Values for ENABLE_TRACE_PARAMETERS.Version
         internal const uint ENABLE_TRACE_PARAMETERS_VERSION = 1;
@@ -567,7 +740,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int ControlTrace(
-            ulong sessionHandle,
+            TRACEHANDLE sessionHandle,
             string sessionName,
             EVENT_TRACE_PROPERTIES* properties,
             uint controlCode);

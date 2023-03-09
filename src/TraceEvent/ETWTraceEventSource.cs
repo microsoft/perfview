@@ -14,7 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Utilities;
+using Microsoft.Diagnostics.Utilities;
 using Address = System.UInt64;
 
 // code:System.Diagnostics.ETWTraceEventSource definition.
@@ -108,10 +108,7 @@ namespace Microsoft.Diagnostics.Tracing
                     if (handles != null)
                     {
                         Debug.Assert(handles.Length == 1);
-                        if (handles[0] != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                        {
-                            TraceEventNativeMethods.CloseTrace(handles[0]);
-                        }
+                        handles[0].Dispose();
                     }
 
                     Initialize(fileName, TraceEventSourceType.FileOnly);
@@ -122,6 +119,7 @@ namespace Microsoft.Diagnostics.Tracing
                         return false;
                     }
                 }
+
                 OnCompleted();
                 Debug.Assert(sessionEndTimeQPC != long.MaxValue);       // Not a real time session
                 return true;
@@ -478,11 +476,10 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void InitializeFiles()
         {
-            handles = new ulong[logFiles.Length];
+            handles = new TraceEventNativeMethods.SafeTraceHandle[logFiles.Length];
 
             // Fill  out the first log file information (we will clone it later if we have multiple files). 
             logFiles[0].BufferCallback = TraceEventBufferCallback;
-            handles[0] = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
             useClassicETW = !OperatingSystemVersion.AtLeast(OperatingSystemVersion.Vista);
             if (useClassicETW)
             {
@@ -515,10 +512,6 @@ namespace Microsoft.Diagnostics.Tracing
             for (int i = 0; i < handles.Length; i++)
             {
                 handles[i] = TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
-                if (handles[i] == TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                {
-                    Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
-                }
 
                 // Start time is minimum of all start times
                 DateTime logFileStartTimeUTC = SafeFromFileTimeUtc(logFiles[i].LogfileHeader.StartTime);
@@ -649,13 +642,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 return 8;
             }
-#if !NETSTANDARD1_6
+
             bool is64bitOS = Environment.Is64BitOperatingSystem;
-#else
-            // Sadly this API does not work properly on V4.7.1 of the Desktop framework.   See https://github.com/Microsoft/perfview/issues/478 for more.  
-            // However with this partial fix, (works on everything not NetSTandard, and only in 32 bit processes), that we can wait for the fix.
-            bool is64bitOS = (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64);
-#endif
             return is64bitOS ? 8 : 4;
         }
 
@@ -745,7 +733,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private bool ProcessOneFile()
         {
-            int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (uint)handles.Length, (IntPtr)0, (IntPtr)0);
+            int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (IntPtr)0, (IntPtr)0);
             if (dwErr == 6)
             {
                 throw new ApplicationException("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
@@ -863,18 +851,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected override void Dispose(bool disposing)
         {
-            // We only want one thread doing this at a time.  
+            // We only want one thread doing this at a time.
             lock (this)
             {
                 stopProcessing = true;
                 if (handles != null)
                 {
-                    foreach (ulong handle in handles)
+                    foreach (TraceEventNativeMethods.SafeTraceHandle handle in handles)
                     {
-                        if (handle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                        {
-                            TraceEventNativeMethods.CloseTrace(handle);
-                        }
+                        handle.Dispose();
                     }
 
                     handles = null;
@@ -888,7 +873,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 traceLoggingEventId.Dispose();
 
-                // logFiles = null; Keep the callback delegate alive as long as possible.  
+                // logFiles = null; Keep the callback delegate alive as long as possible.
                 base.Dispose(disposing);
             }
         }
@@ -912,11 +897,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 for (int i = 0; i < handles.Length; i++)
                 {
-                    if (handles[i] != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                    {
-                        TraceEventNativeMethods.CloseTrace(handles[i]);
-                        handles[i] = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
-                    }
+                    handles[i].Dispose();
+
                     // Annoying.  The OS resets the LogFileMode field, so I have to set it up again.   
                     if (!useClassicETW)
                     {
@@ -925,11 +907,6 @@ namespace Microsoft.Diagnostics.Tracing
                     }
 
                     handles[i] = TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
-
-                    if (handles[i] == TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                    {
-                        Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
-                    }
                 }
             }
         }
@@ -947,7 +924,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // Returned from OpenTrace
         private TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[] logFiles;
-        private UInt64[] handles;
+        private TraceEventNativeMethods.SafeTraceHandle[] handles;
 
         private IEnumerable<string> fileNames;        // Used if more than one file being processed.  (Null otherwise)
 
