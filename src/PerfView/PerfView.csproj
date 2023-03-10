@@ -105,6 +105,15 @@
     <Copy SourceFiles="@(AutomatedAnalysisAnalyzers)" DestinationFolder="$(TargetDir)Analyzers" />
   </Target>
 
+  <!--
+    Overwrite the generated app.config with our custom app.config.
+    This is necessary to overwrite the binding redirects that get generated incorrectly.
+    We also don't want to carry the many app-local dependencies, and will instead depend on the in-box .NET Framework versions.
+  -->
+  <Target Name="OverwriteAppConfig" AfterTargets="Build">
+    <Copy SourceFiles="app.config" DestinationFiles="$(TargetDir)\PerfView.exe.config" />
+  </Target>
+
   <ItemGroup>
     <Compile Include="..\heapDump\GCHeapDump.cs">
       <Link>memory\GCHeapDump.cs</Link>
