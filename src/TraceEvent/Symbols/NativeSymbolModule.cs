@@ -1039,6 +1039,12 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
 
         private NativeSymbolModule(SymbolReader reader, string pdbFilePath, Action<IDiaDataSource3> loadData) : base(reader, pdbFilePath)
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // DIA is not supported on non-Windows systems.
+                throw new PlatformNotSupportedException("Cannot load a Windows PDB on a non-Windows system.");
+            }
+
             m_reader = reader;
 
             m_source = DiaLoader.GetDiaSourceObject();

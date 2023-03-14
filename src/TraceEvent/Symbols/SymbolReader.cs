@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -384,10 +384,19 @@ namespace Microsoft.Diagnostics.Symbols
                 else
                 {
                     stream.Dispose();
-                    ret = new NativeSymbolModule(this, pdbFilePath);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        ret = new NativeSymbolModule(this, pdbFilePath);
+                    }
+                    else
+                    {
+                        ret = null;
+                    }
                 }
+
                 m_symbolModuleCache.Add(pdbFilePath, ret);
             }
+
             return ret;
         }
 
