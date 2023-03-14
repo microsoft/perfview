@@ -8603,7 +8603,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             }
 
-            if (pdbFileName == null)
+            if (pdbFileName == null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // Check to see if the file is inside of an existing Windows container.
                 // Create a new instance of WindowsDeviceToVolumeMap to avoid situations where the mappings have changed but we haven't noticed.
@@ -8624,8 +8624,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     symReader.m_log.WriteLine("Unable to convert {0} to a volume-based path.", moduleFile.FilePath);
                 }
-
             }
+
             if (pdbFileName == null)
             {
                 if (UnsafePDBMatching)
@@ -8654,6 +8654,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         symReader.m_log.WriteLine("The /UnsafePdbMatch option will force an ambiguous match, but this is not recommended.");
                     }
                 }
+
                 symReader.m_log.WriteLine("Failed to find PDB for {0}", moduleFile.FilePath);
                 return null;
             }
@@ -8667,6 +8668,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.  PDB GUID = " + symbolReaderModule.PdbGuid + " DESIRED GUID = " + moduleFile.PdbSignature);
                     return null;
                 }
+
                 symbolReaderModule.ExePath = moduleFile.FilePath;
 
                 // Currently NGEN pdbs do not have source server information, but the managed version does.
