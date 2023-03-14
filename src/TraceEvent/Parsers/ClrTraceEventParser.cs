@@ -2709,8 +2709,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             int timePlan = GetInt32At(baseAddress);
             int timeCompact = GetInt32At(baseAddress + 4);
             int timeRelocate = GetInt32At(baseAddress + 8);
-            long totalRefs = (PointerSize == 8) ? GetInt64At(baseAddress + 16) : (long)GetInt32At(12);
-            long zeroRefs = (PointerSize == 8) ? GetInt64At(baseAddress + 24) : (long)GetInt32At(16);
+            long totalRefs = (PointerSize == 8) ? GetInt64At(baseAddress + 16) : (long)GetInt32At(baseAddress + 12);
+            long zeroRefs = (PointerSize == 8) ? GetInt64At(baseAddress + 24) : (long)GetInt32At(baseAddress + 16);
             return new GCLOHCompactInfo(timePlan, timeCompact, timeRelocate, totalRefs, zeroRefs);
         }
 
