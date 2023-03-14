@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// simply implement Windows PDBS here.   This can be factored out of this class when we 
     /// support other formats (e.g. Dwarf).
     /// 
-    /// To implmente support for Windows PDBs we use the Debug Interface Access (DIA).  See 
+    /// To implement support for Windows PDBs we use the Debug Interface Access (DIA).  See 
     /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
@@ -1797,36 +1797,35 @@ namespace Dia2Lib
     internal static class DiaLoader
     {
         /// <summary>
-        /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
+        /// Load the msdia140 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.
         /// </summary>
         public static IDiaDataSource3 GetDiaSourceObject()
         {
-            if (!s_loadedNativeDll)
-            {
-                // Ensure that the native DLL we need exist.  
-                NativeDlls.LoadNative("msdia140.dll");
-                s_loadedNativeDll = true;
-            }
+            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
+            s_diaClassFactory.CreateInstance(null, iDataDataSourceGuid, out object comObject);
+            return comObject as IDiaDataSource3;
+        }
+
+        private static IClassFactory CreateDiaClassFactory()
+        {
+            // Ensure that the native DLL we need exists.
+            NativeDlls.LoadNative("msdia140.dll");
 
             // This is the value it was for msdia120 and before 
             // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
 
             // This is the value for msdia140.  
             var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
-
-            object comObject = null;
-            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
-            comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
-            return (comObject as IDiaDataSource3);
+            return (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
         }
+
         #region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
         {
             void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
-                                ref Guid refiid,
+                                [In] in Guid refiid,
                                 [MarshalAs(UnmanagedType.Interface)] out object createdObject);
             void LockServer(bool incrementRefCount);
         }
@@ -1835,15 +1834,16 @@ namespace Dia2Lib
         [return: MarshalAs(UnmanagedType.Interface)]
         [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
         private static extern object DllGetClassObject(
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
+            [In] in Guid rclsid,
+            [In] in Guid riid);
 
         /// <summary>
-        /// Used to ensure the native library is loaded at least once prior to trying to use it. No protection is
-        /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
-        /// after use.
+        /// The COM class factory for DIA.
+        /// Used to ensure the native library is loaded prior to trying to use it.
+        /// Note that we never release this class factory, but this is not a problem since we
+        /// aren't trying to unload the library after use.
         /// </summary>
-        private static bool s_loadedNativeDll;
+        private static readonly IClassFactory s_diaClassFactory = CreateDiaClassFactory();
         #endregion
     }
 
