@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     /// <summary>
     /// Analyzer resolver that searches the specified directory.
     /// </summary>
-    public sealed class DirectoryAnalyzerResolver : AnalyzerResolver
+    public class DirectoryAnalyzerResolver : AnalyzerResolver
     {
         private static string _baseDirectory;
 
