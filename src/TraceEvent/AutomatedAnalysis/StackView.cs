@@ -9,6 +9,8 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
+    public delegate FilterStackSource FilterDelegate(StackSource stackSource, ProcessIndex processIndex);
+
     /// <summary>
     /// A view into a set of aggregated stacks.
     /// </summary>
@@ -18,7 +20,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         private TraceLog _traceLog;
         private StackSource _rawStackSource;
+        private ProcessIndex _processIndex;
         private SymbolReader _symbolReader;
+        private FilterDelegate _filterDelegate;
         private CallTree _callTree;
         private List<CallTreeNodeBase> _byName;
         private HashSet<string> _resolvedSymbolModules = new HashSet<string>();
@@ -28,13 +32,23 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// Create a new instance of StackView for the specified source.
         /// </summary>
         /// <param name="traceLog">Optional: The TraceLog associated with the StackSource.</param>
-        /// <param name="stackSource">The souce of the stack data.</param>
+        /// <param name="stackSource">The source of the stack data.</param>
+        /// <param name="processIndex">Optional: The index of the process that the stacks belong to.</param>
         /// <param name="symbolReader">Optional: A symbol reader that can be used to lookup symbols.</param>
-        public StackView(TraceLog traceLog, StackSource stackSource, SymbolReader symbolReader)
+        public StackView(TraceLog traceLog, StackSource stackSource, ProcessIndex processIndex, SymbolReader symbolReader, FilterDelegate filterDelegate = null)
         {
             _traceLog = traceLog;
             _rawStackSource = stackSource;
+            _processIndex = processIndex;
             _symbolReader = symbolReader;
+            _filterDelegate = filterDelegate;
+            if (_filterDelegate == null)
+            {
+                _filterDelegate = (source, index) =>
+                {
+                    return new FilterStackSource(new FilterParams(), source, ScalingPolicyKind.ScaleToData);
+                };
+            }
         }
 
         /// <summary>
@@ -46,10 +60,9 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             {
                 if (_callTree == null)
                 {
-                    FilterStackSource filterStackSource = new FilterStackSource(new FilterParams(), _rawStackSource, ScalingPolicyKind.ScaleToData);
                     _callTree = new CallTree(ScalingPolicyKind.ScaleToData)
                     {
-                        StackSource = filterStackSource
+                        StackSource = _filterDelegate(_rawStackSource, _processIndex)
                     };
                 }
                 return _callTree;
@@ -140,8 +153,18 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 if (node.Name.Equals(unresolvedSymbolsNodeName, StringComparison.OrdinalIgnoreCase))
                 {
                     // Symbols haven't been resolved yet.  Try to resolve them now.
-                    TraceModuleFile moduleFile = _traceLog.ModuleFiles.Where(m => m.Name.Equals(symbolParts[0], StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                    if (moduleFile != null)
+                    IEnumerable<TraceModuleFile> moduleFiles;
+                    if (_processIndex != ProcessIndex.Invalid)
+                    {
+                        moduleFiles = _traceLog.Processes[_processIndex].LoadedModules
+                            .Where(m => m.Name.Equals(symbolParts[0], StringComparison.OrdinalIgnoreCase))
+                            .Select(m => m.ModuleFile);
+                    }
+                    else
+                    {
+                        moduleFiles = _traceLog.ModuleFiles.Where(m => m.Name.Equals(symbolParts[0], StringComparison.OrdinalIgnoreCase));
+                    }
+                    foreach(TraceModuleFile moduleFile in moduleFiles)
                     {
                         // Special handling for NGEN images.
                         if(symbolParts[0].EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
@@ -161,8 +184,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                         {
                             _traceLog.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
                         }
-                        InvalidateCachedStructures();
                     }
+                    InvalidateCachedStructures();
                 }
 
                 // Mark the module as resolved so that we don't try again.
