@@ -35,10 +35,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             _traceLog = traceLog;
             _rawStackSource = stackSource;
             _symbolReader = symbolReader;
-            if (traceLog != null && symbolReader != null)
-            {
-                LookupWarmNGENSymbols();
-            }
         }
 
         /// <summary>
@@ -183,32 +179,6 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
 
             return null;
-        }
-
-        private void LookupWarmNGENSymbols()
-        {
-            TraceEventStackSource asTraceEventStackSource = GetTraceEventStackSource(_rawStackSource);
-            if (asTraceEventStackSource == null)
-            {
-                return;
-            }
-
-            SymbolReaderOptions savedOptions = _symbolReader.Options;
-            try
-            {
-                // NGEN PDBs (even those not yet produced) are considered to be in the cache.
-                _symbolReader.Options = SymbolReaderOptions.CacheOnly;
-
-                // Resolve all NGEN images.
-                asTraceEventStackSource.LookupWarmSymbols(1, _symbolReader, _rawStackSource, s => s.Name.EndsWith(".ni", StringComparison.OrdinalIgnoreCase));
-
-                // Invalidate cached data structures to finish resolving symbols.
-                InvalidateCachedStructures();
-            }
-            finally
-            {
-                _symbolReader.Options = savedOptions;
-            }
         }
 
         /// <summary>
