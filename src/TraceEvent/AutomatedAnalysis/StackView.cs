@@ -135,20 +135,30 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 return null;
             }
 
+            return GetCallTreeNodeImpl(symbolName, symbolParts[0]);
+        }
+
+        public CallTreeNodeBase GetCallTreeNode(string moduleName, string methodName)
+        {
+            return GetCallTreeNodeImpl($"{moduleName}!{methodName}", moduleName);
+        }
+
+        private CallTreeNodeBase GetCallTreeNodeImpl(string symbolName, string moduleName)
+        {
             // Try to get the call tree node.
             CallTreeNodeBase node = FindNodeByName(Regex.Escape(symbolName));
 
             // Check to see if the node matches.
-            if (node.Name.StartsWith(symbolName, StringComparison.OrdinalIgnoreCase))
+            if (SymbolNamesMatch(symbolName, node.Name))
             {
                 return node;
             }
 
             // Check to see if we should attempt to load symbols.
-            if (_traceLog != null && _symbolReader != null && !_resolvedSymbolModules.Contains(symbolParts[0]))
+            if (_traceLog != null && _symbolReader != null && !_resolvedSymbolModules.Contains(moduleName))
             {
                 // Look for an unresolved symbols node for the module.
-                string unresolvedSymbolsNodeName = symbolParts[0] + "!?";
+                string unresolvedSymbolsNodeName = moduleName + "!?";
                 node = FindNodeByName(unresolvedSymbolsNodeName);
                 if (node.Name.Equals(unresolvedSymbolsNodeName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -157,17 +167,17 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     if (_processIndex != ProcessIndex.Invalid)
                     {
                         moduleFiles = _traceLog.Processes[_processIndex].LoadedModules
-                            .Where(m => m.Name.Equals(symbolParts[0], StringComparison.OrdinalIgnoreCase))
+                            .Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
                             .Select(m => m.ModuleFile);
                     }
                     else
                     {
-                        moduleFiles = _traceLog.ModuleFiles.Where(m => m.Name.Equals(symbolParts[0], StringComparison.OrdinalIgnoreCase));
+                        moduleFiles = _traceLog.ModuleFiles.Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
                     }
                     foreach(TraceModuleFile moduleFile in moduleFiles)
                     {
                         // Special handling for NGEN images.
-                        if(symbolParts[0].EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                        if(moduleName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
                         {
                             SymbolReaderOptions options = _symbolReader.Options;
                             try
@@ -189,19 +199,57 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 }
 
                 // Mark the module as resolved so that we don't try again.
-                _resolvedSymbolModules.Add(symbolParts[0]);
+                _resolvedSymbolModules.Add(moduleName);
 
                 // Try to get the call tree node one more time.
                 node = FindNodeByName(Regex.Escape(symbolName));
 
                 // Check to see if the node matches.
-                if (node.Name.StartsWith(symbolName, StringComparison.OrdinalIgnoreCase))
+                if (SymbolNamesMatch(symbolName, node.Name))
                 {
                     return node;
                 }
             }
 
             return null;
+        }
+
+        private static bool SymbolNamesMatch(string requestedName, string foundName)
+        {
+            // Symbol names don't match if either or both are null.
+            if (requestedName == null || foundName == null)
+            {
+                return false;
+            }
+
+            // Allow the found name to be of equivalent or greater length than the requested length.
+            // Example:
+            //  Requested: System.Private.CoreLib.il!System.String.Concat
+            //  Found:     System.Private.CoreLib.il!System.String.Concat(class System.String,class System.String)
+            if (foundName.Length < requestedName.Length)
+            {
+                return false;
+            }
+
+            // Check for module!methodName equivalence.
+            for (int i = 0; i < requestedName.Length; i++)
+            {
+                if (requestedName[i] != foundName[i])
+                {
+                    return false;
+                }
+            }
+
+            // After the module!methodName equivalence check, only allow a '(', which denotes the method signature.
+            if (foundName.Length > requestedName.Length)
+            {
+                if (foundName[requestedName.Length] != '(')
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
