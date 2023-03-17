@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
-    public static class Extensions
+    internal static class Extensions
     {
         public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, Predicate<TraceEvent> predicate = null)
         {
@@ -24,6 +25,18 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
             // We clone the samples so that we don't have to go back to the ETL file from here on.  
             return CopyStackSource.Clone(traceStackSource);
+        }
+
+        public static MutableTraceEventStackSource BlockedTimeStacks(this TraceLog eventLog, SymbolReader symbolReader)
+        {
+            var stackSource = new MutableTraceEventStackSource(eventLog);
+
+            var computer = new ThreadTimeStackComputer(eventLog, symbolReader);
+            computer.ExcludeReadyThread = true;
+            computer.BlockedTimeOnly = true;
+            computer.GenerateThreadTimeStacks(stackSource);
+
+            return stackSource;
         }
 
         public static bool ManagedProcess(this TraceProcess process)
