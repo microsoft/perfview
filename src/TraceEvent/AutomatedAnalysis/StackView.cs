@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     {
         private static readonly char[] SymbolSeparator = new char[] { '!' };
 
-        private TraceLog _traceLog;
+        private AutomatedAnalysisTraceLog _traceLog;
         private StackSource _rawStackSource;
         private ProcessIndex _processIndex;
         private SymbolReader _symbolReader;
@@ -35,7 +35,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <param name="stackSource">The source of the stack data.</param>
         /// <param name="processIndex">Optional: The index of the process that the stacks belong to.</param>
         /// <param name="symbolReader">Optional: A symbol reader that can be used to lookup symbols.</param>
-        public StackView(TraceLog traceLog, StackSource stackSource, ProcessIndex processIndex, SymbolReader symbolReader, FilterDelegate filterDelegate = null)
+        public StackView(AutomatedAnalysisTraceLog traceLog, StackSource stackSource, ProcessIndex processIndex, SymbolReader symbolReader, FilterDelegate filterDelegate = null)
         {
             _traceLog = traceLog;
             _rawStackSource = stackSource;
@@ -90,7 +90,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// </summary>
         /// <param name="nodeNamePat">The regex pattern for the node name.</param>
         /// <returns>The requested node, or the root node if requested not found.</returns>
-        public CallTreeNodeBase FindNodeByName(string nodeNamePat)
+        private CallTreeNodeBase FindNodeByName(string nodeNamePat)
         {
             var regEx = new Regex(nodeNamePat, RegexOptions.IgnoreCase);
             foreach (var node in ByName)
@@ -102,24 +102,89 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             }
             return CallTree.Root;
         }
+
         /// <summary>
-        /// Get the set of caller nodes for a specified symbol.
+        /// Resolve symbols for the specified module.
         /// </summary>
-        /// <param name="symbolName">The symbol.</param>
-        public CallTreeNode GetCallers(string symbolName)
+        /// <param name="moduleName">The name of the module (without the dll or exe suffix).</param>
+        public void ResolveSymbols(string moduleName)
         {
-            var focusNode = FindNodeByName(symbolName);
-            return AggregateCallTreeNode.CallerTree(focusNode);
+            if (!_resolvedSymbolModules.Contains(moduleName))
+            {
+                IEnumerable<TraceModuleFile> moduleFiles;
+                if (_processIndex != ProcessIndex.Invalid)
+                {
+                    moduleFiles = _traceLog.UnderlyingSource.Processes[_processIndex].LoadedModules
+                        .Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
+                        .Select(m => m.ModuleFile);
+                }
+                else
+                {
+                    moduleFiles = _traceLog.UnderlyingSource.ModuleFiles.Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+                }
+                foreach (TraceModuleFile moduleFile in moduleFiles)
+                {
+                    // Check to see if symbols have already been resolved at the TraceLog level.
+                    // Otherwise we'll attempt to resolve them across multiple processes.
+                    // Always invalidate the cached structures to ensure that if this StackView was created before
+                    // the symbols were resolved, that the StackView will have a chance to refresh itself.
+                    if (!_traceLog.ResolvedModules.Contains(moduleFile.ModuleFileIndex))
+                    {
+                        // Special handling for NGEN images.
+                        if (moduleName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                        {
+                            SymbolReaderOptions options = _symbolReader.Options;
+                            try
+                            {
+                                _symbolReader.Options = SymbolReaderOptions.CacheOnly;
+                                _traceLog.UnderlyingSource.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
+                            }
+                            finally
+                            {
+                                _symbolReader.Options = options;
+                            }
+                        }
+                        else
+                        {
+                            _traceLog.UnderlyingSource.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
+                        }
+
+                        _traceLog.ResolvedModules.Add(moduleFile.ModuleFileIndex);
+                    }
+                }
+                InvalidateCachedStructures();
+
+                // Mark the module as resolved so that we don't try again.
+                _resolvedSymbolModules.Add(moduleName);
+            }
         }
 
         /// <summary>
-        /// Get the set of callee nodes for a specified symbol.
+        /// Get the set of caller nodes for a specified node.
         /// </summary>
-        /// <param name="symbolName">The symbol.</param>
-        public CallTreeNode GetCallees(string symbolName)
+        /// <param name="node">The node.</param>
+        public CallTreeNode GetCallers(CallTreeNodeBase node)
         {
-            var focusNode = FindNodeByName(symbolName);
-            return AggregateCallTreeNode.CalleeTree(focusNode);
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            return AggregateCallTreeNode.CallerTree(node);
+        }
+
+        /// <summary>
+        /// Get the set of callee nodes for a specified node.
+        /// </summary>
+        /// <param name="node">The node.</param>
+        public CallTreeNode GetCallees(CallTreeNodeBase node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            return AggregateCallTreeNode.CalleeTree(node);
         }
 
         /// <summary>
@@ -166,33 +231,42 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     IEnumerable<TraceModuleFile> moduleFiles;
                     if (_processIndex != ProcessIndex.Invalid)
                     {
-                        moduleFiles = _traceLog.Processes[_processIndex].LoadedModules
+                        moduleFiles = _traceLog.UnderlyingSource.Processes[_processIndex].LoadedModules
                             .Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
                             .Select(m => m.ModuleFile);
                     }
                     else
                     {
-                        moduleFiles = _traceLog.ModuleFiles.Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+                        moduleFiles = _traceLog.UnderlyingSource.ModuleFiles.Where(m => m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
                     }
                     foreach(TraceModuleFile moduleFile in moduleFiles)
                     {
-                        // Special handling for NGEN images.
-                        if(moduleName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                        // Check to see if symbols have already been resolved at the TraceLog level.
+                        // Otherwise we'll attempt to resolve them across multiple processes.
+                        // Always invalidate the cached structures to ensure that if this StackView was created before
+                        // the symbols were resolved, that the StackView will have a chance to refresh itself.
+                        if (!_traceLog.ResolvedModules.Contains(moduleFile.ModuleFileIndex))
                         {
-                            SymbolReaderOptions options = _symbolReader.Options;
-                            try
+                            // Special handling for NGEN images.
+                            if (moduleName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
                             {
-                                _symbolReader.Options = SymbolReaderOptions.CacheOnly;
-                                _traceLog.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
+                                SymbolReaderOptions options = _symbolReader.Options;
+                                try
+                                {
+                                    _symbolReader.Options = SymbolReaderOptions.CacheOnly;
+                                    _traceLog.UnderlyingSource.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
+                                }
+                                finally
+                                {
+                                    _symbolReader.Options = options;
+                                }
                             }
-                            finally
+                            else
                             {
-                                _symbolReader.Options = options;
+                                _traceLog.UnderlyingSource.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
                             }
-                        }
-                        else
-                        {
-                            _traceLog.CallStacks.CodeAddresses.LookupSymbolsForModule(_symbolReader, moduleFile);
+
+                            _traceLog.ResolvedModules.Add(moduleFile.ModuleFileIndex);
                         }
                     }
                     InvalidateCachedStructures();

@@ -31,6 +31,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         internal SymbolReader SymbolReader { get; }
 
+        internal HashSet<ModuleFileIndex> ResolvedModules { get; set; } = new HashSet<ModuleFileIndex>();
+
         IEnumerable<Process> ITrace.Processes
         {
             get
@@ -63,7 +65,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             if (traceProcess != null)
             {
                 StackSource stackSource = UnderlyingSource.CPUStacks(traceProcess);
-                stackView = new StackView(traceProcess.Log, stackSource, traceProcess.ProcessIndex, SymbolReader);
+                stackView = new StackView(this, stackSource, traceProcess.ProcessIndex, SymbolReader);
             }
             return stackView;
         }
@@ -79,7 +81,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                     _blockedTimeStacks = UnderlyingSource.BlockedTimeStacks(SymbolReader);
                 }
 
-                stackView = new StackView(traceProcess.Log, _blockedTimeStacks, traceProcess.ProcessIndex, SymbolReader,
+                stackView = new StackView(this, _blockedTimeStacks, traceProcess.ProcessIndex, SymbolReader,
                     (stackSource, processIndex) =>
                     {
                         return new FilterStackSource(
