@@ -88,14 +88,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <summary>
         /// Find a node.
         /// </summary>
-        /// <param name="nodeNamePat">The regex pattern for the node name.</param>
+        /// <param name="requestedNodeName">The requested node name.</param>
         /// <returns>The requested node, or the root node if requested not found.</returns>
-        private CallTreeNodeBase FindNodeByName(string nodeNamePat)
+        private CallTreeNodeBase FindNodeByName(string requestedNodeName)
         {
-            var regEx = new Regex(nodeNamePat, RegexOptions.IgnoreCase);
             foreach (var node in ByName)
             {
-                if (regEx.IsMatch(node.Name))
+                if (SymbolNamesMatch(requestedNodeName, node.Name))
                 {
                     return node;
                 }
@@ -211,7 +210,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         private CallTreeNodeBase GetCallTreeNodeImpl(string symbolName, string moduleName)
         {
             // Try to get the call tree node.
-            CallTreeNodeBase node = FindNodeByName(Regex.Escape(symbolName));
+            CallTreeNodeBase node = FindNodeByName(symbolName);
 
             // Check to see if the node matches.
             if (SymbolNamesMatch(symbolName, node.Name))
@@ -276,7 +275,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
                 _resolvedSymbolModules.Add(moduleName);
 
                 // Try to get the call tree node one more time.
-                node = FindNodeByName(Regex.Escape(symbolName));
+                node = FindNodeByName(symbolName);
 
                 // Check to see if the node matches.
                 if (SymbolNamesMatch(symbolName, node.Name))

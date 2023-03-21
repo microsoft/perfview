@@ -1543,7 +1543,7 @@ table {
 
     public class AutomatedAnalysisReport : PerfViewHtmlReport
     {
-        public AutomatedAnalysisReport(PerfViewFile dataFile) : base(dataFile, "Automatic CPU Analysis") { }
+        public AutomatedAnalysisReport(PerfViewFile dataFile) : base(dataFile, "Automated Trace Analysis") { }
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
