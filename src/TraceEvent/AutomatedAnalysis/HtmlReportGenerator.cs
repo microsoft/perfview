@@ -31,12 +31,12 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         {
             _writer.WriteLine("<html>");
             _writer.WriteLine("<head>");
-            _writer.WriteLine("<title>Automated CPU Analysis</title>");
+            _writer.WriteLine("<title>Automated Trace Analysis</title>");
             _writer.WriteLine("<meta charset=\"UTF-8\"/>");
             _writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
             _writer.WriteLine("</head>");
             _writer.WriteLine("<body>");
-            _writer.WriteLine("<H2>Automated CPU Analysis</H2>");
+            _writer.WriteLine("<H2>Automated Trace Analysis</H2>");
         }
 
         private void EndReport()
