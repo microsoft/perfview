@@ -5,7 +5,7 @@ namespace Microsoft.Diagnostics.Utilities
 {
     /// <summary>
     /// A finite cache based with a least recently used algorithm for replacement.   
-    /// It is meant to be fast (fast as a hashtable), and space efficient (not much
+    /// It is meant to be fast (fast as a hash table), and space efficient (not much
     /// over the MaxEntry key-value pairs are stored.  (only 8 bytes per entry additional).  
     /// 
     /// After reaching MaxEntry entries.  It uses a roughly least-recently used
@@ -49,8 +49,7 @@ namespace Microsoft.Diagnostics.Utilities
         /// </summary>
         public T Get(K key)
         {
-            T retVal;
-            TryGet(key, out retVal);
+            TryGet(key, out T retVal);
             return retVal;
         }
 
@@ -67,9 +66,10 @@ namespace Microsoft.Diagnostics.Utilities
             {
                 if (entryIndex == End)
                 {
-                    valueRet = default(T);
+                    valueRet = default;
                     return false;
                 }
+
                 CacheEntry entry = m_entries[entryIndex];
                 if (entry.Hash == entryHash && entry.Key.Equals(key))
                 {
@@ -82,6 +82,7 @@ namespace Microsoft.Diagnostics.Utilities
                     valueRet = entry.Value;
                     return true;
                 }
+
                 entryIndex = entry.Next;
             }
         }
@@ -103,6 +104,7 @@ namespace Microsoft.Diagnostics.Utilities
                 Value = value,
                 Next = m_hashTable[tableIndex]
             };
+
             UpdateAge(ref m_entries[entryIndex]);
             m_hashTable[tableIndex] = entryIndex;
         }
@@ -121,13 +123,9 @@ namespace Microsoft.Diagnostics.Utilities
             // Null out values so that we release the memory.   
             for (int i = 0; i < m_entries.Length; i++)
             {
-                m_entries[i].Key = default(K);
-                if (m_entries[i].Value != null && m_entries[i].Value is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-                m_entries[i].Value = null;
+                ClearEntry(ref m_entries[i]);
             }
+
             // indicate the free entries. 
             m_freeEntries = (ushort)m_entries.Length;
         }
@@ -151,6 +149,20 @@ namespace Microsoft.Diagnostics.Utilities
                 m_entriesInCurAge = 0;
                 m_curAge = (byte)((m_curAge + 1) & AgeMask);
             }
+        }
+
+        /// <summary>
+        /// Clear <see cref="CacheEntry.Key"/> and <see cref="CacheEntry.Value"/>,
+        /// disposing the old <see cref="CacheEntry.Value"/> if necessary.
+        /// This should be called when removing an entry from the cache to ensure
+        /// that the value is disposed.
+        /// </summary>
+        /// <param name="entry">The entry being removed from the cache.</param>
+        private static void ClearEntry(ref CacheEntry entry)
+        {
+            entry.Key = default;
+            (entry.Value as IDisposable)?.Dispose();
+            entry.Value = null;
         }
 
         // Finds an free entry in the table and returns the index to it.  
@@ -178,10 +190,10 @@ namespace Microsoft.Diagnostics.Utilities
                     }
 
                     // Look for an older age (0 means current age, 1 means
-                    // it is in the older epoc.  After a number of trials we simply
-                    // steal one, and the unlucky entry gets evicited 'unfairly'. 
+                    // it is in the older epoch.  After a number of trials we simply
+                    // steal one, and the unlucky entry gets evicted 'unfairly'. 
                     // We don't care about wrap around as that is rare and it just
-                    // means that it has to wait until the next epoc to die.  
+                    // means that it has to wait until the next epoch to die.  
                     int age = (m_curAge - m_entries[cur].Age) & AgeMask;
                     if (age > 1 || tries >= 5)
                     {
@@ -195,15 +207,19 @@ namespace Microsoft.Diagnostics.Utilities
                             m_entries[prev].Next = m_entries[cur].Next;
                         }
 
+                        ClearEntry(ref m_entries[cur]);
+
                         // Note that because we don't advance m_freeScan, we will
                         // scan the elements in the front of this chain again but
                         // that is OK.  
                         return cur;
                     }
+
                     tries++;
                     prev = cur;
                     cur = m_entries[cur].Next;
                 }
+
                 m_freeScan++;
                 if (m_freeScan >= m_hashTable.Length)
                 {
@@ -305,10 +321,10 @@ namespace Microsoft.Diagnostics.Utilities
         private const int AgeMask = 0x7;            // 3 bits for the age
 
         // fields...
-        private ushort[] m_hashTable;         // We hash here, which returns an index 
-        private CacheEntry[] m_entries;       // which point here.  Effectively this is open hashing, but is more efficient than using pointers.  
-        private ushort m_freeEntries;         // from 0 to m_freeEntries-1 are free. 
-                                              // when we run out of free entries, we look for old ones.  Remembers the m_hashTable entry were we are in this scan.
+        private readonly ushort[] m_hashTable;  // We hash here, which returns an index 
+        private readonly CacheEntry[] m_entries;// which point here.  Effectively this is open hashing, but is more efficient than using pointers.  
+        private ushort m_freeEntries;           // from 0 to m_freeEntries-1 are free. 
+                                                // when we run out of free entries, we look for old ones.  Remembers the m_hashTable entry were we are in this scan.
 
         private int m_freeScan;
 
