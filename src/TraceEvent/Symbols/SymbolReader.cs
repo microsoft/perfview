@@ -369,25 +369,36 @@ namespace Microsoft.Diagnostics.Symbols
         {
             if (!m_symbolModuleCache.TryGet(pdbFilePath, out ManagedSymbolModule ret))
             {
-                Stream stream = File.Open(pdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                byte[] firstBytes = new byte[4];
-                if (stream.Read(firstBytes, 0, firstBytes.Length) != 4)
+                FileStream stream = File.Open(pdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                try
                 {
-                    throw new InvalidOperationException("PDB corrupted (too small) " + pdbFilePath);
+                    byte[] firstBytes = new byte[4];
+                    if (stream.Read(firstBytes, 0, firstBytes.Length) != 4)
+                    {
+                        throw new InvalidOperationException("PDB corrupted (too small) " + pdbFilePath);
+                    }
+
+                    if (firstBytes[0] == 'B' && firstBytes[1] == 'S' && firstBytes[2] == 'J' && firstBytes[3] == 'B')
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);   // Start over
+                        ret = new PortableSymbolModule(this, stream, pdbFilePath);
+                    }
+                    else
+                    {
+                        stream.Dispose();
+                        stream = null;
+                        ret = new NativeSymbolModule(this, pdbFilePath);
+                    }
+                }
+                catch
+                {
+                    stream?.Dispose();
+                    throw;
                 }
 
-                if (firstBytes[0] == 'B' && firstBytes[1] == 'S' && firstBytes[2] == 'J' && firstBytes[3] == 'B')
-                {
-                    stream.Seek(0, SeekOrigin.Begin);   // Start over
-                    ret = new PortableSymbolModule(this, stream, pdbFilePath);
-                }
-                else
-                {
-                    stream.Dispose();
-                    ret = new NativeSymbolModule(this, pdbFilePath);
-                }
                 m_symbolModuleCache.Add(pdbFilePath, ret);
             }
+
             return ret;
         }
 
@@ -485,7 +496,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 _Options = value;
                 m_pdbPathCache.Clear();
-                m_log.WriteLine("Setting SYmbolReaderOptions forces clearing Pdb lookup cache");
+                m_log.WriteLine("Setting SymbolReaderOptions forces clearing Pdb lookup cache");
             }
         }
         private SymbolReaderOptions _Options;
@@ -734,7 +745,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Given a NGEN (or ReadyToRun) imge 'ngenImageFullPath' and the PDB path
+        /// Given a NGEN (or ReadyToRun) image 'ngenImageFullPath' and the PDB path
         /// that we WANT it to generate generate the PDB.  Returns either pdbPath 
         /// on success or null on failure.  
         /// 
@@ -1003,7 +1014,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Fetches a file from the server 'serverPath' with pdb signature path 'pdbSigPath' (concatinate them with a / or \ separator
+        /// Fetches a file from the server 'serverPath' with pdb signature path 'pdbSigPath' (concatenate them with a / or \ separator
         /// to form a complete URL or path name).   It will place the file in 'fullDestPath'   It will return true if successful
         /// If 'contentTypeFilter is present, this predicate is called with the URL content type (e.g. application/octet-stream)
         /// and if it returns false, it fails.   This ensures that things that are the wrong content type (e.g. redirects to 
@@ -1014,7 +1025,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <param name="serverPath">path to server (e.g. \\symbols\symbols or http://symweb) </param>
         /// <param name="pdbIndexPath">pdb path with signature (e.g clr.pdb/1E18F3E494DC464B943EA90F23E256432/clr.pdb)</param>
         /// <param name="fullDestPath">the full path of where to put the file locally </param>
-        /// <param name="contentTypeFilter">if present this allows you to filter out urls that dont match this ContentType.</param>
+        /// <param name="contentTypeFilter">if present this allows you to filter out URLs that don't match this ContentType.</param>
         internal bool GetPhysicalFileFromServer(string serverPath, string pdbIndexPath, string fullDestPath, Predicate<string> contentTypeFilter = null)
         {
             if (File.Exists(fullDestPath))
@@ -1343,12 +1354,12 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 // Decompress it
                 m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, targetPath);
-                var commandline = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath);
+                var commandLine = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath);
                 var options = new CommandOptions().AddNoThrow();
-                var command = Command.Run(commandline, options);
+                var command = Command.Run(commandLine, options);
                 if (command.ExitCode != 0)
                 {
-                    m_log.WriteLine("FindSymbolFilePath: Failure executing: {0}", commandline);
+                    m_log.WriteLine("FindSymbolFilePath: Failure executing: {0}", commandLine);
                     return null;
                 }
                 File.Delete(compressedFilePath);
@@ -1606,7 +1617,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// <summary>
     /// A SymbolModule represents a file that contains symbolic information 
     /// (a Windows PDB or Portable PDB).  This is the interface that is independent 
-    /// of what kind of symbolic file format you use.  Becase portable PDBs only
+    /// of what kind of symbolic file format you use.  Because portable PDBs only
     /// support managed code, this shared interface is by necessity the interface
     /// for managed code only (currently only Windows PDBs support native code).  
     /// </summary>
@@ -1643,7 +1654,7 @@ namespace Microsoft.Diagnostics.Symbols
         public abstract SourceLocation SourceLocationForManagedCode(uint methodMetadataToken, int ilOffset);
 
         /// <summary>
-        /// If the symbol file format supports SourceLink JSON this routine should be overriden
+        /// If the symbol file format supports SourceLink JSON this routine should be overridden
         /// to return it.  
         /// </summary>
         protected virtual IEnumerable<string> GetSourceLinkJson() { return Enumerable.Empty<string>(); }
@@ -2074,7 +2085,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return true;
             }
 
-            // If we don't match but we have nothinging better, remember it.   Otherwise do nothing as first hit is better.  
+            // If we don't match but we have nothing better, remember it.   Otherwise do nothing as first hit is better.  
             if (_filePath == null)
             {
                 _filePath = filePath;
@@ -2090,7 +2101,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Returns true if 'filePath' matches the checksum OR we don't have a checkdum
+        /// Returns true if 'filePath' matches the checksum OR we don't have a checksum
         /// (thus if we pass what validity check we have).    
         /// </summary>
         private bool ComputeChecksumMatch(string filePath)
@@ -2242,7 +2253,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                     catch (EndOfStreamException)
                     {
-                        // We succesfully normalized the entire file.
+                        // We successfully normalized the entire file.
                         // Grab remaining bytes in the case that the file does not end
                         // with a line ending character.
                         AppendLine();
