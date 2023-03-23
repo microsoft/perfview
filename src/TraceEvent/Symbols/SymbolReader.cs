@@ -182,13 +182,13 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             string pdbIndexPath = null;
-            string pdbSimpleName = Path.GetFileName(pdbFileName);        // Make sure the simple name is really a simple name
+            string pdbSimpleName = PathUtil.GetPlatformIndependentFileName(pdbFileName);        // Make sure the simple name is really a simple name
 
             // If we have a dllPath, look right beside it, or in a directory symbols.pri\retail\dll
             if (pdbPath == null && dllFilePath != null)        // Check next to the file. 
             {
                 m_log.WriteLine("FindSymbolFilePath: Checking relative to DLL path {0}", dllFilePath);
-                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), Path.GetFileName(pdbFileName));
+                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), PathUtil.GetPlatformIndependentFileName(pdbFileName));
                 if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                 {
                     pdbPath = pdbPathCandidate;
