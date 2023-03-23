@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Utilities
 {
@@ -309,6 +310,29 @@ namespace Microsoft.Diagnostics.Utilities
             returnVal = Path.Combine(returnVal, rest);
             Debug.Assert(string.Compare(Path.GetFullPath(Path.Combine(relativeToDirectory, returnVal)), fullPath, StringComparison.OrdinalIgnoreCase) == 0);
             return returnVal;
+        }
+
+        /// <summary>
+        /// Returns the file name and extension of the specified path string.
+        /// Path.GetFileName will not trim the file name from a Windows path 
+        /// when running on Unix because `\` is a legal file char on Unix.
+        /// See the Remarks section in the docs: https://learn.microsoft.com/en-us/dotnet/api/system.io.path.getfilename
+        /// This method ignores that logic and provides the string after the last '\' when running on non-Windows platform and Path.GetFileName returns the same string.
+        /// </summary>
+        public static string GetPlatformIndependentFileName(string path)
+        {
+            var fileName = Path.GetFileName(path);
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(path, fileName, StringComparison.Ordinal))
+            {
+                var lastSeparatorIdx = path.LastIndexOf('\\');
+                if (lastSeparatorIdx != -1)
+                {
+                    return path.Substring(lastSeparatorIdx + 1);
+                }
+            }
+#endif
+            return fileName;
         }
     }
 }

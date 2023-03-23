@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -10,6 +11,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     /// </summary>
     public sealed class AutomatedAnalysisTraceLog : ITrace
     {
+        private MutableTraceEventStackSource _blockedTimeStacks;
+
         /// <summary>
         /// Create a new instance for the specified TraceLog and SymbolReader.
         /// </summary>
@@ -28,6 +31,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         internal SymbolReader SymbolReader { get; }
 
+        internal HashSet<ModuleFileIndex> ResolvedModules { get; set; } = new HashSet<ModuleFileIndex>();
+
         IEnumerable<Process> ITrace.Processes
         {
             get
@@ -41,9 +46,13 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
         StackView ITrace.GetStacks(Process process, string stackType)
         {
-            if(StackTypes.CPU.Equals(stackType))
+            if (StackTypes.CPU.Equals(stackType))
             {
                 return GetCPUStacks(process);
+            }
+            else if (StackTypes.Blocked.Equals(stackType))
+            {
+                return GetBlockedTimeStacks(process);
             }
 
             return null;
@@ -56,7 +65,33 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
             if (traceProcess != null)
             {
                 StackSource stackSource = UnderlyingSource.CPUStacks(traceProcess);
-                stackView = new StackView(traceProcess.Log, stackSource, SymbolReader);
+                stackView = new StackView(this, stackSource, traceProcess.ProcessIndex, SymbolReader);
+            }
+            return stackView;
+        }
+
+        private StackView GetBlockedTimeStacks(Process process)
+        {
+            StackView stackView = null;
+            TraceProcess traceProcess = UnderlyingSource.Processes[(ProcessIndex)process.UniqueID];
+            if (traceProcess != null)
+            {
+                if (_blockedTimeStacks == null)
+                {
+                    _blockedTimeStacks = UnderlyingSource.BlockedTimeStacks(SymbolReader);
+                }
+
+                stackView = new StackView(this, _blockedTimeStacks, traceProcess.ProcessIndex, SymbolReader,
+                    (stackSource, processIndex) =>
+                    {
+                        return new FilterStackSource(
+                            new FilterParams()
+                            {
+                                IncludeRegExs = $"Process% {traceProcess.Name} ({traceProcess.ProcessID})"
+                            },
+                            stackSource,
+                            ScalingPolicyKind.ScaleToData);
+                    });
             }
             return stackView;
         }
