@@ -37,6 +37,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Xml;
+using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
@@ -5450,6 +5451,16 @@ table {
                         goto ADD_EVENT_FRAME;
                     }
 
+                    var asTaskWaitSend = data as TaskWaitSendArgs;
+                    if (asTaskWaitSend != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData Behavior " + asTaskWaitSend.Behavior);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                        
+                        goto ADD_EVENT_FRAME;
+                    }
+
+
                     var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
                     if (asSampleObjectAllocated != null)
                     {
@@ -9040,6 +9051,15 @@ table {
 
                                     frameIdx = stackSource.Interner.FrameIntern("EventData TypeName " + typeName);
                                     stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                                    goto ADD_EVENT_FRAME;
+                                }
+                                
+                                var asTaskWaitSend = data as TaskWaitSendArgs;
+                                if (asTaskWaitSend != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData Behavior " + asTaskWaitSend.Behavior);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                        
                                     goto ADD_EVENT_FRAME;
                                 }
 
