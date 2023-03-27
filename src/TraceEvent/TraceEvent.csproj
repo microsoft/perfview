@@ -37,6 +37,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2;CONTAINER_WORKAROUND_NOT_NEEDED</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
