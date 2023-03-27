@@ -1731,6 +1731,19 @@ namespace Microsoft.Diagnostics.Tracing
             return res;
         }
         /// <summary>
+        /// Give an offset to a int array of size 'size' in the payload bytes, return a int[] that contains
+        /// those bytes.
+        /// </summary>
+        protected internal int[] GetInt32ArrayAt(int offset, int size)
+        {
+            int[] res = new int[size];
+            for (int i = 0; i < size; i++)
+            {
+                res[i] = GetInt32At(offset + i * 4);
+            }
+            return res;
+        }
+        /// <summary>
         /// Returns a byte value that was serialized at 'offset' in the payload bytes
         /// </summary>
         protected internal int GetByteAt(int offset)
