@@ -813,6 +813,20 @@ namespace PerfView
                         symPath.Insert("SRV*" + wprSymDir);
                     }
 
+                    // Some diagsession files have a PDBCache directory.
+                    // The file is named something like D1_1<hash>_sc.etl
+                    // The corresponding PDBCache directory is named D1_1_<hash>_PDBCache
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(etlFilePath);
+                    if (fileNameWithoutExtension.EndsWith("_sc"))
+                    {
+                        fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, fileNameWithoutExtension.Length - 3);
+                        wprSymDir = Path.Combine(filePathDir, $"{fileNameWithoutExtension}_PDBCache");
+                        if (Directory.Exists(wprSymDir))
+                        {
+                            symPath.Insert("SRV*" + wprSymDir);
+                        }
+                    }
+
                     if (!string.IsNullOrWhiteSpace(sourcePath))
                     {
                         sourcePath += ";";
