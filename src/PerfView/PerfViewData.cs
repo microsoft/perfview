@@ -10046,22 +10046,20 @@ table {
                     {
                         // The directories contained in the symbol cache resource _are_ in the symbol cache format
                         // which means directories are in the form of /<file.ext>/<hash>/file.ext so in this case
-                        // we use the GetFileName API since it will consider the dictory name a file name.
+                        // we use the GetFileName API since it will consider the directory name a file name.
                         var targetDir = Path.Combine(symbolCachePath, Path.GetFileName(subPath));
 
-                        if (!Directory.Exists(targetDir))
+                        // The directory exists, so we must merge the two cache directories
+                        foreach (var symbolVersionDir in Directory.EnumerateDirectories(subPath))
                         {
-                            Directory.Move(subPath, targetDir);
-                        }
-                        else
-                        {
-                            // The directory exists, so we must merge the two cache directories
-                            foreach (var symbolVersionDir in Directory.EnumerateDirectories(subPath))
+                            var targetVersionDir = Path.Combine(targetDir, Path.GetFileName(symbolVersionDir));
+                            if (!Directory.Exists(targetVersionDir))
                             {
-                                var targetVersionDir = Path.Combine(targetDir, Path.GetFileName(symbolVersionDir));
-                                if (!Directory.Exists(targetVersionDir))
+                                Directory.CreateDirectory(targetVersionDir);
+                                foreach (var symbolFilePath in Directory.EnumerateFiles(symbolVersionDir))
                                 {
-                                    Directory.Move(symbolVersionDir, targetVersionDir);
+                                    string targetFilePath = Path.Combine(targetVersionDir, Path.GetFileName(symbolFilePath));
+                                    File.Move(symbolFilePath, Path.Combine(symbolFilePath, targetFilePath));
                                 }
                             }
                         }
