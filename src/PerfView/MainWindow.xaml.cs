@@ -1135,8 +1135,6 @@ namespace PerfView
                     App.UserConfigData["MainWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
                     App.UserConfigData["MainWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
                 }
-
-                AppLog.LogUsage("Exiting");
             };
 
             // Initialize configuration options.
@@ -1194,6 +1192,16 @@ namespace PerfView
             App.UserConfigData["DoNotCompressStackFramesOnCopy"] = newValue.ToString();
             Option_DoNotCompressStackFramesOnCopy.IsChecked = newValue;
             PerfDataGrid.DoNotCompressStackFrames = newValue;
+        }
+
+        public void ToggleExperimentalGCFeatures(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["ExperimentalGCFeatures"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["ExperimentalGCFeatures"] = newValue.ToString();
+            Option_ExperimentalGCFeatures.IsChecked = newValue;
+            Stats.GcStats.EnableExperimentalFeatures = newValue;
         }
 
         /// <summary>
@@ -1580,14 +1588,6 @@ namespace PerfView
 
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
-                if (AppLog.s_IsUnderTest)
-                {
-                    return;
-                }
-
-                bool canSendFeedback = AppLog.CanSendFeedback;
-                AppLog.LogUsage("Start", DateTime.Now.ToString(), AppLog.BuildDate);
-
                 // If we have the PdbScope.exe file then we can enable the ImageFile capability
                 string pdbScopeFile = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "PdbScope.exe");
                 bool pdbScopeExists = File.Exists(pdbScopeFile);
@@ -1597,14 +1597,6 @@ namespace PerfView
 
                 Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    if (canSendFeedback)
-                    {
-                        // FeedbackButton.Visibility = System.Windows.Visibility.Visible;
-
-                        // TODO Currently even the internal Wiki is now a broken link, so simply give up for now.
-                        // When we go open source we can use GitHub for this.
-                        // WikiButton.Visibility = System.Windows.Visibility.Visible;
-                    }
                     if (pdbScopeExists)
                     {
                         ImageSizeMenuItem.Visibility = System.Windows.Visibility.Visible;
@@ -1647,34 +1639,7 @@ namespace PerfView
             StatusBar.Log("Opening " + videoUrl);
             Command.Run(Command.Quote(videoUrl), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
         }
-        private void DoFeedbackClick(object sender, RoutedEventArgs e)
-        {
-            if (AppLog.CanSendFeedback)
-            {
-                var feedbackDialog = new PerfView.Dialogs.FeedbackDialog(this, delegate (string message)
-                {
-                    if (string.IsNullOrWhiteSpace(message))
-                    {
-                        StatusBar.Log("No feedback provided, cancelling.");
-                        return;
-                    }
-                    if (AppLog.SendFeedback(message, false))
-                    {
-                        StatusBar.Log("Successfully appended to " + AppLog.FeedbackFilePath);
-                        StatusBar.Log("Feedback sent.");
-                    }
-                    else
-                    {
-                        StatusBar.LogError("Sorry, there was a problem sending feedback.");
-                    }
-                });
-                feedbackDialog.Show();
-            }
-            else
-            {
-                DisplayUsersGuide("Feedback");
-            }
-        }
+
         private void DoTakeHeapSnapshot(object sender, RoutedEventArgs e)
         {
             App.CommandLineArgs.ProcessDumpFile = null;
@@ -1733,7 +1698,7 @@ namespace PerfView
 
         private void DoAbout(object sender, RoutedEventArgs e)
         {
-            string versionString = "PerfView Version " + AppLog.VersionNumber + " \r\nBuildDate: " + AppLog.BuildDate;
+            string versionString = "PerfView Version " + AppInfo.VersionNumber + " \r\nBuildDate: " + AppInfo.BuildDate;
             MessageBox.Show(versionString, versionString);
         }
 
@@ -2085,11 +2050,6 @@ namespace PerfView
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            if (AppLog.s_IsUnderTest)
-            {
-                return;
-            }
-
             if (App.CommandProcessor.CollectingData)
             {
                 DoAbort(null, null);

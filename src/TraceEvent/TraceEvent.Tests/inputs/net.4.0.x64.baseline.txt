@@ -223,11 +223,11 @@ EVENT 2,666.020: Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderDeliverEve
 EVENT 2,666.409: Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderPhaseStart PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=38; AppDomainID=1; LoadContextID=3; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=11; 
 EVENT 2,666.435: Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderPhaseStop PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=46; AppDomainID=1; LoadContextID=3; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=mscorlib; ClrInstanceID=11; 
 EVENT 2,680.911: Windows Kernel/UdpIp/Recv PID=4; TID=-1; PName=System; ProceNum=0; DataLen=32; context=0x3200000004; saddr=10.199.101.77; sport=137; size=50; daddr=10.199.101.255; dport=137; dsize=0; 
-EVENT 2,761.591: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=110,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; 
-EVENT 2,761.690: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; 
-EVENT 2,761.762: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; 
-EVENT 2,761.849: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; 
-EVENT 2,761.925: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; 
+EVENT 2,761.591: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=110,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; ObjectSize=0
+EVENT 2,761.690: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; ObjectSize=0
+EVENT 2,761.762: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; ObjectSize=0
+EVENT 2,761.849: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; ObjectSize=0
+EVENT 2,761.925: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=0; TypeID=0x00000000; TypeName=; HeapIndex=0; Address=0x00000000; ObjectSize=0
 EVENT 2,770.495: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=10; Reason=SuspendForGC; Count=0; ClrInstanceID=11; 
 EVENT 2,770.508: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=2; ClrInstanceID=11; 
 EVENT 2,770.520: Microsoft-Windows-DotNETRuntime/GC/Start PID=3896; TID=2784; PName=test; ProceNum=1; DataLen=18; Count=1; Reason=AllocSmall; Depth=0; Type=NonConcurrentGC; ClrInstanceID=11; ClientSequenceNumber=0; 
@@ -492,7 +492,7 @@ COUNT MSNT_SystemTrace/Image/KernelBase:1
 COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-Windows-DNS-Client/EventID(1001):3
 COUNT Microsoft-Windows-DNS-Client/EventID(1019):1
-COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49110
+COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49110; ObjectSize=0
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:4
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStart:71
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStop:71

@@ -97,7 +97,6 @@ namespace PerfView
         /// Maps thread Indexes to their status.
         /// </summary>
         private UserCritThreadStateMap m_ThreadStateMap;
-        /// <summary>
     }
 
     internal enum UserCritAcquisitionType

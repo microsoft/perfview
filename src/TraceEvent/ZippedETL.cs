@@ -112,12 +112,10 @@ namespace Microsoft.Diagnostics.Tracing
             FileUtilities.ForceDelete(newFileName);
             try
             {
-#if !NETSTANDARD1_6
                 if (LowPriority)
                 {
                     Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                 }
-#endif
                 Log.WriteLine("[Zipping ETL file {0}]", m_etlFilePath);
                 using (var zipArchive = ZipFile.Open(newFileName, ZipArchiveMode.Create))
                 {
@@ -186,9 +184,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             finally
             {
-#if !NETSTANDARD1_6
                 Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                 FileUtilities.ForceDelete(newFileName);
             }
             return success;
@@ -282,12 +278,10 @@ namespace Microsoft.Diagnostics.Tracing
                     if (Merge)
                     {
                         var startTime = DateTime.UtcNow;
-#if !NETSTANDARD1_6
                         if (LowPriority)
                         {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                         }
-#endif
                         try
                         {
                             Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
@@ -308,9 +302,7 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         finally
                         {
-#if !NETSTANDARD1_6
                             Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                         }
                     }
                     else
@@ -331,12 +323,10 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (NGenSymbolFiles)
                     {
-#if !NETSTANDARD1_6
                         if (LowPriority)
                         {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                         }
-#endif
                         try
                         {
                             var startTime = DateTime.UtcNow;
@@ -352,9 +342,7 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         finally
                         {
-#if !NETSTANDARD1_6
                             Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                         }
                     }
                     else

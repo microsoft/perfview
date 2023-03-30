@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Utilities;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;

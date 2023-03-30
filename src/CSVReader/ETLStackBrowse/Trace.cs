@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace ETLStackBrowse
 {
@@ -499,125 +498,7 @@ namespace ETLStackBrowse
             return val;
         }
 
-
-        [Serializable]
-        private class SavedState
-        {
-            public List<ThreadInfo> threads;
-            public List<ProcessInfo> processes;
-            public ByteAtomTable atomsProcesses;
-            public ByteAtomTable atomsFields;
-            public ByteAtomTable atomsRecords;
-            public List<List<int>> listEventFields;
-            public int[] sortedThreads;
-            public int[] sortedProcesses;
-            public long tmax;
-            public bool[] stackIgnoreEvents;
-            public List<long> offsets;
-            public Dictionary<int, int> mp_tid_firstindex;
-            public bool[] stackTypes;
-            public List<TimeMark> listInitialTime;
-            public RecordInfo[] recordInfo;
-            // public int maxCPU;
-            public string traceinfo;
-        }
-
         public const string cacheSuffix = ".cache.v9A";
-
-        private string CacheName(string file)
-        {
-            return file + cacheSuffix;
-        }
-
-        private void TrySaveState()
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            SavedState s = new SavedState();
-
-            s.threads = threads;
-            s.processes = processes;
-            s.atomsProcesses = atomsProcesses;
-            s.atomsFields = atomsFields;
-            s.atomsRecords = atomsRecords;
-            s.listEventFields = listEventFields;
-            s.sortedThreads = sortedThreads;
-            s.sortedProcesses = sortedProcesses;
-            s.tmax = tmax;
-            s.stackIgnoreEvents = stackIgnoreEvents;
-            s.offsets = offsets;
-            s.mp_tid_firstindex = mp_tid_firstindex;
-            s.stackTypes = stackTypes;
-            s.listInitialTime = listInitialTime;
-            s.recordInfo = recordInfo;
-            // s.maxCPU             =  this.maxCPU;
-            s.traceinfo = traceinfo;
-
-            try
-            {
-                using (FileStream fs = new FileStream(CacheName(filename), FileMode.Create))
-                {
-                    bf.Serialize(fs, s);
-                }
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException("Unable to Save Cache (Ignoring)\r\n" + e.Message);
-            }
-        }
-
-        private bool TryLoadState()
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            SavedState s = new SavedState();
-            string cacheName = CacheName(filename);
-            if (File.Exists(cacheName) && File.GetLastWriteTimeUtc(cacheName) > File.GetLastWriteTimeUtc(filename))
-            {
-                try
-                {
-                    using (FileStream fs = new FileStream(cacheName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-                    {
-                        s = (SavedState)bf.Deserialize(fs);
-                    }
-                }
-                catch (Exception)
-                {
-                    // never mind
-                    return false;
-                }
-            }
-            else
-            {
-                return false;       // cache out of date, ignore.  
-            }
-
-            threads = s.threads;
-            processes = s.processes;
-            atomsProcesses = s.atomsProcesses;
-            atomsFields = s.atomsFields;
-            atomsRecords = s.atomsRecords;
-            listEventFields = s.listEventFields;
-            sortedThreads = s.sortedThreads;
-            sortedProcesses = s.sortedProcesses;
-            tmax = s.tmax;
-            stackIgnoreEvents = s.stackIgnoreEvents;
-            offsets = s.offsets;
-            mp_tid_firstindex = s.mp_tid_firstindex;
-            stackTypes = s.stackTypes;
-            listInitialTime = s.listInitialTime;
-            recordInfo = s.recordInfo;
-            // this.maxCPU              =  s.maxCPU;
-            traceinfo = s.traceinfo;
-
-            idRecordEscape = atomsFields.Lookup("$R");
-            idTimeOffsetEscape = atomsFields.Lookup("$TimeOffset");
-            idTimeEscape = atomsFields.Lookup("$T");
-            idWhenEscape = atomsFields.Lookup("$When");
-            idFirstEscape = atomsFields.Lookup("$First");
-            idLastEscape = atomsFields.Lookup("$Last");
-
-            return true;
-        }
-
 
         public ETLTrace(ITraceParameters itparms, ITraceUINotify itnotify, string filename)
         {
@@ -628,19 +509,7 @@ namespace ETLStackBrowse
 
             stm = new BigStream(filename);
 
-            if (!TryLoadState())
-            {
-                InitializeFromPrimary();
-            }
-            else
-            {
-                itnotify.ClearEventFields();
-
-                foreach (TimeMark t in listInitialTime)
-                {
-                    itnotify.AddTimeToTimeList(t.desc);
-                }
-            }
+            InitializeFromPrimary();
 
             for (int i = 0; i < atomsRecords.Count; i++)
             {
@@ -1035,8 +904,6 @@ namespace ETLStackBrowse
             );
 
             tmax = t;
-
-            TrySaveState();
         }
 
         private long AddTimeRow(long tNext, CPUState[] state)

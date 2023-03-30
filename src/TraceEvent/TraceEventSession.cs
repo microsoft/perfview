@@ -5,7 +5,6 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
 using Microsoft.Diagnostics.Tracing.Compatibility;
-using Microsoft.Diagnostics.Tracing.Extensions;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
@@ -16,7 +15,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Utilities;
+
+using STACK_TRACING_EVENT_ID = Microsoft.Diagnostics.Tracing.STACK_TRACING_EVENT_ID; // Same as CLASSIC_EVENT_ID
+using EVENT_TRACE_MERGE_EXTENDED_DATA = Microsoft.Diagnostics.Tracing.EVENT_TRACE_MERGE_EXTENDED_DATA;
+using ETWKernelControl = Microsoft.Diagnostics.Tracing.ETWKernelControl;
 
 namespace Microsoft.Diagnostics.Tracing.Session
 {
@@ -657,8 +659,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         throw new ApplicationException("CPU Sampling interval is too large.");
                     }
 
-                    var succeeded = ETWControl.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
-                    if (!succeeded && CpuSampleIntervalMSec != 1.0F)
+                    // Always try to set, since it may not be the default
+                    var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL { Interval = (int)cpu100ns };
+                    var result = TraceEventNativeMethods.TraceSetInformation(0,
+                        TraceEventNativeMethods.TRACE_INFO_CLASS.TraceSampledProfileIntervalInfo,
+                        &interval, sizeof(TraceEventNativeMethods.TRACE_PROFILE_INTERVAL));
+                    if (result != 0 && CpuSampleIntervalMSec != 1.0F)
                     {
                         throw new ApplicationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");
                     }
@@ -733,9 +739,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
                 m_IsActive = true;
 
-                if (OperatingSystemVersion.AtLeast(62) && StackCompression)
+                if (StackCompression && OperatingSystemVersion.AtLeast(OperatingSystemVersion.Win10))
                 {
-                    ETWControl.EnableStackCaching(m_SessionHandle.DangerousGetHandle());
+                    var info = new TraceEventNativeMethods.TRACE_STACK_CACHING_INFO{ Enabled = 1 };
+                    TraceEventNativeMethods.TraceSetInformation(
+                        m_SessionHandle,
+                        TraceEventNativeMethods.TRACE_INFO_CLASS.TraceStackCachingInfo,
+                        &info,
+                        sizeof(TraceEventNativeMethods.TRACE_STACK_CACHING_INFO));
                 }
 
                 EnableLastBranchRecordingIfConfigured();
@@ -878,7 +889,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
                 catch (Exception) { Debug.Assert(false); }
 
-                ETWControl.SetCpuSamplingRate(10000);      // Set sample rate back to default 1 Msec 
+                // Set sample rate back to default 1 Msec
+                var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL { Interval = (int)10000 };
+                TraceEventNativeMethods.TraceSetInformation(0,
+                    TraceEventNativeMethods.TRACE_INFO_CLASS.TraceSampledProfileIntervalInfo,
+                    &interval, sizeof(TraceEventNativeMethods.TRACE_PROFILE_INTERVAL));
+
                 var propertiesBuff = stackalloc byte[PropertiesSize];
                 var properties = GetProperties(propertiesBuff);
                 int hr = TraceEventNativeMethods.ControlTrace(0UL, m_SessionName, properties, TraceEventNativeMethods.EVENT_TRACE_CONTROL_STOP);
@@ -1068,6 +1084,19 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     asArray[1] = (byte)(intVal >> 8);
                     asArray[2] = (byte)(intVal >> 16);
                     asArray[3] = (byte)(intVal >> 24);
+                }
+                else if (data is long)
+                {
+                    long longVal = (long)data;
+                    asArray = new byte[8];
+                    asArray[0] = (byte)longVal;
+                    asArray[1] = (byte)(longVal >> 8);
+                    asArray[2] = (byte)(longVal >> 16);
+                    asArray[3] = (byte)(longVal >> 24);
+                    asArray[4] = (byte)(longVal >> 32);
+                    asArray[5] = (byte)(longVal >> 40);
+                    asArray[6] = (byte)(longVal >> 48);
+                    asArray[7] = (byte)(longVal >> 56);
                 }
                 fixed (byte* filterDataPtr = asArray)
                 {
@@ -2836,7 +2865,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             // Compute the Sha1 hash 
-            var sha1 = System.Security.Cryptography.SHA1.Create();
+            var sha1 = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
             byte[] hash = sha1.ComputeHash(bytes);
 
             // Create a GUID out of the first 16 bytes of the hash (SHA-1 create a 20 byte hash)

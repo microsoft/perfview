@@ -24,7 +24,6 @@ namespace PerfViewTests.Utilities
         {
             _testOutputHelper = testOutputHelper;
 
-            AppLog.s_IsUnderTest = true;
             App.CommandLineArgs = new CommandLineArgs();
             App.CommandProcessor = new CommandProcessor();
 

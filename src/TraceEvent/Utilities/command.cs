@@ -15,7 +15,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
 
     /// <summary>
@@ -445,28 +445,22 @@ namespace Utilities
 
             if (options.elevate)
             {
-#if NETSTANDARD1_6
-                throw new NotImplementedException("Launching elevated processes is not implemented when TraceEvent is built for NetStandard 1.6");
-#else
                 options.useShellExecute = true;
                 startInfo.Verb = "runas";
                 if (options.currentDirectory == null)
                 {
                     options.currentDirectory = Directory.GetCurrentDirectory();
                 }
-#endif
             }
 
             startInfo.CreateNoWindow = options.noWindow;
             if (options.useShellExecute)
             {
                 startInfo.UseShellExecute = true;
-#if ! NETSTANDARD1_6
                 if (options.noWindow)
                 {
                     startInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 }
-#endif
             }
             else
             {
@@ -478,10 +472,8 @@ namespace Utilities
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardError = true;
                 startInfo.RedirectStandardOutput = true;
-#if ! NETSTANDARD1_6
                 startInfo.ErrorDialog = false;
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-#endif
                 startInfo.CreateNoWindow = true;
 
                 process.OutputDataReceived += new DataReceivedEventHandler(OnProcessOutput);

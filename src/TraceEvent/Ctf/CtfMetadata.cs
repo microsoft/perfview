@@ -26,6 +26,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             Dictionary<string, CtfMetadataType> typeAlias = new Dictionary<string, CtfMetadataType>();
             List<CtfStream> streams = new List<CtfStream>();
+            List<CtfEvent> events = new List<CtfEvent>();
 
             foreach (CtfMetadataDeclaration entry in parser.Parse())
             {
@@ -64,13 +65,21 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                     case CtfDeclarationTypes.Event:
                         CtfEvent evt = new CtfEvent(entry.Properties);
-                        streams[evt.Stream].AddEvent(evt);
+                        events.Add(evt);
                         break;
 
                     default:
                         Debug.Fail("Unknown metadata entry type.");
                         break;
                 }
+            }
+
+            // Add events to the corresponding streams after parsing the entire metadata document.
+            // This handles the case where a stream element gets written out after one or more
+            // event elements that reference it.
+            foreach (CtfEvent evt in events)
+            {
+                streams[evt.Stream].AddEvent(evt);
             }
 
             Streams = streams.ToArray();

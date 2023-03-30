@@ -38,11 +38,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (numResets > RecursionGuardConfiguration.MaxResets)
             {
-#if NETSTANDARD1_6
-                throw new Exception("Stack Overflow");
-#else 
                 throw new StackOverflowException();
-#endif
             }
             _currentThreadRecursionDepth = (ushort)currentThreadRecursionDepth;
             _resetCount = (ushort)numResets;

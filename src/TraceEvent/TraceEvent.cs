@@ -10,9 +10,7 @@ using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if !NETSTANDARD1_6
 using System.Dynamic;
-#endif
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -594,13 +592,11 @@ namespace Microsoft.Diagnostics.Tracing
     /// </para>
     /// </summary>
     public abstract unsafe class TraceEvent
-#if !NETSTANDARD1_6
         // To support DLR access of dynamic payload data ("((dynamic) myEvent).MyPayloadName"),
         // we derive from DynamicObject and override a couple of methods. If for some reason in
         // the future we wanted to derive from a different base class, we could also accomplish
         // this by implementing the IDynamicMetaObjectProvider interface instead.
         : DynamicObject
-#endif
     {
         /// <summary>
         /// The GUID that uniquely identifies the Provider for this event.  This can return Guid.Empty for classic (Pre-VISTA) ETW providers.  
@@ -999,7 +995,6 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-#if !NETSTANDARD1_6
         // These overloads allow integration with the DLR (Dynamic Language Runtime). That
         // enables getting at payload data in a more convenient fashion, directly by name.
         // In PowerShell, it "just works" (e.g. "$myEvent.MyPayload" will just work); in
@@ -1016,8 +1011,6 @@ namespace Microsoft.Diagnostics.Tracing
             result = PayloadByName(binder.Name);
             return result != null;
         }
-#endif
-
 
         // Getting at payload values.  
         /// <summary>
@@ -1734,6 +1727,19 @@ namespace Microsoft.Diagnostics.Tracing
             for (int i = 0; i < size; i++)
             {
                 res[i] = (byte)GetByteAt(offset + i);
+            }
+            return res;
+        }
+        /// <summary>
+        /// Give an offset to a int array of size 'size' in the payload bytes, return a int[] that contains
+        /// those bytes.
+        /// </summary>
+        protected internal int[] GetInt32ArrayAt(int offset, int size)
+        {
+            int[] res = new int[size];
+            for (int i = 0; i < size; i++)
+            {
+                res[i] = GetInt32At(offset + i * 4);
             }
             return res;
         }

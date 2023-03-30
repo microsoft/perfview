@@ -1016,7 +1016,7 @@ namespace PerfView
                         heapSession.StopOnDispose = false;
                     }
 
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                 }
             }
         }
@@ -1203,7 +1203,7 @@ namespace PerfView
                 LogFile.WriteLine("Stopping tracing for sessions '" + s_KernelessionName +
                     "' and '" + s_UserModeSessionName + "'.");
 
-                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                 PerfViewLogger.Log.StopTracing();
                 PerfViewLogger.StopTime = DateTime.UtcNow;
                 PerfViewLogger.Log.StartAndStopTimes();
@@ -3537,7 +3537,13 @@ namespace PerfView
                         // to get the runtime start event.  For minimal rundown, just enabling ForceEndRundown
                         // should be enough to get the rundown event for both .NET Framework and .NET Core
                         // without going down any expensive rundown codepaths.
-                        var rundownKeywords = ClrRundownTraceEventParser.Keywords.ForceEndRundown;
+
+                        // Minimal rundown includes:
+                        // - Runtime/Start event
+                        // - TieredCompilation
+                        var rundownKeywords = ClrRundownTraceEventParser.Keywords.ForceEndRundown |
+                            ClrRundownTraceEventParser.Keywords.Compilation |
+                            ClrRundownTraceEventParser.Keywords.GC;
 
                         // Only consider forcing suppression of these keywords if full rundown is enabled.
                         if (!parsedArgs.NoRundown && !parsedArgs.NoClrRundown)
@@ -3593,7 +3599,7 @@ namespace PerfView
 
                     // Complete perfview rundown.
                     DotNetVersionLogger.Stop();
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                     PerfViewLogger.Log.StartAndStopTimes();
                     PerfViewLogger.Log.StopRundown();
                 }

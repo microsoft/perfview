@@ -4,7 +4,7 @@ using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Web;
+using System.Net;
 
 namespace PerfView
 {
@@ -125,7 +125,7 @@ namespace PerfView
                             continue;
                         }
 
-                        var encodedName = HttpUtility.HtmlEncode(r.name);
+                        var encodedName = WebUtility.HtmlEncode(r.name);
 
                         w.WriteLine("<tr><td>{0}</td><td><a href='command:ShowBaseStacks,{0}' title='View Callers of {0} in Base Stacks'>{1:f1}</a></td><td><a href='command:ShowStacks,{0}' title='View Callers of {0} in Test Stacks'>{2:f1}</a></td><td>{3:f1}</td><td>{4:f2}</td><td>{5:f2}</td><td>{6}</td></tr>",
                             encodedName,

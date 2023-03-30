@@ -1,5 +1,4 @@
-﻿#if NET462 || NETSTANDARD2_0
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
@@ -7,7 +6,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     /// <summary>
     /// Analyzer resolver that searches the specified directory.
     /// </summary>
-    public sealed class DirectoryAnalyzerResolver : AnalyzerResolver
+    public class DirectoryAnalyzerResolver : AnalyzerResolver
     {
         private static string _baseDirectory;
 
@@ -44,4 +43,3 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         }
     }
 }
-#endif
