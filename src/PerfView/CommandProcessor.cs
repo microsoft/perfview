@@ -3526,7 +3526,8 @@ namespace PerfView
                         // - Runtime/Start event
                         // - TieredCompilation
                         var rundownKeywords = ClrRundownTraceEventParser.Keywords.ForceEndRundown |
-                            ClrRundownTraceEventParser.Keywords.Compilation;
+                            ClrRundownTraceEventParser.Keywords.Compilation |
+                            ClrRundownTraceEventParser.Keywords.GC;
 
                         // Only consider forcing suppression of these keywords if full rundown is enabled.
                         if (!parsedArgs.NoRundown && !parsedArgs.NoClrRundown)
