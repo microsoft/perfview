@@ -210,6 +210,7 @@ namespace PerfView
         public DateTime EndTime;
         public bool ForceNgenRundown;
         public bool DumpHeap;
+        public bool DisableDotNetVersionLogging;
 
         // Collect options
         public bool NoGui;
@@ -561,6 +562,8 @@ namespace PerfView
                 "Displays the hexadecimal address rather than ? when the address is unknown.");
             parser.DefineOptionalQualifier("ShowOptimizationTiers", ref ShowOptimizationTiers,
                 "Displays the optimization tier of each code version executed for the method.");
+            parser.DefineOptionalQualifier("DisableDotNetVersionLogging", ref DisableDotNetVersionLogging,
+                "Disables capturing of .NET version information during collection.");
             parser.DefineOptionalQualifier("NoGui", ref NoGui,
                 "Use the Command line version of the command (like on ARM).  Brings up a console window.  For batch scripts/automation use /LogFile instead (see users guide under 'Scripting' for more).");
             parser.DefineOptionalQualifier("SafeMode", ref SafeMode, "Turn off parallelism and other risky features.");

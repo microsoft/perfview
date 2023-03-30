@@ -99,6 +99,8 @@ internal class PerfViewLogger : System.Diagnostics.Tracing.EventSource
     { WriteEvent(25, eventTime, processID, threadID, processName, eventName, durationMSec); }
     [Event(26)]
     public void StopTriggerDebugMessage(DateTime eventTime, string message) { WriteEvent(26, eventTime, message); }
+    [Event(27)]
+    public void RuntimeVersion(string path, string version) { WriteEvent(27, path, version); }
     public class Tasks
     {
         public const EventTask Tracing = (EventTask)1;

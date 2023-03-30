@@ -44,6 +44,7 @@
     <Compile Include="..\PerfView\JitStats.cs" />
     <Compile Include="..\PerfView\RuntimeLoaderStats.cs" />
     <Compile Include="..\PerfView\FileVersionInformation.cs" />
+    <Compile Include="..\PerfView\DotNetVersionLogger.cs" />
   </ItemGroup>
 
   <ItemGroup>

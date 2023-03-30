@@ -109,6 +109,8 @@ namespace PerfView
             Command cmd = null;
             try
             {
+                DotNetVersionLogger.Start();
+
                 Start(parsedArgs);
                 Thread.Sleep(100);          // Allow time for the start rundown events OS events to happen.  
                 DateTime startTime = DateTime.Now;
@@ -153,6 +155,7 @@ namespace PerfView
             }
             finally
             {
+                DotNetVersionLogger.Stop();
                 if (!success)
                 {
                     if (cmd != null)
@@ -205,6 +208,7 @@ namespace PerfView
                     }
                     else
                     {
+                        DotNetVersionLogger.Start();
                         Start(parsedArgs);
                         WaitUntilCollectionDone(collectionCompleted, parsedArgs, DateTime.Now);
                         if (m_aborted)
@@ -218,6 +222,7 @@ namespace PerfView
                 }
                 finally
                 {
+                    DotNetVersionLogger.Stop();
                     collectionCompleted.Set();  // This ensures that the GUI window closes.  
                     if (!success)
                     {
@@ -2984,6 +2989,11 @@ namespace PerfView
                 cmdLineArgs += " /ShowOptimizationTiers";
             }
 
+            if (parsedArgs.DisableDotNetVersionLogging)
+            {
+                cmdLineArgs += " /DisableVersionLogging";
+            }
+
             if (parsedArgs.ContinueOnError)
             {
                 cmdLineArgs += " /ContinueOnError";
@@ -3445,6 +3455,12 @@ namespace PerfView
             try
             {
                 Stopwatch sw = Stopwatch.StartNew();
+                if (!DotNetVersionLogger.Running)
+                {
+                    DotNetVersionLogger.Start();
+                }
+
+                DotNetVersionLogger.StartRundown();
                 var rundownFile = Path.ChangeExtension(fileName, ".clrRundown.etl");
                 using (TraceEventSession clrRundownSession = new TraceEventSession(sessionName + "Rundown", rundownFile))
                 {
@@ -3582,6 +3598,7 @@ namespace PerfView
                     WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, rundownFile);
 
                     // Complete perfview rundown.
+                    DotNetVersionLogger.Stop();
                     PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                     PerfViewLogger.Log.StartAndStopTimes();
                     PerfViewLogger.Log.StopRundown();
