@@ -44,7 +44,7 @@ namespace PerfView
                     _session.EnableProvider(
                         ClrTraceEventParser.ProviderGuid,
                         TraceEventLevel.Always,
-                        (ulong)TraceEventKeyword.None,
+                        0x8000000000000000UL,
                         new TraceEventProviderOptions() { EventIDsToEnable = new List<int> { 187 } });
 
                     _session.Source.Clr.RuntimeStart += OnRuntimeInformationStartEvent;

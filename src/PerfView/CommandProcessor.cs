@@ -2991,7 +2991,7 @@ namespace PerfView
 
             if (parsedArgs.DisableDotNetVersionLogging)
             {
-                cmdLineArgs += " /DisableVersionLogging";
+                cmdLineArgs += " /DisableDotNetVersionLogging";
             }
 
             if (parsedArgs.ContinueOnError)
