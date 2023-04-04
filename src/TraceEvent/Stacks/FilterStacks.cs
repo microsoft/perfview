@@ -148,8 +148,13 @@ namespace Diagnostics.Tracing.StackSources
                 return false;
             }
 
-            return StartTimeRelativeMSec == asFilterParams.StartTimeRelativeMSec &&
-                EndTimeRelativeMSec == asFilterParams.EndTimeRelativeMSec &&
+            return
+                Double.TryParse(StartTimeRelativeMSec, out double dblStartTimeRelativeMSec) &&
+                Double.TryParse(asFilterParams.StartTimeRelativeMSec, out double dblFilterParamsStartTimeRelativeMSec) &&
+                dblStartTimeRelativeMSec == dblFilterParamsStartTimeRelativeMSec &&
+                Double.TryParse(EndTimeRelativeMSec, out double dblEndTimeRelativeMSec) &&
+                Double.TryParse(asFilterParams.EndTimeRelativeMSec, out double dblFilterParamsEndTimeRelativeMSec) &&
+                dblEndTimeRelativeMSec == dblFilterParamsEndTimeRelativeMSec &&
                 MinInclusiveTimePercent == asFilterParams.MinInclusiveTimePercent &&
                 FoldRegExs == asFilterParams.FoldRegExs &&
                 IncludeRegExs == asFilterParams.IncludeRegExs &&
@@ -157,6 +162,7 @@ namespace Diagnostics.Tracing.StackSources
                 GroupRegExs == asFilterParams.GroupRegExs &&
                 Scenarios == asFilterParams.Scenarios;
         }
+
         /// <summary>
         ///  override
         /// </summary>
