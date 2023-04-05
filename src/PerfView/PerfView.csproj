@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
     <OutputType>WinExe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <UseWPF>true</UseWPF>
@@ -48,15 +48,14 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
+  <PropertyGroup>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="PresentationFramework.Aero" />
     <Reference Include="ReachFramework" />
-    <Reference Include="System.Management" />
     <Reference Include="System.Printing" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="WindowsBase" />
   </ItemGroup>
 
   <ItemGroup>
@@ -71,6 +70,8 @@
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" GeneratePathProperty="true" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(SystemDiagnosticsDiagnosticSourceVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+    <PackageReference Include="System.Management" Version="7.0.0" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" GeneratePathProperty="true" />
     <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" GeneratePathProperty="true" />
     <PackageReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebVersion)" GeneratePathProperty="true" />
@@ -106,7 +107,7 @@
   <ItemGroup>
     <AutomatedAnalysisAnalyzers Include="$(TraceEventAutomatedAnalysisAnalyzersBase)Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers.dll;$(TraceEventAutomatedAnalysisAnalyzersBase)TraceEvent.Analyzers.config.xml" />
   </ItemGroup>
-  <Target Name="CopyAnalyzersToTarget" AfterTargets="Build">
+  <Target Name="CopyAnalyzersToTarget" AfterTargets="Build" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Copy SourceFiles="@(AutomatedAnalysisAnalyzers)" DestinationFolder="$(TargetDir)Analyzers" />
   </Target>
 
@@ -297,21 +298,21 @@
       <Link>amd64\HeapDump.exe.config</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Buffers.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\$(OutDir)\System.Buffers.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.Buffers.dll</LogicalName>
       <Link>HeapDump\System.Buffers.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Collections.Immutable.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\$(OutDir)\System.Collections.Immutable.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.Collections.Immutable.dll</LogicalName>
       <Link>HeapDump\System.Collections.Immutable.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Memory.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\$(OutDir)\System.Memory.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.Memory.dll</LogicalName>
@@ -332,21 +333,21 @@
       <Link>HeapDump\System.Numerics.Vectors.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Reflection.Metadata.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\$(OutDir)\System.Reflection.Metadata.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.Reflection.Metadata.dll</LogicalName>
       <Link>HeapDump\System.Reflection.Metadata.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.ValueTuple.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\$(OutDir)\System.ValueTuple.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.ValueTuple.dll</LogicalName>
       <Link>HeapDump\System.ValueTuple.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Runtime.InteropServices.RuntimeInformation.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\$(OutDir)\System.Runtime.InteropServices.RuntimeInformation.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.Runtime.InteropServices.RuntimeInformation.dll</LogicalName>
@@ -597,7 +598,14 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\EULA.rtf</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\CsvReader\$(OutDir)CsvReader.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\CsvReader\$(OutDir)CsvReader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\CsvReader.dll</LogicalName>
+      <Link>CsvReader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\CsvReader\bin\$(Configuration)\net6.0\CsvReader.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\CsvReader.dll</LogicalName>

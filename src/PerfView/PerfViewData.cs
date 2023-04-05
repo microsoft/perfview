@@ -1,5 +1,4 @@
 using Diagnostics.Tracing.StackSources;
-using global::DiagnosticsHub.Packaging.Interop;
 using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
@@ -20,7 +19,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareEngine;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Utilities;
-using Microsoft.DiagnosticsHub.Packaging.InteropEx;
 using PerfView.GuiUtilities;
 using PerfViewExtensibility;
 using PerfViewModel;
@@ -40,6 +38,11 @@ using System.Xml;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
+
+#if NETFRAMEWORK
+using DiagnosticsHub.Packaging.Interop;
+using Microsoft.DiagnosticsHub.Packaging.InteropEx;
+#endif
 
 namespace PerfView
 {
@@ -867,7 +870,9 @@ namespace PerfView
             new ProcessDumpPerfViewFile(),
             new ScenarioSetPerfViewFile(),
             new OffProfPerfViewFile(),
+#if NETFRAMEWORK
             new DiagSessionPerfViewFile(),
+#endif
             new LinuxPerfViewData(),
             new XmlTreeFile(),
             new EventPipePerfViewData(),
@@ -9804,6 +9809,7 @@ table {
         #endregion
     }
 
+#if NETFRAMEWORK
     /// <summary>
     /// Class to represent the Visual Studio .diagsesion file format that is defined
     /// as part of Microsoft.DiagnosticsHub.Packaging
@@ -10065,6 +10071,7 @@ table {
             return newResources;
         }
     }
+#endif
 
     public partial class StracePerfViewData : PerfViewFile
     {

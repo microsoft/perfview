@@ -1065,7 +1065,11 @@ namespace PerfView
 
                 if (xps)
                 {
+#if NETFRAMEWORK
                     Toolbox.SaveAsXps(data.visual, width, height, fileName);
+#else
+                    throw new NotSupportedException("Save as XPS is not supported on .NET");
+#endif
                 }
                 else
                 {

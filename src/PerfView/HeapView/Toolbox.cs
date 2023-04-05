@@ -861,6 +861,7 @@ namespace PerfView
             return pngFile;
         }
 
+#if NETFRAMEWORK
         /// <summary>
         /// Save Visual as XPS file, may be slow
         /// </summary>
@@ -905,6 +906,7 @@ namespace PerfView
 
             return xpsFile;
         }
+#endif
 
         /// <summary>
         /// Wrap around Panel with top-left border, with a label as Tooltip

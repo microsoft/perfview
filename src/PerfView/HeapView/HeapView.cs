@@ -49,10 +49,12 @@ namespace PerfView
             }
         }
 
+#if NETFRAMEWORK
         private void OnSaveAsXPS(object sender, RoutedEventArgs e)
         {
             m_heapInfo.SaveDiagram(FilePath, true);
         }
+#endif
 
         private void OnSaveAsPNG(object sender, RoutedEventArgs e)
         {
@@ -81,7 +83,9 @@ namespace PerfView
 
             MenuItem file = menu.AddItem("File");
             file.AddItem("Open").IsEnabled = false;
+#if NETFRAMEWORK
             file.AddItem("Save as XPS ...").Click += OnSaveAsXPS;
+#endif
             file.AddItem("Save as PNG ...").Click += OnSaveAsPNG;
             file.AddItem("Close").Click += OnCloseWindow;
 

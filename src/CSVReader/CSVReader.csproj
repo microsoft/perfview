@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFrameworks>net462;net6.0</TargetFrameworks>
 
     <Description>CSVReader</Description>
     <Company>Microsoft</Company>
@@ -12,6 +12,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Permissions" Version="7.0.0" />
   </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->
