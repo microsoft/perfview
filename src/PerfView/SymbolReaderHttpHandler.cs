@@ -950,7 +950,7 @@ namespace PerfView
 
                 gcmProcess.StartInfo = startInfo;
                 gcmProcess.EnableRaisingEvents = true;
-                TaskCompletionSource<object> exitedTcs = new TaskCompletionSource<object>(TaskContinuationOptions.ExecuteSynchronously);
+                TaskCompletionSource<object> exitedTcs = new TaskCompletionSource<object>();
                 gcmProcess.Exited += (sender, e) => exitedTcs.TrySetResult(null);
 
                 cancellationToken.ThrowIfCancellationRequested();
