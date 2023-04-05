@@ -37,10 +37,29 @@ namespace PerfView
         /// </summary>
         private readonly List<IAsyncSymbolReaderHandler> _handlers = new List<IAsyncSymbolReaderHandler>();
 
+        internal static HttpClientHandler CreateClientHandler()
+        {
+            var handler = new HttpClientHandler();
+            try
+            {
+                handler.CheckCertificateRevocationList = true;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Depending on which binary loads at runtime, it might fail to set the CheckCertificateRevocationList
+                // property. This should never occur on .NET builds.
+#if NET
+                throw;
+#endif
+            }
+
+            return handler;
+        }
+
         /// <summary>
         /// Construct a new <see cref="SymbolReaderHttpHandler"/> instance.
         /// </summary>
-        public SymbolReaderHttpHandler() : base(new HttpClientHandler() { CheckCertificateRevocationList = true })
+        public SymbolReaderHttpHandler() : base(CreateClientHandler())
         {
         }
 
@@ -1279,7 +1298,7 @@ namespace PerfView
         /// <summary>
         /// An HTTP client used to discover the authority (login endpoint and tenant) for an Azure Dev Ops instance.
         /// </summary>
-        private readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true });
+        private readonly HttpClient _httpClient = new HttpClient(SymbolReaderHttpHandler.CreateClientHandler());
 
         /// <summary>
         /// Construct a new <see cref="AzureDevOpsHandler"/> instance.
@@ -1556,7 +1575,7 @@ namespace PerfView
         /// <summary>
         /// An HTTP client for making device flow calls
         /// </summary>
-        private readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true });
+        private readonly HttpClient _httpClient = new HttpClient(SymbolReaderHttpHandler.CreateClientHandler());
 
         /// <summary>
         /// Gate to protect against multiple calls to the device flow.
