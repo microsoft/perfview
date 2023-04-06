@@ -89,6 +89,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="banned.h" />
     <ClInclude Include="COMInfrastructure.h" />
     <ClInclude Include="CorProfilerTracer.h" />
     <ClInclude Include="ETWClrProfiler.h" />
