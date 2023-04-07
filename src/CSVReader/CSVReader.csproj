@@ -9,6 +9,10 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
   </ItemGroup>
