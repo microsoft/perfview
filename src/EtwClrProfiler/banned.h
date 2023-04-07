@@ -69,9 +69,12 @@
 #			pragma deprecated (strncpy, wcsncpy, _tcsncpy, _mbsncpy, _mbsnbcpy, StrCpyN, StrCpyNA, StrCpyNW, StrNCpy, strcpynA, StrNCpyA, StrNCpyW, lstrcpyn, lstrcpynA, lstrcpynW)
 #			pragma deprecated (strncat, wcsncat, _tcsncat, _mbsncat, _mbsnbcat, StrCatN, StrCatNA, StrCatNW, StrNCat, StrNCatA, StrNCatW, lstrncat, lstrcatnA, lstrcatnW, lstrcatn)
 #			pragma deprecated (gets, _getts, _gettws)
-#			pragma deprecated (IsBadWritePtr, IsBadHugeWritePtr, IsBadReadPtr, IsBadHugeReadPtr, IsBadCodePtr, IsBadStringPtr)
-#			pragma deprecated (memcpy, RtlCopyMemory, CopyMemory, wmemcpy)
-#			pragma deprecated (lstrlen)
+
+			// Commented out functions are used in the latest version of the Windows SDK, so we can't mark them deprecated here
+			// or the additional SDL checks we have enabled will convert the warnings to errors.  Uncomment these once the usages are removed.
+#			pragma deprecated (/*IsBadWritePtr, IsBadHugeWritePtr, IsBadReadPtr, IsBadHugeReadPtr, IsBadCodePtr,*/ IsBadStringPtr)
+#			pragma deprecated (/*memcpy, RtlCopyMemory, */ CopyMemory, wmemcpy)
+// #			pragma deprecated (lstrlen)
 #		endif //defined(_STRSAFE_H_INCLUDED_) && !defined(STRSAFE_NO_DEPRECATE)
 
 		// SDL 6.0, 6.1, 6.5 and 7.0 Recommendations
