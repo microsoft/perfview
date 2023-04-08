@@ -22,6 +22,28 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <!-- Build a NuGet package containing PerfView.exe -->
+  <PropertyGroup>
+    <Description>PerfView</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>$(PerfViewVersion)</Version>
+    <FileVersion>$(PerfViewVersion)</FileVersion>
+    <InformationalVersion>$(PerfViewVersion)</InformationalVersion>
+    <NeutralLanguage>en</NeutralLanguage>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <NuspecFile>PerfView.nuspec</NuspecFile>
+    <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
+  </PropertyGroup>
+
+  <Target Name="SetNuspecProperties">
+    <PropertyGroup>
+      <NuspecProperties>Configuration=$(Configuration);version=$(PerfViewVersion);OutDir=$(OutputPath)</NuspecProperties>
+    </PropertyGroup>
+  </Target>
+
   <ItemGroup>
     <SuggestedBindingRedirects Include="Microsoft.Diagnostics.Tracing.TraceEvent, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <MaxVersion>$(TraceEventVersion).0</MaxVersion>
