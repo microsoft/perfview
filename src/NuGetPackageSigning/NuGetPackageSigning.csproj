@@ -13,8 +13,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <!-- Get the PerfView.*.nuget package we just built -->
-    <None Include="..\PerfView\bin\$(Configuration)\PerfView.*nupkg">
+    <!-- Get the Microsoft.PerfView.*.nuget package we just built -->
+    <None Include="..\PerfView\bin\$(Configuration)\Microsoft.PerfView.*nupkg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 

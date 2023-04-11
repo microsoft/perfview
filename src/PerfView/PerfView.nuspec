@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 <package>
   <metadata minClientVersion="2.5">
-    <id>PerfView</id>
+    <id>Microsoft.PerfView</id>
     <version>0.0.0</version>
     <title>Microsoft PerfView</title>
     <authors>Microsoft</authors>
