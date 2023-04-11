@@ -247,12 +247,6 @@ namespace PerfView
                 return;
             }
 
-            // if no filters have changed, quick out
-            if (m_lastSetStackSourceFilter != null && Filter.Equals(m_lastSetStackSourceFilter))
-            {
-                return;
-            }
-
             // Synchronize the sample rate if the source supports it.  
             // TODO - Currently nothing uses sampling.  USE OR REMOVE 
             if (newSource.SamplingRate == null)
@@ -469,9 +463,6 @@ namespace PerfView
                     onComplete?.Invoke();
                 });
             });
-
-            // record to throttle calls if no UI changes
-            m_lastSetStackSourceFilter = new FilterParams(Filter);
         }
 
         // The 'Just My App' pattern depends on the directory of the EXE and thus has to be fixed up to be the
@@ -4223,7 +4214,6 @@ namespace PerfView
 
         // Keep track of the parameters we have already seeen. 
         private List<FilterParams> m_history;
-        private FilterParams m_lastSetStackSourceFilter;
         private int m_historyPos;
         private bool m_settingFromHistory;      // true if the filter parameters are being udpated from the history list
         private bool m_fixedUpJustMyCode;
