@@ -106,4 +106,12 @@
     <NoWarn>$(NoWarn),1573,1591</NoWarn>
   </PropertyGroup>
 
+  <!--
+    Don't add synthetic project references for solution dependencies.
+    This is required to build the PerfView NuGet package.
+  -->
+  <PropertyGroup>
+    <AddSyntheticProjectReferencesForSolutionDependencies>false</AddSyntheticProjectReferencesForSolutionDependencies>
+  </PropertyGroup>
+
 </Project>

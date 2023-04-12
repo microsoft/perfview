@@ -65,7 +65,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfViewCollect", "src\Perf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventSamples", "src\TraceEvent\Samples\TraceEventSamples.csproj", "{2D5418E0-6513-4285-8B0D-53A30CBEF242}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventPackageSigning", "src\TraceEventPackageSigning\TraceEventPackageSigning.csproj", "{121D62F5-0BB7-4DB5-8742-454127DF31F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NuGetPackageSigning", "src\NuGetPackageSigning\NuGetPackageSigning.csproj", "{121D62F5-0BB7-4DB5-8742-454127DF31F4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "src\Utilities\Utilities.csproj", "{BBF0A803-0B1C-47F2-B60F-09A5C4DB2136}"
 EndProject
