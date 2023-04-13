@@ -9974,7 +9974,7 @@ table {
 
                         if (!Directory.Exists(targetDir))
                         {
-                            Directory.Move(subPath, targetDir);
+                            MoveDirectory(subPath, targetDir);
                         }
                         else
                         {
@@ -9984,7 +9984,7 @@ table {
                                 var targetVersionDir = Path.Combine(targetDir, Path.GetFileName(symbolVersionDir));
                                 if (!Directory.Exists(targetVersionDir))
                                 {
-                                    Directory.Move(symbolVersionDir, targetVersionDir);
+                                    MoveDirectory(symbolVersionDir, targetVersionDir);
                                 }
                             }
                         }
@@ -9997,6 +9997,28 @@ table {
             catch (Exception e)
             {
                 worker.Log($"Failed to extract symbols from {Path.GetFileName(FilePath)} ... (Exception: {e.Message})");
+            }
+        }
+
+        private void MoveDirectory(string sourceDirName, string destDirName)
+        {
+            if (Directory.GetDirectoryRoot(sourceDirName) == Directory.GetDirectoryRoot(destDirName))
+            {
+                Directory.Move(sourceDirName, destDirName);
+                return;
+            }
+
+            // Create all directories
+            Directory.CreateDirectory(destDirName);
+            foreach (var directory in Directory.EnumerateDirectories(sourceDirName, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(directory.Replace(sourceDirName, destDirName));
+            }
+
+            // Move all files
+            foreach (var file in Directory.EnumerateFiles(sourceDirName, "*", SearchOption.AllDirectories))
+            {
+                File.Move(file, file.Replace(sourceDirName, destDirName));
             }
         }
 
