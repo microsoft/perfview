@@ -21,6 +21,16 @@
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
 
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'net6.0-windows'">
+      <ItemGroup>
+        <!-- PerfView.SupportFiles doesn't currently include a net6.0 build. Manually include references from net40. -->
+        <Reference Include="DiagnosticsHub.Packaging.Interop" HintPath="$(PerfViewSupportFilesBase)net40\DiagnosticsHub.Packaging.Interop.dll" />
+        <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx" HintPath="$(PerfViewSupportFilesBase)net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
   <ItemGroup>
     <AssemblyAttribute Include="PerfView.Properties.BuildDateAttribute">
       <_Parameter1>$([System.DateTime]::Now.ToString(`r`))</_Parameter1>
