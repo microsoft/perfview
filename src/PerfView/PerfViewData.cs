@@ -5478,7 +5478,7 @@ table {
                     var asTraceOperationStop = data as TraceOperationStopArgs;
                     if (asTraceOperationStop != null)
                     {
-                        var frameIdx = stackSource.Interner.FrameIntern("EventData OperationName " + asTraceOperationStop.Status);
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData Status " + asTraceOperationStop.Status);
                         stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
                         goto ADD_EVENT_FRAME;
