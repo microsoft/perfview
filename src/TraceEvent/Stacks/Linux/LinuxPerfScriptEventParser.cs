@@ -1,4 +1,5 @@
-﻿using Microsoft.Diagnostics.Tracing.Utilities;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -768,7 +769,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.SkipUpTo('=');
                 source.MoveNext();
 
-                source.ReadAsciiStringUpTo(' ', sb);
+                ReadProcessNameFromSchedSwitch(source, "prev_pid", sb);
                 string prevComm = sb.ToString();
                 sb.Clear();
 
@@ -792,7 +793,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.SkipUpTo('=');
                 source.MoveNext();
 
-                source.ReadAsciiStringUpTo(' ', sb);
+                ReadProcessNameFromSchedSwitch(source, "next_pid", sb);
                 string nextComm = sb.ToString();
                 sb.Clear();
 
@@ -861,7 +862,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             source.SkipUpTo('=');
             source.MoveNext();
 
-            source.ReadAsciiStringUpTo(' ', sb);
+            ReadProcessNameFromSchedSwitch(source, "pid", sb);
             string comm = sb.ToString();
             sb.Clear();
 
@@ -876,6 +877,32 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             int prio = source.ReadInt();
 
             return new ThreadExit(comm, tid, prio);
+        }
+
+        private void ReadProcessNameFromSchedSwitch(FastStream source, string nextFieldName, StringBuilder dest)
+        {
+            StringBuilder fieldNameStringBuilder = new StringBuilder();
+
+            while (true)
+            {
+                source.ReadAsciiStringUpTo(' ', dest);
+                source.MoveNext();
+
+                // Check to see if we've hit the next field name.
+                FastStream.MarkedPosition pos = source.MarkPosition();
+                source.ReadFixedString(nextFieldName.Length, fieldNameStringBuilder);
+
+                if (nextFieldName.Equals(fieldNameStringBuilder.ToString()))
+                {
+                    break;
+                }
+                else
+                {
+                    source.RestoreToMark(pos);
+                    fieldNameStringBuilder.Clear();
+                    dest.Append(' ');
+                }
+            }
         }
 
         private string RemoveOuterBrackets(string s)
