@@ -581,11 +581,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// Enable the kernel provider for the session. Before windows 8 this session must be called 'NT Kernel Session'.   
         /// This API is OK to call from one thread while Process() is being run on another
+        /// </summary>
         /// <param name="flags">Specifies the particular kernel events of interest</param>
         /// <param name="stackCapture">
         /// Specifies which events should have their stack traces captured when an event is logged</param>
         /// <returns>Returns true if the session existed before and was restarted (see TraceEventSession)</returns>
-        /// </summary>
         public unsafe bool EnableKernelProvider(KernelTraceEventParser.Keywords flags, KernelTraceEventParser.Keywords stackCapture = KernelTraceEventParser.Keywords.None)
         {
             // Setting stack capture implies that it is on.  
@@ -1386,7 +1386,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Creating a TraceEventSession does not actually interact with the operating system until a
         /// provider is enabled. At that point the session is considered active (OS state that survives a
         /// process exit has been modified). IsActive returns true if the session is active. 
-        /// 
         /// </summary>
         public bool IsActive
         {
@@ -3121,7 +3120,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
     /// cause any session with the kernel PMCProfile keyword active to start emitting
     /// PMCCounterProf events for each ProfileSouce that is enabled.  
     /// </para>
-    /// /// </summary>
+    /// </summary>
     public static class TraceEventProfileSources
     {
         /// <summary>
