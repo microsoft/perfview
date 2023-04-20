@@ -25,13 +25,38 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Linux
                 _endingStates[linuxEvent.ThreadID] = _beginningStates[linuxEvent.ThreadID];
             }
 
-            // TODO: If this is a sched_switch event, then connect the two thread ids.
+            // In container scenarios, scheduler and thread exit events have two different IDs for the same thread.
+            // One is from the container namespace and one is from the global namespace.  They are logically the same thread.
+            if (linuxEvent.Kind == EventKind.Scheduler)
+            {
+                SchedulerEvent schedulerEvent = (SchedulerEvent)linuxEvent;
+                if (!_beginningStates.ContainsKey(schedulerEvent.Switch.PreviousThreadID))
+                {
+                    _beginningStates.Add(
+                        schedulerEvent.Switch.PreviousThreadID,
+                        _beginningStates[linuxEvent.ThreadID]);
+
+                    _endingStates[schedulerEvent.Switch.PreviousThreadID] = _beginningStates[linuxEvent.ThreadID];
+                }
+
+            }
+            else if (linuxEvent.Kind == EventKind.ThreadExit)
+            {
+                ThreadExitEvent threadExitEvent = (ThreadExitEvent)linuxEvent;
+                if (!_beginningStates.ContainsKey(threadExitEvent.Exit.ThreadID))
+                {
+                    _beginningStates.Add(
+                        threadExitEvent.Exit.ThreadID,
+                        _beginningStates[linuxEvent.ThreadID]);
+
+                    _endingStates[threadExitEvent.Exit.ThreadID] = _beginningStates[linuxEvent.ThreadID];
+                }
+            }
         }
 
         internal void RemoveThread(ThreadExitEvent exitEvent)
         {
-            // TODO: Do we need to also get the in-container thread ID?
-            // TODO: Do we also need to remove from beginning states?
+            _endingStates.Remove(exitEvent.ThreadID);
             _endingStates.Remove(exitEvent.Exit.ThreadID);
         }
 
