@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Linux;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -64,7 +65,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                             BlockedTimeAnalyzer blockedTimeAnalyzer = null;
                             if (threadBlockedTimeAnalyzers != null)
                             {
-                                blockedTimeAnalyzer = new BlockedTimeAnalyzer(this);
+                                blockedTimeAnalyzer = new BlockedTimeAnalyzer(this, doThreadTime);
                                 threadBlockedTimeAnalyzers[(int)givenArrayIndex].Add(blockedTimeAnalyzer);
                             }
 
@@ -230,7 +231,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
             for (int i = 0; i < analyzers.Count; i++)
             {
-                var endingStates = analyzers[i].EndingStates;
+                var endingStates = analyzers[i].ThreadStateComputer.EndingStates;
 
                 if (i < analyzers.Count - 1)
                 {
@@ -239,11 +240,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     {
                         for (int j = i + 1; j < analyzers.Count; j++)
                         {
-                            var beginningStates = analyzers[j].BeginningStates;
+                            var beginningStates = analyzers[j].ThreadStateComputer.BeginningStates;
 
                             if (beginningStates.ContainsKey(threadId))
                             {
-                                var afterEvent = beginningStates[threadId].Value;
+                                var afterEvent = beginningStates[threadId].Event;
                                 analyzers[i].UpdateThreadState(afterEvent);
 
                                 break;
@@ -357,7 +358,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         protected virtual void DoInterning()
         {
-            BlockedTimeAnalyzer blockedTimeAnalyzer = new BlockedTimeAnalyzer(this);
+            BlockedTimeAnalyzer blockedTimeAnalyzer = new BlockedTimeAnalyzer(this, doThreadTime);
 
             foreach (var linuxEvent in parser.ParseSkippingPreamble(masterSource))
             {
@@ -367,12 +368,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     StartTimeStampMSec = linuxEvent.TimeMSec;
                 }
 
-                // BlockedTimeAnalyzer handles all sample production.
-                // Only give it the set of events that we want it to process.
-                if (doThreadTime || linuxEvent.Kind == EventKind.Cpu)
-                {
-                    blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
-                }
+                blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
             }
 
             blockedTimeAnalyzer?.FinishAnalyzing();
@@ -514,8 +510,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
     public class BlockedTimeAnalyzer
     {
         public double TimeStamp { get; private set; }
-        public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> BeginningStates { get; }
-        public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> EndingStates { get; }
+        internal LinuxPerfScriptThreadStateComputer ThreadStateComputer { get; }
         public Dictionary<LinuxEvent, LinuxPerfScriptStackSourceSample> LinuxEventSamples { get; }
         public Dictionary<int, LinuxEvent> LastCpuUsage { get; }
         public List<ThreadPeriod> BlockedThreadPeriods { get; }
@@ -535,10 +530,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             }
         }
 
-        public BlockedTimeAnalyzer(LinuxPerfScriptStackSource stackSource)
+        internal bool DoThreadTime { get; private set; }
+
+        public BlockedTimeAnalyzer(LinuxPerfScriptStackSource stackSource, bool doThreadTime)
         {
-            BeginningStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
-            EndingStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
+            DoThreadTime = doThreadTime;
+            ThreadStateComputer = new LinuxPerfScriptThreadStateComputer();
             LinuxEventSamples = new Dictionary<LinuxEvent, LinuxPerfScriptStackSourceSample>();
             LastCpuUsage = new Dictionary<int, LinuxEvent>();
             BlockedThreadPeriods = new List<ThreadPeriod>();
@@ -552,14 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 TimeStamp = linuxEvent.TimeMSec;
             }
 
-            if (!BeginningStates.ContainsKey(linuxEvent.ThreadID))
-            {
-                BeginningStates.Add(
-                    linuxEvent.ThreadID,
-                    new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent));
-
-                EndingStates[linuxEvent.ThreadID] = BeginningStates[linuxEvent.ThreadID];
-            }
+            ThreadStateComputer.PrimeThreadState(linuxEvent);
 
             DoMetrics(linuxEvent);
         }
@@ -571,7 +561,8 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         public bool IsThreadBlocked(int threadId)
         {
-            return EndingStates.ContainsKey(threadId) && EndingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME;
+            LinuxPerfScriptThreadState threadState = ThreadStateComputer.GetEndingStateState(threadId);
+            return threadState != null && threadState.ThreadState == LinuxThreadState.BLOCKED_TIME;
         }
 
         public void FinishAnalyzing(double endTime)
@@ -587,66 +578,86 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         public void FlushBlockedThreadsAt(double endTime)
         {
-            foreach (int threadid in EndingStates.Keys)
+            IReadOnlyDictionary<int, LinuxPerfScriptThreadState> endingStates = ThreadStateComputer.EndingStates;
+
+            foreach (int threadid in endingStates.Keys)
             {
-                if (EndingStates[threadid].Key == LinuxThreadState.BLOCKED_TIME)
+                if (endingStates[threadid].ThreadState == LinuxThreadState.BLOCKED_TIME)
                 {
-                    KeyValuePair<LinuxThreadState, LinuxEvent> sampleInfo = EndingStates[threadid];
-                    sampleInfo.Value.Period = TimeStamp - sampleInfo.Value.TimeMSec;
-                    AddThreadPeriod(threadid, sampleInfo.Value.TimeMSec, TimeStamp);
-                    StackSource.AddSample(StackSource.CreateSampleFor(sampleInfo.Value, this));
+                    LinuxPerfScriptThreadState sampleInfo = endingStates[threadid];
+                    sampleInfo.Event.Period = TimeStamp - sampleInfo.Event.TimeMSec;
+                    AddThreadPeriod(threadid, sampleInfo.Event.TimeMSec, TimeStamp);
+                    LinuxPerfScriptStackSourceSample sample = StackSource.CreateSampleFor(sampleInfo.Event, this);
+                    if (DoThreadTime)
+                    {
+                        StackSource.AddSample(sample);
+                    }
                 }
             }
         }
 
         private void DoMetrics(LinuxEvent linuxEvent)
         {
-            KeyValuePair<LinuxThreadState, LinuxEvent> sampleInfo;
-
             // This is check for completed scheduler events, ones that start with prev_comm and have 
             //   corresponding next_comm.
             if (linuxEvent.Kind == EventKind.Scheduler)
             {
                 SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
-                if (EndingStates.ContainsKey(schedEvent.Switch.PreviousThreadID) &&
-                    EndingStates[schedEvent.Switch.PreviousThreadID].Key == LinuxThreadState.CPU_TIME) // Blocking
+                LinuxPerfScriptThreadState previousThreadState = ThreadStateComputer.GetEndingStateState(schedEvent.Switch.PreviousThreadID);
+                if (previousThreadState != null &&
+                    previousThreadState.ThreadState == LinuxThreadState.CPU_TIME) // Blocking
                 {
                     // PreviousThreadID is now blocking.  linuxEvent contains its blocking stack, so save it here.
                     // When it unblocks (becomes NextThreadID below, we'll log a sample for it.)
-                    EndingStates[schedEvent.Switch.PreviousThreadID] =
-                        new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.BLOCKED_TIME, linuxEvent);
+                    previousThreadState.ThreadState = LinuxThreadState.BLOCKED_TIME;
+                    previousThreadState.Event = linuxEvent;
                 }
 
-                if (EndingStates.TryGetValue(schedEvent.Switch.NextThreadID, out sampleInfo) &&
-                    sampleInfo.Key == LinuxThreadState.BLOCKED_TIME) // Unblocking
+                LinuxPerfScriptThreadState nextThreadState = ThreadStateComputer.GetEndingStateState(schedEvent.Switch.NextThreadID);
+                if (nextThreadState != null &&
+                    nextThreadState.ThreadState == LinuxThreadState.BLOCKED_TIME) // Unblocking
                 {
-                    sampleInfo.Value.Period = linuxEvent.TimeMSec - sampleInfo.Value.TimeMSec;
-                    AddThreadPeriod(sampleInfo.Value.ThreadID, sampleInfo.Value.TimeMSec, linuxEvent.TimeMSec);
-                    StackSource.AddSample(StackSource.CreateSampleFor(sampleInfo.Value, this));
+                    nextThreadState.Event.Period = linuxEvent.TimeMSec - nextThreadState.Event.TimeMSec;
+                    AddThreadPeriod(nextThreadState.Event.ThreadID, nextThreadState.Event.TimeMSec, linuxEvent.TimeMSec);
+                    LinuxPerfScriptStackSourceSample sample = StackSource.CreateSampleFor(nextThreadState.Event, this);
+                    if (DoThreadTime)
+                    {
+                        StackSource.AddSample(sample);
+                    }
 
-                    EndingStates[schedEvent.Switch.NextThreadID] =
-                        new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
+                    nextThreadState.ThreadState = LinuxThreadState.CPU_TIME;
+                    nextThreadState.Event = linuxEvent;
                 }
             }
             else if(linuxEvent.Kind == EventKind.ThreadExit)
             {
                 ThreadExitEvent exitEvent = (ThreadExitEvent)linuxEvent;
-                if (EndingStates.TryGetValue(exitEvent.Exit.ThreadID, out sampleInfo))
+                LinuxPerfScriptThreadState exitThreadState = ThreadStateComputer.GetEndingStateState(exitEvent.Exit.ThreadID);
+                if (exitThreadState != null)
                 {
-                    if (sampleInfo.Key == LinuxThreadState.BLOCKED_TIME) // Blocked on exit
+                    if (exitThreadState.ThreadState == LinuxThreadState.BLOCKED_TIME) // Blocked on exit
                     {
-                        sampleInfo.Value.Period = linuxEvent.TimeMSec - sampleInfo.Value.TimeMSec;
-                        AddThreadPeriod(sampleInfo.Value.ThreadID, sampleInfo.Value.TimeMSec, linuxEvent.TimeMSec);
-                        StackSource.AddSample(StackSource.CreateSampleFor(sampleInfo.Value, this));
+                        exitThreadState.Event.Period = linuxEvent.TimeMSec - exitThreadState.Event.TimeMSec;
+                        AddThreadPeriod(exitThreadState.Event.ThreadID, exitThreadState.Event.TimeMSec, linuxEvent.TimeMSec);
+
+                        LinuxPerfScriptStackSourceSample sample = StackSource.CreateSampleFor(exitThreadState.Event, this);
+                        if(DoThreadTime)
+                        {
+                            StackSource.AddSample(sample);
+                        }
                     }
                     else // Unblocked on exit
                     {
-                        linuxEvent.Period = linuxEvent.TimeMSec - sampleInfo.Value.TimeMSec;
-                        StackSource.AddSample(StackSource.CreateSampleFor(linuxEvent, this));
+                        linuxEvent.Period = linuxEvent.TimeMSec - exitThreadState.Event.TimeMSec;
+                        LinuxPerfScriptStackSourceSample sample = StackSource.CreateSampleFor(linuxEvent, this);
+                        if (DoThreadTime)
+                        {
+                            StackSource.AddSample(sample);
+                        }
                     }
 
                     // Remove the thread so that any events that might come after the exit are ignored.
-                    EndingStates.Remove(exitEvent.Exit.ThreadID);
+                    ThreadStateComputer.RemoveThread(exitEvent);
                 }
             }
             else if (linuxEvent.Kind == EventKind.Cpu)
