@@ -2242,7 +2242,15 @@ namespace PerfView
                 });
             });
         }
-        private void DoGotoSource(object sender, ExecutedRoutedEventArgs e)
+        private void DoGotoSourceInclusive(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoGotoSource(sender, e, false);
+        }
+        private void DoGotoSourceExclusive(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoGotoSource(sender, e, true);
+        }
+        private void DoGotoSource(object sender, ExecutedRoutedEventArgs e, bool exclusiveSamplesOnly)
         {
             var cells = SelectedCells();
             if (cells == null || cells.Count == 0)
@@ -2297,7 +2305,7 @@ namespace PerfView
                 }
 
                 SortedDictionary<int, float> metricOnLine;
-                var sourceLocation = GetSourceLocation(asCallTreeNodeBase, cellText, out metricOnLine);
+                var sourceLocation = GetSourceLocation(asCallTreeNodeBase, cellText, exclusiveSamplesOnly, out metricOnLine);
 
                 string sourcePathToOpen = null;
                 string logicalSourcePath = null;
@@ -2359,7 +2367,7 @@ namespace PerfView
         }
 
         // TODO FIX NOW review 
-        private SourceLocation GetSourceLocation(CallTreeNodeBase asCallTreeNodeBase, string cellText,
+        private SourceLocation GetSourceLocation(CallTreeNodeBase asCallTreeNodeBase, string cellText, bool exclusiveSamplesOnly,
             out SortedDictionary<int, float> metricOnLine)
         {
             metricOnLine = null;
@@ -2387,7 +2395,10 @@ namespace PerfView
                         matchingFrameIndex = frameIndex;        // We keep overwriting it, so we get the entry closest to the root.  
                     }
 
-                    callStackIdx = m_stackSource.GetCallerIndex(callStackIdx);
+                    if (exclusiveSamplesOnly)
+                        callStackIdx = StackSourceCallStackIndex.Invalid;
+                    else
+                        callStackIdx = m_stackSource.GetCallerIndex(callStackIdx);
                 }
                 if (matchingFrameIndex != StackSourceFrameIndex.Invalid)
                 {
@@ -3233,8 +3244,9 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.S, ModifierKeys.Alt) });
         public static RoutedUICommand LookupWarmSymbolsCommand = new RoutedUICommand("Lookup Warm Symbols", "LookupWarmSymbols", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.S, ModifierKeys.Alt | ModifierKeys.Control) });
-        public static RoutedUICommand GotoSourceCommand = new RoutedUICommand("Goto Source (Def)", "GotoSource", typeof(StackWindow),
+        public static RoutedUICommand GotoSourceInclusiveCommand = new RoutedUICommand("Goto Source (Def)", "GotoSourceInclusive", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.D, ModifierKeys.Alt) });
+        public static RoutedUICommand GotoSourceExclusiveCommand = new RoutedUICommand("Goto Source (Def)(Exclusive Samples Only)", "GotoSourceExclusive", typeof(StackWindow));
 
         // Filtering
         public static RoutedUICommand SetTimeRangeCommand = new RoutedUICommand("Set Time Range", "SetTimeRange", typeof(StackWindow),

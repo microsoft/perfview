@@ -63,7 +63,8 @@
 
             <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" />
             <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" />
-            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource"/>
+            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceInclusiveCommand}" Executed="DoGotoSourceInclusive"/>
+            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceExclusiveCommand}" Executed="DoGotoSourceExclusive"/>
             <CommandBinding Command="{x:Static src:StackWindow.OpenEventsCommand}" Executed="DoOpenEvents" CanExecute="CanDoOpenEvents"/>
 
             <CommandBinding Command="{x:Static src:StackWindow.SetTimeRangeCommand}" Executed="DoSetTimeRange"/>
@@ -141,7 +142,8 @@
                 </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.LookupSymbolsCommand}" />
                 <MenuItem Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" />
-                <MenuItem Command="{x:Static src:StackWindow.GotoSourceCommand}" />
+                <MenuItem Command="{x:Static src:StackWindow.GotoSourceInclusiveCommand}" />
+                <MenuItem Command="{x:Static src:StackWindow.GotoSourceExclusiveCommand}" />
                 <Separator/>
                 <MenuItem Command="{x:Static src:StackWindow.SetTimeRangeCommand}" />
                 <MenuItem Command="{x:Static src:StackWindow.CopyTimeRangeCommand}" />
