@@ -5,6 +5,7 @@
 // #define DEBUG_SERIALIZE
 
 using FastSerialization;
+using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.EventPipe;
@@ -153,7 +154,38 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
-            var traceLog = new TraceLog(session);
+            var traceLog = new TraceLog(session.Source);
+
+            // See if we are on Win7 and have a separate kernel session associated with 'session'
+            if (session.m_kernelSession != null)
+            {
+                // Make sure both sources only dispatch one at a time by taking a lock during dispatch.
+                session.m_kernelSession.Source.lockObj = traceLog.realTimeQueue;
+                session.m_associatedWithTraceLog = true;                         // Indicate that it is OK to have the m_kernelSession.
+                session.Source.lockObj = traceLog.realTimeQueue;
+
+                // Set up the callbacks to the kernel session.
+                traceLog.rawKernelEventSource = session.m_kernelSession.Source;
+                traceLog.SetupCallbacks(traceLog.rawKernelEventSource);
+                traceLog.rawKernelEventSource.unhandledEventTemplate.traceEventSource = traceLog;       // Make everything point to the log as its source.
+                // TODO fixme - onAllEvents is local to the constructor
+                // traceLog.rawKernelEventSource.AllEvents += traceLog.onAllEvents;
+            }
+
+            return traceLog.realTimeSource;
+        }
+
+        public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session)
+        {
+            return CreateFromEventPipeEventSource(new EventPipeEventSource(session.EventStream));
+        }
+
+        public static TraceLogEventSource CreateFromEventPipeEventSource(EventPipeEventSource source)
+        {
+            var traceLog = new TraceLog(source);
+            var dynamicParser = source.Dynamic;
+            var clrParser = source.Clr;
+            var kernelParser = source.Kernel;
             return traceLog.realTimeSource;
         }
 
@@ -543,7 +575,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Functionality of TraceLog that does not depend on either remembering past EVENTS or require future
         /// knowledge (e.g. stacks of kernel events), will 'just work'.
         /// </summary>
-        private unsafe TraceLog(TraceEventSession session)
+        private unsafe TraceLog(TraceEventDispatcher source)
             : this()
         {
             IsRealTime = true;
@@ -605,23 +637,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             };
 
-            // See if we are on Win7 and have a separate kernel session associated with 'session'
-            if (session.m_kernelSession != null)
-            {
-                // Make sure both sources only dispatch one at a time by taking a lock during dispatch.
-                session.m_kernelSession.Source.lockObj = realTimeQueue;
-                session.m_associatedWithTraceLog = true;                         // Indicate that it is OK to have the m_kernelSession.
-                session.Source.lockObj = realTimeQueue;
-
-                // Set up the callbacks to the kernel session.
-                rawKernelEventSource = session.m_kernelSession.Source;
-                SetupCallbacks(rawKernelEventSource);
-                rawKernelEventSource.unhandledEventTemplate.traceEventSource = this;       // Make everything point to the log as its source.
-                rawKernelEventSource.AllEvents += onAllEvents;
-            }
-
             // We use the session's source for our input.
-            rawEventSourceToConvert = session.Source;
+            rawEventSourceToConvert = source;
             SetupCallbacks(rawEventSourceToConvert);
             rawEventSourceToConvert.unhandledEventTemplate.traceEventSource = this;       // Make everything point to the log as its source.
             rawEventSourceToConvert.AllEvents += onAllEvents;
@@ -1081,16 +1098,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
 
             // If this is a ETL file, we also need to compute all the normal TraceLog stuff the raw stream
-            pointerSize = rawEvents.PointerSize;
-            _syncTimeUTC = rawEvents._syncTimeUTC;
-            _syncTimeQPC = rawEvents._syncTimeQPC;
-            _QPCFreq = rawEvents._QPCFreq;
-            sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
-            sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
-            cpuSpeedMHz = rawEvents.CpuSpeedMHz;
-            numberOfProcessors = rawEvents.NumberOfProcessors;
-            eventsLost = rawEvents.EventsLost;
-            osVersion = rawEvents.OSVersion;
+            Action copyHeaders = delegate ()
+            {
+                pointerSize = rawEvents.PointerSize;
+                _syncTimeUTC = rawEvents._syncTimeUTC;
+                _syncTimeQPC = rawEvents._syncTimeQPC;
+                _QPCFreq = rawEvents._QPCFreq;
+                sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
+                sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
+                cpuSpeedMHz = rawEvents.CpuSpeedMHz;
+                numberOfProcessors = rawEvents.NumberOfProcessors;
+                eventsLost = rawEvents.EventsLost;
+                osVersion = rawEvents.OSVersion;
+            };
+
+            if (rawEvents is EventPipeEventSource eventPipeEventSource)
+            {
+                eventPipeEventSource.HeadersDeserialized += copyHeaders;
+            } else
+            {
+                copyHeaders();
+            }
 
             // These parsers create state and we want to collect that so we put it on our 'parsers' list that we serialize.
             var kernelParser = rawEvents.Kernel;

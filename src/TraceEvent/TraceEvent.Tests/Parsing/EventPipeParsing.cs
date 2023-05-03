@@ -1,17 +1,22 @@
 ﻿using FastSerialization;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Diagnostics.Tracing.Etlx.TraceLog;
 
 namespace TraceEventTests
 {
@@ -94,8 +99,7 @@ namespace TraceEventTests
                         // block to read the events
                         Assert.InRange(newStreamPosition, curStreamPosition, curStreamPosition + 103_000);
                         curStreamPosition = newStreamPosition;
-
-
+                        
                         string eventName = data.ProviderName + "/" + data.EventName;
 
                         // For whatever reason the parse filtering below produces a couple extra events
@@ -142,6 +146,52 @@ namespace TraceEventTests
 
                     // Process
                     traceSource.Process();
+                }
+            }
+            // Validate
+            ValidateEventStatistics(eventStatistics, eventPipeFileName);
+        }
+
+        [Theory()]
+        [MemberData(nameof(StreamableTestEventPipeFiles))]
+        public void TraceLogStreaming(string eventPipeFileName)
+        {
+            // Initialize
+            PrepareTestData();
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+            Output.WriteLine(string.Format("Processing the file {0}", Path.GetFullPath(eventPipeFilePath)));
+            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+
+            using (MockStreamingOnlyStream s = new MockStreamingOnlyStream(new FileStream(eventPipeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            {
+                using (var eventPipeSource = new EventPipeEventSource(s))
+                {
+                    using (var traceSource = TraceLog.CreateFromEventPipeEventSource(eventPipeSource))
+                    {
+                        Action<TraceEvent> handler = delegate (TraceEvent data)
+                        {
+                            string eventName = data.ProviderName + "/" + data.EventName;
+
+                            if (eventStatistics.ContainsKey(eventName))
+                            {
+                                eventStatistics[eventName].TotalCount++;
+                            }
+                            else
+                            {
+                                eventStatistics[eventName] = new EventRecord()
+                                {
+                                    TotalCount = 1,
+                                    FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
+                                };
+                            }
+                        };
+
+                        traceSource.AllEvents += handler;
+
+                        // Process
+                        traceSource.Process();
+                    }
                 }
             }
             // Validate
