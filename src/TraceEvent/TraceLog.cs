@@ -7,7 +7,6 @@
 using FastSerialization;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Symbols;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
@@ -155,6 +154,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
             var traceLog = new TraceLog(session.Source);
+            traceLog.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
             // See if we are on Win7 and have a separate kernel session associated with 'session'
             if (session.m_kernelSession != null)
@@ -168,24 +168,32 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 traceLog.rawKernelEventSource = session.m_kernelSession.Source;
                 traceLog.SetupCallbacks(traceLog.rawKernelEventSource);
                 traceLog.rawKernelEventSource.unhandledEventTemplate.traceEventSource = traceLog;       // Make everything point to the log as its source.
-                // TODO fixme - onAllEvents is local to the constructor
-                // traceLog.rawKernelEventSource.AllEvents += traceLog.onAllEvents;
+                traceLog.rawKernelEventSource.AllEvents += traceLog.onAllEventsRealTime;
             }
 
             return traceLog.realTimeSource;
         }
 
+        /// <summary>
+        /// From a EventPipeSession, create a real time TraceLog Event Source. Like an EventPipeEventSource a TraceLogEventSource
+        /// will deliver events in real time. However an TraceLogEventSource has an underlying Tracelog (which you can access with
+        /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
+        /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
+        /// </summary>
         public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session)
         {
             return CreateFromEventPipeEventSource(new EventPipeEventSource(session.EventStream));
         }
 
+        /// <summary>
+        /// From a EventPipeEventSource, create a real time TraceLog Event Source. Like an EventPipeEventSource a TraceLogEventSource
+        /// will deliver events in real time. However an TraceLogEventSource has an underlying Tracelog (which you can access with
+        /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
+        /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
+        /// </summary>
         public static TraceLogEventSource CreateFromEventPipeEventSource(EventPipeEventSource source)
         {
             var traceLog = new TraceLog(source);
-            var dynamicParser = source.Dynamic;
-            var clrParser = source.Clr;
-            var kernelParser = source.Kernel;
             return traceLog.realTimeSource;
         }
 
@@ -583,65 +591,63 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             realTimeSource = new TraceLogEventSource(events, ownsItsTraceLog: true);   // Dispose
             realTimeQueue = new Queue<QueueEntry>();
-            realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
-            pointerSize = ETWTraceEventSource.GetOSPointerSize();
+            realTimeFlushTimer = new Timer(_ => FlushRealTimeEvents(1000), null, 1000, 1000);
 
             //double lastTime = 0;
 
-            // Set up callbacks that handle stack processing
-            Action<TraceEvent> onAllEvents = delegate (TraceEvent data)
-            {
-                // we need to guard our data structures from concurrent access.  TraceLog data
-                // is modified by this code as well as code in FlushRealTimeEvents.
-                lock (realTimeQueue)
-                {
-                    // we delay things so we have a chance to match up stacks.
-
-                    // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
-                    //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
-                    TraceEventCounts countForEvent = Stats.GetEventCounts(data);
-                    Debug.Assert((int)data.EventIndex == eventCount);
-                    countForEvent.m_count++;
-                    countForEvent.m_eventDataLenTotal += data.EventDataLength;
-
-                    // Remember past events so we can hook up stacks to them.
-                    data.eventIndex = (EventIndex)eventCount;
-                    pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
-
-                    // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
-                    // same notion of what that is if we have two dispatcher.
-                    if (rawKernelEventSource != null)
-                    {
-                        rawEventSourceToConvert.currentID = (EventIndex)eventCount;
-                        rawKernelEventSource.currentID = (EventIndex)eventCount;
-                    }
-
-                    // Skip samples from the idle thread.
-                    if (data.ProcessID == 0 && data is SampledProfileTraceData)
-                    {
-                        return;
-                    }
-
-                    var extendedDataCount = data.eventRecord->ExtendedDataCount;
-                    if (extendedDataCount != 0)
-                    {
-                        bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
-                    }
-
-                    // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
-                    // that it has been associated before the event count is incremented.  Otherwise, the stack will be associated with
-                    // the next event, and not the current event.
-                    eventCount++;
-
-                    realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
-                }
-            };
-
-            // We use the session's source for our input.
+            // Set up callbacks - we use the session's source for our input.
             rawEventSourceToConvert = source;
             SetupCallbacks(rawEventSourceToConvert);
             rawEventSourceToConvert.unhandledEventTemplate.traceEventSource = this;       // Make everything point to the log as its source.
-            rawEventSourceToConvert.AllEvents += onAllEvents;
+            rawEventSourceToConvert.AllEvents += onAllEventsRealTime;
+        }
+
+        private unsafe void onAllEventsRealTime(TraceEvent data)
+        {
+            // we need to guard our data structures from concurrent access.  TraceLog data
+            // is modified by this code as well as code in FlushRealTimeEvents.
+            lock (realTimeQueue)
+            {
+                // we delay things so we have a chance to match up stacks.
+
+                // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
+                //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
+                TraceEventCounts countForEvent = Stats.GetEventCounts(data);
+                Debug.Assert((int)data.EventIndex == eventCount);
+                countForEvent.m_count++;
+                countForEvent.m_eventDataLenTotal += data.EventDataLength;
+
+                // Remember past events so we can hook up stacks to them.
+                data.eventIndex = (EventIndex)eventCount;
+                pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
+
+                // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
+                // same notion of what that is if we have two dispatcher.
+                if (rawKernelEventSource != null)
+                {
+                    rawEventSourceToConvert.currentID = (EventIndex)eventCount;
+                    rawKernelEventSource.currentID = (EventIndex)eventCount;
+                }
+
+                // Skip samples from the idle thread.
+                if (data.ProcessID == 0 && data is SampledProfileTraceData)
+                {
+                    return;
+                }
+
+                var extendedDataCount = data.eventRecord->ExtendedDataCount;
+                if (extendedDataCount != 0)
+                {
+                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
+                }
+
+                // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
+                // that it has been associated before the event count is incremented.  Otherwise, the stack will be associated with
+                // the next event, and not the current event.
+                eventCount++;
+
+                realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
+            }
         }
 
         /// <summary>
@@ -672,25 +678,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
-        /// Flushes any event that has waited around long enough
+        /// Flushes any event that has waited around for longer than minimumAgeMs.
         /// </summary>
-        private void FlushRealTimeEvents(object notUsed)
+        internal void FlushRealTimeEvents(int minimumAgeMs = 0)
         {
             lock (realTimeQueue)
             {
                 var nowTicks = Environment.TickCount;
                 // TODO review.
-                for (; ; )
+                while (realTimeQueue.Count > 0)
                 {
-                    var count = realTimeQueue.Count;
-                    if (count == 0)
-                    {
-                        break;
-                    }
-
                     QueueEntry entry = realTimeQueue.Peek();
                     // If it has been in the queue less than 1 second, we we wait until next time) & 3FFFFFF does wrap around subtraction.
-                    if (((nowTicks - entry.enqueueTick) & 0x3FFFFFFF) < 1000)
+                    if (minimumAgeMs > 0 && ((nowTicks - entry.enqueueTick) & 0x3FFFFFFF) < minimumAgeMs)
                     {
                         break;
                     }
@@ -4323,6 +4323,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     TraceLog.rawKernelEventSource.StopProcessing();
                     kernelTask.Wait();
                 }
+                // Flush all outstanding events in the realTimeQueue.
+                TraceLog.FlushRealTimeEvents();
                 return true;
             }
             Debug.Assert(unhandledEventTemplate.traceEventSource == TraceLog);

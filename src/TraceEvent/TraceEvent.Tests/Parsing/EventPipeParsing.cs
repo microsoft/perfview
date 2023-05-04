@@ -28,11 +28,34 @@ namespace TraceEventTests
             public string FirstSeriazliedSample;
         }
 
+        private class EventStatistics
+        {
+            public SortedDictionary<string, EventRecord> Records = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+
+            public void Record(TraceEvent data) => Record(data.ProviderName + "/" + data.EventName, data);
+
+            public void Record(string eventName, TraceEvent data)
+            {
+                if (Records.ContainsKey(eventName))
+                {
+                    Records[eventName].TotalCount++;
+                }
+                else
+                {
+                    Records[eventName] = new EventRecord()
+                    {
+                        TotalCount = 1,
+                        FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
+                    };
+                }
+            }
+        }
+        
         public EventPipeParsing(ITestOutputHelper output)
             : base(output)
         {
         }
-        
+
         [Theory()]
         [MemberData(nameof(TestEventPipeFiles))]
         public void Basic(string eventPipeFileName)
@@ -43,30 +66,13 @@ namespace TraceEventTests
             string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
 
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(eventPipeFilePath)));
-
-            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+            var eventStatistics = new EventStatistics();
 
             using (var traceLog = new TraceLog(TraceLog.CreateFromEventPipeDataFile(eventPipeFilePath)))
             {
                 var traceSource = traceLog.Events.GetSource();
 
-                traceSource.AllEvents += delegate (TraceEvent data)
-                {
-                    string eventName = data.ProviderName + "/" + data.EventName;
-
-                    if (eventStatistics.ContainsKey(eventName))
-                    {
-                        eventStatistics[eventName].TotalCount++;
-                    }
-                    else
-                    {
-                        eventStatistics[eventName] = new EventRecord()
-                        {
-                            TotalCount = 1,
-                            FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
-                        };
-                    }
-                };
+                traceSource.AllEvents += eventStatistics.Record;
 
                 // Process
                 traceSource.Process();
@@ -84,7 +90,7 @@ namespace TraceEventTests
 
             string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
             Output.WriteLine(string.Format("Processing the file {0}", Path.GetFullPath(eventPipeFilePath)));
-            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+            var eventStatistics = new EventStatistics();
 
             long curStreamPosition = 0;
             using (MockStreamingOnlyStream s = new MockStreamingOnlyStream(new FileStream(eventPipeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)))
@@ -112,18 +118,7 @@ namespace TraceEventTests
                             eventName == "Microsoft-Windows-DotNETRuntime/Method")
                             return;
 
-                        if (eventStatistics.ContainsKey(eventName))
-                        {
-                            eventStatistics[eventName].TotalCount++;
-                        }
-                        else
-                        {
-                            eventStatistics[eventName] = new EventRecord()
-                            {
-                                TotalCount = 1,
-                                FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
-                            };
-                        }
+                        eventStatistics.Record(eventName, data);
                     };
 
                     // this is somewhat arbitrary looking set of parser event callbacks empirically
@@ -161,33 +156,36 @@ namespace TraceEventTests
 
             string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
             Output.WriteLine(string.Format("Processing the file {0}", Path.GetFullPath(eventPipeFilePath)));
-            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+            var eventStatistics = new EventStatistics();
 
             using (MockStreamingOnlyStream s = new MockStreamingOnlyStream(new FileStream(eventPipeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)))
             {
                 using (var eventPipeSource = new EventPipeEventSource(s))
                 {
-                    using (var traceSource = TraceLog.CreateFromEventPipeEventSource(eventPipeSource))
+                    using (var traceSource = CreateFromEventPipeEventSource(eventPipeSource))
                     {
-                        Action<TraceEvent> handler = delegate (TraceEvent data)
-                        {
-                            string eventName = data.ProviderName + "/" + data.EventName;
+                        Action<TraceEvent> handler = eventStatistics.Record;
 
-                            if (eventStatistics.ContainsKey(eventName))
-                            {
-                                eventStatistics[eventName].TotalCount++;
-                            }
-                            else
-                            {
-                                eventStatistics[eventName] = new EventRecord()
-                                {
-                                    TotalCount = 1,
-                                    FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
-                                };
-                            }
-                        };
+                        // this is somewhat arbitrary looking set of parser event callbacks empirically
+                        // produces the same set of events as TraceLog.Events.GetSource().AllEvents so
+                        // that the baseline files can be reused from the Basic test
+                        var rundown = new ClrRundownTraceEventParser(traceSource);
+                        rundown.LoaderAppDomainDCStop += handler;
+                        rundown.LoaderAssemblyDCStop += handler;
+                        rundown.LoaderDomainModuleDCStop += handler;
+                        rundown.LoaderModuleDCStop += handler;
+                        rundown.MethodDCStopComplete += handler;
+                        rundown.MethodDCStopInit += handler;
+                        var sampleProfiler = new SampleProfilerTraceEventParser(traceSource);
+                        sampleProfiler.All += handler;
+                        var privateClr = new ClrPrivateTraceEventParser(traceSource);
+                        privateClr.All += handler;
+                        traceSource.Clr.All += handler;
+                        traceSource.Clr.MethodILToNativeMap -= handler;
+                        // traceSource.Dynamic.All += handler;
 
-                        traceSource.AllEvents += handler;
+                        // TODO Needed for custom events (eventpipe-dotnetcore2.1-linux-x64-tracelogging.net), but the event names are still missing...
+                        // traceSource.UnhandledEvents += handler; 
 
                         // Process
                         traceSource.Process();
@@ -620,10 +618,10 @@ namespace TraceEventTests
             throw new NotImplementedException();
         }
 
-        private void ValidateEventStatistics(SortedDictionary<string, EventRecord> eventStatistics, string eventPipeFileName)
+        private void ValidateEventStatistics(EventStatistics eventStatistics, string eventPipeFileName)
         {
             StringBuilder sb = new StringBuilder(1024 * 1024);
-            foreach (var item in eventStatistics)
+            foreach (var item in eventStatistics.Records)
             {
                 sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSeriazliedSample}");
             }
