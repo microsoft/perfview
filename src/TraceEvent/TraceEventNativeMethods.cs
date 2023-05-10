@@ -1107,6 +1107,7 @@ namespace Microsoft.Diagnostics.Tracing
           out int FinalUncompressedSize
        );
 
+        internal const uint ERROR_MORE_DATA = 234;
         internal const uint ERROR_WMI_INSTANCE_NOT_FOUND = 4201;
     } // end class
     #endregion

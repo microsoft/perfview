@@ -1433,9 +1433,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// to the TraceEventSession constructor to open it.   
         /// </summary>
         /// <returns>A enumeration of strings, each of which is a name of a session</returns>
-        public static unsafe List<string> GetActiveSessionNames()
+        public static List<string> GetActiveSessionNames()
         {
             int MAX_SESSIONS = GetETWMaxLoggers();
+            return GetActiveSessionNamesInternal(MAX_SESSIONS);
+        }
+
+        private static unsafe List<string> GetActiveSessionNamesInternal(int MAX_SESSIONS, int depth = 0)
+        {
             int sizeOfProperties = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) +
                                    sizeof(char) * TraceEventSession.MaxNameSize +     // For log moduleFile name 
                                    sizeof(char) * TraceEventSession.MaxNameSize;      // For session name
@@ -1453,16 +1458,26 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             int sessionCount = 0;
             int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propetiesArray, MAX_SESSIONS, ref sessionCount);
-            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
 
-            List<string> activeTraceNames = new List<string>(sessionCount);
-            for (int i = 0; i < sessionCount; i++)
+            // If there are more than MAX_SESSIONS active sessions, then QueryAllTraces returns this error. We will retry at most once with the
+            // new session size defined by sessionCount
+            if (hr == TraceEventNativeMethods.ERROR_MORE_DATA && depth == 0)
             {
-                byte* propertiesBlob = (byte*)propetiesArray[i];
-                string sessionName = new string((char*)(&propertiesBlob[propetiesArray[i]->LoggerNameOffset]));
-                activeTraceNames.Add(sessionName);
+                return GetActiveSessionNamesInternal(sessionCount, depth + 1);
             }
-            return activeTraceNames;
+            else
+            {
+                Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
+
+                List<string> activeTraceNames = new List<string>(sessionCount);
+                for (int i = 0; i < sessionCount; i++)
+                {
+                    byte* propertiesBlob = (byte*)propetiesArray[i];
+                    string sessionName = new string((char*)(&propertiesBlob[propetiesArray[i]->LoggerNameOffset]));
+                    activeTraceNames.Add(sessionName);
+                }
+                return activeTraceNames;
+            }
         }
 
         /// <summary>
