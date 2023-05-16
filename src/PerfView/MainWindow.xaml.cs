@@ -14,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -1141,7 +1142,7 @@ namespace PerfView
             InitializeOpenToLastUsedDirectory();
             InitializeDoNotCompressStackFramesOnCopy();
 
-            InitializeFeedback();
+            _ = InitializeFeedbackAsync();
         }
         public PerfViewDirectory CurrentDirectory { get { return m_CurrentDirectory; } }
 
@@ -1579,9 +1580,9 @@ namespace PerfView
         {
             StatusBar.AbortWork();
         }
-        private void InitializeFeedback()
+        private async Task InitializeFeedbackAsync()
         {
-            System.Threading.Thread.Sleep(100);     // Wait for startup to end, this is lower priority work.
+            await Task.Delay(100);     // Wait for startup to end, this is lower priority work.
 
             // FeedbackButton.Visibility = System.Windows.Visibility.Collapsed;
             WikiButton.Visibility = System.Windows.Visibility.Collapsed;
