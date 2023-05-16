@@ -1440,27 +1440,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                    sizeof(char) * TraceEventSession.MaxNameSize +     // For log moduleFile name 
                                    sizeof(char) * TraceEventSession.MaxNameSize;      // For session name
 
-            byte* sessionsArray = stackalloc byte[MAX_SESSIONS * sizeOfProperties];
-            TraceEventNativeMethods.EVENT_TRACE_PROPERTIES** propetiesArray = stackalloc TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*[MAX_SESSIONS];
+            List<string> activeTraceNames = null;
 
-            for (int i = 0; i < MAX_SESSIONS; i++)
+            // Allocate the sessionsArray on the heap for environments that have a large number of sessions.
+            byte[] sessionsArr = new byte[MAX_SESSIONS * sizeOfProperties];
+            fixed (byte* sessionsArray = sessionsArr)
             {
-                TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)&sessionsArray[sizeOfProperties * i];
-                properties->Wnode.BufferSize = (uint)sizeOfProperties;
-                properties->LoggerNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES);
-                properties->LogFileNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + sizeof(char) * TraceEventSession.MaxNameSize;
-                propetiesArray[i] = properties;
-            }
-            int sessionCount = 0;
-            int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propetiesArray, MAX_SESSIONS, ref sessionCount);
-            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
+                TraceEventNativeMethods.EVENT_TRACE_PROPERTIES** propetiesArray = stackalloc TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*[MAX_SESSIONS];
 
-            List<string> activeTraceNames = new List<string>(sessionCount);
-            for (int i = 0; i < sessionCount; i++)
-            {
-                byte* propertiesBlob = (byte*)propetiesArray[i];
-                string sessionName = new string((char*)(&propertiesBlob[propetiesArray[i]->LoggerNameOffset]));
-                activeTraceNames.Add(sessionName);
+                for (int i = 0; i < MAX_SESSIONS; i++)
+                {
+                    TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)&sessionsArray[sizeOfProperties * i];
+                    properties->Wnode.BufferSize = (uint)sizeOfProperties;
+                    properties->LoggerNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES);
+                    properties->LogFileNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + sizeof(char) * TraceEventSession.MaxNameSize;
+                    propetiesArray[i] = properties;
+                }
+                int sessionCount = 0;
+                int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propetiesArray, MAX_SESSIONS, ref sessionCount);
+                Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
+
+                activeTraceNames = new List<string>(sessionCount);
+                for (int i = 0; i < sessionCount; i++)
+                {
+                    byte* propertiesBlob = (byte*)propetiesArray[i];
+                    string sessionName = new string((char*)(&propertiesBlob[propetiesArray[i]->LoggerNameOffset]));
+                    activeTraceNames.Add(sessionName);
+                }
             }
             return activeTraceNames;
         }
