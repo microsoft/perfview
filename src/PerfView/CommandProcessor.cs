@@ -1470,6 +1470,9 @@ namespace PerfView
                     DisableNetMonTrace();
                 }
                 catch (Exception) { }
+
+                // Ensure that DotNetVersionLogger is disabled.
+                DotNetVersionLogger.Abort();
             }
         }
 

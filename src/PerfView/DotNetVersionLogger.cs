@@ -21,7 +21,7 @@ namespace PerfView
 
         private sealed class VersionLogger : IDisposable
         {
-            private const string SessionName = "PerfView-DotNetVersionLogger-Session";
+            internal const string SessionName = "PerfView-DotNetVersionLogger-Session";
             private readonly static TextWriter Log = App.CommandProcessor.LogFile;
             private TraceEventSession _session;
             private AutoResetEvent _sessionStopEvent = new AutoResetEvent(false);
@@ -151,6 +151,21 @@ namespace PerfView
                 _loggerInstance.Stop();
                 _loggerInstance.Dispose();
             }
+        }
+
+        public static void Abort()
+        {
+
+            try
+            {
+                using (TraceEventSession session = new TraceEventSession(
+                    VersionLogger.SessionName,
+                    TraceEventSessionOptions.Attach))
+                {
+                    session.Stop(true);
+                }
+            }
+            catch (Exception) { }
         }
     }
 }
