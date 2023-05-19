@@ -180,9 +180,34 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
         /// </summary>
-        public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session)
+        /// <param name="rundownSession">
+        /// If given, the rundownSession is used to initialize module and method information and then the session is closed.
+        /// This only makes sense in realtime sessions when you need to resolve function names.
+        /// </param>
+        /// <example>
+        /// var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
+        /// using var rundownSession = client.StartEventPipeSession(
+        ///     new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long) ClrTraceEventParser.Keywords.Default),
+        ///     requestRundown: true
+        /// );
+        /// EventPipeProvider[] providers = new[]
+        /// {   new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long) ClrTraceEventParser.Keywords.Default),
+        ///     new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
+        /// };
+        /// var session = client.StartEventPipeSession(providers, requestRundown: false);
+        /// var eventSource = TraceLog.CreateFromEventPipeSession(session, rundownSession);
+        /// eventSource.Process();
+        /// </example>
+        public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session, EventPipeSession rundownSession = null)
         {
-            return CreateFromEventPipeEventSource(new EventPipeEventSource(session.EventStream));
+            var tlEventSource = CreateFromEventPipeEventSource(new EventPipeEventSource(session.EventStream));
+
+            if (rundownSession != null)
+            {
+                tlEventSource.TraceLog.ProcessInitialRundown(rundownSession);
+            }
+
+            return tlEventSource;
         }
 
         /// <summary>
@@ -195,6 +220,83 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             var traceLog = new TraceLog(source);
             return traceLog.realTimeSource;
+        }
+
+        private void ProcessInitialRundown(EventPipeSession session)
+        {
+            using (var source = new EventPipeEventSource(session.EventStream))
+            {
+                SetupInitialRundownCallbacks(source);
+
+                // Only stopping the session will cause the rundown events to be sent.
+                // However, we cannot stop it before starting to process the source.
+                // Therefore, we need attach to the first event and only then stop the session.
+                var completionSource = new TaskCompletionSource<bool>();
+                source.AllEvents += delegate (TraceEvent _)
+                {
+                    completionSource.TrySetResult(true);
+                };
+                var task = Task.Run(source.Process);
+                completionSource.Task.Wait();
+                session.Stop();
+                task.Wait();
+            }
+        }
+
+        /// <summary>
+        /// Attaches callbacks to initialize modules and methods based on the rundown events.
+        /// Unlike SetupCallbacks(), these callbacks are attached before any events are processed so
+        /// they do not rely on ForAllUnresolvedCodeAddressesInRange() and instead record all the methods.
+        /// </summary>
+        private void SetupInitialRundownCallbacks(EventPipeEventSource rawEvents)
+        {
+            rawEvents.HeadersDeserialized += delegate () { CopyHeadersFrom(rawEvents); };
+
+            var clrRundownParser = new ClrRundownTraceEventParser(rawEvents);
+            Action<ModuleLoadUnloadTraceData> onLoaderRundown = delegate (ModuleLoadUnloadTraceData data)
+            {
+                TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                process.LoadedModules.ManagedModuleLoadOrUnload(data, false, true);
+            };
+
+            clrRundownParser.LoaderModuleDCStop += onLoaderRundown;
+            clrRundownParser.LoaderModuleDCStart += onLoaderRundown;
+
+            // TODO We don't seem to be getting any of these events, only MethodDCStopVerbose.
+            // clrRundownParser.MethodDCStartVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
+            // {
+            //     if (data.IsJitted)
+            //     {
+            //         TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+            //         process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
+            //         {
+            //             TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
+            //             MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(TraceLog.GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
+            //             return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
+            //         });
+
+            //         jittedMethods.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
+            //     }
+            // };
+
+            clrRundownParser.MethodILToNativeMapDCStop += delegate (MethodILToNativeMapTraceData data)
+            {
+                codeAddresses.AddILMapping(data);
+            };
+
+            clrRundownParser.MethodDCStopVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
+            {
+                if (data.IsJitted)
+                {
+                    TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                    process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
+                    {
+                        TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
+                        MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(TraceLog.GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
+                        return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
+                    });
+                }
+            };
         }
 
         /// <summary>
@@ -592,8 +694,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             realTimeSource = new TraceLogEventSource(events, ownsItsTraceLog: true);   // Dispose
             realTimeQueue = new Queue<QueueEntry>();
             realTimeFlushTimer = new Timer(_ => FlushRealTimeEvents(1000), null, 1000, 1000);
-
-            //double lastTime = 0;
 
             // Set up callbacks - we use the session's source for our input.
             rawEventSourceToConvert = source;
@@ -1077,6 +1177,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 thread.process.markThreadsInGC[threadID] = heapNum;
             }
         }
+
+        private void CopyHeadersFrom(TraceEventDispatcher rawEvents)
+        {
+            pointerSize = rawEvents.PointerSize;
+            _syncTimeUTC = rawEvents._syncTimeUTC;
+            _syncTimeQPC = rawEvents._syncTimeQPC;
+            _QPCFreq = rawEvents._QPCFreq;
+            sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
+            sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
+            cpuSpeedMHz = rawEvents.CpuSpeedMHz;
+            numberOfProcessors = rawEvents.NumberOfProcessors;
+            eventsLost = rawEvents.EventsLost;
+            osVersion = rawEvents.OSVersion;
+        }
+
         /// <summary>
         /// SetupCallbacks installs all the needed callbacks for TraceLog Processing (stacks, process, thread, summaries etc)
         /// on the TraceEventSource rawEvents.
@@ -1097,27 +1212,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             jsJittedMethods = new List<MethodLoadUnloadJSTraceData>();
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
 
-            // If this is a ETL file, we also need to compute all the normal TraceLog stuff the raw stream
-            Action copyHeaders = delegate ()
-            {
-                pointerSize = rawEvents.PointerSize;
-                _syncTimeUTC = rawEvents._syncTimeUTC;
-                _syncTimeQPC = rawEvents._syncTimeQPC;
-                _QPCFreq = rawEvents._QPCFreq;
-                sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
-                sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
-                cpuSpeedMHz = rawEvents.CpuSpeedMHz;
-                numberOfProcessors = rawEvents.NumberOfProcessors;
-                eventsLost = rawEvents.EventsLost;
-                osVersion = rawEvents.OSVersion;
-            };
-
             if (rawEvents is EventPipeEventSource eventPipeEventSource)
             {
-                eventPipeEventSource.HeadersDeserialized += copyHeaders;
-            } else
+                eventPipeEventSource.HeadersDeserialized += delegate () { CopyHeadersFrom(rawEvents); };
+            }
+            else
             {
-                copyHeaders();
+                CopyHeadersFrom(rawEvents);
             }
 
             // These parsers create state and we want to collect that so we put it on our 'parsers' list that we serialize.
@@ -4315,7 +4416,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         TraceLog.rawKernelEventSource.Process();
                         TraceLog.rawEventSourceToConvert.StopProcessing();
                     });
-                    kernelTask.Start();
                 }
                 TraceLog.rawEventSourceToConvert.Process();
                 if (kernelTask != null)
@@ -9094,7 +9194,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             var ilMap = new ILToNativeMap();
             ilMap.Next = ILMapIndex.Invalid;
-            var process = log.Processes.GetProcess(data.ProcessID, data.TimeStampQPC);
+            var process = log.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
             if (process == null)
             {
                 return;
