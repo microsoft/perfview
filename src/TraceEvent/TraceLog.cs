@@ -286,16 +286,30 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             clrRundownParser.MethodDCStopVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
             {
-                if (data.IsJitted)
+                // TODO we need this also for non-jitted methods, otherwise we won't resolve some frames, for example:
+                //      "System.Private.CoreLib.il" - "System.Threading.Tasks.Task.Wait()"
+                //      Is it OK to use InsertJITTEDMethod & FindJITTEDMethodFromAddress or do we need something else?
+                // if (data.IsJitted)
+                // {
+                TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
                 {
-                    TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                    process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
-                    {
-                        TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
-                        MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(TraceLog.GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
-                        return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
-                    });
-                }
+                    TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
+                    MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
+                    return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
+                });
+                // }
+                // if (data.IsJitted)
+                // {
+                //     ILMapIndex ilMap = UnloadILMapForMethod(methodIndex, data);
+                // }
+                // // Set the info
+                // info.SetMethodIndex(this, methodIndex);
+                // if (ilMap != ILMapIndex.Invalid)
+                // {
+                //     info.SetILMapIndex(this, ilMap);
+                // }
+                // info.SetOptimizationTier(data.OptimizationTier);
             };
         }
 
@@ -9195,10 +9209,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var ilMap = new ILToNativeMap();
             ilMap.Next = ILMapIndex.Invalid;
             var process = log.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-            if (process == null)
-            {
-                return;
-            }
 
             ilMap.ProcessIndex = process.ProcessIndex;
             ILToNativeMapTuple tuple;
