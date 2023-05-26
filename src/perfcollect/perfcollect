@@ -1249,6 +1249,16 @@ InstallLTTng_Ubuntu()
 
 InstallLTTng()
 {
+    if command -v lttng &> /dev/null
+    then
+        lttngInstalled=1
+
+        BlueText
+        echo "LTTng already installed."
+        ResetText
+        return
+    fi
+
     if [ "$(IsUbuntu)" == "1" ]
     then
         InstallLTTng_Ubuntu
