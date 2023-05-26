@@ -1216,16 +1216,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 256, ProviderGuid);
             }
         }
-        public event Action<LockCreatedTraceData> LockCreated
+        public event Action<ContentionLockCreatedTraceData> ContentionLockCreated
         {
             add
             {
-                RegisterTemplate(LockCreatedTemplate(value));
+                RegisterTemplate(ContentionLockCreatedTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 90, ProviderGuid);
-                source.UnregisterEventTemplate(value, 0, ContentionTaskGuid);
+                source.UnregisterEventTemplate(value, 11, ContentionTaskGuid);
             }
         }
         public event Action<ContentionStartTraceData> ContentionStart
@@ -2174,9 +2174,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new ThreadPoolMinMaxThreadsTraceData(action, 59, 38, "ThreadPoolMinMaxThreads", ThreadPoolMinMaxThreadsTaskGuid, 0, "Info", ProviderGuid, ProviderName);
         }
-        static private LockCreatedTraceData LockCreatedTemplate(Action<LockCreatedTraceData> action)
+        static private ContentionLockCreatedTraceData ContentionLockCreatedTemplate(Action<ContentionLockCreatedTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new LockCreatedTraceData(action, 90, 8, "Contention", ContentionTaskGuid, 0, "Info", ProviderGuid, ProviderName);
+            return new ContentionLockCreatedTraceData(action, 90, 8, "Contention", ContentionTaskGuid, 11, "LockCreated", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -2338,7 +2338,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[141] = ThreadPoolMinMaxThreadsTemplate(null);
                 templates[142] = GCLOHCompactTemplate(null);
                 templates[143] = GCFitBucketInfoTemplate(null);
-                templates[144] = LockCreatedTemplate(null);
+                templates[144] = ContentionLockCreatedTemplate(null);
 
                 s_templates = templates;
             }
@@ -9465,18 +9465,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<ExceptionTraceData> Action;
         #endregion
     }
-    public sealed class LockCreatedTraceData : TraceEvent
+    public sealed class ContentionLockCreatedTraceData : TraceEvent
     {
         public Address LockID { get { return (Address)GetInt64At(0); } }
         public Address AssociatedObjectID { get { return (Address)GetInt64At(8); } }
         public int ClrInstanceID { get { return GetInt16At(16); } }
 
         #region Private
-        internal LockCreatedTraceData(Action<LockCreatedTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal ContentionLockCreatedTraceData(Action<ContentionLockCreatedTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             m_target = target;
-            eventName = "LockCreated"; // override the event name since TraceEvent.EventName's default behavior does not match the event name
         }
         protected internal override void Dispatch()
         {
@@ -9490,7 +9489,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<LockCreatedTraceData>)value; }
+            set { m_target = (Action<ContentionLockCreatedTraceData>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -9528,7 +9527,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        private event Action<LockCreatedTraceData> m_target;
+        private event Action<ContentionLockCreatedTraceData> m_target;
         #endregion
     }
     public sealed class ContentionStartTraceData : TraceEvent
