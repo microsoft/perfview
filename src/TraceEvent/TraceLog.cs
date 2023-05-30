@@ -220,10 +220,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
         /// </summary>
-        public static TraceLogEventSource CreateFromEventPipeEventSource(EventPipeEventSource source)
+        /// <param name="rundownSource">
+        /// If given, the rundownSource is used to initialize module and method information.
+        /// This only makes sense in realtime sessions when you need to resolve function names.
+        /// </param>
+        public static TraceLogEventSource CreateFromEventPipeEventSource(EventPipeEventSource source, EventPipeSession rundownSource = null)
         {
             var traceLog = new TraceLog(source);
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventPipeEventsRealTime;
+
+            if (rundownSource != null)
+            {
+                traceLog.ProcessInitialRundown(rundownSource);
+            }
+
             return traceLog.realTimeSource;
         }
 
@@ -246,6 +256,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 session.Stop();
                 task.Wait();
             }
+        }
+
+        private void ProcessInitialRundown(EventPipeEventSource source)
+        {
+            SetupInitialRundownCallbacks(source);
+            source.Process();
         }
 
         /// <summary>
