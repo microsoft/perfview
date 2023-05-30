@@ -1216,6 +1216,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 256, ProviderGuid);
             }
         }
+        public event Action<ContentionLockCreatedTraceData> ContentionLockCreated
+        {
+            add
+            {
+                RegisterTemplate(ContentionLockCreatedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 90, ProviderGuid);
+                source.UnregisterEventTemplate(value, 11, ContentionTaskGuid);
+            }
+        }
         public event Action<ContentionStartTraceData> ContentionStart
         {
             add
@@ -2162,13 +2174,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new ThreadPoolMinMaxThreadsTraceData(action, 59, 38, "ThreadPoolMinMaxThreads", ThreadPoolMinMaxThreadsTaskGuid, 0, "Info", ProviderGuid, ProviderName);
         }
+        static private ContentionLockCreatedTraceData ContentionLockCreatedTemplate(Action<ContentionLockCreatedTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ContentionLockCreatedTraceData(action, 90, 8, "Contention", ContentionTaskGuid, 11, "LockCreated", ProviderGuid, ProviderName);
+        }
 
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[144];
+                var templates = new TraceEvent[145];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2322,6 +2338,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[141] = ThreadPoolMinMaxThreadsTemplate(null);
                 templates[142] = GCLOHCompactTemplate(null);
                 templates[143] = GCFitBucketInfoTemplate(null);
+                templates[144] = ContentionLockCreatedTemplate(null);
 
                 s_templates = templates;
             }
@@ -9448,10 +9465,78 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<ExceptionTraceData> Action;
         #endregion
     }
+    public sealed class ContentionLockCreatedTraceData : TraceEvent
+    {
+        public Address LockID { get { return (Address)GetInt64At(0); } }
+        public Address AssociatedObjectID { get { return (Address)GetInt64At(8); } }
+        public int ClrInstanceID { get { return GetInt16At(16); } }
+
+        #region Private
+        internal ContentionLockCreatedTraceData(Action<ContentionLockCreatedTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 18));
+            Debug.Assert(!(Version > 1 && EventDataLength < 18));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<ContentionLockCreatedTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttribHex(sb, "LockID", LockID);
+            XmlAttribHex(sb, "AssociatedObjectID", AssociatedObjectID);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "LockID", "AssociatedObjectID", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return LockID;
+                case 1:
+                    return AssociatedObjectID;
+                case 2:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<ContentionLockCreatedTraceData> m_target;
+        #endregion
+    }
     public sealed class ContentionStartTraceData : TraceEvent
     {
         public ContentionFlags ContentionFlags { get { if (Version >= 1) return (ContentionFlags)GetByteAt(0); return (ContentionFlags)0; } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(1); return 0; } }
+        public Address LockID { get { if (Version >= 2) { return (Address)GetInt64At(3); } return 0; } }
+        public Address AssociatedObjectID { get { if (Version >= 2) { return (Address)GetInt64At(11); } return 0; } }
+        public long LockOwnerThreadID { get { if (Version >= 2) { return GetInt64At(19); } return 0; } }
 
         #region Private
         internal ContentionStartTraceData(Action<ContentionStartTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -9468,7 +9553,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             // Not sure if hand editing is appropriate but the start event is size 3 whereas the stop event is size 11
             // and both of them come here
             Debug.Assert(!(Version == 1 && EventDataLength != 3 && EventDataLength != 11));
-            Debug.Assert(!(Version > 1 && EventDataLength < 3));
+            Debug.Assert(!(Version == 2 && EventDataLength != 27));
+            Debug.Assert(!(Version > 2 && EventDataLength < 27));
         }
         protected internal override Delegate Target
         {
@@ -9480,6 +9566,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Prefix(sb);
             XmlAttrib(sb, "ContentionFlags", ContentionFlags);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttribHex(sb, "LockID", LockID);
+            XmlAttribHex(sb, "AssociatedObjectID", AssociatedObjectID);
+            XmlAttrib(sb, "LockOwnerThreadID", LockOwnerThreadID);
             sb.Append("/>");
             return sb;
         }
@@ -9489,7 +9578,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContentionFlags", "ClrInstanceID" };
+                    payloadNames = new string[] { "ContentionFlags", "ClrInstanceID", "LockID", "AssociatedObjectID", "LockOwnerThreadID" };
                 return payloadNames;
             }
         }
@@ -9502,6 +9591,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return ContentionFlags;
                 case 1:
                     return ClrInstanceID;
+                case 2:
+                    return LockID;
+                case 3:
+                    return AssociatedObjectID;
+                case 4:
+                    return LockOwnerThreadID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
