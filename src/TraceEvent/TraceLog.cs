@@ -156,6 +156,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var traceLog = new TraceLog(session.Source);
             traceLog.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
+            traceLog.realTimeQueue = new Queue<QueueEntry>();
+            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(1000), null, 1000, 1000);
+            traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventsRealTime;
+
             // See if we are on Win7 and have a separate kernel session associated with 'session'
             if (session.m_kernelSession != null)
             {
@@ -219,6 +223,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public static TraceLogEventSource CreateFromEventPipeEventSource(EventPipeEventSource source)
         {
             var traceLog = new TraceLog(source);
+            traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventPipeEventsRealTime;
             return traceLog.realTimeSource;
         }
 
@@ -311,6 +316,46 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // }
                 // info.SetOptimizationTier(data.OptimizationTier);
             };
+        }
+
+        private unsafe void onAllEventPipeEventsRealTime(TraceEvent data)
+        {
+            TraceEventCounts countForEvent = Stats.GetEventCounts(data);
+            // Debug.Assert((int)data.EventIndex == eventCount);
+            countForEvent.m_count++;
+            countForEvent.m_eventDataLenTotal += data.EventDataLength;
+
+            // Remember past events so we can hook up stacks to them.
+            data.eventIndex = (EventIndex)eventCount;
+            pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
+
+            // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
+            // same notion of what that is if we have two dispatcher.
+            if (rawEventSourceToConvert != null)
+            {
+                rawEventSourceToConvert.currentID = (EventIndex)eventCount;
+            }
+
+            // Skip samples from the idle thread.
+            if (data.ProcessID == 0 && data is SampledProfileTraceData)
+            {
+                return;
+            }
+
+            var extendedDataCount = data.eventRecord->ExtendedDataCount;
+            if (extendedDataCount != 0)
+            {
+                bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
+            }
+
+            // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
+            // that it has been associated before the event count is incremented.  Otherwise, the stack will be associated with
+            // the next event, and not the current event.
+            eventCount++;
+
+            // We need to look up the event to get the dispatch Target assigned.
+            TraceEvent rtEvent = realTimeSource.Lookup(data.eventRecord);
+            realTimeSource.Dispatch(rtEvent);
         }
 
         /// <summary>
@@ -706,14 +751,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             machineName = Environment.MachineName;
 
             realTimeSource = new TraceLogEventSource(events, ownsItsTraceLog: true);   // Dispose
-            realTimeQueue = new Queue<QueueEntry>();
-            realTimeFlushTimer = new Timer(_ => FlushRealTimeEvents(1000), null, 1000, 1000);
 
             // Set up callbacks - we use the session's source for our input.
             rawEventSourceToConvert = source;
             SetupCallbacks(rawEventSourceToConvert);
             rawEventSourceToConvert.unhandledEventTemplate.traceEventSource = this;       // Make everything point to the log as its source.
-            rawEventSourceToConvert.AllEvents += onAllEventsRealTime;
         }
 
         private unsafe void onAllEventsRealTime(TraceEvent data)
@@ -4436,9 +4478,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     TraceLog.rawKernelEventSource.StopProcessing();
                     kernelTask.Wait();
+
+                    // Flush all outstanding events in the realTimeQueue.
+                    TraceLog.FlushRealTimeEvents();
                 }
-                // Flush all outstanding events in the realTimeQueue.
-                TraceLog.FlushRealTimeEvents();
                 return true;
             }
             Debug.Assert(unhandledEventTemplate.traceEventSource == TraceLog);
@@ -10772,10 +10815,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
             TraceProcess ret = log.Processes.GetProcess(anEvent.ProcessID, anEvent.TimeStampQPC);
-            // When the trace was converted, a TraceProcess should have been created for
-            // every mentioned Process ID.
-            // When we care, we should ensure this is true for the RealTime case.
-            Debug.Assert(ret != null || log.IsRealTime);
+            Debug.Assert(ret != null);
             return ret;
         }
         /// <summary>
@@ -10790,10 +10830,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
             TraceThread ret = log.Threads.GetThread(anEvent.ThreadID, anEvent.TimeStampQPC);
-            // When the trace was converted, a TraceThread should have been created for
-            // every mentioned Thread ID.
-            // When we care, we should ensure this is true for the RealTime case.
-            Debug.Assert(ret != null || log.IsRealTime);
+            Debug.Assert(ret != null);
             return ret;
         }
         /// <summary>
