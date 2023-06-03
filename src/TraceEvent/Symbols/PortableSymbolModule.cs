@@ -153,8 +153,14 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 BlobReader blobReader = _metaData.GetBlobReader(_sourceHandle);
 
-                // Skip the first 4 bytes. They indicate the uncompressed size.
-                _ = blobReader.ReadInt32();
+                // See https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md#embedded-source-c-and-vb-compilers
+                // The first 4 bytes indicate the format of the embedded content.
+                int format = blobReader.ReadInt32();
+                if (format < 0)
+                {
+                    // Negative values are reserved for future use
+                    throw new NotSupportedException("Unrecognized format in embedded source.");
+                }
 
                 string sourceCacheDirectory = _symbolModule.SymbolReader.SourceCacheDirectory;
                 if (string.IsNullOrEmpty(sourceCacheDirectory))
@@ -165,10 +171,21 @@ namespace Microsoft.Diagnostics.Symbols
                 Directory.CreateDirectory(sourceCacheDirectory);
                 string cachedLocation = Path.Combine(sourceCacheDirectory, Path.GetRandomFileName());
                 using (FileStream file = File.Create(cachedLocation))
-                using (var compressedSource = new UnmanagedMemoryStream(blobReader.CurrentPointer, blobReader.RemainingBytes))
-                using (var deflater = new DeflateStream(compressedSource, CompressionMode.Decompress))
+                using (var embeddedContent = new UnmanagedMemoryStream(blobReader.CurrentPointer, blobReader.RemainingBytes))
                 {
-                    deflater.CopyTo(file);
+                    if (format == 0)
+                    {
+                        // Raw bytes, uncompressed
+                        embeddedContent.CopyTo(file);
+                    }
+                    else
+                    {
+                        // Compressed by deflate algorithm and value indicates uncompressed size
+                        using (var deflater = new DeflateStream(embeddedContent, CompressionMode.Decompress))
+                        {
+                            deflater.CopyTo(file);
+                        }
+                    }
                 }
 
                 return cachedLocation;
@@ -181,7 +198,10 @@ namespace Microsoft.Diagnostics.Symbols
             #endregion
         }
 
+        // See https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md#source-link-c-and-vb-compilers
         private static readonly Guid SourceLinkKind = Guid.Parse("CC110556-A091-4D38-9FEC-25AB9A351A6A");
+
+        // See https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md#embedded-source-c-and-vb-compilers
         private static readonly Guid EmbeddedSourceKind = Guid.Parse("0E8A571B-6926-466E-B4AD-8AB04611F5FE");
 
         // Needed by other things to look up data
