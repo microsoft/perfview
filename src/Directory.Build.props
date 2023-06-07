@@ -42,6 +42,7 @@
     <AzureCoreVersion>1.24.0</AzureCoreVersion>
     <AzureIdentityVersion>1.6.0</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.2.0</MicroBuildCoreVersion>
+    <MicrosoftDiagnosticsNETCoreClientVersion>0.2.421201</MicrosoftDiagnosticsNETCoreClientVersion>
     <MicrosoftNETCorePortableCompatibilityVersion>1.0.1</MicrosoftNETCorePortableCompatibilityVersion>
     <MicrosoftIdentityClientVersion>4.39.0</MicrosoftIdentityClientVersion>
     <MicrosoftIdentityClientExtensionsMsalVersion>2.19.3</MicrosoftIdentityClientExtensionsMsalVersion>

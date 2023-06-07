@@ -204,34 +204,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </example>
         public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session, EventPipeSession rundownSession = null)
         {
-            var tlEventSource = CreateFromEventPipeEventSource(new EventPipeEventSource(session.EventStream));
+            var traceLog = new TraceLog(new EventPipeEventSource(session.EventStream));
+            traceLog.rawEventSourceToConvert.AllEvents += traceLog.OnAllEventPipeEventsRealTime;
 
             if (rundownSession != null)
             {
-                tlEventSource.TraceLog.ProcessInitialRundown(rundownSession);
-            }
-
-            return tlEventSource;
-        }
-
-        /// <summary>
-        /// From a EventPipeEventSource, create a real time TraceLog Event Source. Like an EventPipeEventSource a TraceLogEventSource
-        /// will deliver events in real time. However an TraceLogEventSource has an underlying Tracelog (which you can access with
-        /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
-        /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
-        /// </summary>
-        /// <param name="rundownSource">
-        /// If given, the rundownSource is used to initialize module and method information.
-        /// This only makes sense in realtime sessions when you need to resolve function names.
-        /// </param>
-        public static TraceLogEventSource CreateFromEventPipeEventSource(EventPipeEventSource source, EventPipeSession rundownSource = null)
-        {
-            var traceLog = new TraceLog(source);
-            traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventPipeEventsRealTime;
-
-            if (rundownSource != null)
-            {
-                traceLog.ProcessInitialRundown(rundownSource);
+                traceLog.ProcessInitialRundown(rundownSession);
             }
 
             return traceLog.realTimeSource;
@@ -256,12 +234,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 session.Stop();
                 task.Wait();
             }
-        }
-
-        private void ProcessInitialRundown(EventPipeEventSource source)
-        {
-            SetupInitialRundownCallbacks(source);
-            source.Process();
         }
 
         /// <summary>
@@ -334,7 +306,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
         }
 
-        private unsafe void onAllEventPipeEventsRealTime(TraceEvent data)
+        private unsafe void OnAllEventPipeEventsRealTime(TraceEvent data)
         {
             TraceEventCounts countForEvent = Stats.GetEventCounts(data);
             // Debug.Assert((int)data.EventIndex == eventCount);
@@ -1284,6 +1256,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             jsJittedMethods = new List<MethodLoadUnloadJSTraceData>();
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
 
+            // We need to copy some information from the event source.
+            // An EventPipeEventSource won't have headers set until Process() is called, so we wait for the event trigger instead of copying right away.
             if (rawEvents is EventPipeEventSource eventPipeEventSource)
             {
                 eventPipeEventSource.HeadersDeserialized += delegate () { CopyHeadersFrom(rawEvents); };
