@@ -6,6 +6,7 @@
     public sealed class ProcessContext
     {
         private StackView _cpuStacks;
+        private StackView _blockedTimeStacks;
         private AnalyzerExecutionContext _executionContext;
 
         internal ProcessContext(AnalyzerExecutionContext executionContext, Process process)
@@ -31,6 +32,21 @@
                     _cpuStacks = _executionContext.Trace.GetStacks(Process, StackTypes.CPU);
                 }
                 return _cpuStacks;
+            }
+        }
+
+        /// <summary>
+        /// The blocked time stacks for the process being analyzed.
+        /// </summary>
+        public StackView BlockedTimeStacks
+        {
+            get
+            {
+                if (_blockedTimeStacks == null)
+                {
+                    _blockedTimeStacks = _executionContext.Trace.GetStacks(Process, StackTypes.Blocked);
+                }
+                return _blockedTimeStacks;
             }
         }
 

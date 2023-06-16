@@ -199,6 +199,7 @@ namespace PerfView
         }
 
         public int RundownTimeout = 120;
+        public int RundownMaxMB = -1;
         public int MinRundownTime;
         public bool NoView;
         public double CpuSampleMSec = 1.0;
@@ -210,6 +211,7 @@ namespace PerfView
         public DateTime EndTime;
         public bool ForceNgenRundown;
         public bool DumpHeap;
+        public bool DisableDotNetVersionLogging;
 
         // Collect options
         public bool NoGui;
@@ -407,6 +409,8 @@ namespace PerfView
                 "Don't do rundown .NET (CLR) rundown information )(for symbolic name lookup).");
             parser.DefineOptionalQualifier("RundownTimeout", ref RundownTimeout,
                 "Maximum number of seconds to wait for CLR rundown to complete.");
+            parser.DefineOptionalQualifier("RundownMaxMB", ref RundownMaxMB,
+                "Approximate maximum size of rundown etl file.");
             parser.DefineOptionalQualifier("MinRundownTime", ref MinRundownTime,
                 "Minimum number of seconds to wait for CLR rundown to complete.");
             parser.DefineOptionalQualifier("KeepAllEvents", ref KeepAllEvents,
@@ -561,6 +565,8 @@ namespace PerfView
                 "Displays the hexadecimal address rather than ? when the address is unknown.");
             parser.DefineOptionalQualifier("ShowOptimizationTiers", ref ShowOptimizationTiers,
                 "Displays the optimization tier of each code version executed for the method.");
+            parser.DefineOptionalQualifier("DisableDotNetVersionLogging", ref DisableDotNetVersionLogging,
+                "Disables capturing of .NET version information during collection.");
             parser.DefineOptionalQualifier("NoGui", ref NoGui,
                 "Use the Command line version of the command (like on ARM).  Brings up a console window.  For batch scripts/automation use /LogFile instead (see users guide under 'Scripting' for more).");
             parser.DefineOptionalQualifier("SafeMode", ref SafeMode, "Turn off parallelism and other risky features.");

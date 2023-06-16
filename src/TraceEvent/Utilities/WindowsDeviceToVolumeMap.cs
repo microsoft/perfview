@@ -23,6 +23,11 @@ namespace Microsoft.Diagnostics.Utilities
 
         public WindowsDeviceToVolumeMap()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             Initialize();
         }
 
@@ -77,7 +82,7 @@ namespace Microsoft.Diagnostics.Utilities
                 }
             }
 
-            if(!s_LegacyPathHandlingDisabled && shouldDisableLegacyPathHandling)
+            if (!s_LegacyPathHandlingDisabled && shouldDisableLegacyPathHandling)
             {
                 DisableLegacyPathHandling();
             }

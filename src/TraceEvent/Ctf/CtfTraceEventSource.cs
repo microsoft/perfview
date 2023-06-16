@@ -134,8 +134,10 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:ThreadPoolWorkingThreadCount"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 60, 0);
             result["DotNETRuntime:ExceptionThrown"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 80, 0);
             result["DotNETRuntime:ExceptionThrown_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 80, 1);
+            result["DotNETRuntime:LockCreated"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 0, 90, 0);
             result["DotNETRuntime:Contention"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 81, 0);
             result["DotNETRuntime:ContentionStart_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 81, 1);
+            result["DotNETRuntime:ContentionStart_V2"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 81, 2);
             result["DotNETRuntime:StrongNameVerificationStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 181, 0);
             result["DotNETRuntime:StrongNameVerificationStart_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 181, 1);
             result["DotNETRuntime:AuthenticodeVerificationStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 183, 0);

@@ -22,19 +22,19 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <FastSerializationVersion>3.0.8</FastSerializationVersion>
-    <HeapDumpDllVersion>3.0.8</HeapDumpDllVersion>
-    <MemoryGraphVersion>3.0.8</MemoryGraphVersion>
-    <PerfViewVersion>3.0.8</PerfViewVersion>
-    <TraceEventVersion>3.0.8</TraceEventVersion>
-    <UtilitiesVersion>3.0.8</UtilitiesVersion>
+    <FastSerializationVersion>3.1.3</FastSerializationVersion>
+    <HeapDumpDllVersion>3.1.3</HeapDumpDllVersion>
+    <MemoryGraphVersion>3.1.3</MemoryGraphVersion>
+    <PerfViewVersion>3.1.3</PerfViewVersion>
+    <TraceEventVersion>3.1.3</TraceEventVersion>
+    <UtilitiesVersion>3.1.3</UtilitiesVersion>
   </PropertyGroup>
 
   <!-- Support files and analyzers -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.25</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.1</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
+    <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.2</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
   </PropertyGroup>
 
   <!-- External dependencies -->
@@ -104,6 +104,14 @@
     -->
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <NoWarn>$(NoWarn),1573,1591</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    Don't add synthetic project references for solution dependencies.
+    This is required to build the PerfView NuGet package.
+  -->
+  <PropertyGroup>
+    <AddSyntheticProjectReferencesForSolutionDependencies>false</AddSyntheticProjectReferencesForSolutionDependencies>
   </PropertyGroup>
 
 </Project>

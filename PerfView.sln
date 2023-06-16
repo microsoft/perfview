@@ -67,7 +67,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventSamples", "src\Tr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastSerialization.Tests", "src\FastSerialization.Tests\FastSerialization.Tests.csproj", "{ECAD6A7A-9302-4D5B-8DC6-18A9418EEDDF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventPackageSigning", "src\TraceEventPackageSigning\TraceEventPackageSigning.csproj", "{121D62F5-0BB7-4DB5-8742-454127DF31F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NuGetPackageSigning", "src\NuGetPackageSigning\NuGetPackageSigning.csproj", "{121D62F5-0BB7-4DB5-8742-454127DF31F4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "src\Utilities\Utilities.csproj", "{BBF0A803-0B1C-47F2-B60F-09A5C4DB2136}"
 EndProject

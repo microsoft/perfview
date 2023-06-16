@@ -109,6 +109,8 @@ namespace PerfView
             Command cmd = null;
             try
             {
+                DotNetVersionLogger.Start();
+
                 Start(parsedArgs);
                 Thread.Sleep(100);          // Allow time for the start rundown events OS events to happen.  
                 DateTime startTime = DateTime.Now;
@@ -153,6 +155,7 @@ namespace PerfView
             }
             finally
             {
+                DotNetVersionLogger.Stop();
                 if (!success)
                 {
                     if (cmd != null)
@@ -205,6 +208,7 @@ namespace PerfView
                     }
                     else
                     {
+                        DotNetVersionLogger.Start();
                         Start(parsedArgs);
                         WaitUntilCollectionDone(collectionCompleted, parsedArgs, DateTime.Now);
                         if (m_aborted)
@@ -218,6 +222,7 @@ namespace PerfView
                 }
                 finally
                 {
+                    DotNetVersionLogger.Stop();
                     collectionCompleted.Set();  // This ensures that the GUI window closes.  
                     if (!success)
                     {
@@ -1465,6 +1470,9 @@ namespace PerfView
                     DisableNetMonTrace();
                 }
                 catch (Exception) { }
+
+                // Ensure that DotNetVersionLogger is disabled.
+                DotNetVersionLogger.Abort();
             }
         }
 
@@ -2839,6 +2847,11 @@ namespace PerfView
                 cmdLineArgs += " /RundownTimeout:" + parsedArgs.RundownTimeout;
             }
 
+            if (parsedArgs.RundownMaxMB != -1)
+            {
+                cmdLineArgs += " /RundownMaxMB:" + parsedArgs.RundownMaxMB;
+            }
+
             if (parsedArgs.CpuCounters != null)
             {
                 cmdLineArgs += " /CpuCounters:" + Command.Quote(string.Join(",", parsedArgs.CpuCounters));
@@ -2982,6 +2995,11 @@ namespace PerfView
             if (parsedArgs.ShowOptimizationTiers)
             {
                 cmdLineArgs += " /ShowOptimizationTiers";
+            }
+
+            if (parsedArgs.DisableDotNetVersionLogging)
+            {
+                cmdLineArgs += " /DisableDotNetVersionLogging";
             }
 
             if (parsedArgs.ContinueOnError)
@@ -3445,6 +3463,12 @@ namespace PerfView
             try
             {
                 Stopwatch sw = Stopwatch.StartNew();
+                if (!DotNetVersionLogger.Running)
+                {
+                    DotNetVersionLogger.Start();
+                }
+
+                DotNetVersionLogger.StartRundown();
                 var rundownFile = Path.ChangeExtension(fileName, ".clrRundown.etl");
                 using (TraceEventSession clrRundownSession = new TraceEventSession(sessionName + "Rundown", rundownFile))
                 {
@@ -3521,7 +3545,13 @@ namespace PerfView
                         // to get the runtime start event.  For minimal rundown, just enabling ForceEndRundown
                         // should be enough to get the rundown event for both .NET Framework and .NET Core
                         // without going down any expensive rundown codepaths.
-                        var rundownKeywords = ClrRundownTraceEventParser.Keywords.ForceEndRundown;
+
+                        // Minimal rundown includes:
+                        // - Runtime/Start event
+                        // - TieredCompilation
+                        var rundownKeywords = ClrRundownTraceEventParser.Keywords.ForceEndRundown |
+                            ClrRundownTraceEventParser.Keywords.Compilation |
+                            ClrRundownTraceEventParser.Keywords.GC;
 
                         // Only consider forcing suppression of these keywords if full rundown is enabled.
                         if (!parsedArgs.NoRundown && !parsedArgs.NoClrRundown)
@@ -3573,9 +3603,10 @@ namespace PerfView
                     PerfViewLogger.Log.WaitForIdle();
 
                     // Wait for rundown to complete.
-                    WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, rundownFile);
+                    WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, parsedArgs.RundownMaxMB, rundownFile);
 
                     // Complete perfview rundown.
+                    DotNetVersionLogger.Stop();
                     PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppInfo.VersionNumber);
                     PerfViewLogger.Log.StartAndStopTimes();
                     PerfViewLogger.Log.StopRundown();
@@ -3598,9 +3629,10 @@ namespace PerfView
         /// Currently there is no good way to know when rundown is finished.  We basically wait as long as
         /// the rundown file is growing.  
         /// </summary>
-        private void WaitForRundownIdle(int minSeconds, int maxSeconds, string rundownFilePath)
+        private void WaitForRundownIdle(int minSeconds, int maxSeconds, int maxSizeMB, string rundownFilePath)
         {
             LogFile.WriteLine("Waiting up to {0} sec for rundown events.  Use /RundownTimeout to change.", maxSeconds);
+            LogFile.WriteLine($"Maximum rundown file size is {maxSizeMB}MB.  Use /RundownMaxMB to change.");
             LogFile.WriteLine("If you know your process has exited, use /noRundown qualifer to skip this step.");
 
             long rundownFileLen = 0;
@@ -3616,6 +3648,12 @@ namespace PerfView
                 var delta = newRundownFileLen - rundownFileLen;
                 LogFile.WriteLine("Rundown File Length: {0:n1}MB delta: {1:n1}MB", newRundownFileLen / 1000000.0, delta / 1000000.0);
                 rundownFileLen = newRundownFileLen;
+
+                if ((maxSizeMB > 0) && rundownFileLen >= (maxSizeMB * 1024 * 1024))
+                {
+                    LogFile.WriteLine($"Exceeded maximum rundown file size of {maxSizeMB}MB.");
+                    break;
+                }
 
                 if (i >= minSeconds)
                 {

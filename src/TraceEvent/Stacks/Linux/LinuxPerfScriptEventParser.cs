@@ -1,4 +1,5 @@
-﻿using Microsoft.Diagnostics.Tracing.Utilities;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -490,6 +491,8 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         {
             uint idx = 0;
 
+            char zeroVal = (char)source.Peek(0);
+
             startOver:
             int firstSpaceIdx = -1;
             bool seenDigit = false;
@@ -497,10 +500,29 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             // Deal with the case where the COMMAND is empty.
             // Thus we have ANY spaces before the proceed ID Thread ID Num/Num. 
             // We can deal with this case by 'jump starting the state machine state if it starts with a digit.   
-            if (char.IsDigit((char) source.Peek(0)))
+            if (char.IsDigit(zeroVal))
             {
                 firstSpaceIdx = 0;
                 seenDigit = true;
+            }
+
+            // Handle the case where the PROCESS_COMMAND is something like :-1 or -1
+            else if (zeroVal == ':' || zeroVal == '-')
+            {
+                for (; ; idx++)
+                {
+                    byte val = source.Peek(idx);
+                    if (val == '\n')
+                    {
+                        Debug.Assert(false, "Could not parse process command");
+                        return -1;
+                    }
+                    else if (char.IsWhiteSpace((char)val))
+                    {
+                        firstSpaceIdx = (int)idx;
+                        return firstSpaceIdx;
+                    }
+                }
             }
 
             for (; ; )
@@ -747,7 +769,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.SkipUpTo('=');
                 source.MoveNext();
 
-                source.ReadAsciiStringUpTo(' ', sb);
+                ReadProcessNameFromSchedSwitch(source, "prev_pid", sb);
                 string prevComm = sb.ToString();
                 sb.Clear();
 
@@ -771,7 +793,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.SkipUpTo('=');
                 source.MoveNext();
 
-                source.ReadAsciiStringUpTo(' ', sb);
+                ReadProcessNameFromSchedSwitch(source, "next_pid", sb);
                 string nextComm = sb.ToString();
                 sb.Clear();
 
@@ -840,7 +862,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             source.SkipUpTo('=');
             source.MoveNext();
 
-            source.ReadAsciiStringUpTo(' ', sb);
+            ReadProcessNameFromSchedSwitch(source, "pid", sb);
             string comm = sb.ToString();
             sb.Clear();
 
@@ -855,6 +877,32 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             int prio = source.ReadInt();
 
             return new ThreadExit(comm, tid, prio);
+        }
+
+        private void ReadProcessNameFromSchedSwitch(FastStream source, string nextFieldName, StringBuilder dest)
+        {
+            StringBuilder fieldNameStringBuilder = new StringBuilder();
+
+            while (true)
+            {
+                source.ReadAsciiStringUpTo(' ', dest);
+                source.MoveNext();
+
+                // Check to see if we've hit the next field name.
+                FastStream.MarkedPosition pos = source.MarkPosition();
+                source.ReadFixedString(nextFieldName.Length, fieldNameStringBuilder);
+
+                if (nextFieldName.Equals(fieldNameStringBuilder.ToString()))
+                {
+                    break;
+                }
+                else
+                {
+                    source.RestoreToMark(pos);
+                    fieldNameStringBuilder.Clear();
+                    dest.Append(' ');
+                }
+            }
         }
 
         private string RemoveOuterBrackets(string s)

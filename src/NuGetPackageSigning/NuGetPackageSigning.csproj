@@ -1,11 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- This project is here only to support MicroBuild Signing of the Microsoft.Diagnostics.Tracing.TraceEvent package.
-       In theory this could be rold into the TraceEvent.csproj project, but after several attempts  (the last
-       of which were that the fact that we build for several frameworks, makes it so that it can't seem to load
-       the microbuild package from the PackageReference element propertly.   If we care we can make another
-       attempt, but this should get us unblocked.   See issue https://github.com/Microsoft/perfview/issues/673 for more. 
-    -->
+  <!-- This project is here only to support MicroBuild Signing of the NuGet packages. -->
 
   <PropertyGroup>
     <OutputType>library</OutputType>
@@ -15,6 +10,11 @@
   <ItemGroup>
     <!-- To support Signing new SupportFile packages, look for any packages in the NugetSupportFiles directory -->
     <None Include="..\NugetSupportFiles\*.SupportFiles.*.nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+    <!-- Get the Microsoft.PerfView.*.nuget package we just built -->
+    <None Include="..\PerfView\bin\$(Configuration)\Microsoft.PerfView.*nupkg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 

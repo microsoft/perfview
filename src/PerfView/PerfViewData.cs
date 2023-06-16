@@ -37,6 +37,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Xml;
+using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
@@ -1534,7 +1535,7 @@ table {
 
     public class AutomatedAnalysisReport : PerfViewHtmlReport
     {
-        public AutomatedAnalysisReport(PerfViewFile dataFile) : base(dataFile, "Automatic CPU Analysis") { }
+        public AutomatedAnalysisReport(PerfViewFile dataFile) : base(dataFile, "Automated Trace Analysis") { }
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
@@ -3820,7 +3821,7 @@ table {
                     // For .NET, we are looking for a Gen 2 GC Start that is induced that has GCBulkNodes after it.   
                     var lastGCStartsRelMSec = new Dictionary<int, double>();
 
-                    source.Clr.GCGenAwareStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GenAwareBeginTraceData data)
+                    source.Clr.GCGenAwareBegin += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GenAwareTemplateTraceData data)
                     {
                         lastGCStartsRelMSec[data.ProcessID] = data.TimeStampRelativeMSec;
                     };
@@ -5440,6 +5441,16 @@ table {
                         stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
                         goto ADD_EVENT_FRAME;
                     }
+
+                    var asTaskWaitSend = data as TaskWaitSendArgs;
+                    if (asTaskWaitSend != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData Behavior " + asTaskWaitSend.Behavior);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                        
+                        goto ADD_EVENT_FRAME;
+                    }
+
 
                     var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
                     if (asSampleObjectAllocated != null)
@@ -8985,6 +8996,15 @@ table {
                                     stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
                                     goto ADD_EVENT_FRAME;
                                 }
+                                
+                                var asTaskWaitSend = data as TaskWaitSendArgs;
+                                if (asTaskWaitSend != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData Behavior " + asTaskWaitSend.Behavior);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                        
+                                    goto ADD_EVENT_FRAME;
+                                }
 
                                 // Tack on event nam
                                 ADD_EVENT_FRAME:
@@ -9969,22 +9989,20 @@ table {
                     {
                         // The directories contained in the symbol cache resource _are_ in the symbol cache format
                         // which means directories are in the form of /<file.ext>/<hash>/file.ext so in this case
-                        // we use the GetFileName API since it will consider the dictory name a file name.
+                        // we use the GetFileName API since it will consider the directory name a file name.
                         var targetDir = Path.Combine(symbolCachePath, Path.GetFileName(subPath));
 
-                        if (!Directory.Exists(targetDir))
+                        // The directory exists, so we must merge the two cache directories
+                        foreach (var symbolVersionDir in Directory.EnumerateDirectories(subPath))
                         {
-                            MoveDirectory(subPath, targetDir);
-                        }
-                        else
-                        {
-                            // The directory exists, so we must merge the two cache directories
-                            foreach (var symbolVersionDir in Directory.EnumerateDirectories(subPath))
+                            var targetVersionDir = Path.Combine(targetDir, Path.GetFileName(symbolVersionDir));
+                            if (!Directory.Exists(targetVersionDir))
                             {
-                                var targetVersionDir = Path.Combine(targetDir, Path.GetFileName(symbolVersionDir));
-                                if (!Directory.Exists(targetVersionDir))
+                                Directory.CreateDirectory(targetVersionDir);
+                                foreach (var symbolFilePath in Directory.EnumerateFiles(symbolVersionDir))
                                 {
-                                    MoveDirectory(symbolVersionDir, targetVersionDir);
+                                    string targetFilePath = Path.Combine(targetVersionDir, Path.GetFileName(symbolFilePath));
+                                    File.Move(symbolFilePath, Path.Combine(symbolFilePath, targetFilePath));
                                 }
                             }
                         }
@@ -9997,28 +10015,6 @@ table {
             catch (Exception e)
             {
                 worker.Log($"Failed to extract symbols from {Path.GetFileName(FilePath)} ... (Exception: {e.Message})");
-            }
-        }
-
-        private void MoveDirectory(string sourceDirName, string destDirName)
-        {
-            if (Directory.GetDirectoryRoot(sourceDirName) == Directory.GetDirectoryRoot(destDirName))
-            {
-                Directory.Move(sourceDirName, destDirName);
-                return;
-            }
-
-            // Create all directories
-            Directory.CreateDirectory(destDirName);
-            foreach (var directory in Directory.EnumerateDirectories(sourceDirName, "*", SearchOption.AllDirectories))
-            {
-                Directory.CreateDirectory(directory.Replace(sourceDirName, destDirName));
-            }
-
-            // Move all files
-            foreach (var file in Directory.EnumerateFiles(sourceDirName, "*", SearchOption.AllDirectories))
-            {
-                File.Move(file, file.Replace(sourceDirName, destDirName));
             }
         }
 

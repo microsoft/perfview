@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// simply implement Windows PDBS here.   This can be factored out of this class when we 
     /// support other formats (e.g. Dwarf).
     /// 
-    /// To implmente support for Windows PDBs we use the Debug Interface Access (DIA).  See 
+    /// To implement support for Windows PDBs we use the Debug Interface Access (DIA).  See 
     /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
@@ -158,6 +158,7 @@ namespace Microsoft.Diagnostics.Symbols
                     ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
                 }
             }
+
             return ret;
         }
 
@@ -173,6 +174,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 catch (Exception) { } // Catch all AssemblyName fails with ' in the name.   
             }
+
             return defaultValue;
         }
 
@@ -192,7 +194,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// This overload of SourceLocationForRva like the one that takes only an RVA will return a source location
         /// if it can.   However this version has additional support for NGEN images.   In the case of NGEN images 
         /// for .NET V4.6.1 or later), the NGEN images can't convert all the way back to a source location, but they 
-        /// can convert the RVA back to IL artifacts (ilAssemblyName, methodMetadataToken, iloffset).  THese can then
+        /// can convert the RVA back to IL artifacts (ilAssemblyName, methodMetadataToken, iloffset).  These can then
         /// be used to look up the source line using the IL PDB.  
         /// 
         /// Thus if the return value from this is null, check to see if the ilAssemblyName is non-null, and if not 
@@ -766,14 +768,14 @@ namespace Microsoft.Diagnostics.Symbols
 
             /// <summary>
             /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
-            /// represented by the 'this' pointer.   This target is iether a ULR or a local file
+            /// represented by the 'this' pointer.   This target is either a ULR or a local file
             /// path.  
             /// 
             /// You can dump the srcsrv stream using a tool called pdbstr 
             ///     pdbstr -r -s:srcsrv -p:PDBPATH
             /// 
             /// The target in this stream is called SRCSRVTRG and there is another variable SRCSRVCMD
-            /// which represents the command to run to fetch the soruce into SRCSRVTRG
+            /// which represents the command to run to fetch the source into SRCSRVTRG
             /// 
             /// To form the target, the stream expect you to private a %targ% variable which is a directory
             /// prefix to tell where to put the source file being fetched.   If the source file is
@@ -810,7 +812,7 @@ namespace Microsoft.Diagnostics.Symbols
             ///  SRCSRVCMD=
             ///  SRCSRVVERCTRL=http
             ///  SRCSRV: source files ---------------------------------------
-            ///  c:\Users\rafalkrynski\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
+            ///  c:\Users\dev\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
             ///  SRCSRV: end ------------------------------------------------
             ///  
             /// </summary>
@@ -818,7 +820,7 @@ namespace Microsoft.Diagnostics.Symbols
             /// <param name="command">returns the command to fetch the target source file</param>
             /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
             /// directory where source files can be fetched to.  Typically the returned file is under this directory
-            /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something
+            /// If the value is null, %targ% variable be empty.  This assumes that the resulting file is something
             /// that does not need to be copied to the machine (either a URL or a file that already exists)</param>
             private void GetSourceServerTargetAndCommand(out string target, out string command, string localDirectoryToPlaceSourceFiles = null)
             {
@@ -1039,6 +1041,12 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
 
         private NativeSymbolModule(SymbolReader reader, string pdbFilePath, Action<IDiaDataSource3> loadData) : base(reader, pdbFilePath)
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // DIA is not supported on non-Windows systems.
+                throw new PlatformNotSupportedException("Cannot load a Windows PDB on a non-Windows system.");
+            }
+
             m_reader = reader;
 
             m_source = DiaLoader.GetDiaSourceObject();
@@ -1098,7 +1106,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         {
             ThrowIfDisposed();
 
-            // In order to get the IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
+            // In order to get the IDiaDataSource3 which includes 'getStreamSize' API, you need to use the 
             // dia2_internal.idl file from devdiv to produce the Interop.Dia2Lib.dll 
             // see class DiaLoader for more
             var log = m_reader.m_log;
@@ -1329,7 +1337,18 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return buf;
         }
 
+        ~NativeSymbolModule()
+        {
+            Dispose(disposing: false);
+        }
+
         public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             if (!m_isDisposed)
             {
@@ -1782,7 +1801,7 @@ namespace Dia2Lib
     /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
     /// From there you can do anything you need.  
     /// 
-    /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
+    /// In order to get IDiaDataSource3 which includes 'getStreamSize' API, you need to use the 
     /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Dia2Lib.dll
     /// 
     /// roughly what you need to do is 
@@ -1797,36 +1816,35 @@ namespace Dia2Lib
     internal static class DiaLoader
     {
         /// <summary>
-        /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
+        /// Load the msdia140 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.
         /// </summary>
         public static IDiaDataSource3 GetDiaSourceObject()
         {
-            if (!s_loadedNativeDll)
-            {
-                // Ensure that the native DLL we need exist.  
-                NativeDlls.LoadNative("msdia140.dll");
-                s_loadedNativeDll = true;
-            }
+            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
+            s_diaClassFactory.CreateInstance(null, iDataDataSourceGuid, out object comObject);
+            return comObject as IDiaDataSource3;
+        }
+
+        private static IClassFactory CreateDiaClassFactory()
+        {
+            // Ensure that the native DLL we need exists.
+            NativeDlls.LoadNative("msdia140.dll");
 
             // This is the value it was for msdia120 and before 
             // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
 
             // This is the value for msdia140.  
             var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
-
-            object comObject = null;
-            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
-            comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
-            return (comObject as IDiaDataSource3);
+            return (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
         }
+
         #region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
         {
             void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
-                                ref Guid refiid,
+                                [In] in Guid refiid,
                                 [MarshalAs(UnmanagedType.Interface)] out object createdObject);
             void LockServer(bool incrementRefCount);
         }
@@ -1835,15 +1853,16 @@ namespace Dia2Lib
         [return: MarshalAs(UnmanagedType.Interface)]
         [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
         private static extern object DllGetClassObject(
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
+            [In] in Guid rclsid,
+            [In] in Guid riid);
 
         /// <summary>
-        /// Used to ensure the native library is loaded at least once prior to trying to use it. No protection is
-        /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
-        /// after use.
+        /// The COM class factory for DIA.
+        /// Used to ensure the native library is loaded prior to trying to use it.
+        /// Note that we never release this class factory, but this is not a problem since we
+        /// aren't trying to unload the library after use.
         /// </summary>
-        private static bool s_loadedNativeDll;
+        private static readonly IClassFactory s_diaClassFactory = CreateDiaClassFactory();
         #endregion
     }
 

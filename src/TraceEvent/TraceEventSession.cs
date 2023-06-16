@@ -581,11 +581,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// Enable the kernel provider for the session. Before windows 8 this session must be called 'NT Kernel Session'.   
         /// This API is OK to call from one thread while Process() is being run on another
+        /// </summary>
         /// <param name="flags">Specifies the particular kernel events of interest</param>
         /// <param name="stackCapture">
         /// Specifies which events should have their stack traces captured when an event is logged</param>
         /// <returns>Returns true if the session existed before and was restarted (see TraceEventSession)</returns>
-        /// </summary>
         public unsafe bool EnableKernelProvider(KernelTraceEventParser.Keywords flags, KernelTraceEventParser.Keywords stackCapture = KernelTraceEventParser.Keywords.None)
         {
             // Setting stack capture implies that it is on.  
@@ -1386,7 +1386,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Creating a TraceEventSession does not actually interact with the operating system until a
         /// provider is enabled. At that point the session is considered active (OS state that survives a
         /// process exit has been modified). IsActive returns true if the session is active. 
-        /// 
         /// </summary>
         public bool IsActive
         {
@@ -1441,27 +1440,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                    sizeof(char) * TraceEventSession.MaxNameSize +     // For log moduleFile name 
                                    sizeof(char) * TraceEventSession.MaxNameSize;      // For session name
 
-            byte* sessionsArray = stackalloc byte[MAX_SESSIONS * sizeOfProperties];
-            TraceEventNativeMethods.EVENT_TRACE_PROPERTIES** propetiesArray = stackalloc TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*[MAX_SESSIONS];
+            List<string> activeTraceNames = null;
 
-            for (int i = 0; i < MAX_SESSIONS; i++)
+            // Allocate the sessionsArray on the heap for environments that have a large number of sessions.
+            byte[] sessionsArr = new byte[MAX_SESSIONS * sizeOfProperties];
+            fixed (byte* sessionsArray = sessionsArr)
             {
-                TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)&sessionsArray[sizeOfProperties * i];
-                properties->Wnode.BufferSize = (uint)sizeOfProperties;
-                properties->LoggerNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES);
-                properties->LogFileNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + sizeof(char) * TraceEventSession.MaxNameSize;
-                propetiesArray[i] = properties;
-            }
-            int sessionCount = 0;
-            int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propetiesArray, MAX_SESSIONS, ref sessionCount);
-            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
+                TraceEventNativeMethods.EVENT_TRACE_PROPERTIES** propetiesArray = stackalloc TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*[MAX_SESSIONS];
 
-            List<string> activeTraceNames = new List<string>(sessionCount);
-            for (int i = 0; i < sessionCount; i++)
-            {
-                byte* propertiesBlob = (byte*)propetiesArray[i];
-                string sessionName = new string((char*)(&propertiesBlob[propetiesArray[i]->LoggerNameOffset]));
-                activeTraceNames.Add(sessionName);
+                for (int i = 0; i < MAX_SESSIONS; i++)
+                {
+                    TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)&sessionsArray[sizeOfProperties * i];
+                    properties->Wnode.BufferSize = (uint)sizeOfProperties;
+                    properties->LoggerNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES);
+                    properties->LogFileNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + sizeof(char) * TraceEventSession.MaxNameSize;
+                    propetiesArray[i] = properties;
+                }
+                int sessionCount = 0;
+                int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propetiesArray, MAX_SESSIONS, ref sessionCount);
+                Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
+
+                activeTraceNames = new List<string>(sessionCount);
+                for (int i = 0; i < sessionCount; i++)
+                {
+                    byte* propertiesBlob = (byte*)propetiesArray[i];
+                    string sessionName = new string((char*)(&propertiesBlob[propetiesArray[i]->LoggerNameOffset]));
+                    activeTraceNames.Add(sessionName);
+                }
             }
             return activeTraceNames;
         }
@@ -3121,7 +3126,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
     /// cause any session with the kernel PMCProfile keyword active to start emitting
     /// PMCCounterProf events for each ProfileSouce that is enabled.  
     /// </para>
-    /// /// </summary>
+    /// </summary>
     public static class TraceEventProfileSources
     {
         /// <summary>

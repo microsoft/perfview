@@ -12,6 +12,11 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// Stacks representing execution on one or more CPUs.
         /// </summary>
         public static string CPU { get; } = "CPU";
+
+        /// <summary>
+        /// Stacks representing time spent on threads but not executing on CPUs.
+        /// </summary>
+        public static string Blocked { get; } = "Blocked";
     }
 
     /// <summary>
