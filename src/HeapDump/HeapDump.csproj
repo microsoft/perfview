@@ -26,6 +26,10 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
   </ItemGroup>

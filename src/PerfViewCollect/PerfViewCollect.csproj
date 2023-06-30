@@ -15,6 +15,10 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\PerfView\App.cs" />
     <Compile Include="..\PerfView\CommandLineArgs.cs" />

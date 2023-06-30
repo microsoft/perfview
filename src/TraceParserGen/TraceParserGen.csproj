@@ -15,6 +15,10 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">

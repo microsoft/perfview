@@ -22,6 +22,10 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <!-- Build a NuGet package containing PerfView.exe -->
   <PropertyGroup>
     <Description>PerfView</Description>

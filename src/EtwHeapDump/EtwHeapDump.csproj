@@ -15,6 +15,10 @@
     <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />

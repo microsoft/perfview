@@ -27,6 +27,9 @@
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
   <Target Name="SetNuspecProperties">
     <PropertyGroup>

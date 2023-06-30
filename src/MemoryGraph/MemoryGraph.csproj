@@ -13,6 +13,10 @@
     <Version>$(MemoryGraphVersion)</Version>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\Utilities\Utilities.csproj" />
