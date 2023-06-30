@@ -199,6 +199,7 @@ namespace PerfView
         }
 
         public int RundownTimeout = 120;
+        public int RundownMaxMB = -1;
         public int MinRundownTime;
         public bool NoView;
         public float CpuSampleMSec = 1.0F;
@@ -408,6 +409,8 @@ namespace PerfView
                 "Don't do rundown .NET (CLR) rundown information )(for symbolic name lookup).");
             parser.DefineOptionalQualifier("RundownTimeout", ref RundownTimeout,
                 "Maximum number of seconds to wait for CLR rundown to complete.");
+            parser.DefineOptionalQualifier("RundownMaxMB", ref RundownMaxMB,
+                "Approximate maximum size of rundown etl file.");
             parser.DefineOptionalQualifier("MinRundownTime", ref MinRundownTime,
                 "Minimum number of seconds to wait for CLR rundown to complete.");
             parser.DefineOptionalQualifier("KeepAllEvents", ref KeepAllEvents,

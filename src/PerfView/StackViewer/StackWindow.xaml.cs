@@ -247,12 +247,6 @@ namespace PerfView
                 return;
             }
 
-            // if no filters have changed, quick out
-            if (m_lastSetStackSourceFilter != null && Filter.Equals(m_lastSetStackSourceFilter))
-            {
-                return;
-            }
-
             // Synchronize the sample rate if the source supports it.  
             // TODO - Currently nothing uses sampling.  USE OR REMOVE 
             if (newSource.SamplingRate == null)
@@ -469,9 +463,6 @@ namespace PerfView
                     onComplete?.Invoke();
                 });
             });
-
-            // record to throttle calls if no UI changes
-            m_lastSetStackSourceFilter = new FilterParams(Filter);
         }
 
         // The 'Just My App' pattern depends on the directory of the EXE and thus has to be fixed up to be the
@@ -2306,7 +2297,8 @@ namespace PerfView
                 }
 
                 SortedDictionary<int, float> metricOnLine;
-                var sourceLocation = GetSourceLocation(asCallTreeNodeBase, cellText, out metricOnLine);
+                SortedDictionary<int, float> exclusiveMetricOnLine;
+                var sourceLocation = GetSourceLocation(asCallTreeNodeBase, cellText, out metricOnLine, out exclusiveMetricOnLine);
 
                 string sourcePathToOpen = null;
                 string logicalSourcePath = null;
@@ -2330,7 +2322,7 @@ namespace PerfView
                         {
                             sourcePathToOpen = CacheFiles.FindFile(sourcePathToOpen, Path.GetExtension(sourcePathToOpen));
                             StatusBar.Log("Annotating source with metric to the file " + sourcePathToOpen);
-                            AnnotateLines(logicalSourcePath, sourcePathToOpen, metricOnLine);
+                            AnnotateLines(logicalSourcePath, sourcePathToOpen, ("Inc", metricOnLine) ,("Exc", exclusiveMetricOnLine));
                         }
                     }
                 }
@@ -2369,9 +2361,10 @@ namespace PerfView
 
         // TODO FIX NOW review 
         private SourceLocation GetSourceLocation(CallTreeNodeBase asCallTreeNodeBase, string cellText,
-            out SortedDictionary<int, float> metricOnLine)
+            out SortedDictionary<int, float> metricOnLine, out SortedDictionary<int, float> exclusiveMetricOnLine)
         {
             metricOnLine = null;
+            exclusiveMetricOnLine = null;
             var m = Regex.Match(cellText, "<<(.*!.*)>>");
             if (m.Success)
             {
@@ -2381,12 +2374,14 @@ namespace PerfView
             // Find the most numerous call stack
             // TODO this can be reasonably expensive.   If it is a problem do something about it (e.g. sampling)
             var frameIndexCounts = new Dictionary<StackSourceFrameIndex, float>();
+            var exclusiveFrameIndexCounts = new Dictionary<StackSourceFrameIndex, float>();
             asCallTreeNodeBase.GetSamples(false, delegate (StackSourceSampleIndex sampleIdx)
             {
                 // Find the callStackIdx which corresponds to the name in the cell, and log it to callStackIndexCounts
                 var matchingFrameIndex = StackSourceFrameIndex.Invalid;
                 var sample = m_stackSource.GetSampleByIndex(sampleIdx);
                 var callStackIdx = sample.StackIndex;
+                bool exclusiveSample = true;
                 while (callStackIdx != StackSourceCallStackIndex.Invalid)
                 {
                     var frameIndex = m_stackSource.GetFrameIndex(callStackIdx);
@@ -2396,6 +2391,13 @@ namespace PerfView
                         matchingFrameIndex = frameIndex;        // We keep overwriting it, so we get the entry closest to the root.  
                     }
 
+                    if (exclusiveSample)
+                    {
+                        exclusiveSample = false;
+                        float count = 0;
+                        exclusiveFrameIndexCounts.TryGetValue(matchingFrameIndex, out count);
+                        exclusiveFrameIndexCounts[matchingFrameIndex] = count + sample.Metric;
+                    }
                     callStackIdx = m_stackSource.GetCallerIndex(callStackIdx);
                 }
                 if (matchingFrameIndex != StackSourceFrameIndex.Invalid)
@@ -2446,18 +2448,25 @@ namespace PerfView
             if (sourceLocation != null)
             {
                 var filePathForMax = sourceLocation.SourceFile.BuildTimeFilePath;
-                metricOnLine = new SortedDictionary<int, float>();
                 // Accumulate the counts on a line basis
-                foreach (StackSourceFrameIndex frameIdx in frameIndexCounts.Keys)
+                AccumulateCounts(frameIndexCounts, out metricOnLine);
+                AccumulateCounts(exclusiveFrameIndexCounts, out exclusiveMetricOnLine);
+
+                void AccumulateCounts(Dictionary<StackSourceFrameIndex, float> indexCounts, out SortedDictionary<int, float> metricHash)
                 {
-                    var loc = asTraceEventStackSource.GetSourceLine(frameIdx, reader);
-                    if (loc != null && loc.SourceFile.BuildTimeFilePath == filePathForMax)
+                    metricHash = new SortedDictionary<int, float>();
+
+                    foreach (StackSourceFrameIndex frameIdx in indexCounts.Keys)
                     {
-                        frameToLine[frameIdx] = loc.LineNumber;
-                        float metric;
-                        metricOnLine.TryGetValue(loc.LineNumber, out metric);
-                        metric += frameIndexCounts[frameIdx];
-                        metricOnLine[loc.LineNumber] = metric;
+                        var loc = asTraceEventStackSource.GetSourceLine(frameIdx, reader);
+                        if (loc != null && loc.SourceFile.BuildTimeFilePath == filePathForMax)
+                        {
+                            frameToLine[frameIdx] = loc.LineNumber;
+                            float metric;
+                            metricHash.TryGetValue(loc.LineNumber, out metric);
+                            metric += indexCounts[frameIdx];
+                            metricHash[loc.LineNumber] = metric;
+                        }
                     }
                 }
             }
@@ -2518,7 +2527,7 @@ namespace PerfView
             return sourceLocation;
         }
 
-        private void AnnotateLines(string inFileName, string outFileName, SortedDictionary<int, float> lineData)
+        private void AnnotateLines(string inFileName, string outFileName, params ValueTuple<string, SortedDictionary<int, float>>[] lineData)
         {
             using (var inFile = File.OpenText(inFileName))
             using (var outFile = File.CreateText(outFileName))
@@ -2534,18 +2543,21 @@ namespace PerfView
 
                     lineNum++;
 
-                    float value;
-                    if (lineData.TryGetValue(lineNum, out value))
+                    foreach (var data in lineData)
                     {
-                        outFile.Write(ToCompactString(value));
-                    }
-                    else if (lineNum == 1)
-                    {
-                        outFile.Write("Metric|");
-                    }
-                    else
-                    {
-                        outFile.Write("       ");
+                        float value;
+                        if (data.Item2.TryGetValue(lineNum, out value))
+                        {
+                            outFile.Write(ToCompactString(value));
+                        }
+                        else if (lineNum == 1)
+                        {
+                            outFile.Write($"{data.Item1.PadLeft(6)}|");
+                        }
+                        else
+                        {
+                            outFile.Write("       ");
+                        }
                     }
 
                     outFile.WriteLine(line);
@@ -4223,7 +4235,6 @@ namespace PerfView
 
         // Keep track of the parameters we have already seeen. 
         private List<FilterParams> m_history;
-        private FilterParams m_lastSetStackSourceFilter;
         private int m_historyPos;
         private bool m_settingFromHistory;      // true if the filter parameters are being udpated from the history list
         private bool m_fixedUpJustMyCode;

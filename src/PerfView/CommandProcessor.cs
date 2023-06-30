@@ -1470,6 +1470,9 @@ namespace PerfView
                     DisableNetMonTrace();
                 }
                 catch (Exception) { }
+
+                // Ensure that DotNetVersionLogger is disabled.
+                DotNetVersionLogger.Abort();
             }
         }
 
@@ -2844,6 +2847,11 @@ namespace PerfView
                 cmdLineArgs += " /RundownTimeout:" + parsedArgs.RundownTimeout;
             }
 
+            if (parsedArgs.RundownMaxMB != -1)
+            {
+                cmdLineArgs += " /RundownMaxMB:" + parsedArgs.RundownMaxMB;
+            }
+
             if (parsedArgs.CpuCounters != null)
             {
                 cmdLineArgs += " /CpuCounters:" + Command.Quote(string.Join(",", parsedArgs.CpuCounters));
@@ -3595,7 +3603,7 @@ namespace PerfView
                     PerfViewLogger.Log.WaitForIdle();
 
                     // Wait for rundown to complete.
-                    WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, rundownFile);
+                    WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, parsedArgs.RundownMaxMB, rundownFile);
 
                     // Complete perfview rundown.
                     DotNetVersionLogger.Stop();
@@ -3621,9 +3629,10 @@ namespace PerfView
         /// Currently there is no good way to know when rundown is finished.  We basically wait as long as
         /// the rundown file is growing.  
         /// </summary>
-        private void WaitForRundownIdle(int minSeconds, int maxSeconds, string rundownFilePath)
+        private void WaitForRundownIdle(int minSeconds, int maxSeconds, int maxSizeMB, string rundownFilePath)
         {
             LogFile.WriteLine("Waiting up to {0} sec for rundown events.  Use /RundownTimeout to change.", maxSeconds);
+            LogFile.WriteLine($"Maximum rundown file size is {maxSizeMB}MB.  Use /RundownMaxMB to change.");
             LogFile.WriteLine("If you know your process has exited, use /noRundown qualifer to skip this step.");
 
             long rundownFileLen = 0;
@@ -3639,6 +3648,12 @@ namespace PerfView
                 var delta = newRundownFileLen - rundownFileLen;
                 LogFile.WriteLine("Rundown File Length: {0:n1}MB delta: {1:n1}MB", newRundownFileLen / 1000000.0, delta / 1000000.0);
                 rundownFileLen = newRundownFileLen;
+
+                if ((maxSizeMB > 0) && rundownFileLen >= (maxSizeMB * 1024 * 1024))
+                {
+                    LogFile.WriteLine($"Exceeded maximum rundown file size of {maxSizeMB}MB.");
+                    break;
+                }
 
                 if (i >= minSeconds)
                 {

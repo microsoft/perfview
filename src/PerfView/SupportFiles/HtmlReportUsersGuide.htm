@@ -203,19 +203,46 @@
     <h3>
         <a id="UnderstandingTieredCompilation">Understanding Tiered Compilation</a>
     </h3>
-    <p>Tiered compilation is a feature that was introduced in .Net Core 2.1. It improves both startup performance and steady-state performance by hot-swapping between different compilations of the same method at runtime. </p>
+    <p>Tiered compilation is a feature that was introduced in .Net Core 2.1. It improves both startup performance and steady-state performance by hot-swapping between different compilations of the same method at runtime.</p>
     <ol>
         <li>Startup perf wins - The runtime requests that the JIT use minimal optimizations the first time a method is compiled. Later if the method is called frequently the method will be recompiled with more optimizations. This recompilation occurs on a background thread in parallel with other activity.</li>
         <li>Steady-state perf wins - The runtime will identify frequently called methods whose code was originally loaded from ReadyToRun (aka crossgen) images and recompile it using the JIT. The jitted code is often more performant than the original because it can take advantage of additional information that is only known at runtime.</li>
     </ol>
-    <p>Different compilations of the same method are referred to as tiers, and as of .Net Core 2.1 there are two of them, 'Tier0' and 'Tier1'. Tier0 is the initial code for each method, regardless whether it was obtained from the JIT or from a ReadyToRun image. Tier1 refers to the optimized jitted code that is compiled on a background thread</p>
-    <h4>Enabling tiered compilation</h4>
-    <p>In .Net Core 2.1 tiered compilation is an opt-in preview feature. It can be enabled either by any of these mechanisms:</p>
+    <p>Different compilations of the same method are referred to as tiers 'Tier0' (also known as Quick Jit) and 'Tier1'. Tier0 is the initial code for each method, regardless whether it was obtained from the JIT or from a ReadyToRun image. Tier1 refers to the optimized jitted code that is compiled on a background thread</p>
+    <p>Some method types bypass tiering and are always jitted with full optimization (if optimization is enabled):</p>
     <ol>
-        <li>Set an app config switch in runtimeconfig.json "System.Runtime.TieredCompilation": "true"</li>
-        <li>Set the msbuild property &lt;TieredCompilation&gt;true&lt;/TieredCompilation&gt; in the application's project file</li>
-        <li>Set the environment variable COMPlus_TieredCompilation=1</li>
+        <li>Dynamic methods</li>
+        <li>Methods with the <code>AggressiveOptimization</code> attribute</li>
+        <li>Methods with loops (.Net Core 3, .Net 5, .Net 6)</li>
+        <li>Methods with loops and stackalloc</li>
+        <li>Methods with loops in catch or finally clauses</li>
+        <li>Methods with explicit tail calls</li>
+        <li>Methods that modify <code>this</code></li>
+        <li>Methods that are reverse PInvokes</li>
     </ol>
+    <p>When a tiering-eligible method is called, if there is Tier1 code for the method, that version of the method executes, otherwise the Tier0 code is executed.</p>
+    <h4>Enabling tiered compilation</h4>
+    <p>In .NET Core 3 and later tiered compilation is enabled by default. It can be disabled by any of these mechanisms:</p>
+    <ol>
+        <li>Set an app config switch in runtimeconfig.json "System.Runtime.TieredCompilation": "false"</li>
+        <li>Set the msbuild property &lt;TieredCompilation&gt;false&lt;/TieredCompilation&gt; in the application's project file</li>
+        <li>Set the environment variable COMPlus_TieredCompilation=0</li>
+    </ol>
+    <p>The "CPU (with Optimization Tiers) Stacks" view in the Advanced Group will annotate each method with its tiering information. A method that is eligible for tiering can create multiple entries in this view, one for each tiering level.</p>
+    <p></p>
+
+    <h4>Understanding On-Stack Replacement (OSR)</h4>
+    <p>
+        On-Stack Replacement is a feature enabled by default in .Net 7. It allows most methods with loops to participate in tiered compilation.
+    </p>
+    <p>
+        In earlier releases of .Net, methods with loops would bypass tiered compilation by default, because a single call to one of these these methods might invoke the Tier0 method, and run for a long time, adversely impacting performance. OSR allows individual method executions to jump from Tier0 to Tier1 in the middle of a method by creating a specially crafted OSR version of the method.
+    </p>
+    <p>
+        OSR versions of methods are logically Tier1 but can have slightly different performance characteristics than the full Tier1 version. OSR methods are annotated specially in the "CPU (with Optimization Tiers) Stacks" view noted above.
+    </p>
+    <p></p>
+
     <h4>Understanding Tiered Compilation events</h4>
     <p>
         Each process shows a high level summary table indicating JIT time broken down by trigger. One of these triggers is 'Tiered Compilation Background.' This category contains all the Tier1 methods.
@@ -227,7 +254,24 @@
         <li>If the Background JIT feature is enabled the method's usage may have been accurately predicted and jitted in advance on the Multicore JIT background thread, in which case it is accounted for in the 'Multicore JIT Background' group</li>
     </ol>
     <p>In the individual method listings the column 'Trigger' contains the value 'TC' for each Tier1 background recompilation due to Tiered Compilation</p>
+    <p></p>
     <hr />
+    <h3>Understanding Dynamic PGO</h3>
+    <p>Dynamic PGO is a feature that was introduced in .Net 6. It further improves steady-state performance by instrumenting Tier0 versions of methods to collect profile data, which is then used to better optimize the Tier1 version.</p>
+
+    <p>Dynamic PGO can be enabled as follows:</p>
+    <ol>
+        <li>Set an app config switch in runtimeconfig.json "System.Runtime.TieredPGO": "true"</li>
+        <li>Set the msbuild property &lt;TieredPGO&gt;true&lt;/TieredPGO&gt; in the application's project file</li>
+        <li>Set the environment variable COMPlus_TieredPGO=1</li>
+    </ol>
+    <p>For .Net 6, the performance benefit of TieredPGO can be further enhanced by disabling ReadyToRun and enabling QuickJitForLoops. This can adversely impact startup.</p>
+    <p>For .Net 7, the performance benefit of TieredPGO can be further enhanced by disabling ReadyToRun. This can adversely impact startup.</p>
+    <p>For .Net 8, no other changes are needed to get maximum performance.</p>
+    <p>Dynamic PGO introduces new "instrumented" versions of methods. Both Tier0 and Tier1 can may be instrumented. In .NET 8 and later, instrumented versions are annotated specially in the "CPU (with Optimization Tiers) Stacks" view noted above.</p>
+    <p></p>
+    <hr />
+
     <h3>
         <a id="UnderstandingRuntimeLoader">
             Understanding Runtime Loader

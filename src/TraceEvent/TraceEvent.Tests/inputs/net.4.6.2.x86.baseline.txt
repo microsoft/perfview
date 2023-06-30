@@ -752,7 +752,7 @@ EVENT 3,229.816: Microsoft-Windows-DotNETRuntime/IOThreadCreation/Start PID=6160
 EVENT 3,230.207: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolEnqueueWork PID=6160; TID=10684; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=2; DataLen=8; workID=175,118,772; 
 EVENT 3,230.298: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolDequeueWork PID=6160; TID=3768; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=3; DataLen=8; workID=175,118,772; 
 EVENT 3,230.372: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolEnqueueWork PID=6160; TID=3768; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=1; DataLen=8; workID=43,839,024; 
-EVENT 3,230.455: Microsoft-Windows-DotNETRuntime/Contention/Start PID=6160; TID=10684; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=2; DataLen=3; ContentionFlags=Native; ClrInstanceID=10; 
+EVENT 3,230.455: Microsoft-Windows-DotNETRuntime/Contention/Start PID=6160; TID=10684; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=2; DataLen=3; ContentionFlags=Native; ClrInstanceID=10; LockID=0x00000000; AssociatedObjectID=0x00000000; LockOwnerThreadID=0; 
 EVENT 3,231.215: System.Diagnostics.Eventing.FrameworkEventSource/ThreadPoolDequeueWork PID=6160; TID=15468; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=1; DataLen=8; workID=43,839,024; 
 EVENT 3,231.464: Microsoft-Windows-DotNETRuntime/ThreadPool/IOPack PID=6160; TID=15468; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=3; DataLen=10; NativeOverlapped=0x06f211d8; Overlapped=0x06f211b0; ClrInstanceID=10; 
 EVENT 3,231.632: System.Threading.Tasks.TplEventSource/TaskWaitContinuationComplete PID=6160; TID=3768; PName=Microsoft.VsHub.Server.HttpHost; ProceNum=0; DataLen=4; TaskID=677; 

@@ -227,15 +227,16 @@ namespace TraceEventTests
             }
         }
 
-        [Fact]
-        public void EmbeddedSourceCanBeLoaded()
+        [Theory]
+        [InlineData(0x06000003 /*Program.Main*/, "Console.WriteLine(\"Hello from CsPortableEmbeddedSource!\");\r\n")]
+        [InlineData(0x06000001 /*Test.get_X*/, "int X=>0;")]
+        public void EmbeddedSourceCanBeLoaded(uint methodToken, string expectedSubstring)
         {
             string pdbName = FileName_CsPortableEmbeddedSource;
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, pdbName));
             using (pdbFile as IDisposable)
             {
-                const uint assemblyInfoToken = 0x06000001;
-                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(assemblyInfoToken, ilOffset: 0);
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(methodToken, ilOffset: 0);
                 Assert.NotNull(sourceLocation);
 
                 var sourceFile = sourceLocation.SourceFile;
@@ -260,7 +261,7 @@ namespace TraceEventTests
 
                     // Check the contents
                     string fileContents = File.ReadAllText(downloadedPath);
-                    Assert.Contains("Console.WriteLine(\"Hello from CsPortableEmbeddedSource!\");\r\n", fileContents, StringComparison.Ordinal);
+                    Assert.Contains(expectedSubstring, fileContents, StringComparison.Ordinal);
                 }
                 finally
                 {
