@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>AnyCPU;x86;x64</Platforms>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

@@ -21,7 +21,7 @@
   </metadata>
 
   <files>
-    <file src="$OutDir$PerfView.exe" target="content\PerfView.exe" />
+    <file src="$OutDir$net462\PerfView.exe" target="content\PerfView.exe" />
   </files>
 
 </package>

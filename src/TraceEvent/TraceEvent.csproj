@@ -32,8 +32,12 @@
   </PropertyGroup>
 
   <Target Name="SetNuspecProperties">
+    <ConvertToAbsolutePath Paths="$(OutputPath)">
+      <Output TaskParameter="AbsolutePaths" PropertyName="_OutputAbsolutePath" />
+    </ConvertToAbsolutePath>
+
     <PropertyGroup>
-      <NuspecProperties>Configuration=$(Configuration);version=$(InformationalVersion);OutDir=$(OutputPath)</NuspecProperties>
+      <NuspecProperties>Configuration=$(Configuration);version=$(InformationalVersion);OutDir=$(_OutputAbsolutePath)</NuspecProperties>
     </PropertyGroup>
   </Target>
 
