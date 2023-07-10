@@ -821,6 +821,12 @@ public class GCHeapDumper
                     throw;
                 }
 
+                long beforeGCMemSize = GC.GetTotalMemory(false);
+
+                // Free most of the memory.
+                m_gcHeapDump.MemoryGraph = null;
+                _ = GC.GetTotalMemory(true);
+
                 foreach (ClrRuntime runtime in runtimes)
                     runtime.FlushCachedData();
 
@@ -837,8 +843,6 @@ public class GCHeapDumper
                 m_copyOfLog = new StringWriter();
                 m_log = new TeeTextWriter(m_copyOfLog, m_origLog);
 
-                long beforeGCMemSize = GC.GetTotalMemory(false);
-                m_gcHeapDump.MemoryGraph = null;        // Free most of the memory.  
                 long afterGCMemSize = GC.GetTotalMemory(true);
                 m_log.WriteLine("{0,5:f1}s: WARNING: Hit and Out of Memory Condition, retrying with a smaller MaxObjectCount", m_sw.Elapsed.TotalSeconds);
                 m_log.WriteLine("Stack: {0}", e.StackTrace);
