@@ -418,35 +418,7 @@
       <Link>HeapDump\System.Runtime.InteropServices.RuntimeInformation.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x86\$(Configuration)\net6.0-windows\HeapDump.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\HeapDump.dll</LogicalName>
-      <Link>x86\HeapDump.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x86\$(Configuration)\net6.0-windows\HeapDump.dll.config">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\HeapDump.dll.config</LogicalName>
-      <Link>x86\HeapDump.dll.config</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x86\$(Configuration)\net6.0-windows\HeapDump.exe">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\HeapDump.exe</LogicalName>
-      <Link>x86\HeapDump.exe</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x86\$(Configuration)\net6.0-windows\HeapDump.runtimeconfig.json">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\HeapDump.runtimeconfig.json</LogicalName>
-      <Link>x86\HeapDump.runtimeconfig.json</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="..\HeapDump\bin\$(Configuration)\net462\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net462\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
