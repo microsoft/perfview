@@ -23,24 +23,24 @@ using ETWKernelControl = Microsoft.Diagnostics.Tracing.ETWKernelControl;
 namespace Microsoft.Diagnostics.Tracing.Session
 {
     /// <summary>
-    /// A TraceEventSession represents a single ETW Tracing Session.   A session is and event sink that 
-    /// can enable or disable event logging from event providers).    TraceEventSessions can log their
+    /// A TraceEventSession represents a single Event Tracing for Windows (ETW) tracing session. A session
+    /// is an event sink that can enable or disable event logging from event providers. TraceEventSessions can log
     /// events either to a file, or by issuing callbacks when events arrive (a so-called 'real time' 
     /// session).   
     /// <para>
-    /// Session are MACHINE wide and unlike most OS resources the operating system does NOT reclaim 
-    /// them when the process that created it dies.  By default TraceEventSession tries is best to
-    /// do this reclamation, but it is possible that for 'orphan' session to accidentally survive
-    /// if the process is ended abruptly (e.g. by the debugger or a user explicitly killing it).  It is 
+    /// Sessions are MACHINE wide and unlike most OS resources, the operating system does NOT reclaim 
+    /// them when the process that created them dies.  By default, TraceEventSession tries its best to
+    /// do this reclamation, but it is possible for 'orphan' sessions to accidentally survive
+    /// if the process is ended abruptly (e.g. by the debugger or by a user explicitly killing it).  It is 
     /// possible to turn off TraceEventSession automatic reclamation by setting the StopOnDispose 
-    /// property to false (its default is true).  
+    /// property to false (its default is true).
     /// </para>
     /// <para> 
-    /// Kernel events have additional restrictions.   In particular there is a special API (EnableKernelProvider).  
+    /// Kernel events have additional restrictions.  In particular, there is a special API (EnableKernelProvider).
     /// Before Windows 8, there was a restriction that kernel events could only be enabled from a session 
     /// with a special name (see KernelTraceEventParser.KernelSessionName) and thus there could only be a single
     /// session that could log kernel events (and that session could not log non-kernel events).  These
-    /// restrictions were dropped in windows 8. 
+    /// restrictions were dropped in Windows 8. 
     /// </para>
     /// </summary>
     public sealed unsafe class TraceEventSession : IDisposable
