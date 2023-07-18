@@ -2903,6 +2903,11 @@ namespace Microsoft.Diagnostics.Tracing
                 declaredSet.Add(eventName, eventName);
             }
 
+            // These events are derived from GCDynamic and has no template associated with them
+            declaredSet.Remove("CommittedUsage");
+            declaredSet.Remove("HeapCountTuning");
+            declaredSet.Remove("HeapCountSample");
+
             var enumSet = new SortedDictionary<string, string>();
 
             // Make sure that we have all the event we should have 
