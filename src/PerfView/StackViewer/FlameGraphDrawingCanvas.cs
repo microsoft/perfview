@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using PerfView.Utilities;
 using static PerfView.FlameGraph;
 
 namespace PerfView
@@ -14,7 +15,7 @@ namespace PerfView
     {
         private static readonly Typeface Typeface = new Typeface("Consolas");
 
-        private static readonly Brush[][] Brushes = GenerateBrushes(new Random(12345));
+        private static readonly Brush[][] Brushes = GenerateBrushes();
 
         public event EventHandler<string> CurrentFlameBoxChanged;
 
@@ -237,23 +238,23 @@ namespace PerfView
 
         private void ResetCursor() => Mouse.OverrideCursor = cursor;
 
-        private static Brush[][] GenerateBrushes(Random random)
+        private static Brush[][] GenerateBrushes()
         {
             var brushes = new Brush[][]
             {
                 Enumerable.Range(0, 100)
                     .Select(_ => (Brush)new SolidColorBrush(
                         Color.FromRgb(
-                            (byte)(205.0 + 50.0 * random.NextDouble()),
-                            (byte)(230.0 * random.NextDouble()),
-                            (byte)(55.0 * random.NextDouble()))))
+                            (byte)(205.0 + 50.0 * RandomNumberGenerator.GetDouble()),
+                            (byte)(230.0 * RandomNumberGenerator.GetDouble()),
+                            (byte)(55.0 * RandomNumberGenerator.GetDouble()))))
                     .ToArray(),
                 Enumerable.Range(0, 100)
                     .Select(_ => (Brush)new SolidColorBrush(
                         Color.FromRgb(
-                            (byte)(50 + 60.0 * random.NextDouble()),
-                            (byte)(165 + 55.0 * random.NextDouble()),
-                            (byte)(165.0 + 55.0 * random.NextDouble()))))
+                            (byte)(50 + 60.0 * RandomNumberGenerator.GetDouble()),
+                            (byte)(165 + 55.0 * RandomNumberGenerator.GetDouble()),
+                            (byte)(165.0 + 55.0 * RandomNumberGenerator.GetDouble()))))
                     .ToArray()
             };
 
