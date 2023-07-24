@@ -217,6 +217,8 @@ namespace PerfView
             {
                 handler.AddGitCredentialManagerAuthentication(log, mainWindow);
             }
+
+            handler.AddUserPasswordAuthentication(log, mainWindow);
         }
     }
 }

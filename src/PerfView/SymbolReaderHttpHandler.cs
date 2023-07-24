@@ -172,6 +172,9 @@ namespace PerfView
         public SymbolReaderHttpHandler AddGitHubDeviceCodeAuthentication(TextWriter log, Window mainWindow)
             => AddHandler(new GitHubDeviceFlowHandler(log, mainWindow));
 
+        public SymbolReaderHttpHandler AddUserPasswordAuthentication(TextWriter log, Window mainWindow)
+            => AddHandler(new BasicAuthHandler(log));
+
         /// <summary>
         /// Get the HWND of the given WPF window in a way that honors WPF
         /// threading rules.
@@ -725,6 +728,46 @@ namespace PerfView
         }
     }
 
+    internal sealed class BasicAuthHandler : SymbolReaderAuthHandlerBase
+    {
+        /// <summary>
+        /// Prefix to put in front of logging messages.
+        /// </summary>
+        private const string LogPrefix = "BasicAuth: ";
+
+        public BasicAuthHandler(TextWriter log) : base(log, LogPrefix)
+        {
+        }
+
+
+        private static readonly char[] delimiter = { ':' };
+        protected override bool TryGetAuthority(Uri requestUri, out Uri authority)
+        {
+            if (string.IsNullOrEmpty(requestUri.UserInfo) || !requestUri.UserInfo.Contains(":"))
+            {
+                authority = null;
+                return false;
+            }
+            authority = requestUri;
+            return true;
+        }
+
+        protected override Task<AuthToken?> GetAuthTokenAsync(RequestContext context, SymbolReaderHandlerDelegate next, Uri authority,
+            CancellationToken cancellationToken)
+        {
+
+            var strings = authority.UserInfo.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+            if (strings.Length < 2)
+            {
+                return base.GetAuthTokenAsync(context, next, authority, cancellationToken);
+            }
+
+            this.WriteStatusLog("auth token for basic auth provided");
+
+            var token = AuthToken.CreateBasicFromUsernameAndPassword(strings[0], strings[1]);
+            return Task.FromResult<AuthToken?>(token);
+        }
+    }
     /// <summary>
     /// A handler that uses Git Credential Manager (GCM) to authenticate source look-ups.
     /// </summary>
