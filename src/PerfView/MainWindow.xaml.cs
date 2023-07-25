@@ -2398,6 +2398,18 @@ namespace PerfView
         }
 
         /// <summary>
+        /// Handler for when <see cref="AuthenticationCommands.UseBasicHttpAuth"/> command is executed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void UseBasicHttpAuth_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            AuthenticationViewModel.IsBasicHttpAuthEnabled = !AuthenticationViewModel.IsBasicHttpAuthEnabled;
+            UpdateSymbolReaderHandler();
+            e.Handled = true;
+        }
+
+        /// <summary>
         /// Handler for when <see cref="ThemeViewModel.SetThemeCommand"/> command is executed.
         /// </summary>
         /// <param name="sender">The sender.</param>

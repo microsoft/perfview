@@ -172,8 +172,8 @@ namespace PerfView
         public SymbolReaderHttpHandler AddGitHubDeviceCodeAuthentication(TextWriter log, Window mainWindow)
             => AddHandler(new GitHubDeviceFlowHandler(log, mainWindow));
 
-        public SymbolReaderHttpHandler AddUserPasswordAuthentication(TextWriter log, Window mainWindow)
-            => AddHandler(new BasicAuthHandler(log));
+        public SymbolReaderHttpHandler AddBasicHttpAuthentication(TextWriter log, Window mainWindow)
+            => AddHandler(new BasicHttpAuthHandler(log));
 
         /// <summary>
         /// Get the HWND of the given WPF window in a way that honors WPF
@@ -728,14 +728,14 @@ namespace PerfView
         }
     }
 
-    internal sealed class BasicAuthHandler : SymbolReaderAuthHandlerBase
+    internal sealed class BasicHttpAuthHandler : SymbolReaderAuthHandlerBase
     {
         /// <summary>
         /// Prefix to put in front of logging messages.
         /// </summary>
         private const string LogPrefix = "BasicAuth: ";
 
-        public BasicAuthHandler(TextWriter log) : base(log, LogPrefix)
+        public BasicHttpAuthHandler(TextWriter log) : base(log, LogPrefix)
         {
         }
 
