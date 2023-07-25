@@ -51,6 +51,7 @@
         <CommandBinding Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" Executed="UseGCMAuth_Executed" CanExecute="UseGCMAuth_CanExecute" />
         <CommandBinding Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" Executed="UseDeveloperIdentityAuth_Executed" />
         <CommandBinding Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" Executed="UseGitHubDeviceFlowAuth_Executed" />
+        <CommandBinding Command="{x:Static src:AuthenticationCommands.UseBasicHttpAuth}" Executed="UseBasicHttpAuth_Executed" />
         <CommandBinding Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}" Executed="SetTheme_Executed" />
         <CommandBinding Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}" Executed="SetTheme_Executed" />
         <CommandBinding Command="{x:Static src:ThemeViewModel.SetSystemThemeCommand}" Executed="SetTheme_Executed" />
@@ -116,6 +117,7 @@
                         <MenuItem Header="Use _Git Credential Manager" x:Name="Authentication_UseGitCredentialManager" IsChecked="{Binding Path=AuthenticationViewModel.IsGitCredentialManagerEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" ToolTip="Use the Git Credential Manager to authenticate to GitHub and Azure DevOps."/>
                         <MenuItem Header="Use _Developer Identity for Azure DevOps"  x:Name="Authentication_UseManagedIdentityForAzureDevOps" IsChecked="{Binding Path=AuthenticationViewModel.IsDeveloperIdentityEnabled}" Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" ToolTip="Use Visual Studio or VS Code sign-in information to authenticate to Azure DevOps instances."/>
                         <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
+                        <MenuItem Header="Use Basic Http Auth" x:Name="Authentication_UseBasicHttpAuth" IsChecked="{Binding Path=AuthenticationViewModel.IsBasicHttpAuthEnabled}" Command="{x:Static src:AuthenticationCommands.UseBasicHttpAuth}" ToolTip="Use basic HTTP authentication to access a symbol server"/>
                     </MenuItem>
                     <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
                     <MenuItem Header="_Experimental">

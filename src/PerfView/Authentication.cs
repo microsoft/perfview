@@ -27,6 +27,11 @@ namespace PerfView
         /// A routed command for enabling/disabling GitHub Device Flow authentication.
         /// </summary>
         public static readonly RoutedUICommand UseGitHubDeviceFlow = new RoutedUICommand("Use Device _Code Flow for GitHub", nameof(UseGitHubDeviceFlow), typeof(AuthenticationCommands));
+
+        /// <summary>
+        /// A routed command for enabling/disabling Basic Http authentication.
+        /// </summary>
+        public static readonly RoutedUICommand UseBasicHttpAuth = new RoutedUICommand("Use Basic Http Auth", nameof(UseBasicHttpAuth), typeof(AuthenticationCommands));
     }
 
     /// <summary>
@@ -53,7 +58,8 @@ namespace PerfView
             None = 0,
             GitCredentialManager = 1,
             DeveloperIdentity = 2,
-            GitHubDeviceFlow = 4
+            GitHubDeviceFlow = 4,
+            BasicHttpAuth = 8,
         }
 
         /// <summary>
@@ -75,8 +81,8 @@ namespace PerfView
             // Prefer to use GCM, if you have it installed, since it can handle
             // nearly everything, and we can add more support over time.
             return GitCredentialManagerHandler.IsGitCredentialManagerInstalled
-                ? AuthProviderFlags.GitCredentialManager
-                : AuthProviderFlags.DeveloperIdentity | AuthProviderFlags.GitHubDeviceFlow;
+                ? AuthProviderFlags.GitCredentialManager | AuthProviderFlags.BasicHttpAuth
+                : AuthProviderFlags.DeveloperIdentity | AuthProviderFlags.GitHubDeviceFlow | AuthProviderFlags.BasicHttpAuth;
         }
 
         /// <summary>
@@ -129,6 +135,15 @@ namespace PerfView
         {
             get => _state.HasFlag(AuthProviderFlags.GitHubDeviceFlow);
             set => Enable(AuthProviderFlags.GitHubDeviceFlow, value);
+        }
+
+        /// <summary>
+        /// Gets or sets whether the <see cref="AuthProviderFlags.GitHubDeviceFlow"/> provider is enabled.
+        /// </summary>
+        public bool IsBasicHttpAuthEnabled
+        {
+            get => _state.HasFlag(AuthProviderFlags.BasicHttpAuth);
+            set => Enable(AuthProviderFlags.BasicHttpAuth, value);
         }
 
         /// <summary>
@@ -216,6 +231,11 @@ namespace PerfView
             if (authenticationViewModel.IsGitCredentialManagerEnabled)
             {
                 handler.AddGitCredentialManagerAuthentication(log, mainWindow);
+            }
+
+            if (authenticationViewModel.IsBasicHttpAuthEnabled)
+            {
+                handler.AddBasicHttpAuthentication(log, mainWindow);
             }
         }
     }
