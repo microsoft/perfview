@@ -728,8 +728,12 @@ namespace PerfView
         }
     }
 
+    /// <summary>
+    /// A handler that adds support for basic username:password authentication over HTTP
+    /// </summary>
     internal sealed class BasicHttpAuthHandler : SymbolReaderAuthHandlerBase
     {
+        private static readonly char[] delimiter = { ':' };
         /// <summary>
         /// Prefix to put in front of logging messages.
         /// </summary>
@@ -739,8 +743,6 @@ namespace PerfView
         {
         }
 
-
-        private static readonly char[] delimiter = { ':' };
         protected override bool TryGetAuthority(Uri requestUri, out Uri authority)
         {
             if (string.IsNullOrEmpty(requestUri.UserInfo) || !requestUri.UserInfo.Contains(":"))
@@ -752,22 +754,21 @@ namespace PerfView
             return true;
         }
 
-        protected override Task<AuthToken?> GetAuthTokenAsync(RequestContext context, SymbolReaderHandlerDelegate next, Uri authority,
-            CancellationToken cancellationToken)
+        protected override Task<AuthToken?> GetAuthTokenAsync(RequestContext context, SymbolReaderHandlerDelegate next, Uri authority, CancellationToken cancellationToken)
         {
-
             var strings = authority.UserInfo.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
             if (strings.Length < 2)
             {
                 return base.GetAuthTokenAsync(context, next, authority, cancellationToken);
             }
 
-            this.WriteStatusLog("auth token for basic auth provided");
+            this.WriteStatusLog("auth token for basic HTTP auth provided");
 
             var token = AuthToken.CreateBasicFromUsernameAndPassword(strings[0], strings[1]);
             return Task.FromResult<AuthToken?>(token);
         }
     }
+
     /// <summary>
     /// A handler that uses Git Credential Manager (GCM) to authenticate source look-ups.
     /// </summary>
