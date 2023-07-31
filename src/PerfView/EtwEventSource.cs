@@ -23,7 +23,7 @@ namespace PerfView
         public ETWEventSource(TraceLog traceLog)
         {
             m_tracelog = traceLog;
-            NonRestFields = 4;
+            NonRestFields = 10;
             MaxEventTimeRelativeMsec = traceLog.SessionDuration.TotalMilliseconds;
         }
         public override ICollection<string> EventNames
@@ -823,7 +823,7 @@ namespace PerfView
             m_records = records;
             m_records.OnNewRecord += this.EventCallback;
 
-            NonRestFields = 4;
+            NonRestFields = 10;
             MaxEventTimeRelativeMsec = 60000;       // Currently set to 1 min, will expand when we exceed that.  
             m_allEventRecords = new List<GenericEventRecord>();
             m_eventFieldNames = new SortedDictionary<string, string[]>();

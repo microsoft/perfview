@@ -5,7 +5,7 @@
         xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
         Style="{DynamicResource CustomWindowStyle}"
-        Title="Events Filtered by Type" Height="493" Width="989">
+        Title="Events Filtered by Type" WindowState="Maximized">
     <Window.Resources>
         <!-- Shared Styles -->
         <Style x:Key="RightAlign">
@@ -273,6 +273,36 @@
                         Visibility="Hidden"
                         Header="Field4"
                         Binding="{Binding DisplayField4, Mode=TwoWay}"
+                        Width="Auto" />
+                        <WPFToolKit:DataGridTextColumn
+                        Visibility="Hidden"
+                        Header="Field5"
+                        Binding="{Binding DisplayField5, Mode=TwoWay}"
+                        Width="Auto" />
+                        <WPFToolKit:DataGridTextColumn
+                        Visibility="Hidden"
+                        Header="Field6"
+                        Binding="{Binding DisplayField6, Mode=TwoWay}"
+                        Width="Auto" />
+                        <WPFToolKit:DataGridTextColumn
+                        Visibility="Hidden"
+                        Header="Field7"
+                        Binding="{Binding DisplayField7, Mode=TwoWay}"
+                        Width="Auto" />
+                        <WPFToolKit:DataGridTextColumn
+                        Visibility="Hidden"
+                        Header="Field8"
+                        Binding="{Binding DisplayField8, Mode=TwoWay}"
+                        Width="Auto" />
+                        <WPFToolKit:DataGridTextColumn
+                        Visibility="Hidden"
+                        Header="Field9"
+                        Binding="{Binding DisplayField9, Mode=TwoWay}"
+                        Width="Auto" />
+                        <WPFToolKit:DataGridTextColumn
+                        Visibility="Hidden"
+                        Header="Field10"
+                        Binding="{Binding DisplayField10, Mode=TwoWay}"
                         Width="Auto" />
                         <WPFToolKit:DataGridTextColumn
                         Header="Rest"
