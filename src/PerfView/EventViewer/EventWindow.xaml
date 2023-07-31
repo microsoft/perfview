@@ -307,7 +307,7 @@
                         <WPFToolKit:DataGridTextColumn
                         Header="Rest"
                         Binding="{Binding Rest, Mode=TwoWay}"
-                        Width="*" />
+                        Width="Auto" />
                     </WPFToolKit:DataGrid.Columns>
                 </WPFToolKit:DataGrid>
             </Grid>
