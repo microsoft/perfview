@@ -184,35 +184,59 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
         /// </summary>
-        /// <param name="rundownSession">
-        /// If given, the rundownSession is used to initialize module and method information and then the session is closed.
-        /// This only makes sense in realtime sessions when you need to resolve function names.
+        /// <param name="rundownConfiguration">
+        /// If enabled, a rundown is triggered immediately as a separate session. 
+        /// This is used to initialize module and method information and then the session is closed.
+        /// This only makes sense in realtime sessions when you need to resolve function names during the session.
         /// </param>
         /// <example>
         /// var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
-        /// using var rundownSession = client.StartEventPipeSession(
-        ///     new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long) ClrTraceEventParser.Keywords.Default),
-        ///     requestRundown: true
-        /// );
         /// EventPipeProvider[] providers = new[]
         /// {   new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long) ClrTraceEventParser.Keywords.Default),
         ///     new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
         /// };
         /// var session = client.StartEventPipeSession(providers, requestRundown: false);
-        /// var eventSource = TraceLog.CreateFromEventPipeSession(session, rundownSession);
+        /// var eventSource = TraceLog.CreateFromEventPipeSession(session, TraceLog.EventPipeRundownConfiguration.Enable(client));
         /// eventSource.Process();
         /// </example>
-        public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session, EventPipeSession rundownSession = null)
+        public static TraceLogEventSource CreateFromEventPipeSession(EventPipeSession session, EventPipeRundownConfiguration rundownConfiguration = null)
         {
             var traceLog = new TraceLog(new EventPipeEventSource(session.EventStream));
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.OnAllEventPipeEventsRealTime;
 
-            if (rundownSession != null)
+            var rundownDiagnosticsClient = rundownConfiguration?.m_client;
+            if (rundownDiagnosticsClient != null)
             {
-                traceLog.ProcessInitialRundown(rundownSession);
+                // Rundown events only come in after the session is stopped but we need them right from the start so that we
+                // can recognize loaded moodules and methods. Therefore, we start an additional session which will only collect
+                // rundown events and shut down immediately and feed this as an additional session to the TraceLog.
+                // Note: it doesn't matter what the actual provider is, just that we request rundown in the constructor.
+                using (var rundownSession = rundownDiagnosticsClient.StartEventPipeSession(
+                    new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default),
+                    requestRundown: true
+                )) {
+                    traceLog.ProcessInitialRundown(rundownSession);
+                }
             }
 
             return traceLog.realTimeSource;
+        }
+
+        public class EventPipeRundownConfiguration
+        {
+            internal readonly DiagnosticsClient m_client;
+
+            private EventPipeRundownConfiguration(DiagnosticsClient client) { m_client = client; }
+
+            public static EventPipeRundownConfiguration None()
+            {
+                return new EventPipeRundownConfiguration(null);
+            }
+
+            public static EventPipeRundownConfiguration Enable(DiagnosticsClient client)
+            {
+                return new EventPipeRundownConfiguration(client);
+            }
         }
 
         private void ProcessInitialRundown(EventPipeSession session)
@@ -255,23 +279,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             clrRundownParser.LoaderModuleDCStop += onLoaderRundown;
             clrRundownParser.LoaderModuleDCStart += onLoaderRundown;
 
-            // TODO We don't seem to be getting any of these events, only MethodDCStopVerbose.
-            // clrRundownParser.MethodDCStartVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
-            // {
-            //     if (data.IsJitted)
-            //     {
-            //         TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-            //         process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
-            //         {
-            //             TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
-            //             MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(TraceLog.GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
-            //             return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
-            //         });
-
-            //         jittedMethods.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
-            //     }
-            // };
-
             clrRundownParser.MethodILToNativeMapDCStop += delegate (MethodILToNativeMapTraceData data)
             {
                 codeAddresses.AddILMapping(data);
@@ -279,11 +286,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             clrRundownParser.MethodDCStopVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
             {
-                // TODO we need this also for non-jitted methods, otherwise we won't resolve some frames, for example:
+                // Note: we need this also for non-jitted methods, otherwise we won't resolve some frames, for example:
                 //      "System.Private.CoreLib.il" - "System.Threading.Tasks.Task.Wait()"
-                //      Is it OK to use InsertJITTEDMethod & FindJITTEDMethodFromAddress or do we need something else?
-                // if (data.IsJitted)
-                // {
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
                 {
@@ -291,18 +295,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
                     return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
                 });
-                // }
-                // if (data.IsJitted)
-                // {
-                //     ILMapIndex ilMap = UnloadILMapForMethod(methodIndex, data);
-                // }
-                // // Set the info
-                // info.SetMethodIndex(this, methodIndex);
-                // if (ilMap != ILMapIndex.Invalid)
-                // {
-                //     info.SetILMapIndex(this, ilMap);
-                // }
-                // info.SetOptimizationTier(data.OptimizationTier);
             };
         }
 

@@ -21,7 +21,7 @@ namespace TraceEventTests
         private class EventRecord
         {
             public int TotalCount;
-            public string FirstSeriazliedSample;
+            public string FirstSerializedSample;
         }
 
         private class EventStatistics
@@ -41,7 +41,7 @@ namespace TraceEventTests
                     Records[eventName] = new EventRecord()
                     {
                         TotalCount = 1,
-                        FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
+                        FirstSerializedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
                     };
                 }
             }
@@ -619,7 +619,7 @@ namespace TraceEventTests
             StringBuilder sb = new StringBuilder(1024 * 1024);
             foreach (var item in eventStatistics.Records)
             {
-                sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSeriazliedSample}");
+                sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSerializedSample}");
             }
 
             string actual = sb.ToString();
