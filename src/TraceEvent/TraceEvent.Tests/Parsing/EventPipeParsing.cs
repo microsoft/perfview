@@ -1,4 +1,5 @@
 ﻿using FastSerialization;
+using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
@@ -7,9 +8,11 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Diagnostics.Tracing.Etlx.TraceLog;
@@ -45,14 +48,30 @@ namespace TraceEventTests
                     };
                 }
             }
+
+            override
+            public string ToString()
+            {
+                StringBuilder sb = new StringBuilder(1024 * 1024);
+                foreach (var item in Records)
+                {
+                    sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSerializedSample}");
+                }
+
+                return sb.ToString();
+            }
         }
-        
+
         public EventPipeParsing(ITestOutputHelper output)
             : base(output)
         {
         }
 
-        [Theory()]
+#if NETCOREAPP3_0_OR_GREATER
+        [Theory(Skip = "Snapshot difs due to increased float accuracy on newer .NET versions.")]
+#else
+        [Theory]
+#endif
         [MemberData(nameof(TestEventPipeFiles))]
         public void Basic(string eventPipeFileName)
         {
@@ -101,7 +120,7 @@ namespace TraceEventTests
                         // block to read the events
                         Assert.InRange(newStreamPosition, curStreamPosition, curStreamPosition + 103_000);
                         curStreamPosition = newStreamPosition;
-                        
+
                         string eventName = data.ProviderName + "/" + data.EventName;
 
                         // For whatever reason the parse filtering below produces a couple extra events
@@ -143,53 +162,59 @@ namespace TraceEventTests
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
         }
 
-        [Theory()]
-        [MemberData(nameof(StreamableTestEventPipeFiles))]
-        public void TraceLogStreaming(string eventPipeFileName)
+#if NETCOREAPP3_0_OR_GREATER
+        [Theory]
+#else
+        [Theory(Skip = "EventPipeSession connection is only available to target apps on .NET Core 3.0 or later")]
+#endif
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SessionStreaming(bool initialRundown)
         {
-            // Initialize
-            PrepareTestData();
-
-            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
-            Output.WriteLine(string.Format("Processing the file {0}", Path.GetFullPath(eventPipeFilePath)));
-            var eventStatistics = new EventStatistics();
-
-            using (MockStreamingOnlyStream s = new MockStreamingOnlyStream(new FileStream(eventPipeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
+            var rundownConfig = initialRundown ? EventPipeRundownConfiguration.Enable(client) : EventPipeRundownConfiguration.None();
+            var providers = new[] 
             {
-                using (var eventPipeSource = new EventPipeEventSource(s))
+                new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
+            };
+            using (var session = client.StartEventPipeSession(providers, requestRundown: false))
+            {
+                using (var traceSource = CreateFromEventPipeSession(session, rundownConfig))
                 {
-                    using (var traceSource = CreateFromEventPipeEventSource(eventPipeSource))
+                    var sampleEventParser = new SampleProfilerTraceEventParser(traceSource);
+             
+                    // Signal that we have received the first event.
+                    var eventReceived = new TaskCompletionSource<TraceEvent>();
+                    sampleEventParser.ThreadSample += delegate (ClrThreadSampleTraceData e) { 
+                        eventReceived.TrySetResult(e); 
+                    };
+
+                    // Process in the background (this is blocking).
+                    var processingTask = Task.Run(traceSource.Process);
+
+                    // Verify the event can be symbolicated on the fly if (initialRundown == true).
+                    var ev = await eventReceived.Task;
+
+                    var callStackIndex = ev.CallStackIndex();
+                    Assert.NotEqual(CallStackIndex.Invalid, callStackIndex);
+                    var codeAddressIndex = traceSource.TraceLog.CallStacks.CodeAddressIndex(callStackIndex);
+                    Assert.NotEqual(CodeAddressIndex.Invalid, codeAddressIndex);
+                    var methodIndex = traceSource.TraceLog.CodeAddresses.MethodIndex(codeAddressIndex);
+                    if (initialRundown)
                     {
-                        Action<TraceEvent> handler = eventStatistics.Record;
-
-                        // this is somewhat arbitrary looking set of parser event callbacks empirically
-                        // produces the same set of events as TraceLog.Events.GetSource().AllEvents so
-                        // that the baseline files can be reused from the Basic test
-                        var rundown = new ClrRundownTraceEventParser(traceSource);
-                        rundown.LoaderAppDomainDCStop += handler;
-                        rundown.LoaderAssemblyDCStop += handler;
-                        rundown.LoaderDomainModuleDCStop += handler;
-                        rundown.LoaderModuleDCStop += handler;
-                        rundown.MethodDCStopComplete += handler;
-                        rundown.MethodDCStopInit += handler;
-                        var sampleProfiler = new SampleProfilerTraceEventParser(traceSource);
-                        sampleProfiler.All += handler;
-                        var privateClr = new ClrPrivateTraceEventParser(traceSource);
-                        privateClr.All += handler;
-                        traceSource.Clr.All += handler;
-                        traceSource.Clr.MethodILToNativeMap -= handler;
-                        // traceSource.Dynamic.All += handler;
-
-                        // TODO Needed for custom events (eventpipe-dotnetcore2.1-linux-x64-tracelogging.net), but the event names are still missing...
-                        // traceSource.UnhandledEvents += handler; 
-
-                        // Process
-                        traceSource.Process();
+                        Assert.NotEqual(MethodIndex.Invalid, methodIndex);
+                        var method = traceSource.TraceLog.CodeAddresses.Methods[methodIndex];
+                        Assert.NotEmpty(method.FullMethodName);
+                    } else
+                    {
+                        Assert.Equal(MethodIndex.Invalid, methodIndex);
                     }
+
+                    // Stop after receiving the first event.
+                    session.Stop();
+                    await processingTask;
                 }
             }
-            // Validate
-            ValidateEventStatistics(eventStatistics, eventPipeFileName);
         }
 
         [Fact]
@@ -292,7 +317,7 @@ namespace TraceEventTests
                 // Process
                 traceSource.Process();
 
-                for(int i = 0; i < traceSource.NumberOfProcessors; i++)
+                for (int i = 0; i < traceSource.NumberOfProcessors; i++)
                 {
                     Assert.NotEqual(0, counts[i]);
                 }
@@ -616,13 +641,7 @@ namespace TraceEventTests
 
         private void ValidateEventStatistics(EventStatistics eventStatistics, string eventPipeFileName)
         {
-            StringBuilder sb = new StringBuilder(1024 * 1024);
-            foreach (var item in eventStatistics.Records)
-            {
-                sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSerializedSample}");
-            }
-
-            string actual = sb.ToString();
+            string actual = eventStatistics.ToString();
             string baselineFile = Path.Combine(TestDataDir, eventPipeFileName + ".baseline.txt");
             string expected = File.ReadAllText(baselineFile);
 
@@ -647,7 +666,7 @@ namespace TraceEventTests
         {
             _innerStream = innerStream;
         }
-        public long TestOnlyPosition {  get { return _innerStream.Position; } }
+        public long TestOnlyPosition { get { return _innerStream.Position; } }
 
         public override bool CanRead => true;
         public override bool CanSeek => false;
@@ -706,7 +725,7 @@ namespace TraceEventTests
         public void WriteArray<T>(T[] elements, Action<T> writeElement)
         {
             WriteArrayLength(elements.Length);
-            for(int i = 0; i < elements.Length; i++)
+            for (int i = 0; i < elements.Length; i++)
             {
                 writeElement(elements[i]);
             }
@@ -823,7 +842,7 @@ namespace TraceEventTests
             }
         }
 
-        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData, 
+        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData,
             long previousBytesWritten = 0)
         {
             Debug.WriteLine($"Starting block {name} position: {writer.BaseStream.Position + previousBytesWritten}");
@@ -975,7 +994,7 @@ namespace TraceEventTests
             EventPipeWriter.WriteNetTraceHeader(writer);
             EventPipeWriter.WriteFastSerializationHeader(writer);
             EventPipeWriter.WriteTraceObject(writer);
-            EventPipeWriter.WriteMetadataBlock(writer, 
+            EventPipeWriter.WriteMetadataBlock(writer,
                 new EventMetadata(1, "Provider", "Event", 1));
             ms.Position = 0;
             return ms;
@@ -994,16 +1013,16 @@ namespace TraceEventTests
             else
             {
                 // 20 blocks, each with 20 events in them
-                for(int i = 0; i < 20; i++)
+                for (int i = 0; i < 20; i++)
                 {
-                    EventPipeWriter.WriteEventBlock(writer, 
+                    EventPipeWriter.WriteEventBlock(writer,
                         w =>
                         {
                             for (int j = 0; j < 20; j++)
                             {
                                 EventPipeWriter.WriteEventBlob(w, 1, _sequenceNumber++, payloadSize, WriteEventPayload);
                             }
-                        }, 
+                        },
                         _bytesWritten);
                 }
             }
@@ -1031,7 +1050,7 @@ namespace TraceEventTests
         public override int Read(byte[] buffer, int offset, int count)
         {
             int ret = _currentChunk.Read(buffer, offset, count);
-            if(ret == 0)
+            if (ret == 0)
             {
                 _currentChunk = GetNextChunk();
                 _bytesWritten += _currentChunk.Length;

@@ -12,6 +12,13 @@ using Xunit;
 
 using static Microsoft.Diagnostics.Tracing.Stacks.StackSourceWriterHelper;
 
+// For Debug.Listeners
+#if NETCOREAPP3_0_OR_GREATER
+using Debug = System.Diagnostics.Trace;
+#else
+using Debug = System.Diagnostics.Debug;
+#endif
+
 namespace TraceEventTests
 {
     public class SpeedScopeStackSourceWriterTests
