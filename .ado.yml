@@ -55,6 +55,9 @@ jobs:
          **\PerfViewTests.dll
          !**\*TestAdapter.dll
          !**\obj\**
+         !**\ref\**
+         !**\xunit.runner.visualstudio.testadapter.dll
+         !**\xunit.runner.visualstudio.dotnetcore.testadapter.dll
         testRunTitle: 'PerfView - Debug'
 
     - task: CopyFiles@2
@@ -115,6 +118,9 @@ jobs:
          **\PerfViewTests.dll
          !**\*TestAdapter.dll
          !**\obj\**
+         !**\ref\**
+         !**\xunit.runner.visualstudio.testadapter.dll
+         !**\xunit.runner.visualstudio.dotnetcore.testadapter.dll
         testRunTitle: 'PerfView - Release'
 
     - task: CopyFiles@2
