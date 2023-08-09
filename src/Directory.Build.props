@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project> 
+<Project>
 
   <PropertyGroup>
     <EnableDefaultNoneItems>False</EnableDefaultNoneItems>
@@ -87,12 +87,12 @@
 
   <!-- Test dependencies -->
   <PropertyGroup>
-    <MicrosoftVisualStudioThreadingVersion>15.3.23</MicrosoftVisualStudioThreadingVersion>
-    <XunitVersion>2.4.0</XunitVersion>
-    <XunitExtensibilityCoreVersion>2.4.0</XunitExtensibilityCoreVersion>
-    <XunitExtensibilityExecutionVersion>2.4.0</XunitExtensibilityExecutionVersion>
-    <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
-    <XunitStaFactVersion>0.3.2</XunitStaFactVersion>
+    <MicrosoftVisualStudioThreadingVersion>15.7.23</MicrosoftVisualStudioThreadingVersion>
+    <XunitVersion>2.5.0</XunitVersion>
+    <XunitExtensibilityCoreVersion>2.5.0</XunitExtensibilityCoreVersion>
+    <XunitExtensibilityExecutionVersion>2.5.0</XunitExtensibilityExecutionVersion>
+    <XunitRunnerVisualstudioVersion>2.5.0</XunitRunnerVisualstudioVersion>
+    <XunitStaFactVersion>0.3.18</XunitStaFactVersion>
   </PropertyGroup>
 
   <PropertyGroup>
