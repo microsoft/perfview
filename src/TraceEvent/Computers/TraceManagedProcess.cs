@@ -2615,34 +2615,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             if (gc.Type == GCType.BackgroundGC)
             {
-                // Find all GCs that occurred during the current background GC.
-                double startTimeRelativeMSec = gc.StartRelativeMSec;
-                double endTimeRelativeMSec = gc.StartRelativeMSec + gc.DurationMSec;
-
-                // Calculate the pause time for this BGC.
-                // Pause time is defined as pause time for the BGC + pause time for all FGCs that ran during the BGC.
+                // Get the pause time for this BGC.
                 double totalPauseTime = gc.PauseDurationMSec;
 
-                if (gc.Index + 1 < GCs.Count)
+                // Iterate backwards from the last GC recorded to find the index of the current BGC.
+                int indexOfPreviousGC = GCs.Count - 1;
+                while (GCs[indexOfPreviousGC] != gc && indexOfPreviousGC >= 0)
                 {
-                    TraceGC gcEvent;
-                    for (int i = gc.Index + 1; i < GCs.Count; ++i)
-                    {
-                        gcEvent = GCs[i];
-                        if ((gcEvent.StartRelativeMSec >= startTimeRelativeMSec) && (gcEvent.StartRelativeMSec < endTimeRelativeMSec))
-                        {
-                            totalPauseTime += gcEvent.PauseDurationMSec;
-                        }
-                        else
-                        {
-                            // We've finished processing all FGCs that occurred during this BGC.
-                            break;
-                        }
-                    }
+                    --indexOfPreviousGC;
                 }
 
                 // Get the elapsed time since the previous GC finished.
-                int previousGCIndex = gc.Index - 1;
+                int previousGCIndex = indexOfPreviousGC - 1;
                 double previousGCStopTimeRelativeMSec;
                 if (previousGCIndex >= 0)
                 {
