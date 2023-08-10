@@ -1365,6 +1365,7 @@ gcCollectOnly=''
 gcOnly=''
 gcWithHeap=''
 events=''
+rawevents=''
 
 ProcessArguments()
 {
@@ -1414,7 +1415,8 @@ ProcessArguments()
             local value=${args[$i+1]}
 
             # Keep the cases of '-events' value to match keyword variables
-            if [ "-events" != "$arg" ]
+            # Keep the cases of '-rawevents'
+            if [ "-events" != "$arg" ] && [ "-rawevents" != "$arg" ]
             then
                 # Convert the value to lower case.
                 value=`echo $value | tr '[:upper:]' '[:lower:]'`
@@ -1480,6 +1482,10 @@ ProcessArguments()
         elif [ "-events" == "$arg" ]
         then
             events=$value
+            i=$i+1
+        elif [ "-rawevents" == "$arg" ]
+        then
+            rawevents=$value
             i=$i+1
         elif [ "-collectsec" == "$arg" ]
         then
@@ -1563,11 +1569,11 @@ SetupLTTngSession()
         elif [ "$events" == "threading" ]
         then
             EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
-        else     
+        else
             # Enable other keywords
             events=(${events//","/" "})
             for event in ${events[@]}
-            do 
+            do
                 if [ "${!event}" == "" ] || [ "$( echo `declare -p $event | grep -- -a` )" == "" ]
                 then
                     echo Invalid keyword $event, skipped...
@@ -1580,6 +1586,14 @@ SetupLTTngSession()
                 else
                     EnableLTTngEvents ${keywords[@]}
                 fi
+            done
+        fi
+        if [ "$rawevents" != "" ]
+        then
+            rawevents=(${rawevents//","/" "})
+            for rawevent in ${rawevents[@]}
+            do
+                EnableLTTngEvents $rawevent
             done
         fi
     fi
