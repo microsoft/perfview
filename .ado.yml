@@ -50,8 +50,41 @@ jobs:
       inputs:
         testAssemblyVer2: |
          **\LinuxTracing.Tests.dll
+         !**\*TestAdapter.dll
+         !**\obj\**
+         !**\ref\**
+         !**\xunit.runner.visualstudio.testadapter.dll
+         !**\xunit.runner.visualstudio.dotnetcore.testadapter.dll
+        testRunTitle: 'PerfView - Debug'
+
+    - task: VSTest@2
+      displayName: 'Run Tests'
+      inputs:
+        testAssemblyVer2: |
          **\Tests.dll
+         !**\*TestAdapter.dll
+         !**\obj\**
+         !**\ref\**
+         !**\xunit.runner.visualstudio.testadapter.dll
+         !**\xunit.runner.visualstudio.dotnetcore.testadapter.dll
+        testRunTitle: 'PerfView - Debug'
+
+    - task: VSTest@2
+      displayName: 'Run Tests'
+      inputs:
+        testAssemblyVer2: |
          **\TraceEventTests.dll
+         !**\*TestAdapter.dll
+         !**\obj\**
+         !**\ref\**
+         !**\xunit.runner.visualstudio.testadapter.dll
+         !**\xunit.runner.visualstudio.dotnetcore.testadapter.dll
+        testRunTitle: 'PerfView - Debug'
+
+    - task: VSTest@2
+      displayName: 'Run Tests'
+      inputs:
+        testAssemblyVer2: |
          **\PerfViewTests.dll
          !**\*TestAdapter.dll
          !**\obj\**
