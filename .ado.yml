@@ -9,16 +9,21 @@ pr:
   - main
 
 jobs:
-  - job: PerfView_Debug
+  - job: Build
+    strategy:
+      matrix:
+        Debug:
+          configuration: Debug
+          Codeql.Enabled: true
+          Codeql.BuildIdentifier: PerfView
+        Release:
+          configuration: Release
     pool:
       vmImage: 'windows-2022'
       name: Azure Pipelines
       demands:
       - msbuild
       - vstest
-    variables:
-      Codeql.Enabled: true
-      Codeql.BuildIdentifier: PerfView
 
     steps:
     - task: UseDotNet@2
@@ -43,7 +48,7 @@ jobs:
       displayName: 'Build PerfView.sln'
       inputs:
         solution: PerfView.sln
-        configuration: Debug
+        configuration: $(configuration)
 
     - task: VSTest@2
       displayName: 'Run Tests'
@@ -55,7 +60,7 @@ jobs:
          **\PerfViewTests.dll
          !**\*TestAdapter.dll
          !**\obj\**
-        testRunTitle: 'PerfView - Debug'
+        testRunTitle: 'PerfView - $(configuration)'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
@@ -69,66 +74,8 @@ jobs:
       displayName: 'Publish Artifacts'
       inputs:
         PathtoPublish: '$(build.artifactstagingdirectory)'
-        ArtifactName: 'PerfViewBinaries-Debug'
+        ArtifactName: 'PerfViewBinaries-$(configuration)'
       condition: succeededOrFailed()
-
-  - job: PerfView_Release
-    pool:
-      vmImage: 'windows-2022'
-      name: Azure Pipelines
-      demands:
-      - msbuild
-      - vstest
-
-    steps:
-    - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 3.1'
-      inputs:
-        version: 3.1.x
-
-    - task: NuGetToolInstaller@1
-      displayName: 'Install NuGet.exe'
-      inputs:
-        versionSpec: 6.3.0
-
-    - task: NuGetCommand@2
-      displayName: 'NuGet Restore PerfView.sln'
-      inputs:
-        restoreSolution: PerfView.sln
-        feedsToUse: config
-        includeNuGetOrg: false
-        nugetConfigPath: '.\NuGet.config'
-
-    - task: MSBuild@1
-      displayName: 'Build PerfView.sln'
-      inputs:
-        solution: PerfView.sln
-        configuration: Release
-
-    - task: VSTest@2
-      displayName: 'Run Tests'
-      inputs:
-        testAssemblyVer2: |
-         **\LinuxTracing.Tests.dll
-         **\Tests.dll
-         **\TraceEventTests.dll
-         **\PerfViewTests.dll
-         !**\*TestAdapter.dll
-         !**\obj\**
-        testRunTitle: 'PerfView - Release'
-
-    - task: CopyFiles@2
-      displayName: 'Copy Files to Artifacts Staging'
-      inputs:
-        SourceFolder: '$(system.defaultworkingdirectory)'
-        Contents: '**\bin\$(BuildConfiguration)\**'
-        TargetFolder: '$(build.artifactstagingdirectory)'
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact'
-      inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
-        ArtifactName: 'PerfViewBinaries-Release'
 
   - job: PerfCollect
     pool:
