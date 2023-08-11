@@ -51,16 +51,32 @@ jobs:
         configuration: $(configuration)
 
     - task: VSTest@2
-      displayName: 'Run Tests'
+      displayName: Test
       inputs:
-        testAssemblyVer2: |
-         **\LinuxTracing.Tests.dll
-         **\Tests.dll
-         **\TraceEventTests.dll
-         **\PerfViewTests.dll
-         !**\*TestAdapter.dll
-         !**\obj\**
-        testRunTitle: 'PerfView - $(configuration)'
+        testRunTitle: 'LinuxTracing ($(configuration))'
+        failOnMinTestsNotRun: true
+        testAssemblyVer2: '**\bin\$(configuration)\**\Tests.dll'
+
+    - task: VSTest@2
+      displayName: Test LinuxTracing
+      inputs:
+        testRunTitle: LinuxTracing ($(configuration))
+        failOnMinTestsNotRun: true
+        testAssemblyVer2: '**\bin\$(configuration)\**\LinuxTracing.Tests.dll'
+
+    - task: VSTest@2
+      displayName: Test TraceEvent
+      inputs:
+        testRunTitle: TraceEvent ($(configuration))
+        failOnMinTestsNotRun: true
+        testAssemblyVer2: '**\bin\$(configuration)\**\TraceEventTests.dll'
+
+    - task: VSTest@2
+      displayName: Test PerfView
+      inputs:
+        testRunTitle: PerfView ($(configuration))
+        failOnMinTestsNotRun: true
+        testAssemblyVer2: '**\bin\$(configuration)\**\PerfViewTests.dll'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
