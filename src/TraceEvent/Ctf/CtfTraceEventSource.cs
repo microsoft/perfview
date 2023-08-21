@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing
 {
-    internal struct ETWMapping
+    public struct ETWMapping
     {
         public bool IsNull { get { return Guid == new Guid(); } }
 
@@ -564,6 +564,15 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             return base.ProcessName(processID, timeQPC);
+        }
+
+        internal override void RegisterParserImpl(TraceEventParser parser)
+        {
+            base.RegisterParserImpl(parser);
+            foreach (var (key, mapping) in parser.GetCtfToETWMappings())
+            {
+                _eventMapping.Add(key, mapping);
+            }
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, ETWMapping etw)
