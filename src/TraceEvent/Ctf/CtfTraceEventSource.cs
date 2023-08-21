@@ -602,10 +602,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         private ETWMapping GetTraceEvent(CtfEvent evt)
         {
-            ETWMapping result;
-            _eventMapping.TryGetValue(evt.Name, out result);
+            var found = _eventMapping.TryGetValue(evt.Name, out var result);
 
-            Debug.Assert(evt.Name.StartsWith("lttng") || _eventMapping.ContainsKey(evt.Name), evt.Name);
+            Debug.Assert(evt.Name.StartsWith("lttng") || found, evt.Name);
 
             return result;
         }
