@@ -2813,7 +2813,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns the set of ETWMappings between CTF event names and the corresponding ETW Provider GUID, etc.
         /// </summary>
-        protected internal virtual IEnumerable<(string, ETWMapping)> GetCtfToETWMappings()
+        protected internal virtual IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
         {
             yield break;
         }
