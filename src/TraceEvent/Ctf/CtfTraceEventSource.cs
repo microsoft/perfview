@@ -18,8 +18,6 @@ namespace Microsoft.Diagnostics.Tracing
         public TraceEventID Id { get; }
         public byte Version { get; }
 
-        public bool IsNull { get { return Guid == new Guid(); } }
-
         public CtfEventMapping(string eventName, Guid guid, int opcode, int id, int version)
         {
             EventName = eventName;
@@ -157,8 +155,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 #endif
 
-                CtfEventMapping mapping = GetEventMapping(evt);
-                if (mapping.IsNull)
+                if (!TryGetEventMapping(evt, out CtfEventMapping mapping))
                 {
                     continue;
                 }
@@ -238,13 +235,13 @@ namespace Microsoft.Diagnostics.Tracing
             return _header;
         }
 
-        private CtfEventMapping GetEventMapping(CtfEvent evt)
+        private bool TryGetEventMapping(CtfEvent evt, out CtfEventMapping mapping)
         {
-            var found = _eventMapping.TryGetValue(evt.Name, out var result);
+            var found = _eventMapping.TryGetValue(evt.Name, out mapping);
 
             Debug.Assert(evt.Name.StartsWith("lttng") || found, evt.Name);
 
-            return result;
+            return found;
         }
 
         public void ParseMetadata()
