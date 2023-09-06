@@ -56,7 +56,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Debug'
-        vsTestVersion: 17.6
+        vsTestVersion: 16.0
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
@@ -117,7 +117,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Release'
-        vsTestVersion: 17.6
+        vsTestVersion: 16.0
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
