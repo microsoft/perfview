@@ -56,7 +56,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Debug'
-        resultsFolder: '$(Agent.TempDirectory)\TestResultsDirectory'
+        vsTestVersion: 17.6
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
@@ -82,11 +82,6 @@ jobs:
       - vstest
 
     steps:
-    - task: PowerShell@2
-      displayName: Temp Directory
-      inputs:
-        targetType: 'inline'
-        script: 'Write-Host "Temp: $(Agent.TempDirectory)"'
     - task: UseDotNet@2
       displayName: 'Use .NET Core SDK 3.1'
       inputs:
@@ -122,7 +117,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Release'
-        resultsFolder: '$(Agent.TempDirectory)\TestResults'
+        vsTestVersion: 17.6
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
