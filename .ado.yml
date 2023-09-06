@@ -56,7 +56,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Debug'
-        resultsFolder: '$(Agent.TempDirectory)\TestResults'
+        resultsFolder: '$(Agent.TempDirectory)\TestResultsDirectory'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
