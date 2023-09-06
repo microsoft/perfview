@@ -82,6 +82,11 @@ jobs:
       - vstest
 
     steps:
+    - task: PowerShell@2
+      displayName: Temp Directory
+      inputs:
+        targetType: 'inline'
+        script: 'Write-Host "Temp: $(Agent.TempDirectory)'
     - task: UseDotNet@2
       displayName: 'Use .NET Core SDK 3.1'
       inputs:
