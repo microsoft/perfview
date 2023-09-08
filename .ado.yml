@@ -45,6 +45,13 @@ jobs:
         solution: PerfView.sln
         configuration: Debug
 
+    - task: VisualStudioTestPlatformInstaller@1
+      displayName: Install Latest Stable VSTest
+      inputs:
+        packageFeedSelector: 'nugetOrg'
+        versionSelector: 'specificVersion'
+        testPlatformVersion: '17.6.3'
+
     - task: VSTest@2
       displayName: 'Run Tests'
       inputs:
@@ -56,6 +63,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Debug'
+        vsTestVersion: 'toolsInstaller'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
@@ -105,6 +113,13 @@ jobs:
         solution: PerfView.sln
         configuration: Release
 
+    - task: VisualStudioTestPlatformInstaller@1
+      displayName: Install Latest Stable VSTest
+      inputs:
+        packageFeedSelector: 'nugetOrg'
+        versionSelector: 'specificVersion'
+        testPlatformVersion: '17.6.3'
+
     - task: VSTest@2
       displayName: 'Run Tests'
       inputs:
@@ -116,6 +131,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Release'
+        vsTestVersion: 'toolsInstaller'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
