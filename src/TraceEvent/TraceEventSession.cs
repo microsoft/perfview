@@ -121,7 +121,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
                 if (properties->BufferSize != 0)
                 {
-                    m_BufferQuantumKB = (int)properties->BufferSize;
+                    m_BufferQuantumKB = (int)properties->BufferSize / 1024; //properties->BufferSize is defined in MB
                 }
 
                 m_BufferSizeMB = (int)(properties->MinimumBuffers * m_BufferQuantumKB) / 1024;
@@ -2333,7 +2333,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             properties->FlushTimer = 60;                // flush every minute for file based collection.  
 
             Debug.Assert(m_BufferQuantumKB != 0);
-            properties->BufferSize = (uint)m_BufferQuantumKB;
+            properties->BufferSize = (uint)m_BufferSizeMB;
             properties->MinimumBuffers = (uint)(m_BufferSizeMB * 1024 / m_BufferQuantumKB);
             properties->LogFileMode = TraceEventNativeMethods.EVENT_TRACE_INDEPENDENT_SESSION_MODE;
 
