@@ -50,7 +50,7 @@ jobs:
       inputs:
         packageFeedSelector: 'nugetOrg'
         versionSelector: 'specificVersion'
-        testPlatformVersion: '17.6.2'
+        testPlatformVersion: '17.6.3'
 
     - task: VSTest@2
       displayName: 'Run Tests'
