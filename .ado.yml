@@ -49,7 +49,8 @@ jobs:
       displayName: Install Latest Stable VSTest
       inputs:
         packageFeedSelector: 'nugetOrg'
-        versionSelector: 'latestPreRelease'
+        versionSelector: 'specificVersion'
+        testPlatformVersion: '17.6.3'
 
     - task: VSTest@2
       displayName: 'Run Tests'
