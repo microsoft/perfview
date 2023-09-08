@@ -49,7 +49,7 @@ jobs:
       displayName: Install Latest Stable VSTest
       inputs:
         packageFeedSelector: 'nugetOrg'
-        versionSelector: 'latestStable'
+        versionSelector: 'latestPreRelease'
 
     - task: VSTest@2
       displayName: 'Run Tests'
