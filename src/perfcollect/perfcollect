@@ -1102,7 +1102,7 @@ InstallPerf_Ubuntu()
     then
         apt-get install -y linux-tools-azure zip software-properties-common
     else
-        apt-get install -y linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r` zip software-properties-common
+        apt-get install -y linux-tools-common linux-tools-`uname -r` zip software-properties-common
     fi
 }
 
