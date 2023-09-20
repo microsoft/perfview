@@ -1880,11 +1880,11 @@ namespace PerfView
         public void GuiHeapSnapshot(CommandLineArgs parsedArgs, bool waitForCompletion)
         {
 #if !PERFVIEW_COLLECT
-            // We'll wait on this handle until the heap snapshot completes.
-            ManualResetEvent waitHandle = new ManualResetEvent(false);
-
             if (GuiApp.MainWindow != null)
             {
+                // We'll wait on this handle until the heap snapshot completes.
+                ManualResetEvent waitHandle = new ManualResetEvent(false);
+
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     GuiApp.MainWindow.TakeHeapShapshot((Action)delegate ()
@@ -1894,11 +1894,15 @@ namespace PerfView
                         waitHandle.Set();
                     });
                 });
-            }
 
-            if (waitForCompletion)
+                if (waitForCompletion)
+                {
+                    waitHandle.WaitOne();
+                }
+            }
+            else
             {
-                waitHandle.WaitOne();
+                LogFile.WriteLine("[WARNING: Unable to capture the requested heap snapshot via command line.  Please re-run without /NoGui.]");
             }
 #endif
         }
