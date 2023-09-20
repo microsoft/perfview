@@ -31,6 +31,7 @@
     <dependencies>
       <group targetFramework=".NETStandard2.0">
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
+        <dependency id="Microsoft.Win32.Registry" version="4.4.0" />
       </group>
     </dependencies>
   </metadata>
