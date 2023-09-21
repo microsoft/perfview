@@ -42,38 +42,38 @@
     <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="buildTransitive\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
 
     <!-- Native binaries -->
-    <file src="$OutDir$netstandard2.0\amd64\KernelTraceControl.dll" target="build\native\amd64\KernelTraceControl.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\msdia140.dll" target="build\native\amd64\msdia140.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\msvcp140.dll" target="build\native\amd64\msvcp140.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\vcruntime140.dll" target="build\native\amd64\vcruntime140.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\vcruntime140_1.dll" target="build\native\amd64\vcruntime140_1.dll" />
+    <file src="$OutDir$amd64\KernelTraceControl.dll" target="build\native\amd64\KernelTraceControl.dll" />
+    <file src="$OutDir$amd64\msdia140.dll" target="build\native\amd64\msdia140.dll" />
+    <file src="$OutDir$amd64\msvcp140.dll" target="build\native\amd64\msvcp140.dll" />
+    <file src="$OutDir$amd64\vcruntime140.dll" target="build\native\amd64\vcruntime140.dll" />
+    <file src="$OutDir$amd64\vcruntime140_1.dll" target="build\native\amd64\vcruntime140_1.dll" />
 
-    <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.dll" target="build\native\x86\KernelTraceControl.dll" />
-    <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.Win61.dll" target="build\native\x86\KernelTraceControl.Win61.dll" />
-    <file src="$OutDir$netstandard2.0\x86\msdia140.dll" target="build\native\x86\msdia140.dll" />
-    <file src="$OutDir$netstandard2.0\x86\msvcp140.dll" target="build\native\x86\msvcp140.dll" />
-    <file src="$OutDir$netstandard2.0\x86\vcruntime140.dll" target="build\native\x86\vcruntime140.dll" />
+    <file src="$OutDir$x86\KernelTraceControl.dll" target="build\native\x86\KernelTraceControl.dll" />
+    <file src="$OutDir$x86\KernelTraceControl.Win61.dll" target="build\native\x86\KernelTraceControl.Win61.dll" />
+    <file src="$OutDir$x86\msdia140.dll" target="build\native\x86\msdia140.dll" />
+    <file src="$OutDir$x86\msvcp140.dll" target="build\native\x86\msvcp140.dll" />
+    <file src="$OutDir$x86\vcruntime140.dll" target="build\native\x86\vcruntime140.dll" />
 
-    <file src="$OutDir$netstandard2.0\arm64\KernelTraceControl.dll" target="build\native\arm64\KernelTraceControl.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\msdia140.dll" target="build\native\arm64\msdia140.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\msvcp140.dll" target="build\native\arm64\msvcp140.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\vcruntime140.dll" target="build\native\arm64\vcruntime140.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\vcruntime140_1.dll" target="build\native\arm64\vcruntime140_1.dll" />
+    <file src="$OutDir$arm64\KernelTraceControl.dll" target="build\native\arm64\KernelTraceControl.dll" />
+    <file src="$OutDir$arm64\msdia140.dll" target="build\native\arm64\msdia140.dll" />
+    <file src="$OutDir$arm64\msvcp140.dll" target="build\native\arm64\msvcp140.dll" />
+    <file src="$OutDir$arm64\vcruntime140.dll" target="build\native\arm64\vcruntime140.dll" />
+    <file src="$OutDir$arm64\vcruntime140_1.dll" target="build\native\arm64\vcruntime140_1.dll" />
 
     <!-- NetStandard 2.0 Framework -->
 	
     <!-- Built libraries -->
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\netstandard2.0" />
+    <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\netstandard2.0" />
+    <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\netstandard2.0" />
 
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.xml" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard2.0" />
+    <file src="$OutDir$Microsoft.Diagnostics.FastSerialization.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$Microsoft.Diagnostics.FastSerialization.xml" target="lib\netstandard2.0" />
+    <file src="$OutDir$Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard2.0" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$netstandard2.0\Dia2Lib.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\TraceReloggerLib.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$Dia2Lib.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$TraceReloggerLib.dll" target="lib\netstandard2.0" />
 
     <!-- Source code (All Frameworks *) -->
     <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />
