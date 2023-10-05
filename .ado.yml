@@ -19,6 +19,7 @@ jobs:
     variables:
       Codeql.Enabled: true
       Codeql.BuildIdentifier: PerfView
+      System.Debug: true
 
     steps:
     - task: UseDotNet@2
@@ -62,6 +63,7 @@ jobs:
          !**\*TestAdapter.dll
          !**\obj\**
         testRunTitle: 'PerfView - Debug'
+        runTestsInIsolation: false
         vsTestVersion: 'toolsInstaller'
 
     - task: CopyFiles@2
@@ -131,6 +133,7 @@ jobs:
          !**\obj\**
         testRunTitle: 'PerfView - Release'
         vsTestVersion: 'toolsInstaller'
+        runTestsInIsolation: false
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
