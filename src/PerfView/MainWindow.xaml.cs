@@ -2055,7 +2055,7 @@ namespace PerfView
                 DoAbort(null, null);
             }
 
-            Environment.Exit(0);        // TODO can we do this another way?
+            // Environment.Exit(0);        // TODO can we do this another way?
         }
 
         // GUI Command objects.
