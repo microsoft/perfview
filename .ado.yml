@@ -8,6 +8,10 @@ trigger:
 pr:
   - main
 
+variables:
+  - name: 'System.Debug'
+    value: true
+
 jobs:
   - job: PerfView_Debug
     pool:
@@ -19,7 +23,6 @@ jobs:
     variables:
       Codeql.Enabled: true
       Codeql.BuildIdentifier: PerfView
-      System.Debug: true
 
     steps:
     - task: UseDotNet@2
