@@ -45,25 +45,17 @@ jobs:
         solution: PerfView.sln
         configuration: Debug
 
-    - task: VisualStudioTestPlatformInstaller@1
-      displayName: Install Latest Stable VSTest
-      inputs:
-        packageFeedSelector: 'nugetOrg'
-        versionSelector: 'specificVersion'
-        testPlatformVersion: '17.6.3'
-
     - task: VSTest@2
       displayName: 'Run Tests'
       inputs:
         testAssemblyVer2: |
-         **\LinuxTracing.Tests.dll
-         **\Tests.dll
-         **\TraceEventTests.dll
-         **\PerfViewTests.dll
-         !**\*TestAdapter.dll
-         !**\obj\**
+         **\bin\**\LinuxTracing.Tests.dll
+         **\bin\**\Tests.dll
+         **\bin\**\TraceEventTests.dll
+         **\bin\**\PerfViewTests.dll
         testRunTitle: 'PerfView - Debug'
-        vsTestVersion: 'toolsInstaller'
+        runTestsInIsolation: true
+        otherConsoleOptions: '--blame'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
@@ -113,25 +105,17 @@ jobs:
         solution: PerfView.sln
         configuration: Release
 
-    - task: VisualStudioTestPlatformInstaller@1
-      displayName: Install Latest Stable VSTest
-      inputs:
-        packageFeedSelector: 'nugetOrg'
-        versionSelector: 'specificVersion'
-        testPlatformVersion: '17.6.3'
-
     - task: VSTest@2
       displayName: 'Run Tests'
       inputs:
         testAssemblyVer2: |
-         **\LinuxTracing.Tests.dll
-         **\Tests.dll
-         **\TraceEventTests.dll
-         **\PerfViewTests.dll
-         !**\*TestAdapter.dll
-         !**\obj\**
+         **\bin\**\LinuxTracing.Tests.dll
+         **\bin\**\Tests.dll
+         **\bin\**\TraceEventTests.dll
+         **\bin\**\PerfViewTests.dll
         testRunTitle: 'PerfView - Release'
-        vsTestVersion: 'toolsInstaller'
+        runTestsInIsolation: true
+        otherConsoleOptions: '--blame'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
