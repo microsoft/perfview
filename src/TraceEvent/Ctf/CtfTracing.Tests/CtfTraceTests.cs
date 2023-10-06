@@ -2,6 +2,7 @@
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
@@ -184,6 +185,49 @@ namespace CtfTracingTests
                     Assert.Equal(assertValues[file][1], gcStartCount);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData("validation_001.zip")]
+        [InlineData("validation_002.zip")]
+        [InlineData("validation_003.zip")]
+        [InlineData("validation_004.zip")]
+        [InlineData("validation_005.zip")]
+        public void BasicValidationProcessesFileWithoutException(string file)
+        {
+            var path = Path.Combine(TestDataDirectory, file);
+            using (var source = new CtfTraceEventSource(path))
+            {
+                var dummy = new DummyParser(source);
+                source.Clr.All += evt => { };
+
+                var count = 0;
+                source.AllEvents += evt =>
+                {
+                    count++;
+                };
+                var exception = Record.Exception(() => source.Process());
+                Assert.Null(exception);
+                Assert.NotEqual(0, count);
+            }
+        }
+
+        sealed class DummyParser : TraceEventParser
+        {
+            public DummyParser(TraceEventSource source)
+                : base(source)
+            { }
+
+            protected override IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
+            {
+                yield return new CtfEventMapping("PerfLabGenericEventSourceLTTngProvider:Startup", Guid.Empty, 0, 0, 0);
+                yield return new CtfEventMapping("PerfLabGenericEventSourceLTTngProvider:OnMain", Guid.Empty, 0, 0, 0);
+            }
+
+            protected override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
+            { }
+
+            protected override string GetProviderName() => nameof(DummyParser);
         }
     }
 }
