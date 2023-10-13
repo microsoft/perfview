@@ -258,6 +258,12 @@ namespace Microsoft.Diagnostics.Tracing
                     *((int*)&m_scratchBuffer[curBlobPtr]) = (int)payloadArg;
                     curBlobPtr += 4;
                 }
+                else if (argType == typeof(float))
+                {
+                    EnsureSratchBufferSpace(curBlobPtr + 4);
+                    *((float*)&m_scratchBuffer[curBlobPtr]) = (float)payloadArg;
+                    curBlobPtr += 4;
+                }
                 else if (argType == typeof(long))
                 {
                     EnsureSratchBufferSpace(curBlobPtr + 8);
