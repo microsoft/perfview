@@ -3584,6 +3584,7 @@ namespace Microsoft.Diagnostics.Tracing
                         curTemplate.eventRecord = eventRecord;
                         curTemplate.userData = eventRecord->UserData;
                         curTemplate.eventIndex = currentID;
+                        curTemplate.task = (TraceEventTask)eventRecord->EventHeader.Task;
                         currentID = currentID + 1;      // TODO overflow. 
 
                         if ((((int)currentID) & 0xFFFF) == 0) // Every 64K events allow Thread.Interrupt.  
