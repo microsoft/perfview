@@ -1,7 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing.StackSources;
 using Xunit;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracingTests
 {
     public class InterningTests
     {

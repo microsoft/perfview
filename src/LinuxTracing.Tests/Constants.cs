@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracingTests
 {
     public static class Constants
     {

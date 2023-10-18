@@ -3,7 +3,7 @@ using Microsoft.Diagnostics.Tracing.StackSources;
 using System.IO;
 using Xunit;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracingTests
 {
 
     /// <summary>
