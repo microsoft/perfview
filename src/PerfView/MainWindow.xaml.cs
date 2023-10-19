@@ -2055,7 +2055,7 @@ namespace PerfView
                 DoAbort(null, null);
             }
 
-            Environment.Exit(0);        // TODO can we do this another way?
+            // DO NOT call Environment.Exit(0) here, it will kill the test runner, and tests won't complete.
         }
 
         // GUI Command objects.
