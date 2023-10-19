@@ -500,7 +500,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 System.Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
             }
 
-
             if (count == 1)
             {
                 int value = _stream.ReadByte();
@@ -515,7 +514,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
             else
             {
-
                 int read = _stream.Read(_buffer, offset, count);
                 if (read == count)
                 {
