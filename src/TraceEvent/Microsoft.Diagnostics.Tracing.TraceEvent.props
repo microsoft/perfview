@@ -16,16 +16,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\x86\msvcp140.dll') And ('$(ProcessorArchitecture)' == 'x86' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\x86\msvcp140.dll">
-      <Link>x86\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\x86\vcruntime140.dll') And ('$(ProcessorArchitecture)' == 'x86' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\x86\vcruntime140.dll">
-      <Link>x86\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\amd64\KernelTraceControl.dll') And ('$(ProcessorArchitecture)' == 'amd64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\amd64\KernelTraceControl.dll">
       <Link>amd64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -36,21 +26,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\amd64\msvcp140.dll') And ('$(ProcessorArchitecture)' == 'amd64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\amd64\msvcp140.dll">
-      <Link>amd64\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\amd64\vcruntime140.dll') And ('$(ProcessorArchitecture)' == 'amd64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\amd64\vcruntime140.dll">
-      <Link>amd64\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\amd64\vcruntime140_1.dll') And ('$(ProcessorArchitecture)' == 'amd64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\amd64\vcruntime140_1.dll">
-      <Link>amd64\vcruntime140_1.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\KernelTraceControl.dll') And ('$(ProcessorArchitecture)' == 'arm64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\KernelTraceControl.dll">
       <Link>arm64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -58,21 +33,6 @@
     </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\msdia140.dll') And ('$(ProcessorArchitecture)' == 'arm64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\msdia140.dll">
       <Link>arm64\msdia140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\msvcp140.dll') And ('$(ProcessorArchitecture)' == 'arm64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\msvcp140.dll">
-      <Link>arm64\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140.dll') And ('$(ProcessorArchitecture)' == 'arm64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140.dll">
-      <Link>arm64\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140_1.dll') And ('$(ProcessorArchitecture)' == 'arm64' Or '$(ProcessorArchitecture)' == 'msil')" Include="$(MSBuildThisFileDirectory)..\build\native\arm64\vcruntime140_1.dll">
-      <Link>arm64\vcruntime140_1.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
