@@ -7,7 +7,6 @@
     <AssemblyName>TraceEventTests</AssemblyName>
     <Description>Unit tests for TraceEvent.</Description>
     <Copyright>Copyright © Microsoft 2016</Copyright>
-    <Company>Microsoft</Company>
 
     <!-- Test projects can automatically generate the necessary binding redirects -->
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

@@ -49,8 +49,8 @@ jobs:
       displayName: 'Run Tests'
       inputs:
         testAssemblyVer2: |
-         **\bin\**\LinuxTracing.Tests.dll
-         **\bin\**\Tests.dll
+         **\bin\**\LinuxTracingTests.dll
+         **\bin\**\CtfTracingTests.dll
          **\bin\**\TraceEventTests.dll
          **\bin\**\PerfViewTests.dll
         testRunTitle: 'PerfView - Debug'
@@ -109,8 +109,8 @@ jobs:
       displayName: 'Run Tests'
       inputs:
         testAssemblyVer2: |
-         **\bin\**\LinuxTracing.Tests.dll
-         **\bin\**\Tests.dll
+         **\bin\**\LinuxTracingTests.dll
+         **\bin\**\CtfTracingTests.dll
          **\bin\**\TraceEventTests.dll
          **\bin\**\PerfViewTests.dll
         testRunTitle: 'PerfView - Release'
