@@ -50,6 +50,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert(val >= 0 && alignment >= 0);
             return val & ~(alignment - 1);
         }
+
+        public static long AlignDown(long val, long alignment)
+        {
+            Debug.Assert(val >= 0 && alignment >= 0);
+            return val & ~(alignment - 1);
+        }
     }
 
     internal abstract class CtfMetadataType
