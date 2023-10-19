@@ -150,7 +150,7 @@ namespace Microsoft.Diagnostics.Tracing
                     _debugOut.WriteLine($"[{evt.Name}]");
                     _debugOut.WriteLine($"    Process: {header.ProcessName}");
                     _debugOut.WriteLine($"    File: {entry.FileName}");
-                    _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
+                    _debugOut.WriteLine($"    Position: {entry.Channel.Position}");
                     _debugOut.WriteLine($"    Event #{events}: {evt.Name}");
                 }
 #endif
