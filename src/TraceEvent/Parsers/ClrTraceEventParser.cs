@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     using Microsoft.Diagnostics.Tracing.Parsers.Clr;
     using System.Collections.Generic;
 
-    // TODO, AndrewAu, property
+    // TODO, AndrewAu, Decide to convert this to a property.
     public sealed class CommittedUsageTraceData
     {
         public short version;
@@ -29,23 +29,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     }
     public sealed class HeapCountTuningTraceData
     {
-        public short version;
-        public short newHeapCount;
-        public long gcIndex;
-        public float medianPercentOverhead;
-        public float smoothedMedianPercentOverhead;
-        public float overheadReductionPerStepUp;
-        public float overheadIncreasePerStepDown;
-        public float spaceCostIncreasePerStepUp;
-        public float spaceCostDecreasePerStepDown;
+        public short Version { get; internal set; }
+        public short NewHeapCount { get; internal set; }
+        public long GcIndex { get; internal set; }
+        public float MedianPercentOverhead { get; internal set; }
+        public float SmoothedMedianPercentOverhead { get; internal set; }
+        public float OverheadReductionPerStepUp { get; internal set; }
+        public float OverheadIncreasePerStepDown { get; internal set; }
+        public float SpaceCostIncreasePerStepUp { get; internal set; }
+        public float SpaceCostDecreasePerStepDown { get; internal set; }
     }
     public sealed class HeapCountSampleTraceData
     {
-        public short version;
-        public long gcElapsedTime;
-        public long sohMslWaitTime;
-        public long uohMslWaitTime;
-        public long elapsedBetweenGcs;
+        public short Version { get; internal set; }
+        public long GcElapsedTime { get; internal set; }
+        public long SohMslWaitTime { get; internal set; }
+        public long UohMslWaitTime { get; internal set; }
+        public long ElapsedBetweenGcs { get; internal set; }
     }
 
     /* Parsers defined in this file */
@@ -910,7 +910,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             remove
             {
-                // TODO, AndrewAu, implementation
+                // TODO, mrsharm: We currently disallow unsubscribing from the Dynamic Events.
+                throw new NotImplementedException();
             }
         }
         public event Action<TraceEvent, HeapCountTuningTraceData> HeapCountTuning
@@ -922,10 +923,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (string.CompareOrdinal(d.Name, "HeapCountTuning") == 0)
                     {
                         HeapCountTuningTraceData heapCountTuning = new HeapCountTuningTraceData();
-                        heapCountTuning.version = BitConverter.ToInt16(d.Data, 0);
-                        Debug.Assert(!(heapCountTuning.version == 1 && d.Data.Length != 36));
-                        Debug.Assert(!(heapCountTuning.version > 1 && d.Data.Length < 36));
-                        heapCountTuning.newHeapCount = BitConverter.ToInt16(d.Data, 2);
+                        heapCountTuning.Version = BitConverter.ToInt16(d.Data, 0);
+                        Debug.Assert(!(heapCountTuning.Version == 1 && d.Data.Length != 36));
+                        Debug.Assert(!(heapCountTuning.Version > 1 && d.Data.Length < 36));
+                        heapCountTuning.NewHeapCount = BitConverter.ToInt16(d.Data, 2);
                         heapCountTuning.gcIndex = BitConverter.ToInt64(d.Data, 4);
                         heapCountTuning.medianPercentOverhead = BitConverter.ToSingle(d.Data, 12);
                         heapCountTuning.smoothedMedianPercentOverhead = BitConverter.ToSingle(d.Data, 16);
@@ -939,7 +940,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             remove
             {
-                // TODO, AndrewAu, implementation
+                // TODO, mrsharm: We currently disallow unsubscribing from the Dynamic Events.
+                throw new NotImplementedException();
             }
         }
         public event Action<TraceEvent, HeapCountSampleTraceData> HeapCountSample
@@ -951,20 +953,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (string.CompareOrdinal(d.Name, "HeapCountSample") == 0)
                     {
                         HeapCountSampleTraceData heapCountSample = new HeapCountSampleTraceData();
-                        heapCountSample.version = BitConverter.ToInt16(d.Data, 0);
-                        Debug.Assert(!(heapCountSample.version == 1 && d.Data.Length != 34));
-                        Debug.Assert(!(heapCountSample.version > 1 && d.Data.Length < 34));
-                        heapCountSample.gcElapsedTime = BitConverter.ToInt64(d.Data, 2);
-                        heapCountSample.sohMslWaitTime = BitConverter.ToInt64(d.Data, 10);
-                        heapCountSample.uohMslWaitTime = BitConverter.ToInt64(d.Data, 18);
-                        heapCountSample.elapsedBetweenGcs = BitConverter.ToInt64(d.Data, 26);
+                        heapCountSample.Version = BitConverter.ToInt16(d.Data, 0);
+                        Debug.Assert(!(heapCountSample.Version == 1 && d.Data.Length != 34));
+                        Debug.Assert(!(heapCountSample.Version > 1 && d.Data.Length < 34));
+                        heapCountSample.GcElapsedTime = BitConverter.ToInt64(d.Data, 2);
+                        heapCountSample.SohMslWaitTime = BitConverter.ToInt64(d.Data, 10);
+                        heapCountSample.UohMslWaitTime = BitConverter.ToInt64(d.Data, 18);
+                        heapCountSample.ElapsedBetweenGcs = BitConverter.ToInt64(d.Data, 26);
                         value(d, heapCountSample);
                     }
                 };
             }
             remove
             {
-                // TODO, AndrewAu, implementation
+                // TODO, mrsharm: We currently disallow unsubscribing from the Dynamic Events.
+                throw new NotImplementedException();
             }
         }
         public event Action<IOThreadTraceData> IOThreadCreationStart
