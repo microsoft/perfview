@@ -473,7 +473,7 @@ namespace Stats
             }
             if (gc.heapCountTuning != null)
             {
-                writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.heapCountTuning.newHeapCount.ToString("n3"), 10));
+                writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.heapCountTuning.NewHeapCount.ToString("n3"), 10));
                 writer.Write(" GCIndex={0}", StringUtilities.QuotePadLeft(gc.heapCountTuning.gcIndex.ToString("n3"), 10));
                 writer.Write(" MedianPercentOverhead={0}", StringUtilities.QuotePadLeft(gc.heapCountTuning.medianPercentOverhead.ToString("n3"), 10));
                 writer.Write(" SmoothedMedianPercentOverhead={0}", StringUtilities.QuotePadLeft(gc.heapCountTuning.smoothedMedianPercentOverhead.ToString("n3"), 10));
@@ -484,10 +484,10 @@ namespace Stats
             }
             if (gc.heapCountSample != null)
             {
-                writer.Write(" gcElapsedTime={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.gcElapsedTime.ToString("n3"), 10));
-                writer.Write(" sohMslWaitTime={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.sohMslWaitTime.ToString("n3"), 10));
-                writer.Write(" uohMslWaitTime={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.uohMslWaitTime.ToString("n3"), 10));
-                writer.Write(" elapsedBetweenGcs={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.elapsedBetweenGcs.ToString("n3"), 10));
+                writer.Write(" gcElapsedTime={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.GcElapsedTime.ToString("n3"), 10));
+                writer.Write(" sohMslWaitTime={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.SohMslWaitTime.ToString("n3"), 10));
+                writer.Write(" uohMslWaitTime={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.UohMslWaitTime.ToString("n3"), 10));
+                writer.Write(" elapsedBetweenGcs={0}", StringUtilities.QuotePadLeft(gc.heapCountSample.ElapsedBetweenGcs.ToString("n3"), 10));
             }
             writer.WriteLine(">");
             if (gc.HeapStats != null)

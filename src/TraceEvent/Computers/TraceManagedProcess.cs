@@ -1853,7 +1853,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// </summary>
     public class TraceGC
     {
-        // TODO, AndrewAu, property
+        // TODO, AndrewAu, decide to Change to properties.
         public CommittedUsageTraceData committedUsageBefore;
         public CommittedUsageTraceData committedUsageAfter;
         public HeapCountTuningTraceData heapCountTuning;
