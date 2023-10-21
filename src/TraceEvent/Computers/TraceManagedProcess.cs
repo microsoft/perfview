@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -537,18 +538,29 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             return;
                     }
                     mang.GC.m_stats.lastSuspendReason = data.Reason;
-
                     mang.GC.m_stats.suspendTimeRelativeMSec = data.TimeStampRelativeMSec;
 
-                    if ((process.Log != null) && !mang.GC.m_stats.gotThreadInfo)
+                    // Check to see if the traceLogEventSource can get us to the Etlx.TraceLog.
+                    // And if so, we'll have the details of the GC SVR threads to discern 
+                    // if we are truly running a SVR process.
+                    TraceLogEventSource traceLogEventSource = source as TraceLogEventSource;
+                    Etlx.TraceLog traceLog = traceLogEventSource?.TraceLog;
+
+                    // Check to see if we have access to the Etlx.TraceLog in any form and if we haven't 
+                    // got the Thread Info in a previous iteration.
+                    if (((process.Log != null) || (traceLog != null)) && !mang.GC.m_stats.gotThreadInfo)
                     {
                         mang.GC.m_stats.gotThreadInfo = true;
-                        Microsoft.Diagnostics.Tracing.Etlx.TraceProcess traceProc = process.Log.Processes.GetProcess(process.ProcessID, data.TimeStampRelativeMSec);
+
+                        // If the process.Log is null, obtain the traceProc from the traceLog.
+                        Etlx.TraceLog validTraceLog = process.Log ?? traceLog;
+                        Etlx.TraceProcess traceProc = validTraceLog.Processes.GetProcess(process.ProcessID, data.TimeStampRelativeMSec);
+
                         if (traceProc != null)
                         {
                             foreach (var procThread in traceProc.Threads)
                             {
-                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.Contains(".NET Server GC Thread")))
+                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC")))
                                 {
                                     mang.GC.m_stats.IsServerGCUsed = 1;
                                     break;
@@ -4597,7 +4609,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (IsServerGCUsed == 1)
             {
-                Debug.Assert(HeapCount > 1);
+                // This debug assert fails in the case of DATAS where the HeapCount starts from 1.
+                // TODO (musharm): Come up with a more descriptive assert that'll take DATAS into account.
+                // Debug.Assert(HeapCount > 1);
 
                 if (serverGCThreads.Count < HeapCount)
                 {
@@ -4613,8 +4627,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static void ProcessGlobalHistory(TraceLoadedDotNetRuntime proc, GCGlobalHeapHistoryTraceData data)
         {
-            // We detected whether we are using Server GC now.
-            proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
             if (proc.GC.m_stats.HeapCount == -1)
             {
                 proc.GC.m_stats.HeapCount = data.NumHeaps;
@@ -4639,7 +4651,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     HasCondemnReasons0 = data.HasCondemnReasons0,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
                 };
-                _event.SetHeapCount(proc.GC.m_stats.HeapCount);
+                _event.SetHeapCount(data.NumHeaps);
             }
         }
 
