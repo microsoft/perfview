@@ -15,38 +15,8 @@ using Address = System.UInt64;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+    using Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData;
     using System.Collections.Generic;
-
-    // TODO, AndrewAu, Decide to convert this to a property.
-    public sealed class CommittedUsageTraceData
-    {
-        public short version;
-        public long totalCommittedInUse;
-        public long totalCommittedInGlobalDecommit;
-        public long totalCommittedInFree;
-        public long totalCommittedInGlobalFree;
-        public long totalBookkeepingCommitted;
-    }
-    public sealed class HeapCountTuningTraceData
-    {
-        public short Version { get; internal set; }
-        public short NewHeapCount { get; internal set; }
-        public long GcIndex { get; internal set; }
-        public float MedianPercentOverhead { get; internal set; }
-        public float SmoothedMedianPercentOverhead { get; internal set; }
-        public float OverheadReductionPerStepUp { get; internal set; }
-        public float OverheadIncreasePerStepDown { get; internal set; }
-        public float SpaceCostIncreasePerStepUp { get; internal set; }
-        public float SpaceCostDecreasePerStepDown { get; internal set; }
-    }
-    public sealed class HeapCountSampleTraceData
-    {
-        public short Version { get; internal set; }
-        public long GcElapsedTime { get; internal set; }
-        public long SohMslWaitTime { get; internal set; }
-        public long UohMslWaitTime { get; internal set; }
-        public long ElapsedBetweenGcs { get; internal set; }
-    }
 
     /* Parsers defined in this file */
     // ClrTraceEventParser, ClrRundownTraceEventParser, ClrStressTraceEventParser
@@ -896,14 +866,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (string.CompareOrdinal(d.Name, "CommittedUsage") == 0)
                     {
                         CommittedUsageTraceData committedUsage = new CommittedUsageTraceData();
-                        committedUsage.version = BitConverter.ToInt16(d.Data, 0);
-                        Debug.Assert(!(committedUsage.version == 1 && d.Data.Length != 42));
-                        Debug.Assert(!(committedUsage.version > 1 && d.Data.Length < 42));
-                        committedUsage.totalCommittedInUse = BitConverter.ToInt64(d.Data, 2);
-                        committedUsage.totalCommittedInGlobalDecommit = BitConverter.ToInt64(d.Data, 10);
-                        committedUsage.totalCommittedInFree = BitConverter.ToInt64(d.Data, 18);
-                        committedUsage.totalCommittedInGlobalFree = BitConverter.ToInt64(d.Data, 26);
-                        committedUsage.totalBookkeepingCommitted = BitConverter.ToInt64(d.Data, 34);
+                        committedUsage.Version = BitConverter.ToInt16(d.Data, 0);
+                        Debug.Assert(!(committedUsage.Version == 1 && d.Data.Length != 42));
+                        Debug.Assert(!(committedUsage.Version > 1 && d.Data.Length < 42));
+                        committedUsage.TotalCommittedInUse = BitConverter.ToInt64(d.Data, 2);
+                        committedUsage.TotalCommittedInGlobalDecommit = BitConverter.ToInt64(d.Data, 10);
+                        committedUsage.TotalCommittedInFree = BitConverter.ToInt64(d.Data, 18);
+                        committedUsage.TotalCommittedInGlobalFree = BitConverter.ToInt64(d.Data, 26);
+                        committedUsage.TotalBookkeepingCommitted = BitConverter.ToInt64(d.Data, 34);
                         value(d, committedUsage);
                     }
                 };
@@ -927,13 +897,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Debug.Assert(!(heapCountTuning.Version == 1 && d.Data.Length != 36));
                         Debug.Assert(!(heapCountTuning.Version > 1 && d.Data.Length < 36));
                         heapCountTuning.NewHeapCount = BitConverter.ToInt16(d.Data, 2);
-                        heapCountTuning.gcIndex = BitConverter.ToInt64(d.Data, 4);
-                        heapCountTuning.medianPercentOverhead = BitConverter.ToSingle(d.Data, 12);
-                        heapCountTuning.smoothedMedianPercentOverhead = BitConverter.ToSingle(d.Data, 16);
-                        heapCountTuning.overheadReductionPerStepUp = BitConverter.ToSingle(d.Data, 20);
-                        heapCountTuning.overheadIncreasePerStepDown = BitConverter.ToSingle(d.Data, 24);
-                        heapCountTuning.spaceCostIncreasePerStepUp = BitConverter.ToSingle(d.Data, 28);
-                        heapCountTuning.spaceCostDecreasePerStepDown = BitConverter.ToSingle(d.Data, 32);
+                        heapCountTuning.GCIndex = BitConverter.ToInt64(d.Data, 4);
+                        heapCountTuning.MedianPercentOverhead = BitConverter.ToSingle(d.Data, 12);
+                        heapCountTuning.SmoothedMedianPercentOverhead = BitConverter.ToSingle(d.Data, 16);
+                        heapCountTuning.OverheadReductionPerStepUp = BitConverter.ToSingle(d.Data, 20);
+                        heapCountTuning.OverheadIncreasePerStepDown = BitConverter.ToSingle(d.Data, 24);
+                        heapCountTuning.SpaceCostIncreasePerStepUp = BitConverter.ToSingle(d.Data, 28);
+                        heapCountTuning.SpaceCostDecreasePerStepDown = BitConverter.ToSingle(d.Data, 32);
                         value(d, heapCountTuning);
                     }
                 };
@@ -956,10 +926,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         heapCountSample.Version = BitConverter.ToInt16(d.Data, 0);
                         Debug.Assert(!(heapCountSample.Version == 1 && d.Data.Length != 34));
                         Debug.Assert(!(heapCountSample.Version > 1 && d.Data.Length < 34));
-                        heapCountSample.GcElapsedTime = BitConverter.ToInt64(d.Data, 2);
-                        heapCountSample.SohMslWaitTime = BitConverter.ToInt64(d.Data, 10);
-                        heapCountSample.UohMslWaitTime = BitConverter.ToInt64(d.Data, 18);
-                        heapCountSample.ElapsedBetweenGcs = BitConverter.ToInt64(d.Data, 26);
+                        heapCountSample.GCElapsedTime = BitConverter.ToInt64(d.Data, 2);
+                        heapCountSample.SOHMslWaitTime = BitConverter.ToInt64(d.Data, 10);
+                        heapCountSample.UOHMslWaitTime = BitConverter.ToInt64(d.Data, 18);
+                        heapCountSample.ElapsedBetweenGCs = BitConverter.ToInt64(d.Data, 26);
                         value(d, heapCountSample);
                     }
                 };
