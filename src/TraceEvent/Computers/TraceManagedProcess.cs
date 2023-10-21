@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -1854,10 +1855,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     public class TraceGC
     {
         // TODO, AndrewAu, decide to Change to properties.
-        public CommittedUsageTraceData committedUsageBefore;
-        public CommittedUsageTraceData committedUsageAfter;
-        public HeapCountTuningTraceData heapCountTuning;
-        public HeapCountSampleTraceData heapCountSample;
+        public CommittedUsageTraceData CommittedUsageBefore;
+        public CommittedUsageTraceData CommittedUsageAfter;
+        public HeapCountTuningTraceData HeapCountTuning;
+        public HeapCountSampleTraceData HeapCountSample;
 
         public enum BGCRevisitState
         {
@@ -4807,24 +4808,24 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                if (_event.committedUsageBefore == null)
+                if (_event.CommittedUsageBefore == null)
                 {
-                    _event.committedUsageBefore = committedUsage;
+                    _event.CommittedUsageBefore = committedUsage;
                 }
                 else
                 {
-                    Debug.Assert(_event.committedUsageAfter == null);
-                    _event.committedUsageAfter = committedUsage;
+                    Debug.Assert(_event.CommittedUsageAfter == null);
+                    _event.CommittedUsageAfter = committedUsage;
                 }
             }
         }
 
         internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceData heapCountTuning)
         {
-            TraceGC _event = GetGC(proc, heapCountTuning.gcIndex);
+            TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
             if (_event != null)
             {
-                _event.heapCountTuning = heapCountTuning;
+                _event.HeapCountTuning = heapCountTuning;
             }
         }
 
@@ -4836,7 +4837,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                _event.heapCountSample = heapCountSample;
+                _event.HeapCountSample = heapCountSample;
             }
         }
 
