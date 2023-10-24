@@ -528,7 +528,7 @@
       <Link>System.Buffers.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Diagnostics_DiagnosticSource)\lib\net46\System.Diagnostics.DiagnosticSource.dll">
+    <EmbeddedResource Include="$(PkgSystem_Diagnostics_DiagnosticSource)\lib\net461\System.Diagnostics.DiagnosticSource.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Diagnostics.DiagnosticSource.dll</LogicalName>

@@ -39,19 +39,19 @@
 
   <!-- External dependencies -->
   <PropertyGroup>
-    <AzureCoreVersion>1.24.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.6.0</AzureIdentityVersion>
+    <AzureCoreVersion>1.35.0</AzureCoreVersion>
+    <AzureIdentityVersion>1.10.2</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.2.0</MicroBuildCoreVersion>
     <MicrosoftNETCorePortableCompatibilityVersion>1.0.1</MicrosoftNETCorePortableCompatibilityVersion>
-    <MicrosoftIdentityClientVersion>4.39.0</MicrosoftIdentityClientVersion>
-    <MicrosoftIdentityClientExtensionsMsalVersion>2.19.3</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityClientVersion>4.54.1</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>2.31.0</MicrosoftIdentityClientExtensionsMsalVersion>
     <MicrosoftIdentityModelTokensVersion>6.22.0</MicrosoftIdentityModelTokensVersion>
     <MicrosoftIdentityModelJsonWebTokensVersion>6.22.0</MicrosoftIdentityModelJsonWebTokensVersion>
     <MicrosoftSourceLinkGitHubVersion>1.1.1</MicrosoftSourceLinkGitHubVersion>
     <MicrosoftWin32RegistryVersion>4.4.0</MicrosoftWin32RegistryVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsImmutableVersion>1.7.1</SystemCollectionsImmutableVersion>
-    <SystemDiagnosticsDiagnosticSourceVersion>4.6.0</SystemDiagnosticsDiagnosticSourceVersion>
+    <SystemDiagnosticsDiagnosticSourceVersion>6.0.1</SystemDiagnosticsDiagnosticSourceVersion>
     <SystemDiagnosticsProcessVersion>4.3.0</SystemDiagnosticsProcessVersion>
     <SystemDiagnosticsTraceSourceVersion>4.3.0</SystemDiagnosticsTraceSourceVersion>
     <SystemIOCompressionVersion>4.3.0</SystemIOCompressionVersion>
@@ -63,7 +63,7 @@
     <SystemReflectionMetadataVersion>1.8.1</SystemReflectionMetadataVersion>
     <SystemReflectionTypeExtensionsVersion>4.3.0</SystemReflectionTypeExtensionsVersion>
     <SystemRuntimeVersion>4.3.0</SystemRuntimeVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>5.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
+    <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
     <SystemSecurityCryptographyAlgorithmsVersion>4.3.0</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemTextEncodingsWebVersion>4.7.2</SystemTextEncodingsWebVersion>
