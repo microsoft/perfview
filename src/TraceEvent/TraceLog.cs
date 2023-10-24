@@ -13,6 +13,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.JScript;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
@@ -947,6 +948,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // at file creation time.
             var kernelParser = Kernel;
             var clrParser = Clr;
+            new GCDynamicTraceEventParser(this);
             new ClrRundownTraceEventParser(this);
             new ClrStressTraceEventParser(this);
             new ClrPrivateTraceEventParser(this);
@@ -1824,6 +1826,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private unsafe void CopyRawEvents(TraceEventDispatcher rawEvents, IStreamWriter writer)
         {
             SetupCallbacks(rawEvents);
+
+            // The GC dynamic parser needs to be created here to ensure that any events
+            // that belong to it get its custom handling so that the events are
+            // parsed property and then copied into the resulting ETLX file in their final form.
+            GC.KeepAlive(new GCDynamicTraceEventParser(rawEvents));
 
             // Fix up MemInfoWS records so that we get one per process rather than one per machine
             rawEvents.Kernel.MemoryProcessMemInfo += delegate (MemoryProcessMemInfoTraceData data)

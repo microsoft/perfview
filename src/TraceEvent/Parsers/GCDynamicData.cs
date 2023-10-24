@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData
+﻿using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using System;
+using System.Diagnostics;
+
+namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData
 {
     public sealed class CommittedUsageTraceData
     {
