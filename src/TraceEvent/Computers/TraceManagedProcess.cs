@@ -537,24 +537,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             return;
                     }
                     mang.GC.m_stats.lastSuspendReason = data.Reason;
+
                     mang.GC.m_stats.suspendTimeRelativeMSec = data.TimeStampRelativeMSec;
 
-                    // Check to see if the traceLogEventSource can get us to the Etlx.TraceLog.
-                    // And if so, we'll have the details of the GC SVR threads to discern 
-                    // if we are truly running a SVR process.
-                    TraceLogEventSource traceLogEventSource = source as TraceLogEventSource;
-                    Etlx.TraceLog traceLog = traceLogEventSource?.TraceLog;
-
-                    // Check to see if we have access to the Etlx.TraceLog in any form and if we haven't 
-                    // got the Thread Info in a previous iteration.
-                    if (((process.Log != null) || (traceLog != null)) && !mang.GC.m_stats.gotThreadInfo)
+                    if ((process.Log != null) && !mang.GC.m_stats.gotThreadInfo)
                     {
                         mang.GC.m_stats.gotThreadInfo = true;
-
-                        // If the process.Log is null, obtain the traceProc from the traceLog.
-                        Etlx.TraceLog validTraceLog = process.Log ?? traceLog;
-                        Etlx.TraceProcess traceProc = validTraceLog.Processes.GetProcess(process.ProcessID, data.TimeStampRelativeMSec);
-
+                        Microsoft.Diagnostics.Tracing.Etlx.TraceProcess traceProc = process.Log.Processes.GetProcess(process.ProcessID, data.TimeStampRelativeMSec);
                         if (traceProc != null)
                         {
                             foreach (var procThread in traceProc.Threads)
