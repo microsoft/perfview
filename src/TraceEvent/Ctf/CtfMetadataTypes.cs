@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             return val & ~(alignment - 1);
         }
 
-        public static long AlignDown(long val, long alignment)
+        public static long AlignDown(long val, int alignment)
         {
             Debug.Assert(val >= 0 && alignment >= 0);
             return val & ~(alignment - 1);
