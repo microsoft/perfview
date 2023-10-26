@@ -28,7 +28,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 Etlx.TraceLog etlxTraceLog = null;
                 if (traceLogEventSource != null)
                 {
-                    etlxTraceLog = traceLogEventSource;
+                    etlxTraceLog = traceLogEventSource.TraceLog;
                 }
 
                 processes = new TraceProcesses(etlxTraceLog, source);
