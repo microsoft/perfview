@@ -25,7 +25,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             if (processes == null || m_weakCurrentSource.Target != source)
             {
                 TraceLogEventSource traceLogEventSource = source as TraceLogEventSource;
-                Etlx.TraceLog etlxTraceLog = traceLogEventSource?.TraceLog;
+                Etlx.TraceLog etlxTraceLog = null;
+                if (traceLogEventSource != null)
+                {
+                    etlxTraceLog = traceLogEventSource;
+                }
+
                 processes = new TraceProcesses(etlxTraceLog, source);
                 // establish listeners
                 if (m_weakCurrentSource.Target != source)
