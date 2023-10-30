@@ -152,7 +152,7 @@ coverage status reflected here is the AppVeyor and Azure DevOps build status of 
 > :warning: Builds produced by AppVeyor and Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
 > participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
-> information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.\
+> information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.
 
 ### Contributing to PerfView 
 
