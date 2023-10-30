@@ -491,12 +491,24 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
     internal class CtfStruct : CtfMetadataType
     {
+        private const int DefaultAlign = 1;
+
         private int _align;
         public override int Align
         {
             get
             {
-                return _align;
+                int fieldTypesAlignment = Fields.Max(x => x.Type.Align);
+                if (_align != DefaultAlign)
+                {
+                    // CTF: Alignment for a structure compound type can be forced to a minimum value by adding an align specifier after the declaration of a structure body. This attribute is read as: align(value). The value is specified in bits. The structure will be aligned on the maximum value between this attribute and the alignment required by the basic types contained within the structure.
+                    return Math.Max(_align, fieldTypesAlignment);
+                }
+                else
+                {
+                    // CTF: Structures are aligned on the largest alignment required by basic types contained within the structure.
+                    return fieldTypesAlignment;
+                }
             }
         }
 
@@ -507,7 +519,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfStruct(CtfPropertyBag props, CtfField[] fields)
             : base(CtfTypes.Struct)
         {
-            _align = props?.GetIntOrNull("align") ?? 1;
+            _align = props?.GetIntOrNull("align") ?? DefaultAlign;
             Fields = fields;
         }
 
