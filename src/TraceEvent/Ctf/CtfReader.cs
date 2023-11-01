@@ -40,12 +40,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private bool _eof;
         private GCHandle _handle;
         private int _bitOffset;
+        private long _bitOffsetBase;
         private int _bufferLength;
+        private int _bufferStartOffset;
         private bool _readHeader;
 
-        public int BufferLength { get { return _bufferLength; } }
-        public byte[] Buffer { get { return _buffer; } }
-        public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
+        public int BufferLength { get { return _bufferLength - _bufferStartOffset; } }
+        public IntPtr BufferPtr { get { return IntPtr.Add(_handle.AddrOfPinnedObject(), _bufferStartOffset); } }
 
         public CtfReader(Stream stream, CtfMetadata metadata, CtfStream ctfStream)
         {
@@ -239,7 +240,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public void ResetBuffer()
         {
             _bitOffset = 0;
+            _bitOffsetBase = _stream.Position * 8;
             _bufferLength = 0;
+            _bufferStartOffset = 0;
         }
 
         internal void ReadEventIntoBuffer(CtfEvent evt)
@@ -456,9 +459,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 return;
             }
 
-            int amount = (int)(IntHelpers.AlignUp(_bitOffset, bits) - _bitOffset);
+            long offset = _bitOffsetBase + _bitOffset;
+            int amount = (int)(IntHelpers.AlignUp(offset, bits) - offset);
             if (amount != 0)
             {
+                if (_bitOffset == 0)
+                {
+                    _bufferStartOffset = amount / 8;
+                }
                 ReadBits(amount);
             }
         }

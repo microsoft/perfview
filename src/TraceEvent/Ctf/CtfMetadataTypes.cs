@@ -279,7 +279,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 throw new NotImplementedException();
             }
 
-            Debug.Assert((bitOffset % Align) == 0);
             int byteOffset = bitOffset / 8;
 
             bool fastPath = (bitOffset % 8) == 0 && (Size % 8) == 0;
