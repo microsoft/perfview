@@ -193,6 +193,7 @@ namespace CtfTracingTests
         [InlineData("validation_003.zip")]
         [InlineData("validation_004.zip")]
         [InlineData("validation_005.zip")]
+        [InlineData("validation_006.zip")]
         public void BasicValidationProcessesFileWithoutException(string file)
         {
             var path = Path.Combine(TestDataDirectory, file);
@@ -209,6 +210,34 @@ namespace CtfTracingTests
                 var exception = Record.Exception(() => source.Process());
                 Assert.Null(exception);
                 Assert.NotEqual(0, count);
+            }
+        }
+
+        [Fact]
+        public void ProblemAlignment()
+        {
+            var path = Path.Combine(TestDataDirectory, "problem_alignment.zip");
+            using (var source = new CtfTraceEventSource(path))
+            {
+                var index = 0;
+                source.Clr.EventSourceEvent += evt =>
+                {
+                    switch (index++)
+                    {
+                        case 0:
+                            Assert.Equal(6668, evt.EventID);
+                            Assert.Equal(482332487730801, evt.TimeStampQPC);
+                            break;
+                        case 1:
+                            Assert.Equal(6668, evt.EventID);
+                            Assert.Equal(482332675464150, evt.TimeStampQPC);
+                            break;
+                        default:
+                            throw new InvalidOperationException();
+                    }
+                };
+                source.Process();
+                Assert.Equal(2, index);
             }
         }
 
