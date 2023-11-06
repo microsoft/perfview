@@ -587,6 +587,10 @@ namespace PerfView
                     }
                     m_args.FocusProcess = FocusProcessTextBox.Text;
                 }
+                else
+                {
+                    m_args.FocusProcess = null;
+                }
             }
 
             m_args.DataFile = DataFileNameTextBox.Text;
