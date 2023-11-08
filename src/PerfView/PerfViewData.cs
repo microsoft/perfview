@@ -5437,7 +5437,13 @@ table {
                         var frameIdx = stackSource.Interner.FrameIntern("EventData Kind " + asAllocTick.AllocationKind);
                         stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
-                        frameIdx = stackSource.Interner.FrameIntern("EventData Size " + asAllocTick.AllocationAmount64);
+                        if (data.Version >= 4)
+                        {
+                            frameIdx = stackSource.Interner.FrameIntern("EventData ObjectSize " + asAllocTick.ObjectSize);
+                            stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                        }
+
+                        frameIdx = stackSource.Interner.FrameIntern("EventData AllocationSize " + asAllocTick.AllocationAmount64);
                         stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
                         var typeName = asAllocTick.TypeName;
@@ -9040,7 +9046,13 @@ table {
                                     var frameIdx = stackSource.Interner.FrameIntern("EventData Kind " + asAllocTick.AllocationKind);
                                     stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
-                                    frameIdx = stackSource.Interner.FrameIntern("EventData Size " + asAllocTick.AllocationAmount64);
+                                    if (data.Version >= 4)
+                                    {
+                                        frameIdx = stackSource.Interner.FrameIntern("EventData ObjectSize " + asAllocTick.ObjectSize);
+                                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+                                    }
+
+                                    frameIdx = stackSource.Interner.FrameIntern("EventData AllocationSize " + asAllocTick.AllocationAmount64);
                                     stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
                                     var typeName = asAllocTick.TypeName;
