@@ -21,6 +21,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // They ensure that Dispatch is called so that the specific event handlers are called for each event.
             ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.RawDynamicTemplate));
             ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.HeapCountTuningTemplate));
+            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.CommittedUsageTemplate));
+            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.HeapCountSampleTemplate));
         }
 
         protected override string GetProviderName()
@@ -32,7 +34,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[2];
+                var templates = new TraceEvent[4];
 
                 // This template ensures that all GC dynamic events are parsed properly.
                 templates[0] = GCDynamicTemplate(null, GCDynamicEvent.RawDynamicTemplate);
@@ -40,6 +42,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // A template must be registered for each dynamic event type.  This ensures that after the event is converted
                 // to its final form and saved in a TraceLog, that it can still be properly parsed and dispatched.
                 templates[1] = GCDynamicTemplate(null, GCDynamicEvent.HeapCountTuningTemplate);
+                templates[2] = GCDynamicTemplate(null, GCDynamicEvent.CommittedUsageTemplate);
+                templates[3] = GCDynamicTemplate(null, GCDynamicEvent.HeapCountSampleTemplate);
 
                 s_templates = templates;
             }
@@ -64,8 +68,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private event Action<GCDynamicTraceData> _gcHeapCountTuning;
-        public event Action<GCDynamicTraceData> GCHeapCountTuning
+        private event Action<HeapCountTuningTraceEvent> _gcHeapCountTuning;
+        public event Action<HeapCountTuningTraceEvent> GCHeapCountTuning
         {
             add
             {
@@ -74,6 +78,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 _gcHeapCountTuning -= value;
+            }
+        }
+
+        private event Action<CommittedUsageTraceEvent> _gcCommittedUsage;
+        public event Action<CommittedUsageTraceEvent> GCCommittedUsage
+        {
+            add
+            {
+                _gcCommittedUsage += value;
+            }
+            remove
+            {
+                _gcCommittedUsage -= value;
+            }
+        }
+
+        private event Action<HeapCountSampleTraceEvent> _gcHeapCountSample;
+        public event Action<HeapCountSampleTraceEvent> GCHeapCountSample
+        {
+            add
+            {
+                _gcHeapCountSample += value;
+            }
+            remove
+            {
+                _gcHeapCountSample -= value;
             }
         }
 
@@ -86,7 +116,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (_gcHeapCountTuning != null &&
                 data.eventID == GCDynamicEvent.HeapCountTuningTemplate.ID)
             {
-                _gcHeapCountTuning(data);
+                _gcHeapCountTuning(data.EventPayload as HeapCountTuningTraceEvent);
+            }
+
+            else if (_gcCommittedUsage != null && 
+                data.eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
+            {
+                _gcCommittedUsage(data.EventPayload as CommittedUsageTraceEvent);
+            }
+
+            else if (_gcHeapCountSample != null && 
+                data.eventID == GCDynamicEvent.HeapCountSampleTemplate.ID)
+            {
+                _gcHeapCountSample(data.EventPayload as HeapCountSampleTraceEvent);
             }
         }
 
@@ -143,8 +185,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             set { Action = (Action<GCDynamicTraceData>)value; }
         }
 
-        private HeapCountTuningTraceData _heapCountTuningTemplate = new HeapCountTuningTraceData();
-        private RawDynamicTraceData _rawTemplate = new RawDynamicTraceData();
+        private readonly HeapCountTuningTraceEvent _heapCountTuningTemplate = new HeapCountTuningTraceEvent();
+        private readonly CommittedUsageTraceEvent _committedUsageTemplate = new CommittedUsageTraceEvent();
+        private readonly HeapCountSampleTraceEvent _heapCountSampleTemplate = new HeapCountSampleTraceEvent();
+        private readonly RawDynamicTraceData _rawTemplate = new RawDynamicTraceData();
 
         /// <summary>
         /// Contains the fully parsed payload of the dynamic event.
@@ -156,6 +200,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 if (eventID == GCDynamicEvent.HeapCountTuningTemplate.ID)
                 {
                     return _heapCountTuningTemplate.Bind(this);
+                }
+
+                else if (eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
+                {
+                    return _committedUsageTemplate.Bind(this);
+                }
+
+                else if (eventID == GCDynamicEvent.HeapCountSampleTemplate.ID)
+                {
+                    return _heapCountSampleTemplate.Bind(this);
                 }
 
                 return _rawTemplate.Bind(this);
@@ -194,9 +248,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         {
             GCDynamicEvent eventTemplate = GCDynamicEvent.RawDynamicTemplate;
 
-            if (Name.Equals(GCDynamicEvent.HeapCountTuningTemplate.OpcodeName))
+            if (Name.Equals(GCDynamicEvent.HeapCountTuningTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
             {
                 eventTemplate = GCDynamicEvent.HeapCountTuningTemplate;
+            }
+
+            else if (Name.Equals(GCDynamicEvent.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                eventTemplate = GCDynamicEvent.CommittedUsageTemplate;
+            }
+
+            else if (Name.Equals(GCDynamicEvent.HeapCountSampleTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                eventTemplate = GCDynamicEvent.HeapCountSampleTemplate;
             }
 
             SetMetadataFromTemplate(eventTemplate);
@@ -220,8 +284,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// <summary>
         /// The list of specific event templates.
         /// </summary>
-        internal static RawDynamicTraceData RawDynamicTemplate = new RawDynamicTraceData();
-        internal static HeapCountTuningTraceData HeapCountTuningTemplate = new HeapCountTuningTraceData();
+        internal static readonly RawDynamicTraceData RawDynamicTemplate = new RawDynamicTraceData();
+        internal static readonly HeapCountTuningTraceEvent HeapCountTuningTemplate = new HeapCountTuningTraceEvent();
+        internal static readonly CommittedUsageTraceEvent CommittedUsageTemplate = new CommittedUsageTraceEvent();
+        internal static readonly HeapCountSampleTraceEvent HeapCountSampleTemplate = new HeapCountSampleTraceEvent();
 
         /// <summary>
         /// Metadata that must be specified for each specific type of dynamic event.
@@ -267,6 +333,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
     {
         internal override TraceEventID ID => (TraceEventID)39;
         internal override string TaskName => "GC";
+        // TODO: Change the name.
         internal override string OpcodeName => "DynamicData";
         internal override string EventName => "GC/DynamicData";
 
@@ -314,17 +381,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
     }
 
-    internal sealed class HeapCountTuningTraceData : GCDynamicEvent
+    public sealed class HeapCountTuningTraceEvent : GCDynamicEvent
     {
         public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
         public short NewHeapCount { get { return BitConverter.ToInt16(DataField, 2); } }
         public long GCIndex { get { return BitConverter.ToInt64(DataField, 4); } }
-        public float MedianPercentOverhead { get { return BitConverter.ToSingle(DataField, 12); } }
-        public float SmoothedMedianPercentOverhead { get { return BitConverter.ToSingle(DataField, 16); } }
-        public float OverheadReductionPerStepUp { get { return BitConverter.ToSingle(DataField, 20); } }
-        public float OverheadIncreasePerStepDown { get { return BitConverter.ToSingle(DataField, 24); } }
-        public float SpaceCostIncreasePerStepUp { get { return BitConverter.ToSingle(DataField, 28); } }
-        public float SpaceCostDecreasePerStepDown { get { return BitConverter.ToSingle(DataField, 32); } }
+        public float MedianThroughputCostPercent { get { return BitConverter.ToSingle(DataField, 12); } }
+        public float SmoothedMedianThroughputCostPercent { get { return BitConverter.ToSingle(DataField, 16); } }
+        public float ThroughputCostPercentReductionPerStepUp { get { return BitConverter.ToSingle(DataField, 20); } }
+        public float ThroughputCostPercentIncreasePerStepDown { get { return BitConverter.ToSingle(DataField, 24); } }
+        public float SpaceCostPercentIncreasePerStepUp { get { return BitConverter.ToSingle(DataField, 28); } }
+        public float SpaceCostPercentDecreasePerStepDown { get { return BitConverter.ToSingle(DataField, 32); } }
 
         internal override TraceEventID ID => TraceEventID.Illegal - 10;
         internal override string TaskName => "GC";
@@ -339,7 +406,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             {
                 if (_payloadNames == null)
                 {
-                    _payloadNames = new string[] { "Version", "NewHeapCount", "GCIndex", "MedianPercentOverhead", "SmoothedMedianPercentOverhead", "OverheadReductionPerStepUp", "OverheadIncreasePerStepDown", "SpaceCostIncreasePerStepUp", "SpaceCostDecreasePerStepDown" };
+                    _payloadNames = new string[] { "Version", "NewHeapCount", "GCIndex", "MedianThroughputCostPercent", "SmoothedMedianThroughputCostPercent", "ThroughputCostPercentReductionPerStepUp", "ThroughputCostPercentIncreasePerStepDown", "SpaceCostPercentIncreasePerStepUp", "SpaceCostPercentDecreasePerStepDown" };
                 }
 
                 return _payloadNames;
@@ -357,17 +424,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 case 2:
                     return GCIndex;
                 case 3:
-                    return MedianPercentOverhead;
+                    return MedianThroughputCostPercent;
                 case 4:
-                    return SmoothedMedianPercentOverhead;
+                    return SmoothedMedianThroughputCostPercent;
                 case 5:
-                    return OverheadReductionPerStepUp;
+                    return ThroughputCostPercentReductionPerStepUp;
                 case 6:
-                    return OverheadIncreasePerStepDown;
+                    return ThroughputCostPercentIncreasePerStepDown;
                 case 7:
-                    return SpaceCostIncreasePerStepUp;
+                    return SpaceCostPercentIncreasePerStepUp;
                 case 8:
-                    return SpaceCostDecreasePerStepDown;
+                    return SpaceCostPercentDecreasePerStepDown;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -381,12 +448,138 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 yield return new KeyValuePair<string, object>("Version", Version);
                 yield return new KeyValuePair<string, object>("NewHeapCount", NewHeapCount);
                 yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
-                yield return new KeyValuePair<string, object>("MedianPercentOverhead", MedianPercentOverhead);
-                yield return new KeyValuePair<string, object>("SmoothedMedianPercentOverhead", SmoothedMedianPercentOverhead);
-                yield return new KeyValuePair<string, object>("OverheadReductionPerStepUp", OverheadReductionPerStepUp);
-                yield return new KeyValuePair<string, object>("OverheadIncreasePerStepDown", OverheadIncreasePerStepDown);
-                yield return new KeyValuePair<string, object>("SpaceCostIncreasePerStepUp", SpaceCostIncreasePerStepUp);
-                yield return new KeyValuePair<string, object>("SpaceCostDecreasePerStepDown", SpaceCostDecreasePerStepDown);
+                yield return new KeyValuePair<string, object>("MedianThroughputCostPercent", MedianThroughputCostPercent);
+                yield return new KeyValuePair<string, object>("SmoothedMedianThroughputCostPercent", SmoothedMedianThroughputCostPercent);
+                yield return new KeyValuePair<string, object>("ThroughputCostPercentReductionPerStepUp", ThroughputCostPercentReductionPerStepUp);
+                yield return new KeyValuePair<string, object>("ThroughputCostPercentIncreasePerStepDown", ThroughputCostPercentIncreasePerStepDown);
+                yield return new KeyValuePair<string, object>("SpaceCostPercentIncreasePerStepUp", SpaceCostPercentIncreasePerStepUp);
+                yield return new KeyValuePair<string, object>("SpaceCostPercentDecreasePerStepDown", SpaceCostPercentDecreasePerStepDown);
+            }
+        }
+    }
+
+    public sealed class CommittedUsageTraceEvent : GCDynamicEvent
+    {
+        public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
+        public long TotalCommittedInUse { get { return BitConverter.ToInt64(DataField, 2); } }
+        public long TotalCommittedInGlobalDecommit { get { return BitConverter.ToInt64(DataField, 10); } }
+        public long TotalCommittedInFree { get { return BitConverter.ToInt64(DataField, 18); } }
+        public long TotalCommittedInGlobalFree { get { return BitConverter.ToInt64(DataField, 26); } }
+        public long TotalBookkeepingCommitted { get { return BitConverter.ToInt64(DataField, 34); } }
+
+        internal override TraceEventID ID => TraceEventID.Illegal - 11;
+        internal override string TaskName => "GC";
+        internal override string OpcodeName => "CommittedUsage";
+        internal override string EventName => "GC/CommittedUsage";
+
+        private string[] _payloadNames;
+
+        internal override string[] PayloadNames
+        {
+            get
+            {
+                if (_payloadNames == null)
+                {
+                    _payloadNames = new string[] { "Version", "TotalCommittedInUse", "TotalCommittedInGlobalDecommit", "TotalCommittedInFree", "TotalCommittedInGlobalFree", "TotalBookkeepingCommitted" };
+                }
+
+                return _payloadNames;
+            }
+        }
+
+        internal override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Version;
+                case 1:
+                    return TotalCommittedInUse;
+                case 2:
+                    return TotalCommittedInGlobalDecommit;
+                case 3:
+                    return TotalCommittedInFree;
+                case 4:
+                    return TotalCommittedInGlobalFree;
+                case 5:
+                    return TotalBookkeepingCommitted;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        internal override IEnumerable<KeyValuePair<string, object>> PayloadValues
+        {
+            get
+            {
+                yield return new KeyValuePair<string, object>("Version", Version);
+                yield return new KeyValuePair<string, object>("TotalCommittedInUse", TotalCommittedInUse);
+                yield return new KeyValuePair<string, object>("TotalCommittedInGlobalDecommit", TotalCommittedInGlobalDecommit);
+                yield return new KeyValuePair<string, object>("TotalCommittedInFree", TotalCommittedInFree);
+                yield return new KeyValuePair<string, object>("TotalCommittedInGlobalFree", TotalCommittedInGlobalFree);
+                yield return new KeyValuePair<string, object>("TotalBookkeepingCommitted", TotalBookkeepingCommitted);
+            }
+        }
+    }
+
+    public sealed class HeapCountSampleTraceEvent : GCDynamicEvent
+    {
+        public short Version { get { return BitConverter.ToInt16(DataField, 0); }}
+        public long GCIndex { get { return BitConverter.ToInt64(DataField, 2); }}
+        public long ElapsedTimeBetweenGCs { get { return BitConverter.ToInt64(DataField, 10); }}
+        public long GCPauseTime { get { return BitConverter.ToInt64(DataField, 18); }}
+        public long MslWaitTime { get { return BitConverter.ToInt64(DataField, 26); }}
+
+        internal override TraceEventID ID => TraceEventID.Illegal - 12;
+        internal override string TaskName => "GC";
+        internal override string OpcodeName => "HeapCountSample";
+        internal override string EventName => "GC/HeapCountSample";
+
+        private string[] _payloadNames;
+
+        internal override string[] PayloadNames
+        {
+            get
+            {
+                if (_payloadNames == null)
+                {
+                    _payloadNames = new string[] { "Version", "GCIndex", "ElapsedTimeBetweenGCs", "GCPauseTime", "MslWaitTime" };
+                }
+
+                return _payloadNames;
+            }
+        }
+
+        internal override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Version;
+                case 1:
+                    return GCIndex;
+                case 2:
+                    return ElapsedTimeBetweenGCs;
+                case 3:
+                    return GCPauseTime;
+                case 4:
+                    return MslWaitTime;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        internal override IEnumerable<KeyValuePair<string, object>> PayloadValues
+        {
+            get
+            {
+                yield return new KeyValuePair<string, object>("Version", Version);
+                yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
+                yield return new KeyValuePair<string, object>("ElapsedTimeBetweenGCs", ElapsedTimeBetweenGCs);
+                yield return new KeyValuePair<string, object>("GCPauseTime", GCPauseTime);
+                yield return new KeyValuePair<string, object>("MslWaitTime", MslWaitTime);
             }
         }
     }

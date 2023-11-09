@@ -1,10 +1,6 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using System;
-using System.Diagnostics;
-
-namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData
+﻿namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData
 {
-    public sealed class CommittedUsageTraceData
+    public sealed class CommittedUsage
     {
         public short Version { get; internal set; }
         public long TotalCommittedInUse { get; internal set; }
@@ -13,24 +9,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData
         public long TotalCommittedInGlobalFree { get; internal set; }
         public long TotalBookkeepingCommitted { get; internal set; }
     }
-    public sealed class HeapCountTuningTraceData
+
+    public sealed class HeapCountTuning
     {
         public short Version { get; internal set; }
         public short NewHeapCount { get; internal set; }
         public long GCIndex { get; internal set; }
-        public float MedianPercentOverhead { get; internal set; }
-        public float SmoothedMedianPercentOverhead { get; internal set; }
-        public float OverheadReductionPerStepUp { get; internal set; }
-        public float OverheadIncreasePerStepDown { get; internal set; }
-        public float SpaceCostIncreasePerStepUp { get; internal set; }
-        public float SpaceCostDecreasePerStepDown { get; internal set; }
+        public float MedianThroughputCostPercent { get; internal set; }
+        public float SmoothedMedianThroughputCostPercent { get; internal set; }
+        public float ThroughputCostPercentReductionPerStepUp { get; internal set; }
+        public float ThroughputCostPercentIncreasePerStepDown { get; internal set; }
+        public float SpaceCostPercentIncreasePerStepUp { get; internal set; }
+        public float SpaceCostPercentDecreasePerStepDown { get; internal set; }
     }
-    public sealed class HeapCountSampleTraceData
+    
+    public sealed class HeapCountSample
     {
         public short Version { get; internal set; }
-        public long GCElapsedTime { get; internal set; }
-        public long SOHMslWaitTime { get; internal set; }
-        public long UOHMslWaitTime { get; internal set; }
-        public long ElapsedBetweenGCs { get; internal set; }
+        public long GCIndex { get; internal set; }
+        public long ElapsedTimeBetweenGCs { get; internal set; }
+        public long GCPauseTime { get; internal set; }
+        public long MslWaitTime { get; internal set; }
     }
 }

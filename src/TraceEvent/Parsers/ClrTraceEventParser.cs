@@ -226,6 +226,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             });
 
+            GCDynamicData = new GCDynamicTraceEventParser(source);
         }
 
         /// <summary>
@@ -247,6 +248,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret;
             }
         }
+
+        public GCDynamicTraceEventParser GCDynamicData { get; }
 
         public event Action<GenAwareTemplateTraceData> GCGenAwareBegin
         {
@@ -843,33 +846,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 source.UnregisterEventTemplate(value, 38, ProviderGuid);
-            }
-        }
-        public event Action<TraceEvent, CommittedUsageTraceData> CommittedUsage
-        {
-            add
-            {
-            }
-            remove
-            {
-            }
-        }
-        public event Action<TraceEvent, HeapCountTuningTraceData> HeapCountTuning
-        {
-            add
-            {
-            }
-            remove
-            {
-            }
-        }
-        public event Action<TraceEvent, HeapCountSampleTraceData> HeapCountSample
-        {
-            add
-            {
-            }
-            remove
-            {
             }
         }
         public event Action<IOThreadTraceData> IOThreadCreationStart

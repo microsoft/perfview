@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
@@ -868,21 +869,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
-                source.Clr.CommittedUsage += delegate (TraceEvent traceEvent, CommittedUsageTraceData committedUsage)
+                source.Clr.GCDynamicData.GCCommittedUsage += delegate (CommittedUsageTraceEvent committedUsage)
                 {
-                    var stats = currentManagedProcess(traceEvent);
+                    var stats = currentManagedProcess(committedUsage.UnderlyingEvent);
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
-                source.Clr.HeapCountTuning += delegate (TraceEvent traceEvent, HeapCountTuningTraceData heapCountTuning)
+                source.Clr.GCDynamicData.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
                 {
-                    var stats = currentManagedProcess(traceEvent);
+                    var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
                     GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
                 };
 
-                source.Clr.HeapCountSample += delegate (TraceEvent traceEvent, HeapCountSampleTraceData heapCountSample)
+                source.Clr.GCDynamicData.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
                 {
-                    var stats = currentManagedProcess(traceEvent);
+                    var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
                     GCStats.ProcessHeapCountSample(stats, heapCountSample);
                 };
 
@@ -1854,12 +1855,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// </summary>
     public class TraceGC
     {
-        // TODO, AndrewAu, decide to Change to properties.
-        public CommittedUsageTraceData CommittedUsageBefore;
-        public CommittedUsageTraceData CommittedUsageAfter;
-        public HeapCountTuningTraceData HeapCountTuning;
-        public HeapCountSampleTraceData HeapCountSample;
-
         public enum BGCRevisitState
         {
             Concurrent = 0,
@@ -2148,6 +2143,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 }
             }
         }
+
+        /// <summary>
+        /// The placeholder property for the heap count tuning details used in the process of deciding whether or not to update the heap count.
+        /// </summary>
+        public HeapCountTuning HeapCountTuning { get; internal set; }
+
+        /// <summary>
+        /// The the heap count sample GC times such as the MSL wait times and elapsed time between GCs.
+        /// </summary>
+        public HeapCountSample HeapCountSample { get; internal set; }
+
+        /// <summary>
+        /// The pl
+        /// </summary>
+        public CommittedUsage CommittedUsageBefore { get; internal set; }
+
+        /// <summary>
+        /// TODO: Fill
+        /// </summary>
+        public CommittedUsage CommittedUsageAfter { get; internal set; }
+
         /// <summary>
         /// Memory survival percentage by generation
         /// </summary>
@@ -4803,41 +4819,67 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal static void ProcessCommittedUsage(TraceLoadedDotNetRuntime proc, CommittedUsageTraceData committedUsage)
+        internal static void ProcessCommittedUsage(TraceLoadedDotNetRuntime proc, CommittedUsageTraceEvent committedUsage)
         {
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
+                CommittedUsage traceData = new CommittedUsage
+                {
+                    Version                        = committedUsage.Version,
+                    TotalCommittedInUse            = committedUsage.TotalCommittedInUse,
+                    TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
+                    TotalCommittedInFree           = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree     = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted      = committedUsage.TotalBookkeepingCommitted
+                };
+
                 if (_event.CommittedUsageBefore == null)
                 {
-                    _event.CommittedUsageBefore = committedUsage;
+                    _event.CommittedUsageBefore = traceData;
                 }
                 else
                 {
                     Debug.Assert(_event.CommittedUsageAfter == null);
-                    _event.CommittedUsageAfter = committedUsage;
+                    _event.CommittedUsageAfter = traceData;
                 }
             }
         }
 
-        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceData heapCountTuning)
+        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceEvent heapCountTuning)
         {
             TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
             if (_event != null)
             {
-                _event.HeapCountTuning = heapCountTuning;
+                // Copy over the contents of the dynamic data to prevent issues when the event is reused.
+                _event.HeapCountTuning = new HeapCountTuning
+                {
+                    Version                       = heapCountTuning.Version,
+                    NewHeapCount                  = heapCountTuning.NewHeapCount,
+                    GCIndex                       = heapCountTuning.GCIndex,
+                    MedianThroughputCostPercent         = heapCountTuning.MedianThroughputCostPercent,
+                    SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
+                    ThroughputCostPercentReductionPerStepUp    = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
+                    ThroughputCostPercentIncreasePerStepDown   = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
+                    SpaceCostPercentIncreasePerStepUp    = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
+                    SpaceCostPercentDecreasePerStepDown  = heapCountTuning.SpaceCostPercentDecreasePerStepDown
+                };
             }
         }
 
-        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceData heapCountSample)
+        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceEvent heapCountSample)
         {
-            // TODO, AndrewAu, the runtime is supposed to fire the HeapCountSample event within GC pause, in that case this is correct.
-            // It is not currently doing that, and this can lead to occassional missed correlation (e.g. _event == null) or assertion (that last GC 
-            // is not BGC but outside of GC pause)
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                _event.HeapCountSample = heapCountSample;
+                _event.HeapCountSample = new HeapCountSample
+                {
+                    Version               = heapCountSample.Version,
+                    GCIndex               = heapCountSample.GCIndex,
+                    ElapsedTimeBetweenGCs = heapCountSample.ElapsedTimeBetweenGCs,
+                    GCPauseTime           = heapCountSample.GCPauseTime,
+                    MslWaitTime           = heapCountSample.MslWaitTime
+                };
             }
         }
 
