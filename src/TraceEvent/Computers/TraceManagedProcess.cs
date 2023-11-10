@@ -2144,24 +2144,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        /// <summary>
-        /// The placeholder property for the heap count tuning details used in the process of deciding whether or not to update the heap count.
-        /// </summary>
         public HeapCountTuning HeapCountTuning { get; internal set; }
-
-        /// <summary>
-        /// The the heap count sample GC times such as the MSL wait times and elapsed time between GCs.
-        /// </summary>
         public HeapCountSample HeapCountSample { get; internal set; }
-
-        /// <summary>
-        /// The pl
-        /// </summary>
         public CommittedUsage CommittedUsageBefore { get; internal set; }
-
-        /// <summary>
-        /// TODO: Fill
-        /// </summary>
         public CommittedUsage CommittedUsageAfter { get; internal set; }
 
         /// <summary>
