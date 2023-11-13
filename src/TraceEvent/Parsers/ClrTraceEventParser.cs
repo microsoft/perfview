@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
-using Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData;
 
 // This file was generated with the following command:
 //    traceParserGen CLREtwAll.man CLRTraceEventParser.cs
@@ -226,7 +225,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             });
 
-            GCDynamicData = new GCDynamicTraceEventParser(source);
+            GCDynamicEvent = new GCDynamicTraceEventParser(source);
         }
 
         /// <summary>
@@ -249,7 +248,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public GCDynamicTraceEventParser GCDynamicData { get; }
+        public GCDynamicTraceEventParser GCDynamicEvent { get; }
 
         public event Action<GenAwareTemplateTraceData> GCGenAwareBegin
         {

@@ -7,6 +7,15 @@ using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
+    /// <summary>
+    /// This parser is responsible for extracting the appropriate Dynamic Events and using their payloads and metadata to convert them into first-class events, the implications of which are that they can show up in 
+    /// the Events View and can be accessed via TraceLog as a regular events without the indirection of .
+    /// The implementation involves registration of the pertinent dynamic events and appropriately dispatching them after parsing them based on their identifiers.
+    /// To interface with these events, the user has to subscribe to one of the typed Dynamic Events such as the `CommittedUsageTraceEvent`. These can be publicly accessed via the ``Clr.GCDynamicEvent`` property.
+    /// More Details:
+    /// 1. There are two paths that can be invoked: one that's used when parsing events directly from the raw trace (e.g., etl or nettrace) and another when dealing directly with TraceLog after the etlx has been composed.
+    /// 2. The scheme of the event ids of these involve making use of some decremented value starting from TraceEventID.Illegal - 10.
+    /// </summary>
     public sealed class GCDynamicTraceEventParser : TraceEventParser
     {
         private static readonly string ProviderName = "Microsoft-Windows-DotNETRuntime";
@@ -56,7 +65,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Do not use.  This is here to avoid asserts that detect undeclared event templates.
         /// </summary>
-        public event Action<GCDynamicTraceData> GCDynamicData
+        public event Action<GCDynamicTraceEvent> GCDynamicData
         {
             add
             {
@@ -111,7 +120,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Responsible for dispatching the event after we determine its type
         /// and parse it.
         /// </summary>
-        private void Dispatch(GCDynamicTraceData data)
+        private void Dispatch(GCDynamicTraceEvent data)
         {
             if (_gcHeapCountTuning != null &&
                 data.eventID == GCDynamicEvent.HeapCountTuningTemplate.ID)
@@ -132,21 +141,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private static GCDynamicTraceData GCDynamicTemplate(Action<GCDynamicTraceData> action, GCDynamicEvent eventTemplate)
+        private static GCDynamicTraceEvent GCDynamicTemplate(Action<GCDynamicTraceEvent> action, GCDynamic.GCDynamicEvent eventTemplate)
         {
             Debug.Assert(eventTemplate != null);
 
             // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GCDynamicTraceData(action, (int) eventTemplate.ID, 1, eventTemplate.TaskName, GCTaskGuid, 41, eventTemplate.OpcodeName, ProviderGuid, ProviderName);
+            return new GCDynamicTraceEvent(action, (int) eventTemplate.ID, 1, eventTemplate.TaskName, GCTaskGuid, 41, eventTemplate.OpcodeName, ProviderGuid, ProviderName);
         }
     }
 }
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 {
-    public sealed class GCDynamicTraceData : TraceEvent
+    public sealed class GCDynamicTraceEvent : TraceEvent
     {
-        internal GCDynamicTraceData(Action<GCDynamicTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal GCDynamicTraceEvent(Action<GCDynamicTraceEvent> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             Action = action;
@@ -182,7 +191,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         protected internal override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<GCDynamicTraceData>)value; }
+            set { Action = (Action<GCDynamicTraceEvent>)value; }
         }
 
         private readonly HeapCountTuningTraceEvent _heapCountTuningTemplate = new HeapCountTuningTraceEvent();
@@ -242,7 +251,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             return sb;
         }
 
-        private event Action<GCDynamicTraceData> Action;
+        private event Action<GCDynamicTraceEvent> Action;
 
         private void SelectEventMetadata()
         {
@@ -308,7 +317,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// The underlying TraceEvent object that is bound to the template during dispatch.
         /// It contains a pointer to the actual event payload and is what's used to fetch and parse fields.
         /// </summary>
-        internal GCDynamicTraceData UnderlyingEvent { get; private set; }
+        internal GCDynamicTraceEvent UnderlyingEvent { get; private set; }
 
         /// <summary>
         /// The Data field from the underlying event.
@@ -322,7 +331,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// Binds this template to an underlying event before it is dispatched.
         /// This is what allows the template to be used to parse the event.
         /// </summary>
-        internal GCDynamicEvent Bind(GCDynamicTraceData underlyingEvent)
+        internal GCDynamicEvent Bind(GCDynamicTraceEvent underlyingEvent)
         {
             UnderlyingEvent = underlyingEvent;
             return this;
@@ -424,17 +433,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 case 2:
                     return GCIndex;
                 case 3:
-                    return MedianThroughputCostPercent;
+                    return Math.Round((decimal)MedianThroughputCostPercent, 3);
                 case 4:
-                    return SmoothedMedianThroughputCostPercent;
+                    return Math.Round((decimal)SmoothedMedianThroughputCostPercent, 3);
                 case 5:
-                    return ThroughputCostPercentReductionPerStepUp;
+                    return Math.Round((decimal)ThroughputCostPercentReductionPerStepUp, 3);
                 case 6:
-                    return ThroughputCostPercentIncreasePerStepDown;
+                    return Math.Round((decimal)ThroughputCostPercentIncreasePerStepDown, 3);
                 case 7:
-                    return SpaceCostPercentIncreasePerStepUp;
+                    return Math.Round((decimal)SpaceCostPercentIncreasePerStepUp, 3);
                 case 8:
-                    return SpaceCostPercentDecreasePerStepDown;
+                    return Math.Round((decimal)SpaceCostPercentDecreasePerStepDown, 3);
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -448,14 +457,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 yield return new KeyValuePair<string, object>("Version", Version);
                 yield return new KeyValuePair<string, object>("NewHeapCount", NewHeapCount);
                 yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
-                yield return new KeyValuePair<string, object>("MedianThroughputCostPercent", MedianThroughputCostPercent);
-                yield return new KeyValuePair<string, object>("SmoothedMedianThroughputCostPercent", SmoothedMedianThroughputCostPercent);
-                yield return new KeyValuePair<string, object>("ThroughputCostPercentReductionPerStepUp", ThroughputCostPercentReductionPerStepUp);
-                yield return new KeyValuePair<string, object>("ThroughputCostPercentIncreasePerStepDown", ThroughputCostPercentIncreasePerStepDown);
-                yield return new KeyValuePair<string, object>("SpaceCostPercentIncreasePerStepUp", SpaceCostPercentIncreasePerStepUp);
-                yield return new KeyValuePair<string, object>("SpaceCostPercentDecreasePerStepDown", SpaceCostPercentDecreasePerStepDown);
+                yield return new KeyValuePair<string, object>("MedianThroughputCostPercent", Math.Round((decimal)MedianThroughputCostPercent, 3));
+                yield return new KeyValuePair<string, object>("SmoothedMedianThroughputCostPercent", Math.Round((decimal)SmoothedMedianThroughputCostPercent, 3));
+                yield return new KeyValuePair<string, object>("ThroughputCostPercentReductionPerStepUp", Math.Round((decimal)ThroughputCostPercentReductionPerStepUp, 3));
+                yield return new KeyValuePair<string, object>("ThroughputCostPercentIncreasePerStepDown", Math.Round((decimal)ThroughputCostPercentIncreasePerStepDown, 3));
+                yield return new KeyValuePair<string, object>("SpaceCostPercentIncreasePerStepUp", Math.Round((decimal)SpaceCostPercentIncreasePerStepUp, 3));
+                yield return new KeyValuePair<string, object>("SpaceCostPercentDecreasePerStepDown", Math.Round((decimal)SpaceCostPercentDecreasePerStepDown, 3));
             }
         }
+    }
+
+    public sealed class HeapCountTuning
+    {
+        public short Version { get; internal set; }
+        public short NewHeapCount { get; internal set; }
+        public long GCIndex { get; internal set; }
+        public float MedianThroughputCostPercent { get; internal set; }
+        public float SmoothedMedianThroughputCostPercent { get; internal set; }
+        public float ThroughputCostPercentReductionPerStepUp { get; internal set; }
+        public float ThroughputCostPercentIncreasePerStepDown { get; internal set; }
+        public float SpaceCostPercentIncreasePerStepUp { get; internal set; }
+        public float SpaceCostPercentDecreasePerStepDown { get; internal set; }
     }
 
     public sealed class CommittedUsageTraceEvent : GCDynamicEvent
@@ -523,6 +545,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
     }
 
+    public sealed class CommittedUsage
+    {
+        public short Version { get; internal set; }
+        public long TotalCommittedInUse { get; internal set; }
+        public long TotalCommittedInGlobalDecommit { get; internal set; }
+        public long TotalCommittedInFree { get; internal set; }
+        public long TotalCommittedInGlobalFree { get; internal set; }
+        public long TotalBookkeepingCommitted { get; internal set; }
+    }
+
     public sealed class HeapCountSampleTraceEvent : GCDynamicEvent
     {
         public short Version { get { return BitConverter.ToInt16(DataField, 0); }}
@@ -582,5 +614,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 yield return new KeyValuePair<string, object>("MslWaitTime", MslWaitTime);
             }
         }
+    }
+
+    public sealed class HeapCountSample
+    {
+        public short Version { get; internal set; }
+        public long GCIndex { get; internal set; }
+        public long ElapsedTimeBetweenGCs { get; internal set; }
+        public long GCPauseTime { get; internal set; }
+        public long MslWaitTime { get; internal set; }
     }
 }

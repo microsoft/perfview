@@ -11,7 +11,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
-using Microsoft.Diagnostics.Tracing.Parsers.GCDynamicData;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -869,19 +868,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
-                source.Clr.GCDynamicData.GCCommittedUsage += delegate (CommittedUsageTraceEvent committedUsage)
+                source.Clr.GCDynamicEvent.GCCommittedUsage += delegate (CommittedUsageTraceEvent committedUsage)
                 {
                     var stats = currentManagedProcess(committedUsage.UnderlyingEvent);
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
-                source.Clr.GCDynamicData.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
+                source.Clr.GCDynamicEvent.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
                 {
                     var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
                     GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
                 };
 
-                source.Clr.GCDynamicData.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
+                source.Clr.GCDynamicEvent.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
                 {
                     var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
                     GCStats.ProcessHeapCountSample(stats, heapCountSample);
@@ -4635,7 +4634,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (IsServerGCUsed == 1)
             {
-                //Debug.Assert(HeapCount > 1);
+                // This debug assert fails in the case of DATAS where the HeapCount starts from 1.
+                // TODO (musharm): Come up with a more descriptive assert that'll take DATAS into account.
+                // Debug.Assert(HeapCount > 1);
 
                 if (serverGCThreads.Count < HeapCount)
                 {
@@ -4651,11 +4652,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static void ProcessGlobalHistory(TraceLoadedDotNetRuntime proc, GCGlobalHeapHistoryTraceData data)
         {
-            int numHeaps = data.NumHeaps;
-
-            // We detected whether we are using Server GC now.
-            // TODO, AndrewAu, this is no longer correct after dynamic heap adaptation.
-            proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
             if (proc.GC.m_stats.HeapCount == -1)
             {
                 proc.GC.m_stats.HeapCount = data.NumHeaps;

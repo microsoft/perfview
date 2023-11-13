@@ -474,7 +474,6 @@ namespace Stats
             if (gc.HeapCountTuning != null)
             {
                 writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.NewHeapCount.ToString("n3"), 10));
-                writer.Write(" GCIndex={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.GCIndex.ToString("n3"), 10));
                 writer.Write(" MedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.MedianThroughputCostPercent.ToString("n3"), 10));
                 writer.Write(" SmoothedMedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SmoothedMedianThroughputCostPercent.ToString("n3"), 10));
                 writer.Write(" ThroughputCostPercentReductionPerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentReductionPerStepUp.ToString("n3"), 10));
@@ -484,7 +483,6 @@ namespace Stats
             }
             if (gc.HeapCountSample != null)
             {
-                writer.Write(" GCIndex={0}", gc.HeapCountSample.GCIndex);
                 writer.Write(" ElapsedTimeBetweenGCs={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCs.ToString("n3"), 10));
                 writer.Write(" GCPauseTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTime.ToString("n3"), 10));
                 writer.Write(" MslWaitTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTime.ToString("n3"), 10));
