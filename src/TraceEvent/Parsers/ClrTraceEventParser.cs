@@ -10197,6 +10197,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return TypeLoadStartID;
                 case 1:
                     return ClrInstanceID;
+                case 2:
+                    return LoadLevel;
+                case 3:
+                    return TypeID;
+                case 4:
+                    return TypeName;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
