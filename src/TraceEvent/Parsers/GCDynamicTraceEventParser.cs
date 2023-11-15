@@ -9,8 +9,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
     /// This parser is responsible for extracting the appropriate Dynamic Events and using their payloads and metadata to convert them into first-class events, the implications of which are that they can show up in the Events View.
-    /// The implementation involves declaration of the dynamic events (look at CommittedUsageTraceEvent as an example), registration of the Metadata that'll match on the GC/DynamicData event based on the Name.
-    /// Once the event is matched to the appropriate DynamicEvent implementation (if implemented), the appropriate event handler is invoked to dispatch the typed payload to any subscribers.
+    /// The implementation involves declaration of the dynamic events (look at CommittedUsageTraceEvent as an example), registration of the Metadata that'll match on the Microsoft-Windows-DotNETRuntime/GarbageCollection/GCDynamicEvent
+    /// event based on the Name. Once the event is matched to the appropriate DynamicEvent implementation (if implemented), the appropriate event handler is invoked to dispatch the typed payload to any subscribers.
     /// The differentiating factor between dynamic events and traditional events is, therefore, this additional layer of extracting the payload after the metadata matches.
     /// To interface with these events, the user has to subscribe to one of the typed Dynamic Events such as the `CommittedUsageTraceEvent`. These can be publicly accessed via the ``Clr.GCDynamicEvent`` property.
     /// Additional fields such as the Payloads, Trace Event ID and other details have to be filled for the DynamicEvent to show up in the Events View.
@@ -67,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Do not use.  This is here to avoid asserts that detect undeclared event templates.
         /// </summary>
-        public event Action<GCDynamicTraceEvent> GCDynamicData
+        public event Action<GCDynamicTraceEvent> GCDynamicTraceEvent
         {
             add
             {
@@ -344,9 +344,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
     {
         internal override TraceEventID ID => (TraceEventID)39;
         internal override string TaskName => "GC";
-        // TODO: Change the name.
-        internal override string OpcodeName => "DynamicData";
-        internal override string EventName => "GC/DynamicData";
+        internal override string OpcodeName => "DynamicTraceEvent";
+        internal override string EventName => "GC/DynamicTraceEvent";
 
         private string[] _payloadNames;
 
@@ -622,8 +621,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
     {
         public short Version { get; internal set; }
         public long GCIndex { get; internal set; }
-        public long ElapsedTimeBetweenGCs { get; internal set; }
-        public long GCPauseTime { get; internal set; }
-        public long MslWaitTime { get; internal set; }
+        public long ElapsedTimeBetweenGCsMSec { get; internal set; }
+        public long GCPauseTimeMSec { get; internal set; }
+        public long MslWaitTimeMSec { get; internal set; }
     }
 }

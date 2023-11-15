@@ -4857,9 +4857,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     Version               = heapCountSample.Version,
                     GCIndex               = heapCountSample.GCIndex,
-                    ElapsedTimeBetweenGCs = heapCountSample.ElapsedTimeBetweenGCs,
-                    GCPauseTime           = heapCountSample.GCPauseTime,
-                    MslWaitTime           = heapCountSample.MslWaitTime
+                    // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
+                    ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000,
+                    GCPauseTimeMSec           = heapCountSample.GCPauseTime / 1000,
+                    MslWaitTimeMSec           = heapCountSample.MslWaitTime / 1000
                 };
             }
         }

@@ -496,9 +496,9 @@ namespace Stats
 
                 if (gc.HeapCountSample != null)
                 {
-                    writer.Write(" ElapsedTimeBetweenGCs={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCs.ToString("n0"), 10));
-                    writer.Write(" GCPauseTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTime.ToString("n0"), 10));
-                    writer.Write(" MslWaitTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTime.ToString("n0"), 10));
+                    writer.Write(" ElapsedTimeBetweenGCsMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCsMSec.ToString("n3"), 10));
+                    writer.Write(" GCPauseTimeMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTimeMSec.ToString("n3"), 10));
+                    writer.Write(" MslWaitTimeMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTimeMSec.ToString("n3"), 10));
                 }
 
                 writer.WriteLine("/>");
