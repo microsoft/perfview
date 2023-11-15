@@ -621,8 +621,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
     {
         public short Version { get; internal set; }
         public long GCIndex { get; internal set; }
-        public long ElapsedTimeBetweenGCsMSec { get; internal set; }
-        public long GCPauseTimeMSec { get; internal set; }
-        public long MslWaitTimeMSec { get; internal set; }
+        public double ElapsedTimeBetweenGCsMSec { get; internal set; }
+        public double GCPauseTimeMSec { get; internal set; }
+        public double MslWaitTimeMSec { get; internal set; }
     }
 }
