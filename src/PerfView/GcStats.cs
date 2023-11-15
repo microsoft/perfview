@@ -455,39 +455,55 @@ namespace Stats
             writer.Write(" AllocedSinceLastGC={0}", StringUtilities.QuotePadLeft(gc.AllocedSinceLastGCMB.ToString("n3"), 5));
             writer.Write(" Type={0}", StringUtilities.QuotePadLeft(gc.Type.ToString(), 18));
             writer.Write(" Reason={0}", StringUtilities.QuotePadLeft(gc.Reason.ToString(), 27));
-            if (gc.CommittedUsageBefore != null)
+            writer.Write(">");
+
+            if (gc.CommittedUsageBefore != null || gc.CommittedUsageAfter != null)
             {
-                writer.Write(" BeforeTotalCommittedInUse={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInUse.ToString("n3"), 10));
-                writer.Write(" BeforeTotalCommittedInGlobalDecommit={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInGlobalDecommit.ToString("n3"), 10));
-                writer.Write(" BeforeTotalCommittedInFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInFree.ToString("n3"), 10));
-                writer.Write(" BeforeTotalCommittedInGlobalFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInGlobalFree.ToString("n3"), 10));
-                writer.Write(" BeforeTotalBookkeepingCommitted={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalBookkeepingCommitted.ToString("n3"), 10));
+                writer.WriteLine();
+                writer.Write("      <CommittedData");
+                if (gc.CommittedUsageBefore != null)
+                {
+                    writer.Write(" BeforeTotalCommittedInUse={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInUse.ToString("n0"), 10));
+                    writer.Write(" BeforeTotalCommittedInGlobalDecommit={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInGlobalDecommit.ToString("n0"), 10));
+                    writer.Write(" BeforeTotalCommittedInFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInFree.ToString("n0"), 10));
+                    writer.Write(" BeforeTotalCommittedInGlobalFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalCommittedInGlobalFree.ToString("n0"), 10));
+                    writer.Write(" BeforeTotalBookkeepingCommitted={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageBefore.TotalBookkeepingCommitted.ToString("n0"), 10));
+                }
+                if (gc.CommittedUsageAfter != null)
+                {
+                    writer.Write(" AfterTotalCommittedInUse={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInUse.ToString("n0"), 10));
+                    writer.Write(" AfterTotalCommittedInGlobalDecommit={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInGlobalDecommit.ToString("n0"), 10));
+                    writer.Write(" AfterTotalCommittedInFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInFree.ToString("n0"), 10));
+                    writer.Write(" AfterTotalCommittedInGlobalFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInGlobalFree.ToString("n0"), 10));
+                    writer.Write(" AfterTotalBookkeepingCommitted={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalBookkeepingCommitted.ToString("n0"), 10));
+                }
+                writer.WriteLine("/>");
             }
-            if (gc.CommittedUsageAfter != null)
+
+            if (gc.HeapCountTuning != null || gc.HeapCountSample != null)
             {
-                writer.Write(" AfterTotalCommittedInUse={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInUse.ToString("n3"), 10));
-                writer.Write(" AfterTotalCommittedInGlobalDecommit={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInGlobalDecommit.ToString("n3"), 10));
-                writer.Write(" AfterTotalCommittedInFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInFree.ToString("n3"), 10));
-                writer.Write(" AfterTotalCommittedInGlobalFree={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalCommittedInGlobalFree.ToString("n3"), 10));
-                writer.Write(" AfterTotalBookkeepingCommitted={0}", StringUtilities.QuotePadLeft(gc.CommittedUsageAfter.TotalBookkeepingCommitted.ToString("n3"), 10));
+                writer.Write("      <DynamicData");
+                if (gc.HeapCountTuning != null)
+                {
+                    writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.NewHeapCount.ToString("n0"), 10));
+                    writer.Write(" MedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.MedianThroughputCostPercent.ToString("n3"), 10));
+                    writer.Write(" SmoothedMedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SmoothedMedianThroughputCostPercent.ToString("n3"), 10));
+                    writer.Write(" ThroughputCostPercentReductionPerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentReductionPerStepUp.ToString("n3"), 10));
+                    writer.Write(" ThroughputCostPercentIncreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentIncreasePerStepDown.ToString("n3"), 10));
+                    writer.Write(" SpaceCostPercentIncreasePerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentIncreasePerStepUp.ToString("n3"), 10));
+                    writer.Write(" SpaceCostPercentDecreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentDecreasePerStepDown.ToString("n3"), 10));
+                }
+
+                if (gc.HeapCountSample != null)
+                {
+                    writer.Write(" ElapsedTimeBetweenGCs={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCs.ToString("n0"), 10));
+                    writer.Write(" GCPauseTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTime.ToString("n0"), 10));
+                    writer.Write(" MslWaitTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTime.ToString("n0"), 10));
+                }
+
+                writer.WriteLine("/>");
             }
-            if (gc.HeapCountTuning != null)
-            {
-                writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.NewHeapCount.ToString("n3"), 10));
-                writer.Write(" MedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.MedianThroughputCostPercent.ToString("n3"), 10));
-                writer.Write(" SmoothedMedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SmoothedMedianThroughputCostPercent.ToString("n3"), 10));
-                writer.Write(" ThroughputCostPercentReductionPerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentReductionPerStepUp.ToString("n3"), 10));
-                writer.Write(" ThroughputCostPercentIncreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentIncreasePerStepDown.ToString("n3"), 10));
-                writer.Write(" SpaceCostPercentIncreasePerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentIncreasePerStepUp.ToString("n3"), 10));
-                writer.Write(" SpaceCostPercentDecreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentDecreasePerStepDown.ToString("n3"), 10));
-            }
-            if (gc.HeapCountSample != null)
-            {
-                writer.Write(" ElapsedTimeBetweenGCs={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCs.ToString("n3"), 10));
-                writer.Write(" GCPauseTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTime.ToString("n3"), 10));
-                writer.Write(" MslWaitTime={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTime.ToString("n3"), 10));
-            }
-            writer.WriteLine(">");
+
             if (gc.HeapStats != null)
             {
                 writer.Write("      <HeapStats");

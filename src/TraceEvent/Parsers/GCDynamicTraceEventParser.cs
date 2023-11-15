@@ -8,10 +8,12 @@ using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
-    /// This parser is responsible for extracting the appropriate Dynamic Events and using their payloads and metadata to convert them into first-class events, the implications of which are that they can show up in 
-    /// the Events View and can be accessed via TraceLog as a regular events without the indirection of .
-    /// The implementation involves registration of the pertinent dynamic events and appropriately dispatching them after parsing them based on their identifiers.
+    /// This parser is responsible for extracting the appropriate Dynamic Events and using their payloads and metadata to convert them into first-class events, the implications of which are that they can show up in the Events View.
+    /// The implementation involves declaration of the dynamic events (look at CommittedUsageTraceEvent as an example), registration of the Metadata that'll match on the GC/DynamicData event based on the Name.
+    /// Once the event is matched to the appropriate DynamicEvent implementation (if implemented), the appropriate event handler is invoked to dispatch the typed payload to any subscribers.
+    /// The differentiating factor between dynamic events and traditional events is, therefore, this additional layer of extracting the payload after the metadata matches.
     /// To interface with these events, the user has to subscribe to one of the typed Dynamic Events such as the `CommittedUsageTraceEvent`. These can be publicly accessed via the ``Clr.GCDynamicEvent`` property.
+    /// Additional fields such as the Payloads, Trace Event ID and other details have to be filled for the DynamicEvent to show up in the Events View.
     /// More Details:
     /// 1. There are two paths that can be invoked: one that's used when parsing events directly from the raw trace (e.g., etl or nettrace) and another when dealing directly with TraceLog after the etlx has been composed.
     /// 2. The scheme of the event ids of these involve making use of some decremented value starting from TraceEventID.Illegal - 10.
