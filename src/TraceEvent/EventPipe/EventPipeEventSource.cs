@@ -204,6 +204,10 @@ namespace Microsoft.Diagnostics.Tracing
                 Debug.Assert(sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
 
                 var traceEvent = Lookup(eventRecord);
+                if (traceEvent.NeedsFixup)
+                {
+                    traceEvent.FixupData();
+                }
                 Dispatch(traceEvent);
                 sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
             }

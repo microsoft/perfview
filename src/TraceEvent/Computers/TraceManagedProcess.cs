@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -865,6 +866,24 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)data.Type] = data.TimeStampRelativeMSec;
                         _gc.PerHeapMarkTimes[data.HeapNum].MarkPromoted[(int)data.Type] = data.Promoted;
                     }
+                };
+
+                source.Clr.GCDynamicEvent.GCCommittedUsage += delegate (CommittedUsageTraceEvent committedUsage)
+                {
+                    var stats = currentManagedProcess(committedUsage.UnderlyingEvent);
+                    GCStats.ProcessCommittedUsage(stats, committedUsage);
+                };
+
+                source.Clr.GCDynamicEvent.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
+                {
+                    var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
+                    GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
+                };
+
+                source.Clr.GCDynamicEvent.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
+                {
+                    var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
+                    GCStats.ProcessHeapCountSample(stats, heapCountSample);
                 };
 
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
@@ -2123,6 +2142,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 }
             }
         }
+
+        public HeapCountTuning HeapCountTuning { get; internal set; }
+        public HeapCountSample HeapCountSample { get; internal set; }
+        public CommittedUsage CommittedUsageBefore { get; internal set; }
+        public CommittedUsage CommittedUsageAfter { get; internal set; }
+
         /// <summary>
         /// Memory survival percentage by generation
         /// </summary>
@@ -4575,6 +4600,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return null;
         }
 
+        internal static TraceGC GetGC(TraceLoadedDotNetRuntime proc, long gcIndex)
+        {
+            for (int i = (proc.GC.GCs.Count - 1); i >= 0; i--)
+            {
+                if (proc.GC.GCs[i].Number == gcIndex)
+                {
+                    return proc.GC.GCs[i];
+                }
+            }
+            return null;
+        }
+
         internal void AddConcurrentPauseTime(TraceGC _event, double RestartEEMSec)
         {
             if (suspendThreadIDBGC > 0)
@@ -4760,6 +4797,71 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     GcWorkingThreadId = gcThreadId,
                     GcWorkingThreadPriority = gcThreadPriority
                 });
+            }
+        }
+
+        internal static void ProcessCommittedUsage(TraceLoadedDotNetRuntime proc, CommittedUsageTraceEvent committedUsage)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                CommittedUsage traceData = new CommittedUsage
+                {
+                    Version                        = committedUsage.Version,
+                    TotalCommittedInUse            = committedUsage.TotalCommittedInUse,
+                    TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
+                    TotalCommittedInFree           = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree     = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted      = committedUsage.TotalBookkeepingCommitted
+                };
+
+                if (_event.CommittedUsageBefore == null)
+                {
+                    _event.CommittedUsageBefore = traceData;
+                }
+                else
+                {
+                    Debug.Assert(_event.CommittedUsageAfter == null);
+                    _event.CommittedUsageAfter = traceData;
+                }
+            }
+        }
+
+        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceEvent heapCountTuning)
+        {
+            TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
+            if (_event != null)
+            {
+                // Copy over the contents of the dynamic data to prevent issues when the event is reused.
+                _event.HeapCountTuning = new HeapCountTuning
+                {
+                    Version                       = heapCountTuning.Version,
+                    NewHeapCount                  = heapCountTuning.NewHeapCount,
+                    GCIndex                       = heapCountTuning.GCIndex,
+                    MedianThroughputCostPercent         = heapCountTuning.MedianThroughputCostPercent,
+                    SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
+                    ThroughputCostPercentReductionPerStepUp    = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
+                    ThroughputCostPercentIncreasePerStepDown   = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
+                    SpaceCostPercentIncreasePerStepUp    = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
+                    SpaceCostPercentDecreasePerStepDown  = heapCountTuning.SpaceCostPercentDecreasePerStepDown
+                };
+            }
+        }
+
+        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceEvent heapCountSample)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                _event.HeapCountSample = new HeapCountSample
+                {
+                    Version               = heapCountSample.Version,
+                    GCIndex               = heapCountSample.GCIndex,
+                    // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
+                    ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000.0,
+                    GCPauseTimeMSec           = heapCountSample.GCPauseTime / 1000.0,
+                    MslWaitTimeMSec           = heapCountSample.MslWaitTime / 1000.0
+                };
             }
         }
 

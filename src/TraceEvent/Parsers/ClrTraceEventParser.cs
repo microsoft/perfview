@@ -225,6 +225,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             });
 
+            GCDynamicEvent = new GCDynamicTraceEventParser(source);
         }
 
         /// <summary>
@@ -246,6 +247,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret;
             }
         }
+
+        public GCDynamicTraceEventParser GCDynamicEvent { get; }
 
         public event Action<GenAwareTemplateTraceData> GCGenAwareBegin
         {

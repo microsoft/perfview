@@ -5,6 +5,7 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -1047,7 +1048,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
 
                     int intValue = (int)value;
-                    if (intValue != 0 && payloadNames[index] == "IPv4Address")
+                    if (intValue != 0 && PayloadNames[index] == "IPv4Address")
                     {
                         return (intValue & 0xFF).ToString() + "." +
                                ((intValue >> 8) & 0xFF).ToString() + "." +
@@ -1066,7 +1067,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 if (value is long)
                 {
-                    if (payloadNames[index] == "objectId")      // TODO this is a hack.  
+                    if (PayloadNames[index] == "objectId")      // TODO this is a hack.  
                     {
                         return "0x" + ((long)value).ToString("x8");
                     }
@@ -1114,7 +1115,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (asByteArray != null)
                 {
                     StringBuilder sb = new StringBuilder();
-                    if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
+                    if (PayloadNames[index].EndsWith("Address") || PayloadNames[index].EndsWith("Addr"))
                     {
                         if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
                         {
@@ -2903,6 +2904,14 @@ namespace Microsoft.Diagnostics.Tracing
                 declaredSet.Add(eventName, eventName);
             }
 
+            // These events are derived from GCDynamic and has no template associated with them
+            if (string.Equals(GetType().Name, nameof(GCDynamicTraceEventParser), StringComparison.OrdinalIgnoreCase))
+            {
+                declaredSet.Remove("CommittedUsage");
+                declaredSet.Remove("HeapCountTuning");
+                declaredSet.Remove("HeapCountSample");
+            }
+
             var enumSet = new SortedDictionary<string, string>();
 
             // Make sure that we have all the event we should have 
@@ -3608,7 +3617,18 @@ namespace Microsoft.Diagnostics.Tracing
                         else
                         {
                             Debug.Assert(curTemplate.ProviderGuid == eventRecord->EventHeader.ProviderId);
-                            Debug.Assert((ushort)curTemplate.eventID == eventRecord->EventHeader.Id);
+
+                            // Make sure that the assert below doesn't fail by checking if _any_ of the event header ids match.
+                            bool gcDynamicTemplateEventHeaderMatch =
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.RawDynamicTemplate.ID ||
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.HeapCountTuningTemplate.ID ||
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.CommittedUsageTemplate.ID ||
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.HeapCountSampleTemplate.ID;
+
+                            // Ignore the failure for GC dynamic events because they are all
+                            // dispatched through the same template and we vary the event ID.
+                            Debug.Assert((ushort)curTemplate.eventID == eventRecord->EventHeader.Id ||
+                                (curTemplate.ProviderGuid == GCDynamicTraceEventParser.ProviderGuid && gcDynamicTemplateEventHeaderMatch));
                         }
 #endif
                         return curTemplate;
