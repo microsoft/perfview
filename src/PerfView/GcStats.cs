@@ -168,7 +168,7 @@ namespace Stats
                                 gen.MaxAllocRateMBSec,
                                 gen.TotalPauseTimeMSec,
                                 gen.TotalAllocatedMB,
-                                gen.TotalPauseTimeMSec / runtime.GC.Stats().TotalAllocatedMB,
+                                runtime.GC.Stats().TotalAllocatedMB / gen.TotalPauseTimeMSec,
                                 gen.TotalPromotedMB / gen.TotalCpuMSec,
                                 gen.MeanPauseDurationMSec,
                                 gen.NumInduced,

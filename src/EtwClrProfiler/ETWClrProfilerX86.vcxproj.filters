@@ -30,6 +30,9 @@
     <ClInclude Include="ETWInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="banned.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Stdafx.cpp">

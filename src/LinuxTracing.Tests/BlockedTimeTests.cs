@@ -1,7 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing.StackSources;
 using Xunit;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracingTests
 {
     /// <summary>
     /// Completed Context Switch - Starts with a thread that blocked through a sched_switch event and ends with the same

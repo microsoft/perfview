@@ -548,7 +548,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         {
                             foreach (var procThread in traceProc.Threads)
                             {
-                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.Contains(".NET Server GC Thread")))
+                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC")))
                                 {
                                     mang.GC.m_stats.IsServerGCUsed = 1;
                                     break;
@@ -2615,34 +2615,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             if (gc.Type == GCType.BackgroundGC)
             {
-                // Find all GCs that occurred during the current background GC.
-                double startTimeRelativeMSec = gc.StartRelativeMSec;
-                double endTimeRelativeMSec = gc.StartRelativeMSec + gc.DurationMSec;
-
-                // Calculate the pause time for this BGC.
-                // Pause time is defined as pause time for the BGC + pause time for all FGCs that ran during the BGC.
+                // Get the pause time for this BGC.
                 double totalPauseTime = gc.PauseDurationMSec;
 
-                if (gc.Index + 1 < GCs.Count)
+                // Iterate backwards from the last GC recorded to find the index of the current BGC.
+                int indexOfPreviousGC = GCs.Count - 1;
+                while (GCs[indexOfPreviousGC] != gc && indexOfPreviousGC >= 0)
                 {
-                    TraceGC gcEvent;
-                    for (int i = gc.Index + 1; i < GCs.Count; ++i)
-                    {
-                        gcEvent = GCs[i];
-                        if ((gcEvent.StartRelativeMSec >= startTimeRelativeMSec) && (gcEvent.StartRelativeMSec < endTimeRelativeMSec))
-                        {
-                            totalPauseTime += gcEvent.PauseDurationMSec;
-                        }
-                        else
-                        {
-                            // We've finished processing all FGCs that occurred during this BGC.
-                            break;
-                        }
-                    }
+                    --indexOfPreviousGC;
                 }
 
                 // Get the elapsed time since the previous GC finished.
-                int previousGCIndex = gc.Index - 1;
+                int previousGCIndex = indexOfPreviousGC - 1;
                 double previousGCStopTimeRelativeMSec;
                 if (previousGCIndex >= 0)
                 {
@@ -4613,7 +4597,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (IsServerGCUsed == 1)
             {
-                Debug.Assert(HeapCount > 1);
+                // This debug assert fails in the case of DATAS where the HeapCount starts from 1.
+                // TODO (musharm): Come up with a more descriptive assert that'll take DATAS into account.
+                // Debug.Assert(HeapCount > 1);
 
                 if (serverGCThreads.Count < HeapCount)
                 {
@@ -4629,8 +4615,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static void ProcessGlobalHistory(TraceLoadedDotNetRuntime proc, GCGlobalHeapHistoryTraceData data)
         {
-            // We detected whether we are using Server GC now.
-            proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
             if (proc.GC.m_stats.HeapCount == -1)
             {
                 proc.GC.m_stats.HeapCount = data.NumHeaps;
@@ -4655,7 +4639,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     HasCondemnReasons0 = data.HasCondemnReasons0,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
                 };
-                _event.SetHeapCount(proc.GC.m_stats.HeapCount);
+                _event.SetHeapCount(data.NumHeaps);
             }
         }
 

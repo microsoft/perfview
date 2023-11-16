@@ -4,6 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -23,7 +24,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             TraceProcesses processes = source.Processes();
             if (processes == null || m_weakCurrentSource.Target != source)
             {
-                processes = new TraceProcesses(null /* TraceLog */, source);
+                TraceLogEventSource traceLogEventSource = source as TraceLogEventSource;
+                Etlx.TraceLog etlxTraceLog = null;
+                if (traceLogEventSource != null)
+                {
+                    etlxTraceLog = traceLogEventSource.TraceLog;
+                }
+
+                processes = new TraceProcesses(etlxTraceLog, source);
                 // establish listeners
                 if (m_weakCurrentSource.Target != source)
                 {
@@ -204,7 +212,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// <summary>
         /// The log associated with this collection of processes. 
         /// </summary> 
-        public TraceLog Log { get { return log; } }
+        public Etlx.TraceLog Log { get { return log; } }
         /// <summary>
         /// The count of the number of TraceProcess instances in the TraceProcesses list. 
         /// </summary>
@@ -356,7 +364,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// process, as well as the process lookup tables and a cache that remembers the last calls to
         /// GetNameForAddress(). 
         /// </summary>
-        internal TraceProcesses(TraceLog log, TraceEventDispatcher source)
+        internal TraceProcesses(Etlx.TraceLog log, TraceEventDispatcher source)
         {
             this.log = log;
             this.source = source;
@@ -496,7 +504,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         // State variables.  
         private GrowableArray<TraceProcess> processes;          // The threads ordered in time. 
         private GrowableArray<TraceProcess> processesByPID;     // The threads ordered by processID.  
-        private TraceLog log;
+        private Etlx.TraceLog log;
         private TraceEventDispatcher source;
         internal event Action<TraceProcess> OnProcessStart;
         internal event Action<TraceProcess> OnProcessStop;
@@ -755,15 +763,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         internal TraceProcess(int processID, ProcessIndex processIndex)
         {
-            Initialize(processID, processIndex, null /* TraceEventDispatcher */);
+            Initialize(processID, processIndex, null /* TraceEventDispatcher */, null /* TraceLog */);
         }
 
-        internal TraceProcess(int processID, TraceLog log, ProcessIndex processIndex, TraceEventDispatcher source)
+        internal TraceProcess(int processID, Etlx.TraceLog log, ProcessIndex processIndex, TraceEventDispatcher source)
         {
-            Initialize(processID, processIndex, source);
+            Initialize(processID, processIndex, source, log);
         }
 
-        private void Initialize(int processID, ProcessIndex processIndex, TraceEventDispatcher source)
+        private void Initialize(int processID, ProcessIndex processIndex, TraceEventDispatcher source, Etlx.TraceLog log)
         {
             ProcessID = processID;
             ParentID = -1;
@@ -774,7 +782,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Source = source;
             Is64Bit = false;
             LoadedModules = null;
-            Log = null;
+            Log = log;
             Parent = null;
             Threads = null;
             EventsInProcess = null;

@@ -2838,6 +2838,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal abstract void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback);
 
+        /// <summary>
+        /// Returns the set of ETWMappings between CTF event names and the corresponding ETW Provider GUID, etc.
+        /// </summary>
+        protected internal virtual IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
+        {
+            yield break;
+        }
+
         #endregion
         #region private
 

@@ -10,6 +10,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
   </ItemGroup>

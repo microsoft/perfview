@@ -12,6 +12,7 @@ using Address = System.UInt64;
 // an ETW event manifest into strongly typed C# classes.
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
+    using System.Collections.Generic;
     using Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel;
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
@@ -77,6 +78,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             foreach (var template in s_templates)
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
                     callback(template);
+        }
+
+        protected internal override IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
+        {
+            yield return new CtfEventMapping("sched_process_exec", Parsers.LinuxKernelEventParser.ProviderGuid, 1, 1, 0);
+            yield return new CtfEventMapping("sched_process_exit", Parsers.LinuxKernelEventParser.ProviderGuid, 2, 2, 0);
         }
 
         #endregion

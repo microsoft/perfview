@@ -27,6 +27,10 @@
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
@@ -111,21 +115,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
-      <Link>amd64\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
-      <Link>amd64\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
-      <Link>amd64\vcruntime140_1.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Link>x86\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -141,16 +130,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
-      <Link>x86\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
-      <Link>x86\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
       <Link>arm64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -158,21 +137,6 @@
     </None>
     <None Include="$(TraceEventSupportFilesBase)native\arm64\msdia140.dll">
       <Link>arm64\msdia140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\msvcp140.dll">
-      <Link>arm64\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\vcruntime140.dll">
-      <Link>arm64\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\vcruntime140_1.dll">
-      <Link>arm64\vcruntime140_1.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>

@@ -2056,7 +2056,7 @@ namespace PerfView
                 DoAbort(null, null);
             }
 
-            Environment.Exit(0);        // TODO can we do this another way?
+            // DO NOT call Environment.Exit(0) here, it will kill the test runner, and tests won't complete.
         }
 
         // GUI Command objects.
@@ -2394,6 +2394,18 @@ namespace PerfView
         private void UseGitHubDeviceFlowAuth_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             AuthenticationViewModel.IsGitHubDeviceFlowEnabled = !AuthenticationViewModel.IsGitHubDeviceFlowEnabled;
+            UpdateSymbolReaderHandler();
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Handler for when <see cref="AuthenticationCommands.UseBasicHttpAuth"/> command is executed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void UseBasicHttpAuth_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            AuthenticationViewModel.IsBasicHttpAuthEnabled = !AuthenticationViewModel.IsBasicHttpAuthEnabled;
             UpdateSymbolReaderHandler();
             e.Handled = true;
         }

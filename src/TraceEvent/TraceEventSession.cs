@@ -23,24 +23,24 @@ using ETWKernelControl = Microsoft.Diagnostics.Tracing.ETWKernelControl;
 namespace Microsoft.Diagnostics.Tracing.Session
 {
     /// <summary>
-    /// A TraceEventSession represents a single ETW Tracing Session.   A session is and event sink that 
-    /// can enable or disable event logging from event providers).    TraceEventSessions can log their
+    /// A TraceEventSession represents a single Event Tracing for Windows (ETW) tracing session. A session
+    /// is an event sink that can enable or disable event logging from event providers. TraceEventSessions can log
     /// events either to a file, or by issuing callbacks when events arrive (a so-called 'real time' 
     /// session).   
     /// <para>
-    /// Session are MACHINE wide and unlike most OS resources the operating system does NOT reclaim 
-    /// them when the process that created it dies.  By default TraceEventSession tries is best to
-    /// do this reclamation, but it is possible that for 'orphan' session to accidentally survive
-    /// if the process is ended abruptly (e.g. by the debugger or a user explicitly killing it).  It is 
+    /// Sessions are MACHINE wide and unlike most OS resources, the operating system does NOT reclaim 
+    /// them when the process that created them dies.  By default, TraceEventSession tries its best to
+    /// do this reclamation, but it is possible for 'orphan' sessions to accidentally survive
+    /// if the process is ended abruptly (e.g. by the debugger or by a user explicitly killing it).  It is 
     /// possible to turn off TraceEventSession automatic reclamation by setting the StopOnDispose 
-    /// property to false (its default is true).  
+    /// property to false (its default is true).
     /// </para>
     /// <para> 
-    /// Kernel events have additional restrictions.   In particular there is a special API (EnableKernelProvider).  
+    /// Kernel events have additional restrictions.  In particular, there is a special API (EnableKernelProvider).
     /// Before Windows 8, there was a restriction that kernel events could only be enabled from a session 
     /// with a special name (see KernelTraceEventParser.KernelSessionName) and thus there could only be a single
     /// session that could log kernel events (and that session could not log non-kernel events).  These
-    /// restrictions were dropped in windows 8. 
+    /// restrictions were dropped in Windows 8. 
     /// </para>
     /// </summary>
     public sealed unsafe class TraceEventSession : IDisposable
@@ -1631,25 +1631,34 @@ namespace Microsoft.Diagnostics.Tracing.Session
             {
                 if (s_providersByName == null)
                 {
-                    s_providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
-                    int buffSize = 0;
-                    var hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
-                    Debug.Assert(hr == 122);     // ERROR_INSUFFICIENT_BUFFER
-                    var buffer = stackalloc byte[buffSize];
-                    var providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
-
-                    hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
-                    if (hr != 0)
+                    lock (s_lock)
                     {
-                        Trace.WriteLine("TdhEnumerateProviders failed HR = " + hr);
-                        providersDesc->NumberOfProviders = 0;
-                    }
+                        if (s_providersByName == null)
+                        {
+                            SortedDictionary<string, Guid> providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+                            int buffSize = 0;
+                            var hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
+                            Debug.Assert(hr == 122);     // ERROR_INSUFFICIENT_BUFFER
+                            var buffer = stackalloc byte[buffSize];
+                            var providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
 
-                    var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
-                    for (int i = 0; i < providersDesc->NumberOfProviders; i++)
-                    {
-                        var name = new string((char*)&buffer[providers[i].ProviderNameOffset]);
-                        s_providersByName[name] = providers[i].ProviderGuid;
+                            hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
+                            if ((hr == 0) && (providersDesc != null))
+                            {
+                                var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
+                                for (int i = 0; i < providersDesc->NumberOfProviders; i++)
+                                {
+                                    var name = new string((char*)&buffer[providers[i].ProviderNameOffset]);
+                                    providersByName[name] = providers[i].ProviderGuid;
+                                }
+
+                                s_providersByName = providersByName;
+                            }
+                            else
+                            {
+                                Trace.WriteLine("TdhEnumerateProviders failed HR = " + hr);
+                            }
+                        }
                     }
                 }
                 return s_providersByName;
@@ -1662,10 +1671,18 @@ namespace Microsoft.Diagnostics.Tracing.Session
             {
                 if (s_providerNames == null)
                 {
-                    s_providerNames = new Dictionary<Guid, string>(ProviderNameToGuid.Count);
-                    foreach (var keyValue in ProviderNameToGuid)
+                    lock (s_lock)
                     {
-                        s_providerNames[keyValue.Value] = keyValue.Key;
+                        if (s_providerNames == null)
+                        {
+                            Dictionary<Guid, string> providerNames = new Dictionary<Guid, string>(ProviderNameToGuid.Count);
+                            foreach (var keyValue in ProviderNameToGuid)
+                            {
+                                providerNames[keyValue.Value] = keyValue.Key;
+                            }
+
+                            s_providerNames = providerNames;
+                        }
                     }
                 }
                 return s_providerNames;
@@ -1720,6 +1737,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             return (eventIds.Count - 1) * 2 + sizeof(TraceEventNativeMethods.EVENT_FILTER_EVENT_ID);
         }
 
+        private static object s_lock = new object();
         private static SortedDictionary<string, Guid> s_providersByName;
         private static Dictionary<Guid, string> s_providerNames;
 

@@ -49,13 +49,13 @@ jobs:
       displayName: 'Run Tests'
       inputs:
         testAssemblyVer2: |
-         **\LinuxTracing.Tests.dll
-         **\Tests.dll
-         **\TraceEventTests.dll
-         **\PerfViewTests.dll
-         !**\*TestAdapter.dll
-         !**\obj\**
+         **\bin\**\LinuxTracingTests.dll
+         **\bin\**\CtfTracingTests.dll
+         **\bin\**\TraceEventTests.dll
+         **\bin\**\PerfViewTests.dll
         testRunTitle: 'PerfView - Debug'
+        runTestsInIsolation: true
+        otherConsoleOptions: '--blame'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'
@@ -109,13 +109,13 @@ jobs:
       displayName: 'Run Tests'
       inputs:
         testAssemblyVer2: |
-         **\LinuxTracing.Tests.dll
-         **\Tests.dll
-         **\TraceEventTests.dll
-         **\PerfViewTests.dll
-         !**\*TestAdapter.dll
-         !**\obj\**
+         **\bin\**\LinuxTracingTests.dll
+         **\bin\**\CtfTracingTests.dll
+         **\bin\**\TraceEventTests.dll
+         **\bin\**\PerfViewTests.dll
         testRunTitle: 'PerfView - Release'
+        runTestsInIsolation: true
+        otherConsoleOptions: '--blame'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to Artifacts Staging'

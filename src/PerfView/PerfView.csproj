@@ -37,6 +37,10 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
   <!-- Build a NuGet package containing PerfView.exe -->
   <PropertyGroup>
     <Description>PerfView</Description>
@@ -227,20 +231,6 @@
       <Link>x86\msdia140.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\msvcp140.dll</LogicalName>
-      <Link>x86\msvcp140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\vcruntime140.dll</LogicalName>
-      <Link>x86\vcruntime140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -297,27 +287,6 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
       <Link>amd64\msdia140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\amd64\msvcp140.dll</LogicalName>
-      <Link>amd64\msvcp140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\amd64\vcruntime140.dll</LogicalName>
-      <Link>amd64\vcruntime140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\amd64\vcruntime140_1.dll</LogicalName>
-      <Link>amd64\vcruntime140_1.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net6.0-windows\HeapDump.dll">
@@ -598,7 +567,7 @@
       <Link>System.Buffers.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Diagnostics_DiagnosticSource)\lib\net46\System.Diagnostics.DiagnosticSource.dll">
+    <EmbeddedResource Include="$(PkgSystem_Diagnostics_DiagnosticSource)\lib\net461\System.Diagnostics.DiagnosticSource.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Diagnostics.DiagnosticSource.dll</LogicalName>

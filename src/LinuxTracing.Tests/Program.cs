@@ -1,4 +1,4 @@
-﻿namespace LinuxTracing.Tests
+﻿namespace LinuxTracingTests
 {
     internal class Program
     {
