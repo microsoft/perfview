@@ -214,6 +214,7 @@ namespace CtfTracingTests
         }
 
         [Fact]
+        [Obsolete("This method tests obsolete properties.")]
         public void ProblemAlignment()
         {
             var path = Path.Combine(TestDataDirectory, "problem_alignment.zip");

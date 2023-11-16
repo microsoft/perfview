@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Security.Cryptography;
 
 namespace PerfView.Utilities
 {
     internal static class RandomNumberGenerator
     {
-        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
+#if !NET
+        private static System.Security.Cryptography.RNGCryptoServiceProvider rngCsp = new();
+#endif
 
         internal static double GetDouble()
         {
@@ -20,10 +21,15 @@ namespace PerfView.Utilities
 
         private static ulong GetUInt64()
         {
+#if NET
+            Span<byte> data = stackalloc byte[8];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(data);
+            return BitConverter.ToUInt64(data);
+#else
             byte[] data = new byte[8];
             rngCsp.GetBytes(data);
-
             return BitConverter.ToUInt64(data, 0);
+#endif
         }
     }
 }

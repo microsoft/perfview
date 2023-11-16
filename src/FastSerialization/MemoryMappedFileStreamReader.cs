@@ -17,7 +17,9 @@ namespace FastSerialization
     public class MemoryMappedFileStreamReader : IStreamReader
     {
         private readonly Func<StreamLabel> readLabel;
+#pragma warning disable CS0414 // The field is assigned but its value is never used
         private readonly int sizeOfSerializedStreamLabel;
+#pragma warning restore CS0414 // The field is assigned but its value is never used
 
         private MemoryMappedFile _file;
         private long _fileLength;

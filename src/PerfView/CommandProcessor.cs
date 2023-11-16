@@ -4097,6 +4097,7 @@ namespace PerfView
 
         #region private
 
+#if !NET
         private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
         {
             soFar[assembly] = assembly;
@@ -4128,6 +4129,8 @@ namespace PerfView
                 }
             }
         }
+#endif
+
         #endregion
     }
 }
