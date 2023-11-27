@@ -27,7 +27,19 @@ The TraceEvent library is [NuGET](https://www.nuget.org/) package that provides 
 
 There are three basic parts to and ETW based logging system as shown in the figure below
 
-![Logging Architecture](images/LoggingArchitecture.png)
+```mermaid
+graph LR
+    provider["Event Provider (EventSource)"]
+    session["Event Session (TraceEventSession)"]
+    consumer["Event Consumer (TraceEventSource)"]
+    file[("File")]
+    provider -- "Commands" --> session
+    session -- "Commands" --> provider
+    session -- "Event Data" --> consumer
+    provider -- "Event Data" --> file
+    file --> consumer
+    provider -- "Event Manifest (Schema)" --> consumer
+```
 
 1. The **Event Session** (represents the entity controlling the logging). The session has the ability to tell the providers of events to start and stop logging and control how verbose the logging is. It also has the ability to route the data to various places. It can indicate that the data should be directly written to a file (for maximum efficiency) or to send it to the session itself (for on the fly processing)
 2. The **Event Provider** is the part of the logging system that is wired into the application to be monitored. Its job is to call a logging API when interesting things happen in the application.
@@ -223,7 +235,34 @@ Here is where the 'strong typing' of the logging becomes apparent. On the one en
 
 Thus in general you get a diagram that looks like this:
 
-![Event Parsing](images/EventParsing.png)
+```mermaid
+graph LR
+    etw(["EtwTraceSource"])
+    clr(["ClrTraceEventParser"])
+    kernel(["KernelTraceEventParser"])
+    registered(["RegisteredTraceEventParser"])
+    dynamic(["DynamicTraceEventParser"])
+    etw -- "Unparsed events" --> clr
+    etw -- "Unparsed events" --> kernel
+    etw -- "Unparsed events" --> registered
+    etw -- "Unparsed events" --> dynamic
+
+    gcEvent(["GC Event Callback"])
+    jitEvent(["JIT Event Callback"])
+    clr -- "Parsed events" --> gcEvent
+    clr -- "Parsed events" --> jitEvent
+
+    dllLoad(["DLL Load Callback"])
+    threadSwitch(["Thread Switch Callback"])
+    kernel -- "Parsed events" --> dllLoad
+    kernel -- "Parsed events" --> threadSwitch
+
+    iisEvent(["IIS Event Callback"])
+    registered -- "Parsed events" --> iisEvent
+
+    eventSource(["EventSource Callback"])
+    dynamic -- "Parsed events" --> eventSource
+```
 
 Where potentially many different `TraceEventParser` types are 'attached' to a `TraceEventSource` and then in turn many callbacks are registered to the parser that knows how to decode them. The result is that you get fully parsed events in your callback code. Here is code that shows how to 'connect' the `KernelTraceEventParser` class to an `ETWTraceEventSource` and then subscribe to a the `ProcessStart` event and fetch out the process name and command line. Notice that in the callback delegate we specify a specific subclass of `TraceEvent` called `ProcessTraceData` which in addition to all the generic properties of an event (*Name*, *Process*, *Timestamp*, ...) also has properties for those specific to the `ProcessStart` event (e.g. *ProcessName*, *CommandLine*, *ProcessID*, ...).
 
