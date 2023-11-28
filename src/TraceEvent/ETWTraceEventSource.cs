@@ -165,7 +165,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Resolution of the hardware timer, in units of 100 nanoseconds.
         /// </summary>
-        public ulong TimerResolution { get { return logFiles[0].LogfileHeader.TimerResolution; } }
+        public uint TimerResolution { get { return logFiles[0].LogfileHeader.TimerResolution; } }
 
         /// <summary>
         /// The size of the log, will return 0 if it does not know. 
