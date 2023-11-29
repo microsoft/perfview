@@ -161,6 +161,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// The name of the session that generated the data. 
         /// </summary>
         public string SessionName { get { return logFiles[0].LoggerName; } }
+
+        /// <summary>
+        /// Resolution of the hardware timer, in units of 100 nanoseconds.
+        /// </summary>
+        public uint TimerResolution { get { return logFiles[0].LogfileHeader.TimerResolution; } }
+
         /// <summary>
         /// The size of the log, will return 0 if it does not know. 
         /// </summary>

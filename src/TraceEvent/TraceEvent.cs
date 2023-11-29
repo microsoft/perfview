@@ -996,6 +996,60 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+        /// <summary>
+        /// The processor time of the event, if available
+        /// </summary>
+        public ulong ProcessorTime
+        {
+            get
+            {
+                if((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_NO_CPUTIME) != 0)
+                {
+                    return (eventRecord->EventHeader.KernelTime << sizeof(int)) + eventRecord->EventHeader.UserTime;
+                }
+                else
+                {
+                    return eventRecord->EventHeader.KernelTime + eventRecord->EventHeader.UserTime;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The user time of the event, if available
+        /// </summary>
+        public uint? UserTime
+        {
+            get
+            {
+                if ((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_NO_CPUTIME) != 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    return eventRecord->EventHeader.UserTime;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The kernel time of the event, if available
+        /// </summary>
+        public uint? KernelTime
+        {
+            get
+            {
+                if ((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_NO_CPUTIME) != 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    return eventRecord->EventHeader.KernelTime;
+                }
+            }
+        }
+
         // These overloads allow integration with the DLR (Dynamic Language Runtime). That
         // enables getting at payload data in a more convenient fashion, directly by name.
         // In PowerShell, it "just works" (e.g. "$myEvent.MyPayload" will just work); in

@@ -171,8 +171,8 @@ namespace Microsoft.Diagnostics.Tracing
             //	no access to GuidPtr, union'd with guid field
             //	no access to ClientContext & MatchAnyKeywords, ProcessorTime, 
             //	union'd with kernelTime,userTime
-            public int KernelTime;         // Offset 0x28
-            public int UserTime;
+            public uint KernelTime;         // Offset 0x28
+            public uint UserTime;
         }
 
         /// <summary>
@@ -399,6 +399,7 @@ namespace Microsoft.Diagnostics.Tracing
         */
 
         internal const ushort EVENT_HEADER_FLAG_STRING_ONLY = 0x0004;
+        internal const ushort EVENT_HEADER_FLAG_NO_CPUTIME = 0x0010;
         internal const ushort EVENT_HEADER_FLAG_32_BIT_HEADER = 0x0020;
         internal const ushort EVENT_HEADER_FLAG_64_BIT_HEADER = 0x0040;
         internal const ushort EVENT_HEADER_FLAG_CLASSIC_HEADER = 0x0100;
@@ -426,8 +427,8 @@ namespace Microsoft.Diagnostics.Tracing
             public byte Opcode;
             public ushort Task;
             public ulong Keyword;
-            public int KernelTime;         // offset: 0x38
-            public int UserTime;           // offset: 0x3C
+            public uint KernelTime;         // offset: 0x38
+            public uint UserTime;           // offset: 0x3C
             public Guid ActivityId;
         }
 
