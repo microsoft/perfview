@@ -46,4 +46,4 @@ The easiest way to build the latest samples is to simply clone the [PerfView Rep
 
 ## Release Notes for the Microsoft.Diagnostics.Tracing.TraceEvent library
 
-The [Releases](https://github.com/Microsoft/perfview/releases) page for PerfView also shows the releases for the TraceEvent library. Note that PerfView's version numbers and TraceEvent version numbers are not kept in lock step. The version numbers that begin with T are for TraceEvent, the ones with V correspond to PerfView.
+The [Releases](https://github.com/Microsoft/perfview/releases) page for PerfView also shows the releases for the TraceEvent library. PerfView's version numbers and TraceEvent version numbers starting with version 3 are kept in lock step.
