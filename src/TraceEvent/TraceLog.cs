@@ -1815,6 +1815,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     sampleProfileInterval100ns = data.OldInterval;
                 }
             };
+
+            // This is a bit of a hack because the dynamic parser doesn't quite work with EventPipeEventSource
+            // directly.  We should fix this and then switch to using DynamicTraceEventParser directly.
+            if (rawEvents is EventPipeEventSource)
+            {
+                Guid eventPipeProviderGuid = new Guid("92f528a6-f5b8-5160-a7ee-b33da7739e29");
+                rawEvents.UnhandledEvents += delegate (TraceEvent data)
+                {
+                    if (data.ProviderGuid == eventPipeProviderGuid && data.ID == (TraceEventID)1)
+                    {
+                        string cmd = data.GetUnicodeStringAt(0);
+                        processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC)
+                            .FromEventPipeProcessInfo(cmd);
+                    }
+                };
+            }
         }
 
         /// <summary>
@@ -5709,6 +5725,30 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 endTimeQPC = data.TimeStampQPC;
             }
             Log.DebugWarn(startTimeQPC <= endTimeQPC, "Process Ends before it starts! StartTime: " + StartTimeRelativeMsec.ToString("f4"), data);
+        }
+        internal void FromEventPipeProcessInfo(string cmd)
+        {
+            if (!string.IsNullOrEmpty(cmd))
+            {
+                commandLine = cmd;
+
+                // Separate the image file name from command line arguments.
+                int firstIndexOfSpace = cmd.IndexOf(' ');
+                if (firstIndexOfSpace > 0)
+                {
+                    imageFileName = cmd.Substring(0, firstIndexOfSpace);
+
+                    // Remove quotes around the image file name if present.
+                    if (imageFileName.Length > 2 && imageFileName[0] == '\"' && imageFileName[imageFileName.Length - 1] == '\"')
+                    {
+                        imageFileName = imageFileName.Substring(1, imageFileName.Length - 2);
+                    }
+                }
+                else
+                {
+                    imageFileName = cmd;
+                }
+            }
         }
 
         /// <summary>
