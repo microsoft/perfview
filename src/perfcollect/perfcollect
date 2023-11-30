@@ -1244,7 +1244,14 @@ InstallLTTng_Ubuntu()
     BlueText
     echo "Installing LTTng packages."
     ResetText
-    apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust0
+
+    # Handle Ubuntu 22.04.
+    distro=$(lsb_release -c -s)
+    if [ ${distro} != 'jammy' ]; then
+        apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust0
+    else
+        apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust1
+    fi
 }
 
 InstallLTTng()
