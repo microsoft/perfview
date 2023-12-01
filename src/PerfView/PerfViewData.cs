@@ -9672,7 +9672,7 @@ table {
     public class ProcessDumpPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "Process Dump"; } }
-        public override string[] FileExtensions { get { return new string[] { ".dmp" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".dmp", ".hdmp", ".mdmp" }; } }
 
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
