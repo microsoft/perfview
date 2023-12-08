@@ -2449,10 +2449,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid AssemblyLoaderTaskGuid = new Guid(unchecked((int)0xbcf2339e), unchecked((short)0xb0a6), unchecked((short)0x452d), 0x96, 0x6c, 0x33, 0xac, 0x9d, 0xd8, 0x25, 0x73);
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
         private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
+        private static readonly Guid WaitHandleWaitTaskGuid = new Guid(unchecked((int)0xe90049d8), unchecked((short)0x8ab8), unchecked((short)0x4799), 0xb0, 0x72, 0xee, 0xf4, 0x12, 0x65, 0xbc, 0xa4);
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
         private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
-        private static readonly Guid WaitHandleWaitTaskGuid = new Guid(unchecked((int)0xe90049d8), unchecked((short)0x8ab8), unchecked((short)0x4799), 0xb0, 0x72, 0xee, 0xf4, 0x12, 0x65, 0xbc, 0xa4);
 
         protected internal override IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
         {
@@ -10184,12 +10184,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
-    public enum WaitHandleWaitSource
-    {
-        Unknown = 0x0,
-        MonitorWait = 0x1,
-    }
-
     public sealed class TypeLoadStopTraceData : TraceEvent
     {
         public int TypeLoadStartID { get { return GetInt32At(0); } }
@@ -10261,6 +10255,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         private event Action<TypeLoadStopTraceData> m_target;
         #endregion
+    }
+
+    public enum WaitHandleWaitSource
+    {
+        Unknown = 0x0,
+        MonitorWait = 0x1,
     }
 
     public sealed class WaitHandleWaitStartTraceData : TraceEvent
