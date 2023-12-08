@@ -2452,6 +2452,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
         private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
+        private static readonly Guid WaitHandleWaitTaskGuid = new Guid(unchecked((int)0xe90049d8), unchecked((short)0x8ab8), unchecked((short)0x4799), 0xb0, 0x72, 0xee, 0xf4, 0x12, 0x65, 0xbc, 0xa4);
 
         protected internal override IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
         {
@@ -10274,16 +10275,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Action = action;
         }
-        protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
-        protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(7, 1)));
             Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(7, 1)));
         }
-        protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return Action; }
             set { Action = (Action<WaitHandleWaitStartTraceData>) value; }
@@ -10341,16 +10342,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Action = action;
         }
-        protected override void Dispatch()
+        protected internal override void Dispatch()
         {
             Action(this);
         }
-        protected override void Validate()
+        protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 2));
             Debug.Assert(!(Version > 0 && EventDataLength < 2));
         }
-        protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return Action; }
             set { Action = (Action<WaitHandleWaitStopTraceData>) value; }
