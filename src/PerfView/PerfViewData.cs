@@ -5565,6 +5565,15 @@ table {
                         goto ADD_EVENT_FRAME;
                     }
 
+                    var asWaitHandleWaitStart = data as WaitHandleWaitStartTraceData;
+                    if (asWaitHandleWaitStart != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData WaitSource " + asWaitHandleWaitStart.WaitSource);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        goto ADD_EVENT_FRAME;
+                    }
+
                     // Tack on additional info about the event. 
                     var fieldNames = data.PayloadNames;
                     for (int i = 0; i < fieldNames.Length; i++)
@@ -9105,6 +9114,15 @@ table {
                                 if (asTraceOperationStop != null)
                                 {
                                     var frameIdx = stackSource.Interner.FrameIntern("EventData Status " + asTraceOperationStop.Status);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                                    goto ADD_EVENT_FRAME;
+                                }
+
+                                var asWaitHandleWaitStart = data as WaitHandleWaitStartTraceData;
+                                if (asWaitHandleWaitStart != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData WaitSource " + asWaitHandleWaitStart.WaitSource);
                                     stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
 
                                     goto ADD_EVENT_FRAME;

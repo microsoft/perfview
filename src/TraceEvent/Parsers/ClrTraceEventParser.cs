@@ -191,6 +191,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             TypeDiagnostic = 0x8000000000,
 
             /// <summary>
+            /// Events for wait handle waits.
+            /// </summary>
+            WaitHandle = 0x40000000000,
+
+            /// <summary>
             /// Recommend default flags (good compromise on verbosity).
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
@@ -1686,6 +1691,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        public event Action<WaitHandleWaitStartTraceData> WaitHandleWaitStart
+        {
+            add
+            {
+                RegisterTemplate(new WaitHandleWaitStartTraceData(value, 301, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 1, "Start", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 301, WaitHandleWaitTaskGuid);
+            }
+        }
+
+        public event Action<WaitHandleWaitStopTraceData> WaitHandleWaitStop
+        {
+            add
+            {
+                RegisterTemplate(new WaitHandleWaitStopTraceData(value, 302, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 2, "Stop", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 302, WaitHandleWaitTaskGuid);
+            }
+        }
+
         public event Action<ModuleLoadUnloadTraceData> LoaderModuleDCStartV2
         {
             add
@@ -2157,6 +2186,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new TypeLoadStopTraceData(action, 74, 33, "TypeLoad", LoaderTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
         }
+        static private WaitHandleWaitStartTraceData WaitHandleWaitStartTemplate(Action<WaitHandleWaitStartTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new WaitHandleWaitStartTraceData(action, 301, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private WaitHandleWaitStopTraceData WaitHandleWaitStopTemplate(Action<WaitHandleWaitStopTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new WaitHandleWaitStopTraceData(action, 302, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
+        }
         static private JitInstrumentationDataTraceData JitInstrumentationDataTemplate(Action<JitInstrumentationDataTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new JitInstrumentationDataTraceData(action, 297, 34, "JitInstrumentationData", JitInstrumentationDataTaskGuid, 11, "InstrumentationData", ProviderGuid, ProviderName);
@@ -2187,7 +2224,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[145];
+                var templates = new TraceEvent[147];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2343,6 +2380,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[143] = GCFitBucketInfoTemplate(null);
                 templates[144] = ContentionLockCreatedTemplate(null);
 
+                templates[145] = new WaitHandleWaitStartTraceData(null, 301, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+                templates[146] = new WaitHandleWaitStopTraceData(null, 302, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
+
                 s_templates = templates;
             }
 
@@ -2409,6 +2449,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid AssemblyLoaderTaskGuid = new Guid(unchecked((int)0xbcf2339e), unchecked((short)0xb0a6), unchecked((short)0x452d), 0x96, 0x6c, 0x33, 0xac, 0x9d, 0xd8, 0x25, 0x73);
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
         private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
+        private static readonly Guid WaitHandleWaitTaskGuid = new Guid(unchecked((int)0xe90049d8), unchecked((short)0x8ab8), unchecked((short)0x4799), 0xb0, 0x72, 0xee, 0xf4, 0x12, 0x65, 0xbc, 0xa4);
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
         private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
@@ -10213,6 +10254,142 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<TypeLoadStopTraceData> m_target;
+        #endregion
+    }
+
+    public enum WaitHandleWaitSource
+    {
+        Unknown = 0x0,
+        MonitorWait = 0x1,
+    }
+
+    public sealed class WaitHandleWaitStartTraceData : TraceEvent
+    {
+        public WaitHandleWaitSource WaitSource { get { return (WaitHandleWaitSource)GetByteAt(0); } }
+        public Address AssociatedObjectID { get { return GetAddressAt(1); } }
+        public int ClrInstanceID { get { return GetInt16At(HostOffset(5, 1)); } }
+
+        #region Private
+        internal WaitHandleWaitStartTraceData(Action<WaitHandleWaitStartTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(7, 1)));
+            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(7, 1)));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<WaitHandleWaitStartTraceData>) value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+             Prefix(sb);
+             XmlAttrib(sb, "WaitSource", WaitSource);
+             XmlAttribHex(sb, "AssociatedObjectID", AssociatedObjectID);
+             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+             sb.Append("/>");
+             return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "WaitSource", "AssociatedObjectID", "ClrInstanceID"};
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return WaitSource;
+                case 1:
+                    return AssociatedObjectID;
+                case 2:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4398046511104; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<WaitHandleWaitStartTraceData> Action;
+        #endregion
+    }
+
+    public sealed class WaitHandleWaitStopTraceData : TraceEvent
+    {
+        public int ClrInstanceID { get { return GetInt16At(0); } }
+
+        #region Private
+        internal WaitHandleWaitStopTraceData(Action<WaitHandleWaitStopTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < 2));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<WaitHandleWaitStopTraceData>) value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+             Prefix(sb);
+             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+             sb.Append("/>");
+             return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ClrInstanceID"};
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 4398046511104; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<WaitHandleWaitStopTraceData> Action;
         #endregion
     }
 
