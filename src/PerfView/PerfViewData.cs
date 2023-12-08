@@ -5466,6 +5466,23 @@ table {
                         goto ADD_EVENT_FRAME;
                     }
 
+                    var asTraceOperationStart = data as TraceOperationStartArgs;
+                    if (asTraceOperationStart != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData OperationName " + asTraceOperationStart.OperationName);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        goto ADD_EVENT_FRAME;
+                    }
+
+                    var asTraceOperationStop = data as TraceOperationStopArgs;
+                    if (asTraceOperationStop != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData Status " + asTraceOperationStop.Status);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        goto ADD_EVENT_FRAME;
+                    }
 
                     var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
                     if (asSampleObjectAllocated != null)
@@ -9072,6 +9089,24 @@ table {
                                     var frameIdx = stackSource.Interner.FrameIntern("EventData Behavior " + asTaskWaitSend.Behavior);
                                     stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
                         
+                                    goto ADD_EVENT_FRAME;
+                                }
+
+                                var asTraceOperationStart = data as TraceOperationStartArgs;
+                                if (asTraceOperationStart != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData OperationName " + asTraceOperationStart.OperationName);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                                    goto ADD_EVENT_FRAME;
+                                }
+
+                                var asTraceOperationStop = data as TraceOperationStopArgs;
+                                if (asTraceOperationStop != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData Status " + asTraceOperationStop.Status);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
                                     goto ADD_EVENT_FRAME;
                                 }
 
