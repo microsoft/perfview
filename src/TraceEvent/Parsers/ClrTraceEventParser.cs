@@ -2188,11 +2188,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         static private WaitHandleWaitStartTraceData WaitHandleWaitStartTemplate(Action<WaitHandleWaitStartTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new WaitHandleWaitStartTraceData(action, 301, 39, "WaitHandleWait", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new WaitHandleWaitStartTraceData(action, 301, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 1, "Start", ProviderGuid, ProviderName);
         }
         static private WaitHandleWaitStopTraceData WaitHandleWaitStopTemplate(Action<WaitHandleWaitStopTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new WaitHandleWaitStopTraceData(action, 302, 39, "WaitHandleWait", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new WaitHandleWaitStopTraceData(action, 302, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private JitInstrumentationDataTraceData JitInstrumentationDataTemplate(Action<JitInstrumentationDataTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
