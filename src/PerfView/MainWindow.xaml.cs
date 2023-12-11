@@ -1047,6 +1047,8 @@ namespace PerfView
     /// </summary>
     public partial class MainWindow : Window
     {
+        private bool _testing;
+
         // TODO FIX NOW do a better job keeping track of open windows
         public int NumWindowsNeedingSaving;
 
@@ -1060,8 +1062,10 @@ namespace PerfView
         /// </summary>
         public ThemeViewModel ThemeViewModel { get; }
 
-        public MainWindow()
+        public MainWindow(bool testing = false)
         {
+            _testing = testing;
+
             ThemeViewModel = new ThemeViewModel(App.UserConfigData);
             InitializeComponent();
             Directory.HistoryLength = 25;
@@ -2055,7 +2059,11 @@ namespace PerfView
                 DoAbort(null, null);
             }
 
-            // DO NOT call Environment.Exit(0) here, it will kill the test runner, and tests won't complete.
+            // DO NOT call Environment.Exit(0) under tests, it will kill the test runner, and tests won't complete.
+            if (!_testing)
+            {
+                Environment.Exit(0);
+            }
         }
 
         // GUI Command objects.
