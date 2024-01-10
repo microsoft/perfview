@@ -1245,12 +1245,22 @@ InstallLTTng_Ubuntu()
     echo "Installing LTTng packages."
     ResetText
 
-    # Handle Ubuntu 22.04.
-    distro=$(lsb_release -c -s)
-    if [ ${distro} != 'jammy' ]; then
+    distroVersion=$(lsb_release -r -s)
+    majorVersion=${distroVersion%%.*}
+    if (( $majorVersion < 22 )); then
         apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust0
     else
-        apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust1
+        YellowText
+        echo "You're using Ubuntu 22 or newer. LTTng version available for this version does not work with .NET. Use -force to force installation."
+        ResetText
+
+        if [ "$forceInstall" == 1 ]; then
+            BlueText
+            echo "Installing LTTng anyway."
+            ResetText
+
+            apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust1
+        fi
     fi
 }
 
