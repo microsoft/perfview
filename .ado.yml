@@ -8,6 +8,14 @@ trigger:
 pr:
   - main
 
+schedules:
+  - cron: "0 0 * * 2" # Trigger on Tuesday at Midnight UTC
+    displayName: Weekly Build
+    branches:
+      include:
+        - main
+    always: true
+
 jobs:
   - job: PerfView_Debug
     pool:
