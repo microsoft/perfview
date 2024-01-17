@@ -39,14 +39,14 @@
 
   <!-- External dependencies -->
   <PropertyGroup>
-    <AzureCoreVersion>1.35.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.10.2</AzureIdentityVersion>
+    <AzureCoreVersion>1.36.0</AzureCoreVersion>
+    <AzureIdentityVersion>1.10.4</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
     <MicrosoftNETCorePortableCompatibilityVersion>1.0.2</MicrosoftNETCorePortableCompatibilityVersion>
-    <MicrosoftIdentityClientVersion>4.54.1</MicrosoftIdentityClientVersion>
-    <MicrosoftIdentityClientExtensionsMsalVersion>2.31.0</MicrosoftIdentityClientExtensionsMsalVersion>
-    <MicrosoftIdentityModelTokensVersion>6.22.0</MicrosoftIdentityModelTokensVersion>
-    <MicrosoftIdentityModelJsonWebTokensVersion>6.22.0</MicrosoftIdentityModelJsonWebTokensVersion>
+    <MicrosoftIdentityClientVersion>4.58.1</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>4.58.1</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>
+    <MicrosoftIdentityModelJsonWebTokensVersion>7.1.2</MicrosoftIdentityModelJsonWebTokensVersion>
     <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
     <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>

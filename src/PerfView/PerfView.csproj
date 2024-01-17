@@ -493,14 +493,14 @@
       <Link>Azure.Identity.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client)\lib\net461\Microsoft.Identity.Client.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client)\lib\net462\Microsoft.Identity.Client.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Identity.Client.dll</LogicalName>
       <Link>Microsoft.Identity.Client.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client_Extensions_Msal)\lib\net45\Microsoft.Identity.Client.Extensions.Msal.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client_Extensions_Msal)\lib\netstandard2.0\Microsoft.Identity.Client.Extensions.Msal.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Identity.Client.Extensions.Msal.dll</LogicalName>
