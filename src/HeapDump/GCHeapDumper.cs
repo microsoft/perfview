@@ -1052,6 +1052,7 @@ public class GCHeapDumper
                 bool pinned = root.IsPinned;
                 ComCallableWrapper ccwInfo = obj.HasComCallableWrapper ? obj.GetComCallableWrapper() : null;
 
+                // NOTE: If changing these names, need to document as a breaking change in release notes.
                 string name;
                 switch (kind)
                 {
