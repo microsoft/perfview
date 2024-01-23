@@ -39,35 +39,35 @@
 
   <!-- External dependencies -->
   <PropertyGroup>
-    <AzureCoreVersion>1.35.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.10.2</AzureIdentityVersion>
-    <MicroBuildCoreVersion>0.2.0</MicroBuildCoreVersion>
-    <MicrosoftNETCorePortableCompatibilityVersion>1.0.1</MicrosoftNETCorePortableCompatibilityVersion>
-    <MicrosoftIdentityClientVersion>4.54.1</MicrosoftIdentityClientVersion>
-    <MicrosoftIdentityClientExtensionsMsalVersion>2.31.0</MicrosoftIdentityClientExtensionsMsalVersion>
-    <MicrosoftIdentityModelTokensVersion>6.22.0</MicrosoftIdentityModelTokensVersion>
-    <MicrosoftIdentityModelJsonWebTokensVersion>6.22.0</MicrosoftIdentityModelJsonWebTokensVersion>
-    <MicrosoftSourceLinkGitHubVersion>1.1.1</MicrosoftSourceLinkGitHubVersion>
-    <MicrosoftWin32RegistryVersion>4.4.0</MicrosoftWin32RegistryVersion>
+    <AzureCoreVersion>1.36.0</AzureCoreVersion>
+    <AzureIdentityVersion>1.10.4</AzureIdentityVersion>
+    <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
+    <MicrosoftNETCorePortableCompatibilityVersion>1.0.2</MicrosoftNETCorePortableCompatibilityVersion>
+    <MicrosoftIdentityClientVersion>4.58.1</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>4.58.1</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>
+    <MicrosoftIdentityModelJsonWebTokensVersion>7.1.2</MicrosoftIdentityModelJsonWebTokensVersion>
+    <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
+    <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
-    <SystemCollectionsImmutableVersion>1.7.1</SystemCollectionsImmutableVersion>
-    <SystemDiagnosticsDiagnosticSourceVersion>6.0.1</SystemDiagnosticsDiagnosticSourceVersion>
+    <SystemCollectionsImmutableVersion>8.0.0</SystemCollectionsImmutableVersion>
+    <SystemDiagnosticsDiagnosticSourceVersion>8.0.0</SystemDiagnosticsDiagnosticSourceVersion>
     <SystemDiagnosticsProcessVersion>4.3.0</SystemDiagnosticsProcessVersion>
     <SystemDiagnosticsTraceSourceVersion>4.3.0</SystemDiagnosticsTraceSourceVersion>
     <SystemIOCompressionVersion>4.3.0</SystemIOCompressionVersion>
     <SystemIOUnmanagedMemoryStreamVersion>4.3.0</SystemIOUnmanagedMemoryStreamVersion>
-    <SystemMemoryVersion>4.5.4</SystemMemoryVersion>
+    <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemNetNameResolutionVersion>4.3.0</SystemNetNameResolutionVersion>
     <SystemNetRequestsVersion>4.3.0</SystemNetRequestsVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
-    <SystemReflectionMetadataVersion>1.8.1</SystemReflectionMetadataVersion>
-    <SystemReflectionTypeExtensionsVersion>4.3.0</SystemReflectionTypeExtensionsVersion>
-    <SystemRuntimeVersion>4.3.0</SystemRuntimeVersion>
+    <SystemReflectionMetadataVersion>8.0.0</SystemReflectionMetadataVersion>
+    <SystemReflectionTypeExtensionsVersion>4.7.0</SystemReflectionTypeExtensionsVersion>
+    <SystemRuntimeVersion>4.3.1</SystemRuntimeVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
-    <SystemSecurityCryptographyAlgorithmsVersion>4.3.0</SystemSecurityCryptographyAlgorithmsVersion>
-    <SystemTextEncodingsWebVersion>4.7.2</SystemTextEncodingsWebVersion>
-    <SystemTextJsonVersion>4.7.2</SystemTextJsonVersion>
+    <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
+    <SystemTextEncodingsWebVersion>8.0.0</SystemTextEncodingsWebVersion>
+    <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemThreadingTasksParallelVersion>4.3.0</SystemThreadingTasksParallelVersion>
     <SystemThreadingThreadVersion>4.3.0</SystemThreadingThreadVersion>
@@ -86,11 +86,11 @@
 
   <!-- Test dependencies -->
   <PropertyGroup>
-    <MicrosoftVisualStudioThreadingVersion>15.3.23</MicrosoftVisualStudioThreadingVersion>
-    <XunitVersion>2.4.0</XunitVersion>
-    <XunitExtensibilityCoreVersion>2.4.0</XunitExtensibilityCoreVersion>
-    <XunitExtensibilityExecutionVersion>2.4.0</XunitExtensibilityExecutionVersion>
-    <XunitRunnerVisualstudioVersion>2.4.0</XunitRunnerVisualstudioVersion>
+    <MicrosoftVisualStudioThreadingVersion>17.8.14</MicrosoftVisualStudioThreadingVersion>
+    <XunitVersion>2.6.5</XunitVersion>
+    <XunitExtensibilityCoreVersion>2.6.5</XunitExtensibilityCoreVersion>
+    <XunitExtensibilityExecutionVersion>2.6.5</XunitExtensibilityExecutionVersion>
+    <XunitRunnerVisualstudioVersion>2.5.6</XunitRunnerVisualstudioVersion>
     <XunitStaFactVersion>0.3.2</XunitStaFactVersion>
   </PropertyGroup>
 

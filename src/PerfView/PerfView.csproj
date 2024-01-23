@@ -493,14 +493,14 @@
       <Link>Azure.Identity.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client)\lib\net461\Microsoft.Identity.Client.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client)\lib\net462\Microsoft.Identity.Client.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Identity.Client.dll</LogicalName>
       <Link>Microsoft.Identity.Client.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client_Extensions_Msal)\lib\net45\Microsoft.Identity.Client.Extensions.Msal.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_Identity_Client_Extensions_Msal)\lib\netstandard2.0\Microsoft.Identity.Client.Extensions.Msal.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Identity.Client.Extensions.Msal.dll</LogicalName>
@@ -528,7 +528,7 @@
       <Link>System.Buffers.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Diagnostics_DiagnosticSource)\lib\net461\System.Diagnostics.DiagnosticSource.dll">
+    <EmbeddedResource Include="$(PkgSystem_Diagnostics_DiagnosticSource)\lib\net462\System.Diagnostics.DiagnosticSource.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Diagnostics.DiagnosticSource.dll</LogicalName>
@@ -549,14 +549,14 @@
       <Link>System.Numerics.Vectors.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Text_Encodings_Web)\lib\net461\System.Text.Encodings.Web.dll">
+    <EmbeddedResource Include="$(PkgSystem_Text_Encodings_Web)\lib\net462\System.Text.Encodings.Web.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Text.Encodings.Web.dll</LogicalName>
       <Link>System.Text.Encodings.Web.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Text_Json)\lib\net461\System.Text.Json.dll">
+    <EmbeddedResource Include="$(PkgSystem_Text_Json)\lib\net462\System.Text.Json.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Text.Json.dll</LogicalName>
