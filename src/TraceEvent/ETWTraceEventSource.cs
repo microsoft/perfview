@@ -84,6 +84,15 @@ namespace Microsoft.Diagnostics.Tracing
             this.fileNames = fileNames;
         }
 
+        /// <summary>
+        /// Allows users to change the characteristics of dispatch behavior.
+        /// Behavior is undefined if this field is changed while processing is in-progress.
+        /// </summary>
+        public TraceEventSourceDispatchBehavior DispatchBehavior
+        {
+            get; set;
+        }
+
         // Process is called after all desired subscriptions have been registered.  
         /// <summary>
         /// Processes all the events in the data source, issuing callbacks that were subscribed to.  See
@@ -839,6 +848,11 @@ namespace Microsoft.Diagnostics.Tracing
             // Looking at rawData will give you the truth however. 
             anEvent.DebugValidate();
 
+            if (DispatchBehavior.HasFlag(TraceEventSourceDispatchBehavior.FetchTaskIDFromEventStream))
+            {
+                anEvent.task = (TraceEventTask)rawData->EventHeader.Task;
+            }
+
             if (anEvent.NeedsFixup)
             {
                 anEvent.FixupData();
@@ -979,4 +993,23 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         Session,
     };
+
+
+    /// <summary>
+    /// Options that allow for manipulation of behavior during dispatch.
+    /// </summary>
+    [Flags]
+    public enum TraceEventSourceDispatchBehavior
+    {
+        /// <summary>
+        /// Use the default dispatch behavior.
+        /// </summary>
+        Default = 0,
+
+        /// <summary>
+        /// Fetch the TaskID for each event from the event stream even if the event has a parser with a hardcoded TaskID.
+        /// This is useful for cases where event producers specify different TaskIDs for the same event ID.
+        /// </summary>
+        FetchTaskIDFromEventStream = 1,
+    }
 }
