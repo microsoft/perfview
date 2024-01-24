@@ -8,7 +8,7 @@ internal static class GCHeapDumpNames
     internal const string OtherHandlesRootTitle = "other Handles";
     internal const string DependentHandlesRootTitle = "Dependent Handles";
     internal const string LocalVarsRootTitle = "local vars";
-    internal const string PinnedLocalVarsRootTitle= "Pinned local vars";
+    internal const string PinnedLocalVarsRootTitle = "Pinned local vars";
     internal const string COMWinRTRootTitle = "COM/WinRT Objects";
     internal const string OtherRootsTitle = "other roots";
 
