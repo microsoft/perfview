@@ -2504,7 +2504,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Per heap statistics
         /// </summary>
-        public List<GCPerHeapHistory> PerHeapHistories = new List<GCPerHeapHistory>();
+        public List<GCPerHeapHistory> PerHeapHistories;
         /// <summary>
         /// Sum of the pinned plug sizes
         /// </summary>
@@ -2806,7 +2806,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return gc.AllocedSinceLastGCBasedOnAllocTickMB[(int)gen];
             }
 
-            if (gc.PerHeapHistories?.Count != 0 && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories?.Count != 0)
+            if (gc.PerHeapHistories != null && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories != null)
             {
                 double TotalAllocated = 0;
                 if (gc.Index > 0)
@@ -4721,6 +4721,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
 
+                if (_event.PerHeapHistories == null) { _event.PerHeapHistories = new List<GCPerHeapHistory>(); }
                 _event.PerHeapHistories.Add(hist);
             }
         }
