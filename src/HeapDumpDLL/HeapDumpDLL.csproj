@@ -48,6 +48,7 @@
     <Compile Include="..\HeapDump\GCHeapDump.cs" />
     <Compile Include="..\HeapDump\Utilities\*.cs" />
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />

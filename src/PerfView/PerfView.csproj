@@ -141,6 +141,9 @@
   </Target>
 
   <ItemGroup>
+    <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs">
+      <Link>memory\GCHeapDumpNames.cs</Link>
+    </Compile>
     <Compile Include="..\heapDump\GCHeapDump.cs">
       <Link>memory\GCHeapDump.cs</Link>
     </Compile>

@@ -53,6 +53,7 @@
 
   <ItemGroup>
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->
