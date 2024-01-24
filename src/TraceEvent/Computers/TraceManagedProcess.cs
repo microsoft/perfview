@@ -2806,7 +2806,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return gc.AllocedSinceLastGCBasedOnAllocTickMB[(int)gen];
             }
 
-            if (gc.PerHeapHistories != null && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories != null)
+            if (gc.PerHeapHistories?.Count != 0 && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories?.Count != 0)
             {
                 double TotalAllocated = 0;
                 if (gc.Index > 0)
