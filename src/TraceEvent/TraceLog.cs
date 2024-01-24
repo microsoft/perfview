@@ -645,6 +645,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             TraceEvent eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
             eventInRealTimeSource.userData = toSend.userData;
             eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
+            eventInRealTimeSource.myBuffer = toSend.myBuffer;
             realTimeSource.Dispatch(eventInRealTimeSource);
 
             // Optimization, remove 'toSend' from the finalization queue.
@@ -653,6 +654,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Do the cleanup, but also keep toSend alive during the dispatch and until finalization was suppressed.
             System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);
             toSend.instanceContainerID = null;
+            eventInRealTimeSource.myBuffer = IntPtr.Zero;
         }
 
         /// <summary>
