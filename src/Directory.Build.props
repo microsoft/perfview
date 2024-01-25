@@ -22,12 +22,12 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <FastSerializationVersion>3.1.7</FastSerializationVersion>
-    <HeapDumpDllVersion>3.1.7</HeapDumpDllVersion>
-    <MemoryGraphVersion>3.1.7</MemoryGraphVersion>
-    <PerfViewVersion>3.1.7</PerfViewVersion>
-    <TraceEventVersion>3.1.7</TraceEventVersion>
-    <UtilitiesVersion>3.1.7</UtilitiesVersion>
+    <FastSerializationVersion>3.1.8</FastSerializationVersion>
+    <HeapDumpDllVersion>3.1.8</HeapDumpDllVersion>
+    <MemoryGraphVersion>3.1.8</MemoryGraphVersion>
+    <PerfViewVersion>3.1.8</PerfViewVersion>
+    <TraceEventVersion>3.1.8</TraceEventVersion>
+    <UtilitiesVersion>3.1.8</UtilitiesVersion>
   </PropertyGroup>
 
   <!-- Support files and analyzers -->
