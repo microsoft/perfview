@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/cbl-mariner/base/core:2.0@sha256:c50a804cc7918e1011ec2fee33d88fdfdd2a7007cda62684da90bed912ffb758
+FROM mcr.microsoft.com/cbl-mariner/base/core:2.0@sha256:82314abb594a695fd8817774e8b7f101934902cc1d99b3075e80acbc8b9b23ee
 
 # Copy perfcollect sources.
 COPY . /src/
