@@ -1,0 +1,17 @@
+steps:
+- task: DockerInstaller@0
+  displayName: 'Install Docker'
+
+- task: Bash@3
+  displayName: 'Build Containers'
+  inputs:
+    targetType: filePath
+    filePath: './src/perfcollect/tests/build-containers.sh'
+    workingDirectory: src/perfcollect/tests
+
+- task: Bash@3
+  displayName: 'Run Tests'
+  inputs:
+    targetType: filePath
+    filePath: './src/perfcollect/tests/run-containers.sh'
+    workingDirectory: src/perfcollect/tests

@@ -1,0 +1,47 @@
+parameters:
+  flavor: 'Debug'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Use .NET SDK'
+  inputs:
+    version: 8.0.x
+
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet.exe'
+  inputs:
+    versionSpec: 6.3.0
+
+- task: NuGetCommand@2
+  displayName: 'NuGet Restore PerfView.sln'
+  inputs:
+    restoreSolution: PerfView.sln
+    feedsToUse: config
+    includeNuGetOrg: false
+    nugetConfigPath: '.\NuGet.config'
+
+- task: MSBuild@1
+  displayName: 'Build PerfView.sln'
+  inputs:
+    solution: PerfView.sln
+    configuration: ${{ parameters.flavor }}
+
+- task: VSTest@2
+  displayName: 'Run Tests'
+  inputs:
+    testAssemblyVer2: |
+      **\bin\**\LinuxTracingTests.dll
+      **\bin\**\CtfTracingTests.dll
+      **\bin\**\TraceEventTests.dll
+      **\bin\**\PerfViewTests.dll
+    testRunTitle: 'PerfView - ${{ parameters.flavor }}'
+    runTestsInIsolation: true
+    otherConsoleOptions: '--blame'
+
+- task: CopyFiles@2
+  displayName: 'Copy Files to Artifacts Staging'
+  inputs:
+    SourceFolder: '$(system.defaultworkingdirectory)'
+    Contents: '**\bin\$(BuildConfiguration)\**'
+    TargetFolder: '$(build.artifactstagingdirectory)'
+  condition: succeededOrFailed()

@@ -1,20 +1,8 @@
-# https://aka.ms/yaml
-
-name: "$(date:yyyyMMdd)$(rev:.r)"
-
 trigger:
   - main
 
 pr:
   - main
-
-schedules:
-  - cron: "0 0 * * 2" # Trigger on Tuesday at Midnight UTC
-    displayName: Weekly Build
-    branches:
-      include:
-        - main
-    always: true
 
 jobs:
   - job: PerfView_Debug
@@ -24,54 +12,11 @@ jobs:
       demands:
       - msbuild
       - vstest
-    variables:
-      Codeql.Enabled: true
-      Codeql.BuildIdentifier: PerfView
 
     steps:
-    - task: UseDotNet@2
-      displayName: 'Use .NET SDK'
-      inputs:
-        version: 8.0.x
-
-    - task: NuGetToolInstaller@1
-      displayName: 'Install NuGet.exe'
-      inputs:
-        versionSpec: 6.3.0
-
-    - task: NuGetCommand@2
-      displayName: 'NuGet Restore PerfView.sln'
-      inputs:
-        restoreSolution: PerfView.sln
-        feedsToUse: config
-        includeNuGetOrg: false
-        nugetConfigPath: '.\NuGet.config'
-
-    - task: MSBuild@1
-      displayName: 'Build PerfView.sln'
-      inputs:
-        solution: PerfView.sln
-        configuration: Debug
-
-    - task: VSTest@2
-      displayName: 'Run Tests'
-      inputs:
-        testAssemblyVer2: |
-         **\bin\**\LinuxTracingTests.dll
-         **\bin\**\CtfTracingTests.dll
-         **\bin\**\TraceEventTests.dll
-         **\bin\**\PerfViewTests.dll
-        testRunTitle: 'PerfView - Debug'
-        runTestsInIsolation: true
-        otherConsoleOptions: '--blame'
-
-    - task: CopyFiles@2
-      displayName: 'Copy Files to Artifacts Staging'
-      inputs:
-        SourceFolder: '$(system.defaultworkingdirectory)'
-        Contents: '**\bin\$(BuildConfiguration)\**'
-        TargetFolder: '$(build.artifactstagingdirectory)'
-      condition: succeededOrFailed()
+    - template: /.pipelines/perfview-job.yml
+      parameters:
+        flavor: 'Debug'
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts'
@@ -89,48 +34,9 @@ jobs:
       - vstest
 
     steps:
-    - task: UseDotNet@2
-      displayName: 'Use .NET SDK'
-      inputs:
-        version: 8.0.x
-
-    - task: NuGetToolInstaller@1
-      displayName: 'Install NuGet.exe'
-      inputs:
-        versionSpec: 6.3.0
-
-    - task: NuGetCommand@2
-      displayName: 'NuGet Restore PerfView.sln'
-      inputs:
-        restoreSolution: PerfView.sln
-        feedsToUse: config
-        includeNuGetOrg: false
-        nugetConfigPath: '.\NuGet.config'
-
-    - task: MSBuild@1
-      displayName: 'Build PerfView.sln'
-      inputs:
-        solution: PerfView.sln
-        configuration: Release
-
-    - task: VSTest@2
-      displayName: 'Run Tests'
-      inputs:
-        testAssemblyVer2: |
-         **\bin\**\LinuxTracingTests.dll
-         **\bin\**\CtfTracingTests.dll
-         **\bin\**\TraceEventTests.dll
-         **\bin\**\PerfViewTests.dll
-        testRunTitle: 'PerfView - Release'
-        runTestsInIsolation: true
-        otherConsoleOptions: '--blame'
-
-    - task: CopyFiles@2
-      displayName: 'Copy Files to Artifacts Staging'
-      inputs:
-        SourceFolder: '$(system.defaultworkingdirectory)'
-        Contents: '**\bin\$(BuildConfiguration)\**'
-        TargetFolder: '$(build.artifactstagingdirectory)'
+    - template: /.pipelines/perfview-job.yml
+      parameters:
+        flavor: 'Release'
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact'
@@ -144,20 +50,4 @@ jobs:
       name: Azure Pipelines
 
     steps:
-    - task: DockerInstaller@0
-      displayName: 'Install Docker'
-
-    - task: Bash@3
-      displayName: 'Build Containers'
-      inputs:
-        targetType: filePath
-        filePath: './src/perfcollect/tests/build-containers.sh'
-        workingDirectory: src/perfcollect/tests
-
-    - task: Bash@3
-      displayName: 'Run Tests'
-      inputs:
-        targetType: filePath
-        filePath: './src/perfcollect/tests/run-containers.sh'
-        workingDirectory: src/perfcollect/tests
-
+    - template: /.pipelines/perfcollect-job.yml
