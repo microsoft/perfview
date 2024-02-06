@@ -8,6 +8,14 @@ trigger:
 pr:
   - main
 
+schedules:
+  - cron: "0 0 * * 2" # Trigger on Tuesday at Midnight UTC
+    displayName: Weekly Build
+    branches:
+      include:
+        - main
+    always: true
+
 jobs:
   - job: PerfView_Debug
     pool:
@@ -22,9 +30,9 @@ jobs:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 3.1'
+      displayName: 'Use .NET SDK'
       inputs:
-        version: 3.1.x
+        version: 8.0.x
 
     - task: NuGetToolInstaller@1
       displayName: 'Install NuGet.exe'
@@ -82,9 +90,9 @@ jobs:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK 3.1'
+      displayName: 'Use .NET SDK'
       inputs:
-        version: 3.1.x
+        version: 8.0.x
 
     - task: NuGetToolInstaller@1
       displayName: 'Install NuGet.exe'

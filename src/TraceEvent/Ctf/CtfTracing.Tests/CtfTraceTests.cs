@@ -226,11 +226,15 @@ namespace CtfTracingTests
                     {
                         case 0:
                             Assert.Equal(6668, evt.EventID);
+#pragma warning disable CS0618
                             Assert.Equal(482332487730801, evt.TimeStampQPC);
+#pragma warning restore CS0618
                             break;
                         case 1:
                             Assert.Equal(6668, evt.EventID);
+#pragma warning disable CS0618
                             Assert.Equal(482332675464150, evt.TimeStampQPC);
+#pragma warning restore CS0618
                             break;
                         default:
                             throw new InvalidOperationException();
