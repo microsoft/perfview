@@ -124,6 +124,7 @@
                         <MenuItem Header="Show experimental GC features." x:Name="Option_ExperimentalGCFeatures" IsCheckable="true" Click="ToggleExperimentalGCFeatures" ToolTip="Enable or disable experimental GC features."/>
                     </MenuItem>
                     <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
+                    <MenuItem Header="Truncate raw data when dumping an event" x:Name="Option_TruncateRawEventData" IsCheckable="True" Click="ToggleTruncateRawEventData" ToolTip="Controls whether or not a raw event dumped from the events view is truncated." />
                     <MenuItem Header="Theme">
                         <MenuItem Header="Light" x:Name="Theme_Light" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>
                         <MenuItem Header="Dark" x:Name="Theme_Dark" IsChecked="{Binding Path=ThemeViewModel.IsDarkTheme}" Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}"/>
