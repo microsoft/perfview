@@ -1210,7 +1210,7 @@ namespace PerfView
         }
 
         /// <summary>
-        /// Initial read-in of the user settings to check if they had previously opted-in for the DoNotTruncateRawEventData option
+        /// Initial read-in of the user settings to check if they had previously opted-in for the TruncateRawEventData option
         /// </summary>
         public void InitializeTruncateRawEventData()
         {
