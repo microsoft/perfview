@@ -106,8 +106,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// Resolve symbols for the specified module.
         /// </summary>
         /// <param name="moduleName">The name of the module (without the dll or exe suffix).</param>
-        /// <returns>true if it tries to resolve the module, or false if it already tried</returns>
-        public bool ResolveSymbols(string moduleName)
+        public void ResolveSymbols(string moduleName)
         {
             if (!_resolvedSymbolModules.Contains(moduleName))
             {
@@ -156,10 +155,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
                 // Mark the module as resolved so that we don't try again.
                 _resolvedSymbolModules.Add(moduleName);
-                return true;
             }
-
-            return false;
         }
 
         /// <summary>
