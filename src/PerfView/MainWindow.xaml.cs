@@ -1144,6 +1144,7 @@ namespace PerfView
             // Initialize configuration options.
             InitializeOpenToLastUsedDirectory();
             InitializeDoNotCompressStackFramesOnCopy();
+            InitializeTruncateRawEventData();
 
             InitializeFeedback();
         }
@@ -1206,6 +1207,35 @@ namespace PerfView
             App.UserConfigData["ExperimentalGCFeatures"] = newValue.ToString();
             Option_ExperimentalGCFeatures.IsChecked = newValue;
             Stats.GcStats.EnableExperimentalFeatures = newValue;
+        }
+
+        /// <summary>
+        /// Initial read-in of the user settings to check if they had previously opted-in for the TruncateRawEventData option
+        /// </summary>
+        public void InitializeTruncateRawEventData()
+        {
+            bool willTruncate;
+            if (!bool.TryParse(App.UserConfigData["TruncateRawEventData"], out willTruncate))
+            {
+                // the default behavior of PerfView has always been to truncate the event data
+                // so if the TryParse fails for any reason, then opt for the original behavior
+                willTruncate = true;
+            }
+            Option_TruncateRawEventData.IsChecked = willTruncate;
+            EventWindow.TruncateRawEventData = willTruncate;
+        }
+
+        /// <summary>
+        /// Toggles the option to truncate or not the raw event data when an event is dumped from the Events view
+        /// </summary>
+        public void ToggleTruncateRawEventData(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["TruncateRawEventData"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["TruncateRawEventData"] = newValue.ToString();
+            Option_TruncateRawEventData.IsChecked = newValue;
+            EventWindow.TruncateRawEventData = newValue;
         }
 
         /// <summary>
