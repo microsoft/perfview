@@ -3388,6 +3388,30 @@ table {
         #endregion
     }
 
+    /// <summary>
+    /// Generates an ASP.NET Core Stats HTML page
+    /// </summary>
+    public class PerfViewAspNetCoreStats : PerfViewHtmlReport
+    {
+        public PerfViewAspNetCoreStats(PerfViewFile dataFile) : base(dataFile, "ASP.NET Core Stats") { }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        {
+            writer.WriteLine("<H2>ASP.NET Core Request Statistics</H2>");
+
+            var dispatcher = dataFile.Events.GetSource();
+
+
+
+            writer.Flush();
+        }
+
+        protected override string DoCommand(string command, StatusBar worker)
+        {
+            return base.DoCommand(command, worker);
+        }
+    }
+
     public class PerfViewEventStats : PerfViewHtmlReport
     {
         public PerfViewEventStats(PerfViewFile dataFile) : base(dataFile, "EventStats") { }
@@ -7160,6 +7184,7 @@ table {
             bool hasAssemblyLoad = false;
             bool hasJIT = false;
             bool hasUserCrit = false;
+            bool hasAspNetCoreHosting = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -7173,6 +7198,11 @@ table {
                 if (!hasAspNet && name.StartsWith("AspNetReq"))
                 {
                     hasAspNet = true;
+                }
+
+                if(!hasAspNetCoreHosting && counts.ProviderName.Equals("Microsoft.AspNetCore.Hosting", StringComparison.OrdinalIgnoreCase) && name.StartsWith("Request"))
+                {
+                    hasAspNetCoreHosting = true;
                 }
 
                 if (!hasIis && name.StartsWith("IIS"))
@@ -7532,6 +7562,11 @@ table {
             if (hasIis)
             {
                 advanced.Children.Add(new PerfViewIisStats(this));
+            }
+
+            if(hasAspNetCoreHosting)
+            {
+                advanced.Children.Add(new PerfViewAspNetCoreStats(this));
             }
 
             if (hasProjectNExecutionTracingEvents)
