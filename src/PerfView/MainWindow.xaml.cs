@@ -1048,6 +1048,8 @@ namespace PerfView
     /// </summary>
     public partial class MainWindow : Window
     {
+        private bool _testing;
+
         // TODO FIX NOW do a better job keeping track of open windows
         public int NumWindowsNeedingSaving;
 
@@ -1061,8 +1063,10 @@ namespace PerfView
         /// </summary>
         public ThemeViewModel ThemeViewModel { get; }
 
-        public MainWindow()
+        public MainWindow(bool testing = false)
         {
+            _testing = testing;
+
             ThemeViewModel = new ThemeViewModel(App.UserConfigData);
             InitializeComponent();
             Directory.HistoryLength = 25;
@@ -1141,6 +1145,7 @@ namespace PerfView
             // Initialize configuration options.
             InitializeOpenToLastUsedDirectory();
             InitializeDoNotCompressStackFramesOnCopy();
+            InitializeTruncateRawEventData();
 
             _ = InitializeFeedbackAsync();
         }
@@ -1203,6 +1208,35 @@ namespace PerfView
             App.UserConfigData["ExperimentalGCFeatures"] = newValue.ToString();
             Option_ExperimentalGCFeatures.IsChecked = newValue;
             Stats.GcStats.EnableExperimentalFeatures = newValue;
+        }
+
+        /// <summary>
+        /// Initial read-in of the user settings to check if they had previously opted-in for the TruncateRawEventData option
+        /// </summary>
+        public void InitializeTruncateRawEventData()
+        {
+            bool willTruncate;
+            if (!bool.TryParse(App.UserConfigData["TruncateRawEventData"], out willTruncate))
+            {
+                // the default behavior of PerfView has always been to truncate the event data
+                // so if the TryParse fails for any reason, then opt for the original behavior
+                willTruncate = true;
+            }
+            Option_TruncateRawEventData.IsChecked = willTruncate;
+            EventWindow.TruncateRawEventData = willTruncate;
+        }
+
+        /// <summary>
+        /// Toggles the option to truncate or not the raw event data when an event is dumped from the Events view
+        /// </summary>
+        public void ToggleTruncateRawEventData(object sender, RoutedEventArgs e)
+        {
+            bool currentValue;
+            bool.TryParse(App.UserConfigData["TruncateRawEventData"], out currentValue);
+            bool newValue = !currentValue;
+            App.UserConfigData["TruncateRawEventData"] = newValue.ToString();
+            Option_TruncateRawEventData.IsChecked = newValue;
+            EventWindow.TruncateRawEventData = newValue;
         }
 
         /// <summary>
@@ -2056,7 +2090,11 @@ namespace PerfView
                 DoAbort(null, null);
             }
 
-            // DO NOT call Environment.Exit(0) here, it will kill the test runner, and tests won't complete.
+            // DO NOT call Environment.Exit(0) under tests, it will kill the test runner, and tests won't complete.
+            if (!_testing)
+            {
+                Environment.Exit(0);
+            }
         }
 
         // GUI Command objects.

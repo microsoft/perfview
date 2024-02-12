@@ -5457,6 +5457,23 @@ table {
                         goto ADD_EVENT_FRAME;
                     }
 
+                    var asTraceOperationStart = data as TraceOperationStartArgs;
+                    if (asTraceOperationStart != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData OperationName " + asTraceOperationStart.OperationName);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        goto ADD_EVENT_FRAME;
+                    }
+
+                    var asTraceOperationStop = data as TraceOperationStopArgs;
+                    if (asTraceOperationStop != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData Status " + asTraceOperationStop.Status);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                        goto ADD_EVENT_FRAME;
+                    }
 
                     var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
                     if (asSampleObjectAllocated != null)
@@ -5536,6 +5553,15 @@ table {
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ShareAccess: " + asFileCreate.ShareAccess), stackIndex);
                         // stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateDispostion: " + asFileCreate.CreateDispostion), stackIndex);
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileName: " + asFileCreate.FileName), stackIndex);
+                        goto ADD_EVENT_FRAME;
+                    }
+
+                    var asWaitHandleWaitStart = data as WaitHandleWaitStartTraceData;
+                    if (asWaitHandleWaitStart != null)
+                    {
+                        var frameIdx = stackSource.Interner.FrameIntern("EventData WaitSource " + asWaitHandleWaitStart.WaitSource);
+                        stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
                         goto ADD_EVENT_FRAME;
                     }
 
@@ -9018,6 +9044,33 @@ table {
                                     goto ADD_EVENT_FRAME;
                                 }
 
+                                var asTraceOperationStart = data as TraceOperationStartArgs;
+                                if (asTraceOperationStart != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData OperationName " + asTraceOperationStart.OperationName);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                                    goto ADD_EVENT_FRAME;
+                                }
+
+                                var asTraceOperationStop = data as TraceOperationStopArgs;
+                                if (asTraceOperationStop != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData Status " + asTraceOperationStop.Status);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                                    goto ADD_EVENT_FRAME;
+                                }
+
+                                var asWaitHandleWaitStart = data as WaitHandleWaitStartTraceData;
+                                if (asWaitHandleWaitStart != null)
+                                {
+                                    var frameIdx = stackSource.Interner.FrameIntern("EventData WaitSource " + asWaitHandleWaitStart.WaitSource);
+                                    stackIndex = stackSource.Interner.CallStackIntern(frameIdx, stackIndex);
+
+                                    goto ADD_EVENT_FRAME;
+                                }
+
                                 // Tack on event nam
                                 ADD_EVENT_FRAME:
                                 var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
@@ -9615,7 +9668,7 @@ table {
     public class ProcessDumpPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "Process Dump"; } }
-        public override string[] FileExtensions { get { return new string[] { ".dmp", ".hdmp" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".dmp", ".hdmp", ".mdmp" }; } }
 
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {

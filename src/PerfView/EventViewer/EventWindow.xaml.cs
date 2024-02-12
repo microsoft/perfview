@@ -27,6 +27,8 @@ namespace PerfView
     /// </summary>
     public partial class EventWindow : WindowBase
     {
+        public static bool TruncateRawEventData = true;
+
         public EventWindow(Window parent, EventSource source) : base(parent)
         {
             throw new NotImplementedException();
@@ -966,7 +968,7 @@ namespace PerfView
             var eventData = traceLog.GetEvent(elem.Index);
             if (eventData != null)
             {
-                string eventDataAsString = eventData.Dump(true, true);
+                string eventDataAsString = eventData.Dump(true, TruncateRawEventData);
                 StatusBar.LogWriter.WriteLine(eventDataAsString);
                 StatusBar.OpenLog();
                 StatusBar.Status = "Event Dumped to log.";
