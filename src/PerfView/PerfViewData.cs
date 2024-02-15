@@ -3393,22 +3393,250 @@ table {
     /// </summary>
     public class PerfViewAspNetCoreStats : PerfViewHtmlReport
     {
+        private const string _hostingProvider = "Microsoft.AspNetCore.Hosting";
+        private const string _eventManifestData = "ManifestData";
+        private const string _eventRequestStart = "Request/Start";
+        private const string _eventRequestStop = "Request/Stop";
+        private const string _eventHostStart = "Host/Start";
+        private const string _eventHostStop = "Host/Stop";
+        private const string _eventUnhandledException = "UnhandledException";
+        private const string _eventServerReady = "ServerReady";
+        //private const string _iloggerProvider = "Microsoft-Extensions-Logging";
+
+        // master requests dictionary
+        private Dictionary<Guid, ANCHostingRequest> requests = new Dictionary<Guid, ANCHostingRequest>();
+
+        // holds non-request events like host/start and stop, etc.
+        private List<OtherHostingEvent> otherEvents = new List<OtherHostingEvent>();
+
         public PerfViewAspNetCoreStats(PerfViewFile dataFile) : base(dataFile, "ASP.NET Core Stats") { }
 
-        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter outputWriter, string fileName, TextWriter log)
         {
-            writer.WriteLine("<H2>ASP.NET Core Request Statistics</H2>");
+            outputWriter.WriteLine("<H2>ASP.NET Core Request Statistics</H2>");
 
-            var dispatcher = dataFile.Events.GetSource();
+            // example output for request start event:
+            // data.TaskName = "Request"
+            // data.OpcodeName = "Start"
+            // data.EventName = "Request/Start"
+            // data.ProcessID
+            // data.ActivityID ==> use StartStopActivityComputer.ActivityPathString(Guid) for displaying
+            //                 ==> StartStopActivityComputer.IsActivityPath(guid, processID)
+            // data.PayloadNames = {"method", "path"}
+            // data.PayloadByName("method"|"path"|etc.) cast to string if appropriate (since the method returns object)
 
+            // request/stop does not contain status code or anything like that
+            /* 
+             * some possible events (ref: https://source.dot.net/#Microsoft.AspNetCore.Hosting/Internal/HostingEventSource.cs):
+             * Request/Start and Request/Stop
+             * ManifestData
+             * Host/Start and Host/Stop
+             * UnhandledException
+             * ServerReady
+             */
 
+            /* generally we are focusing on only one process' events; however, it's possible multiple processes
+             * were emitting Microsoft.AspNetCore.Hosting events. So we need the ability to track more than one and associate
+             * each event with its specific PID.
+             * Thus using a Dictionary where the key is PID, and each value is a SortedList of requests, sorted by StartTimeRelativeMSec
+             */
 
-            writer.Flush();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            // using the pull/foreach model for iterating through the TraceLog events
+            foreach (TraceEvent traceEvent in dataFile.Events)
+            {
+                if (traceEvent.ProviderName.Equals(_hostingProvider))
+                {
+                    // determine which event we're dealing with
+                    switch (traceEvent.EventName)
+                    {
+                        case _eventRequestStart:
+                            if (requests.TryGetValue(traceEvent.ActivityID, out ANCHostingRequest request))
+                            {
+                                // request exists, sanity PID check and update
+                                if (request.ProcessID == traceEvent.ProcessID)
+                                {
+                                    request.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                                    request.Method = (string)traceEvent.PayloadByName("method");
+                                    request.Path = (string)traceEvent.PayloadByName("path");
+                                }
+                                else
+                                {
+                                    // activityId matches but PID is different, this shouldn't happen?
+                                    log.WriteLine("AspNetCoreStats encountered an identical ActivityId between processes on a request/start. Ignoring this one.");
+                                }
+
+                            }
+                            else
+                            {
+                                // request does not exist yet, create and track it
+                                request = new ANCHostingRequest(traceEvent);
+                                request.Method = (string)traceEvent.PayloadByName("method");
+                                request.Path = (string)traceEvent.PayloadByName("path");
+                                request.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                                requests.Add(request.ActivityId, request);
+                            }
+
+                            break;
+
+                        case _eventRequestStop:
+                            if (requests.TryGetValue(traceEvent.ActivityID, out request))
+                            {
+                                // request exists, sanity PID check and create if necessary
+                                if (request.ProcessID == traceEvent.ProcessID)
+                                {
+                                    request.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                                }
+                                else
+                                {
+                                    // activityId matches but PID is different, this shouldn't happen?
+                                    log.WriteLine("AspNetCoreStats encountered an identical ActivityId between processes on a request/stop. Ignoring this one.");
+                                }
+
+                            }
+                            else
+                            {
+                                // request does not exist yet, create and track it
+                                request = new ANCHostingRequest(traceEvent);
+                                request.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                                requests.Add(request.ActivityId, request);
+                            }
+
+                            break;
+
+                        case _eventUnhandledException:
+                            if (traceEvent.ActivityID != null && requests.TryGetValue(traceEvent.ActivityID, out request))
+                            {
+                                // request exists, sanity PID check and create if necessary
+                                if (request.ProcessID == traceEvent.ProcessID)
+                                {
+                                    request.HasUnhandledException = true;
+                                }
+                                else
+                                {
+                                    // activityId matches but PID is different, this shouldn't happen?
+                                    log.WriteLine("AspNetCoreStats encountered an identical ActivityId between processes on an UnhandledException event. Ignoring this one.");
+                                }
+                            }
+                            else
+                            {
+                                otherEvents.Add(new OtherHostingEvent(traceEvent));
+                            }
+                            break;
+
+                        case _eventManifestData:
+                            // ignore
+                            break;
+
+                        case _eventHostStart:
+                        case _eventHostStop:
+                        case _eventServerReady:
+                        default:
+                            otherEvents.Add(new OtherHostingEvent(traceEvent));
+                            break;
+                    }
+                }
+                else continue;
+
+            }
+
+            sw.Stop();
+            log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to iterate through all events.");
+
+            // at this point we have all the relevant events stored, need to start processing and building the HTML output
+            sw.Restart();
+
+            // main stats
+            // TODO: Output more request metrics like # unhandled exceptions, etc.
+            outputWriter.WriteLine("<ul>");
+            outputWriter.WriteLine($"<li>Total Requests: {requests.Count}</li>");
+            outputWriter.WriteLine($"<li>Trace Duration (Sec): {dataFile.SessionDuration.TotalSeconds:N2}</li>");
+            outputWriter.WriteLine($"<li>RPS (Requests/Sec): {requests.Count / dataFile.SessionDuration.TotalSeconds:N2}</li>");
+            outputWriter.WriteLine($"</ul>");
+
+            // output the general/non-request-related events if any
+            if (otherEvents.Count > 0)
+            {
+                outputWriter.WriteLine("<h3>General Events</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.Write("<tr>");
+                outputWriter.Write("<th align='center' title='Raw time of the event in UTC'>Time (UTC)</th>");
+                outputWriter.Write("<th align='center' title='How many milliseconds after the trace started this event was emitted'>Trace Relative Time (msec)</th>");
+                outputWriter.Write("<th align='center' title='The PID that emitted the event'>Process ID</th>");
+                outputWriter.Write("<th align='center' title='The event that was emitted'>Event</th>");
+                outputWriter.WriteLine("</tr>");
+                foreach (OtherHostingEvent hostingEvent in otherEvents)
+                {
+                    outputWriter.Write("<tr>");
+                    outputWriter.Write($"<td>{hostingEvent.TimeUTC}</td>");
+                    outputWriter.Write($"<td>{hostingEvent.TimeRelativeMSec}</td>");
+                    outputWriter.Write($"<td>{hostingEvent.ProcessID}</td>");
+                    outputWriter.Write($"<td>{hostingEvent.EventName}</td>");
+                    outputWriter.WriteLine("</tr>");
+                }
+                outputWriter.WriteLine("</table>");
+            }
+
+            
+            // TODO: output slow requests table
+            // TODO: output all requests table
+
+            // outputWriter.WriteLine($"");
+
+            sw.Stop();
+            outputWriter.Flush();
+            log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to build and flush HTML.");
         }
 
         protected override string DoCommand(string command, StatusBar worker)
         {
             return base.DoCommand(command, worker);
+        }
+
+        private class ANCHostingRequest
+        {
+            public int ProcessID;
+            public string Method;
+            public string Path;
+            public double EndTimeRelativeMSec;
+            public double StartTimeRelativeMSec;
+            public DateTime TimeUTC;
+            public Guid ActivityId;
+            public bool HasUnhandledException;
+
+            public bool HasStart => StartTimeRelativeMSec != 0.0;
+            public bool HasStop => EndTimeRelativeMSec != 0.0; 
+            public bool IsComplete => HasStart && HasStop;
+
+            public ANCHostingRequest(TraceEvent fromEvent)
+            {
+                ProcessID = fromEvent.ProcessID;
+                ActivityId = fromEvent.ActivityID;
+                StartTimeRelativeMSec = 0.0;
+                EndTimeRelativeMSec = 0.0;
+                Method = String.Empty;
+                Path = String.Empty;
+                TimeUTC = fromEvent.TimeStamp.ToUniversalTime();
+                HasUnhandledException = false;
+            }
+        }
+
+        private class OtherHostingEvent
+        {
+            public int ProcessID;
+            public DateTime TimeUTC;
+            public double TimeRelativeMSec;
+            public string EventName;
+
+            public OtherHostingEvent(TraceEvent fromEvent)
+            {
+                ProcessID = fromEvent.ProcessID;
+                TimeUTC = fromEvent.TimeStamp.ToUniversalTime();
+                TimeRelativeMSec = fromEvent.TimeStampRelativeMSec;
+                EventName = fromEvent.EventName;
+            }
         }
     }
 
@@ -7200,7 +7428,7 @@ table {
                     hasAspNet = true;
                 }
 
-                if(!hasAspNetCoreHosting && counts.ProviderName.Equals("Microsoft.AspNetCore.Hosting", StringComparison.OrdinalIgnoreCase) && name.StartsWith("Request"))
+                if(!hasAspNetCoreHosting && counts.ProviderName.Equals("Microsoft.AspNetCore.Hosting", StringComparison.OrdinalIgnoreCase))
                 {
                     hasAspNetCoreHosting = true;
                 }
@@ -8955,6 +9183,7 @@ table {
             bool hasMemAllocStacks = false;
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
+            bool hasAspNetCoreHosting = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8995,6 +9224,10 @@ table {
                     else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
                     {
                         hasAssemblyLoad = true;
+                    }
+                    else if (!hasAspNetCoreHosting && eventStats.ProviderName.Equals("Microsoft.AspNetCore.Hosting", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAspNetCoreHosting = true;
                     }
                 }
             }
@@ -9046,6 +9279,11 @@ table {
                 if (hasJIT || hasTypeLoad || hasAssemblyLoad)
                 {
                     advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
+
+                if (hasAspNetCoreHosting)
+                {
+                    advanced.AddChild(new PerfViewAspNetCoreStats(this));
                 }
             }
 
