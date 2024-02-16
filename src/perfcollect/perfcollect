@@ -1383,6 +1383,7 @@ gcOnly=''
 gcWithHeap=''
 events=''
 rawevents=''
+bufferSize=''
 
 ProcessArguments()
 {
@@ -1437,6 +1438,13 @@ ProcessArguments()
             then
                 # Convert the value to lower case.
                 value=`echo $value | tr '[:upper:]' '[:lower:]'`
+            fi
+
+            # Use upper case for '-buffersize' as perf requires upper case.
+            if [ "-buffersize" == "$arg" ]
+            then
+                # Convert the value to upper case.
+                value=`echo $value | tr '[:lower:]' '[:upper:]'`
             fi
         fi
 
@@ -1507,6 +1515,10 @@ ProcessArguments()
         elif [ "-collectsec" == "$arg" ]
         then
             duration=$value
+            i=$i+1
+        elif [ "-buffersize" == "$arg" ]
+        then
+            bufferSize="--mmap-pages="$value
             i=$i+1
         else
             echo "Unknown arg ${arg}, ignored..."
@@ -1977,6 +1989,9 @@ PrintUsage()
     echo "    -threadtime   : Collect events for thread time analysis (on and off cpu)."
     echo "    -offcpu       : Collect events for off-cpu analysis."
     echo "    -hwevents     : Collect (some) hardware counters."
+    echo "    -buffersize   : Set the size of the buffer used by perf_events.  Default size is specified in pages."
+    echo "                    Specify B/K/M/G suffix for bytes/kilobytes/megabytes/gigabytes."
+    echo "                    Example: -buffersize 100M for 100 megabytes"
     echo ""
     echo "start:"
     echo "    Start collection, but with Lttng trace ONLY. It needs to be used with 'stop' action."
@@ -2005,7 +2020,7 @@ PrintUsage()
 BuildPerfRecordArgs()
 {
     # Start with default collection arguments that record at realtime priority, all CPUs (-a), and collect call stacks (-g)
-    collectionArgs="record -k 1 -g"
+    collectionArgs="record $bufferSize -k 1 -g"
 
     # Filter to a single process if desired
     if [ "$collectionPid" != "" ]
