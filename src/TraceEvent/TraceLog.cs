@@ -642,6 +642,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private unsafe void DispatchClonedEvent(TraceEvent toSend)
         {
+            realTimeSource.RegisterUnhandledEventImpl(te =>
+            {
+                if (toSend.containsSelfDescribingMetadata)
+                {
+                    var template = toSend.CloneToTemplate();
+                    realTimeSource.Dynamic.OnNewEventDefintion(template, true);
+                    return true;
+                }
+                return false;
+            });
             TraceEvent eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
             eventInRealTimeSource.userData = toSend.userData;
             eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
@@ -1114,6 +1124,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             rawEvents.Clr.GCJoin += doNothing;
             rawEvents.Clr.GCFinalizeObject += doNothing;
             rawEvents.Clr.MethodJittingStarted += doNothing;
+
+            if (IsRealTime)
+            {
+                rawEvents.Dynamic.All += doNothing;
+            }
 
             //kernelParser.AddCallbackForEvents<PageFaultTraceData>(doNothing);        // Lots of page fault ones
             //kernelParser.AddCallbackForEvents<PageAccessTraceData>(doNothing);

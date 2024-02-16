@@ -1038,7 +1038,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get { return m_target; }
             set
             {
-                Debug.Assert(m_target == null);
+                Debug.Assert(m_target == null || value == null);
                 m_target = (Action<TraceEvent>)value;
             }
         }
