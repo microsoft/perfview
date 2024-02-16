@@ -2393,7 +2393,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             get
             {
-                if ((PerHeapHistories != null) && (_PerHeapCondemnedReasons == null))
+                if ((PerHeapHistories?.Count > 0) && (_PerHeapCondemnedReasons == null))
                 {
                     int NumHeaps = PerHeapHistories.Count;
                     _PerHeapCondemnedReasons = new GCCondemnedReasons[NumHeaps];
@@ -2504,7 +2504,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Per heap statistics
         /// </summary>
-        public List<GCPerHeapHistory> PerHeapHistories;
+        public List<GCPerHeapHistory> PerHeapHistories = new List<GCPerHeapHistory>();
         /// <summary>
         /// Sum of the pinned plug sizes
         /// </summary>
@@ -2806,7 +2806,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return gc.AllocedSinceLastGCBasedOnAllocTickMB[(int)gen];
             }
 
-            if (gc.PerHeapHistories != null && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories != null)
+            if (gc.PerHeapHistories?.Count > 0 && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories?.Count > 0)
             {
                 double TotalAllocated = 0;
                 if (gc.Index > 0)
@@ -2930,12 +2930,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         private static double GetUserAllocatedPerHeap(List<TraceGC> GCs, TraceGC gc, int HeapIndex, Gens gen)
         {
+            Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
                 // If the prevous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                if (HeapIndex < perHeapGenData.Count)
+                if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
                     // Note that for gen3 we need to do something extra as its after data may not be updated if the last
@@ -2986,7 +2988,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (HeapIndex < perHeapGenData.Count)
+                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                     {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
                     }
