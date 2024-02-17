@@ -38,7 +38,7 @@ The beginning of the format is always the stream header.   This header's only pu
 is to quickly identify the format of this stream (file) as a whole, and to indicate
 exactly which version of the basic Stream library should be used. It is the UTF8 encoding of the characters 'Nettrace', thus the first 8 bytes will be:
 
-45 65 74 74 72 61 63 65
+4E 65 74 74 72 61 63 65
 
 ## Stream Header
 
