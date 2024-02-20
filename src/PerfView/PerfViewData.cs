@@ -3401,7 +3401,8 @@ table {
         private const string _eventHostStop = "Host/Stop";
         private const string _eventUnhandledException = "UnhandledException";
         private const string _eventServerReady = "ServerReady";
-        //private const string _iloggerProvider = "Microsoft-Extensions-Logging";
+        private const string _iloggerProvider = "Microsoft-Extensions-Logging";
+        private const string _iloggerProviderFormattedMessage = "Microsoft-Extensions-Logging/FormattedMessage";
 
         // master requests dictionary
         private Dictionary<Guid, ANCHostingRequest> requests = new Dictionary<Guid, ANCHostingRequest>();
@@ -3461,6 +3462,9 @@ table {
                                     request.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
                                     request.Method = (string)traceEvent.PayloadByName("method");
                                     request.Path = (string)traceEvent.PayloadByName("path");
+                                    if (String.IsNullOrEmpty(request.Path))
+                                        request.Path = "/";
+
                                 }
                                 else
                                 {
@@ -3475,6 +3479,8 @@ table {
                                 request = new ANCHostingRequest(traceEvent);
                                 request.Method = (string)traceEvent.PayloadByName("method");
                                 request.Path = (string)traceEvent.PayloadByName("path");
+                                if (String.IsNullOrEmpty(request.Path))
+                                    request.Path = "/";
                                 request.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
                                 requests.Add(request.ActivityId, request);
                             }
@@ -3542,10 +3548,31 @@ table {
 
             }
 
-            sw.Stop();
-            log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to iterate through all events.");
+            // fixup requests without a start or a stop
+            if (requests.Count > 0)
+            {
+                foreach (ANCHostingRequest request in requests.Values)
+                {
+                    // DurationMsec only returns -1 if the request is not complete (i.e. does not have both a start and a stop event associated with it)
+                    if (request.DurationMsec == -1)
+                    {
+                        if (request.HasStart)
+                        {
+                            // if the request is not complete but has a start, then it must not have a stop, so mark the duration as such
+                            request.DurationMsec = dataFile.SessionEndTimeRelativeMSec - request.StartTimeRelativeMSec;
+                        }
+                        else
+                        {
+                            request.DurationMsec = request.StartTimeRelativeMSec;
+                        }
+                    }
+                }
+            }
 
-            // at this point we have all the relevant events stored, need to start processing and building the HTML output
+            sw.Stop();
+            log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to process events.");
+
+            // at this point we have all the relevant information, now start processing and creating the HTML output
             sw.Restart();
 
             // main stats
@@ -3556,17 +3583,22 @@ table {
             outputWriter.WriteLine($"<li>RPS (Requests/Sec): {requests.Count / dataFile.SessionDuration.TotalSeconds:N2}</li>");
             outputWriter.WriteLine($"</ul>");
 
+            // for commands:
+            // string detailedRequestCommandString = $"detailedrequestevents:{request.ContextId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
+            // <A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A>
+
             // output the general/non-request-related events if any
             if (otherEvents.Count > 0)
             {
                 outputWriter.WriteLine("<h3>General Events</h3>");
                 outputWriter.WriteLine("<table border=\"1\">");
-                outputWriter.Write("<tr>");
+                outputWriter.Write("<thead><tr>");
                 outputWriter.Write("<th align='center' title='Raw time of the event in UTC'>Time (UTC)</th>");
                 outputWriter.Write("<th align='center' title='How many milliseconds after the trace started this event was emitted'>Trace Relative Time (msec)</th>");
                 outputWriter.Write("<th align='center' title='The PID that emitted the event'>Process ID</th>");
                 outputWriter.Write("<th align='center' title='The event that was emitted'>Event</th>");
-                outputWriter.WriteLine("</tr>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
                 foreach (OtherHostingEvent hostingEvent in otherEvents)
                 {
                     outputWriter.Write("<tr>");
@@ -3576,14 +3608,123 @@ table {
                     outputWriter.Write($"<td>{hostingEvent.EventName}</td>");
                     outputWriter.WriteLine("</tr>");
                 }
+                outputWriter.WriteLine("</tbody>");
                 outputWriter.WriteLine("</table>");
             }
-
             
-            // TODO: output slow requests table
-            // TODO: output all requests table
+            // slow requests table
+            // TODO: add command for opening events window
+            if(requests.Count > 0) 
+            {
+                IEnumerable<ANCHostingRequest> slowestRequests =
+                    (from request in requests.Values
+                     where request.DurationMsec >= 100
+                     orderby request.DurationMsec descending
+                     select request).Take(20);
 
-            // outputWriter.WriteLine($"");
+                outputWriter.WriteLine("<h3>Top 20 Slowest Requests</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>This table shows the top 20 slowest requests in this trace. Requests taking <100 milliseconds are ignored. Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                if(slowestRequests.Any())
+                {
+                    outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
+                    outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
+                    outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
+                    outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                    //outputWriter.Write("<th align='center' title='Start time of request, if available, relative to when the trace started, in milliseconds'>Relative start time (msec)</th>");
+                    //outputWriter.Write("<th align='center' title='End time of request, if available, relative to when the trace started, in milliseconds'>Relative end time (msec)</th>");
+                    //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
+                    outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
+                    outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
+                    outputWriter.WriteLine("</tr></thead>");
+                    outputWriter.WriteLine("<tbody>");
+                    foreach (ANCHostingRequest request in slowestRequests)
+                    {
+                        // used for opening the request in the Events view
+                        //string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
+
+                        outputWriter.Write("<tr>");
+                        outputWriter.Write($"<td>{request.ProcessID}</td>");
+                        outputWriter.Write($"<td>{request.Method}</td>");
+                        outputWriter.Write($"<td>{request.Path}</td>");
+                        outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                        //outputWriter.Write($"<td>{request.StartTimeRelativeMSec}</td>");
+                        //outputWriter.Write($"<td>{request.EndTimeRelativeMSec}</td>");
+                        //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
+                        outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+
+                        string note = String.Empty;
+                        if (!request.IsComplete)
+                            note = request.HasStart ? "2" : "1";
+
+                        outputWriter.Write($"<td>{note}</td>");
+                        outputWriter.WriteLine("</tr>");
+                    }
+                    outputWriter.WriteLine("</tbody>");
+                    outputWriter.WriteLine("<tfoot>");
+                    outputWriter.WriteLine("<tr><td colspan=6><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
+                    outputWriter.WriteLine("<tr><td colspan=6><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
+                    outputWriter.WriteLine("</tfoot>");
+                }
+                else
+                {
+                    outputWriter.WriteLine("<th align='center' title='no requests took more than 100 milliseconds'>No requests took >= 100 milliseconds</th>");
+                    outputWriter.WriteLine("</tr></thead>");
+                }
+                
+                outputWriter.WriteLine("</table>");
+
+            }
+
+            // all requests table
+            // TODO: add command for opening events window
+            if (requests.Count > 0)
+            {
+                outputWriter.WriteLine("<h3>All Requests</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
+                outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
+                outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
+                outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                //outputWriter.Write("<th align='center' title='Start time of request, if available, relative to when the trace started, in milliseconds'>Relative start time (msec)</th>");
+                //outputWriter.Write("<th align='center' title='End time of request, if available, relative to when the trace started, in milliseconds'>Relative end time (msec)</th>");
+                //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
+                outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
+                outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                foreach (ANCHostingRequest request in requests.Values)
+                {
+                    // used for opening the request in the Events view
+                    //string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
+
+                    outputWriter.Write("<tr>");
+                    outputWriter.Write($"<td>{request.ProcessID}</td>");
+                    outputWriter.Write($"<td>{request.Method}</td>");
+                    outputWriter.Write($"<td>{request.Path}</td>");
+                    outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                    //outputWriter.Write($"<td>{request.StartTimeRelativeMSec}</td>");
+                    //outputWriter.Write($"<td>{request.EndTimeRelativeMSec}</td>");
+                    //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
+                    outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+
+                    string note = String.Empty;
+                    if (!request.IsComplete)
+                        note = request.HasStart ? "2" : "1";
+
+                    outputWriter.Write($"<td>{note}</td>");
+                    outputWriter.WriteLine("</tr>");
+                }
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("<tfoot>");
+                outputWriter.WriteLine("<tr><td colspan=6><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
+                outputWriter.WriteLine("<tr><td colspan=6><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
+                outputWriter.WriteLine("</tfoot>");
+                outputWriter.WriteLine("</table>");
+            }
 
             sw.Stop();
             outputWriter.Flush();
@@ -3592,6 +3733,70 @@ table {
 
         protected override string DoCommand(string command, StatusBar worker)
         {
+            // string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
+
+            try
+            {
+                if (command.StartsWith("detailedrequestevents:"))
+                {
+                    string detailedrequesteventsString = command.Substring(22);
+
+                    var detailedrequesteventsParams = detailedrequesteventsString.Split(';');
+
+                    if (detailedrequesteventsParams.Length > 2)
+                    {
+                        string activityId = detailedrequesteventsParams[0];
+                        string startTime = detailedrequesteventsParams[1];
+                        string endTime = detailedrequesteventsParams[2];
+
+                        // this ctor doesn't work for nettrace
+                        // is there not a way to get this working with the existing log opened by the app?
+                        var etlFile = new ETLDataFile(DataFile.FilePath);
+                        //var etlFile = TraceLog.OpenOrConvert
+                        var events = etlFile.Events;
+
+                        // Pick out the desired events. 
+                        // does this matter?
+                        //var desiredEvents = new List<string>();
+                        //foreach (var eventName in events.EventNames)
+                        //{
+                        //    if (eventName.Contains("IIS_Trace") || eventName.Contains("AspNet"))
+                        //    {
+                        //        desiredEvents.Add(eventName);
+                        //    }
+                        //}
+                        //events.SetEventFilter(desiredEvents);
+
+                        GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                        {
+                            // TODO FIX NOW this is probably a hack?
+                            //var file = PerfViewFile.Get(events.m_EtlFile.FilePath);
+                            //PerfViewFile file = 
+                            //var eventSource = new PerfViewEventSource(file);
+                            var eventSource = new PerfViewEventSource(DataFile);
+                            //eventSource.m_eventSource = events;
+
+                            eventSource.Viewer = new EventWindow(GuiApp.MainWindow, eventSource);
+                            eventSource.Viewer.TextFilterTextBox.Text = StartStopActivityComputer.ActivityPathString(new Guid(activityId));
+                            eventSource.Viewer.StartTextBox.Text = startTime;
+                            eventSource.Viewer.EndTextBox.Text = endTime;
+                            eventSource.Viewer.Loaded += delegate
+                            {
+                                eventSource.Viewer.EventTypes.SelectAll();
+                                eventSource.Viewer.Update();
+                            };
+
+                            eventSource.Viewer.Show();
+                        });
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                worker.LogWriter.WriteLine("Exception encountered trying to open Events view:");
+                worker.LogWriter.WriteLine(e.ToString());
+            }
+
             return base.DoCommand(command, worker);
         }
 
@@ -3602,13 +3807,23 @@ table {
             public string Path;
             public double EndTimeRelativeMSec;
             public double StartTimeRelativeMSec;
-            public DateTime TimeUTC;
             public Guid ActivityId;
             public bool HasUnhandledException;
 
             public bool HasStart => StartTimeRelativeMSec != 0.0;
             public bool HasStop => EndTimeRelativeMSec != 0.0; 
             public bool IsComplete => HasStart && HasStop;
+            public double DurationMsec
+            {
+                get
+                {
+                    return IsComplete ? EndTimeRelativeMSec-StartTimeRelativeMSec : -1;
+                }
+                set
+                {
+                    DurationMsec = value;
+                }
+            }
 
             public ANCHostingRequest(TraceEvent fromEvent)
             {
@@ -3616,9 +3831,8 @@ table {
                 ActivityId = fromEvent.ActivityID;
                 StartTimeRelativeMSec = 0.0;
                 EndTimeRelativeMSec = 0.0;
-                Method = String.Empty;
-                Path = String.Empty;
-                TimeUTC = fromEvent.TimeStamp.ToUniversalTime();
+                Method = "N/A";
+                Path = "N/A";
                 HasUnhandledException = false;
             }
         }
