@@ -3439,7 +3439,7 @@ table {
             /* generally we are focusing on only one process' events; however, it's possible multiple processes
              * were emitting Microsoft.AspNetCore.Hosting events. So we need the ability to track more than one and associate
              * each event with its specific PID.
-             * Thus using a Dictionary where the key is PID, and each value is a SortedList of requests, sorted by StartTimeRelativeMSec
+             * Thus using a Dictionary where the key is the ActivityId of the request, and the value is the ANCHostingRequest class that tracks request details
              */
 
             Stopwatch sw = new Stopwatch();
@@ -3593,18 +3593,18 @@ table {
                 outputWriter.WriteLine("<h3>General Events</h3>");
                 outputWriter.WriteLine("<table border=\"1\">");
                 outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='The PID that emitted the event'>Process ID</th>");
                 outputWriter.Write("<th align='center' title='Raw time of the event in UTC'>Time (UTC)</th>");
                 outputWriter.Write("<th align='center' title='How many milliseconds after the trace started this event was emitted'>Trace Relative Time (msec)</th>");
-                outputWriter.Write("<th align='center' title='The PID that emitted the event'>Process ID</th>");
                 outputWriter.Write("<th align='center' title='The event that was emitted'>Event</th>");
                 outputWriter.WriteLine("</tr></thead>");
                 outputWriter.WriteLine("<tbody>");
                 foreach (OtherHostingEvent hostingEvent in otherEvents)
                 {
                     outputWriter.Write("<tr>");
+                    outputWriter.Write($"<td>{hostingEvent.ProcessID}</td>");
                     outputWriter.Write($"<td>{hostingEvent.TimeUTC}</td>");
                     outputWriter.Write($"<td>{hostingEvent.TimeRelativeMSec}</td>");
-                    outputWriter.Write($"<td>{hostingEvent.ProcessID}</td>");
                     outputWriter.Write($"<td>{hostingEvent.EventName}</td>");
                     outputWriter.WriteLine("</tr>");
                 }
