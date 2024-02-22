@@ -3626,19 +3626,17 @@ table {
                 outputWriter.WriteLine("<table border=\"1\">");
                 outputWriter.WriteLine("<caption>This table shows the top 20 slowest requests in this trace. Requests taking <100 milliseconds are ignored. Hover over column headings for explanation of columns.</caption>");
                 outputWriter.Write("<thead><tr>");
-                if(slowestRequests.Any())
+                outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
+                outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
+                outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
+                outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
+                outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
+                outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                if (slowestRequests.Any())
                 {
-                    outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
-                    outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
-                    outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
-                    outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
-                    //outputWriter.Write("<th align='center' title='Start time of request, if available, relative to when the trace started, in milliseconds'>Relative start time (msec)</th>");
-                    //outputWriter.Write("<th align='center' title='End time of request, if available, relative to when the trace started, in milliseconds'>Relative end time (msec)</th>");
-                    //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
-                    outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
-                    outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
-                    outputWriter.WriteLine("</tr></thead>");
-                    outputWriter.WriteLine("<tbody>");
                     foreach (ANCHostingRequest request in slowestRequests)
                     {
                         // used for opening the request in the Events view
@@ -3649,8 +3647,6 @@ table {
                         outputWriter.Write($"<td>{request.Method}</td>");
                         outputWriter.Write($"<td>{request.Path}</td>");
                         outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
-                        //outputWriter.Write($"<td>{request.StartTimeRelativeMSec}</td>");
-                        //outputWriter.Write($"<td>{request.EndTimeRelativeMSec}</td>");
                         //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                         outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
 
@@ -3661,20 +3657,17 @@ table {
                         outputWriter.Write($"<td>{note}</td>");
                         outputWriter.WriteLine("</tr>");
                     }
-                    outputWriter.WriteLine("</tbody>");
-                    outputWriter.WriteLine("<tfoot>");
-                    outputWriter.WriteLine("<tr><td colspan=6><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
-                    outputWriter.WriteLine("<tr><td colspan=6><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
-                    outputWriter.WriteLine("</tfoot>");
                 }
                 else
                 {
-                    outputWriter.WriteLine("<th align='center' title='no requests took more than 100 milliseconds'>No requests took >= 100 milliseconds</th>");
-                    outputWriter.WriteLine("</tr></thead>");
+                    outputWriter.WriteLine("<td align='center' title='no requests took more than 100 milliseconds' colspan=6>No requests took >= 100 milliseconds</td>");
                 }
-                
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("<tfoot>");
+                outputWriter.WriteLine("<tr><td colspan=6><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
+                outputWriter.WriteLine("<tr><td colspan=6><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
+                outputWriter.WriteLine("</tfoot>");
                 outputWriter.WriteLine("</table>");
-
             }
 
             // all requests table
@@ -3689,8 +3682,6 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
-                //outputWriter.Write("<th align='center' title='Start time of request, if available, relative to when the trace started, in milliseconds'>Relative start time (msec)</th>");
-                //outputWriter.Write("<th align='center' title='End time of request, if available, relative to when the trace started, in milliseconds'>Relative end time (msec)</th>");
                 //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
@@ -3706,8 +3697,6 @@ table {
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
-                    //outputWriter.Write($"<td>{request.StartTimeRelativeMSec}</td>");
-                    //outputWriter.Write($"<td>{request.EndTimeRelativeMSec}</td>");
                     //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                     outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
 
