@@ -3714,7 +3714,7 @@ namespace PerfView
                 TraceEventLevel level = TraceEventLevel.Verbose;
                 ulong matchAnyKeywords = unchecked((ulong)-1);
 
-                var rest = providerSpec;
+                var rest = providerSpec.Trim();
                 Match m = Regex.Match(rest, @"^([^:]*)(:(.*))?$");
                 Debug.Assert(m.Success);
                 rest = m.Groups[3].Value;
