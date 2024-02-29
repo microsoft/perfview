@@ -37,6 +37,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Xml;
+using Microsoft.Diagnostics.Tracing.Computers;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
@@ -8920,6 +8921,7 @@ table {
             bool hasMemAllocStacks = false;
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
+            bool hasContention = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8960,6 +8962,10 @@ table {
                     else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
                     {
                         hasAssemblyLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Contention/Start"))
+                    {
+                        hasContention = true;
                     }
                 }
             }
@@ -9011,6 +9017,11 @@ table {
                 if (hasJIT || hasTypeLoad || hasAssemblyLoad)
                 {
                     advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
+
+                if (hasContention)
+                {
+                    m_Children.Add(new PerfViewStackSource(this, "Contention"));
                 }
             }
 
@@ -9143,6 +9154,21 @@ table {
 
                         stackSource.DoneAddingSamples();
                         return stackSource;
+                    }
+                case "Contention":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var contentionSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        contentionSource.OnlyManagedCodeStacks = true;
+                        contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                        var computer = new ContentionTimeComputer(eventLog, contentionSource);
+                        computer.GenerateContentionTimeStacks();
+
+                        return contentionSource;
                     }
                 case "Thread Time (with StartStop Activities)":
                     {
