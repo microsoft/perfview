@@ -1384,15 +1384,6 @@ namespace Microsoft.Diagnostics.Tracing
             return ret;
         }
 
-        public virtual TraceEvent CloneToTemplate()
-        {
-            TraceEvent ret = Clone();
-            ret.traceEventSource = null;
-            ret.eventRecord = null;
-            ret.Target = null;
-            return ret;
-        }
-
         /// <summary>
         /// Pretty print the event.  It uses XML syntax.. 
         /// </summary>
@@ -2021,6 +2012,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// Parsers with state are reasonably rare, the main examples are KernelTraceEventParser and ClrTraceEventParser.    
         /// </summary>
         protected internal virtual void SetState(object state) { }
+
+        protected internal TraceEvent CloneToTemplate()
+        {
+            TraceEvent ret = Clone();
+            ret.traceEventSource = null;
+            ret.eventRecord = null;
+            ret.Target = null;
+            return ret;
+        }
 
         #endregion
         #region Private

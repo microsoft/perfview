@@ -1038,6 +1038,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get { return m_target; }
             set
             {
+                // value can be set to null when cloning and converting to a template for live session dispatch
                 Debug.Assert(m_target == null || value == null);
                 m_target = (Action<TraceEvent>)value;
             }
