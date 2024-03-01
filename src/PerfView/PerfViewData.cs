@@ -8922,6 +8922,7 @@ table {
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
             bool hasContention = false;
+            bool hasWaitHandle = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8967,12 +8968,17 @@ table {
                     {
                         hasContention = true;
                     }
+                    else if (eventStats.EventName.StartsWith("WaitHandleWait/Start"))
+                    {
+                        hasWaitHandle = true;
+                    }
                 }
             }
 
             m_Children = new List<PerfViewTreeItem>();
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
+            var wait = new PerfViewTreeGroup("Wait Group");
 
             if (m_traceLog != null)
             {
@@ -9021,7 +9027,12 @@ table {
 
                 if (hasContention)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Contention"));
+                    wait.AddChild(new PerfViewStackSource(this, "Contention"));
+                }
+
+                if (hasWaitHandle)
+                {
+                    wait.AddChild(new PerfViewStackSource(this, "WaitHandleWait"));
                 }
             }
 
@@ -9033,6 +9044,11 @@ table {
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
+            }
+
+            if (wait.Children.Count > 0)
+            {
+                m_Children.Add(wait);
             }
 
             return null;
@@ -9166,6 +9182,21 @@ table {
                         contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
                         var computer = new ContentionTimeComputer(eventLog, contentionSource);
+                        computer.GenerateContentionTimeStacks();
+
+                        return contentionSource;
+                    }
+                case "WaitHandleWait":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var contentionSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        contentionSource.OnlyManagedCodeStacks = true;
+                        contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                        var computer = new WaitHandleWaitTimeComputer(eventLog, contentionSource);
                         computer.GenerateContentionTimeStacks();
 
                         return contentionSource;
