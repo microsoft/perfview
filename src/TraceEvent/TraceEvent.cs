@@ -1383,6 +1383,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             return ret;
         }
+
         /// <summary>
         /// Pretty print the event.  It uses XML syntax.. 
         /// </summary>
@@ -2011,6 +2012,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// Parsers with state are reasonably rare, the main examples are KernelTraceEventParser and ClrTraceEventParser.    
         /// </summary>
         protected internal virtual void SetState(object state) { }
+
+        protected internal TraceEvent CloneToTemplate()
+        {
+            TraceEvent ret = Clone();
+            ret.traceEventSource = null;
+            ret.eventRecord = null;
+            ret.Target = null;
+            return ret;
+        }
 
         #endregion
         #region Private
@@ -3647,7 +3657,6 @@ namespace Microsoft.Diagnostics.Tracing
                         curTemplate.eventRecord = eventRecord;
                         curTemplate.userData = eventRecord->UserData;
                         curTemplate.eventIndex = currentID;
-                        currentID = currentID + 1;      // TODO overflow. 
 
                         if ((((int)currentID) & 0xFFFF) == 0) // Every 64K events allow Thread.Interrupt.  
                         {
@@ -3685,6 +3694,7 @@ namespace Microsoft.Diagnostics.Tracing
                                 (curTemplate.ProviderGuid == GCDynamicTraceEventParser.ProviderGuid && gcDynamicTemplateEventHeaderMatch));
                         }
 #endif
+                        currentID = currentID + 1;      // TODO overflow.
                         return curTemplate;
                     }
                     else
@@ -3704,7 +3714,6 @@ namespace Microsoft.Diagnostics.Tracing
             unhandledEventTemplate.userData = eventRecord->UserData;
             unhandledEventTemplate.eventIndex = currentID;
             unhandledEventTemplate.lookupAsClassic = unhandledEventTemplate.IsClassicProvider;
-            currentID = currentID + 1;                  // TODO overflow.
             if ((((int)currentID) & 0xFFFF) == 0)       // Every 64K events allow Thread.Interrupt.  
             {
                 System.Threading.Thread.Sleep(0);
@@ -3739,6 +3748,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 while (lastChanceHandlerChecked < lastChanceHandlers.Length);
             }
+            currentID = currentID + 1;                  // TODO overflow.
             return unhandledEventTemplate;
         }
         internal unsafe TraceEvent LookupTemplate(Guid guid, TraceEventID eventID_)
