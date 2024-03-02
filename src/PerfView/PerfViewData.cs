@@ -3401,8 +3401,8 @@ table {
         private const string _eventHostStop = "Host/Stop";
         private const string _eventUnhandledException = "UnhandledException";
         private const string _eventServerReady = "ServerReady";
-        private const string _iloggerProvider = "Microsoft-Extensions-Logging";
-        private const string _iloggerProviderFormattedMessage = "Microsoft-Extensions-Logging/FormattedMessage";
+        //private const string _iloggerProvider = "Microsoft-Extensions-Logging";
+        //private const string _iloggerProviderFormattedMessage = "Microsoft-Extensions-Logging/FormattedMessage";
 
         // master requests dictionary
         private Dictionary<Guid, ANCHostingRequest> requests = new Dictionary<Guid, ANCHostingRequest>();
@@ -3416,17 +3416,9 @@ table {
         {
             outputWriter.WriteLine("<H2>ASP.NET Core Request Statistics</H2>");
 
-            // example output for request start event:
-            // data.TaskName = "Request"
-            // data.OpcodeName = "Start"
-            // data.EventName = "Request/Start"
-            // data.ProcessID
-            // data.ActivityID ==> use StartStopActivityComputer.ActivityPathString(Guid) for displaying
-            //                 ==> StartStopActivityComputer.IsActivityPath(guid, processID)
-            // data.PayloadNames = {"method", "path"}
-            // data.PayloadByName("method"|"path"|etc.) cast to string if appropriate (since the method returns object)
-
             // request/stop does not contain status code or anything like that
+            // maybe add ILogger events, if available, to enhance these logs?
+            // also down the road if both ILogger and MS-ANC-Hosting events are available, use both and integrate them?
             /* 
              * some possible events (ref: https://source.dot.net/#Microsoft.AspNetCore.Hosting/Internal/HostingEventSource.cs):
              * Request/Start and Request/Stop
@@ -3434,12 +3426,6 @@ table {
              * Host/Start and Host/Stop
              * UnhandledException
              * ServerReady
-             */
-
-            /* generally we are focusing on only one process' events; however, it's possible multiple processes
-             * were emitting Microsoft.AspNetCore.Hosting events. So we need the ability to track more than one and associate
-             * each event with its specific PID.
-             * Thus using a Dictionary where the key is the ActivityId of the request, and the value is the ANCHostingRequest class that tracks request details
              */
 
             Stopwatch sw = new Stopwatch();
