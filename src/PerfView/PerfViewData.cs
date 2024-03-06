@@ -3397,10 +3397,7 @@ table {
         private const string _eventManifestData = "ManifestData";
         private const string _eventRequestStart = "Request/Start";
         private const string _eventRequestStop = "Request/Stop";
-        private const string _eventHostStart = "Host/Start";
-        private const string _eventHostStop = "Host/Stop";
         private const string _eventUnhandledException = "UnhandledException";
-        private const string _eventServerReady = "ServerReady";
         //private const string _iloggerProvider = "Microsoft-Extensions-Logging";
         //private const string _iloggerProviderFormattedMessage = "Microsoft-Extensions-Logging/FormattedMessage";
 
@@ -3522,9 +3519,6 @@ table {
                             // ignore
                             break;
 
-                        case _eventHostStart:
-                        case _eventHostStop:
-                        case _eventServerReady:
                         default:
                             otherEvents.Add(new OtherHostingEvent(traceEvent));
                             break;
@@ -3704,75 +3698,6 @@ table {
             sw.Stop();
             outputWriter.Flush();
             log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to build and flush HTML.");
-        }
-
-        protected override string DoCommand(string command, StatusBar worker)
-        {
-            // string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
-
-            try
-            {
-                if (command.StartsWith("detailedrequestevents:"))
-                {
-                    string detailedrequesteventsString = command.Substring(22);
-
-                    var detailedrequesteventsParams = detailedrequesteventsString.Split(';');
-
-                    if (detailedrequesteventsParams.Length > 2)
-                    {
-                        string activityId = detailedrequesteventsParams[0];
-                        string startTime = detailedrequesteventsParams[1];
-                        string endTime = detailedrequesteventsParams[2];
-
-                        // this ctor doesn't work for nettrace
-                        // is there not a way to get this working with the existing log opened by the app?
-                        var etlFile = new ETLDataFile(DataFile.FilePath);
-                        //var etlFile = TraceLog.OpenOrConvert
-                        var events = etlFile.Events;
-
-                        // Pick out the desired events. 
-                        // does this matter?
-                        //var desiredEvents = new List<string>();
-                        //foreach (var eventName in events.EventNames)
-                        //{
-                        //    if (eventName.Contains("IIS_Trace") || eventName.Contains("AspNet"))
-                        //    {
-                        //        desiredEvents.Add(eventName);
-                        //    }
-                        //}
-                        //events.SetEventFilter(desiredEvents);
-
-                        GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
-                        {
-                            // TODO FIX NOW this is probably a hack?
-                            //var file = PerfViewFile.Get(events.m_EtlFile.FilePath);
-                            //PerfViewFile file = 
-                            //var eventSource = new PerfViewEventSource(file);
-                            var eventSource = new PerfViewEventSource(DataFile);
-                            //eventSource.m_eventSource = events;
-
-                            eventSource.Viewer = new EventWindow(GuiApp.MainWindow, eventSource);
-                            eventSource.Viewer.TextFilterTextBox.Text = StartStopActivityComputer.ActivityPathString(new Guid(activityId));
-                            eventSource.Viewer.StartTextBox.Text = startTime;
-                            eventSource.Viewer.EndTextBox.Text = endTime;
-                            eventSource.Viewer.Loaded += delegate
-                            {
-                                eventSource.Viewer.EventTypes.SelectAll();
-                                eventSource.Viewer.Update();
-                            };
-
-                            eventSource.Viewer.Show();
-                        });
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                worker.LogWriter.WriteLine("Exception encountered trying to open Events view:");
-                worker.LogWriter.WriteLine(e.ToString());
-            }
-
-            return base.DoCommand(command, worker);
         }
 
         private class ANCHostingRequest
