@@ -31,7 +31,7 @@ namespace PerfView.Dialogs
             FreezeCheckBox.IsChecked = m_args.Freeze;
             SaveETLCheckBox.IsChecked = m_args.SaveETL;
             // DumpDataCheckBox.IsChecked = m_args.DumpData;
-            MaxDumpTextBox.Text = m_args.MaxDumpCountK.ToString();
+            MaxDumpTextBox.Text = m_args.MaxDumpCountK > 0 ? m_args.MaxDumpCountK.ToString() : string.Empty;
 
             if (args.ProcessDumpFile != null)
             {
@@ -140,25 +140,10 @@ namespace PerfView.Dialogs
             m_args.Freeze = FreezeCheckBox.IsChecked ?? false;
             m_args.SaveETL = SaveETLCheckBox.IsChecked ?? false;
             m_args.DumpData = false;  // TODO FIX NOW actually use
-            if (!int.TryParse(MaxDumpTextBox.Text, out m_args.MaxDumpCountK))
+            if (!string.IsNullOrEmpty(MaxDumpTextBox.Text) && !int.TryParse(MaxDumpTextBox.Text, out m_args.MaxDumpCountK))
             {
                 StatusBar.LogError("Could not parse MaxDump " + MaxDumpTextBox.Text);
                 return;
-            }
-
-            if (m_args.MaxDumpCountK >= 10000)
-            {
-                var response = MessageBox.Show("WARNING: you have selected a Max Dump Count larger than 10M objects.\r\n" +
-                    "You should only need 100K to do a good job, even at 10M the GUI will be very sluggish.\r\n" +
-                    "Consider canceling and picking a smaller value.", "Max Dump Size Too Big",
-                    MessageBoxButton.OKCancel);
-                if (response != MessageBoxResult.OK)
-                {
-                    StatusBar.Log("Memory collection canceled.");
-                    Close();
-                    GuiApp.MainWindow.Focus();
-                    return;
-                }
             }
 
             m_args.NoView = true;
