@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Etlx;
+﻿using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Stacks;
 
@@ -9,7 +8,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     {
         private readonly TraceLog _eventLog;
         private readonly MutableTraceEventStackSource _stackSource;
-        private readonly Dictionary<int, StackSourceSample> _samplesPerThread;
+        private readonly StackSourceSample[] _samplesPerThread;
 
         private const double NanosInMillisecond = 1000 * 1000;
 
@@ -17,7 +16,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         {
             _eventLog = eventLog;
             _stackSource = stackSource;
-            _samplesPerThread = new Dictionary<int, StackSourceSample>();
+            _samplesPerThread = new StackSourceSample[eventLog.Threads.Count];
         }
 
         public void GenerateContentionTimeStacks()
@@ -34,9 +33,12 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
         private void OnContentionStart(ContentionStartTraceData startData)
         {
-            if (!_samplesPerThread.TryGetValue(startData.ThreadID, out var sample))
+            var threadIndex = (int) startData.Thread().ThreadIndex;
+            var sample = _samplesPerThread[threadIndex];
+            
+            if (sample == null)
             {
-                _samplesPerThread[startData.ThreadID] = sample = new StackSourceSample(_stackSource);
+                _samplesPerThread[threadIndex] = sample = new StackSourceSample(_stackSource);
                 sample.Count = 1;
             }
 
@@ -48,9 +50,13 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
         private void OnContentionStop(ContentionStopTraceData stopData)
         {
-            if (!_samplesPerThread.TryGetValue(stopData.ThreadID, out var sample))
+            var threadIndex = (int) stopData.Thread().ThreadIndex;
+            var sample = _samplesPerThread[threadIndex];
+            
+            if (sample == null || (sample.TimeRelativeMSec == 0 && sample.StackIndex == StackSourceCallStackIndex.Invalid))
             {
                 // no corresponding start event
+                // or start event was missing for this stop (we got start-stop-stop sequence for this thread)
                 return;
             }
 
@@ -58,6 +64,9 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {stopData.DurationNs:N0}"), sample.StackIndex);
 
             _stackSource.AddSample(sample);
+            sample.StackIndex = StackSourceCallStackIndex.Invalid;
+            sample.TimeRelativeMSec = 0;
+            sample.Metric = 0;
         }
     }
 }

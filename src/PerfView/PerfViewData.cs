@@ -6290,6 +6290,28 @@ table {
 
                 return stackSource;
             }
+            else if (streamName == "Contention")
+            {
+                var contentionSource = new MutableTraceEventStackSource(eventLog);
+                contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                var computer = new ContentionTimeComputer(eventLog, contentionSource);
+                computer.GenerateContentionTimeStacks();
+
+                return contentionSource;
+            }
+            else if (streamName == "WaitHandleWait")
+            {
+                var waitHandleWaitSource = new MutableTraceEventStackSource(eventLog);
+                waitHandleWaitSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                waitHandleWaitSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                var computer = new WaitHandleWaitTimeComputer(eventLog, waitHandleWaitSource);
+                computer.GenerateWaitTimeStacks();
+
+                return waitHandleWaitSource;
+            }
             else
             {
                 throw new Exception("Unknown stream " + streamName);
@@ -7010,6 +7032,13 @@ table {
                 prev += "^Request URL";
                 stackWindow.FoldRegExTextBox.Text = prev;
                 stackWindow.FoldRegExTextBox.Items.Insert(0, prev);
+            }
+            
+            if (stackSourceName == "Contention" || stackSourceName == "WaitHandleWait")
+            {
+                var foldDuration = "EventData DurationNs ";
+                stackWindow.FoldRegExTextBox.Text = foldDuration;
+                stackWindow.FoldRegExTextBox.Items.Insert(0, foldDuration);
             }
 
             if (m_extraTopStats != null)
@@ -8978,7 +9007,6 @@ table {
             m_Children = new List<PerfViewTreeItem>();
             var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
-            var wait = new PerfViewTreeGroup("Wait Group");
 
             if (m_traceLog != null)
             {
@@ -9027,12 +9055,12 @@ table {
 
                 if (hasContention)
                 {
-                    wait.AddChild(new PerfViewStackSource(this, "Contention"));
+                    advanced.AddChild(new PerfViewStackSource(this, "Contention"));
                 }
 
                 if (hasWaitHandle)
                 {
-                    wait.AddChild(new PerfViewStackSource(this, "WaitHandleWait"));
+                    advanced.AddChild(new PerfViewStackSource(this, "WaitHandleWait"));
                 }
             }
 
@@ -9044,11 +9072,6 @@ table {
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
-            }
-
-            if (wait.Children.Count > 0)
-            {
-                m_Children.Add(wait);
             }
 
             return null;
@@ -9190,16 +9213,16 @@ table {
                     {
                         var eventLog = GetTraceLog(log);
 
-                        var contentionSource = new MutableTraceEventStackSource(eventLog);
+                        var waitHandleWaitSource = new MutableTraceEventStackSource(eventLog);
                         // EventPipe currently only has managed code stacks.
-                        contentionSource.OnlyManagedCodeStacks = true;
-                        contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-                        contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+                        waitHandleWaitSource.OnlyManagedCodeStacks = true;
+                        waitHandleWaitSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        waitHandleWaitSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
-                        var computer = new WaitHandleWaitTimeComputer(eventLog, contentionSource);
-                        computer.GenerateContentionTimeStacks();
+                        var computer = new WaitHandleWaitTimeComputer(eventLog, waitHandleWaitSource);
+                        computer.GenerateWaitTimeStacks();
 
-                        return contentionSource;
+                        return waitHandleWaitSource;
                     }
                 case "Thread Time (with StartStop Activities)":
                     {
@@ -9408,6 +9431,13 @@ table {
                 stackWindow.ComputeMaxInTopStats = true;
             }
 
+            if (stackSourceName == "Contention" || stackSourceName == "WaitHandleWait")
+            {
+                var foldDuration = "EventData DurationNs ";
+                stackWindow.FoldRegExTextBox.Text = foldDuration;
+                stackWindow.FoldRegExTextBox.Items.Insert(0, foldDuration);
+            }
+            
             if (m_extraTopStats != null)
             {
                 stackWindow.ExtraTopStats += " " + m_extraTopStats;
