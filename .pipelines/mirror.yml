@@ -16,7 +16,7 @@ extends:
   parameters:
     pool:
       name: AzurePipelines-EO
-      image: 1ESPT-Windows2019
+      image: 1ESPT-Windows2022
       os: windows
 
     stages:
@@ -59,6 +59,12 @@ extends:
             inputs:
               filename: python
               arguments: '-m pip install --upgrade pip'
+
+          - task: CmdLine@1
+            displayName: 'Install MSAL Python and pymsalruntime'
+            inputs:
+              filename: pip
+              arguments: 'install msalruntime pymsalruntime==0.14.0'
 
           - task: CmdLine@1
             displayName: 'Install Azure CLI'
