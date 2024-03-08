@@ -55,7 +55,7 @@ jobs:
       displayName: 'Install Azure CLI'
       inputs:
         filename: pip
-        arguments: 'install azure-cli'
+        arguments: 'install --pre azure-cli'
 
     - task: CmdLine@1
       displayName: 'Install Azure DevOps Extension'
