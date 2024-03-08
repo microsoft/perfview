@@ -55,7 +55,7 @@ jobs:
       displayName: 'Install Azure CLI'
       inputs:
         filename: pip
-        arguments: 'install azure-cli --extra-index-url https://azurecliprod.blob.core.windows.net/edge'
+        arguments: 'install azure-cli
 
     - task: CmdLine@1
       displayName: 'Install Azure DevOps Extension'
