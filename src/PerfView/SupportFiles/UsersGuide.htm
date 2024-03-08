@@ -2440,8 +2440,8 @@
                         <li>
                             <strong><a id="ContentionStacks">Contention Stacks</a></strong> - This view aggregates Contention events.&nbsp;
                             Contention event is fired when a thread tries to acquire a managed lock that is currently owned
-                            by another thread. Note that each event provides DurationNs event data that
-                            is folded by default. Unfolding it reveals individual pauses of each thread: this can be useful 
+                            by another thread. Note that each event has useful event data that is folded by default.
+                            For example, unfolding <code>EventData DurationNs</code> reveals individual pauses of each thread: this can be useful 
                             to correlate a particular long wait to another events in the trace. Note that not all contention events
                             are real OS-level waits: the runtime will first spin wait to try acquire the lock fast. The metric
                             represents the amount of time spent to acquire the lock in milliseconds.
