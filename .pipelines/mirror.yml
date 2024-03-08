@@ -1,6 +1,9 @@
 trigger:
   - main
 
+variables:
+  - group: 'DotNet-VSTS-Infra-Access'
+
 pool:
   name: VSEngSS-MicroBuild2019-1ES
 
@@ -13,29 +16,29 @@ jobs:
         scriptType: inlineScript
         arguments: '$(Build.SourceBranch)'
         inlineScript: |
-        param(
-          [string]$SourceBranch
-        )
-        if ($SourceBranch.StartsWith("refs/heads/"))
-        {
-            # strip off the refs/heads/ prefix
-            $SourceBranch=$SourceBranch.Substring(11)
-        }
-        $env:SourceBranch=$SourceBranch
-        Write-Host ("##vso[task.setvariable variable=SourceBranch;]$env:SourceBranch")
+          param(
+            [string]$SourceBranch
+          )
+          if ($SourceBranch.StartsWith("refs/heads/"))
+          {
+              # strip off the refs/heads/ prefix
+              $SourceBranch=$SourceBranch.Substring(11)
+          }
+          $env:SourceBranch=$SourceBranch
+          Write-Host ("##vso[task.setvariable variable=SourceBranch;]$env:SourceBranch")
 
     - task: PowerShell@1
       displayName: 'Set MirrorBranch Variable'
       inputs:
         scriptType: inlineScript
         inlineScript: |
-        $env:MirrorBranch='mirror/'+[Guid]::NewGuid().ToString()
-        Write-Host ("##vso[task.setvariable variable=MirrorBranch;]$env:MirrorBranch")
+          $env:MirrorBranch='mirror/'+[Guid]::NewGuid().ToString()
+          Write-Host ("##vso[task.setvariable variable=MirrorBranch;]$env:MirrorBranch")
 
     - task: UsePythonVersion@0
-      displayName: 'Use Python 3.10.x'
+      displayName: 'Use Python 3.x'
       inputs:
-        versionSpec: 3.10.x
+        versionSpec: 3.x
 
     - task: CmdLine@1
       displayName: 'Update pip to latest'
@@ -47,7 +50,7 @@ jobs:
       displayName: 'Install Azure CLI'
       inputs:
         filename: pip
-        arguments: 'install azure-cli --extra-index-url https://azurecliprod.blob.core.windows.net/edge'
+        arguments: 'install --pre azure-cli'
 
     - task: CmdLine@1
       displayName: 'Install Azure DevOps Extension'
@@ -104,13 +107,12 @@ jobs:
         scriptType: inlineScript
         arguments: '$(dn-bot-devdiv-build-rw-code-rw)'
         inlineScript: |
-        param(
-          [string]$AccessToken
-        )
-        $env:AZURE_DEVOPS_EXT_PAT=$AccessToken
-        $Organization="https://devdiv.visualstudio.com"
-        $Project="DevDiv"
-        $Repository="PerfView"
-        az devops configure --defaults organization=$Organization project=$Project
-        az repos pr create --repository $Repository --auto-complete true --delete-source-branch true --title "Mirror Changes from GitHub" --source-branch $(MirrorBranch) --target-branch $(SourceBranch)
-  ```
+          param(
+            [string]$AccessToken
+          )
+          $env:AZURE_DEVOPS_EXT_PAT=$AccessToken
+          $Organization="https://devdiv.visualstudio.com"
+          $Project="DevDiv"
+          $Repository="PerfView"
+          az devops configure --defaults organization=$Organization project=$Project
+          az repos pr create --repository $Repository --auto-complete true --delete-source-branch true --title "Mirror Changes from GitHub" --source-branch $(MirrorBranch) --target-branch $(SourceBranch)
