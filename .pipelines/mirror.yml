@@ -50,21 +50,15 @@ extends:
                 Write-Host ("##vso[task.setvariable variable=MirrorBranch;]$env:MirrorBranch")
 
           - task: UsePythonVersion@0
-            displayName: 'Use Python 3.x'
+            displayName: 'Use Python 3.11.x'
             inputs:
-              versionSpec: 3.x
+              versionSpec: 3.11.x
 
           - task: CmdLine@1
             displayName: 'Update pip to latest'
             inputs:
               filename: python
               arguments: '-m pip install --upgrade pip'
-
-          - task: CmdLine@1
-            displayName: 'Install MSAL Python and pymsalruntime'
-            inputs:
-              filename: pip
-              arguments: 'install msalruntime pymsalruntime==0.14.0'
 
           - task: CmdLine@1
             displayName: 'Install Azure CLI'
