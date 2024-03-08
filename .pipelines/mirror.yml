@@ -40,6 +40,11 @@ jobs:
       inputs:
         versionSpec: 3.10.x
 
+    - task: PipAuthenticate@1
+      displayName: 'Pip Authenticate'
+      inputs:
+        artifactFeeds: 'https://azurecliprod.blob.core.windows.net/edge`
+
     - task: CmdLine@1
       displayName: 'Update pip to latest'
       inputs:
