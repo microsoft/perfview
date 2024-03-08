@@ -36,14 +36,9 @@ jobs:
           Write-Host ("##vso[task.setvariable variable=MirrorBranch;]$env:MirrorBranch")
 
     - task: UsePythonVersion@0
-      displayName: 'Use Python 3.10.x'
+      displayName: 'Use Python 3.x'
       inputs:
-        versionSpec: 3.10.x
-
-    - task: PipAuthenticate@1
-      displayName: 'Pip Authenticate'
-      inputs:
-        artifactFeeds: 'https://azurecliprod.blob.core.windows.net/edge'
+        versionSpec: 3.x
 
     - task: CmdLine@1
       displayName: 'Update pip to latest'
