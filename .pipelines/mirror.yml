@@ -116,4 +116,3 @@ jobs:
           $Repository="PerfView"
           az devops configure --defaults organization=$Organization project=$Project
           az repos pr create --repository $Repository --auto-complete true --delete-source-branch true --title "Mirror Changes from GitHub" --source-branch $(MirrorBranch) --target-branch $(SourceBranch)
-  ```
