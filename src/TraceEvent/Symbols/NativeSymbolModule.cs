@@ -1424,6 +1424,10 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                                         break;
                                 }
                                 return sb.ToString();
+                            case BasicType.btChar16:
+                                return "char16_t";
+                            case BasicType.btChar32:
+                                return "char32_t";
                             case BasicType.btFloat:
                                 return symbol.length == 4 ? "float" : "double";
                             default:
