@@ -49,6 +49,11 @@ extends:
                 $env:MirrorBranch='mirror/'+[Guid]::NewGuid().ToString()
                 Write-Host ("##vso[task.setvariable variable=MirrorBranch;]$env:MirrorBranch")
 
+          - task: PipAuthenticate@1
+            displayName: 'Pip Authenticate'
+            inputs:
+              artifactFeeds: 'DevDiv/PerfView-Mirror'
+
           - task: UsePythonVersion@0
             displayName: 'Use Python 3.11.x'
             inputs:
