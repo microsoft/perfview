@@ -768,6 +768,12 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var ngenImageDir = Path.GetDirectoryName(ngenImageFullPath);
+            var ngenPdbPath = Path.Combine(ngenImageDir, Path.GetFileName(pdbPath));
+            if (File.Exists(ngenPdbPath))
+            {
+                return ngenPdbPath;
+            }
+
             var pdbDir = Path.GetDirectoryName(pdbPath);
 
             // We need Crossgen, and there are several options, see what we can do. 
