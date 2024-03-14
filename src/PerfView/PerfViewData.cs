@@ -3398,6 +3398,7 @@ table {
         private const string _eventRequestStart = "Request/Start";
         private const string _eventRequestStop = "Request/Stop";
         private const string _eventUnhandledException = "UnhandledException";
+        private const string _eventCounters = "EventCounters";
 
         // main storage for tracking requests and associated processes
         private Dictionary<string, ANCHostingRequest> incompleteRequests = new Dictionary<string, ANCHostingRequest>();
@@ -3517,6 +3518,7 @@ table {
                         break;
 
                     case _eventManifestData:
+                    case _eventCounters:
                         // ignore
                         break;
 
