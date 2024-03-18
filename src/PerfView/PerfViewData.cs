@@ -3565,10 +3565,6 @@ table {
             outputWriter.WriteLine($"<li>Inbound Request Rate (total RequestStart events/total log session time): {(inboundRequestCount / dataFile.SessionDuration.TotalSeconds):N2}</li>");
             outputWriter.WriteLine($"</ul>");
 
-            // for commands:
-            // string detailedRequestCommandString = $"detailedrequestevents:{request.ContextId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
-            // <A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A>
-
             // show info about processes that output these events
             if (processesThatEmittedEvents.Count > 0)
             {
@@ -3638,22 +3634,17 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
-                //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
                 outputWriter.WriteLine("</tr></thead>");
                 outputWriter.WriteLine("<tbody>");
                 foreach (ANCHostingRequest request in incompleteRequests.Values)
                 {
-                    // used for opening the request in the Events view
-                    //string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
-
                     outputWriter.Write("<tr>");
                     outputWriter.Write($"<td>{request.ProcessID}</td>");
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
-                    //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                     outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
 
                     string note = String.Empty;
@@ -3689,7 +3680,6 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
-                //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.WriteLine("</tr></thead>");
                 outputWriter.WriteLine("<tbody>");
@@ -3697,15 +3687,11 @@ table {
                 {
                     foreach (ANCHostingRequest request in slowestRequests)
                     {
-                        // used for opening the request in the Events view
-                        //string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
-
                         outputWriter.Write("<tr>");
                         outputWriter.Write($"<td>{request.ProcessID}</td>");
                         outputWriter.Write($"<td>{request.Method}</td>");
                         outputWriter.Write($"<td>{request.Path}</td>");
                         outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
-                        //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                         outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
                         outputWriter.WriteLine("</tr>");
                     }
@@ -3730,21 +3716,16 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
-                //outputWriter.Write("<th align='center' title='ActivityId of the request - click to open Events view for this ID'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.WriteLine("</tr></thead>");
                 outputWriter.WriteLine("<tbody>");
                 foreach (ANCHostingRequest request in completeRequests)
                 {
-                    // used for opening the request in the Events view
-                    //string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
-
                     outputWriter.Write("<tr>");
                     outputWriter.Write($"<td>{request.ProcessID}</td>");
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
-                    //outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                     outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
                     outputWriter.WriteLine("</tr>");
                 }
