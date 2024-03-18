@@ -242,6 +242,13 @@
                         MinWidth="60"
                         IsReadOnly="True" />
                         <WPFToolKit:DataGridTextColumn
+                        x:Name="TimeStampColumn"
+                        Header="TimeStamp (Trace Local)"
+                        Binding="{Binding TimeStamp, StringFormat=o}"
+                        MinWidth="60"
+                        IsReadOnly="True"
+                        ElementStyle="{StaticResource RightAlign}" />
+                        <WPFToolKit:DataGridTextColumn
                         x:Name="TimeMSecColumn"
                         Header="Time MSec"
                         Binding="{Binding TimeStampRelatveMSec, StringFormat={}{0:n3}}"

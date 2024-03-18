@@ -25,6 +25,7 @@ namespace PerfView
             m_tracelog = traceLog;
             NonRestFields = 10;
             MaxEventTimeRelativeMsec = traceLog.SessionDuration.TotalMilliseconds;
+            SessionStartTime = traceLog.SessionStartTime;
         }
         public override ICollection<string> EventNames
         {
@@ -373,6 +374,8 @@ namespace PerfView
             }
         }
 
+        public DateTime SessionStartTime { get; private set; }
+
         [Flags]
         private enum CorelationOptions
         {
@@ -657,6 +660,7 @@ namespace PerfView
             public override string EventName { get { return m_name; } }
             public override string ProcessName { get { return m_processName; } }
             public override double TimeStampRelatveMSec { get { return m_timeStampRelativeMSec; } }
+            public DateTime TimeStamp { get { return this.m_source.SessionStartTime.AddMilliseconds(this.m_timeStampRelativeMSec); } }
             public override string Rest { get { return m_asText; } set { } }
             public EventIndex Index { get { return m_idx; } }
 
