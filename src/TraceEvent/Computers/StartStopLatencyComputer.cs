@@ -4,9 +4,9 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace Microsoft.Diagnostics.Tracing.Computers
 {
-    public class ContentionTimeComputer : StartStopThreadTimeComputer
+    public class ContentionLatencyComputer : StartStopLatencyComputer
     {
-        public ContentionTimeComputer(TraceLog eventLog, MutableTraceEventStackSource stackSource) : base(eventLog, stackSource)
+        public ContentionLatencyComputer(TraceLog eventLog, MutableTraceEventStackSource stackSource) : base(eventLog, stackSource)
         {
         }
 
@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             eventSource.Clr.ContentionStop += OnStop;
         }
 
-        protected override void RecordAdditionalDataOnMissingStartAtTraceStart(StackSourceSample sample)
+        protected override void RecordAdditionalDataOnStopWithoutStart(StackSourceSample sample)
         {
             sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {sample.Metric*NanosInMillisecond:N0}"), sample.StackIndex);
         }
@@ -30,22 +30,22 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData LockOwnerThreadID {startData.LockOwnerThreadID}"), sample.StackIndex);
         }
         
-        protected override void RecordAdditionalDataOnMissingStopAtTraceEnd(StackSourceSample sample)
+        protected override void RecordAdditionalDataOnStartWithoutStop(StackSourceSample sample)
         {
-            sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {sample.Metric*NanosInMillisecond:N0}"), sample.StackIndex);
+            sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData DurationNs {sample.Metric*NanosInMillisecond:N0}"), sample.StackIndex);
         }
         
         protected override void RecordAdditionalStopData(StackSourceSample sample, TraceEvent data)
         {
             var stopData = (ContentionStopTraceData) data;
             sample.Metric = (float) (stopData.DurationNs / NanosInMillisecond);
-            sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {stopData.DurationNs:N0}"), sample.StackIndex);
+            sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData DurationNs {stopData.DurationNs:N0}"), sample.StackIndex);
         }
     }
     
-    public class WaitHandleWaitTimeComputer : StartStopThreadTimeComputer
+    public class WaitHandleWaitLatencyComputer : StartStopLatencyComputer
     {
-        public WaitHandleWaitTimeComputer(TraceLog eventLog, MutableTraceEventStackSource stackSource) : base(eventLog, stackSource)
+        public WaitHandleWaitLatencyComputer(TraceLog eventLog, MutableTraceEventStackSource stackSource) : base(eventLog, stackSource)
         {}
 
         protected override void Subscribe(TraceLogEventSource eventSource)
@@ -54,7 +54,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             eventSource.Clr.WaitHandleWaitStop += OnStop;
         }
 
-        protected override void RecordAdditionalDataOnMissingStartAtTraceStart(StackSourceSample sample)
+        protected override void RecordAdditionalDataOnStopWithoutStart(StackSourceSample sample)
         {
             sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {sample.Metric*NanosInMillisecond:N0}"), sample.StackIndex);
         }
@@ -66,32 +66,41 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData AssociatedObjectID {startData.AssociatedObjectID}"), sample.StackIndex);
         }
 
-        protected override void RecordAdditionalDataOnMissingStopAtTraceEnd(StackSourceSample sample)
+        protected override void RecordAdditionalDataOnStartWithoutStop(StackSourceSample sample)
         {
-            sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {sample.Metric*NanosInMillisecond:N0}"), sample.StackIndex);
+            sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData DurationNs {sample.Metric*NanosInMillisecond:N0}"), sample.StackIndex);
         }
 
         protected override void RecordAdditionalStopData(StackSourceSample sample, TraceEvent data)
         {
             var stopData = (WaitHandleWaitStopTraceData) data;
             var durationMs = stopData.TimeStampRelativeMSec - sample.TimeRelativeMSec; // recompute the duration to get better precision than float
-            sample.StackIndex = _stackSource.Interner.CallStackIntern(_stackSource.Interner.FrameIntern($"EventData DurationNs {durationMs*NanosInMillisecond:N0}"), sample.StackIndex);
+            sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData DurationNs {durationMs*NanosInMillisecond:N0}"), sample.StackIndex);
         }
     }
     
-    public abstract class StartStopThreadTimeComputer
+    /// <summary>
+    /// Computes the latency view of Start/Stop event pairs that happen on the same thread.
+    /// Think contention or other "blocking" events, where Start and Stop have the same callstack.
+    /// Inherit this class for each type of blocking events and
+    /// look at <see cref="ContentionLatencyComputer"/> and <see cref="WaitHandleWaitLatencyComputer"/> for reference.
+    /// </summary>
+    public abstract class StartStopLatencyComputer
     {
         protected readonly TraceLog _eventLog;
         protected readonly MutableTraceEventStackSource _stackSource;
+        /// <summary>
+        /// A shortcut to <c>_stackSource.Interner</c>
+        /// </summary>
         protected readonly StackSourceInterner _interner;
         
         private readonly StackSourceSample[] _samplesPerThread;
 
         protected const double NanosInMillisecond = 1000 * 1000;
-        private const string BrokenEventNoStart = "BROKEN_EVENT NO_CORRESPONDING_START";
-        private const string BrokenEventNoStop = "BROKEN_EVENT NO_CORRESPONDING_STOP";
+        protected const string BrokenEventNoStart = "BROKEN_EVENT NO_CORRESPONDING_START";
+        protected const string BrokenEventNoStop = "BROKEN_EVENT NO_CORRESPONDING_STOP";
 
-        protected StartStopThreadTimeComputer(TraceLog eventLog, MutableTraceEventStackSource stackSource)
+        protected StartStopLatencyComputer(TraceLog eventLog, MutableTraceEventStackSource stackSource)
         {
             _eventLog = eventLog;
             _stackSource = stackSource;
@@ -99,13 +108,64 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             _samplesPerThread = new StackSourceSample[eventLog.Threads.Count];
         }
 
+        /// <summary>
+        /// Implementations should subscribe <see cref="OnStart"/> and <see cref="OnStop"/> methods to the corresponding events
+        /// The callstack of the Start event will be used in the resulting display. 
+        /// </summary>
         protected abstract void Subscribe(TraceLogEventSource eventSource);
-        protected abstract void RecordAdditionalDataOnMissingStartAtTraceStart(StackSourceSample sample);
+        /// <summary>
+        /// Append custom data from Start event to the sample.
+        /// Cast the TraceEvent to the concrete type of Start event you subscribed to
+        /// and populate the sample like this:
+        /// <code>
+        /// var startData = (ContentionStartTraceData) data;
+        /// var frame = _interner.FrameIntern($"EventData LockID {startData.LockID}");
+        /// sample.StackIndex = _interner.CallStackIntern(frame, sample.StackIndex);
+        /// </code>
+        /// </summary>
         protected abstract void RecordAdditionalStartData(StackSourceSample sample, TraceEvent data);
-        protected abstract void RecordAdditionalDataOnMissingStopAtTraceEnd(StackSourceSample sample);
+        /// <summary>
+        /// Append custom data from Stop event to the sample.
+        /// Cast the TraceEvent to the concrete type of Stop event you subscribed to
+        /// and populate the sample like below.
+        /// <para>
+        /// The implementations should include DurationNs event data to allow the user to distinguish
+        /// between individual events with the same callstack.
+        /// </para>
+        /// <para>
+        /// Note that you can also change <c>sample.Metric</c>:
+        /// by default it will be set to <c>stop.TimeStampRelativeMSec - start.TimeStampRelativeMSec</c>
+        /// </para>
+        /// <code>
+        /// var stopData = (ContentionStopTraceData) data;
+        /// var frame = _interner.FrameIntern($"EventData DurationNs {stopData.DurationNs:N0}");
+        /// sample.StackIndex = _interner.CallStackIntern(frame, sample.StackIndex);
+        /// sample.Metric = stopData.DurationNs / NanosInMillisecond;
+        /// </code>
+        /// </summary>
         protected abstract void RecordAdditionalStopData(StackSourceSample sample, TraceEvent data);
-        
-        public void GenerateStartStopThreadTimeStacks()
+        /// <summary>
+        /// If Stop arrives before Start it will be signalled by <see cref="BrokenEventNoStart"/> frame.
+        /// <para>
+        /// However, there's a special case at the beginning of the trace where we could miss the Start because
+        /// it happened before we started the recording.
+        /// </para>
+        /// In this case, <c>sample.Metric</c> will be set to <c>stop.TimeStampRelativeMSec</c>
+        /// like if the Start arrived at the beginning of the trace
+        /// </summary>
+        protected abstract void RecordAdditionalDataOnStopWithoutStart(StackSourceSample sample);
+        /// <summary>
+        /// If Start arrives but there's no Stop it will be signalled by <see cref="BrokenEventNoStop"/> frame.
+        /// <para>
+        /// However, there's a special case at the end of the trace where we could miss the Stop because
+        /// it happened after we finished the recording.
+        /// </para>
+        /// In this case, <c>sample.Metric</c> will be set to <c>_eventLog.SessionEndTimeRelativeMSec - start.TimeStampRelativeMSec</c>
+        /// like if the Stop happened at the end of the trace.
+        /// </summary>
+        protected abstract void RecordAdditionalDataOnStartWithoutStop(StackSourceSample sample);
+
+        public void GenerateStacks()
         {
             var eventSource = _eventLog.Events.GetSource();
             
@@ -127,7 +187,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 {
                     // Start event without corresponding Stop at the end of the trace
                     sample.Metric = (float) (_eventLog.SessionEndTimeRelativeMSec - sample.TimeRelativeMSec);
-                    RecordAdditionalDataOnMissingStopAtTraceEnd(sample);
+                    RecordAdditionalDataOnStartWithoutStop(sample);
                     AddAndResetSample(sample);
                 }
             }
@@ -170,7 +230,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 sample.TimeRelativeMSec = 0;
                 sample.Metric = (float) stopData.TimeStampRelativeMSec;
                 sample.StackIndex = _stackSource.GetCallStack(stopData.CallStackIndex(), stopData);
-                RecordAdditionalDataOnMissingStartAtTraceStart(sample);
+                RecordAdditionalDataOnStopWithoutStart(sample);
                 AddAndResetSample(sample);
                 return;
             }

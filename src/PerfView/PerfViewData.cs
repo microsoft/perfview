@@ -998,7 +998,7 @@ namespace PerfView
 
         protected static void ConfigureStackWindowForStartStopThreadTime(StackWindow stackWindow)
         {
-            var foldPats = StartStopThreadTimeComputer.GetDefaultFoldPatterns();
+            var foldPats = StartStopLatencyComputer.GetDefaultFoldPatterns();
             for (var i = 0; i < foldPats.Length; i++)
             {
                 if (i == 0)
@@ -6309,8 +6309,8 @@ table {
                 contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
                 contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
-                var computer = new ContentionTimeComputer(eventLog, contentionSource);
-                computer.GenerateStartStopThreadTimeStacks();
+                var computer = new ContentionLatencyComputer(eventLog, contentionSource);
+                computer.GenerateStacks();
 
                 return contentionSource;
             }
@@ -6320,8 +6320,8 @@ table {
                 waitHandleWaitSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
                 waitHandleWaitSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
-                var computer = new WaitHandleWaitTimeComputer(eventLog, waitHandleWaitSource);
-                computer.GenerateStartStopThreadTimeStacks();
+                var computer = new WaitHandleWaitLatencyComputer(eventLog, waitHandleWaitSource);
+                computer.GenerateStacks();
 
                 return waitHandleWaitSource;
             }
@@ -9238,8 +9238,8 @@ table {
                         contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
                         contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
-                        var computer = new ContentionTimeComputer(eventLog, contentionSource);
-                        computer.GenerateStartStopThreadTimeStacks();
+                        var computer = new ContentionLatencyComputer(eventLog, contentionSource);
+                        computer.GenerateStacks();
 
                         return contentionSource;
                     }
@@ -9253,8 +9253,8 @@ table {
                         waitHandleWaitSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
                         waitHandleWaitSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
-                        var computer = new WaitHandleWaitTimeComputer(eventLog, waitHandleWaitSource);
-                        computer.GenerateStartStopThreadTimeStacks();
+                        var computer = new WaitHandleWaitLatencyComputer(eventLog, waitHandleWaitSource);
+                        computer.GenerateStacks();
 
                         return waitHandleWaitSource;
                     }
