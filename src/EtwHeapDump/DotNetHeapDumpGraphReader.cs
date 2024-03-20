@@ -86,7 +86,7 @@ public class DotNetHeapDumpGraphReader
         m_staticVarBlocks = new Queue<GCBulkRootStaticVarTraceData>();
         m_ccwBlocks = new Queue<GCBulkRootCCWTraceData>();
         m_typeIntern = new Dictionary<string, NodeTypeIndex>();
-        m_root = new MemoryNodeBuilder(m_graph, "[.NET Roots]");
+        m_root = new MemoryNodeBuilder(m_graph, GCHeapDumpNames.Bracket(GCHeapDumpNames.DotNetRootsTitle));
         m_typeStorage = m_graph.AllocTypeNodeStorage();
 
         // We also keep track of the loaded modules in the target process just in case it is a project N scenario.  
@@ -316,7 +316,7 @@ public class DotNetHeapDumpGraphReader
                 return;
             }
 
-            MemoryNodeBuilder staticRoot = m_root.FindOrCreateChild("[static vars]");
+            MemoryNodeBuilder staticRoot = m_root.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.StaticVarsRootTitle));
             for (int i = 0; i < data.Count; i++)
             {
                 var value = data.Values(i);
@@ -328,34 +328,34 @@ public class DotNetHeapDumpGraphReader
                     string name;
                     if (kind == GCRootKind.Stack)
                     {
-                        name = "[local vars]";
+                        name = GCHeapDumpNames.Bracket(GCHeapDumpNames.LocalVarsRootTitle);
                     }
                     else
                     {
-                        root = m_root.FindOrCreateChild("[other roots]");
+                        root = m_root.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.OtherRootsTitle));
 
                         if ((flags & GCRootFlags.RefCounted) != 0)
                         {
-                            name = "[COM/WinRT Objects]";
+                            name = GCHeapDumpNames.Bracket(GCHeapDumpNames.COMWinRTRootTitle);
                         }
                         else if (kind == GCRootKind.Finalizer)
                         {
-                            name = "[finalizer Handles]";
+                            name = GCHeapDumpNames.Bracket(GCHeapDumpNames.FinalizerQueueRootTitle);
                         }
                         else if (kind == GCRootKind.Handle)
                         {
                             if (flags == GCRootFlags.Pinning)
                             {
-                                name = "[pinning Handles]";
+                                name = GCHeapDumpNames.Bracket(GCHeapDumpNames.PinnedHandleRootTitle);
                             }
                             else
                             {
-                                name = "[strong Handles]";
+                                name = GCHeapDumpNames.Bracket(GCHeapDumpNames.StrongHandleRootTitle);
                             }
                         }
                         else
                         {
-                            name = "[other Handles]";
+                            name = GCHeapDumpNames.Bracket(GCHeapDumpNames.OtherHandlesRootTitle);
                         }
 
                         // Remember the root for later processing.  
@@ -431,8 +431,8 @@ public class DotNetHeapDumpGraphReader
                 return;
             }
 
-            var otherRoots = m_root.FindOrCreateChild("[other roots]");
-            var dependentHandles = otherRoots.FindOrCreateChild("[Dependent Handles]");
+            var otherRoots = m_root.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.OtherRootsTitle));
+            var dependentHandles = otherRoots.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.DependentHandlesRootTitle));
             for (int i = 0; i < data.Count; i++)
             {
                 var value = data.Values(i);
@@ -586,7 +586,7 @@ public class DotNetHeapDumpGraphReader
                     // Is this type a an RCW?   If so mark the type name that way.   
                     if ((typeData.Flags & TypeFlags.ExternallyImplementedCOMObject) != 0)
                     {
-                        typeName = "[RCW " + typeName + "]";
+                        typeName = $"[{GCHeapDumpNames.RCWPrefix} {typeName}]";
                     }
 
                     m_typeID2TypeIndex[typeData.TypeID] = CreateType(typeName, moduleName);
@@ -596,7 +596,7 @@ public class DotNetHeapDumpGraphReader
         }
 
         // Process all the ccw root information (which also need the type information complete)
-        var ccwRoot = m_root.FindOrCreateChild("[COM/WinRT Objects]");
+        var ccwRoot = m_root.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.COMWinRTRootTitle));
         while (m_ccwBlocks.Count > 0)
         {
             GCBulkRootCCWTraceData data = m_ccwBlocks.Dequeue();
@@ -620,7 +620,7 @@ public class DotNetHeapDumpGraphReader
                     var ccwTypeIndex = GetTypeIndex(ccwInfo.TypeID, 200);
                     var ccwType = m_graph.GetType(ccwTypeIndex, m_typeStorage);
 
-                    var typeName = "[CCW 0x" + ccwInfo.IUnknown.ToString("x") + " for type " + ccwType.Name + "]";
+                    var typeName = $"[{GCHeapDumpNames.CCWPrefix} 0x{ccwInfo.IUnknown.ToString("x")} for type {ccwType.Name}]";
                     ccwTypeIndex = CreateType(typeName);
 
                     ccwChildren.Clear();
@@ -632,7 +632,7 @@ public class DotNetHeapDumpGraphReader
         }
 
         // Process all the static variable root information (which also need the module information complete
-        var staticVarsRoot = m_root.FindOrCreateChild("[static vars]");
+        var staticVarsRoot = m_root.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.StaticVarsRootTitle));
         while (m_staticVarBlocks.Count > 0)
         {
             GCBulkRootStaticVarTraceData data = m_staticVarBlocks.Dequeue();
@@ -642,7 +642,7 @@ public class DotNetHeapDumpGraphReader
                 var rootToAddTo = staticVarsRoot;
                 if ((staticVarData.Flags & GCRootStaticVarFlags.ThreadLocal) != 0)
                 {
-                    rootToAddTo = m_root.FindOrCreateChild("[thread static vars]");
+                    rootToAddTo = m_root.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.ThreadStaticVarsRootTitle));
                 }
 
                 // Get the type name.  
@@ -660,7 +660,7 @@ public class DotNetHeapDumpGraphReader
 
                 string fullFieldName = typeName + "." + staticVarData.FieldName;
 
-                rootToAddTo = rootToAddTo.FindOrCreateChild("[static var " + fullFieldName + "]");
+                rootToAddTo = rootToAddTo.FindOrCreateChild($"[{GCHeapDumpNames.StaticVarPrefix} {fullFieldName}]");
                 var nodeIdx = m_graph.GetNodeIndex(staticVarData.ObjectID);
                 rootToAddTo.AddChild(nodeIdx);
             }

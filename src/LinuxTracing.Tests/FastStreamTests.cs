@@ -2,7 +2,7 @@
 using System.Text;
 using Xunit;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracingTests
 {
     public class FastStreamTests
     {

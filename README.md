@@ -143,7 +143,7 @@ This repository uses [AppVeyor](https://www.appveyor.com/) and Azure DevOps to a
 the community to easily view build results. Code coverage is provided by [codecov.io](https://codecov.io). The build and
 coverage status reflected here is the AppVeyor and Azure DevOps build status of the **main** branch.
 
-[![Build status](https://dev.azure.com/ms/perfview/_apis/build/status/CI?label=build)](https://dev.azure.com/ms/perfview/_build/latest?definitionId=332)
+[![Build Status](https://dev.azure.com/ms/perfview/_apis/build/status%2FCI?branchName=main)](https://dev.azure.com/ms/perfview/_build/latest?definitionId=332&branchName=main)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
 
@@ -152,7 +152,7 @@ coverage status reflected here is the AppVeyor and Azure DevOps build status of 
 > :warning: Builds produced by AppVeyor and Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
 > participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
-> information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.\
+> information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.
 
 ### Contributing to PerfView 
 

@@ -1003,7 +1003,7 @@ public class GCHeapDumper
     private MemoryNodeBuilder DumpRoots(DataTarget dataTarget, ClrRuntime[] runtimes)
     {
         int numRoots = 0;
-        var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[.NET Roots]");
+        var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, GCHeapDumpNames.Bracket(GCHeapDumpNames.DotNetRootsTitle));
         try
         {
             m_log.WriteLine("{0,5:f1}s: Scanning Static Variables", m_sw.Elapsed.TotalSeconds);
@@ -1052,19 +1052,20 @@ public class GCHeapDumper
                 bool pinned = root.IsPinned;
                 ComCallableWrapper ccwInfo = obj.HasComCallableWrapper ? obj.GetComCallableWrapper() : null;
 
+                // NOTE: If changing these names, need to document as a breaking change in release notes.
                 string name;
                 switch (kind)
                 {
                     case ClrRootKind.Stack:
-                        name = "local vars";
+                        name = GCHeapDumpNames.LocalVarsRootTitle;
                         break;
 
                     case ClrRootKind.RefCountedHandle:
-                        name = "COM/WinRT Objects";
+                        name = GCHeapDumpNames.COMWinRTRootTitle;
                         break;
 
                     default:
-                        name = kind.ToString();
+                        name = GetRootTitle(kind);
                         break;
                 };
 
@@ -1082,6 +1083,31 @@ public class GCHeapDumper
         m_log.Flush();
 
         return dotNetRoot;
+    }
+
+    private static string GetRootTitle(ClrRootKind rootKind)
+    {
+        switch (rootKind)
+        {
+            case ClrRootKind.FinalizerQueue:
+                return GCHeapDumpNames.FinalizerQueueRootTitle;
+            case ClrRootKind.StrongHandle:
+                return GCHeapDumpNames.StrongHandleRootTitle;
+            case ClrRootKind.PinnedHandle:
+                return GCHeapDumpNames.PinnedHandleRootTitle;
+            case ClrRootKind.Stack:
+                return GCHeapDumpNames.StackRootTitle;
+            case ClrRootKind.RefCountedHandle:
+                return GCHeapDumpNames.RefCountedHandleRootTitle;
+            case ClrRootKind.AsyncPinnedHandle:
+                return GCHeapDumpNames.AsyncPinnedHandleRootTitle;
+            case ClrRootKind.SizedRefHandle:
+                return GCHeapDumpNames.SizedRefHandleRootTitle;
+            case ClrRootKind.None:
+                return "None";
+            default:
+                throw new ArgumentOutOfRangeException("rootKind");
+        };
     }
 
     private void WriteRoot(IDataReader reader, MemoryNodeBuilder dotNetRoot, ClrObject obj, ClrRootKind kind, bool pinned, ComCallableWrapper ccwInfo, string name, ref int numRoots)
@@ -1116,19 +1142,19 @@ public class GCHeapDumper
             if (comPtr != 0)
                 m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
 
-            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[COM/WinRT Objects]");
+            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.COMWinRTRootTitle));
             nodeToAddRootTo.AddChild(ccwNode);
         }
         else
         {
             if (kind == (ClrRootKind)(-1))
-                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[static vars]");
+                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.StaticVarsRootTitle));
 
             // Add pinned local vars to their own node
             if (pinned && kind == ClrRootKind.Stack)
-                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[Pinned local vars]");
+                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild(GCHeapDumpNames.Bracket(GCHeapDumpNames.PinnedLocalVarsRootTitle));
             else
-                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[" + name + "]");
+                nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild(GCHeapDumpNames.Bracket(name));
 
             NodeIndex child = m_gcHeapDump.MemoryGraph.GetNodeIndex(obj);
             nodeToAddRootTo.AddChild(child);
@@ -1147,7 +1173,7 @@ public class GCHeapDumper
 
         if (m_dotNetRoot != NodeIndex.Invalid && m_JSRoot != NodeIndex.Invalid)
         {
-            var rootNode = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[GC Heaps]");
+            var rootNode = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, GCHeapDumpNames.Bracket(GCHeapDumpNames.GCHeapsTitle));
             rootNode.AddChild(m_JSRoot);
             rootNode.AddChild(m_dotNetRoot);
             m_gcHeapDump.MemoryGraph.RootIndex = rootNode.Build();
@@ -1401,7 +1427,7 @@ public class GCHeapDumper
                     if (moduleName != null)
                         fullTypeName = Path.GetFileNameWithoutExtension(moduleName) + "!" + fullTypeName;
 
-                    var typeName = $"[RCW {fullTypeName} RefCnt: {rcwData.RefCount:n0}]";
+                    var typeName = $"[{GCHeapDumpNames.RCWPrefix} {fullTypeName} RefCnt: {rcwData.RefCount:n0}]";
 
                     // We add 1000 to account for the overhead of the RCW that is NOT on the GC heap.
                     if (objSizeAsInt < int.MaxValue - 1000)

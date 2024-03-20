@@ -4,5 +4,4 @@
 set -x
 
 # Run containers.
-#docker run --privileged --security-opt seccomp=unconfined perfcollect-ubuntu-16.04
-docker run --privileged --security-opt seccomp=unconfined perfcollect-ubuntu-18.04
+docker run --privileged --security-opt seccomp=unconfined perfcollect-mariner-2.0

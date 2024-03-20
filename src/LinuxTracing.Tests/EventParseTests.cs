@@ -7,7 +7,7 @@ using System.Linq;
 using Xunit;
 using System.Linq.Expressions;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracingTests
 {
     public class EventParseTests
     {

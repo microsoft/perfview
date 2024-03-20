@@ -50,6 +50,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert(val >= 0 && alignment >= 0);
             return val & ~(alignment - 1);
         }
+
+        public static long AlignDown(long val, int alignment)
+        {
+            Debug.Assert(val >= 0 && alignment >= 0);
+            return val & ~(alignment - 1);
+        }
     }
 
     internal abstract class CtfMetadataType
@@ -273,7 +279,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 throw new NotImplementedException();
             }
 
-            Debug.Assert((bitOffset % Align) == 0);
             int byteOffset = bitOffset / 8;
 
             bool fastPath = (bitOffset % 8) == 0 && (Size % 8) == 0;
@@ -485,12 +490,24 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
     internal class CtfStruct : CtfMetadataType
     {
+        private const int DefaultAlign = 1;
+
         private int _align;
         public override int Align
         {
             get
             {
-                return _align;
+                int fieldTypesAlignment = Fields.Max(x => x.Type.Align);
+                if (_align != DefaultAlign)
+                {
+                    // CTF: Alignment for a structure compound type can be forced to a minimum value by adding an align specifier after the declaration of a structure body. This attribute is read as: align(value). The value is specified in bits. The structure will be aligned on the maximum value between this attribute and the alignment required by the basic types contained within the structure.
+                    return Math.Max(_align, fieldTypesAlignment);
+                }
+                else
+                {
+                    // CTF: Structures are aligned on the largest alignment required by basic types contained within the structure.
+                    return fieldTypesAlignment;
+                }
             }
         }
 
@@ -501,13 +518,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfStruct(CtfPropertyBag props, CtfField[] fields)
             : base(CtfTypes.Struct)
         {
-            int alignment = 1;
-            if (props != null)
-            {
-                alignment = props.GetIntOrNull("align") ?? 1;
-            }
-
-            _align = alignment;
+            _align = props?.GetIntOrNull("align") ?? DefaultAlign;
             Fields = fields;
         }
 

@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -548,7 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         {
                             foreach (var procThread in traceProc.Threads)
                             {
-                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.Contains(".NET Server GC Thread")))
+                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC")))
                                 {
                                     mang.GC.m_stats.IsServerGCUsed = 1;
                                     break;
@@ -865,6 +866,24 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         _gc.PerHeapMarkTimes[data.HeapNum].MarkTimes[(int)data.Type] = data.TimeStampRelativeMSec;
                         _gc.PerHeapMarkTimes[data.HeapNum].MarkPromoted[(int)data.Type] = data.Promoted;
                     }
+                };
+
+                source.Clr.GCDynamicEvent.GCCommittedUsage += delegate (CommittedUsageTraceEvent committedUsage)
+                {
+                    var stats = currentManagedProcess(committedUsage.UnderlyingEvent);
+                    GCStats.ProcessCommittedUsage(stats, committedUsage);
+                };
+
+                source.Clr.GCDynamicEvent.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
+                {
+                    var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
+                    GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
+                };
+
+                source.Clr.GCDynamicEvent.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
+                {
+                    var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
+                    GCStats.ProcessHeapCountSample(stats, heapCountSample);
                 };
 
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
@@ -2123,6 +2142,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 }
             }
         }
+
+        public HeapCountTuning HeapCountTuning { get; internal set; }
+        public HeapCountSample HeapCountSample { get; internal set; }
+        public CommittedUsage CommittedUsageBefore { get; internal set; }
+        public CommittedUsage CommittedUsageAfter { get; internal set; }
+
         /// <summary>
         /// Memory survival percentage by generation
         /// </summary>
@@ -2615,34 +2640,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             if (gc.Type == GCType.BackgroundGC)
             {
-                // Find all GCs that occurred during the current background GC.
-                double startTimeRelativeMSec = gc.StartRelativeMSec;
-                double endTimeRelativeMSec = gc.StartRelativeMSec + gc.DurationMSec;
-
-                // Calculate the pause time for this BGC.
-                // Pause time is defined as pause time for the BGC + pause time for all FGCs that ran during the BGC.
+                // Get the pause time for this BGC.
                 double totalPauseTime = gc.PauseDurationMSec;
 
-                if (gc.Index + 1 < GCs.Count)
+                // Iterate backwards from the last GC recorded to find the index of the current BGC.
+                int indexOfPreviousGC = GCs.Count - 1;
+                while (GCs[indexOfPreviousGC] != gc && indexOfPreviousGC >= 0)
                 {
-                    TraceGC gcEvent;
-                    for (int i = gc.Index + 1; i < GCs.Count; ++i)
-                    {
-                        gcEvent = GCs[i];
-                        if ((gcEvent.StartRelativeMSec >= startTimeRelativeMSec) && (gcEvent.StartRelativeMSec < endTimeRelativeMSec))
-                        {
-                            totalPauseTime += gcEvent.PauseDurationMSec;
-                        }
-                        else
-                        {
-                            // We've finished processing all FGCs that occurred during this BGC.
-                            break;
-                        }
-                    }
+                    --indexOfPreviousGC;
                 }
 
                 // Get the elapsed time since the previous GC finished.
-                int previousGCIndex = gc.Index - 1;
+                int previousGCIndex = indexOfPreviousGC - 1;
                 double previousGCStopTimeRelativeMSec;
                 if (previousGCIndex >= 0)
                 {
@@ -4591,6 +4600,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return null;
         }
 
+        internal static TraceGC GetGC(TraceLoadedDotNetRuntime proc, long gcIndex)
+        {
+            for (int i = (proc.GC.GCs.Count - 1); i >= 0; i--)
+            {
+                if (proc.GC.GCs[i].Number == gcIndex)
+                {
+                    return proc.GC.GCs[i];
+                }
+            }
+            return null;
+        }
+
         internal void AddConcurrentPauseTime(TraceGC _event, double RestartEEMSec)
         {
             if (suspendThreadIDBGC > 0)
@@ -4613,7 +4634,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (IsServerGCUsed == 1)
             {
-                Debug.Assert(HeapCount > 1);
+                // This debug assert fails in the case of DATAS where the HeapCount starts from 1.
+                // TODO (musharm): Come up with a more descriptive assert that'll take DATAS into account.
+                // Debug.Assert(HeapCount > 1);
 
                 if (serverGCThreads.Count < HeapCount)
                 {
@@ -4629,8 +4652,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static void ProcessGlobalHistory(TraceLoadedDotNetRuntime proc, GCGlobalHeapHistoryTraceData data)
         {
-            // We detected whether we are using Server GC now.
-            proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
             if (proc.GC.m_stats.HeapCount == -1)
             {
                 proc.GC.m_stats.HeapCount = data.NumHeaps;
@@ -4655,7 +4676,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     HasCondemnReasons0 = data.HasCondemnReasons0,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
                 };
-                _event.SetHeapCount(proc.GC.m_stats.HeapCount);
+                _event.SetHeapCount(data.NumHeaps);
             }
         }
 
@@ -4776,6 +4797,71 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     GcWorkingThreadId = gcThreadId,
                     GcWorkingThreadPriority = gcThreadPriority
                 });
+            }
+        }
+
+        internal static void ProcessCommittedUsage(TraceLoadedDotNetRuntime proc, CommittedUsageTraceEvent committedUsage)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                CommittedUsage traceData = new CommittedUsage
+                {
+                    Version                        = committedUsage.Version,
+                    TotalCommittedInUse            = committedUsage.TotalCommittedInUse,
+                    TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
+                    TotalCommittedInFree           = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree     = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted      = committedUsage.TotalBookkeepingCommitted
+                };
+
+                if (_event.CommittedUsageBefore == null)
+                {
+                    _event.CommittedUsageBefore = traceData;
+                }
+                else
+                {
+                    Debug.Assert(_event.CommittedUsageAfter == null);
+                    _event.CommittedUsageAfter = traceData;
+                }
+            }
+        }
+
+        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceEvent heapCountTuning)
+        {
+            TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
+            if (_event != null)
+            {
+                // Copy over the contents of the dynamic data to prevent issues when the event is reused.
+                _event.HeapCountTuning = new HeapCountTuning
+                {
+                    Version                       = heapCountTuning.Version,
+                    NewHeapCount                  = heapCountTuning.NewHeapCount,
+                    GCIndex                       = heapCountTuning.GCIndex,
+                    MedianThroughputCostPercent         = heapCountTuning.MedianThroughputCostPercent,
+                    SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
+                    ThroughputCostPercentReductionPerStepUp    = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
+                    ThroughputCostPercentIncreasePerStepDown   = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
+                    SpaceCostPercentIncreasePerStepUp    = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
+                    SpaceCostPercentDecreasePerStepDown  = heapCountTuning.SpaceCostPercentDecreasePerStepDown
+                };
+            }
+        }
+
+        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceEvent heapCountSample)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                _event.HeapCountSample = new HeapCountSample
+                {
+                    Version               = heapCountSample.Version,
+                    GCIndex               = heapCountSample.GCIndex,
+                    // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
+                    ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000.0,
+                    GCPauseTimeMSec           = heapCountSample.GCPauseTime / 1000.0,
+                    MslWaitTimeMSec           = heapCountSample.MslWaitTime / 1000.0
+                };
             }
         }
 

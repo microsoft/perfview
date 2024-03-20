@@ -32,7 +32,7 @@ flags:
       - src/VS/
   test:
     paths:
-      - src/LinuxEvent.Tests/
+      - src/LinuxTracing.Tests/
       - src/PerfView.Tests/
       - src/PerfView.TestUtilities/
       - src/TraceEvent/Ctf/CtfTracing.Tests/

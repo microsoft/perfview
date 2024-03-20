@@ -2,11 +2,12 @@
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.LinuxKernel;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
-namespace Tests
+namespace CtfTracingTests
 {
     public class CtfTraceTests
     {
@@ -184,6 +185,82 @@ namespace Tests
                     Assert.Equal(assertValues[file][1], gcStartCount);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData("validation_001.zip")]
+        [InlineData("validation_002.zip")]
+        [InlineData("validation_003.zip")]
+        [InlineData("validation_004.zip")]
+        [InlineData("validation_005.zip")]
+        [InlineData("validation_006.zip")]
+        public void BasicValidationProcessesFileWithoutException(string file)
+        {
+            var path = Path.Combine(TestDataDirectory, file);
+            using (var source = new CtfTraceEventSource(path))
+            {
+                var dummy = new DummyParser(source);
+                source.Clr.All += evt => { };
+
+                var count = 0;
+                source.AllEvents += evt =>
+                {
+                    count++;
+                };
+                var exception = Record.Exception(() => source.Process());
+                Assert.Null(exception);
+                Assert.NotEqual(0, count);
+            }
+        }
+
+        [Fact]
+        public void ProblemAlignment()
+        {
+            var path = Path.Combine(TestDataDirectory, "problem_alignment.zip");
+            using (var source = new CtfTraceEventSource(path))
+            {
+                var index = 0;
+                source.Clr.EventSourceEvent += evt =>
+                {
+                    switch (index++)
+                    {
+                        case 0:
+                            Assert.Equal(6668, evt.EventID);
+#pragma warning disable CS0618
+                            Assert.Equal(482332487730801, evt.TimeStampQPC);
+#pragma warning restore CS0618
+                            break;
+                        case 1:
+                            Assert.Equal(6668, evt.EventID);
+#pragma warning disable CS0618
+                            Assert.Equal(482332675464150, evt.TimeStampQPC);
+#pragma warning restore CS0618
+                            break;
+                        default:
+                            throw new InvalidOperationException();
+                    }
+                };
+                source.Process();
+                Assert.Equal(2, index);
+            }
+        }
+
+        sealed class DummyParser : TraceEventParser
+        {
+            public DummyParser(TraceEventSource source)
+                : base(source)
+            { }
+
+            protected override IEnumerable<CtfEventMapping> EnumerateCtfEventMappings()
+            {
+                yield return new CtfEventMapping("PerfLabGenericEventSourceLTTngProvider:Startup", Guid.Empty, 0, 0, 0);
+                yield return new CtfEventMapping("PerfLabGenericEventSourceLTTngProvider:OnMain", Guid.Empty, 0, 0, 0);
+            }
+
+            protected override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
+            { }
+
+            protected override string GetProviderName() => nameof(DummyParser);
         }
     }
 }

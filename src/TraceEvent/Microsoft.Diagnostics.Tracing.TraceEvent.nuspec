@@ -30,7 +30,22 @@
 
     <dependencies>
       <group targetFramework=".NETStandard2.0">
-        <dependency id="System.Runtime.CompilerServices.Unsafe" version="5.0.0" />
+        <dependency id="Microsoft.NETCore.Portable.Compatibility" version="$MicrosoftNETCorePortableCompatibilityVersion$" />
+        <dependency id="Microsoft.Win32.Registry" version="$MicrosoftWin32RegistryVersion$" />
+        <dependency id="System.Collections.Immutable" version="$SystemCollectionsImmutableVersion$" />
+        <dependency id="System.Diagnostics.Process" version="$SystemDiagnosticsProcessVersion$" />
+        <dependency id="System.Diagnostics.TraceSource" version="$SystemDiagnosticsTraceSourceVersion$" />
+        <dependency id="System.IO.Compression" version="$SystemIOCompressionVersion$" />
+        <dependency id="System.IO.UnmanagedMemoryStream" version="$SystemIOUnmanagedMemoryStreamVersion$" />
+        <dependency id="System.Net.Requests" version="$SystemNetRequestsVersion$" />
+        <dependency id="System.Net.NameResolution" version="$SystemNetNameResolutionVersion$" />
+        <dependency id="System.Reflection.Metadata" version="$SystemReflectionMetadataVersion$" />
+        <dependency id="System.Reflection.TypeExtensions" version="$SystemReflectionTypeExtensionsVersion$" />
+        <dependency id="System.Runtime" version="$SystemRuntimeVersion$" />
+        <dependency id="System.Runtime.CompilerServices.Unsafe" version="$SystemRuntimeCompilerServicesUnsafeVersion$" />
+        <dependency id="System.Security.Cryptography.Algorithms" version="$SystemSecurityCryptographyAlgorithmsVersion$" />
+        <dependency id="System.Threading.Tasks.Parallel" version="$SystemThreadingTasksParallelVersion$" />
+        <dependency id="System.Threading.Thread" version="$SystemThreadingThreadVersion$" />
       </group>
     </dependencies>
   </metadata>
@@ -43,21 +58,13 @@
     <!-- Native binaries -->
     <file src="$OutDir$netstandard2.0\amd64\KernelTraceControl.dll" target="build\native\amd64\KernelTraceControl.dll" />
     <file src="$OutDir$netstandard2.0\amd64\msdia140.dll" target="build\native\amd64\msdia140.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\msvcp140.dll" target="build\native\amd64\msvcp140.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\vcruntime140.dll" target="build\native\amd64\vcruntime140.dll" />
-    <file src="$OutDir$netstandard2.0\amd64\vcruntime140_1.dll" target="build\native\amd64\vcruntime140_1.dll" />
 
     <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.dll" target="build\native\x86\KernelTraceControl.dll" />
     <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.Win61.dll" target="build\native\x86\KernelTraceControl.Win61.dll" />
     <file src="$OutDir$netstandard2.0\x86\msdia140.dll" target="build\native\x86\msdia140.dll" />
-    <file src="$OutDir$netstandard2.0\x86\msvcp140.dll" target="build\native\x86\msvcp140.dll" />
-    <file src="$OutDir$netstandard2.0\x86\vcruntime140.dll" target="build\native\x86\vcruntime140.dll" />
 
     <file src="$OutDir$netstandard2.0\arm64\KernelTraceControl.dll" target="build\native\arm64\KernelTraceControl.dll" />
     <file src="$OutDir$netstandard2.0\arm64\msdia140.dll" target="build\native\arm64\msdia140.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\msvcp140.dll" target="build\native\arm64\msvcp140.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\vcruntime140.dll" target="build\native\arm64\vcruntime140.dll" />
-    <file src="$OutDir$netstandard2.0\arm64\vcruntime140_1.dll" target="build\native\arm64\vcruntime140_1.dll" />
 
     <!-- NetStandard 2.0 Framework -->
 	

@@ -10,22 +10,18 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private CtfMetadata _metadata;
         private CtfStream _ctfStream;
         private Stream _stream;
+        private long _position;
         private byte[] _buffer = new byte[256];
         private GCHandle _handle;
         private long _packetSize;
         private long _contentSize;
-
-#if DEBUG
-        private long _fileOffset;
-
-        public long FileOffset { get { return _fileOffset; } }
-#endif
 
         public CtfStream CtfStream { get { return _ctfStream; } }
 
         public CtfChannel(Stream stream, CtfMetadata metadata)
         {
             _stream = stream;
+            _position = 0;
             _metadata = metadata;
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 
@@ -52,9 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     int toRead = _buffer.Length <= _packetSize ? _buffer.Length : (int)_packetSize;
                     int read = _stream.Read(_buffer, 0, toRead);
                     _packetSize -= read;
-#if DEBUG
-                    _fileOffset += read;
-#endif
+                    _position += read;
                     if (read != toRead)
                     {
                         return false;
@@ -108,9 +102,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 return false;
             }
 
-#if DEBUG
-            _fileOffset += traceHeaderSize;
-#endif
+            _position += traceHeaderSize;
 
             uint magic = BitConverter.ToUInt32(_buffer, magicOffset);
             if (magic != 0xc1fc1fc1)
@@ -156,9 +148,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 return false;
             }
 
-#if DEBUG
-            _fileOffset += packetContextSize;
-#endif
+            _position += packetContextSize;
 
             int headerSize = (_metadata.Trace.Header.GetSize() / 8) + packetContextSize;
             _contentSize = (long)BitConverter.ToUInt64(_buffer, contentSizeOffset) / 8 - headerSize;
@@ -177,9 +167,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             int size = Marshal.SizeOf(typeof(T));
             int read = TryReadExactlyCount(_buffer, 0, size);
 
-#if DEBUG
-            _fileOffset += read;
-#endif
+            _position += read;
 
             if (size != read)
             {
@@ -199,6 +187,18 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
+        public override long Position
+        {
+            get
+            {
+                return _position;
+            }
+
+            set
+            {
+                throw new NotSupportedException();
+            }
+        }
 
         public override int ReadByte()
         {
@@ -210,11 +210,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _contentSize--;
             _packetSize--;
             int value = _stream.ReadByte();
-
-#if DEBUG
             if (value != -1)
-                _fileOffset++;
-#endif
+                _position++;
 
             Debug.Assert(value != -1);
             return value;
@@ -232,10 +229,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             _contentSize -= read;
             _packetSize -= read;
-
-#if DEBUG
-            _fileOffset += read;
-#endif
+            _position += read;
 
             return read;
         }
@@ -275,19 +269,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public override long Length
         {
             get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override long Position
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-
-            set
             {
                 throw new NotImplementedException();
             }

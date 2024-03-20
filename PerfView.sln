@@ -49,7 +49,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Global", "src\PerfViewExten
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastSerialization", "src\FastSerialization\FastSerialization.csproj", "{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinuxTracing.Tests", "src\LinuxEvent.Tests\LinuxTracing.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinuxTracing.Tests", "src\LinuxTracing.Tests\LinuxTracing.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CtfTracing.Tests", "src\TraceEvent\Ctf\CtfTracing.Tests\CtfTracing.Tests.csproj", "{B9384E1B-54B5-4A41-85BD-EBAD0577BDCD}"
 EndProject

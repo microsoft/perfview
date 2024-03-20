@@ -33,7 +33,25 @@
 
   <Target Name="SetNuspecProperties">
     <PropertyGroup>
-      <NuspecProperties>Configuration=$(Configuration);version=$(InformationalVersion);OutDir=$(OutputPath)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);Configuration=$(Configuration)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);MicrosoftNETCorePortableCompatibilityVersion=$(MicrosoftNETCorePortableCompatibilityVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);MicrosoftWin32RegistryVersion=$(MicrosoftWin32RegistryVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemCollectionsImmutableVersion=$(SystemCollectionsImmutableVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemDiagnosticsProcessVersion=$(SystemDiagnosticsProcessVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemDiagnosticsTraceSourceVersion=$(SystemDiagnosticsTraceSourceVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemIOCompressionVersion=$(SystemIOCompressionVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemIOUnmanagedMemoryStreamVersion=$(SystemIOUnmanagedMemoryStreamVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemNetRequestsVersion=$(SystemNetRequestsVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemNetNameResolutionVersion=$(SystemNetNameResolutionVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemReflectionMetadataVersion=$(SystemReflectionMetadataVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=$(SystemReflectionTypeExtensionsVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemRuntimeVersion=$(SystemRuntimeVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=$(SystemRuntimeCompilerServicesUnsafeVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemSecurityCryptographyAlgorithmsVersion=$(SystemSecurityCryptographyAlgorithmsVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemThreadingTasksParallelVersion=$(SystemThreadingTasksParallelVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemThreadingThreadVersion=$(SystemThreadingThreadVersion)</NuspecProperties>
     </PropertyGroup>
   </Target>
 
@@ -48,6 +66,7 @@
     <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="$(MicrosoftDiagnosticsNETCoreClientVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
     <PackageReference Include="System.Diagnostics.Process" Version="$(SystemDiagnosticsProcessVersion)" />
     <PackageReference Include="System.Diagnostics.TraceSource" Version="$(SystemDiagnosticsTraceSourceVersion)" />
     <PackageReference Include="System.IO.Compression" Version="$(SystemIOCompressionVersion)" />
@@ -108,21 +127,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)native\amd64\msvcp140.dll">
-      <Link>amd64\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140.dll">
-      <Link>amd64\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\amd64\vcruntime140_1.dll">
-      <Link>amd64\vcruntime140_1.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Link>x86\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -138,16 +142,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)native\x86\msvcp140.dll">
-      <Link>x86\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\x86\vcruntime140.dll">
-      <Link>x86\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
       <Link>arm64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -155,21 +149,6 @@
     </None>
     <None Include="$(TraceEventSupportFilesBase)native\arm64\msdia140.dll">
       <Link>arm64\msdia140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\msvcp140.dll">
-      <Link>arm64\msvcp140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\vcruntime140.dll">
-      <Link>arm64\vcruntime140.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\vcruntime140_1.dll">
-      <Link>arm64\vcruntime140_1.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>

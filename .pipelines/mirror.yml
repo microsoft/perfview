@@ -1,0 +1,137 @@
+trigger:
+  - main
+
+variables:
+  - group: 'DotNet-VSTS-Infra-Access'
+
+resources:
+  repositories:
+  - repository: 1esPipelines
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
+  parameters:
+    pool:
+      name: AzurePipelines-EO
+      image: 1ESPT-Windows2022
+      os: windows
+
+    stages:
+    - stage: Mirror
+      jobs:
+        - job: Mirror
+          steps:
+          - task: PowerShell@1
+            displayName: 'Set SourceBranch Variable'
+            inputs:
+              scriptType: inlineScript
+              arguments: '$(Build.SourceBranch)'
+              inlineScript: |
+                param(
+                  [string]$SourceBranch
+                )
+                if ($SourceBranch.StartsWith("refs/heads/"))
+                {
+                    # strip off the refs/heads/ prefix
+                    $SourceBranch=$SourceBranch.Substring(11)
+                }
+                $env:SourceBranch=$SourceBranch
+                Write-Host ("##vso[task.setvariable variable=SourceBranch;]$env:SourceBranch")
+
+          - task: PowerShell@1
+            displayName: 'Set MirrorBranch Variable'
+            inputs:
+              scriptType: inlineScript
+              inlineScript: |
+                $env:MirrorBranch='mirror/'+[Guid]::NewGuid().ToString()
+                Write-Host ("##vso[task.setvariable variable=MirrorBranch;]$env:MirrorBranch")
+
+          - task: PipAuthenticate@1
+            displayName: 'Pip Authenticate'
+            inputs:
+              artifactFeeds: 'DevDiv/PerfView-Mirror'
+
+          - task: UsePythonVersion@0
+            displayName: 'Use Python 3.11.x'
+            inputs:
+              versionSpec: 3.11.x
+
+          - task: CmdLine@1
+            displayName: 'Update pip to latest'
+            inputs:
+              filename: python
+              arguments: '-m pip install --upgrade pip'
+
+          - task: CmdLine@1
+            displayName: 'Install Azure CLI'
+            inputs:
+              filename: pip
+              arguments: 'install --pre azure-cli'
+
+          - task: CmdLine@1
+            displayName: 'Install Azure DevOps Extension'
+            inputs:
+              filename: az
+              arguments: 'extension add -n azure-devops'
+
+          - task: CmdLine@1
+            displayName: 'Configure Git user.email'
+            inputs:
+              filename: git
+              arguments: 'config user.email "dn-bot@microsoft.com"'
+
+          - task: CmdLine@1
+            displayName: 'Configure git user.name'
+            inputs:
+              filename: git
+              arguments: 'config user.name "dotnet-bot"'
+
+          - task: CmdLine@1
+            displayName: 'Checkout GitHub main Branch'
+            inputs:
+              filename: git
+              arguments: 'checkout $(SourceBranch)'
+
+          - task: CmdLine@1
+            displayName: 'Create Mirror Branch'
+            inputs:
+              filename: git
+              arguments: 'checkout -b $(MirrorBranch)'
+
+          - task: CmdLine@1
+            displayName: 'Run git reset'
+            inputs:
+              filename: git
+              arguments: 'reset --hard origin/$(SourceBranch)'
+            enabled: false
+
+          - task: CmdLine@1
+            displayName: 'Pull AzDO SourceBranch'
+            inputs:
+              filename: 'git '
+              arguments: 'pull https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
+
+          - task: CmdLine@1
+            displayName: 'Run git push '
+            inputs:
+              filename: 'git '
+              arguments: 'push https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(MirrorBranch)'
+
+          - task: PowerShell@1
+            displayName: 'Create Pull Request'
+            inputs:
+              scriptType: inlineScript
+              arguments: '$(dn-bot-devdiv-build-rw-code-rw)'
+              inlineScript: |
+                param(
+                  [string]$AccessToken
+                )
+                $env:AZURE_DEVOPS_EXT_PAT=$AccessToken
+                $Organization="https://devdiv.visualstudio.com"
+                $Project="DevDiv"
+                $Repository="PerfView"
+                az devops configure --defaults organization=$Organization project=$Project
+                az repos pr create --repository $Repository --auto-complete true --delete-source-branch true --title "Mirror Changes from GitHub" --source-branch $(MirrorBranch) --target-branch $(SourceBranch)

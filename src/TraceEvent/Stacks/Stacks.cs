@@ -853,11 +853,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
+        /// OnUnresolvedStackFrame will take an unresolved module 'moduleName', try to resolve it, and return the source with the module resolved (or null if it couldn't be resolved)
+        /// </summary>
+        public delegate StackSourceStacks OnUnresolvedStackFrame(string moduleName);
+        
+        /// <summary>
         /// InternFullStackFromSource will take a call stack 'baseCallStackIndex' from the source 'source' and completely copy it into
         /// the intern stack source (interning along the way of course).   Logically baseCallStackIndex has NOTHING to do with any of the
         /// call stack indexes in the intern stack source.  
         /// </summary>
-        private StackSourceCallStackIndex InternFullStackFromSource(StackSourceCallStackIndex baseCallStackIndex, StackSourceStacks source, int maxDepth = 1000)
+        protected StackSourceCallStackIndex InternFullStackFromSource(StackSourceCallStackIndex baseCallStackIndex, StackSourceStacks source, int maxDepth = 1000, OnUnresolvedStackFrame onUnresolvedStackFrame = null)
         {
             // To avoid stack overflows.  
             if (maxDepth < 0)
@@ -875,6 +880,19 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             var baseFullFrameName = source.GetFrameName(baseFrame, true);
             var moduleName = "";
+
+            // Check if this is an unresolved frame
+            if (onUnresolvedStackFrame != null && baseFullFrameName.EndsWith("!?") && !baseFullFrameName.Equals("?!?"))
+            {
+                moduleName = baseFullFrameName.Substring(0, baseFullFrameName.Length - 2);
+                var sourceWithResolvedModule = onUnresolvedStackFrame(moduleName);
+                if (sourceWithResolvedModule != null)
+                {
+                    source = sourceWithResolvedModule;
+                    baseFullFrameName = source.GetFrameName(baseFrame, true);
+                }
+            }
+
             var frameName = baseFullFrameName;
             var index = baseFullFrameName.IndexOf('!');
             if (index >= 0)
@@ -885,7 +903,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             var myModuleIndex = Interner.ModuleIntern(moduleName);
             var myFrameIndex = Interner.FrameIntern(frameName, myModuleIndex);
-            var ret = Interner.CallStackIntern(myFrameIndex, InternFullStackFromSource(baseCaller, source, maxDepth - 1));
+            var ret = Interner.CallStackIntern(myFrameIndex, InternFullStackFromSource(baseCaller, source, maxDepth - 1, onUnresolvedStackFrame));
             return ret;
         }
         #endregion

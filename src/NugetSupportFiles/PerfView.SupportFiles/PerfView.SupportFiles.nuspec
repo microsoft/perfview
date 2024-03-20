@@ -6,12 +6,8 @@
     <title>Non-Source files needed to Build PerfView</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
-    <!--  *************************************** 
-     4/2/2019 When the official builds support the 'license' element we should upgrade to use the that (shown below)  
-
-    <license type="expression">MIT</license>
-     *************************************** -->
     <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
+    <license type="expression">MIT</license>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <description> Basically this package contains DLLs that PerfView depends on but does not build itself.</description>

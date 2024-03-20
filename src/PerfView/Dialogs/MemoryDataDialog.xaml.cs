@@ -36,7 +36,7 @@ namespace PerfView.Dialogs
             if (args.ProcessDumpFile != null)
             {
                 ProcessDumpTextBox.Text = args.ProcessDumpFile;
-                DataFileNameTextBox.Text = System.IO.Path.ChangeExtension(args.ProcessDumpFile, ".gcDump");
+                DataFileNameTextBox.Text = args.ProcessDumpFile + ".gcDump";
                 SizeToContent = SizeToContent.Height;
                 ProcessRow.Visibility = Visibility.Collapsed;
                 StatusBar.Status = "Confirm parameters and hit enter to extract the GC heap from the dump.";
@@ -130,10 +130,10 @@ namespace PerfView.Dialogs
                 m_args.DoCommand = App.CommandProcessor.HeapSnapshotFromProcessDump;
             }
 
-            var dataFile = DataFileNameTextBox.Text;
+            var dataFile = RemoveQuotesFromPath(DataFileNameTextBox.Text);
             if (dataFile.Length == 0)
             {
-                StatusBar.Log("Error: Output data file not specififed.");
+                StatusBar.Log("Error: Output data file not specified.");
                 return;
             }
             m_args.DataFile = dataFile;
@@ -179,6 +179,19 @@ namespace PerfView.Dialogs
                     DataFileNameTextBox.Text = CommandProcessor.GetNewFile(DataFileNameTextBox.Text);
                 }
             });
+        }
+
+        private string RemoveQuotesFromPath(string inputPath)
+        {
+            if (!string.IsNullOrEmpty(inputPath) && inputPath.Length >= 2)
+            {
+                if (inputPath[0] == '\"' && inputPath[inputPath.Length - 1] == '\"')
+                {
+                    inputPath = inputPath.Substring(1, inputPath.Length - 2);
+                }
+            }
+
+            return inputPath;
         }
 
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)
