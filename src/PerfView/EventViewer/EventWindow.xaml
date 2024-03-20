@@ -79,6 +79,7 @@
             <Menu DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Parent Window" Click="DoOpenParent"/>
+                    <MenuItem Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
                     <MenuItem Header="_Close" Click="DoClose"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
@@ -242,11 +243,20 @@
                         MinWidth="60"
                         IsReadOnly="True" />
                         <WPFToolKit:DataGridTextColumn
-                        x:Name="TimeStampColumn"
-                        Header="TimeStamp (Trace Local)"
-                        Binding="{Binding TimeStamp, StringFormat=o}"
+                        x:Name="LocalTimeStampColumn"
+                        Header="TimeStamp (Current Machine)"
+                        Binding="{Binding LocalTimeStamp, StringFormat=o}"
                         MinWidth="60"
                         IsReadOnly="True"
+                        Visibility="Hidden"
+                        ElementStyle="{StaticResource RightAlign}" />
+                        <WPFToolKit:DataGridTextColumn
+                        x:Name="OriginTimeStampColumn"
+                        Header="TimeStamp (Trace Local)"
+                        Binding="{Binding OriginTimeStamp, StringFormat=o}"
+                        MinWidth="60"
+                        IsReadOnly="True"
+                        Visibility="Visible"
                         ElementStyle="{StaticResource RightAlign}" />
                         <WPFToolKit:DataGridTextColumn
                         x:Name="TimeMSecColumn"
