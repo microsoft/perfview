@@ -37,6 +37,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Xml;
+using Microsoft.Diagnostics.Tracing.Computers;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
@@ -994,6 +995,19 @@ namespace PerfView
 
         private static Dictionary<string, PerfViewFile> s_internTable = new Dictionary<string, PerfViewFile>();
         #endregion
+
+        protected static void ConfigureStackWindowForStartStopThreadTime(StackWindow stackWindow)
+        {
+            var foldPats = StartStopLatencyComputer.GetDefaultFoldPatterns();
+            for (var i = 0; i < foldPats.Length; i++)
+            {
+                if (i == 0)
+                {
+                    stackWindow.FoldRegExTextBox.Text = foldPats[i];
+                }
+                stackWindow.FoldRegExTextBox.Items.Insert(0, foldPats[i]);
+            }
+        }
     }
 
     // Used for new user defined file formats.  
@@ -6289,6 +6303,28 @@ table {
 
                 return stackSource;
             }
+            else if (streamName == "Contention")
+            {
+                var contentionSource = new MutableTraceEventStackSource(eventLog);
+                contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                var computer = new ContentionLatencyComputer(eventLog, contentionSource);
+                computer.GenerateStacks();
+
+                return contentionSource;
+            }
+            else if (streamName == "WaitHandleWait")
+            {
+                var waitHandleWaitSource = new MutableTraceEventStackSource(eventLog);
+                waitHandleWaitSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                waitHandleWaitSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                var computer = new WaitHandleWaitLatencyComputer(eventLog, waitHandleWaitSource);
+                computer.GenerateStacks();
+
+                return waitHandleWaitSource;
+            }
             else
             {
                 throw new Exception("Unknown stream " + streamName);
@@ -7010,6 +7046,11 @@ table {
                 stackWindow.FoldRegExTextBox.Text = prev;
                 stackWindow.FoldRegExTextBox.Items.Insert(0, prev);
             }
+            
+            if (stackSourceName == "Contention" || stackSourceName == "WaitHandleWait")
+            {
+                ConfigureStackWindowForStartStopThreadTime(stackWindow);
+            }
 
             if (m_extraTopStats != null)
             {
@@ -7033,6 +7074,7 @@ table {
                 }
             }
         }
+
         public override bool SupportsProcesses { get { return true; } }
 
         /// <summary>
@@ -7160,6 +7202,8 @@ table {
             bool hasAssemblyLoad = false;
             bool hasJIT = false;
             bool hasUserCrit = false;
+            bool hasContention = false;
+            bool hasWaitHandle = false;
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
@@ -7237,6 +7281,16 @@ table {
                     hasUserCrit = true;
                 }
 
+                if (name.StartsWith("Contention/Start"))
+                {
+                    hasContention = true;
+                }
+                
+                if (name.StartsWith("WaitHandleWait/Start"))
+                {
+                    hasWaitHandle = true;
+                }
+                
                 if (counts.StackCount > 0)
                 {
                     hasAnyStacks = true;
@@ -7495,6 +7549,16 @@ table {
                 }
             }
 
+            if (hasContention)
+            {
+                advanced.Children.Add(new PerfViewStackSource(this, "Contention"));
+            }
+
+            if (hasWaitHandle)
+            {
+                advanced.Children.Add(new PerfViewStackSource(this, "WaitHandleWait"));
+            }
+            
             if (hasAnyStacks)
             {
                 advanced.Children.Add(new PerfViewStackSource(this, "Any"));
@@ -8920,6 +8984,8 @@ table {
             bool hasMemAllocStacks = false;
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
+            bool hasContention = false;
+            bool hasWaitHandle = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -8960,6 +9026,14 @@ table {
                     else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
                     {
                         hasAssemblyLoad = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Contention/Start"))
+                    {
+                        hasContention = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("WaitHandleWait/Start"))
+                    {
+                        hasWaitHandle = true;
                     }
                 }
             }
@@ -9011,6 +9085,16 @@ table {
                 if (hasJIT || hasTypeLoad || hasAssemblyLoad)
                 {
                     advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
+
+                if (hasContention)
+                {
+                    advanced.AddChild(new PerfViewStackSource(this, "Contention"));
+                }
+
+                if (hasWaitHandle)
+                {
+                    advanced.AddChild(new PerfViewStackSource(this, "WaitHandleWait"));
                 }
             }
 
@@ -9143,6 +9227,36 @@ table {
 
                         stackSource.DoneAddingSamples();
                         return stackSource;
+                    }
+                case "Contention":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var contentionSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        contentionSource.OnlyManagedCodeStacks = true;
+                        contentionSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        contentionSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                        var computer = new ContentionLatencyComputer(eventLog, contentionSource);
+                        computer.GenerateStacks();
+
+                        return contentionSource;
+                    }
+                case "WaitHandleWait":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var waitHandleWaitSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        waitHandleWaitSource.OnlyManagedCodeStacks = true;
+                        waitHandleWaitSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        waitHandleWaitSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                        var computer = new WaitHandleWaitLatencyComputer(eventLog, waitHandleWaitSource);
+                        computer.GenerateStacks();
+
+                        return waitHandleWaitSource;
                     }
                 case "Thread Time (with StartStop Activities)":
                     {
@@ -9351,6 +9465,11 @@ table {
                 stackWindow.ComputeMaxInTopStats = true;
             }
 
+            if (stackSourceName == "Contention" || stackSourceName == "WaitHandleWait")
+            {
+                ConfigureStackWindowForStartStopThreadTime(stackWindow);
+            }
+            
             if (m_extraTopStats != null)
             {
                 stackWindow.ExtraTopStats += " " + m_extraTopStats;

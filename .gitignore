@@ -205,3 +205,6 @@ OSExtensions.cs
 password.txt
 documentation/internal/
 *.userosscache
+
+# Rider
+.idea/

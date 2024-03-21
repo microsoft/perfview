@@ -2438,6 +2438,28 @@
                             the heap snapshot.
                         </li>
                         <li>
+                            <strong><a id="ContentionStacks">Contention Stacks</a></strong> - This view aggregates Contention events.&nbsp;
+                            Contention event is fired when a thread tries to acquire a managed lock that is currently owned
+                            by another thread. Note that each event has useful event data that is folded by default.
+                            For example, unfolding <code>EventData DurationNs</code> reveals individual pauses of each thread: this can be useful 
+                            to correlate a particular long wait to another events in the trace. Note that not all contention events
+                            are real OS-level waits: the runtime may first spin wait to try acquire the lock fast. The metric
+                            represents the amount of time spent to acquire the lock in milliseconds.
+                        </li>
+                        <li>
+                            <strong><a id="WaitHandleWaitStacks">WaitHandleWait Stacks</a></strong> - This view is similar to <a href="#ContentionStacks">Contention Stacks</a>
+                            in a sense that it allows to diagnose the blocking waits. However, there are important differences.
+                            Contention events are emitted exclusively on <code>System.Threading.Monitor</code> and <code>System.Threading.Lock</code> code paths.
+                            WaitHandleWait events are lower level and fire when the OS-provided wait handle is used to block the thread execution.
+                            For example, WaitHandleWait will catch waiting inside <code>SemaphoreSlim.Wait()</code> while Contention event won't.
+                            WaitHandleWait can be fired alongside the Contention event: for instance, during <code>Monitor.Enter</code> if spin waiting
+                            was not enough to acquire the lock. Also note that WaitHandleWait is much more noisy: you'd need to clean up
+                            the stacks from "legit" waiting like a main thread waiting for application shutdown signal, or a consumer thread
+                            that waits for new items in a blocking channel. WaitHandleWait may not cover all waits in your application, like waits that
+                            bypass the dotnet runtime or waits on other synchronous OS APIs like a blocking write to a socket.
+                            For more details, refer to <a href="https://github.com/dotnet/runtime/pull/94737#discussion_r1409607825">this diagram</a> from the original PR.
+                        </li>
+                        <li>
                             <strong><a id="AnyStacks">Any Stacks</a></strong> - This view shows
                             every event that has a stack.&nbsp; It is useful when none of the more specialized
                             stack views are available.&nbsp;&nbsp;
