@@ -79,11 +79,13 @@
             <Menu DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Parent Window" Click="DoOpenParent"/>
-                    <MenuItem Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
                     <MenuItem Header="_Close" Click="DoClose"/>
                 </MenuItem>
+                <MenuItem Header="_View">
+                    <MenuItem Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
+                </MenuItem>
                 <MenuItem Header="_Help">
-                    <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
+                        <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:EventWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
                 </MenuItem>
             </Menu>
