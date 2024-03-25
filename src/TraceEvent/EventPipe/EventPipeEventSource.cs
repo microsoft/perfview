@@ -125,6 +125,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public int MinimumVersionCanRead => 0;
 
+        /// <summary>
+        /// Called after headers are deserialized. This is especially useful in a streaming scenario
+        /// because the headers are only read after Process() is called.
+        /// </summary>
+        internal Action HeadersDeserialized;
+
         protected override void Dispose(bool disposing)
         {
             if (_deserializer != null)
@@ -144,6 +150,7 @@ namespace Microsoft.Diagnostics.Tracing
                 Debug.Assert(_deserializer != null);
             }
 
+            HeadersDeserialized?.Invoke();
 
             if (FileFormatVersionNumber >= 3)
             {

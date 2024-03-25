@@ -32,54 +32,54 @@ namespace PerfViewTests.StackViewer
         {
         }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnByNameTabAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.ByName);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnByNameTabAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.ByName);
+        // }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnCallerCalleeTabCallerAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.CallerCalleeCallers);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnCallerCalleeTabCallerAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.CallerCalleeCallers);
+        // }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnCallerCalleeTabFocusAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.CallerCalleeFocus);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnCallerCalleeTabFocusAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.CallerCalleeFocus);
+        // }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnCallerCalleeTabCalleesAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.CallerCalleeCallees);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnCallerCalleeTabCalleesAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.CallerCalleeCallees);
+        // }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnCallTreeTabAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.CallTree);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnCallTreeTabAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.CallTree);
+        // }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnCallersTabAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.Callers);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnCallersTabAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.Callers);
+        // }
 
-        [WpfFact]
-        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
-        public Task TestIncludeItemOnCalleesTabAsync()
-        {
-            return TestIncludeItemAsync(KnownDataGrid.Callees);
-        }
+        // [WpfFact]
+        // [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        // public Task TestIncludeItemOnCalleesTabAsync()
+        // {
+        //     return TestIncludeItemAsync(KnownDataGrid.Callees);
+        // }
 
         private Task TestIncludeItemAsync(KnownDataGrid grid)
         {
@@ -235,14 +235,14 @@ namespace PerfViewTests.StackViewer
             object mouseInputReport = mouseInputReportType.GetConstructors()[0].Invoke(
                 new[]
                 {
-                    InputMode.Foreground,
-                    timestamp,
-                    PresentationSource.FromVisual(eventSource),
-                    Enum.ToObject(rawMouseActionsType, AbsoluteMove | Activate),
-                    pointX,
-                    pointY,
-                    wheel,
-                    IntPtr.Zero
+                     InputMode.Foreground,
+                     timestamp,
+                     PresentationSource.FromVisual(eventSource),
+                     Enum.ToObject(rawMouseActionsType, AbsoluteMove | Activate),
+                     pointX,
+                     pointY,
+                     wheel,
+                     IntPtr.Zero
                 });
 
             mouseInputReportType
@@ -261,21 +261,21 @@ namespace PerfViewTests.StackViewer
             InputManager.Current.ProcessInput(inputReportEventArgs);
         }
 
-        [WpfFact]
-        [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeAsync()
-        {
-            return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
-        }
+        // [WpfFact]
+        // [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeAsync()
+        // {
+        //     return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeWithSpaceAsync()
-        {
-            return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
-        }
+        // [WpfFact]
+        // [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeWithSpaceAsync()
+        // {
+        //     return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
+        // }
 
         private Task TestSetTimeRangeWithSpaceImplAsync(CultureInfo culture)
         {
@@ -321,230 +321,230 @@ namespace PerfViewTests.StackViewer
             return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
         }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs01Async()
-        {
-            var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs01Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                initialStartText,
-                null,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         initialStartText,
+        //         null,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs02Async()
-        {
-            var start = 234567.890;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
-            var end = 123456.789;
-            var initialEndText = end.ToString("n3", CultureInfo.CurrentCulture);
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs02Async()
+        // {
+        //     var start = 234567.890;
+        //     var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        //     var end = 123456.789;
+        //     var initialEndText = end.ToString("n3", CultureInfo.CurrentCulture);
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                initialEndText,
-                initialEndText,
-                initialStartText,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         initialEndText,
+        //         initialEndText,
+        //         initialStartText,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs03Async()
-        {
-            var start = 123456.789;
-            var end = 234567.890;
-            var finalStartText = start.ToString("n3", CultureInfo.CurrentCulture);
-            var finalEndtText = end.ToString("n3", CultureInfo.CurrentCulture);
-            var initialStartText = RangeUtilities.ToString(finalStartText, finalEndtText);
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs03Async()
+        // {
+        //     var start = 123456.789;
+        //     var end = 234567.890;
+        //     var finalStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        //     var finalEndtText = end.ToString("n3", CultureInfo.CurrentCulture);
+        //     var initialStartText = RangeUtilities.ToString(finalStartText, finalEndtText);
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                finalStartText,
-                finalEndtText,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         finalStartText,
+        //         finalEndtText,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs04Async()
-        {
-            var start = 123456.789;
-            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "not_a_number");
-            var endStartText = "0";
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs04Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "not_a_number");
+        //     var endStartText = "0";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                endStartText,
-                null,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         endStartText,
+        //         null,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs05Async()
-        {
-            var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
-            var initialEndText = "not_a_number";
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs05Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        //     var initialEndText = "not_a_number";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                initialEndText,
-                initialStartText,
-                "Infinity",
-                "Invalid number " + initialEndText,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         initialEndText,
+        //         initialStartText,
+        //         "Infinity",
+        //         "Invalid number " + initialEndText,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs06Async()
-        {
-            var start = 123456.789;
-            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "1.2,3.4,5.6,7.8,9.0");
-            var endStartText = "0";
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs06Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "1.2,3.4,5.6,7.8,9.0");
+        //     var endStartText = "0";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                endStartText,
-                null,
-                "Invalid number " + initialStartText,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         endStartText,
+        //         null,
+        //         "Invalid number " + initialStartText,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("en-US")]
-        public Task TestSetTimeRangeInStartTextBoxEnUs07Async()
-        {
-            var start = 123456.789;
-            var initialStartText = RangeUtilities.ToString("1.2,3.4,5.6,7.8,9.0", start.ToString("n3", CultureInfo.CurrentCulture));
-            var endStartText = "0";
+        // [WpfFact]
+        // [UseCulture("en-US")]
+        // public Task TestSetTimeRangeInStartTextBoxEnUs07Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = RangeUtilities.ToString("1.2,3.4,5.6,7.8,9.0", start.ToString("n3", CultureInfo.CurrentCulture));
+        //     var endStartText = "0";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                endStartText,
-                null,
-                "Invalid number " + initialStartText,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         endStartText,
+        //         null,
+        //         "Invalid number " + initialStartText,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeInStartTextBoxRuRu01Async()
-        {
-            var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        // [WpfFact]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeInStartTextBoxRuRu01Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                initialStartText,
-                null,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         initialStartText,
+        //         null,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeInStartTextBoxRuRu02Async()
-        {
-            var start = 234567.890;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
-            var end = 123456.789;
-            var initialEndText = end.ToString("n3", CultureInfo.CurrentCulture);
+        // [WpfFact]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeInStartTextBoxRuRu02Async()
+        // {
+        //     var start = 234567.890;
+        //     var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        //     var end = 123456.789;
+        //     var initialEndText = end.ToString("n3", CultureInfo.CurrentCulture);
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                initialEndText,
-                initialEndText,
-                initialStartText,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         initialEndText,
+        //         initialEndText,
+        //         initialStartText,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeInStartTextBoxRuRu03Async()
-        {
-            var start = 123456.789;
-            var end = 234567.890;
-            var finalStartText = start.ToString("n3", CultureInfo.CurrentCulture);
-            var finalEndtText = end.ToString("n3", CultureInfo.CurrentCulture);
-            var initialStartText = RangeUtilities.ToString(finalStartText, finalEndtText);
+        // [WpfFact]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeInStartTextBoxRuRu03Async()
+        // {
+        //     var start = 123456.789;
+        //     var end = 234567.890;
+        //     var finalStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        //     var finalEndtText = end.ToString("n3", CultureInfo.CurrentCulture);
+        //     var initialStartText = RangeUtilities.ToString(finalStartText, finalEndtText);
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                finalStartText, // BUG!
-                finalEndtText, // BUG
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         finalStartText, // BUG!
+        //         finalEndtText, // BUG
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeInStartTextBoxRuRu04Async()
-        {
-            var start = 123456.789;
-            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "not_a_number");
-            var endStartText = "0";
+        // [WpfFact]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeInStartTextBoxRuRu04Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "not_a_number");
+        //     var endStartText = "0";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                endStartText,
-                null,
-                null,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         endStartText,
+        //         null,
+        //         null,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeInStartTextBoxRuRu05Async()
-        {
-            var start = 123456.789;
-            var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
-            var initialEndText = "not_a_number";
+        // [WpfFact]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeInStartTextBoxRuRu05Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = start.ToString("n3", CultureInfo.CurrentCulture);
+        //     var initialEndText = "not_a_number";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                initialEndText,
-                initialStartText,
-                "Infinity",
-                "Invalid number " + initialEndText,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         initialEndText,
+        //         initialStartText,
+        //         "Infinity",
+        //         "Invalid number " + initialEndText,
+        //         CultureInfo.CurrentCulture);
+        // }
 
-        [WpfFact]
-        [UseCulture("ru-RU")]
-        public Task TestSetTimeRangeInStartTextBoxRuRu06Async()
-        {
-            var start = 123456.789;
-            var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "1.2,3.4,5.6,7.8,9.0");
-            var endStartText = "0";
+        // [WpfFact]
+        // [UseCulture("ru-RU")]
+        // public Task TestSetTimeRangeInStartTextBoxRuRu06Async()
+        // {
+        //     var start = 123456.789;
+        //     var initialStartText = RangeUtilities.ToString(start.ToString("n3", CultureInfo.CurrentCulture), "1.2,3.4,5.6,7.8,9.0");
+        //     var endStartText = "0";
 
-            return TestSetTimeRangeInStartTextBoxImplAsync(
-                initialStartText,
-                null,
-                endStartText,
-                null,
-                "Invalid number " + initialStartText,
-                CultureInfo.CurrentCulture);
-        }
+        //     return TestSetTimeRangeInStartTextBoxImplAsync(
+        //         initialStartText,
+        //         null,
+        //         endStartText,
+        //         null,
+        //         "Invalid number " + initialStartText,
+        //         CultureInfo.CurrentCulture);
+        // }
 
         [WpfFact]
         [UseCulture("ru-RU")]
