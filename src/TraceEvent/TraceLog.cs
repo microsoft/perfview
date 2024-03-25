@@ -186,7 +186,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// importantly TraceEvent.CallStack() will work. Thus you can get real time stacks from events).
         /// </summary>
         /// <param name="rundownConfiguration">
-        /// If enabled, a rundown is triggered immediately as a separate session. 
+        /// If enabled, a rundown is triggered immediately as a separate session.
         /// This is used to initialize module and method information and then the session is closed.
         /// This only makes sense in realtime sessions when you need to resolve function names during the session.
         /// </param>
@@ -215,7 +215,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 using (var rundownSession = rundownDiagnosticsClient.StartEventPipeSession(
                     new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default),
                     requestRundown: true
-                )) {
+                ))
+                {
                     traceLog.ProcessInitialRundown(rundownSession);
                 }
             }
@@ -10865,7 +10866,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
             TraceProcess ret = log.Processes.GetProcess(anEvent.ProcessID, anEvent.TimeStampQPC);
-            Debug.Assert(ret != null);
+            // When the trace was converted, a TraceProcess should have been created for
+            // every mentioned Process ID.
+            // When we care, we should ensure this is true for the RealTime case.
+            Debug.Assert(ret != null || log.IsRealTime);
             return ret;
         }
         /// <summary>
@@ -10880,7 +10884,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
             TraceThread ret = log.Threads.GetThread(anEvent.ThreadID, anEvent.TimeStampQPC);
-            Debug.Assert(ret != null);
+            // When the trace was converted, a TraceThread should have been created for
+            // every mentioned Thread ID.
+            // When we care, we should ensure this is true for the RealTime case.
+            Debug.Assert(ret != null || log.IsRealTime);
             return ret;
         }
         /// <summary>
