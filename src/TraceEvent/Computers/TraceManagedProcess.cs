@@ -3277,7 +3277,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Servo_Postpone = 26,
         Stress_Mix = 27,
         Stress = 28,
-        Max = 29
+        Aggressive = 29,
+        Max = 30
     }
 
     /// <summary>
@@ -3499,6 +3500,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         case Condemned_Reason_Condition.Stress:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress] = 1;
                             break;
+                        case Condemned_Reason_Condition.Aggressive:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Aggressive] = 1;
+                            break;
                         default:
                             Debug.Assert(false, "Unexpected reason");
                             break;
@@ -3550,7 +3554,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Servo_postpone = 27,
             Stress_mix = 28,
             Stress = 29,
-            Max = 30
+            Aggressive = 30,
+            Max = 31
         };
 
         private int GetReasonWithGenNumber(Condemned_Reason_Generation Reason_GenNumber)
