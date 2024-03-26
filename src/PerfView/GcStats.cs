@@ -903,7 +903,7 @@ namespace Stats
             {
                 if (runtime.GC.GCs[i].IsComplete)
                 {
-                    if (runtime.GC.GCs[i].PerHeapHistories == null)
+                    if (!(runtime.GC.GCs[i].PerHeapHistories?.Count > 0))
                     {
                         missingPerHeapHistories++;
 
