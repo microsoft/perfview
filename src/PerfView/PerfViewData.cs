@@ -3433,6 +3433,9 @@ table {
             // for inbound requests/sec stats, use an int counter
             int inboundRequestCount = 0;
 
+            // for tracking a raw count of unhandled exception events
+            int unhandledExceptionCount = 0;
+
             // this callback is invoked when the dispatcher.Process() call is made later, upon matching ANCHosting provider events (any of them)
             dispatcher.Dynamic.AddCallbackForProviderEvent(_hostingProvider, null, delegate (TraceEvent traceEvent)
             {
@@ -3503,6 +3506,7 @@ table {
                         break;
 
                     case _eventUnhandledException:
+                        unhandledExceptionCount++;
                         if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
                         {
                             // request exists, update it
@@ -3561,6 +3565,7 @@ table {
             outputWriter.WriteLine($"<li>Total Requests: {incompleteRequests.Count + completeRequests.Count}</li>");
             outputWriter.WriteLine($"<li>Total Complete Requests: {completeRequests.Count}</li>");
             outputWriter.WriteLine($"<li>Total Incomplete Requests: {incompleteRequests.Count}</li>");
+            outputWriter.WriteLine($"<li>Total Unhandled Exception Events: {unhandledExceptionCount}</li>");
             outputWriter.WriteLine($"<li>Trace Duration (Sec): {dataFile.SessionDuration.TotalSeconds:N2}</li>");
             outputWriter.WriteLine($"<li>Inbound Request Rate (total RequestStart events/total log session time): {(inboundRequestCount / dataFile.SessionDuration.TotalSeconds):N2}</li>");
             outputWriter.WriteLine($"</ul>");
@@ -3634,6 +3639,7 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                outputWriter.Write("<th align='center' title='Exception was thrown during the course of request processing and was not handled by the app.'>Unhandled Exception</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
                 outputWriter.WriteLine("</tr></thead>");
@@ -3645,6 +3651,7 @@ table {
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                    outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
                     outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
 
                     string note = String.Empty;
@@ -3680,6 +3687,7 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                outputWriter.Write("<th align='center' title='Exception was thrown during the course of request processing and was not handled by the app.'>Unhandled Exception</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.WriteLine("</tr></thead>");
                 outputWriter.WriteLine("<tbody>");
@@ -3692,6 +3700,7 @@ table {
                         outputWriter.Write($"<td>{request.Method}</td>");
                         outputWriter.Write($"<td>{request.Path}</td>");
                         outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                        outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
                         outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
                         outputWriter.WriteLine("</tr>");
                     }
@@ -3716,6 +3725,7 @@ table {
                 outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
                 outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
                 outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                outputWriter.Write("<th align='center' title='Exception was thrown during the course of request processing and was not handled by the app.'>Unhandled Exception</th>");
                 outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
                 outputWriter.WriteLine("</tr></thead>");
                 outputWriter.WriteLine("<tbody>");
@@ -3726,6 +3736,7 @@ table {
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                    outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
                     outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
                     outputWriter.WriteLine("</tr>");
                 }
