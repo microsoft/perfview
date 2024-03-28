@@ -881,7 +881,7 @@ In both cases, the [PerfView](http://www.microsoft.com/en-us/download/details.as
 1. Collect an ETL file that events from the `EventSource` you want a manifest for. For example, collect a trace for the **Microsoft-Demos-MySource** `EventSource` do
 
     ```
-    PerfView /onlyProviders=*Microsoft-Demos-MySource EventSource collect
+    PerfView /onlyProviders=*Microsoft-Demos-MySource collect
     ```
 
     which produces the file **PerfviewData.etl.zip**
