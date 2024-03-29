@@ -3436,6 +3436,10 @@ table {
             // for tracking a raw count of unhandled exception events
             int unhandledExceptionCount = 0;
 
+            // for tracking how many events we dropped due to not having an associated ActivityID -- without this there is no way to track which events correlate with others
+            // this is only useful for request-related events - if one of those does not have an ActivityId then we ignore it and increase the counter for later informing of the user
+            int eventsWithNoActivityIdCount = 0;
+
             // this callback is invoked when the dispatcher.Process() call is made later, upon matching ANCHosting provider events (any of them)
             dispatcher.Dynamic.AddCallbackForProviderEvent(_hostingProvider, null, delegate (TraceEvent traceEvent)
             {
@@ -3448,6 +3452,13 @@ table {
                 {
                     case _eventRequestStart:
                         inboundRequestCount++;
+
+                        if(traceEvent.ActivityID.Equals(Guid.Empty))
+                        {
+                            eventsWithNoActivityIdCount++;
+                            break;
+                        }
+
                         if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
                         {
                             // request exists, update its properties
@@ -3481,6 +3492,12 @@ table {
                         break;
 
                     case _eventRequestStop:
+                        if (traceEvent.ActivityID.Equals(Guid.Empty))
+                        {
+                            eventsWithNoActivityIdCount++;
+                            break;
+                        }
+
                         if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
                         {
                             // request exists, update its properties
@@ -3507,6 +3524,12 @@ table {
 
                     case _eventUnhandledException:
                         unhandledExceptionCount++;
+
+                        if (traceEvent.ActivityID.Equals(Guid.Empty))
+                        {
+                            eventsWithNoActivityIdCount++;
+                            break;
+                        }
                         if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
                         {
                             // request exists, update it
@@ -3560,7 +3583,6 @@ table {
 
             #region main stats output
             // main stats
-            // TODO: Output more request metrics like # unhandled exceptions, etc.
             outputWriter.WriteLine("<ul>");
             outputWriter.WriteLine($"<li>Total Requests: {incompleteRequests.Count + completeRequests.Count}</li>");
             outputWriter.WriteLine($"<li>Total Complete Requests: {completeRequests.Count}</li>");
@@ -3569,6 +3591,12 @@ table {
             outputWriter.WriteLine($"<li>Trace Duration (Sec): {dataFile.SessionDuration.TotalSeconds:N2}</li>");
             outputWriter.WriteLine($"<li>Inbound Request Rate (total RequestStart events/total log session time): {(inboundRequestCount / dataFile.SessionDuration.TotalSeconds):N2}</li>");
             outputWriter.WriteLine($"</ul>");
+
+            // show output about events with no ActivityId on them
+            if (eventsWithNoActivityIdCount > 0)
+            {
+                outputWriter.WriteLine($"<p><strong>Note:</strong> there are {eventsWithNoActivityIdCount} request-related events (Request/Start, Request/Stop, Request/UnhandledException) that do not have an associated ActivityID. Because of this, those events are unable to be associated with any other events. Any tables showing request information below are populated <strong>only</strong> by request events with ActivityIDs.</p>");
+            }
 
             // show info about processes that output these events
             if (processesThatEmittedEvents.Count > 0)
