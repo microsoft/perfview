@@ -67,7 +67,7 @@ namespace TraceEventTests
     {
         protected override void OnAnalyzerLoaded(AnalyzerLoadContext loadContext)
         {
-            Assert.True(false, "No analyzers should be loaded, but OnAnalyzerLoaded was called.");
+            Assert.Fail("No analyzers should be loaded, but OnAnalyzerLoaded was called.");
         }
 
         protected internal override void Resolve()
