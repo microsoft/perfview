@@ -3406,7 +3406,7 @@ table {
         private HashSet<ProcessIndex> processesThatEmittedEvents;
 
         // holds non-request events like host/start and stop, etc.
-        private List<OtherHostingEvent> otherEvents = new List<OtherHostingEvent>();
+        private List<OtherHostingEvent> otherEvents;
 
         public PerfViewAspNetCoreStats(PerfViewFile dataFile) : base(dataFile, "ASP.NET Core Stats") { }
 
@@ -3430,6 +3430,7 @@ table {
             incompleteRequests = new Dictionary<string, ANCHostingRequest>();
             completeRequests = new List<ANCHostingRequest>();
             processesThatEmittedEvents = new HashSet<ProcessIndex>();
+            otherEvents = new List<OtherHostingEvent>();
 
             // using the push/callback model for TraceLog processing
             var dispatcher = dataFile.Events.GetSource();
