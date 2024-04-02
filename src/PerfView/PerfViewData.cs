@@ -3401,9 +3401,9 @@ table {
         private const string _eventCounters = "EventCounters";
 
         // main storage for tracking requests and associated processes
-        private Dictionary<string, ANCHostingRequest> incompleteRequests = new Dictionary<string, ANCHostingRequest>();
-        private List<ANCHostingRequest> completeRequests = new List<ANCHostingRequest>();
-        private HashSet<ProcessIndex> processesThatEmittedEvents = new HashSet<ProcessIndex>();
+        private Dictionary<string, ANCHostingRequest> incompleteRequests;
+        private List<ANCHostingRequest> completeRequests;
+        private HashSet<ProcessIndex> processesThatEmittedEvents;
 
         // holds non-request events like host/start and stop, etc.
         private List<OtherHostingEvent> otherEvents = new List<OtherHostingEvent>();
@@ -3426,6 +3426,10 @@ table {
              * UnhandledException
              * ServerReady
              */
+
+            incompleteRequests = new Dictionary<string, ANCHostingRequest>();
+            completeRequests = new List<ANCHostingRequest>();
+            processesThatEmittedEvents = new HashSet<ProcessIndex>();
 
             // using the push/callback model for TraceLog processing
             var dispatcher = dataFile.Events.GetSource();
