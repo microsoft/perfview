@@ -64,7 +64,7 @@ namespace PerfView.Collections.Tests
         public void Dictionary_Generic_Constructor_int(int count)
         {
             IDictionary<TKey, TValue> dictionary = new SegmentedDictionary<TKey, TValue>(count);
-            Assert.Equal(0, dictionary.Count);
+            Assert.Empty(dictionary);
         }
 
         [Theory]

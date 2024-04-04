@@ -27,7 +27,7 @@ namespace TraceEventTests
                     case ClrRootKind.SizedRefHandle:
                         break;
                     default:
-                        Assert.True(false, $"Unexpected ClrRootKind: {kind}");
+                        Assert.Fail($"Unexpected ClrRootKind: {kind}");
                         break;
                 }
             }

@@ -4094,40 +4094,5 @@ namespace PerfView
 
             return manifest;
         }
-
-        #region private
-
-        private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
-        {
-            soFar[assembly] = assembly;
-            string assemblyDirectory = Path.GetDirectoryName(assembly.ManifestModule.FullyQualifiedName);
-            foreach (AssemblyName childAssemblyName in assembly.GetReferencedAssemblies())
-            {
-                try
-                {
-                    // TODO is this is at best heuristic.  
-                    string childPath = Path.Combine(assemblyDirectory, childAssemblyName.Name + ".dll");
-                    Assembly childAssembly = null;
-                    if (File.Exists(childPath))
-                    {
-                        childAssembly = Assembly.ReflectionOnlyLoadFrom(childPath);
-                    }
-
-                    //TODO do we care about things in the GAC?   it expands the search quite a bit. 
-                    //else
-                    //    childAssembly = Assembly.Load(childAssemblyName);
-
-                    if (childAssembly != null && !soFar.ContainsKey(childAssembly))
-                    {
-                        GetStaticReferencedAssemblies(childAssembly, soFar);
-                    }
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("Could not load assembly " + childAssemblyName + " skipping.");
-                }
-            }
-        }
-        #endregion
     }
 }
