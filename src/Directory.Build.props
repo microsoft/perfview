@@ -43,7 +43,6 @@
     <AzureCoreVersion>1.36.0</AzureCoreVersion>
     <AzureIdentityVersion>1.10.4</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
-    <MicrosoftNETCorePortableCompatibilityVersion>1.0.2</MicrosoftNETCorePortableCompatibilityVersion>
     <MicrosoftIdentityClientVersion>4.58.1</MicrosoftIdentityClientVersion>
     <MicrosoftIdentityClientExtensionsMsalVersion>4.58.1</MicrosoftIdentityClientExtensionsMsalVersion>
     <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>

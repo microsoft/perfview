@@ -30,7 +30,6 @@
 
     <dependencies>
       <group targetFramework=".NETStandard2.0">
-        <dependency id="Microsoft.NETCore.Portable.Compatibility" version="$MicrosoftNETCorePortableCompatibilityVersion$" />
         <dependency id="Microsoft.Win32.Registry" version="$MicrosoftWin32RegistryVersion$" />
         <dependency id="System.Collections.Immutable" version="$SystemCollectionsImmutableVersion$" />
         <dependency id="System.Diagnostics.Process" version="$SystemDiagnosticsProcessVersion$" />
