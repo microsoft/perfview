@@ -3302,7 +3302,7 @@ namespace PerfView
 
             if (!File.Exists(iisCorePath))  // IIS is not installed.  
             {
-                LogFile.WriteLine("File {0} does not, ASP.NET is not enabled on the machine", iisCorePath);
+                LogFile.WriteLine("File {0} does not exist, ASP.NET is not enabled on the machine", iisCorePath);
                 return;
             }
             var iisetwPath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR"), @"System32\inetsrv\iisetw.dll");
