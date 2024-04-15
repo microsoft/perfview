@@ -40,11 +40,11 @@
 
   <!-- External dependencies -->
   <PropertyGroup>
-    <AzureCoreVersion>1.36.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.10.4</AzureIdentityVersion>
+    <AzureCoreVersion>1.38.0</AzureCoreVersion>
+    <AzureIdentityVersion>1.11.0</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
-    <MicrosoftIdentityClientVersion>4.58.1</MicrosoftIdentityClientVersion>
-    <MicrosoftIdentityClientExtensionsMsalVersion>4.58.1</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityClientVersion>4.60.1</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>4.60.1</MicrosoftIdentityClientExtensionsMsalVersion>
     <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>
     <MicrosoftIdentityModelJsonWebTokensVersion>7.1.2</MicrosoftIdentityModelJsonWebTokensVersion>
     <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
