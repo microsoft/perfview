@@ -41,7 +41,7 @@
   <!-- External dependencies -->
   <PropertyGroup>
     <AzureCoreVersion>1.36.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.10.4</AzureIdentityVersion>
+    <AzureIdentityVersion>1.11.0</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
     <MicrosoftIdentityClientVersion>4.58.1</MicrosoftIdentityClientVersion>
     <MicrosoftIdentityClientExtensionsMsalVersion>4.58.1</MicrosoftIdentityClientExtensionsMsalVersion>
