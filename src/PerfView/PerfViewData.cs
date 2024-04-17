@@ -3402,6 +3402,454 @@ table {
         #endregion
     }
 
+    /// <summary>
+    /// Generates an ASP.NET Core Stats HTML page
+    /// </summary>
+    public class PerfViewAspNetCoreStats : PerfViewHtmlReport
+    {
+        private const string _hostingProvider = "Microsoft.AspNetCore.Hosting";
+        private const string _eventManifestData = "ManifestData";
+        private const string _eventRequestStart = "Request/Start";
+        private const string _eventRequestStop = "Request/Stop";
+        private const string _eventUnhandledException = "UnhandledException";
+        private const string _eventCounters = "EventCounters";
+
+        // main storage for tracking requests and associated processes
+        private Dictionary<string, ANCHostingRequest> incompleteRequests;
+        private List<ANCHostingRequest> completeRequests;
+        private HashSet<ProcessIndex> processesThatEmittedEvents;
+
+        // holds non-request events like host/start and stop, etc.
+        private List<OtherHostingEvent> otherEvents;
+
+        public PerfViewAspNetCoreStats(PerfViewFile dataFile) : base(dataFile, "ASP.NET Core Stats") { }
+
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter outputWriter, string fileName, TextWriter log)
+        {
+            outputWriter.WriteLine("<H2>ASP.NET Core Request Statistics</H2>");
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            // request/stop does not contain status code or anything like that
+            // maybe add ILogger events, if available, to enhance these logs?
+            // possibility: the ActivityStart/Stop events in System.Diagnostics.DiagnosticSource for ANCHosting do contain status code, check for these?
+            // also down the road if both ILogger and MS.ANC.Hosting events are available, use both and integrate them?
+            /* 
+             * some possible events (ref: https://source.dot.net/#Microsoft.AspNetCore.Hosting/Internal/HostingEventSource.cs):
+             * Request/Start and Request/Stop
+             * ManifestData
+             * Host/Start and Host/Stop
+             * UnhandledException
+             * ServerReady
+             */
+
+            incompleteRequests = new Dictionary<string, ANCHostingRequest>();
+            completeRequests = new List<ANCHostingRequest>();
+            processesThatEmittedEvents = new HashSet<ProcessIndex>();
+            otherEvents = new List<OtherHostingEvent>();
+
+            // using the push/callback model for TraceLog processing
+            var dispatcher = dataFile.Events.GetSource();
+
+            // for inbound requests/sec stats, use an int counter
+            int inboundRequestCount = 0;
+
+            // for tracking a raw count of unhandled exception events
+            int unhandledExceptionCount = 0;
+
+            // for tracking how many events we dropped due to not having an associated ActivityID -- without this there is no way to track which events correlate with others
+            // this is only useful for request-related events - if one of those does not have an ActivityId then we ignore it and increase the counter for later informing of the user
+            int eventsWithNoActivityIdCount = 0;
+
+            // this callback is invoked when the dispatcher.Process() call is made later, upon matching ANCHosting provider events (any of them)
+            dispatcher.Dynamic.AddCallbackForProviderEvent(_hostingProvider, null, delegate (TraceEvent traceEvent)
+            {
+                // track which processes (via the trace's ProcessIndex) have emitted events - this is used for output in the stats later
+                _ = processesThatEmittedEvents.Add(traceEvent.Process().ProcessIndex);
+
+                ANCHostingRequest request = null;
+                // determine which event we're dealing with
+                switch (traceEvent.EventName)
+                {
+                    case _eventRequestStart:
+                        inboundRequestCount++;
+
+                        if(traceEvent.ActivityID.Equals(Guid.Empty))
+                        {
+                            eventsWithNoActivityIdCount++;
+                            break;
+                        }
+
+                        if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
+                        {
+                            // request exists, update its properties
+                            request.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                            request.HasStart = true;
+                            request.Method = (string)traceEvent.PayloadByName("method");
+                            request.Path = (string)traceEvent.PayloadByName("path");
+                            if (String.IsNullOrEmpty(request.Path))
+                                request.Path = "/";
+                        }
+                        else
+                        {
+                            // request does not exist yet, create and track it
+                            request = new ANCHostingRequest(traceEvent);
+                            request.Method = (string)traceEvent.PayloadByName("method");
+                            request.Path = (string)traceEvent.PayloadByName("path");
+                            if (String.IsNullOrEmpty(request.Path))
+                                request.Path = "/";
+                            request.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                            request.HasStart = true;
+                            incompleteRequests.Add(request.IndexingKey, request);
+                        }
+
+                        break;
+
+                    case _eventRequestStop:
+                        if (traceEvent.ActivityID.Equals(Guid.Empty))
+                        {
+                            eventsWithNoActivityIdCount++;
+                            break;
+                        }
+
+                        if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
+                        {
+                            // request exists, update its properties
+                            request.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                            request.HasStop = true;
+
+                            // if the request is complete then move it to the completeRequests List
+                            if (request.IsComplete)
+                            {
+                                incompleteRequests.Remove(request.IndexingKey);
+                                completeRequests.Add(request);
+                            }
+                        }
+                        else
+                        {
+                            // request does not exist yet, create and track it
+                            request = new ANCHostingRequest(traceEvent);
+                            request.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                            request.HasStop = true;
+                            incompleteRequests.Add(request.IndexingKey, request);
+                        }
+
+                        break;
+
+                    case _eventUnhandledException:
+                        unhandledExceptionCount++;
+
+                        if (traceEvent.ActivityID.Equals(Guid.Empty))
+                        {
+                            eventsWithNoActivityIdCount++;
+                            break;
+                        }
+                        if (incompleteRequests.TryGetValue(ANCHostingRequest.GetIndexingKeyFromEvent(traceEvent), out request))
+                        {
+                            // request exists, update it
+                            request.HasUnhandledException = true;
+                        }
+                        else
+                        {
+                            // request does not yet exist, create and track it
+                            request = new ANCHostingRequest(traceEvent);
+                            request.HasUnhandledException = true;
+                            incompleteRequests.Add(request.IndexingKey, request);
+                        }
+                        break;
+
+                    case _eventManifestData:
+                    case _eventCounters:
+                        // ignore
+                        break;
+
+                    default:
+                        otherEvents.Add(new OtherHostingEvent(traceEvent));
+                        break;
+                }
+            });
+
+            // process the log which invokes the callbacks above
+            dispatcher.Process();
+
+            // fixup requests without a start or a stop
+            if (incompleteRequests.Count > 0)
+            {
+                foreach (ANCHostingRequest request in incompleteRequests.Values)
+                {
+                    if (request.HasStart)
+                    {
+                        // if the request is not complete but has a start, then it must not have a stop, so update the end time to be the end of the trace itself
+                        request.EndTimeRelativeMSec = dataFile.SessionEndTimeRelativeMSec;
+                    }
+                    // if there is no start time, then do not change the request's start time and it will remain the default 0.0
+                }
+            }
+
+            sw.Stop();
+            log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to process events.");
+
+            // at this point we have all the relevant information, now start processing and creating the HTML output
+            sw.Restart();
+
+            #region main stats output
+            // main stats
+            outputWriter.WriteLine("<ul>");
+            outputWriter.WriteLine($"<li>Total Requests: {incompleteRequests.Count + completeRequests.Count}</li>");
+            outputWriter.WriteLine($"<li>Total Complete Requests: {completeRequests.Count}</li>");
+            outputWriter.WriteLine($"<li>Total Incomplete Requests: {incompleteRequests.Count}</li>");
+            outputWriter.WriteLine($"<li>Total Unhandled Exception Events: {unhandledExceptionCount}</li>");
+            outputWriter.WriteLine($"<li>Trace Duration (Sec): {dataFile.SessionDuration.TotalSeconds:N2}</li>");
+            outputWriter.WriteLine($"<li>Inbound Request Rate (total RequestStart events/total log session time): {(inboundRequestCount / dataFile.SessionDuration.TotalSeconds):N2}</li>");
+            outputWriter.WriteLine($"</ul>");
+
+            // show output about events with no ActivityId on them
+            if (eventsWithNoActivityIdCount > 0)
+            {
+                outputWriter.WriteLine($"<p><strong>Note:</strong> there are {eventsWithNoActivityIdCount} request-related events (Request/Start, Request/Stop, Request/UnhandledException) that do not have an associated ActivityID. Because of this, those events are unable to be associated with any other events. Any tables showing request information below are populated <strong>only</strong> by request events with ActivityIDs.</p>");
+            }
+
+            // show info about processes that output these events
+            if (processesThatEmittedEvents.Count > 0)
+            {
+                outputWriter.WriteLine("<h3>Relevant Processes</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>These are processes that emitted any ASP.NET Core Hosting-related events.<br/>Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='PID'>Process ID</th>");
+                outputWriter.Write("<th align='center' title='Command line that started the process (may be empty if unknown)'>Command Line</th>");
+                outputWriter.Write("<th align='center' title='32 or 64bit'>Bitness</th>");
+                outputWriter.Write("<th align='center' title='Amount of CPU time spent by the process in milliseconds, based on samples (if available)'>CPU time msec (if available)</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                foreach (ProcessIndex processIdx in processesThatEmittedEvents)
+                {
+                    TraceProcess process = dispatcher.TraceLog.Processes[processIdx];
+                    if (process != null)
+                    {
+                        outputWriter.Write("<tr>");
+                        outputWriter.Write($"<td>{process.ProcessID}</td>");
+                        outputWriter.Write($"<td>{process.CommandLine}</td>");
+                        outputWriter.Write($"<td>{(process.Is64Bit ? "64bit" : "32bit")}</td>");
+                        outputWriter.Write($"<td>{process.CPUMSec:N2}</td>");
+                        outputWriter.Write("</tr>");
+                    }
+                }
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("</table>");
+            }
+
+            // output the general/non-request-related events if any
+            if (otherEvents.Count > 0)
+            {
+                outputWriter.WriteLine("<h3>General Events</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='The PID that emitted the event'>Process ID</th>");
+                outputWriter.Write("<th align='center' title='Raw time of the event in UTC'>Time (UTC)</th>");
+                outputWriter.Write("<th align='center' title='How many milliseconds after the trace started this event was emitted'>Trace Relative Time (msec)</th>");
+                outputWriter.Write("<th align='center' title='The event that was emitted'>Event</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                foreach (OtherHostingEvent hostingEvent in otherEvents)
+                {
+                    outputWriter.Write("<tr>");
+                    outputWriter.Write($"<td>{hostingEvent.ProcessID}</td>");
+                    outputWriter.Write($"<td>{hostingEvent.TimeUTC}</td>");
+                    outputWriter.Write($"<td>{hostingEvent.TimeRelativeMSec}</td>");
+                    outputWriter.Write($"<td>{hostingEvent.EventName}</td>");
+                    outputWriter.WriteLine("</tr>");
+                }
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("</table>");
+            }
+                        
+            // incomplete requests table
+            // generally there should be fewer of these compared to finished/complete requests
+            // TODO: add command for opening events window
+            if (incompleteRequests.Count > 0)
+            {
+                outputWriter.WriteLine("<h3>All Incomplete Requests</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>Requests that do not contain both a start and stop event.<br/>Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
+                outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
+                outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
+                outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                outputWriter.Write("<th align='center' title='Exception was thrown during the course of request processing and was not handled by the app.'>Unhandled Exception</th>");
+                outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
+                outputWriter.Write("<th align='center' title='Note'>Note - see below</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                foreach (ANCHostingRequest request in incompleteRequests.Values)
+                {
+                    outputWriter.Write("<tr>");
+                    outputWriter.Write($"<td>{request.ProcessID}</td>");
+                    outputWriter.Write($"<td>{request.Method}</td>");
+                    outputWriter.Write($"<td>{request.Path}</td>");
+                    outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                    outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
+                    outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+
+                    string note = String.Empty;
+                    if (!request.IsComplete)
+                        note = request.HasStart ? "2" : "1";
+
+                    outputWriter.Write($"<td>{note}</td>");
+                    outputWriter.WriteLine("</tr>");
+                }
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("<tfoot>");
+                outputWriter.WriteLine("<tr><td colspan=6><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
+                outputWriter.WriteLine("<tr><td colspan=6><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
+                outputWriter.WriteLine("</tfoot>");
+                outputWriter.WriteLine("</table>");
+            }
+
+            // slow requests table, only for complete requests
+            // TODO: add command for opening events window
+            if (completeRequests.Count > 0) 
+            {
+                IEnumerable<ANCHostingRequest> slowestRequests =
+                    (from request in completeRequests
+                     where request.DurationMsec >= 100
+                     orderby request.DurationMsec descending
+                     select request).Take(20);
+
+                outputWriter.WriteLine("<h3>Top 20 Slowest Requests (complete requests only)</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>This table shows the top 20 slowest requests in this trace.<br/>Incomplete requests and requests taking <100 milliseconds are ignored.<br/>Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
+                outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
+                outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
+                outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                outputWriter.Write("<th align='center' title='Exception was thrown during the course of request processing and was not handled by the app.'>Unhandled Exception</th>");
+                outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                if (slowestRequests.Any())
+                {
+                    foreach (ANCHostingRequest request in slowestRequests)
+                    {
+                        outputWriter.Write("<tr>");
+                        outputWriter.Write($"<td>{request.ProcessID}</td>");
+                        outputWriter.Write($"<td>{request.Method}</td>");
+                        outputWriter.Write($"<td>{request.Path}</td>");
+                        outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                        outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
+                        outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+                        outputWriter.WriteLine("</tr>");
+                    }
+                }
+                else
+                {
+                    outputWriter.WriteLine("<td align='center' title='no requests took more than 100 milliseconds' colspan=6>No requests took >= 100 milliseconds</td>");
+                }
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("</table>");
+            }
+
+            // all complete requests table
+            // TODO: add command for opening events window
+            if (completeRequests.Count > 0)
+            {
+                outputWriter.WriteLine("<h3>All Complete Requests</h3>");
+                outputWriter.WriteLine("<table border=\"1\">");
+                outputWriter.WriteLine("<caption>Hover over column headings for explanation of columns.</caption>");
+                outputWriter.Write("<thead><tr>");
+                outputWriter.Write("<th align='center' title='Process ID'>PID</th>");
+                outputWriter.Write("<th align='center' title='HTTP Method/Verb - may not be available'>Method</th>");
+                outputWriter.Write("<th align='center' title='Request Path - may not be available'>Path</th>");
+                outputWriter.Write("<th align='center' title='Duration of the request in milliseconds'>Duration (msec)</th>");
+                outputWriter.Write("<th align='center' title='Exception was thrown during the course of request processing and was not handled by the app.'>Unhandled Exception</th>");
+                outputWriter.Write("<th align='center' title='ActivityId of the request - this is a good request-specific text filter for the Events view'>ActivityID</th>");
+                outputWriter.WriteLine("</tr></thead>");
+                outputWriter.WriteLine("<tbody>");
+                foreach (ANCHostingRequest request in completeRequests)
+                {
+                    outputWriter.Write("<tr>");
+                    outputWriter.Write($"<td>{request.ProcessID}</td>");
+                    outputWriter.Write($"<td>{request.Method}</td>");
+                    outputWriter.Write($"<td>{request.Path}</td>");
+                    outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
+                    outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
+                    outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+                    outputWriter.WriteLine("</tr>");
+                }
+                outputWriter.WriteLine("</tbody>");
+                outputWriter.WriteLine("</table>");
+            }
+            #endregion
+
+            sw.Stop();
+            outputWriter.Flush();
+            log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to build and flush HTML.");
+        }
+
+        private class ANCHostingRequest
+        {
+            public int ProcessID;
+            public ProcessIndex TraceProcessIndex; // PIDs can be reused, but this ProcessIndex is unique per-process for the TraceLog
+            public string Method;
+            public string Path;
+            public double EndTimeRelativeMSec;
+            public double StartTimeRelativeMSec;
+            public Guid ActivityId;
+            public bool HasUnhandledException;
+            public string IndexingKey;
+            public bool HasStart;
+            public bool HasStop; 
+
+            public bool IsComplete => HasStart && HasStop;
+            public double DurationMsec => EndTimeRelativeMSec - StartTimeRelativeMSec;
+
+            public ANCHostingRequest(TraceEvent fromEvent)
+            {
+                ProcessID = fromEvent.ProcessID;
+                TraceProcessIndex = fromEvent.Process().ProcessIndex;
+                ActivityId = fromEvent.ActivityID;
+                IndexingKey = GetIndexingKeyFromEvent(fromEvent);
+                StartTimeRelativeMSec = 0.0;
+                EndTimeRelativeMSec = 0.0;
+                HasStart = false;
+                HasStop = false;
+                Method = "N/A";
+                Path = "N/A";
+                HasUnhandledException = false;
+            }
+
+            /// <summary>
+            /// Returns a string that *should* be unique per request, and is thus good for use as a unique index.
+            /// </summary>
+            public static string GetIndexingKeyFromEvent(TraceEvent theEvent)
+            {
+                return theEvent.Process().ProcessIndex.ToString() + theEvent.ActivityID.ToString();
+            }
+        }
+
+        private class OtherHostingEvent
+        {
+            public int ProcessID;
+            public ProcessIndex TraceProcessIndex; // PIDs can be reused, but this ProcessIndex is unique per-process for the TraceLog
+            public DateTime TimeUTC;
+            public double TimeRelativeMSec;
+            public string EventName;
+
+            public OtherHostingEvent(TraceEvent fromEvent)
+            {
+                ProcessID = fromEvent.ProcessID;
+                TraceProcessIndex = fromEvent.Process().ProcessIndex;
+                TimeUTC = fromEvent.TimeStamp.ToUniversalTime();
+                TimeRelativeMSec = fromEvent.TimeStampRelativeMSec;
+                EventName = fromEvent.EventName;
+            }
+        }
+    }
+
     public class PerfViewEventStats : PerfViewHtmlReport
     {
         public PerfViewEventStats(PerfViewFile dataFile) : base(dataFile, "EventStats") { }
@@ -7202,6 +7650,7 @@ table {
             bool hasAssemblyLoad = false;
             bool hasJIT = false;
             bool hasUserCrit = false;
+            bool hasAspNetCoreHosting = false;
             bool hasContention = false;
             bool hasWaitHandle = false;
 
@@ -7217,6 +7666,11 @@ table {
                 if (!hasAspNet && name.StartsWith("AspNetReq"))
                 {
                     hasAspNet = true;
+                }
+
+                if(!hasAspNetCoreHosting && counts.ProviderName.Equals("Microsoft.AspNetCore.Hosting", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasAspNetCoreHosting = true;
                 }
 
                 if (!hasIis && name.StartsWith("IIS"))
@@ -7596,6 +8050,11 @@ table {
             if (hasIis)
             {
                 advanced.Children.Add(new PerfViewIisStats(this));
+            }
+
+            if(hasAspNetCoreHosting)
+            {
+                advanced.Children.Add(new PerfViewAspNetCoreStats(this));
             }
 
             if (hasProjectNExecutionTracingEvents)
@@ -8984,6 +9443,7 @@ table {
             bool hasMemAllocStacks = false;
             bool hasTypeLoad = false;
             bool hasAssemblyLoad = false;
+            bool hasAspNetCoreHosting = false;
             bool hasContention = false;
             bool hasWaitHandle = false;
             if (m_traceLog != null)
@@ -9026,6 +9486,10 @@ table {
                     else if (eventStats.EventName.StartsWith("Loader/AssemblyLoad"))
                     {
                         hasAssemblyLoad = true;
+                    }
+                    else if (!hasAspNetCoreHosting && eventStats.ProviderName.Equals("Microsoft.AspNetCore.Hosting", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAspNetCoreHosting = true;
                     }
                     else if (eventStats.EventName.StartsWith("Contention/Start"))
                     {
@@ -9085,6 +9549,11 @@ table {
                 if (hasJIT || hasTypeLoad || hasAssemblyLoad)
                 {
                     advanced.AddChild(new PerfViewRuntimeLoaderStats(this));
+                }
+
+                if (hasAspNetCoreHosting)
+                {
+                    advanced.AddChild(new PerfViewAspNetCoreStats(this));
                 }
 
                 if (hasContention)
