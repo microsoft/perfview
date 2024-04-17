@@ -3414,6 +3414,9 @@ table {
         {
             outputWriter.WriteLine("<H2>ASP.NET Core Request Statistics</H2>");
 
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             // request/stop does not contain status code or anything like that
             // maybe add ILogger events, if available, to enhance these logs?
             // possibility: the ActivityStart/Stop events in System.Diagnostics.DiagnosticSource for ANCHosting do contain status code, check for these?
@@ -3473,13 +3476,6 @@ table {
                             request.Path = (string)traceEvent.PayloadByName("path");
                             if (String.IsNullOrEmpty(request.Path))
                                 request.Path = "/";
-
-                            // if the request is complete then move it to the completeRequests List
-                            if(request.IsComplete)
-                            {
-                                incompleteRequests.Remove(request.IndexingKey);
-                                completeRequests.Add(request);
-                            }
                         }
                         else
                         {
@@ -3559,9 +3555,6 @@ table {
                         break;
                 }
             });
-
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
 
             // process the log which invokes the callbacks above
             dispatcher.Process();
