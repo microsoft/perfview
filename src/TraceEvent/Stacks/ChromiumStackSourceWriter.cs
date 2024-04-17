@@ -74,7 +74,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
                     writer.Write($"\"name\": \"{GetEscaped(frameIdToFrameTuple[profileEvent.FrameId].Name, escapedNames)}\", ");
                     writer.Write($"\"cat\": \"sampleEvent\", ");
                     writer.Write($"\"ph\": \"{(profileEvent.Type == ProfileEventType.Open ? "B" : "E")}\", ");
-                    writer.Write($"\"ts\": {profileEvent.RelativeTime.ToString("R", CultureInfo.InvariantCulture)}, ");
+                    writer.Write($"\"ts\": {(profileEvent.RelativeTime * 1000).ToString("R", CultureInfo.InvariantCulture)}, ");
                     writer.Write($"\"pid\": {perThread.Key.ProcessId}, ");
                     writer.Write($"\"tid\": {perThread.Key.Id}, ");
                     writer.Write($"\"sf\": {profileEvent.FrameId}");

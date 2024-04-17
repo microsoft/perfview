@@ -2393,7 +2393,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             get
             {
-                if ((PerHeapHistories != null) && (_PerHeapCondemnedReasons == null))
+                if ((PerHeapHistories?.Count > 0) && (_PerHeapCondemnedReasons == null))
                 {
                     int NumHeaps = PerHeapHistories.Count;
                     _PerHeapCondemnedReasons = new GCCondemnedReasons[NumHeaps];
@@ -2806,7 +2806,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return gc.AllocedSinceLastGCBasedOnAllocTickMB[(int)gen];
             }
 
-            if (gc.PerHeapHistories != null && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories != null)
+            if (gc.PerHeapHistories?.Count > 0 && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories?.Count > 0)
             {
                 double TotalAllocated = 0;
                 if (gc.Index > 0)
@@ -2930,12 +2930,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         private static double GetUserAllocatedPerHeap(List<TraceGC> GCs, TraceGC gc, int HeapIndex, Gens gen)
         {
+            Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
                 // If the prevous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                if (HeapIndex < perHeapGenData.Count)
+                if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
                     // Note that for gen3 we need to do something extra as its after data may not be updated if the last
@@ -2986,7 +2988,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (HeapIndex < perHeapGenData.Count)
+                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                     {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
                     }
@@ -3277,7 +3279,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Servo_Postpone = 26,
         Stress_Mix = 27,
         Stress = 28,
-        Max = 29
+        Aggressive = 29,
+        Max = 30
     }
 
     /// <summary>
@@ -3499,6 +3502,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         case Condemned_Reason_Condition.Stress:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress] = 1;
                             break;
+                        case Condemned_Reason_Condition.Aggressive:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Aggressive] = 1;
+                            break;
                         default:
                             Debug.Assert(false, "Unexpected reason");
                             break;
@@ -3550,7 +3556,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Servo_postpone = 27,
             Stress_mix = 28,
             Stress = 29,
-            Max = 30
+            Aggressive = 30,
+            Max = 31
         };
 
         private int GetReasonWithGenNumber(Condemned_Reason_Generation Reason_GenNumber)
@@ -4721,6 +4728,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
 
+                if (_event.PerHeapHistories == null) { _event.PerHeapHistories = new List<GCPerHeapHistory>(); }
                 _event.PerHeapHistories.Add(hist);
             }
         }

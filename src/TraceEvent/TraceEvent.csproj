@@ -36,7 +36,6 @@
       <NuspecProperties>$(NuspecProperties);Configuration=$(Configuration)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);MicrosoftNETCorePortableCompatibilityVersion=$(MicrosoftNETCorePortableCompatibilityVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);MicrosoftWin32RegistryVersion=$(MicrosoftWin32RegistryVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemCollectionsImmutableVersion=$(SystemCollectionsImmutableVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemDiagnosticsProcessVersion=$(SystemDiagnosticsProcessVersion)</NuspecProperties>
@@ -62,7 +61,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="$(MicrosoftNETCorePortableCompatibilityVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />

@@ -168,6 +168,7 @@ namespace PerfView
 
         public PerfViewEventSource DataSource { get; private set; }
         public Window ParentWindow { get; private set; }
+        public bool UseLocalTime { get; set; } = false;
 
         public void SaveDataToCsvFile(string csvFileName, int maxNonRestFields = int.MaxValue)
         {
@@ -1842,5 +1843,35 @@ namespace PerfView
         private float[] m_buckets;                              // Keep track of the counts of events.
         private double m_bucketTimeMSec;                        // Size for each bucket
         #endregion
-    }
+
+        private void DoUseLocalTime(object sender, RoutedEventArgs e)
+        {
+            foreach (var i in Grid.Columns)
+            {
+                if (i == OriginTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Hidden;
+                }
+                else if (i == LocalTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Visible;
+                }
+            }
+        }
+
+        private void DoUseOriginTime(object sender, RoutedEventArgs e)
+        {
+            foreach (var i in Grid.Columns)
+            {
+                    if (i == OriginTimeStampColumn)
+                    {
+                        i.Visibility = Visibility.Visible;
+                    }
+                    else if (i == LocalTimeStampColumn)
+                    {
+                        i.Visibility = Visibility.Hidden;
+                    }
+                }
+            }
+        }
 }

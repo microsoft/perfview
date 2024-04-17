@@ -590,7 +590,7 @@ namespace TraceEventTests
                 Output.WriteLine($"Baseline File: {baselineFile}");
                 Output.WriteLine($"Actual File: {eventStatisticsFile}");
                 Output.WriteLine($"To Diff: windiff {baselineFile} {eventStatisticsFile}");
-                Assert.True(false, $"The event statistics doesn't match {Path.GetFullPath(baselineFile)}. It's saved in {Path.GetFullPath(eventStatisticsFile)}.");
+                Assert.Fail($"The event statistics doesn't match {Path.GetFullPath(baselineFile)}. It's saved in {Path.GetFullPath(eventStatisticsFile)}.");
             }
         }
     }

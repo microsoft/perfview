@@ -642,6 +642,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private unsafe void DispatchClonedEvent(TraceEvent toSend)
         {
+            // Self describing metadata doesn't make it to realTimeSource because TraceLog overwrites the event's extended data.
+            // To address this, we use the event from the raw source, which contains the metadata,
+            // and convert it to a template that can be registered with realTimeSource.
+            realTimeSource.RegisterUnhandledEventImpl(te =>
+            {
+                if (toSend.containsSelfDescribingMetadata)
+                {
+                    var template = toSend.CloneToTemplate();
+                    realTimeSource.Dynamic.OnNewEventDefintion(template, true);
+                    return true;
+                }
+                return false;
+            });
             TraceEvent eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
             eventInRealTimeSource.userData = toSend.userData;
             eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
@@ -1114,6 +1127,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             rawEvents.Clr.GCJoin += doNothing;
             rawEvents.Clr.GCFinalizeObject += doNothing;
             rawEvents.Clr.MethodJittingStarted += doNothing;
+
+            // This is required to ensure that self-describing metadata gets ingested before the event's extended data gets overwritten by the TraceLog.
+            if (IsRealTime)
+            {
+                rawEvents.Dynamic.All += doNothing;
+            }
 
             //kernelParser.AddCallbackForEvents<PageFaultTraceData>(doNothing);        // Lots of page fault ones
             //kernelParser.AddCallbackForEvents<PageAccessTraceData>(doNothing);

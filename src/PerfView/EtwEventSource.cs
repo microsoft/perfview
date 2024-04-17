@@ -25,6 +25,8 @@ namespace PerfView
             m_tracelog = traceLog;
             NonRestFields = 10;
             MaxEventTimeRelativeMsec = traceLog.SessionDuration.TotalMilliseconds;
+            SessionStartTime = traceLog.SessionStartTime;
+            OriginTimeZone = TimeZoneInfo.CreateCustomTimeZone("origin", TimeSpan.FromMinutes(traceLog.UTCOffsetMinutes ?? 0), string.Empty, string.Empty);
         }
         public override ICollection<string> EventNames
         {
@@ -373,6 +375,9 @@ namespace PerfView
             }
         }
 
+        public DateTime SessionStartTime { get; private set; }
+        public TimeZoneInfo OriginTimeZone { get; private set; }
+
         [Flags]
         private enum CorelationOptions
         {
@@ -657,6 +662,8 @@ namespace PerfView
             public override string EventName { get { return m_name; } }
             public override string ProcessName { get { return m_processName; } }
             public override double TimeStampRelatveMSec { get { return m_timeStampRelativeMSec; } }
+            public DateTime LocalTimeStamp { get { return this.m_source.SessionStartTime.AddMilliseconds(this.m_timeStampRelativeMSec); } }
+            public DateTime OriginTimeStamp { get { return TimeZoneInfo.ConvertTime(LocalTimeStamp, this.m_source.OriginTimeZone); } }
             public override string Rest { get { return m_asText; } set { } }
             public EventIndex Index { get { return m_idx; } }
 
