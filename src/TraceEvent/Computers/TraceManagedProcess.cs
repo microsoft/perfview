@@ -2414,6 +2414,101 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return _PerHeapCondemnedReasons;
             }
         }
+
+        public enum TimingType
+        {
+            /// <summary>
+            /// This field records the time spent for marking a type of GCHandle named HNDTYPE_SIZEDREF.
+            /// This happens only for blocking GC, and for majority of the time, this does not happen (because there are no sizedref handles)
+            /// so you get a 0 for blocking GC and a Null for background GC.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            MarkSizedRef,
+
+            /// <summary>
+            /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
+            /// This happen for any type of GC, and it should not be zero for all GCs
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            MarkRoot,
+
+            /// <summary>
+            /// This field records the time spent for nulling out short weak references.
+            /// Short weak references should be null out if the only reason an object is alive is because of finalization (or dependent handle?)
+            /// This happens for any type of GC, and it should not be zero for all GCs.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            MarkShortWeak,
+
+            /// <summary>
+            /// This field records the time spent for scanning the finalization queue and remarking the secondaries for dependent handles.
+            /// This happens for any type of GC, and it should not be zero for all GCs.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            MarkScanFinalization,
+
+            /// <summary>
+            /// This field records the time spent for scanning the long weak references
+            /// Long weak references are nulled out only if absolutely nothing is holding it alive (even pending for finalization is not allowed)
+            /// This include the work for scanning the sync blocks, so this value could indicate sync block usage issues.
+            /// This happens for any type of GC, and it should not be zero for all GCs.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            MarkLongWeak,
+
+            /// <summary>
+            /// This field records the time spent for planning.
+            /// Planning refers to the activity of determining where the contigous block of life memory (aka plugs) are and where they should be
+            /// relocated if we decided to compact
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            Plan,
+
+            /// <summary>
+            /// This fields records the time spent for relocating.
+            /// Relocation refers to the activity of changing all the pointers to objects to their new location.
+            ///
+            /// This happen only for blocking compacting GC.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            Relocate,
+
+            /// <summary>
+            /// This fields records the time spent for compacting.
+            /// Compacting refers to the activity of copying the ojbects from their old location to new location.
+            ///
+            /// This happen only for blocking compacting GC.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            Compact,
+
+            /// <summary>
+            /// This field records the time spent for sweeping.
+            /// Sweeping refers to the activity of inserting the free memory blocks into the size seggregated free
+            /// list if the corresponding generation.
+            ///
+            /// This happen only for blocking sweeping GC.
+            ///
+            /// Available for .NET 6+
+            /// </summary>
+            Sweep,
+        };
+
+        /// <summary>
+        /// In .NET 6+, we have a poor man's profiler that capture the timing information
+        /// for various phases in GC. This provides a lightweight way to know how much time
+        /// is spent on each phase of the GC.
+        /// </summary>
+        public Nullable<int>[] TimingInfo { get; set; }
+
         /// <summary>
         /// Identify the first and greatest condemned heap
         /// </summary>
@@ -3663,6 +3758,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public bool HasCondemnReasons0;
         public int CondemnReasons1;
         public bool HasCondemnReasons1;
+        public int[] Times;
     }
 
     /// <summary>
@@ -4682,8 +4778,32 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
                     HasCondemnReasons0 = data.HasCondemnReasons0,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
+                    Times = data.Times,
                 };
                 _event.SetHeapCount(data.NumHeaps);
+
+                if (data.Times != null)
+                {
+                    _event.TimingInfo = new Nullable<int>[(int)TraceGC.TimingType.Sweep + 1];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkRoot] = data.Times[1];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak] = data.Times[2];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization] = data.Times[3];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak] = data.Times[4];
+                    if (_event.Type != GCType.BackgroundGC)
+                    {
+                        _event.TimingInfo[(int)TraceGC.TimingType.MarkSizedRef] = data.Times[0];
+                        _event.TimingInfo[(int)TraceGC.TimingType.Plan] = data.Times[5];
+                        if ((_event.GlobalHeapHistory.GlobalMechanisms & GCGlobalMechanisms.Compaction) != 0)
+                        {
+                            _event.TimingInfo[(int)TraceGC.TimingType.Relocate] = data.Times[6];
+                            _event.TimingInfo[(int)TraceGC.TimingType.Compact] = data.Times[7];
+                        }
+                        else
+                        {
+                            _event.TimingInfo[(int)TraceGC.TimingType.Sweep] = data.Times[6];
+                        }
+                    }
+                }
             }
         }
 
