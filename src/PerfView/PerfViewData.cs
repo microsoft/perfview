@@ -3668,7 +3668,6 @@ table {
                         
             // incomplete requests table
             // generally there should be fewer of these compared to finished/complete requests
-            // TODO: add command for opening events window
             if (incompleteRequests.Count > 0)
             {
                 outputWriter.WriteLine("<h3>All Incomplete Requests</h3>");
@@ -3686,13 +3685,15 @@ table {
                 outputWriter.WriteLine("<tbody>");
                 foreach (ANCHostingRequest request in incompleteRequests.Values)
                 {
+                    string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec};{dataFile.FilePath}";
+
                     outputWriter.Write("<tr>");
                     outputWriter.Write($"<td>{request.ProcessID}</td>");
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
                     outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
-                    outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+                    outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
 
                     string note = String.Empty;
                     if (!request.IsComplete)
@@ -3703,14 +3704,13 @@ table {
                 }
                 outputWriter.WriteLine("</tbody>");
                 outputWriter.WriteLine("<tfoot>");
-                outputWriter.WriteLine("<tr><td colspan=6><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
-                outputWriter.WriteLine("<tr><td colspan=6><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
+                outputWriter.WriteLine("<tr><td colspan=7><sup>1</sup> Request already running when trace started - duration is based on trace start time</td></tr>");
+                outputWriter.WriteLine("<tr><td colspan=7><sup>2</sup> Request started during the trace but did not stop before the trace ended - duration is based on trace stop time</td></tr>");
                 outputWriter.WriteLine("</tfoot>");
                 outputWriter.WriteLine("</table>");
             }
 
             // slow requests table, only for complete requests
-            // TODO: add command for opening events window
             if (completeRequests.Count > 0) 
             {
                 IEnumerable<ANCHostingRequest> slowestRequests =
@@ -3735,13 +3735,15 @@ table {
                 {
                     foreach (ANCHostingRequest request in slowestRequests)
                     {
+                        string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec};{dataFile.FilePath}";
+
                         outputWriter.Write("<tr>");
                         outputWriter.Write($"<td>{request.ProcessID}</td>");
                         outputWriter.Write($"<td>{request.Method}</td>");
                         outputWriter.Write($"<td>{request.Path}</td>");
                         outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
                         outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
-                        outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+                        outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                         outputWriter.WriteLine("</tr>");
                     }
                 }
@@ -3754,7 +3756,6 @@ table {
             }
 
             // all complete requests table
-            // TODO: add command for opening events window
             if (completeRequests.Count > 0)
             {
                 outputWriter.WriteLine("<h3>All Complete Requests</h3>");
@@ -3771,13 +3772,15 @@ table {
                 outputWriter.WriteLine("<tbody>");
                 foreach (ANCHostingRequest request in completeRequests)
                 {
+                    string detailedRequestCommandString = $"detailedrequestevents:{request.ActivityId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec};{dataFile.FilePath}";
+
                     outputWriter.Write("<tr>");
                     outputWriter.Write($"<td>{request.ProcessID}</td>");
                     outputWriter.Write($"<td>{request.Method}</td>");
                     outputWriter.Write($"<td>{request.Path}</td>");
                     outputWriter.Write($"<td>{request.DurationMsec:N2}</td>");
                     outputWriter.Write($"<td>{(request.HasUnhandledException ? "yes" : "no")}</td>");
-                    outputWriter.Write($"<td>{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</td>");
+                    outputWriter.Write($"<td><a href=\"command:{detailedRequestCommandString}\">{StartStopActivityComputer.ActivityPathString(request.ActivityId)}</a></td>");
                     outputWriter.WriteLine("</tr>");
                 }
                 outputWriter.WriteLine("</tbody>");
@@ -3788,6 +3791,52 @@ table {
             sw.Stop();
             outputWriter.Flush();
             log.WriteLine($"AspNetCoreStats: took {sw.ElapsedMilliseconds} milliseconds to build and flush HTML.");
+        }
+
+        protected override string DoCommand(string command, StatusBar worker)
+        {
+            // right now it exceptions-out
+            if (command.StartsWith("detailedrequestevents:"))
+            {
+                string detailedrequesteventsString = command.Substring(22);
+                string[] detailedrequesteventsParams = detailedrequesteventsString.Split(';');
+
+                if (detailedrequesteventsParams.Length > 3)
+                {
+                    // convert the request ID back to the more readable format
+                    string requestId = StartStopActivityComputer.ActivityPathString(Guid.Parse(detailedrequesteventsParams[0]));
+
+                    // start and end times are used for filtering the events window by time
+                    string startTime = detailedrequesteventsParams[1];
+                    string endTime = detailedrequesteventsParams[2];
+
+                    // this works for nettrace as well since PerfView converts it to etlx
+                    ETLDataFile etlFile = new ETLDataFile(detailedrequesteventsParams[3]);
+
+                    // does the work of opening the events window and setting the filters for viewing (i.e. setting the start/end times, setting the filter to the request ID, etc.)
+                    Events events = etlFile.Events;
+                    GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                    {
+                        PerfViewFile perfViewFile = DataFile;
+                        var eventSource = new PerfViewEventSource(perfViewFile);
+                        eventSource.m_eventSource = events;
+
+                        eventSource.Viewer = new EventWindow(GuiApp.MainWindow, eventSource);
+                        eventSource.Viewer.TextFilterTextBox.Text = requestId;
+                        eventSource.Viewer.StartTextBox.Text = startTime;
+                        eventSource.Viewer.EndTextBox.Text = endTime;
+                        eventSource.Viewer.Loaded += delegate
+                        {
+                            eventSource.Viewer.EventTypes.SelectAll();
+                            eventSource.Viewer.Update();
+                        };
+
+                        eventSource.Viewer.Show();
+                    });
+                }
+            }
+
+            return base.DoCommand(command, worker);
         }
 
         private class ANCHostingRequest
