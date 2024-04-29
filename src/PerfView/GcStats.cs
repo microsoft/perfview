@@ -537,7 +537,6 @@ namespace Stats
 
                 if (gc.TimingInfo != null)
                 {
-                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkSizedRef].HasValue) { writer.Write(" MarkSizedRef=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkSizedRef].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].HasValue) { writer.Write(" MarkRoot=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].HasValue) { writer.Write(" MarkScanFinalization=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].HasValue) { writer.Write(" MarkLongWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].Value); }

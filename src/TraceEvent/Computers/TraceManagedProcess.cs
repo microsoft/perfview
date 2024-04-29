@@ -2416,57 +2416,54 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         public enum TimingType
-        {
-            /// <summary>
-            /// This field records the time spent for marking a type of GCHandle named HNDTYPE_SIZEDREF.
-            /// This happens only for blocking GC, and for majority of the time, this does not happen (because there are no sizedref handles)
-            /// so you get a 0 for blocking GC and a Null for background GC.
-            ///
-            /// Available for .NET 6+
-            /// </summary>
-            MarkSizedRef,
-
+        {            
             /// <summary>
             /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
+            ///
             /// This happen for any type of GC, and it should not be zero for all GCs
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             MarkRoot,
 
             /// <summary>
             /// This field records the time spent for nulling out short weak references.
-            /// Short weak references should be null out if the only reason an object is alive is because of finalization (or dependent handle?)
+            /// GC traced through strong references and any object found dead at this point, if they are targets of a short weak ref, that ref's target will be null-ed.
             /// This happens for any type of GC, and it should not be zero for all GCs.
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             MarkShortWeak,
 
             /// <summary>
-            /// This field records the time spent for scanning the finalization queue and remarking the secondaries for dependent handles.
+            /// This field records the time spent for promoting finalizable objects that were found dead (so their finalizers can run). 
+            ///
             /// This happens for any type of GC, and it should not be zero for all GCs.
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             MarkScanFinalization,
 
             /// <summary>
-            /// This field records the time spent for scanning the long weak references
-            /// Long weak references are nulled out only if absolutely nothing is holding it alive (even pending for finalization is not allowed)
+            /// This field records the time spent for scanning the long weak references.
+            ///
+            /// GC already promoted all the finalizable object, for any object found dead at this point, if they are targets of a long weak ref, that ref's target will be null-ed.
+            ///
             /// This include the work for scanning the sync blocks, so this value could indicate sync block usage issues.
+            ///
             /// This happens for any type of GC, and it should not be zero for all GCs.
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             MarkLongWeak,
 
             /// <summary>
             /// This field records the time spent for planning.
-            /// Planning refers to the activity of determining where the contigous block of life memory (aka plugs) are and where they should be
-            /// relocated if we decided to compact
+            /// Planning refers to the activity of calculating new addresses for objects if this was going to be a compacting GC.
             ///
-            /// Available for .NET 6+
+            /// This happen only for blocking GCs.
+            ///
+            /// Available in .NET 6+
             /// </summary>
             Plan,
 
@@ -2474,38 +2471,39 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// This fields records the time spent for relocating.
             /// Relocation refers to the activity of changing all the pointers to objects to their new location.
             ///
-            /// This happen only for blocking compacting GC.
+            /// This happen only for blocking compacting GCs.
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             Relocate,
 
             /// <summary>
             /// This fields records the time spent for compacting.
-            /// Compacting refers to the activity of copying the ojbects from their old location to new location.
+            /// Compacting refers to the activity of copying the objects from their old location to the new location.
             ///
-            /// This happen only for blocking compacting GC.
+            /// This happen only for blocking compacting GCs.
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             Compact,
 
             /// <summary>
             /// This field records the time spent for sweeping.
-            /// Sweeping refers to the activity of inserting the free memory blocks into the size seggregated free
-            /// list if the corresponding generation.
+            /// Sweeping refers to the activity of making the dead spaces inbetween live objects into a free list
             ///
-            /// This happen only for blocking sweeping GC.
+            /// This happen only for blocking sweeping GCs.
             ///
-            /// Available for .NET 6+
+            /// Available in .NET 6+
             /// </summary>
             Sweep,
         };
 
         /// <summary>
-        /// In .NET 6+, we have a poor man's profiler that capture the timing information
+        /// We have a poor man's profiler that capture the timing information
         /// for various phases in GC. This provides a lightweight way to know how much time
         /// is spent on each phase of the GC.
+        ///
+        /// Available in .NET 6+
         /// </summary>
         public Nullable<int>[] TimingInfo { get; set; }
 
@@ -2522,8 +2520,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (gen == GenNumberHighest)
                 {
                     return HeapIndex;
-                }
-            }
+                }            }
 
             return 0;
         }
@@ -4791,7 +4788,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak] = data.Times[4];
                     if (_event.Type != GCType.BackgroundGC)
                     {
-                        _event.TimingInfo[(int)TraceGC.TimingType.MarkSizedRef] = data.Times[0];
                         _event.TimingInfo[(int)TraceGC.TimingType.Plan] = data.Times[5];
                         if ((_event.GlobalHeapHistory.GlobalMechanisms & GCGlobalMechanisms.Compaction) != 0)
                         {
