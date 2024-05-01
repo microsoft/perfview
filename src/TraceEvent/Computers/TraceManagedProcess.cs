@@ -2420,7 +2420,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// <summary>
             /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
             ///
-            /// This happen for any type of GC, and it should not be zero for all GCs
+            /// This happen for any type of GC, and it should not be zero for any GCs
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2429,7 +2429,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// <summary>
             /// This field records the time spent for nulling out short weak references.
             /// GC traced through strong references and any object found dead at this point, if they are targets of a short weak ref, that ref's target will be null-ed.
-            /// This happens for any type of GC, and it should not be zero for all GCs.
+            /// This happens for any type of GC, and it should not be zero for any GCs.
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2438,7 +2438,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// <summary>
             /// This field records the time spent for promoting finalizable objects that were found dead (so their finalizers can run). 
             ///
-            /// This happens for any type of GC, and it should not be zero for all GCs.
+            /// This happens for any type of GC, and it should not be zero for any GCs.
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2451,7 +2451,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             ///
             /// This include the work for scanning the sync blocks, so this value could indicate sync block usage issues.
             ///
-            /// This happens for any type of GC, and it should not be zero for all GCs.
+            /// This happens for any type of GC, and it should not be zero for any GCs.
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2461,7 +2461,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// This field records the time spent for planning.
             /// Planning refers to the activity of calculating new addresses for objects if this was going to be a compacting GC.
             ///
-            /// This happen only for blocking GCs.
+            /// This happen only for blocking GCs, and it should not be zero for any blocking GCs.
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2471,7 +2471,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// This fields records the time spent for relocating.
             /// Relocation refers to the activity of changing all the pointers to objects to their new location.
             ///
-            /// This happen only for blocking compacting GCs.
+            /// This happen only for blocking compacting GCs, and it should not be zero for any blocking compacting GCs.
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2481,7 +2481,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// This fields records the time spent for compacting.
             /// Compacting refers to the activity of copying the objects from their old location to the new location.
             ///
-            /// This happen only for blocking compacting GCs.
+            /// This happen only for blocking compacting GCs, and it should not be zero for any blocking compacting GCs.
+            ///
+            /// Note: Due to a bug in the runtime, its value can be 0 for .NET 6 to .NET 8
             ///
             /// Available in .NET 6+
             /// </summary>
@@ -2491,7 +2493,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             /// This field records the time spent for sweeping.
             /// Sweeping refers to the activity of making the dead spaces inbetween live objects into a free list
             ///
-            /// This happen only for blocking sweeping GCs.
+            /// This happen only for blocking sweeping GCs, and it should not be zero for any blocking sweeping GCs.
             ///
             /// Available in .NET 6+
             /// </summary>
