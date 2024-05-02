@@ -534,6 +534,18 @@ namespace Stats
                 writer.Write(" Gen0ReductionCount=\"{0:n0}\"", gc.GlobalHeapHistory.Gen0ReductionCount);
                 writer.Write(" Reason=\"{0}\"", gc.GlobalHeapHistory.Reason);
                 writer.Write(" GlobalMechanisms=\"{0}\"", gc.GlobalHeapHistory.GlobalMechanisms);
+
+                if (gc.TimingInfo != null)
+                {
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].HasValue) { writer.Write(" MarkRoot=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].HasValue) { writer.Write(" MarkScanFinalization=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].HasValue) { writer.Write(" MarkLongWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Plan].HasValue) { writer.Write(" Plan=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Plan].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Relocate].HasValue) { writer.Write(" Relocate=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Relocate].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Compact].HasValue) { writer.Write(" Compact=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Compact].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Sweep].HasValue) { writer.Write(" Sweep=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Sweep].Value); }
+                }
+
                 writer.WriteLine("/>");
             }
 
@@ -616,6 +628,8 @@ namespace Stats
                     {
                         writer.Write(" DataUnavailable=\"true\"");
                     }
+
+
                     writer.WriteLine(">");
 
                     var sb = new System.Text.StringBuilder();
