@@ -3653,7 +3653,7 @@ namespace PerfView
                 LogFile.WriteLine("Rundown File Length: {0:n1}MB delta: {1:n1}MB", newRundownFileLen / 1000000.0, delta / 1000000.0);
                 rundownFileLen = newRundownFileLen;
 
-                if ((maxSizeMB > 0) && rundownFileLen >= (maxSizeMB * 1024 * 1024))
+                if ((maxSizeMB > 0) && rundownFileLen >= ((long)maxSizeMB * 1024 * 1024))
                 {
                     LogFile.WriteLine($"Exceeded maximum rundown file size of {maxSizeMB}MB.");
                     break;
