@@ -257,13 +257,16 @@ namespace PerfView
                 commandLineArgs.KernelEvents |= KernelTraceEventParser.Keywords.ImageLoad;
             }
             commandLineArgs.ClrEvents = ClrTraceEventParser.Keywords.GC;
-            if(commandLineArgs.GCTriggeredStacks)
+            commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
+            commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
+            if (commandLineArgs.GCTriggeredStacks)
             {
                 commandLineArgs.ClrEvents |= ClrTraceEventParser.Keywords.Stack;
             }
-            commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
-            commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
-            commandLineArgs.NoRundown = true;
+            else
+            {
+                commandLineArgs.NoRundown = true;
+            }
         }
 
         private void SetupCommandLine(CommandLineParser parser)
