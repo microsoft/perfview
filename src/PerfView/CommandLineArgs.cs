@@ -149,7 +149,7 @@ namespace PerfView
         public bool NoNGenPdbs;
         public bool NoNGenRundown = true;
         public bool NoClrRundown;
-        public bool NoV2Rundown;
+        public bool NoV2Rundown = true;
         public bool LowPriority;
 
         public bool? Merge;
