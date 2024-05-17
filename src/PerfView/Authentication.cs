@@ -214,6 +214,9 @@ namespace PerfView
 
             handler.ClearHandlers();
 
+            // Always add Symweb authentication.
+            handler.AddSymwebAuthentication(log);
+
             // The order isn't critical, but we chose to put GCM last
             // because the user might want to use GCM for GitHub and
             // Developer identity for Azure DevOps. If GCM were first,

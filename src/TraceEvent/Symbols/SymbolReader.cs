@@ -1140,8 +1140,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 });
 
-                // Wait 25 seconds allowing for interruptions.
-                var limit = 250;
+                // Wait 60 seconds allowing for interruptions.
+                var limit = 600;
 
                 for (int i = 0; i < limit; i++)
                 {
