@@ -1072,7 +1072,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
-                            var responseTask = HttpClient.GetAsync(fullUri);
+                            var responseTask = HttpClient.GetAsync(fullUri, HttpCompletionOption.ResponseHeadersRead);
                             responseTask.Wait();
                             var response = responseTask.Result.EnsureSuccessStatusCode();
 
