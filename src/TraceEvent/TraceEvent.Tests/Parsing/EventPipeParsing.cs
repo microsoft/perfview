@@ -173,7 +173,7 @@ namespace TraceEventTests
         {
             var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
             var rundownConfig = initialRundown ? EventPipeRundownConfiguration.Enable(client) : EventPipeRundownConfiguration.None();
-            var providers = new[] 
+            var providers = new[]
             {
                 new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
             };
@@ -182,20 +182,19 @@ namespace TraceEventTests
                 using (var traceSource = CreateFromEventPipeSession(session, rundownConfig))
                 {
                     var sampleEventParser = new SampleProfilerTraceEventParser(traceSource);
-             
+
                     // Signal that we have received the first event.
-                    var eventReceived = new TaskCompletionSource<TraceEvent>();
-                    sampleEventParser.ThreadSample += delegate (ClrThreadSampleTraceData e) { 
-                        eventReceived.TrySetResult(e); 
+                    var eventCallStackIndex = new TaskCompletionSource<CallStackIndex>();
+                    sampleEventParser.ThreadSample += delegate (ClrThreadSampleTraceData e)
+                    {
+                        eventCallStackIndex.TrySetResult(e.CallStackIndex());
                     };
 
                     // Process in the background (this is blocking).
                     var processingTask = Task.Run(traceSource.Process);
 
                     // Verify the event can be symbolicated on the fly if (initialRundown == true).
-                    var ev = await eventReceived.Task;
-
-                    var callStackIndex = ev.CallStackIndex();
+                    var callStackIndex = await eventCallStackIndex.Task;
                     Assert.NotEqual(CallStackIndex.Invalid, callStackIndex);
                     var codeAddressIndex = traceSource.TraceLog.CallStacks.CodeAddressIndex(callStackIndex);
                     Assert.NotEqual(CodeAddressIndex.Invalid, codeAddressIndex);
@@ -205,7 +204,8 @@ namespace TraceEventTests
                         Assert.NotEqual(MethodIndex.Invalid, methodIndex);
                         var method = traceSource.TraceLog.CodeAddresses.Methods[methodIndex];
                         Assert.NotEmpty(method.FullMethodName);
-                    } else
+                    }
+                    else
                     {
                         Assert.Equal(MethodIndex.Invalid, methodIndex);
                     }
@@ -532,7 +532,7 @@ namespace TraceEventTests
             // and ignore the empty parameter metadata provided in the stream, treating the events
             // as if the runtime had provided the correct parameter schema.
             //
-            // I am concurrently working on a runtime fix and updated file format revision which can 
+            // I am concurrently working on a runtime fix and updated file format revision which can
             // correctly encode these parameter types. However for back-compat with older runtimes we
             // need this.
 

@@ -338,6 +338,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // We need to look up the event to get the dispatch Target assigned.
             TraceEvent rtEvent = realTimeSource.Lookup(data.eventRecord);
             realTimeSource.Dispatch(rtEvent);
+
+            // Clean up interim data structures - they're not necessary after the event has been processed (Dispatched).
+            eventsToStacks.Clear();
+            eventsToCodeAddresses.Clear();
+            cswitchBlockingEventsToStacks.Clear();
         }
 
         /// <summary>
