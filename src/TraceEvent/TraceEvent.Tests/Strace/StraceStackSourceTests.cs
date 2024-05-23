@@ -32,7 +32,7 @@ namespace TraceEventTests
                 string newBaselineFilePath = Path.ChangeExtension(fileToUnzip, "perfview.xml");
                 StraceStackSource stackSource = new StraceStackSource(unzippedFile);
                 XmlStackSourceWriter.WriteStackViewAsXml(stackSource, newBaselineFilePath);
-                Assert.True(false, $"Baseline file does not exist.  Created new baseline file at {newBaselineFilePath}.  Confirm that this file is correct, and then save it in the inputs\\strace directory of the repo.");
+                Assert.Fail($"Baseline file does not exist.  Created new baseline file at {newBaselineFilePath}.  Confirm that this file is correct, and then save it in the inputs\\strace directory of the repo.");
             }
 
             // Open the baseline.

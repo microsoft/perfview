@@ -70,6 +70,7 @@ namespace Stats
 
             writer.WriteLine("<LI><A HREF=\"#Events_{0}\">Individual GC Events</A> </LI>", stats.ProcessID);
             writer.WriteLine("<UL><LI> <A HREF=\"command:excel/{0}\">View in Excel</A></LI></UL>", stats.ProcessID);
+            writer.WriteLine("<LI><A HREF=\"#Reasons_{0}\">Condemned reasons for GCs</A> </LI>", stats.ProcessID);
             writer.WriteLine("<LI> <A HREF=\"command:excel/perGeneration/{0}\">Per Generation GC Events in Excel</A></LI>", stats.ProcessID);
             if (runtime.GC.Stats().HasDetailedGCInfo)
             {
@@ -533,6 +534,18 @@ namespace Stats
                 writer.Write(" Gen0ReductionCount=\"{0:n0}\"", gc.GlobalHeapHistory.Gen0ReductionCount);
                 writer.Write(" Reason=\"{0}\"", gc.GlobalHeapHistory.Reason);
                 writer.Write(" GlobalMechanisms=\"{0}\"", gc.GlobalHeapHistory.GlobalMechanisms);
+
+                if (gc.TimingInfo != null)
+                {
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].HasValue) { writer.Write(" MarkRoot=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].HasValue) { writer.Write(" MarkScanFinalization=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].HasValue) { writer.Write(" MarkLongWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Plan].HasValue) { writer.Write(" Plan=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Plan].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Relocate].HasValue) { writer.Write(" Relocate=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Relocate].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Compact].HasValue) { writer.Write(" Compact=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Compact].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.Sweep].HasValue) { writer.Write(" Sweep=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Sweep].Value); }
+                }
+
                 writer.WriteLine("/>");
             }
 
@@ -615,6 +628,8 @@ namespace Stats
                     {
                         writer.Write(" DataUnavailable=\"true\"");
                     }
+
+
                     writer.WriteLine(">");
 
                     var sb = new System.Text.StringBuilder();
@@ -902,7 +917,7 @@ namespace Stats
             {
                 if (runtime.GC.GCs[i].IsComplete)
                 {
-                    if (runtime.GC.GCs[i].PerHeapHistories == null)
+                    if (!(runtime.GC.GCs[i].PerHeapHistories?.Count > 0))
                     {
                         missingPerHeapHistories++;
 
@@ -967,7 +982,7 @@ namespace Stats
             }
 
             writer.WriteLine("<HR/>");
-            writer.WriteLine("<H4>Condemned reasons for GCs</H4>");
+            writer.WriteLine("<H4><A Name=\"Reasons_{0}\">Condemned reasons for GCs</A></H4>", stats.ProcessID);
             if (hasAnyContent)
             {
                 writer.WriteLine("<P>This table gives a more detailed account of exactly why a GC decided to collect that generation.  ");
@@ -1231,6 +1246,7 @@ namespace Stats
             new string[] {"Servo<BR>Gen0", "This happens when the servo tuning decides a gen1 gc should be postponed and doing a gen0 GC instead"},
             new string[] {"Stress<BR>Mix", "This happens in GCStress mix mode, every 10th GC is gen2"},
             new string[] {"Stress", "This happens in GCStress, every GC is gen2"},
+            new string[] {"Aggressive", "This happens when user induce an aggresive GC"},
         };
 
         // Change background color according to generation

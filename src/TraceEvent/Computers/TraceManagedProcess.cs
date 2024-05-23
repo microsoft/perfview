@@ -2393,7 +2393,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             get
             {
-                if ((PerHeapHistories != null) && (_PerHeapCondemnedReasons == null))
+                if ((PerHeapHistories?.Count > 0) && (_PerHeapCondemnedReasons == null))
                 {
                     int NumHeaps = PerHeapHistories.Count;
                     _PerHeapCondemnedReasons = new GCCondemnedReasons[NumHeaps];
@@ -2414,6 +2414,101 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return _PerHeapCondemnedReasons;
             }
         }
+
+        public enum TimingType
+        {            
+            /// <summary>
+            /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
+            ///
+            /// This happen for any type of GC, and it should not be zero for any GCs
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkRoot,
+
+            /// <summary>
+            /// This field records the time spent for nulling out short weak references.
+            /// GC traced through strong references and any object found dead at this point, if they are targets of a short weak ref, that ref's target will be null-ed.
+            /// This happens for any type of GC, and it should not be zero for any GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkShortWeak,
+
+            /// <summary>
+            /// This field records the time spent for promoting finalizable objects that were found dead (so their finalizers can run). 
+            ///
+            /// This happens for any type of GC, and it should not be zero for any GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkScanFinalization,
+
+            /// <summary>
+            /// This field records the time spent for scanning the long weak references.
+            ///
+            /// GC already promoted all the finalizable object, for any object found dead at this point, if they are targets of a long weak ref, that ref's target will be null-ed.
+            ///
+            /// This include the work for scanning the sync blocks, so this value could indicate sync block usage issues.
+            ///
+            /// This happens for any type of GC, and it should not be zero for any GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkLongWeak,
+
+            /// <summary>
+            /// This field records the time spent for planning.
+            /// Planning refers to the activity of calculating new addresses for objects if this was going to be a compacting GC.
+            ///
+            /// This happen only for blocking GCs, and it should not be zero for any blocking GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Plan,
+
+            /// <summary>
+            /// This fields records the time spent for relocating.
+            /// Relocation refers to the activity of changing all the pointers to objects to their new location.
+            ///
+            /// This happen only for blocking compacting GCs, and it should not be zero for any blocking compacting GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Relocate,
+
+            /// <summary>
+            /// This fields records the time spent for compacting.
+            /// Compacting refers to the activity of copying the objects from their old location to the new location.
+            ///
+            /// This happen only for blocking compacting GCs, and it should not be zero for any blocking compacting GCs.
+            ///
+            /// Note: Due to a bug in the runtime, its value can be 0 for .NET 6 to .NET 8
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Compact,
+
+            /// <summary>
+            /// This field records the time spent for sweeping.
+            /// Sweeping refers to the activity of making the dead spaces inbetween live objects into a free list
+            ///
+            /// This happen only for blocking sweeping GCs, and it should not be zero for any blocking sweeping GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Sweep,
+        };
+
+        /// <summary>
+        /// We have a poor man's profiler that capture the timing information
+        /// for various phases in GC. This provides a lightweight way to know how much time
+        /// is spent on each phase of the GC.
+        ///
+        /// Available in .NET 6+
+        /// </summary>
+        public Nullable<int>[] TimingInfo { get; set; }
+
         /// <summary>
         /// Identify the first and greatest condemned heap
         /// </summary>
@@ -2427,8 +2522,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (gen == GenNumberHighest)
                 {
                     return HeapIndex;
-                }
-            }
+                }            }
 
             return 0;
         }
@@ -2806,7 +2900,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return gc.AllocedSinceLastGCBasedOnAllocTickMB[(int)gen];
             }
 
-            if (gc.PerHeapHistories != null && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories != null)
+            if (gc.PerHeapHistories?.Count > 0 && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories?.Count > 0)
             {
                 double TotalAllocated = 0;
                 if (gc.Index > 0)
@@ -2930,12 +3024,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         private static double GetUserAllocatedPerHeap(List<TraceGC> GCs, TraceGC gc, int HeapIndex, Gens gen)
         {
+            Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
                 // If the prevous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                if (HeapIndex < perHeapGenData.Count)
+                if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
                     // Note that for gen3 we need to do something extra as its after data may not be updated if the last
@@ -2986,7 +3082,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (HeapIndex < perHeapGenData.Count)
+                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                     {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
                     }
@@ -3277,7 +3373,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Servo_Postpone = 26,
         Stress_Mix = 27,
         Stress = 28,
-        Max = 29
+        Aggressive = 29,
+        Max = 30
     }
 
     /// <summary>
@@ -3499,6 +3596,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         case Condemned_Reason_Condition.Stress:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress] = 1;
                             break;
+                        case Condemned_Reason_Condition.Aggressive:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Aggressive] = 1;
+                            break;
                         default:
                             Debug.Assert(false, "Unexpected reason");
                             break;
@@ -3550,7 +3650,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Servo_postpone = 27,
             Stress_mix = 28,
             Stress = 29,
-            Max = 30
+            Aggressive = 30,
+            Max = 31
         };
 
         private int GetReasonWithGenNumber(Condemned_Reason_Generation Reason_GenNumber)
@@ -3656,6 +3757,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public bool HasCondemnReasons0;
         public int CondemnReasons1;
         public bool HasCondemnReasons1;
+        public int[] Times;
     }
 
     /// <summary>
@@ -4675,8 +4777,31 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
                     HasCondemnReasons0 = data.HasCondemnReasons0,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
+                    Times = data.Times,
                 };
                 _event.SetHeapCount(data.NumHeaps);
+
+                if (data.Times != null)
+                {
+                    _event.TimingInfo = new Nullable<int>[(int)TraceGC.TimingType.Sweep + 1];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkRoot] = data.Times[1];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak] = data.Times[2];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization] = data.Times[3];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak] = data.Times[4];
+                    if (_event.Type != GCType.BackgroundGC)
+                    {
+                        _event.TimingInfo[(int)TraceGC.TimingType.Plan] = data.Times[5];
+                        if ((_event.GlobalHeapHistory.GlobalMechanisms & GCGlobalMechanisms.Compaction) != 0)
+                        {
+                            _event.TimingInfo[(int)TraceGC.TimingType.Relocate] = data.Times[6];
+                            _event.TimingInfo[(int)TraceGC.TimingType.Compact] = data.Times[7];
+                        }
+                        else
+                        {
+                            _event.TimingInfo[(int)TraceGC.TimingType.Sweep] = data.Times[6];
+                        }
+                    }
+                }
             }
         }
 
@@ -4721,6 +4846,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
 
+                if (_event.PerHeapHistories == null) { _event.PerHeapHistories = new List<GCPerHeapHistory>(); }
                 _event.PerHeapHistories.Add(hist);
             }
         }
