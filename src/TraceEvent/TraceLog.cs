@@ -224,17 +224,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return traceLog.realTimeSource;
         }
 
+        /// <summary>
+        /// EventPipe real-time tracelog session configuration, used to populate the method and module information.
+        /// </summary>
         public class EventPipeRundownConfiguration
         {
             internal readonly DiagnosticsClient m_client;
 
             private EventPipeRundownConfiguration(DiagnosticsClient client) { m_client = client; }
 
+            /// <summary>
+            /// No rundown will be requested, thus it may be impossible to symbolicate events. This is OK, if you don't
+            /// require method/module info the captured events.
+            /// </summary>
             public static EventPipeRundownConfiguration None()
             {
                 return new EventPipeRundownConfiguration(null);
             }
 
+            /// <summary>
+            /// If the rundown is enabled and a DiagnosticsClient is given, TraceLog.CreateFromEventPipeSession will
+            /// create an additional short-lived diagnostics session to load all module/method information up to that
+            /// point.
+            /// </summary>
             public static EventPipeRundownConfiguration Enable(DiagnosticsClient client)
             {
                 return new EventPipeRundownConfiguration(client);
@@ -316,12 +328,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (rawEventSourceToConvert != null)
             {
                 rawEventSourceToConvert.currentID = (EventIndex)eventCount;
-            }
-
-            // Skip samples from the idle thread.
-            if (data.ProcessID == 0 && data is SampledProfileTraceData)
-            {
-                return;
             }
 
             var extendedDataCount = data.eventRecord->ExtendedDataCount;
