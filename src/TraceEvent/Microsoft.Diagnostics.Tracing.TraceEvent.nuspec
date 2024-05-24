@@ -34,7 +34,6 @@
         <dependency id="System.Collections.Immutable" version="$SystemCollectionsImmutableVersion$" />
         <dependency id="System.Reflection.Metadata" version="$SystemReflectionMetadataVersion$" />
         <dependency id="System.Reflection.TypeExtensions" version="$SystemReflectionTypeExtensionsVersion$" />
-        <dependency id="System.Runtime" version="$SystemRuntimeVersion$" />
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="$SystemRuntimeCompilerServicesUnsafeVersion$" />
         <dependency id="System.Security.Cryptography.Algorithms" version="$SystemSecurityCryptographyAlgorithmsVersion$" />
         <dependency id="System.Threading.Tasks.Parallel" version="$SystemThreadingTasksParallelVersion$" />
