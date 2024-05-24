@@ -41,7 +41,6 @@
       <NuspecProperties>$(NuspecProperties);SystemReflectionMetadataVersion=$(SystemReflectionMetadataVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=$(SystemReflectionTypeExtensionsVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=$(SystemRuntimeCompilerServicesUnsafeVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemSecurityCryptographyAlgorithmsVersion=$(SystemSecurityCryptographyAlgorithmsVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemThreadingTasksParallelVersion=$(SystemThreadingTasksParallelVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemThreadingThreadVersion=$(SystemThreadingThreadVersion)</NuspecProperties>
     </PropertyGroup>
@@ -60,7 +59,6 @@
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemReflectionTypeExtensionsVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
-    <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
     <PackageReference Include="System.Threading.Tasks.Parallel" Version="$(SystemThreadingTasksParallelVersion)" />
     <PackageReference Include="System.Threading.Thread" Version="$(SystemThreadingThreadVersion)" />
   </ItemGroup>

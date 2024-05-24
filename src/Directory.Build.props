@@ -58,7 +58,6 @@
     <SystemReflectionTypeExtensionsVersion>4.7.0</SystemReflectionTypeExtensionsVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
-    <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemTextEncodingsWebVersion>8.0.0</SystemTextEncodingsWebVersion>
     <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
