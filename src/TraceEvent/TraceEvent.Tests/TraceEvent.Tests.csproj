@@ -16,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XunitVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualstudioVersion)" PrivateAssets="all" />
-    <PackageReference Include="System.IO.Compression" Version="$(SystemIOCompressionVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
