@@ -32,7 +32,6 @@
       <group targetFramework=".NETStandard2.0">
         <dependency id="Microsoft.Win32.Registry" version="$MicrosoftWin32RegistryVersion$" />
         <dependency id="System.Collections.Immutable" version="$SystemCollectionsImmutableVersion$" />
-        <dependency id="System.Net.NameResolution" version="$SystemNetNameResolutionVersion$" />
         <dependency id="System.Reflection.Metadata" version="$SystemReflectionMetadataVersion$" />
         <dependency id="System.Reflection.TypeExtensions" version="$SystemReflectionTypeExtensionsVersion$" />
         <dependency id="System.Runtime" version="$SystemRuntimeVersion$" />
