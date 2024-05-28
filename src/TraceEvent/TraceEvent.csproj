@@ -38,19 +38,9 @@
       <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);MicrosoftWin32RegistryVersion=$(MicrosoftWin32RegistryVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemCollectionsImmutableVersion=$(SystemCollectionsImmutableVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemDiagnosticsProcessVersion=$(SystemDiagnosticsProcessVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemDiagnosticsTraceSourceVersion=$(SystemDiagnosticsTraceSourceVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemIOCompressionVersion=$(SystemIOCompressionVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemIOUnmanagedMemoryStreamVersion=$(SystemIOUnmanagedMemoryStreamVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemNetRequestsVersion=$(SystemNetRequestsVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemNetNameResolutionVersion=$(SystemNetNameResolutionVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemReflectionMetadataVersion=$(SystemReflectionMetadataVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=$(SystemReflectionTypeExtensionsVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemRuntimeVersion=$(SystemRuntimeVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=$(SystemRuntimeCompilerServicesUnsafeVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemSecurityCryptographyAlgorithmsVersion=$(SystemSecurityCryptographyAlgorithmsVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemThreadingTasksParallelVersion=$(SystemThreadingTasksParallelVersion)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemThreadingThreadVersion=$(SystemThreadingThreadVersion)</NuspecProperties>
     </PropertyGroup>
   </Target>
 
@@ -64,19 +54,9 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
-    <PackageReference Include="System.Diagnostics.Process" Version="$(SystemDiagnosticsProcessVersion)" />
-    <PackageReference Include="System.Diagnostics.TraceSource" Version="$(SystemDiagnosticsTraceSourceVersion)" />
-    <PackageReference Include="System.IO.Compression" Version="$(SystemIOCompressionVersion)" />
-    <PackageReference Include="System.IO.UnmanagedMemoryStream" Version="$(SystemIOUnmanagedMemoryStreamVersion)" />
-    <PackageReference Include="System.Net.Requests" Version="$(SystemNetRequestsVersion)" />
-    <PackageReference Include="System.Net.NameResolution" Version="$(SystemNetNameResolutionVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemReflectionTypeExtensionsVersion)" />
-    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
-    <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
-    <PackageReference Include="System.Threading.Tasks.Parallel" Version="$(SystemThreadingTasksParallelVersion)" />
-    <PackageReference Include="System.Threading.Thread" Version="$(SystemThreadingThreadVersion)" />
   </ItemGroup>
 
   <ItemGroup>

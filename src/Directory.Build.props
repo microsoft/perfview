@@ -52,25 +52,15 @@
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsImmutableVersion>8.0.0</SystemCollectionsImmutableVersion>
     <SystemDiagnosticsDiagnosticSourceVersion>8.0.0</SystemDiagnosticsDiagnosticSourceVersion>
-    <SystemDiagnosticsProcessVersion>4.3.0</SystemDiagnosticsProcessVersion>
-    <SystemDiagnosticsTraceSourceVersion>4.3.0</SystemDiagnosticsTraceSourceVersion>
-    <SystemIOCompressionVersion>4.3.0</SystemIOCompressionVersion>
-    <SystemIOUnmanagedMemoryStreamVersion>4.3.0</SystemIOUnmanagedMemoryStreamVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
-    <SystemNetNameResolutionVersion>4.3.0</SystemNetNameResolutionVersion>
-    <SystemNetRequestsVersion>4.3.0</SystemNetRequestsVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
     <SystemReflectionMetadataVersion>8.0.0</SystemReflectionMetadataVersion>
     <SystemReflectionTypeExtensionsVersion>4.7.0</SystemReflectionTypeExtensionsVersion>
-    <SystemRuntimeVersion>4.3.1</SystemRuntimeVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
-    <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemTextEncodingsWebVersion>8.0.0</SystemTextEncodingsWebVersion>
     <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
-    <SystemThreadingTasksParallelVersion>4.3.0</SystemThreadingTasksParallelVersion>
-    <SystemThreadingThreadVersion>4.3.0</SystemThreadingThreadVersion>
   </PropertyGroup>
 
   <!-- ClrMD -->

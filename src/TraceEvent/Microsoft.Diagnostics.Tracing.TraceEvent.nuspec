@@ -32,19 +32,9 @@
       <group targetFramework=".NETStandard2.0">
         <dependency id="Microsoft.Win32.Registry" version="$MicrosoftWin32RegistryVersion$" />
         <dependency id="System.Collections.Immutable" version="$SystemCollectionsImmutableVersion$" />
-        <dependency id="System.Diagnostics.Process" version="$SystemDiagnosticsProcessVersion$" />
-        <dependency id="System.Diagnostics.TraceSource" version="$SystemDiagnosticsTraceSourceVersion$" />
-        <dependency id="System.IO.Compression" version="$SystemIOCompressionVersion$" />
-        <dependency id="System.IO.UnmanagedMemoryStream" version="$SystemIOUnmanagedMemoryStreamVersion$" />
-        <dependency id="System.Net.Requests" version="$SystemNetRequestsVersion$" />
-        <dependency id="System.Net.NameResolution" version="$SystemNetNameResolutionVersion$" />
         <dependency id="System.Reflection.Metadata" version="$SystemReflectionMetadataVersion$" />
         <dependency id="System.Reflection.TypeExtensions" version="$SystemReflectionTypeExtensionsVersion$" />
-        <dependency id="System.Runtime" version="$SystemRuntimeVersion$" />
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="$SystemRuntimeCompilerServicesUnsafeVersion$" />
-        <dependency id="System.Security.Cryptography.Algorithms" version="$SystemSecurityCryptographyAlgorithmsVersion$" />
-        <dependency id="System.Threading.Tasks.Parallel" version="$SystemThreadingTasksParallelVersion$" />
-        <dependency id="System.Threading.Thread" version="$SystemThreadingThreadVersion$" />
       </group>
     </dependencies>
   </metadata>
