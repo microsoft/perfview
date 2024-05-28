@@ -38,7 +38,10 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         protected override void RecordAdditionalStopData(StackSourceSample sample, TraceEvent data)
         {
             var stopData = (ContentionStopTraceData) data;
-            sample.Metric = (float) (stopData.DurationNs / NanosInMillisecond);
+            if (stopData.DurationNs > 0)
+            {
+                sample.Metric = (float)(stopData.DurationNs / NanosInMillisecond);
+            }
             sample.StackIndex = _interner.CallStackIntern(_interner.FrameIntern($"EventData DurationNs {stopData.DurationNs:N0}"), sample.StackIndex);
         }
     }
