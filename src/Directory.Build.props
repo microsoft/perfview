@@ -45,6 +45,7 @@
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
     <MicrosoftIdentityClientVersion>4.60.1</MicrosoftIdentityClientVersion>
     <MicrosoftIdentityClientExtensionsMsalVersion>4.60.1</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityModelAbstractionsVersion>7.1.2</MicrosoftIdentityModelAbstractionsVersion>
     <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>
     <MicrosoftIdentityModelJsonWebTokensVersion>7.1.2</MicrosoftIdentityModelJsonWebTokensVersion>
     <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
@@ -58,6 +59,8 @@
     <SystemReflectionTypeExtensionsVersion>4.7.0</SystemReflectionTypeExtensionsVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
+    <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
+    <SystemSecurityCryptographyProtectedDataVersion>4.7.0</SystemSecurityCryptographyProtectedDataVersion>
     <SystemTextEncodingsWebVersion>8.0.0</SystemTextEncodingsWebVersion>
     <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
