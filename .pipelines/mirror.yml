@@ -14,6 +14,11 @@ resources:
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
   parameters:
+    sdl:
+      codeql:
+        compiled:
+          enabled: false
+          justificationForDisabling: 'This is a mirror pipeline that does not build any code.'
     pool:
       name: AzurePipelines-EO
       image: 1ESPT-Windows2022
