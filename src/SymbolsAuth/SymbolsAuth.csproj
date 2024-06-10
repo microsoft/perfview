@@ -36,6 +36,8 @@
       <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
       <NuSpecProperties>$(NuspecProperties);TraceEventVersion=$(TraceEventVersion)</NuSpecProperties>
+      <NuSpecProperties>$(NuspecProperties);AzureIdentityVersion=$(AzureIdentityVersion)</NuSpecProperties>
+      <NuSpecProperties>$(NuspecProperties);MicrosoftIdentityModelJsonWebTokensVersion=$(MicrosoftIdentityModelJsonWebTokensVersion)</NuSpecProperties>
     </PropertyGroup>
   </Target>
 
@@ -45,6 +47,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="$(AzureIdentityVersion)" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="$(MicrosoftIdentityModelJsonWebTokensVersion)" />
   </ItemGroup>
 
   <ItemGroup>

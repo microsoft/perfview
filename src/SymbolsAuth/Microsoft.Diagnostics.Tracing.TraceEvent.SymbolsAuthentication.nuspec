@@ -20,6 +20,8 @@
 
     <dependencies>
       <group targetFramework=".NETStandard2.0">
+        <dependency id="Azure.Identity" version="$AzureIdentityVersion$" />
+        <dependency id="Microsoft.IdentityModel.JsonWebTokens" version="$MicrosoftIdentityModelJsonWebTokensVersion$" />
         <dependency id="Microsoft.Diagnostics.Tracing.TraceEvent" version="$TraceEventVersion$" />
       </group>
     </dependencies>

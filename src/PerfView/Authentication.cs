@@ -4,6 +4,9 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
+using Azure.Identity;
+using Microsoft.Diagnostics.Symbols.Authentication;
 using Utilities;
 
 namespace PerfView
@@ -241,5 +244,76 @@ namespace PerfView
                 handler.AddBasicHttpAuthentication(log, mainWindow);
             }
         }
+
+        /// <summary>
+        /// Add a handler for Symweb authentication using local credentials.
+        /// It will try to use cached credentials from Visual Studio, VS Code,
+        /// Azure Powershell and Azure CLI.
+        /// </summary>
+        /// <param name="log">A logger.</param>
+        /// <param name="silent">If no local credentials can be found, then a browser window will
+        /// be opened to prompt the user. Set this to true to if you don't want that.</param>
+        /// <returns>This instance for fluent chaining.</returns>
+        public static SymbolReaderHttpHandler AddSymwebAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, bool silent = false)
+        {
+            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
+            {
+                ExcludeInteractiveBrowserCredential = silent,
+                ExcludeManagedIdentityCredential = true // This is not designed to be used in a service.
+            };
+
+            return httpHandler.AddHandler(new SymwebHandler(log, new DefaultAzureCredential(options)));
+        }
+
+        /// <summary>
+        /// Add a handler that uses Git Credential Manager for authentication.
+        /// </summary>
+        /// <param name="log">A logger.</param>
+        /// <param name="mainWindow">The main window to use when parenting modal dialogs.</param>
+        /// <returns>This instance for fluent chaining.</returns>
+        public static SymbolReaderHttpHandler AddGitCredentialManagerAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, Window mainWindow)
+            => httpHandler.AddHandler(new GitCredentialManagerHandler(log, GetWindowHandle(mainWindow)));
+
+        /// <summary>
+        /// Add a handler for Azure DevOps authentication using local credentials.
+        /// It will try to use cached credentials from Visual Studio, VS Code,
+        /// Azure Powershell and Azure CLI.
+        /// </summary>
+        /// <param name="log">A logger.</param>
+        /// <param name="silent">If no local credentials can be found, then a browser window will
+        /// be opened to prompt the user. Set this to true to if you don't want that.</param>
+        /// <returns>This instance for fluent chaining.</returns>
+        public static SymbolReaderHttpHandler AddAzureDevOpsAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, bool silent = false)
+        {
+            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
+            {
+                ExcludeInteractiveBrowserCredential = silent,
+                ExcludeManagedIdentityCredential = true // This is not designed to be used in a service.
+            };
+
+            return httpHandler.AddHandler(new AzureDevOpsHandler(log, new DefaultAzureCredential(options)));
+        }
+
+        /// <summary>
+        /// Add a handler for GitHub device flow authentication.
+        /// </summary>
+        /// <param name="log">A logger.</param>
+        /// <param name="mainWindow">The Window to use for parenting any modal
+        /// dialogs needed for authentication.</param>
+        /// <returns>This instance for fluent chaining.</returns>
+        public static SymbolReaderHttpHandler AddGitHubDeviceCodeAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, Window mainWindow)
+            => httpHandler.AddHandler(new GitHubDeviceFlowHandler(log, mainWindow));
+
+        public static SymbolReaderHttpHandler AddBasicHttpAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, Window mainWindow)
+            => httpHandler.AddHandler(new BasicHttpAuthHandler(log));
+
+        /// <summary>
+        /// Get the HWND of the given WPF window in a way that honors WPF
+        /// threading rules.
+        /// </summary>
+        /// <param name="window">The WPF window.</param>
+        /// <returns>The handle (HWND) of the given window.</returns>
+        private static IntPtr GetWindowHandle(Window window)
+            => window.Dispatcher.Invoke(() => new WindowInteropHelper(window).Handle);
     }
 }

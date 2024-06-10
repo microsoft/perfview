@@ -1,4 +1,5 @@
 ﻿using Controls;
+using Microsoft.Diagnostics.Symbols.Authentication;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
