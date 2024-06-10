@@ -27,6 +27,7 @@
     <HeapDumpDllVersion>$(ReleaseVersion)</HeapDumpDllVersion>
     <MemoryGraphVersion>$(ReleaseVersion)</MemoryGraphVersion>
     <PerfViewVersion>$(ReleaseVersion)</PerfViewVersion>
+    <SymbolsAuthVersion>$(ReleaseVersion)</SymbolsAuthVersion>
     <TraceEventVersion>$(ReleaseVersion)</TraceEventVersion>
     <UtilitiesVersion>$(ReleaseVersion)</UtilitiesVersion>
   </PropertyGroup>
