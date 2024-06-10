@@ -382,6 +382,13 @@
       <Link>PerfView.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\SymbolsAuth\bin\$(Configuration)\netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.dll</LogicalName>
+      <Link>Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\bin\$(Configuration)\netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
