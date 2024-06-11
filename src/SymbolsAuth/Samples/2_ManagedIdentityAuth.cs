@@ -13,8 +13,15 @@ namespace Samples
 
         public static void Run(string[] args)
         {
-            string localSymbolCachePath = args.Length >= 2 ? args[1] : null;
-            string dllToLookup = args.Length >= 3 ? args[2] : null;
+            if (args.Length <= 1)
+            {
+                Console.WriteLine("You must specify a client id in order to use this sample.");
+                return;
+            }
+
+            string clientId = args[1];
+            string localSymbolCachePath = args.Length >= 3 ? args[2] : null;
+            string dllToLookup = args.Length >= 4 ? args[3] : null;
 
             if (string.IsNullOrEmpty(localSymbolCachePath))
             {
@@ -37,7 +44,7 @@ namespace Samples
             /*** Begin Example ***/
 
             // Setup the token credential that the handler will use to authenticate.
-            ManagedIdentityCredential credential = new ManagedIdentityCredential();
+            ManagedIdentityCredential credential = new ManagedIdentityCredential(clientId);
 
             // Create a new symbols authentication handler and configure it for authentication to symweb.
             SymbolReaderAuthenticationHandler symbolReaderAuthHandler = new SymbolReaderAuthenticationHandler()
