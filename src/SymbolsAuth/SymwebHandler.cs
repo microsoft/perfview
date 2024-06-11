@@ -1,9 +1,7 @@
 ﻿using Azure.Core;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -70,7 +68,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
     /// <summary>
     /// A handler that adds authorization for Symweb.
     /// </summary>
-    public sealed class SymwebHandler : SymbolReaderAuthHandlerBase
+    public sealed class SymwebHandler : SymbolReaderAuthHandler
     {
         /// <summary>
         /// The value of <see cref="Symweb.Scope"/> stored in a single element

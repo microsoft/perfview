@@ -186,19 +186,19 @@ namespace PerfView
     }
 
     /// <summary>
-    /// Extension methods for <see cref="SymbolReaderHttpHandler"/>.
+    /// Extension methods for <see cref="SymbolReaderAuthenticationHandler"/>.
     /// </summary>
     internal static class SymbolReaderHttpHandlerExtensions
     {
         /// <summary>
-        /// Configure a <see cref="SymbolReaderHttpHandler"/> from authentication options.
+        /// Configure a <see cref="SymbolReaderAuthenticationHandler"/> from authentication options.
         /// </summary>
         /// <param name="handler">The handler.</param>
         /// <param name="authenticationViewModel">The authentication view model.</param>
         /// <param name="log">A logger.</param>
         /// <param name="mainWindow">The main window to use as the parent of any modal dialogs.</param>
         /// <exception cref="ArgumentNullException">One of the parameters is null.</exception>
-        public static void Configure(this SymbolReaderHttpHandler handler, AuthenticationViewModel authenticationViewModel, TextWriter log, Window mainWindow)
+        public static void Configure(this SymbolReaderAuthenticationHandler handler, AuthenticationViewModel authenticationViewModel, TextWriter log, Window mainWindow)
         {
             if (handler is null)
             {
@@ -254,7 +254,7 @@ namespace PerfView
         /// <param name="silent">If no local credentials can be found, then a browser window will
         /// be opened to prompt the user. Set this to true to if you don't want that.</param>
         /// <returns>This instance for fluent chaining.</returns>
-        public static SymbolReaderHttpHandler AddSymwebAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, bool silent = false)
+        public static SymbolReaderAuthenticationHandler AddSymwebAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
@@ -271,7 +271,7 @@ namespace PerfView
         /// <param name="log">A logger.</param>
         /// <param name="mainWindow">The main window to use when parenting modal dialogs.</param>
         /// <returns>This instance for fluent chaining.</returns>
-        public static SymbolReaderHttpHandler AddGitCredentialManagerAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, Window mainWindow)
+        public static SymbolReaderAuthenticationHandler AddGitCredentialManagerAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new GitCredentialManagerHandler(log, GetWindowHandle(mainWindow)));
 
         /// <summary>
@@ -283,7 +283,7 @@ namespace PerfView
         /// <param name="silent">If no local credentials can be found, then a browser window will
         /// be opened to prompt the user. Set this to true to if you don't want that.</param>
         /// <returns>This instance for fluent chaining.</returns>
-        public static SymbolReaderHttpHandler AddAzureDevOpsAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, bool silent = false)
+        public static SymbolReaderAuthenticationHandler AddAzureDevOpsAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
@@ -301,10 +301,10 @@ namespace PerfView
         /// <param name="mainWindow">The Window to use for parenting any modal
         /// dialogs needed for authentication.</param>
         /// <returns>This instance for fluent chaining.</returns>
-        public static SymbolReaderHttpHandler AddGitHubDeviceCodeAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, Window mainWindow)
+        public static SymbolReaderAuthenticationHandler AddGitHubDeviceCodeAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new GitHubDeviceFlowHandler(log, mainWindow));
 
-        public static SymbolReaderHttpHandler AddBasicHttpAuthentication(this SymbolReaderHttpHandler httpHandler, TextWriter log, Window mainWindow)
+        public static SymbolReaderAuthenticationHandler AddBasicHttpAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new BasicHttpAuthHandler(log));
 
         /// <summary>

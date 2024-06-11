@@ -1,10 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
 using Azure.Core;
-using Azure.Identity;
 using Microsoft.Diagnostics.Symbols.Authentication;
 using PerfView.Dialogs;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,14 +15,13 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace PerfView
 {
     /// <summary>
     /// A handler that adds support for basic username:password authentication over HTTP
     /// </summary>
-    internal sealed class BasicHttpAuthHandler : SymbolReaderAuthHandlerBase
+    internal sealed class BasicHttpAuthHandler : SymbolReaderAuthHandler
     {
         private static readonly char[] delimiter = { ':' };
         /// <summary>
@@ -65,7 +62,7 @@ namespace PerfView
     /// <summary>
     /// A handler that uses Git Credential Manager (GCM) to authenticate source look-ups.
     /// </summary>
-    internal sealed class GitCredentialManagerHandler : SymbolReaderAuthHandlerBase
+    internal sealed class GitCredentialManagerHandler : SymbolReaderAuthHandler
     {
         /// <summary>
         /// Prefix to put in front of logging messages.
@@ -589,7 +586,7 @@ namespace PerfView
     /// A handler that adds authorization for Azure DevOps instances.
     /// It works for both symbol server (artifacts) and SourceLink.
     /// </summary>
-    internal sealed class AzureDevOpsHandler : SymbolReaderAuthHandlerBase
+    internal sealed class AzureDevOpsHandler : SymbolReaderAuthHandler
     {
         /// <summary>
         /// The value of <see cref="AzureDevOps.Scope"/> stored in a single element
@@ -868,7 +865,7 @@ namespace PerfView
     /// <summary>
     /// A handler that handles GitHub device flow authorization.
     /// </summary>
-    internal sealed class GitHubDeviceFlowHandler : SymbolReaderAuthHandlerBase
+    internal sealed class GitHubDeviceFlowHandler : SymbolReaderAuthHandler
     {
         /// <summary>
         /// This is the OAuth client ID for the PerfView application.

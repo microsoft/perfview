@@ -17,13 +17,9 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
     /// <summary>
     /// A handler for <see cref="HttpClient"/> that allows interception and
     /// modification of requests by a chain of <see cref="IAsyncSymbolReaderHandler"/>
-    /// instances.
+    /// instances with the express purpose of supporting authentication.
     /// </summary>
-    /// <remarks>
-    /// In PerfView, this is usually passed to the constructor of
-    /// <see cref="Microsoft.Diagnostics.Symbols.SymbolReader"/>.
-    /// </remarks>
-    public class SymbolReaderHttpHandler : DelegatingHandler
+    public class SymbolReaderAuthenticationHandler : DelegatingHandler
     {
         /// <summary>
         /// A list of handlers.
@@ -31,9 +27,9 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
         private readonly List<IAsyncSymbolReaderHandler> _handlers = new List<IAsyncSymbolReaderHandler>();
 
         /// <summary>
-        /// Construct a new <see cref="SymbolReaderHttpHandler"/> instance.
+        /// Construct a new <see cref="SymbolReaderAuthenticationHandler"/> instance.
         /// </summary>
-        public SymbolReaderHttpHandler() : base(new HttpClientHandler() { CheckCertificateRevocationList = true })
+        public SymbolReaderAuthenticationHandler() : base(new HttpClientHandler() { CheckCertificateRevocationList = true })
         {
         }
 
@@ -116,7 +112,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
         /// </summary>
         /// <param name="handler">The handler to add.</param>
         /// <returns>This instance for fluent chaining.</returns>
-        public SymbolReaderHttpHandler AddHandler(IAsyncSymbolReaderHandler handler)
+        public SymbolReaderAuthenticationHandler AddHandler(IAsyncSymbolReaderHandler handler)
         {
             lock (_handlers)
             {
@@ -362,7 +358,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
     /// Common base class for all <see cref="IAsyncSymbolReaderHandler"/> implementations.
     /// Adds a logger with a handler-specific prefix.
     /// </summary>
-    public abstract class SymbolReaderHandlerBase : IAsyncSymbolReaderHandler
+    public abstract class SymbolReaderHandler : IAsyncSymbolReaderHandler
     {
         /// <summary>
         /// The logger.
@@ -375,11 +371,11 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
         private readonly string _logPrefix;
 
         /// <summary>
-        /// Creates a new <see cref="SymbolReaderHandlerBase"/> with the given parameters.
+        /// Creates a new <see cref="SymbolReaderHandler"/> with the given parameters.
         /// </summary>
         /// <param name="log">A logger. May be null.</param>
         /// <param name="logPrefix">A prefix for log messages. May be null.</param>
-        protected SymbolReaderHandlerBase(TextWriter log, string logPrefix)
+        protected SymbolReaderHandler(TextWriter log, string logPrefix)
         {
             _log = log ?? TextWriter.Null;
             _logPrefix = logPrefix;
@@ -433,7 +429,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
     /// Base class for request handlers that add authorization headers to
     /// requests.
     /// </summary>
-    public abstract class SymbolReaderAuthHandlerBase : SymbolReaderHandlerBase
+    public abstract class SymbolReaderAuthHandler : SymbolReaderHandler
     {
         /// <summary>
         /// The scheme name for Bearer tokens.
@@ -447,7 +443,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
 
         /// <summary>
         /// A cache of access tokens per authority. It is shared by all
-        /// <see cref="SymbolReaderAuthHandlerBase"/> implementations.
+        /// <see cref="SymbolReaderAuthHandler"/> implementations.
         /// </summary>
         private static readonly ConcurrentDictionary<Uri, AuthToken> s_tokenCache = new ConcurrentDictionary<Uri, AuthToken>();
 
@@ -456,7 +452,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
         /// </summary>
         /// <param name="log">A logger. May be null.</param>
         /// <param name="logPrefix">A prefix for log messages. May be null.</param>
-        protected SymbolReaderAuthHandlerBase(TextWriter log, string logPrefix) : base(log, logPrefix)
+        protected SymbolReaderAuthHandler(TextWriter log, string logPrefix) : base(log, logPrefix)
         {
         }
 
@@ -600,7 +596,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
         /// <summary>
         /// Derived classes may call this if they need to cache additional access tokens
         /// for authorities other than the one returned by <see cref="TryGetAuthority(Uri, out Uri)"/> 
-        /// (which are already cached by <see cref="SymbolReaderAuthHandlerBase"/>).
+        /// (which are already cached by <see cref="SymbolReaderAuthHandler"/>).
         /// </summary>
         /// <param name="authority">The authority.</param>
         /// <param name="token">The token.</param>
