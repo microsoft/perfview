@@ -19,6 +19,11 @@
     </None>
 
     <!-- Get the Microsoft.Diagnostics.TraceEvent.*.nuget package we just built -->
+    <None Include="..\SymbolsAuth\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.*nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+    <!-- Get the Microsoft.Diagnostics.TraceEvent.*.nuget package we just built -->
     <None Include="..\TraceEvent\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.*nupkg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
