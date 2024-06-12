@@ -188,7 +188,7 @@ namespace PerfView
     /// <summary>
     /// Extension methods for <see cref="SymbolReaderAuthenticationHandler"/>.
     /// </summary>
-    internal static class SymbolReaderHttpHandlerExtensions
+    internal static class SymbolReaderAuthenticationHandlerExtensions
     {
         /// <summary>
         /// Configure a <see cref="SymbolReaderAuthenticationHandler"/> from authentication options.
