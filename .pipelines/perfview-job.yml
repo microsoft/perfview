@@ -42,6 +42,6 @@ steps:
   displayName: 'Copy Files to Artifacts Staging'
   inputs:
     SourceFolder: '$(system.defaultworkingdirectory)'
-    Contents: '**\bin\$(BuildConfiguration)\**'
+    Contents: '**\bin\${{ parameters.flavor }}\**'
     TargetFolder: '$(build.artifactstagingdirectory)'
   condition: succeededOrFailed()
