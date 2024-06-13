@@ -1,4 +1,5 @@
 ﻿using Controls;
+using Microsoft.Diagnostics.Symbols.Authentication;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
@@ -2463,14 +2464,14 @@ namespace PerfView
         }
 
         /// <summary>
-        /// A cached instance of <see cref="SymbolReaderHttpHandler"/>.
+        /// A cached instance of <see cref="SymbolReaderAuthenticationHandler"/>.
         /// We can't just keep a singleton because the App's SymbolReader
         /// occasionally gets recreated from scratch. We need a way to
         /// both configure an existing, live instance (when you enable
         /// or disable existing authentication providers) and to create
         /// new, configured handlers on demand.
         /// </summary>
-        private SymbolReaderHttpHandler _cachedSymbolReaderHandler;
+        private SymbolReaderAuthenticationHandler _cachedSymbolReaderHandler;
 
         /// <summary>
         /// Update the current handler, if there is one. If the
@@ -2480,7 +2481,7 @@ namespace PerfView
         /// </summary>
         private void UpdateSymbolReaderHandler()
         {
-            SymbolReaderHttpHandler handler = _cachedSymbolReaderHandler;
+            SymbolReaderAuthenticationHandler handler = _cachedSymbolReaderHandler;
             if (handler != null)
             {
                 if (handler.IsDisposed)
@@ -2504,11 +2505,11 @@ namespace PerfView
         /// <returns>The handler.</returns>
         private DelegatingHandler GetSymbolReaderHandler(TextWriter log)
         {
-            SymbolReaderHttpHandler handler = _cachedSymbolReaderHandler;
+            SymbolReaderAuthenticationHandler handler = _cachedSymbolReaderHandler;
             if (handler == null || handler.IsDisposed)
             {
                 log?.WriteLine("Creating authentication handler for {0}.", AuthenticationViewModel);
-                handler = _cachedSymbolReaderHandler = new SymbolReaderHttpHandler();
+                handler = _cachedSymbolReaderHandler = new SymbolReaderAuthenticationHandler();
             }
 
             handler.Configure(AuthenticationViewModel, log, this);

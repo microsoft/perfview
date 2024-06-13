@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk"> 
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Microsoft.Diagnostics.Symbols.Authentication</RootNamespace>
+    <AssemblyName>Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication</AssemblyName>
+
+    <Description>SymbolReader authentication library for TraceEvent.</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2024</Copyright>
+    <Version>$(SymbolsAuthVersion)</Version>
+    <FileVersion>$(SymbolsAuthVersion)</FileVersion>
+    <InformationalVersion>$(SymbolsAuthVersion)</InformationalVersion>
+    <NeutralLanguage>en</NeutralLanguage>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.nuspec</NuspecFile>
+    <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
+  <Target Name="SetNuspecProperties">
+    <PropertyGroup>
+      <NuspecProperties>$(NuspecProperties);Configuration=$(Configuration)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
+      <NuSpecProperties>$(NuspecProperties);AzureIdentityVersion=$(AzureIdentityVersion)</NuSpecProperties>
+      <NuSpecProperties>$(NuspecProperties);MicrosoftIdentityModelJsonWebTokensVersion=$(MicrosoftIdentityModelJsonWebTokensVersion)</NuSpecProperties>
+    </PropertyGroup>
+  </Target>
+
+  <PropertyGroup>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="$(AzureIdentityVersion)" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="$(MicrosoftIdentityModelJsonWebTokensVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Samples/**/*.*" />
+  </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageSpec)'==''">
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+  </ItemGroup>
+
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);SIGNING_BUILD</DefineConstants>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+</Project>

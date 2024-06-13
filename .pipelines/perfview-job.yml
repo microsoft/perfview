@@ -32,6 +32,7 @@ steps:
     testAssemblyVer2: |
       **\bin\**\LinuxTracingTests.dll
       **\bin\**\CtfTracingTests.dll
+      **\bin\**\SymbolsAuthTests.dll
       **\bin\**\TraceEventTests.dll
       **\bin\**\PerfViewTests.dll
     testRunTitle: 'PerfView - ${{ parameters.flavor }}'
