@@ -64,18 +64,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     callback(template);
         }
 
-        /// <summary>
-        /// Do not use.  This is here to avoid asserts that detect undeclared event templates.
-        /// </summary>
-        public event Action<GCDynamicTraceEvent> GCDynamicTraceEvent
+        private event Action<RawDynamicTraceEvent> _gcDynamicTraceEvent;
+        public event Action<RawDynamicTraceEvent> GCDynamicTraceEvent
         {
             add
             {
-                throw new NotSupportedException();
+                _gcDynamicTraceEvent += value;
             }
             remove
             {
-                throw new NotSupportedException();
+                _gcDynamicTraceEvent -= value;
             }
         }
 
@@ -141,6 +139,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 _gcHeapCountSample(data.EventPayload as HeapCountSampleTraceEvent);
             }
+
+            else if (_gcDynamicTraceEvent != null &&
+                data.EventPayload is RawDynamicTraceEvent)
+            {
+                _gcDynamicTraceEvent(data.EventPayload as RawDynamicTraceEvent);
+            }
         }
 
         private static GCDynamicTraceEvent GCDynamicTemplate(Action<GCDynamicTraceEvent> action, GCDynamic.GCDynamicEvent eventTemplate)
@@ -199,7 +203,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         private readonly HeapCountTuningTraceEvent _heapCountTuningTemplate = new HeapCountTuningTraceEvent();
         private readonly CommittedUsageTraceEvent _committedUsageTemplate = new CommittedUsageTraceEvent();
         private readonly HeapCountSampleTraceEvent _heapCountSampleTemplate = new HeapCountSampleTraceEvent();
-        private readonly RawDynamicTraceData _rawTemplate = new RawDynamicTraceData();
+        private readonly RawDynamicTraceEvent _rawTemplate = new RawDynamicTraceEvent();
 
         /// <summary>
         /// Contains the fully parsed payload of the dynamic event.
@@ -295,7 +299,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// <summary>
         /// The list of specific event templates.
         /// </summary>
-        internal static readonly RawDynamicTraceData RawDynamicTemplate = new RawDynamicTraceData();
+        internal static readonly RawDynamicTraceEvent RawDynamicTemplate = new RawDynamicTraceEvent();
         internal static readonly HeapCountTuningTraceEvent HeapCountTuningTemplate = new HeapCountTuningTraceEvent();
         internal static readonly CommittedUsageTraceEvent CommittedUsageTemplate = new CommittedUsageTraceEvent();
         internal static readonly HeapCountSampleTraceEvent HeapCountSampleTemplate = new HeapCountSampleTraceEvent();
@@ -340,7 +344,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
     }
 
-    internal sealed class RawDynamicTraceData : GCDynamicEvent
+    public sealed class RawDynamicTraceEvent : GCDynamicEvent
     {
         internal override TraceEventID ID => (TraceEventID)39;
         internal override string TaskName => "GC";
@@ -624,5 +628,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         public double ElapsedTimeBetweenGCsMSec { get; internal set; }
         public double GCPauseTimeMSec { get; internal set; }
         public double MslWaitTimeMSec { get; internal set; }
+    }
+
+    public sealed class DynamicEvent
+    {
+        public DynamicEvent(string name, DateTime timeStamp, byte[] payload)
+        {
+            Name = name;
+            TimeStamp = timeStamp;
+            Payload = payload;
+        }
+
+        public string Name { get; internal set; }
+        public DateTime TimeStamp { get; internal set; }
+        public byte[] Payload { get; internal set; }
     }
 }

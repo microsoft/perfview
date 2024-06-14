@@ -886,6 +886,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessHeapCountSample(stats, heapCountSample);
                 };
 
+                source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (RawDynamicTraceEvent rawDynamicTraceData)
+                {
+                    var stats = currentManagedProcess(rawDynamicTraceData.UnderlyingEvent);
+                    GCStats.ProcessGCDynamicEvent(stats, rawDynamicTraceData);
+                };
+
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
                 {
                     var stats = currentManagedProcess(data);
@@ -3329,6 +3335,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         private float[] GCCpuServerGCThreads = null;
 
+        private List<DynamicEvent> dynamicEvents = new List<DynamicEvent>();
+
+        public List<DynamicEvent> DynamicEvents
+        {
+            get { return this.dynamicEvents; }
+        }
+
+        internal void AddDynamicEvent(DynamicEvent dynamicEvent)
+        {
+            dynamicEvents.Add(dynamicEvent);
+        }
+
         #endregion
     }
 
@@ -4989,6 +5007,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     GCPauseTimeMSec = heapCountSample.GCPauseTime / 1000.0,
                     MslWaitTimeMSec = heapCountSample.MslWaitTime / 1000.0
                 };
+            }
+        }
+
+        internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, RawDynamicTraceEvent rawDynamicTraceEvent)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                _event.AddDynamicEvent(new DynamicEvent
+                (
+                    rawDynamicTraceEvent.UnderlyingEvent.Name,
+                    rawDynamicTraceEvent.UnderlyingEvent.TimeStamp,
+                    rawDynamicTraceEvent.DataField
+                ));
             }
         }
 
