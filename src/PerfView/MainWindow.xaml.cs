@@ -1664,7 +1664,7 @@ namespace PerfView
             var videoUrl = Path.Combine(Path.GetDirectoryName(SupportFiles.MainAssemblyPath), @"PerfViewVideos\PerfViewVideos.htm");
             if (!File.Exists(videoUrl))
             {
-                if (!AllowNativateToWeb)
+                if (!AllowNavigateToWeb)
                 {
                     StatusBar.LogError("Navigating to web disallowed, canceling.");
                     return;
@@ -2280,7 +2280,7 @@ namespace PerfView
                 {
                     if (e.Uri != null && e.Uri.Host.Length > 0)
                     {
-                        if (!GuiApp.MainWindow.AllowNativateToWeb)
+                        if (!GuiApp.MainWindow.AllowNavigateToWeb)
                         {
                             GuiApp.MainWindow.StatusBar.LogError("Navigating to web disallowed, canceling.");
                             e.Cancel = true;
@@ -2321,31 +2321,31 @@ namespace PerfView
             return true;
         }
 
-        private bool AllowNativateToWeb
+        private bool AllowNavigateToWeb
         {
             get
             {
-                if (!m_AllowNativateToWeb)
+                if (!m_AllowNavigateToWeb)
                 {
-                    var naviateToWeb = App.UserConfigData["AllowNavigateToWeb"];
-                    m_AllowNativateToWeb = naviateToWeb == "true";
-                    if (!m_AllowNativateToWeb)
+                    var allowNavigateToWeb = App.UserConfigData["AllowNavigateToWeb"];
+                    m_AllowNavigateToWeb = allowNavigateToWeb == "true";
+                    if (!m_AllowNavigateToWeb)
                     {
                         var result = MessageBox.Show(
                             "PerfView is about to fetch content from the web.\r\nIs this OK?",
                             "Navigate to Web", MessageBoxButton.YesNo);
                         if (result == MessageBoxResult.Yes)
                         {
-                            m_AllowNativateToWeb = true;
+                            m_AllowNavigateToWeb = true;
                             App.UserConfigData["AllowNavigateToWeb"] = "true";
                         }
                     }
                 }
-                return m_AllowNativateToWeb;
+                return m_AllowNavigateToWeb;
             }
         }
 
-        private bool m_AllowNativateToWeb;
+        private bool m_AllowNavigateToWeb;
 
         private PerfViewDirectory m_CurrentDirectory;
         private static WebBrowserWindow s_Browser;
