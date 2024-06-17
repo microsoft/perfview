@@ -2278,11 +2278,16 @@ namespace PerfView
 
                 s_Browser.Browser.Navigating += delegate (object sender, NavigatingCancelEventArgs e)
                 {
-                    if (e.Uri != null && e.Uri.Host.Length > 0)
+                    if (e.Uri != null && !string.IsNullOrEmpty(e.Uri.Host))
                     {
                         if (!GuiApp.MainWindow.AllowNavigateToWeb)
                         {
                             GuiApp.MainWindow.StatusBar.LogError("Navigating to web disallowed, canceling.");
+                            e.Cancel = true;
+                        }
+                        else
+                        {
+                            OpenExternalBrowser(e.Uri);
                             e.Cancel = true;
                         }
                     }
@@ -2321,6 +2326,11 @@ namespace PerfView
             return true;
         }
 
+        private static void OpenExternalBrowser(Uri uri)
+        {
+            Process.Start(uri.ToString());
+        }
+
         private bool AllowNavigateToWeb
         {
             get
@@ -2332,7 +2342,7 @@ namespace PerfView
                     if (!m_AllowNavigateToWeb)
                     {
                         var result = MessageBox.Show(
-                            "PerfView is about to fetch content from the web.\r\nIs this OK?",
+                            "PerfView is about to open content on the web.\r\nIs this OK?",
                             "Navigate to Web", MessageBoxButton.YesNo);
                         if (result == MessageBoxResult.Yes)
                         {
