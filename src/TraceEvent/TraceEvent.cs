@@ -2972,8 +2972,6 @@ namespace Microsoft.Diagnostics.Tracing
             if (string.Equals(GetType().Name, nameof(GCDynamicTraceEventParser), StringComparison.OrdinalIgnoreCase))
             {
                 declaredSet.Remove("CommittedUsage");
-                declaredSet.Remove("HeapCountTuning");
-                declaredSet.Remove("HeapCountSample");
             }
 
             var enumSet = new SortedDictionary<string, string>();
@@ -3684,9 +3682,7 @@ namespace Microsoft.Diagnostics.Tracing
                             // Make sure that the assert below doesn't fail by checking if _any_ of the event header ids match.
                             bool gcDynamicTemplateEventHeaderMatch =
                                  eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.RawDynamicTemplate.ID ||
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.HeapCountTuningTemplate.ID ||
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.CommittedUsageTemplate.ID ||
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.HeapCountSampleTemplate.ID;
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.CommittedUsageTemplate.ID;
 
                             // Ignore the failure for GC dynamic events because they are all
                             // dispatched through the same template and we vary the event ID.

@@ -874,18 +874,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
-                source.Clr.GCDynamicEvent.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
-                {
-                    var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
-                    GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
-                };
-
-                source.Clr.GCDynamicEvent.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
-                {
-                    var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
-                    GCStats.ProcessHeapCountSample(stats, heapCountSample);
-                };
-
                 source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (RawDynamicTraceEvent rawDynamicTraceData)
                 {
                     var stats = currentManagedProcess(rawDynamicTraceData.UnderlyingEvent);
@@ -2149,8 +2137,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        public HeapCountTuning HeapCountTuning { get; internal set; }
-        public HeapCountSample HeapCountSample { get; internal set; }
         public CommittedUsage CommittedUsageBefore { get; internal set; }
         public CommittedUsage CommittedUsageAfter { get; internal set; }
 
@@ -4969,44 +4955,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     Debug.Assert(_event.CommittedUsageAfter == null);
                     _event.CommittedUsageAfter = traceData;
                 }
-            }
-        }
-
-        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceEvent heapCountTuning)
-        {
-            TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
-            if (_event != null)
-            {
-                // Copy over the contents of the dynamic data to prevent issues when the event is reused.
-                _event.HeapCountTuning = new HeapCountTuning
-                {
-                    Version = heapCountTuning.Version,
-                    NewHeapCount = heapCountTuning.NewHeapCount,
-                    GCIndex = heapCountTuning.GCIndex,
-                    MedianThroughputCostPercent = heapCountTuning.MedianThroughputCostPercent,
-                    SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
-                    ThroughputCostPercentReductionPerStepUp = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
-                    ThroughputCostPercentIncreasePerStepDown = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
-                    SpaceCostPercentIncreasePerStepUp = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
-                    SpaceCostPercentDecreasePerStepDown = heapCountTuning.SpaceCostPercentDecreasePerStepDown
-                };
-            }
-        }
-
-        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceEvent heapCountSample)
-        {
-            TraceGC _event = GetLastGC(proc);
-            if (_event != null)
-            {
-                _event.HeapCountSample = new HeapCountSample
-                {
-                    Version = heapCountSample.Version,
-                    GCIndex = heapCountSample.GCIndex,
-                    // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
-                    ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000.0,
-                    GCPauseTimeMSec = heapCountSample.GCPauseTime / 1000.0,
-                    MslWaitTimeMSec = heapCountSample.MslWaitTime / 1000.0
-                };
             }
         }
 
