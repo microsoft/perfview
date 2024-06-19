@@ -31,9 +31,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // These registrations are required for raw (non-TraceLog sources).
             // They ensure that Dispatch is called so that the specific event handlers are called for each event.
             ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.RawDynamicTemplate));
-            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.HeapCountTuningTemplate));
             ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.CommittedUsageTemplate));
-            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.HeapCountSampleTemplate));
         }
 
         protected override string GetProviderName()
@@ -45,16 +43,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[4];
+                var templates = new TraceEvent[2];
 
                 // This template ensures that all GC dynamic events are parsed properly.
                 templates[0] = GCDynamicTemplate(null, GCDynamicEvent.RawDynamicTemplate);
 
                 // A template must be registered for each dynamic event type.  This ensures that after the event is converted
                 // to its final form and saved in a TraceLog, that it can still be properly parsed and dispatched.
-                templates[1] = GCDynamicTemplate(null, GCDynamicEvent.HeapCountTuningTemplate);
-                templates[2] = GCDynamicTemplate(null, GCDynamicEvent.CommittedUsageTemplate);
-                templates[3] = GCDynamicTemplate(null, GCDynamicEvent.HeapCountSampleTemplate);
+                templates[1] = GCDynamicTemplate(null, GCDynamicEvent.CommittedUsageTemplate);
 
                 s_templates = templates;
             }
@@ -77,19 +73,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private event Action<HeapCountTuningTraceEvent> _gcHeapCountTuning;
-        public event Action<HeapCountTuningTraceEvent> GCHeapCountTuning
-        {
-            add
-            {
-                _gcHeapCountTuning += value;
-            }
-            remove
-            {
-                _gcHeapCountTuning -= value;
-            }
-        }
-
         private event Action<CommittedUsageTraceEvent> _gcCommittedUsage;
         public event Action<CommittedUsageTraceEvent> GCCommittedUsage
         {
@@ -103,41 +86,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private event Action<HeapCountSampleTraceEvent> _gcHeapCountSample;
-        public event Action<HeapCountSampleTraceEvent> GCHeapCountSample
-        {
-            add
-            {
-                _gcHeapCountSample += value;
-            }
-            remove
-            {
-                _gcHeapCountSample -= value;
-            }
-        }
-
         /// <summary>
         /// Responsible for dispatching the event after we determine its type
         /// and parse it.
         /// </summary>
         private void Dispatch(GCDynamicTraceEvent data)
         {
-            if (_gcHeapCountTuning != null &&
-                data.eventID == GCDynamicEvent.HeapCountTuningTemplate.ID)
-            {
-                _gcHeapCountTuning(data.EventPayload as HeapCountTuningTraceEvent);
-            }
-
-            else if (_gcCommittedUsage != null &&
+            if (_gcCommittedUsage != null &&
                 data.eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
             {
                 _gcCommittedUsage(data.EventPayload as CommittedUsageTraceEvent);
-            }
-
-            else if (_gcHeapCountSample != null &&
-                data.eventID == GCDynamicEvent.HeapCountSampleTemplate.ID)
-            {
-                _gcHeapCountSample(data.EventPayload as HeapCountSampleTraceEvent);
             }
 
             else if (_gcDynamicTraceEvent != null &&
@@ -200,9 +158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             set { Action = (Action<GCDynamicTraceEvent>)value; }
         }
 
-        private readonly HeapCountTuningTraceEvent _heapCountTuningTemplate = new HeapCountTuningTraceEvent();
         private readonly CommittedUsageTraceEvent _committedUsageTemplate = new CommittedUsageTraceEvent();
-        private readonly HeapCountSampleTraceEvent _heapCountSampleTemplate = new HeapCountSampleTraceEvent();
         private readonly RawDynamicTraceEvent _rawTemplate = new RawDynamicTraceEvent();
 
         /// <summary>
@@ -212,19 +168,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         {
             get
             {
-                if (eventID == GCDynamicEvent.HeapCountTuningTemplate.ID)
-                {
-                    return _heapCountTuningTemplate.Bind(this);
-                }
-
-                else if (eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
+                if (eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
                 {
                     return _committedUsageTemplate.Bind(this);
-                }
-
-                else if (eventID == GCDynamicEvent.HeapCountSampleTemplate.ID)
-                {
-                    return _heapCountSampleTemplate.Bind(this);
                 }
 
                 return _rawTemplate.Bind(this);
@@ -263,19 +209,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         {
             GCDynamicEvent eventTemplate = GCDynamicEvent.RawDynamicTemplate;
 
-            if (Name.Equals(GCDynamicEvent.HeapCountTuningTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
-            {
-                eventTemplate = GCDynamicEvent.HeapCountTuningTemplate;
-            }
-
-            else if (Name.Equals(GCDynamicEvent.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
+            if (Name.Equals(GCDynamicEvent.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
             {
                 eventTemplate = GCDynamicEvent.CommittedUsageTemplate;
-            }
-
-            else if (Name.Equals(GCDynamicEvent.HeapCountSampleTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
-            {
-                eventTemplate = GCDynamicEvent.HeapCountSampleTemplate;
             }
 
             SetMetadataFromTemplate(eventTemplate);
@@ -300,9 +236,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// The list of specific event templates.
         /// </summary>
         internal static readonly RawDynamicTraceEvent RawDynamicTemplate = new RawDynamicTraceEvent();
-        internal static readonly HeapCountTuningTraceEvent HeapCountTuningTemplate = new HeapCountTuningTraceEvent();
         internal static readonly CommittedUsageTraceEvent CommittedUsageTemplate = new CommittedUsageTraceEvent();
-        internal static readonly HeapCountSampleTraceEvent HeapCountSampleTemplate = new HeapCountSampleTraceEvent();
 
         /// <summary>
         /// Metadata that must be specified for each specific type of dynamic event.
@@ -395,96 +329,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
     }
 
-    public sealed class HeapCountTuningTraceEvent : GCDynamicEvent
-    {
-        public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
-        public short NewHeapCount { get { return BitConverter.ToInt16(DataField, 2); } }
-        public long GCIndex { get { return BitConverter.ToInt64(DataField, 4); } }
-        public float MedianThroughputCostPercent { get { return BitConverter.ToSingle(DataField, 12); } }
-        public float SmoothedMedianThroughputCostPercent { get { return BitConverter.ToSingle(DataField, 16); } }
-        public float ThroughputCostPercentReductionPerStepUp { get { return BitConverter.ToSingle(DataField, 20); } }
-        public float ThroughputCostPercentIncreasePerStepDown { get { return BitConverter.ToSingle(DataField, 24); } }
-        public float SpaceCostPercentIncreasePerStepUp { get { return BitConverter.ToSingle(DataField, 28); } }
-        public float SpaceCostPercentDecreasePerStepDown { get { return BitConverter.ToSingle(DataField, 32); } }
-
-        internal override TraceEventID ID => TraceEventID.Illegal - 10;
-        internal override string TaskName => "GC";
-        internal override string OpcodeName => "HeapCountTuning";
-        internal override string EventName => "GC/HeapCountTuning";
-
-        private string[] _payloadNames;
-
-        internal override string[] PayloadNames
-        {
-            get
-            {
-                if (_payloadNames == null)
-                {
-                    _payloadNames = new string[] { "Version", "NewHeapCount", "GCIndex", "MedianThroughputCostPercent", "SmoothedMedianThroughputCostPercent", "ThroughputCostPercentReductionPerStepUp", "ThroughputCostPercentIncreasePerStepDown", "SpaceCostPercentIncreasePerStepUp", "SpaceCostPercentDecreasePerStepDown" };
-                }
-
-                return _payloadNames;
-            }
-        }
-
-        internal override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return Version;
-                case 1:
-                    return NewHeapCount;
-                case 2:
-                    return GCIndex;
-                case 3:
-                    return Math.Round((decimal)MedianThroughputCostPercent, 3);
-                case 4:
-                    return Math.Round((decimal)SmoothedMedianThroughputCostPercent, 3);
-                case 5:
-                    return Math.Round((decimal)ThroughputCostPercentReductionPerStepUp, 3);
-                case 6:
-                    return Math.Round((decimal)ThroughputCostPercentIncreasePerStepDown, 3);
-                case 7:
-                    return Math.Round((decimal)SpaceCostPercentIncreasePerStepUp, 3);
-                case 8:
-                    return Math.Round((decimal)SpaceCostPercentDecreasePerStepDown, 3);
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        internal override IEnumerable<KeyValuePair<string, object>> PayloadValues
-        {
-            get
-            {
-                yield return new KeyValuePair<string, object>("Version", Version);
-                yield return new KeyValuePair<string, object>("NewHeapCount", NewHeapCount);
-                yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
-                yield return new KeyValuePair<string, object>("MedianThroughputCostPercent", Math.Round((decimal)MedianThroughputCostPercent, 3));
-                yield return new KeyValuePair<string, object>("SmoothedMedianThroughputCostPercent", Math.Round((decimal)SmoothedMedianThroughputCostPercent, 3));
-                yield return new KeyValuePair<string, object>("ThroughputCostPercentReductionPerStepUp", Math.Round((decimal)ThroughputCostPercentReductionPerStepUp, 3));
-                yield return new KeyValuePair<string, object>("ThroughputCostPercentIncreasePerStepDown", Math.Round((decimal)ThroughputCostPercentIncreasePerStepDown, 3));
-                yield return new KeyValuePair<string, object>("SpaceCostPercentIncreasePerStepUp", Math.Round((decimal)SpaceCostPercentIncreasePerStepUp, 3));
-                yield return new KeyValuePair<string, object>("SpaceCostPercentDecreasePerStepDown", Math.Round((decimal)SpaceCostPercentDecreasePerStepDown, 3));
-            }
-        }
-    }
-
-    public sealed class HeapCountTuning
-    {
-        public short Version { get; internal set; }
-        public short NewHeapCount { get; internal set; }
-        public long GCIndex { get; internal set; }
-        public float MedianThroughputCostPercent { get; internal set; }
-        public float SmoothedMedianThroughputCostPercent { get; internal set; }
-        public float ThroughputCostPercentReductionPerStepUp { get; internal set; }
-        public float ThroughputCostPercentIncreasePerStepDown { get; internal set; }
-        public float SpaceCostPercentIncreasePerStepUp { get; internal set; }
-        public float SpaceCostPercentDecreasePerStepDown { get; internal set; }
-    }
-
     public sealed class CommittedUsageTraceEvent : GCDynamicEvent
     {
         public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
@@ -558,76 +402,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         public long TotalCommittedInFree { get; internal set; }
         public long TotalCommittedInGlobalFree { get; internal set; }
         public long TotalBookkeepingCommitted { get; internal set; }
-    }
-
-    public sealed class HeapCountSampleTraceEvent : GCDynamicEvent
-    {
-        public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
-        public long GCIndex { get { return BitConverter.ToInt64(DataField, 2); } }
-        public long ElapsedTimeBetweenGCs { get { return BitConverter.ToInt64(DataField, 10); } }
-        public long GCPauseTime { get { return BitConverter.ToInt64(DataField, 18); } }
-        public long MslWaitTime { get { return BitConverter.ToInt64(DataField, 26); } }
-
-        internal override TraceEventID ID => TraceEventID.Illegal - 12;
-        internal override string TaskName => "GC";
-        internal override string OpcodeName => "HeapCountSample";
-        internal override string EventName => "GC/HeapCountSample";
-
-        private string[] _payloadNames;
-
-        internal override string[] PayloadNames
-        {
-            get
-            {
-                if (_payloadNames == null)
-                {
-                    _payloadNames = new string[] { "Version", "GCIndex", "ElapsedTimeBetweenGCs", "GCPauseTime", "MslWaitTime" };
-                }
-
-                return _payloadNames;
-            }
-        }
-
-        internal override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return Version;
-                case 1:
-                    return GCIndex;
-                case 2:
-                    return ElapsedTimeBetweenGCs;
-                case 3:
-                    return GCPauseTime;
-                case 4:
-                    return MslWaitTime;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        internal override IEnumerable<KeyValuePair<string, object>> PayloadValues
-        {
-            get
-            {
-                yield return new KeyValuePair<string, object>("Version", Version);
-                yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
-                yield return new KeyValuePair<string, object>("ElapsedTimeBetweenGCs", ElapsedTimeBetweenGCs);
-                yield return new KeyValuePair<string, object>("GCPauseTime", GCPauseTime);
-                yield return new KeyValuePair<string, object>("MslWaitTime", MslWaitTime);
-            }
-        }
-    }
-
-    public sealed class HeapCountSample
-    {
-        public short Version { get; internal set; }
-        public long GCIndex { get; internal set; }
-        public double ElapsedTimeBetweenGCsMSec { get; internal set; }
-        public double GCPauseTimeMSec { get; internal set; }
-        public double MslWaitTimeMSec { get; internal set; }
     }
 
     public sealed class DynamicEvent
