@@ -3,7 +3,7 @@
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
-// using Microsoft.Diagnostics.Tracing.Parsers;
+
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Analysis.JIT;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -2416,7 +2416,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         public enum TimingType
-        {            
+        {
             /// <summary>
             /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
             ///
@@ -2522,7 +2522,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (gen == GenNumberHighest)
                 {
                     return HeapIndex;
-                }            }
+                }
+            }
 
             return 0;
         }
@@ -4933,12 +4934,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 CommittedUsage traceData = new CommittedUsage
                 {
-                    Version                        = committedUsage.Version,
-                    TotalCommittedInUse            = committedUsage.TotalCommittedInUse,
+                    Version = committedUsage.Version,
+                    TotalCommittedInUse = committedUsage.TotalCommittedInUse,
                     TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
-                    TotalCommittedInFree           = committedUsage.TotalCommittedInFree,
-                    TotalCommittedInGlobalFree     = committedUsage.TotalCommittedInGlobalFree,
-                    TotalBookkeepingCommitted      = committedUsage.TotalBookkeepingCommitted
+                    TotalCommittedInFree = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted = committedUsage.TotalBookkeepingCommitted
                 };
 
                 if (_event.CommittedUsageBefore == null)
@@ -4961,15 +4962,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 // Copy over the contents of the dynamic data to prevent issues when the event is reused.
                 _event.HeapCountTuning = new HeapCountTuning
                 {
-                    Version                       = heapCountTuning.Version,
-                    NewHeapCount                  = heapCountTuning.NewHeapCount,
-                    GCIndex                       = heapCountTuning.GCIndex,
-                    MedianThroughputCostPercent         = heapCountTuning.MedianThroughputCostPercent,
+                    Version = heapCountTuning.Version,
+                    NewHeapCount = heapCountTuning.NewHeapCount,
+                    GCIndex = heapCountTuning.GCIndex,
+                    MedianThroughputCostPercent = heapCountTuning.MedianThroughputCostPercent,
                     SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
-                    ThroughputCostPercentReductionPerStepUp    = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
-                    ThroughputCostPercentIncreasePerStepDown   = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
-                    SpaceCostPercentIncreasePerStepUp    = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
-                    SpaceCostPercentDecreasePerStepDown  = heapCountTuning.SpaceCostPercentDecreasePerStepDown
+                    ThroughputCostPercentReductionPerStepUp = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
+                    ThroughputCostPercentIncreasePerStepDown = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
+                    SpaceCostPercentIncreasePerStepUp = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
+                    SpaceCostPercentDecreasePerStepDown = heapCountTuning.SpaceCostPercentDecreasePerStepDown
                 };
             }
         }
@@ -4981,12 +4982,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 _event.HeapCountSample = new HeapCountSample
                 {
-                    Version               = heapCountSample.Version,
-                    GCIndex               = heapCountSample.GCIndex,
+                    Version = heapCountSample.Version,
+                    GCIndex = heapCountSample.GCIndex,
                     // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
                     ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000.0,
-                    GCPauseTimeMSec           = heapCountSample.GCPauseTime / 1000.0,
-                    MslWaitTimeMSec           = heapCountSample.MslWaitTime / 1000.0
+                    GCPauseTimeMSec = heapCountSample.GCPauseTime / 1000.0,
+                    MslWaitTimeMSec = heapCountSample.MslWaitTime / 1000.0
                 };
             }
         }

@@ -130,13 +130,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 _gcHeapCountTuning(data.EventPayload as HeapCountTuningTraceEvent);
             }
 
-            else if (_gcCommittedUsage != null && 
+            else if (_gcCommittedUsage != null &&
                 data.eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
             {
                 _gcCommittedUsage(data.EventPayload as CommittedUsageTraceEvent);
             }
 
-            else if (_gcHeapCountSample != null && 
+            else if (_gcHeapCountSample != null &&
                 data.eventID == GCDynamicEvent.HeapCountSampleTemplate.ID)
             {
                 _gcHeapCountSample(data.EventPayload as HeapCountSampleTraceEvent);
@@ -148,7 +148,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Debug.Assert(eventTemplate != null);
 
             // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GCDynamicTraceEvent(action, (int) eventTemplate.ID, 1, eventTemplate.TaskName, GCTaskGuid, 41, eventTemplate.OpcodeName, ProviderGuid, ProviderName);
+            return new GCDynamicTraceEvent(action, (int)eventTemplate.ID, 1, eventTemplate.TaskName, GCTaskGuid, 41, eventTemplate.OpcodeName, ProviderGuid, ProviderName);
         }
     }
 }
@@ -558,11 +558,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
     public sealed class HeapCountSampleTraceEvent : GCDynamicEvent
     {
-        public short Version { get { return BitConverter.ToInt16(DataField, 0); }}
-        public long GCIndex { get { return BitConverter.ToInt64(DataField, 2); }}
-        public long ElapsedTimeBetweenGCs { get { return BitConverter.ToInt64(DataField, 10); }}
-        public long GCPauseTime { get { return BitConverter.ToInt64(DataField, 18); }}
-        public long MslWaitTime { get { return BitConverter.ToInt64(DataField, 26); }}
+        public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
+        public long GCIndex { get { return BitConverter.ToInt64(DataField, 2); } }
+        public long ElapsedTimeBetweenGCs { get { return BitConverter.ToInt64(DataField, 10); } }
+        public long GCPauseTime { get { return BitConverter.ToInt64(DataField, 18); } }
+        public long MslWaitTime { get { return BitConverter.ToInt64(DataField, 26); } }
 
         internal override TraceEventID ID => TraceEventID.Illegal - 12;
         internal override string TaskName => "GC";
