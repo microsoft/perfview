@@ -960,7 +960,7 @@ public class GCHeapDumper
             gcHeapDumpSegments.Add(gcHeapDumpSegment);
 
             total += seg.Length;
-            m_log.WriteLine("Segment: Start {0,16:x} Length: {1,16:x} {2,11:n3}M LOH:{3}", seg.Start, seg.Length, seg.Length / 1000000.0, seg.Kind == GCSegmentKind.Large);
+            m_log.WriteLine("Segment: Start {0,16:x} Length: {1,16:x} {2,11:n3}M Kind:{3}", seg.Start, seg.Length, seg.Length / 1000000.0, seg.Kind);
         }
 
         m_log.WriteLine("Segment: Total {0,16} Length: {1,16:x} {2,11:n3}M", "", total, total / 1000000.0);
