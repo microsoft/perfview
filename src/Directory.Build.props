@@ -69,7 +69,7 @@
 
   <!-- ClrMD -->
   <PropertyGroup>
-    <MicrosoftDiagnosticsRuntimeVersion>2.3.405304</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>4.0.0-beta.24314.3</MicrosoftDiagnosticsRuntimeVersion>
     <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
     <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
     <!--
