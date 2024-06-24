@@ -572,18 +572,8 @@ namespace Microsoft.Diagnostics.Symbols
                         var toolsDir = Path.GetDirectoryName(typeof(SourceFile).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName);
                         var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
 
-                        // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
+                        // Find the EXE to do the source server fetch.  We only support TF.exe.   
                         string addToPath = null;
-                        if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
-                            {
-                                _log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
-                            }
-
-                            addToPath = archToolsDir;
-                        }
-                        else
                         if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
                         {
                             var tfExe = Command.FindOnPath("tf.exe");
@@ -600,7 +590,7 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                         else
                         {
-                            _log.WriteLine("Source Server command {0} is not recognized as safe (sd.exe or tf.exe), failing.", fetchCmdStr);
+                            _log.WriteLine("Source Server command {0} is not recognized as safe (tf.exe) command. Failing.", fetchCmdStr);
                             return null;
                         }
 
@@ -1000,30 +990,6 @@ f:\dd\ndp\clr\src\vm\i386\RedirectedHandledJITCase.asm*DEVDIV_TFS2*/DevDiv/D11Re
 f:\dd\public\devdiv\inc\ddbanned.h*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/public/devdiv/inc/ddbanned.h*592925
 f:\dd\ndp\clr\src\debug\ee\i386\dbghelpers.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/Debug/EE/i386/dbghelpers.asm*592925
 SRCSRV: end ------------------------------------------------
-      
-        // Here is one for SD. 
-
-SRCSRV: ini ------------------------------------------------
-VERSION=1
-VERCTRL=Source Depot
-SRCSRV: variables ------------------------------------------
-SRCSRVTRG=%targ%\%var2%\%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
-SRCSRVCMD=sd.exe -p %fnvar%(%var2%) print -o %srcsrvtrg% -q %depot%/%var3%#%var4%
-DEPOT=//depot
-SRCSRVVERCTRL=sd
-SRCSRVERRDESC=Connect to server failed
-SRCSRVERRVAR=var2
-WIN_MINKERNEL=minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020
-WIN_PUBLIC=publicdepot.sys-ntgroup.ntdev.microsoft.com:2017
-WIN_PUBLICINT=publicintdepot.sys-ntgroup.ntdev.microsoft.com:2018
-SRCSRV: source files ---------------------------------------
-d:\win7sp1_gdr.public.amd64fre\sdk\inc\pshpack4.h*WIN_PUBLIC*win7sp1_gdr/public/sdk/inc/pshpack4.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\pnp.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/pnp.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\cm.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/cm.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\pnp_x.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/pnp_x.h*2
-SRCSRV: end ------------------------------------------------
-
-
 #endif
 #if false
         // Here is ana example of the stream in use for the jithlp.asm file.  
@@ -1032,8 +998,6 @@ f:\dd\ndp\clr\src\vm\i386\jithelp.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp
 
         // Here is the command that it issues.  
 tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm" /server:http://vstfdevdiv.redmond.corp.microsoft.com:8080/devdiv2 /console >"C:\Users\vancem\AppData\Local\Temp\PerfView\src\DEVDIV_TFS2\DevDiv\D11RelS\FX45RTMGDR\ndp\clr\src\VM\i386\jithelp.asm\592925\jithelp.asm"
-
-sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users\vancem\AppData\Local\Temp\PerfView\src\WIN_MINKERNEL\win8_gdr\minkernel\ntdll\rtlstrt.c\1\rtlstrt.c" -q //depot/win8_gdr/minkernel/ntdll/rtlstrt.c#1
 
 #endif
             #endregion
