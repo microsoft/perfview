@@ -225,15 +225,6 @@
       <Link>x86\msdia140.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\sd.exe</LogicalName>
-      <Link>x86\sd.exe</Link>
-      <Visible>False</Visible>
-      <!-- Copy to output directory. Needed for debugger to work in scenarios that use these DLLs. -->
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
