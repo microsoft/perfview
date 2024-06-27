@@ -31,6 +31,13 @@
     <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
   </ItemGroup>
 
+  <Target Name="DeleteUnusedDlls" BeforeTargets="PostBuild">
+    <ItemGroup>
+      <FilesToDelete Include="$(OutDir)*.dll;$(OutDir)*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(FilesToDelete)" />
+  </Target>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <ItemGroup>
       <!-- Sign any nuget packages that made it to our output directory -->
