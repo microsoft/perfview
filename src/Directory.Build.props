@@ -22,11 +22,12 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <ReleaseVersion>3.1.11</ReleaseVersion>
+    <ReleaseVersion>3.1.12</ReleaseVersion>
     <FastSerializationVersion>$(ReleaseVersion)</FastSerializationVersion>
     <HeapDumpDllVersion>$(ReleaseVersion)</HeapDumpDllVersion>
     <MemoryGraphVersion>$(ReleaseVersion)</MemoryGraphVersion>
     <PerfViewVersion>$(ReleaseVersion)</PerfViewVersion>
+    <SymbolsAuthVersion>$(ReleaseVersion)</SymbolsAuthVersion>
     <TraceEventVersion>$(ReleaseVersion)</TraceEventVersion>
     <UtilitiesVersion>$(ReleaseVersion)</UtilitiesVersion>
   </PropertyGroup>
@@ -41,11 +42,11 @@
   <!-- External dependencies -->
   <PropertyGroup>
     <AzureCoreVersion>1.38.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.11.0</AzureIdentityVersion>
+    <AzureIdentityVersion>1.11.4</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
     <MicrosoftDiagnosticsNETCoreClientVersion>0.2.510501</MicrosoftDiagnosticsNETCoreClientVersion>
-    <MicrosoftIdentityClientVersion>4.60.1</MicrosoftIdentityClientVersion>
-    <MicrosoftIdentityClientExtensionsMsalVersion>4.60.1</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityClientVersion>4.61.3</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>4.61.3</MicrosoftIdentityClientExtensionsMsalVersion>
     <MicrosoftIdentityModelAbstractionsVersion>7.1.2</MicrosoftIdentityModelAbstractionsVersion>
     <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>
     <MicrosoftIdentityModelJsonWebTokensVersion>7.1.2</MicrosoftIdentityModelJsonWebTokensVersion>
@@ -69,7 +70,7 @@
 
   <!-- ClrMD -->
   <PropertyGroup>
-    <MicrosoftDiagnosticsRuntimeVersion>2.3.405304</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>4.0.0-beta.24314.3</MicrosoftDiagnosticsRuntimeVersion>
     <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
     <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
     <!--
