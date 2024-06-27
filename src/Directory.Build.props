@@ -34,8 +34,8 @@
 
   <!-- Support files and analyzers -->
   <PropertyGroup>
-    <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.27</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <PerfViewSupportFilesVersion>1.0.8</PerfViewSupportFilesVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.28</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.2</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
   </PropertyGroup>
 
