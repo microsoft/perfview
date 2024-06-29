@@ -1,4 +1,5 @@
 ﻿using FastSerialization;
+using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
@@ -7,11 +8,14 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Diagnostics.Tracing.Etlx.TraceLog;
 
 namespace TraceEventTests
 {
@@ -20,15 +24,54 @@ namespace TraceEventTests
         private class EventRecord
         {
             public int TotalCount;
-            public string FirstSeriazliedSample;
+            public string FirstSerializedSample;
+        }
+
+        private class EventStatistics
+        {
+            public SortedDictionary<string, EventRecord> Records = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+
+            public void Record(TraceEvent data) => Record(data.ProviderName + "/" + data.EventName, data);
+
+            public void Record(string eventName, TraceEvent data)
+            {
+                if (Records.ContainsKey(eventName))
+                {
+                    Records[eventName].TotalCount++;
+                }
+                else
+                {
+                    Records[eventName] = new EventRecord()
+                    {
+                        TotalCount = 1,
+                        FirstSerializedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
+                    };
+                }
+            }
+
+            override
+            public string ToString()
+            {
+                StringBuilder sb = new StringBuilder(1024 * 1024);
+                foreach (var item in Records)
+                {
+                    sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSerializedSample}");
+                }
+
+                return sb.ToString();
+            }
         }
 
         public EventPipeParsing(ITestOutputHelper output)
             : base(output)
         {
         }
-        
-        [Theory()]
+
+#if NETCOREAPP3_0_OR_GREATER
+        [Theory(Skip = "Snapshot difs due to increased float accuracy on newer .NET versions.")]
+#else
+        [Theory]
+#endif
         [MemberData(nameof(TestEventPipeFiles))]
         public void Basic(string eventPipeFileName)
         {
@@ -38,30 +81,13 @@ namespace TraceEventTests
             string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
 
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(eventPipeFilePath)));
-
-            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+            var eventStatistics = new EventStatistics();
 
             using (var traceLog = new TraceLog(TraceLog.CreateFromEventPipeDataFile(eventPipeFilePath)))
             {
                 var traceSource = traceLog.Events.GetSource();
 
-                traceSource.AllEvents += delegate (TraceEvent data)
-                {
-                    string eventName = data.ProviderName + "/" + data.EventName;
-
-                    if (eventStatistics.ContainsKey(eventName))
-                    {
-                        eventStatistics[eventName].TotalCount++;
-                    }
-                    else
-                    {
-                        eventStatistics[eventName] = new EventRecord()
-                        {
-                            TotalCount = 1,
-                            FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
-                        };
-                    }
-                };
+                traceSource.AllEvents += eventStatistics.Record;
 
                 // Process
                 traceSource.Process();
@@ -79,7 +105,7 @@ namespace TraceEventTests
 
             string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
             Output.WriteLine(string.Format("Processing the file {0}", Path.GetFullPath(eventPipeFilePath)));
-            var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
+            var eventStatistics = new EventStatistics();
 
             long curStreamPosition = 0;
             using (MockStreamingOnlyStream s = new MockStreamingOnlyStream(new FileStream(eventPipeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)))
@@ -95,7 +121,6 @@ namespace TraceEventTests
                         Assert.InRange(newStreamPosition, curStreamPosition, curStreamPosition + 103_000);
                         curStreamPosition = newStreamPosition;
 
-
                         string eventName = data.ProviderName + "/" + data.EventName;
 
                         // For whatever reason the parse filtering below produces a couple extra events
@@ -108,18 +133,7 @@ namespace TraceEventTests
                             eventName == "Microsoft-Windows-DotNETRuntime/Method")
                             return;
 
-                        if (eventStatistics.ContainsKey(eventName))
-                        {
-                            eventStatistics[eventName].TotalCount++;
-                        }
-                        else
-                        {
-                            eventStatistics[eventName] = new EventRecord()
-                            {
-                                TotalCount = 1,
-                                FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
-                            };
-                        }
+                        eventStatistics.Record(eventName, data);
                     };
 
                     // this is somewhat arbitrary looking set of parser event callbacks empirically
@@ -146,6 +160,61 @@ namespace TraceEventTests
             }
             // Validate
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
+        }
+
+#if NETCOREAPP3_0_OR_GREATER
+        [Theory]
+#else
+        [Theory(Skip = "EventPipeSession connection is only available to target apps on .NET Core 3.0 or later")]
+#endif
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SessionStreaming(bool initialRundown)
+        {
+            var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
+            var rundownConfig = initialRundown ? EventPipeRundownConfiguration.Enable(client) : EventPipeRundownConfiguration.None();
+            var providers = new[]
+            {
+                new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
+            };
+            using (var session = client.StartEventPipeSession(providers, requestRundown: false))
+            {
+                using (var traceSource = CreateFromEventPipeSession(session, rundownConfig))
+                {
+                    var sampleEventParser = new SampleProfilerTraceEventParser(traceSource);
+
+                    // Signal that we have received the first event.
+                    var eventCallStackIndex = new TaskCompletionSource<CallStackIndex>();
+                    sampleEventParser.ThreadSample += delegate (ClrThreadSampleTraceData e)
+                    {
+                        eventCallStackIndex.TrySetResult(e.CallStackIndex());
+                    };
+
+                    // Process in the background (this is blocking).
+                    var processingTask = Task.Run(traceSource.Process);
+
+                    // Verify the event can be symbolicated on the fly if (initialRundown == true).
+                    var callStackIndex = await eventCallStackIndex.Task;
+                    Assert.NotEqual(CallStackIndex.Invalid, callStackIndex);
+                    var codeAddressIndex = traceSource.TraceLog.CallStacks.CodeAddressIndex(callStackIndex);
+                    Assert.NotEqual(CodeAddressIndex.Invalid, codeAddressIndex);
+                    var methodIndex = traceSource.TraceLog.CodeAddresses.MethodIndex(codeAddressIndex);
+                    if (initialRundown)
+                    {
+                        Assert.NotEqual(MethodIndex.Invalid, methodIndex);
+                        var method = traceSource.TraceLog.CodeAddresses.Methods[methodIndex];
+                        Assert.NotEmpty(method.FullMethodName);
+                    }
+                    else
+                    {
+                        Assert.Equal(MethodIndex.Invalid, methodIndex);
+                    }
+
+                    // Stop after receiving the first event.
+                    session.Stop();
+                    await processingTask;
+                }
+            }
         }
 
         [Fact]
@@ -248,7 +317,7 @@ namespace TraceEventTests
                 // Process
                 traceSource.Process();
 
-                for(int i = 0; i < traceSource.NumberOfProcessors; i++)
+                for (int i = 0; i < traceSource.NumberOfProcessors; i++)
                 {
                     Assert.NotEqual(0, counts[i]);
                 }
@@ -463,7 +532,7 @@ namespace TraceEventTests
             // and ignore the empty parameter metadata provided in the stream, treating the events
             // as if the runtime had provided the correct parameter schema.
             //
-            // I am concurrently working on a runtime fix and updated file format revision which can 
+            // I am concurrently working on a runtime fix and updated file format revision which can
             // correctly encode these parameter types. However for back-compat with older runtimes we
             // need this.
 
@@ -570,15 +639,9 @@ namespace TraceEventTests
             throw new NotImplementedException();
         }
 
-        private void ValidateEventStatistics(SortedDictionary<string, EventRecord> eventStatistics, string eventPipeFileName)
+        private void ValidateEventStatistics(EventStatistics eventStatistics, string eventPipeFileName)
         {
-            StringBuilder sb = new StringBuilder(1024 * 1024);
-            foreach (var item in eventStatistics)
-            {
-                sb.AppendLine($"{item.Key}, {item.Value.TotalCount}, {item.Value.FirstSeriazliedSample}");
-            }
-
-            string actual = sb.ToString();
+            string actual = eventStatistics.ToString();
             string baselineFile = Path.Combine(TestDataDir, eventPipeFileName + ".baseline.txt");
             string expected = File.ReadAllText(baselineFile);
 
@@ -603,7 +666,7 @@ namespace TraceEventTests
         {
             _innerStream = innerStream;
         }
-        public long TestOnlyPosition {  get { return _innerStream.Position; } }
+        public long TestOnlyPosition { get { return _innerStream.Position; } }
 
         public override bool CanRead => true;
         public override bool CanSeek => false;
@@ -662,7 +725,7 @@ namespace TraceEventTests
         public void WriteArray<T>(T[] elements, Action<T> writeElement)
         {
             WriteArrayLength(elements.Length);
-            for(int i = 0; i < elements.Length; i++)
+            for (int i = 0; i < elements.Length; i++)
             {
                 writeElement(elements[i]);
             }
@@ -779,7 +842,7 @@ namespace TraceEventTests
             }
         }
 
-        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData, 
+        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData,
             long previousBytesWritten = 0)
         {
             Debug.WriteLine($"Starting block {name} position: {writer.BaseStream.Position + previousBytesWritten}");
@@ -931,7 +994,7 @@ namespace TraceEventTests
             EventPipeWriter.WriteNetTraceHeader(writer);
             EventPipeWriter.WriteFastSerializationHeader(writer);
             EventPipeWriter.WriteTraceObject(writer);
-            EventPipeWriter.WriteMetadataBlock(writer, 
+            EventPipeWriter.WriteMetadataBlock(writer,
                 new EventMetadata(1, "Provider", "Event", 1));
             ms.Position = 0;
             return ms;
@@ -950,16 +1013,16 @@ namespace TraceEventTests
             else
             {
                 // 20 blocks, each with 20 events in them
-                for(int i = 0; i < 20; i++)
+                for (int i = 0; i < 20; i++)
                 {
-                    EventPipeWriter.WriteEventBlock(writer, 
+                    EventPipeWriter.WriteEventBlock(writer,
                         w =>
                         {
                             for (int j = 0; j < 20; j++)
                             {
                                 EventPipeWriter.WriteEventBlob(w, 1, _sequenceNumber++, payloadSize, WriteEventPayload);
                             }
-                        }, 
+                        },
                         _bytesWritten);
                 }
             }
@@ -987,7 +1050,7 @@ namespace TraceEventTests
         public override int Read(byte[] buffer, int offset, int count)
         {
             int ret = _currentChunk.Read(buffer, offset, count);
-            if(ret == 0)
+            if (ret == 0)
             {
                 _currentChunk = GetNextChunk();
                 _bytesWritten += _currentChunk.Length;

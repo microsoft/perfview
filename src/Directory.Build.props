@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project> 
+<Project>
 
   <PropertyGroup>
     <EnableDefaultNoneItems>False</EnableDefaultNoneItems>
@@ -44,6 +44,7 @@
     <AzureCoreVersion>1.38.0</AzureCoreVersion>
     <AzureIdentityVersion>1.11.4</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
+    <MicrosoftDiagnosticsNETCoreClientVersion>0.2.510501</MicrosoftDiagnosticsNETCoreClientVersion>
     <MicrosoftIdentityClientVersion>4.61.3</MicrosoftIdentityClientVersion>
     <MicrosoftIdentityClientExtensionsMsalVersion>4.61.3</MicrosoftIdentityClientExtensionsMsalVersion>
     <MicrosoftIdentityModelAbstractionsVersion>7.1.2</MicrosoftIdentityModelAbstractionsVersion>
