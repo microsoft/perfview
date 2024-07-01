@@ -481,30 +481,6 @@ namespace Stats
                 writer.WriteLine("/>");
             }
 
-            if (gc.HeapCountTuning != null || gc.HeapCountSample != null)
-            {
-                writer.Write("      <DynamicData");
-                if (gc.HeapCountTuning != null)
-                {
-                    writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.NewHeapCount.ToString("n0"), 10));
-                    writer.Write(" MedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.MedianThroughputCostPercent.ToString("n3"), 10));
-                    writer.Write(" SmoothedMedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SmoothedMedianThroughputCostPercent.ToString("n3"), 10));
-                    writer.Write(" ThroughputCostPercentReductionPerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentReductionPerStepUp.ToString("n3"), 10));
-                    writer.Write(" ThroughputCostPercentIncreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentIncreasePerStepDown.ToString("n3"), 10));
-                    writer.Write(" SpaceCostPercentIncreasePerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentIncreasePerStepUp.ToString("n3"), 10));
-                    writer.Write(" SpaceCostPercentDecreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentDecreasePerStepDown.ToString("n3"), 10));
-                }
-
-                if (gc.HeapCountSample != null)
-                {
-                    writer.Write(" ElapsedTimeBetweenGCsMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCsMSec.ToString("n3"), 10));
-                    writer.Write(" GCPauseTimeMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTimeMSec.ToString("n3"), 10));
-                    writer.Write(" MslWaitTimeMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTimeMSec.ToString("n3"), 10));
-                }
-
-                writer.WriteLine("/>");
-            }
-
             if (gc.HeapStats != null)
             {
                 writer.Write("      <HeapStats");
