@@ -2025,7 +2025,13 @@ BuildPerfRecordArgs()
     # Filter to a single process if desired
     if [ "$collectionPid" != "" ]
     then
-        collectionArgs="$collectionArgs --pid=$collectionPid"
+        if ps -p "$collectionPid" > /dev/null;
+        then
+            collectionArgs="$collectionArgs --pid=$collectionPid"
+        else
+            WriteWarning "Process with PID '$collectionPid' does not exist.  Please specify a valid PID."
+            exit 1
+        fi
     else
         collectionArgs="$collectionArgs -a"
     fi
