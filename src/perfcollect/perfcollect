@@ -931,7 +931,6 @@ DiscoverCommands()
     lttngcmd=`GetCommandFullPath "lttng"`
     zipcmd=`GetCommandFullPath "zip"`
     unzipcmd=`GetCommandFullPath "unzip"`
-    objdumpcmd=`GetCommandFullPath "objdump"`
 }
 
 GetCommandFullPath()
@@ -1723,59 +1722,6 @@ ProcessCollectedData()
                 RunSilent "cp $jitDumpFile ."
             fi
         done
-
-        if [ "$objdumpcmd" != "" ]
-        then
-            # Create debuginfo files (separate symbols) for all modules in the trace.
-            WriteStatus "Saving native symbols"
-
-            # Get the list of DSOs with hits in the trace file (those that are actually used).
-            # Filter out /tmp/perf-$pid.map files and files that end in .dll.
-            local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
-            for dso in $dsosWithHits
-            do
-                # Build up tuples of buildid and binary path.
-                local processEntry=0
-                if [ -f $dso ]
-                then
-                    local pathToBinary=$dso
-                    processEntry=1
-                else
-                    local buildid=$dso
-                    pathToBinary=''
-                fi
-
-                # Once we have a tuple for a binary path that exists, process it.
-                if [ "$processEntry" == "1" ]
-                then
-                    # Get the binary name without path.
-                    local binaryName=`basename $pathToBinary`
-
-                    # Build the debuginfo file name.
-                    local destFileName=$binaryName.debuginfo
-
-                    # Build the destination directory for the debuginfo file.
-                    local currentDir=`pwd`
-                    local destDir=$currentDir/debuginfo/$buildid
-
-                    # Build the full path to the debuginfo file.
-                    local destPath=$destDir/$destFileName
-
-                    # Check to see if the DSO contains symbols, and if so, build the debuginfo file.
-                    local noSymbols=`$objdumpcmd -t $pathToBinary | grep "no symbols" -c`
-                    if [ "$noSymbols" == "0" ]
-                    then
-                        LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
-                        RunSilent "mkdir -p $destDir"
-                        RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
-                    else
-                        LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
-                    fi
-                fi
-            done
-
-            WriteStatus "...FINISHED"
-        fi
 
         WriteStatus "Resolving JIT and R2R symbols"
 
