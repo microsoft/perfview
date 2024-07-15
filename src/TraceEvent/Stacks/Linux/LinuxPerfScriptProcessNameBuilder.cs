@@ -17,14 +17,14 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 ".NET Server GC"
             };
 
-        private readonly object _lock = new object();
+        private readonly object _dictionariesLock = new object();
         private Dictionary<StackSourceFrameIndex, HashSet<string>> _candidateProcessNames = new Dictionary<StackSourceFrameIndex, HashSet<string>>();
         private Dictionary<StackSourceFrameIndex, string> _cachedProcessNames = new Dictionary<StackSourceFrameIndex, string>();
         private Dictionary<StackSourceFrameIndex, int> _processIds = new Dictionary<StackSourceFrameIndex, int>();
 
         internal void SaveProcessName(StackSourceFrameIndex frameIndex, string processName, int processId)
         {
-            lock (_lock)
+            lock (_dictionariesLock)
             {
                 if (!_candidateProcessNames.TryGetValue(frameIndex, out HashSet<string> processNames))
                 {
@@ -40,7 +40,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         internal string GetProcessName(StackSourceFrameIndex frameIndex)
         {
-            lock (_lock)
+            lock (_dictionariesLock)
             {
                 if (!_cachedProcessNames.TryGetValue(frameIndex, out string processName))
                 {
@@ -54,7 +54,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         private string BuildProcessName(StackSourceFrameIndex frameIndex)
         {
-            Debug.Assert(Monitor.IsEntered(_lock));
+            Debug.Assert(Monitor.IsEntered(_dictionariesLock));
 
             if (_candidateProcessNames.TryGetValue(frameIndex, out HashSet<string> processNames))
             {
