@@ -171,7 +171,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
         public bool IsEndOfSample(FastStream source, byte current, byte peek1)
         {
-            return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || current == 0 || source.EndOfStream;
+            return (current == '\n' && peek1 != '\t') || current == 0 || source.EndOfStream;
         }
 
         /// <summary>
@@ -337,8 +337,6 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 if (source.EndOfStream)
                     break;
 
-                EventKind eventKind = EventKind.Cpu;
-
                 // Fetch Command (processName) - Stops when it sees the pattern \s+\d+/\d
                 int idx = FindEndOfProcessCommand(source);
                 if (idx < 0)
@@ -396,20 +394,16 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 sb.Clear();
                 source.MoveNext();
 
-                // Event Properties
-                // I mark a position here because I need to check what type of event this is without screwing up the stream
-                var markedPosition = source.MarkPosition();
-                source.ReadAsciiStringUpTo('\n', sb);
-                string eventDetails = sb.ToString().Trim();
-                sb.Clear();
+                // The event can end in the format /custom_param_list/:
+                // Detect this and remove from the event name
+                if (eventName.Length != 0 && eventName[eventName.Length - 1] == '/')
+                {
+                    int firstSlash = eventName.IndexOf('/');
 
-                if (eventDetails.Length >= SchedulerEvent.Name.Length && eventDetails.Substring(0, SchedulerEvent.Name.Length) == SchedulerEvent.Name)
-                {
-                    eventKind = EventKind.Scheduler;
-                }
-                else if(eventDetails.Length > ThreadExitEvent.Name.Length && eventDetails.Substring(0, ThreadExitEvent.Name.Length) == ThreadExitEvent.Name)
-                {
-                    eventKind = EventKind.ThreadExit;
+                    if (firstSlash != eventName.Length - 1)
+                    {
+                        eventName = eventName.Substring(0, firstSlash - 1);
+                    }
                 }
 
                 // Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
@@ -417,11 +411,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 {
                     while (true)
                     {
-                        source.MoveNext();
                         if (IsEndOfSample(source, source.Current, source.Peek(1)))
                         {
                             break;
                         }
+                        source.MoveNext();
                     }
 
                     yield return null;
@@ -432,38 +426,46 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
                     Frame threadTimeFrame = null;
 
-                    // For the sake of immutability, I have to do a similar if-statement twice. I'm trying to figure out a better way
-                    //   but for now this will do.
-                    ScheduleSwitch schedSwitch = null;
-                    if (eventKind == EventKind.Scheduler)
-                    {
-                        source.RestoreToMark(markedPosition);
-                        schedSwitch = ReadScheduleSwitch(source);
-                        source.SkipUpTo('\n');
-                    }
-
-                    ThreadExit exit = null;
-                    if(eventKind == EventKind.ThreadExit)
-                    {
-                        source.RestoreToMark(markedPosition);
-                        exit = ReadExit(source);
-                        source.SkipUpTo('\n');
-                    }
+                    // Event Properties
+                    // I mark a position here because I need to check what type of event this is without screwing up the stream
+                    var markedPosition = source.MarkPosition();
+                    source.ReadAsciiStringUpTo('\n', sb);
+                    string eventDetails = sb.ToString().Trim();
+                    sb.Clear();
 
                     IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
 
-                    if (eventKind == EventKind.Scheduler)
+                    // Remember where this event ends so we can go back here after processing it
+                    var nextEventPos = source.MarkPosition();
+
+                    // Go back to the event so we can process it
+                    source.RestoreToMark(markedPosition);
+                    if (eventDetails.Length >= SchedulerEvent.Name.Length && eventDetails.Substring(0, SchedulerEvent.Name.Length) == SchedulerEvent.Name)
                     {
+                        ScheduleSwitch schedSwitch = ReadScheduleSwitch(source);
                         linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
                     }
-                    else if (eventKind == EventKind.ThreadExit)
+                    else if (eventDetails.Length > ThreadExitEvent.Name.Length && eventDetails.Substring(0, ThreadExitEvent.Name.Length) == ThreadExitEvent.Name)
                     {
+                        ThreadExit exit = ReadExit(source);
                         linuxEvent = new ThreadExitEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, exit);
+                    }
+                    else if (eventDetails.Length > BlockReqIssueEvent.Name.Length && eventDetails.Substring(0, BlockReqIssueEvent.Name.Length) == BlockReqIssueEvent.Name)
+                    {
+                        BlockReqIssue blockReqIssue = ReadBlockReqIssue(source);
+                        linuxEvent = new BlockReqIssueEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, blockReqIssue);
+                    }
+                    else if (eventDetails.Length > BlockReqCompleteEvent.Name.Length && eventDetails.Substring(0, BlockReqCompleteEvent.Name.Length) == BlockReqCompleteEvent.Name)
+                    {
+                        BlockReqComplete blockReqComplete = ReadBlockReqComplete(source);
+                        linuxEvent = new BlockReqCompleteEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, blockReqComplete);
                     }
                     else
                     {
                         linuxEvent = new CpuEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
                     }
+
+                    source.RestoreToMark(nextEventPos);
 
                     yield return linuxEvent;
                 }
@@ -879,6 +881,85 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             return new ThreadExit(comm, tid, prio);
         }
 
+        private BlockReqIssue ReadBlockReqIssue(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // Format is: block:block_rq_issue: dev_major,dev_minor flags length_bytes (cmd) sector_offset + sector_length [process]
+
+            // Skip "block:block_rq_issue: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            uint device = source.ReadUInt();
+            source.MoveNext();      // Skip ','
+            uint deviceMinor = source.ReadUInt();
+
+            source.SkipSpace();
+            source.ReadAsciiStringUpTo(' ', sb);
+            string flags = sb.ToString();
+            sb.Clear();
+
+            source.SkipSpace();
+            uint length = source.ReadUInt();
+
+            // Skip '(cmd)' for now - it's often empty
+            source.SkipSpace();
+            source.SkipUpTo(')');
+            source.MoveNext();
+
+            source.SkipSpace();
+            ulong sector = source.ReadULong();
+
+            source.SkipSpace();
+            source.MoveNext();      // Skip '+'
+            source.SkipSpace();
+            uint sectorLength = source.ReadUInt();
+
+            // Next field is the process name in [] - don't bother with it for now
+
+            return new BlockReqIssue(device, deviceMinor, flags, length, sector, sectorLength);
+        }
+
+        private BlockReqComplete ReadBlockReqComplete(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // Format is: block:block_rq_complete: dev_major,dev_minor flags (cmd) sector_offset + sector_length [error]
+
+            // Skip "block:block_rq_complete: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            uint device = source.ReadUInt();
+            source.MoveNext();      // Skip ','
+            uint deviceMinor = source.ReadUInt();
+
+            source.SkipSpace();
+            source.ReadAsciiStringUpTo(' ', sb);
+            string flags = sb.ToString();
+            sb.Clear();
+
+            // Skip '(cmd)' for now - it's often empty
+            source.SkipSpace();
+            source.SkipUpTo(')');
+            source.MoveNext();
+
+            source.SkipSpace();
+            ulong sector = source.ReadULong();
+
+            source.SkipSpace();
+            source.MoveNext();      // Skip '+'
+            source.SkipSpace();
+            uint sectorLength = source.ReadUInt();
+
+            source.SkipSpace();
+            source.MoveNext();      // Skip '['
+            int error = source.ReadInt();
+
+            return new BlockReqComplete(device, deviceMinor, flags, sector, sectorLength, error);
+        }
+
         private void ReadProcessNameFromSchedSwitch(FastStream source, string nextFieldName, StringBuilder dest)
         {
             StringBuilder fieldNameStringBuilder = new StringBuilder();
@@ -1204,6 +1285,16 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         /// Represents a thread exit event.
         /// </summary>
         ThreadExit,
+
+        /// <summary>
+        /// Represents an IO init event.
+        /// </summary>
+        BlockRequestIssue,
+
+        /// <summary>
+        /// Represents an IO complete event.
+        /// </summary>
+        BlockRequestComplete,
     }
 
     /// <summary>
@@ -1297,6 +1388,94 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             string eventName, string eventProp, IEnumerable<Frame> callerStacks) :
             base(EventKind.Cpu, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
         { }
+    }
+
+    /// <summary>
+    /// A sample that has extra properties to hold disk IO init events.
+    /// </summary>
+    public class BlockReqIssueEvent : LinuxEvent
+    {
+        public static readonly string Name = "block_rq_issue";
+
+        /// <summary>
+        /// The details of the IO init.
+        /// </summary>
+        public BlockReqIssue ReqIssue { get; }
+
+        public BlockReqIssueEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, BlockReqIssue reqIssue) :
+            base(EventKind.BlockRequestIssue, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            ReqIssue = reqIssue;
+        }
+    }
+
+    public class BlockReqIssue
+    {
+        public uint Device { get; }
+        public uint DeviceMinor { get; }
+        public string Flags { get; }
+        public uint Length { get; }
+        public ulong Sector { get; }
+        public uint SectorLength { get; }
+
+        public BlockReqIssue(
+            uint device, uint deviceMinor, string flags,
+            uint length, ulong sector, uint sectorLength)
+        {
+            Device = device;
+            DeviceMinor = deviceMinor;
+            Flags = flags;
+            Length = length;
+            Sector = sector;
+            SectorLength = sectorLength;
+        }
+    }
+
+    /// <summary>
+    /// A sample that has extra properties to hold disk IO complete events.
+    /// </summary>
+    public class BlockReqCompleteEvent : LinuxEvent
+    {
+        public static readonly string Name = "block_rq_complete";
+
+        /// <summary>
+        /// The details of the IO complete.
+        /// </summary>
+        public BlockReqComplete ReqComplete { get; }
+
+        public BlockReqCompleteEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, BlockReqComplete reqComplete) :
+            base(EventKind.BlockRequestComplete, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            ReqComplete = reqComplete;
+        }
+    }
+
+    public class BlockReqComplete
+    {
+        public uint Device { get; }
+        public uint DeviceMinor { get; }
+        public string Flags { get; }
+        public ulong Sector { get; }
+        public uint SectorLength { get; }
+        public int Error { get; }
+
+        public BlockReqComplete(
+            uint device, uint deviceMinor, string flags,
+            ulong sector, uint sectorLength, int error)
+        {
+            Device = device;
+            DeviceMinor = deviceMinor;
+            Flags = flags;
+            Sector = sector;
+            SectorLength = sectorLength;
+            Error = error;
+        }
     }
 
     /// <summary>
