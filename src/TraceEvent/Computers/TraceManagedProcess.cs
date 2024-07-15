@@ -3,7 +3,7 @@
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
-// using Microsoft.Diagnostics.Tracing.Parsers;
+
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Analysis.JIT;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -874,16 +874,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
-                source.Clr.GCDynamicEvent.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
+                source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (GCDynamicTraceEvent gcDynamic)
                 {
-                    var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
-                    GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
-                };
-
-                source.Clr.GCDynamicEvent.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
-                {
-                    var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
-                    GCStats.ProcessHeapCountSample(stats, heapCountSample);
+                    var stats = currentManagedProcess(gcDynamic.UnderlyingEvent);
+                    GCStats.ProcessGCDynamicEvent(stats, gcDynamic);
                 };
 
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
@@ -2143,8 +2137,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        public HeapCountTuning HeapCountTuning { get; internal set; }
-        public HeapCountSample HeapCountSample { get; internal set; }
         public CommittedUsage CommittedUsageBefore { get; internal set; }
         public CommittedUsage CommittedUsageAfter { get; internal set; }
 
@@ -2416,7 +2408,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         public enum TimingType
-        {            
+        {
             /// <summary>
             /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
             ///
@@ -2522,7 +2514,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (gen == GenNumberHighest)
                 {
                     return HeapIndex;
-                }            }
+                }
+            }
 
             return 0;
         }
@@ -3327,6 +3320,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // for server background GC as the imbalance there is much less important.
 
         private float[] GCCpuServerGCThreads = null;
+
+        private List<GCDynamicEvent> dynamicEvents = new List<GCDynamicEvent>();
+
+        public List<GCDynamicEvent> DynamicEvents
+        {
+            get { return this.dynamicEvents; }
+        }
+
+        internal void AddDynamicEvent(GCDynamicEvent dynamicEvent)
+        {
+            dynamicEvents.Add(dynamicEvent);
+        }
 
         #endregion
     }
@@ -4933,12 +4938,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 CommittedUsage traceData = new CommittedUsage
                 {
-                    Version                        = committedUsage.Version,
-                    TotalCommittedInUse            = committedUsage.TotalCommittedInUse,
+                    Version = committedUsage.Version,
+                    TotalCommittedInUse = committedUsage.TotalCommittedInUse,
                     TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
-                    TotalCommittedInFree           = committedUsage.TotalCommittedInFree,
-                    TotalCommittedInGlobalFree     = committedUsage.TotalCommittedInGlobalFree,
-                    TotalBookkeepingCommitted      = committedUsage.TotalBookkeepingCommitted
+                    TotalCommittedInFree = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted = committedUsage.TotalBookkeepingCommitted
                 };
 
                 if (_event.CommittedUsageBefore == null)
@@ -4953,41 +4958,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceEvent heapCountTuning)
-        {
-            TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
-            if (_event != null)
-            {
-                // Copy over the contents of the dynamic data to prevent issues when the event is reused.
-                _event.HeapCountTuning = new HeapCountTuning
-                {
-                    Version                       = heapCountTuning.Version,
-                    NewHeapCount                  = heapCountTuning.NewHeapCount,
-                    GCIndex                       = heapCountTuning.GCIndex,
-                    MedianThroughputCostPercent         = heapCountTuning.MedianThroughputCostPercent,
-                    SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
-                    ThroughputCostPercentReductionPerStepUp    = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
-                    ThroughputCostPercentIncreasePerStepDown   = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
-                    SpaceCostPercentIncreasePerStepUp    = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
-                    SpaceCostPercentDecreasePerStepDown  = heapCountTuning.SpaceCostPercentDecreasePerStepDown
-                };
-            }
-        }
-
-        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceEvent heapCountSample)
+        internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, GCDynamicTraceEvent gcDynamic)
         {
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                _event.HeapCountSample = new HeapCountSample
-                {
-                    Version               = heapCountSample.Version,
-                    GCIndex               = heapCountSample.GCIndex,
-                    // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
-                    ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000.0,
-                    GCPauseTimeMSec           = heapCountSample.GCPauseTime / 1000.0,
-                    MslWaitTimeMSec           = heapCountSample.MslWaitTime / 1000.0
-                };
+                _event.AddDynamicEvent(new GCDynamicEvent
+                (
+                    gcDynamic.UnderlyingEvent.Name,
+                    gcDynamic.UnderlyingEvent.TimeStamp,
+                    gcDynamic.DataField
+                ));
             }
         }
 

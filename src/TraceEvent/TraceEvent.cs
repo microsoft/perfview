@@ -986,7 +986,7 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 // Handle the cloned case.
-                if(instanceContainerID != null)
+                if (instanceContainerID != null)
                 {
                     return instanceContainerID;
                 }
@@ -1003,7 +1003,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                if((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_NO_CPUTIME) != 0)
+                if ((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_NO_CPUTIME) != 0)
                 {
                     return (eventRecord->EventHeader.KernelTime << sizeof(int)) + eventRecord->EventHeader.UserTime;
                 }
@@ -2972,8 +2972,6 @@ namespace Microsoft.Diagnostics.Tracing
             if (string.Equals(GetType().Name, nameof(GCDynamicTraceEventParser), StringComparison.OrdinalIgnoreCase))
             {
                 declaredSet.Remove("CommittedUsage");
-                declaredSet.Remove("HeapCountTuning");
-                declaredSet.Remove("HeapCountSample");
             }
 
             var enumSet = new SortedDictionary<string, string>();
@@ -3565,42 +3563,42 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-            {
-                anEvent.Dispatch();
-            }
-
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (; ; )
+                if (anEvent.Target != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                    {
-                        break;
-                    }
-
-                    if (nextEvent.Target != null)
-                    {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;
-                    }
-                }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                {
-                    unhandledEventTemplate.PrepForCallback();
+                    anEvent.Dispatch();
                 }
 
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;
+                if (anEvent.next != null)
+                {
+                    TraceEvent nextEvent = anEvent;
+                    for (; ; )
+                    {
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                        {
+                            break;
+                        }
+
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;
+                        }
+                    }
+                }
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                    {
+                        unhandledEventTemplate.PrepForCallback();
+                    }
+
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)
@@ -3619,7 +3617,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             int lastChanceHandlerChecked = 0;       // We have checked no last chance handlers to begin with
-            RetryLookup:
+        RetryLookup:
             ushort eventID = eventRecord->EventHeader.Id;
 
             //double relTime = QPCTimeToRelMSec(eventRecord->EventHeader.TimeStamp);
@@ -3683,10 +3681,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                             // Make sure that the assert below doesn't fail by checking if _any_ of the event header ids match.
                             bool gcDynamicTemplateEventHeaderMatch =
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.RawDynamicTemplate.ID ||
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.HeapCountTuningTemplate.ID ||
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.CommittedUsageTemplate.ID ||
-                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEvent.HeapCountSampleTemplate.ID;
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEventBase.GCDynamicTemplate.ID ||
+                                 eventRecord->EventHeader.Id == (ushort)GCDynamicEventBase.CommittedUsageTemplate.ID;
 
                             // Ignore the failure for GC dynamic events because they are all
                             // dispatched through the same template and we vary the event ID.
