@@ -43,6 +43,11 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
