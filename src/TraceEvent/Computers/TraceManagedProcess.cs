@@ -874,10 +874,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
-                source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (RawDynamicTraceEvent rawDynamicTraceData)
+                source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (GCDynamicTraceEvent gcDynamic)
                 {
-                    var stats = currentManagedProcess(rawDynamicTraceData.UnderlyingEvent);
-                    GCStats.ProcessGCDynamicEvent(stats, rawDynamicTraceData);
+                    var stats = currentManagedProcess(gcDynamic.UnderlyingEvent);
+                    GCStats.ProcessGCDynamicEvent(stats, gcDynamic);
                 };
 
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
@@ -3321,14 +3321,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         private float[] GCCpuServerGCThreads = null;
 
-        private List<DynamicEvent> dynamicEvents = new List<DynamicEvent>();
+        private List<GCDynamicEvent> dynamicEvents = new List<GCDynamicEvent>();
 
-        public List<DynamicEvent> DynamicEvents
+        public List<GCDynamicEvent> DynamicEvents
         {
             get { return this.dynamicEvents; }
         }
 
-        internal void AddDynamicEvent(DynamicEvent dynamicEvent)
+        internal void AddDynamicEvent(GCDynamicEvent dynamicEvent)
         {
             dynamicEvents.Add(dynamicEvent);
         }
@@ -4958,16 +4958,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, RawDynamicTraceEvent rawDynamicTraceEvent)
+        internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, GCDynamicTraceEvent gcDynamic)
         {
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                _event.AddDynamicEvent(new DynamicEvent
+                _event.AddDynamicEvent(new GCDynamicEvent
                 (
-                    rawDynamicTraceEvent.UnderlyingEvent.Name,
-                    rawDynamicTraceEvent.UnderlyingEvent.TimeStamp,
-                    rawDynamicTraceEvent.DataField
+                    gcDynamic.UnderlyingEvent.Name,
+                    gcDynamic.UnderlyingEvent.TimeStamp,
+                    gcDynamic.DataField
                 ));
             }
         }

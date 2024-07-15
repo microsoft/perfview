@@ -30,8 +30,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             // These registrations are required for raw (non-TraceLog sources).
             // They ensure that Dispatch is called so that the specific event handlers are called for each event.
-            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.RawDynamicTemplate));
-            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEvent.CommittedUsageTemplate));
+            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEventBase.GCDynamicTemplate));
+            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEventBase.CommittedUsageTemplate));
         }
 
         protected override string GetProviderName()
@@ -46,11 +46,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var templates = new TraceEvent[2];
 
                 // This template ensures that all GC dynamic events are parsed properly.
-                templates[0] = GCDynamicTemplate(null, GCDynamicEvent.RawDynamicTemplate);
+                templates[0] = GCDynamicTemplate(null, GCDynamicEventBase.GCDynamicTemplate);
 
                 // A template must be registered for each dynamic event type.  This ensures that after the event is converted
                 // to its final form and saved in a TraceLog, that it can still be properly parsed and dispatched.
-                templates[1] = GCDynamicTemplate(null, GCDynamicEvent.CommittedUsageTemplate);
+                templates[1] = GCDynamicTemplate(null, GCDynamicEventBase.CommittedUsageTemplate);
 
                 s_templates = templates;
             }
@@ -60,8 +60,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     callback(template);
         }
 
-        private event Action<RawDynamicTraceEvent> _gcDynamicTraceEvent;
-        public event Action<RawDynamicTraceEvent> GCDynamicTraceEvent
+        private event Action<GCDynamicTraceEvent> _gcDynamicTraceEvent;
+        public event Action<GCDynamicTraceEvent> GCDynamicTraceEvent
         {
             add
             {
@@ -90,36 +90,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Responsible for dispatching the event after we determine its type
         /// and parse it.
         /// </summary>
-        private void Dispatch(GCDynamicTraceEvent data)
+        private void Dispatch(GCDynamicTraceEventImpl data)
         {
             if (_gcCommittedUsage != null &&
-                data.eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
+                data.eventID == GCDynamicEventBase.CommittedUsageTemplate.ID)
             {
                 _gcCommittedUsage(data.EventPayload as CommittedUsageTraceEvent);
             }
 
             else if (_gcDynamicTraceEvent != null &&
-                data.EventPayload is RawDynamicTraceEvent)
+                data.EventPayload is GCDynamicTraceEvent)
             {
-                _gcDynamicTraceEvent(data.EventPayload as RawDynamicTraceEvent);
+                _gcDynamicTraceEvent(data.EventPayload as GCDynamicTraceEvent);
             }
         }
 
-        private static GCDynamicTraceEvent GCDynamicTemplate(Action<GCDynamicTraceEvent> action, GCDynamic.GCDynamicEvent eventTemplate)
+        private static GCDynamicTraceEventImpl GCDynamicTemplate(Action<GCDynamicTraceEventImpl> action, GCDynamic.GCDynamicEventBase eventTemplate)
         {
             Debug.Assert(eventTemplate != null);
 
             // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new GCDynamicTraceEvent(action, (int)eventTemplate.ID, 1, eventTemplate.TaskName, GCTaskGuid, 41, eventTemplate.OpcodeName, ProviderGuid, ProviderName);
+            return new GCDynamicTraceEventImpl(action, (int)eventTemplate.ID, 1, eventTemplate.TaskName, GCTaskGuid, 41, eventTemplate.OpcodeName, ProviderGuid, ProviderName);
         }
     }
 }
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 {
-    public sealed class GCDynamicTraceEvent : TraceEvent
+    internal sealed class GCDynamicTraceEventImpl : TraceEvent
     {
-        internal GCDynamicTraceEvent(Action<GCDynamicTraceEvent> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal GCDynamicTraceEventImpl(Action<GCDynamicTraceEventImpl> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             Action = action;
@@ -155,25 +155,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         protected internal override Delegate Target
         {
             get { return Action; }
-            set { Action = (Action<GCDynamicTraceEvent>)value; }
+            set { Action = (Action<GCDynamicTraceEventImpl>)value; }
         }
 
         private readonly CommittedUsageTraceEvent _committedUsageTemplate = new CommittedUsageTraceEvent();
-        private readonly RawDynamicTraceEvent _rawTemplate = new RawDynamicTraceEvent();
+        private readonly GCDynamicTraceEvent _gcDynamicTemplate = new GCDynamicTraceEvent();
 
         /// <summary>
         /// Contains the fully parsed payload of the dynamic event.
         /// </summary>
-        public GCDynamicEvent EventPayload
+        public GCDynamicEventBase EventPayload
         {
             get
             {
-                if (eventID == GCDynamicEvent.CommittedUsageTemplate.ID)
+                if (eventID == GCDynamicEventBase.CommittedUsageTemplate.ID)
                 {
                     return _committedUsageTemplate.Bind(this);
                 }
 
-                return _rawTemplate.Bind(this);
+                return _gcDynamicTemplate.Bind(this);
             }
         }
 
@@ -203,21 +203,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             return sb;
         }
 
-        private event Action<GCDynamicTraceEvent> Action;
+        private event Action<GCDynamicTraceEventImpl> Action;
 
         private void SelectEventMetadata()
         {
-            GCDynamicEvent eventTemplate = GCDynamicEvent.RawDynamicTemplate;
+            GCDynamicEventBase eventTemplate = GCDynamicEventBase.GCDynamicTemplate;
 
-            if (Name.Equals(GCDynamicEvent.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
+            if (Name.Equals(GCDynamicEventBase.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
             {
-                eventTemplate = GCDynamicEvent.CommittedUsageTemplate;
+                eventTemplate = GCDynamicEventBase.CommittedUsageTemplate;
             }
 
             SetMetadataFromTemplate(eventTemplate);
         }
 
-        private unsafe void SetMetadataFromTemplate(GCDynamicEvent eventTemplate)
+        private unsafe void SetMetadataFromTemplate(GCDynamicEventBase eventTemplate)
         {
             eventRecord->EventHeader.Id = (ushort)eventTemplate.ID;
             eventID = eventTemplate.ID;
@@ -230,12 +230,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
     /// <summary>
     /// Template base class for a specific type of dynamic event.
     /// </summary>
-    public abstract class GCDynamicEvent
+    public abstract class GCDynamicEventBase
     {
         /// <summary>
         /// The list of specific event templates.
         /// </summary>
-        internal static readonly RawDynamicTraceEvent RawDynamicTemplate = new RawDynamicTraceEvent();
+        internal static readonly GCDynamicTraceEvent GCDynamicTemplate = new GCDynamicTraceEvent();
         internal static readonly CommittedUsageTraceEvent CommittedUsageTemplate = new CommittedUsageTraceEvent();
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// The underlying TraceEvent object that is bound to the template during dispatch.
         /// It contains a pointer to the actual event payload and is what's used to fetch and parse fields.
         /// </summary>
-        internal GCDynamicTraceEvent UnderlyingEvent { get; private set; }
+        internal GCDynamicTraceEventImpl UnderlyingEvent { get; private set; }
 
         /// <summary>
         /// The Data field from the underlying event.
@@ -271,14 +271,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// Binds this template to an underlying event before it is dispatched.
         /// This is what allows the template to be used to parse the event.
         /// </summary>
-        internal GCDynamicEvent Bind(GCDynamicTraceEvent underlyingEvent)
+        internal GCDynamicEventBase Bind(GCDynamicTraceEventImpl underlyingEvent)
         {
             UnderlyingEvent = underlyingEvent;
             return this;
         }
     }
 
-    public sealed class RawDynamicTraceEvent : GCDynamicEvent
+    public sealed class GCDynamicTraceEvent : GCDynamicEventBase
     {
         internal override TraceEventID ID => (TraceEventID)39;
         internal override string TaskName => "GC";
@@ -329,7 +329,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
     }
 
-    public sealed class CommittedUsageTraceEvent : GCDynamicEvent
+    public sealed class CommittedUsageTraceEvent : GCDynamicEventBase
     {
         public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
         public long TotalCommittedInUse { get { return BitConverter.ToInt64(DataField, 2); } }
@@ -404,9 +404,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         public long TotalBookkeepingCommitted { get; internal set; }
     }
 
-    public sealed class DynamicEvent
+    public sealed class GCDynamicEvent
     {
-        public DynamicEvent(string name, DateTime timeStamp, byte[] payload)
+        public GCDynamicEvent(string name, DateTime timeStamp, byte[] payload)
         {
             Name = name;
             TimeStamp = timeStamp;
