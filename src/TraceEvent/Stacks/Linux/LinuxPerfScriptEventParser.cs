@@ -402,7 +402,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
                     if (firstSlash != eventName.Length - 1)
                     {
-                        eventName = eventName.Substring(0, firstSlash - 1);
+                        eventName = eventName.Substring(0, firstSlash);
                     }
                 }
 
@@ -433,39 +433,39 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     string eventDetails = sb.ToString().Trim();
                     sb.Clear();
 
-                    IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
-
-                    // Remember where this event ends so we can go back here after processing it
-                    var nextEventPos = source.MarkPosition();
-
                     // Go back to the event so we can process it
                     source.RestoreToMark(markedPosition);
                     if (eventDetails.Length >= SchedulerEvent.Name.Length && eventDetails.Substring(0, SchedulerEvent.Name.Length) == SchedulerEvent.Name)
                     {
                         ScheduleSwitch schedSwitch = ReadScheduleSwitch(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
                     }
                     else if (eventDetails.Length > ThreadExitEvent.Name.Length && eventDetails.Substring(0, ThreadExitEvent.Name.Length) == ThreadExitEvent.Name)
                     {
                         ThreadExit exit = ReadExit(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new ThreadExitEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, exit);
                     }
                     else if (eventDetails.Length > BlockReqIssueEvent.Name.Length && eventDetails.Substring(0, BlockReqIssueEvent.Name.Length) == BlockReqIssueEvent.Name)
                     {
                         BlockReqIssue blockReqIssue = ReadBlockReqIssue(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new BlockReqIssueEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, blockReqIssue);
                     }
                     else if (eventDetails.Length > BlockReqCompleteEvent.Name.Length && eventDetails.Substring(0, BlockReqCompleteEvent.Name.Length) == BlockReqCompleteEvent.Name)
                     {
                         BlockReqComplete blockReqComplete = ReadBlockReqComplete(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new BlockReqCompleteEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, blockReqComplete);
                     }
                     else
                     {
+                        source.ReadAsciiStringUpTo('\n', sb);
+                        sb.Clear();
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new CpuEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
                     }
-
-                    source.RestoreToMark(nextEventPos);
 
                     yield return linuxEvent;
                 }
@@ -918,6 +918,9 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
             // Next field is the process name in [] - don't bother with it for now
 
+            source.ReadAsciiStringUpTo('\n', sb);
+            sb.Clear();
+
             return new BlockReqIssue(device, deviceMinor, flags, length, sector, sectorLength);
         }
 
@@ -956,6 +959,9 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             source.SkipSpace();
             source.MoveNext();      // Skip '['
             int error = source.ReadInt();
+
+            source.ReadAsciiStringUpTo('\n', sb);
+            sb.Clear();
 
             return new BlockReqComplete(device, deviceMinor, flags, sector, sectorLength, error);
         }
