@@ -121,7 +121,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\kerneltracecontrol.dll">
       <Link>arm64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
