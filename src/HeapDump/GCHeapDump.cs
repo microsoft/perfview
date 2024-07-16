@@ -16,13 +16,20 @@ using Address = System.UInt64;
 /// </summary>
 public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 {
-    public GCHeapDump(string inputFileName) :
-        this(new Deserializer(inputFileName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }))
-    { }
+    private static SerializationConfiguration DefaultSerializationConfiguration = new SerializationConfiguration()
+    {
+        StreamLabelWidth = StreamLabelWidth.EightBytes
+    };
 
-    public GCHeapDump(Stream inputStream, string streamName) :
-        this(new Deserializer(inputStream, streamName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }))
-    { }
+    public GCHeapDump(string inputFileName, SerializationConfiguration serializationConfiguration = null) :
+        this(new Deserializer(inputFileName, serializationConfiguration ?? DefaultSerializationConfiguration), serializationConfiguration)
+    {
+    }
+
+    public GCHeapDump(Stream inputStream, string streamName, SerializationConfiguration serializationConfiguration = null) :
+        this(new Deserializer(inputStream, streamName, serializationConfiguration ?? DefaultSerializationConfiguration), serializationConfiguration)
+    {
+    }
 
     /// <summary>
     /// Writes the memory graph 'graph' as a .gcump file to 'outputFileName'
@@ -192,7 +199,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     private void Write(string outputFileName)
     {
         Debug.Assert(MemoryGraph != null);
-        var serializer = new Serializer(new IOStreamStreamWriter(outputFileName, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }), this);
+        var serializer = new Serializer(new IOStreamStreamWriter(outputFileName, config: new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes }), this);
         serializer.Close();
     }
 
@@ -207,9 +214,17 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     // For serialization
     private GCHeapDump() { }
 
-    private GCHeapDump(Deserializer deserializer)
+    private GCHeapDump(Deserializer deserializer, SerializationConfiguration serializationConfiguration)
     {
-        deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
+        serializationConfiguration = serializationConfiguration ?? DefaultSerializationConfiguration;
+        if (serializationConfiguration.StreamLabelWidth == StreamLabelWidth.EightBytes)
+        {
+            deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1, isVeryLargeGraph: true); });
+        }
+        else
+        {
+            deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1, isVeryLargeGraph: false); });
+        }
         deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
         deserializer.RegisterFactory(typeof(InteropInfo), delegate () { return new InteropInfo(); });
         deserializer.RegisterFactory(typeof(GCHeapDump), delegate () { return this; });
@@ -391,7 +406,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         // As long as we are on a tagged plan, we don't really have to increment this because
         // the tagged values we put in the stream do this for us, but it does not hurt and
         // acts as good documentation so we do increment it when we change things.   
-        get { return 10; }
+        get { return 11; }
     }
 
     int IFastSerializableVersion.MinimumVersionCanRead
@@ -408,6 +423,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
     private MemoryGraph m_graph;
     private InteropInfo m_interop;
+
     #endregion
 }
 
