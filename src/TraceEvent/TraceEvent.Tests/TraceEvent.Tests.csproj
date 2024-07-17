@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462</TargetFrameworks>
+    <TargetFrameworks>net462;net8.0</TargetFrameworks>
     <RootNamespace>TraceEventTests</RootNamespace>
     <AssemblyName>TraceEventTests</AssemblyName>
     <Description>Unit tests for TraceEvent.</Description>
@@ -16,7 +16,7 @@
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XunitVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualstudioVersion)" PrivateAssets="all" />
-    <PackageReference Include="System.IO.Compression" Version="$(SystemIOCompressionVersion)" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
@@ -27,6 +27,11 @@
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,7 +58,7 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 

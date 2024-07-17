@@ -81,8 +81,11 @@
                     <MenuItem Header="_Parent Window" Click="DoOpenParent"/>
                     <MenuItem Header="_Close" Click="DoClose"/>
                 </MenuItem>
+                <MenuItem Header="_View">
+                    <MenuItem Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
+                </MenuItem>
                 <MenuItem Header="_Help">
-                    <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
+                        <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:EventWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
                 </MenuItem>
             </Menu>
@@ -241,6 +244,22 @@
                         Binding="{Binding EventName}"
                         MinWidth="60"
                         IsReadOnly="True" />
+                        <WPFToolKit:DataGridTextColumn
+                        x:Name="LocalTimeStampColumn"
+                        Header="TimeStamp (Current Machine)"
+                        Binding="{Binding LocalTimeStamp, StringFormat=o}"
+                        MinWidth="60"
+                        IsReadOnly="True"
+                        Visibility="Hidden"
+                        ElementStyle="{StaticResource RightAlign}" />
+                        <WPFToolKit:DataGridTextColumn
+                        x:Name="OriginTimeStampColumn"
+                        Header="TimeStamp (Trace Local)"
+                        Binding="{Binding OriginTimeStamp, StringFormat=o}"
+                        MinWidth="60"
+                        IsReadOnly="True"
+                        Visibility="Visible"
+                        ElementStyle="{StaticResource RightAlign}" />
                         <WPFToolKit:DataGridTextColumn
                         x:Name="TimeMSecColumn"
                         Header="Time MSec"

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.Diagnostics.Tracing.StackSources
 {
@@ -16,36 +17,45 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 ".NET Server GC"
             };
 
+        private readonly object _dictionariesLock = new object();
         private Dictionary<StackSourceFrameIndex, HashSet<string>> _candidateProcessNames = new Dictionary<StackSourceFrameIndex, HashSet<string>>();
         private Dictionary<StackSourceFrameIndex, string> _cachedProcessNames = new Dictionary<StackSourceFrameIndex, string>();
         private Dictionary<StackSourceFrameIndex, int> _processIds = new Dictionary<StackSourceFrameIndex, int>();
 
         internal void SaveProcessName(StackSourceFrameIndex frameIndex, string processName, int processId)
         {
-            if (!_candidateProcessNames.TryGetValue(frameIndex, out HashSet<string> processNames))
+            lock (_dictionariesLock)
             {
-                processNames = new HashSet<string>();
-                _candidateProcessNames.Add(frameIndex, processNames);
+                if (!_candidateProcessNames.TryGetValue(frameIndex, out HashSet<string> processNames))
+                {
+                    processNames = new HashSet<string>();
+                    _candidateProcessNames.Add(frameIndex, processNames);
+                }
+
+                processNames.Add(processName);
+
+                _processIds[frameIndex] = processId;
             }
-
-            processNames.Add(processName);
-
-            _processIds[frameIndex] = processId;
         }
 
         internal string GetProcessName(StackSourceFrameIndex frameIndex)
         {
-            if (!_cachedProcessNames.TryGetValue(frameIndex, out string processName))
+            lock (_dictionariesLock)
             {
-                processName = BuildProcessName(frameIndex);
-                _cachedProcessNames.Add(frameIndex, processName);
-            }
+                if (!_cachedProcessNames.TryGetValue(frameIndex, out string processName))
+                {
+                    processName = BuildProcessName(frameIndex);
+                    _cachedProcessNames.Add(frameIndex, processName);
+                }
 
-            return processName;
+                return processName;
+            }
         }
 
         private string BuildProcessName(StackSourceFrameIndex frameIndex)
         {
+            Debug.Assert(Monitor.IsEntered(_dictionariesLock));
+
             if (_candidateProcessNames.TryGetValue(frameIndex, out HashSet<string> processNames))
             {
                 int processId = _processIds[frameIndex];

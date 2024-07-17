@@ -149,7 +149,7 @@ namespace PerfView
         public bool NoNGenPdbs;
         public bool NoNGenRundown = true;
         public bool NoClrRundown;
-        public bool NoV2Rundown;
+        public bool NoV2Rundown = true;
         public bool LowPriority;
 
         public bool? Merge;
@@ -257,13 +257,16 @@ namespace PerfView
                 commandLineArgs.KernelEvents |= KernelTraceEventParser.Keywords.ImageLoad;
             }
             commandLineArgs.ClrEvents = ClrTraceEventParser.Keywords.GC;
-            if(commandLineArgs.GCTriggeredStacks)
+            commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
+            commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
+            if (commandLineArgs.GCTriggeredStacks)
             {
                 commandLineArgs.ClrEvents |= ClrTraceEventParser.Keywords.Stack;
             }
-            commandLineArgs.ClrEventLevel = TraceEventLevel.Informational;
-            commandLineArgs.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
-            commandLineArgs.NoRundown = true;
+            else
+            {
+                commandLineArgs.NoRundown = true;
+            }
         }
 
         private void SetupCommandLine(CommandLineParser parser)

@@ -21,7 +21,11 @@ namespace TraceEventTests
         /// This test unzips a zip file containing 4 etls files, open them as 1 trace
         /// and asserts the correct TraceLog size and event count
         /// </summary>
+#if NETCOREAPP3_0_OR_GREATER
+        [Fact(Skip = "Snapshot difs due to increased float accuracy on newer .NET versions.")]
+#else
         [Fact]
+#endif
         public void ETW_MultiFileMergeAll_Basic()
         {
             PrepareTestData();
@@ -32,66 +36,68 @@ namespace TraceEventTests
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", etlFilePath));
             string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
-            TraceEventDispatcher source = new ETWTraceEventSource(fileNames, TraceEventSourceType.MergeAll);
-            TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(source, eltxFilePath));
-
-            Assert.Equal(95506, traceLog.EventCount);
-            var stopEvents = traceLog.Events.Filter(e => e.EventName == "Activity2Stop/Stop");
-            Assert.Equal(55, stopEvents.Count());
-            Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
-
-            using (var file = new StreamReader($"{TestDataDir}\\diaghub-dotnetcore3.1-win-x64-diagsession.baseline.txt"))
+            using (TraceEventDispatcher source = new ETWTraceEventSource(fileNames, TraceEventSourceType.MergeAll))
+            using (TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(source, eltxFilePath)))
             {
-                var traceSource = traceLog.Events.GetSource();
-                traceSource.AllEvents += delegate (TraceEvent data)
+
+                Assert.Equal(95506, traceLog.EventCount);
+                var stopEvents = traceLog.Events.Filter(e => e.EventName == "Activity2Stop/Stop");
+                Assert.Equal(55, stopEvents.Count());
+                Assert.Equal((uint)13205, (uint)stopEvents.Last().EventIndex);
+
+                using (var file = new StreamReader($"{TestDataDir}\\diaghub-dotnetcore3.1-win-x64-diagsession.baseline.txt"))
                 {
-                    string eventName = data.ProviderName + "/" + data.EventName;
-
-                    // We are going to skip dynamic events from the CLR provider.
-                    // The issue is that this depends on exactly which manifest is present
-                    // on the machine, and I just don't want to deal with the noise of 
-                    // failures because you have a slightly different one.  
-                    if (data.ProviderName == "DotNet")
+                    var traceSource = traceLog.Events.GetSource();
+                    traceSource.AllEvents += delegate (TraceEvent data)
                     {
-                        return;
-                    }
+                        string eventName = data.ProviderName + "/" + data.EventName;
 
-                    // We don't want to use the manifest for CLR Private events since 
-                    // different machines might have different manifests.  
-                    if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
-                    {
-                        if (data.GetType().Name == "DynamicTraceEventData" || data.EventName.StartsWith("EventID"))
+                        // We are going to skip dynamic events from the CLR provider.
+                        // The issue is that this depends on exactly which manifest is present
+                        // on the machine, and I just don't want to deal with the noise of
+                        // failures because you have a slightly different one.
+                        if (data.ProviderName == "DotNet")
                         {
                             return;
                         }
-                    }
-                    // Same problem with classic OS events.   We don't want to rely on the OS to parse since this could vary between baseline and test. 
-                    else if (data.ProviderName == "MSNT_SystemTrace")
-                    {
-                        // However we to allow a couple of 'known good' ones through so we test some aspects of the OS parsing logic in TraceEvent.   
-                        if (data.EventName != "SystemConfig/Platform" && data.EventName != "Image/KernelBase")
+
+                        // We don't want to use the manifest for CLR Private events since
+                        // different machines might have different manifests.
+                        if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
+                        {
+                            if (data.GetType().Name == "DynamicTraceEventData" || data.EventName.StartsWith("EventID"))
+                            {
+                                return;
+                            }
+                        }
+                        // Same problem with classic OS events.   We don't want to rely on the OS to parse since this could vary between baseline and test.
+                        else if (data.ProviderName == "MSNT_SystemTrace")
+                        {
+                            // However we to allow a couple of 'known good' ones through so we test some aspects of the OS parsing logic in TraceEvent.
+                            if (data.EventName != "SystemConfig/Platform" && data.EventName != "Image/KernelBase")
+                            {
+                                return;
+                            }
+                        }
+                        // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too aggressive about
+                        // turning them off, however becasuse I want those code paths tested
+
+
+                        // TODO FIX NOW, this is broken and should be fixed.
+                        // We are hacking it here so we don't turn off the test completely.
+                        if (eventName == "DotNet/CLR.SKUOrVersion")
                         {
                             return;
                         }
-                    }
-                    // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too aggressive about 
-                    // turning them off, however becasuse I want those code paths tested
 
+                        var evt = GeneralParsing.Parse(data);
 
-                    // TODO FIX NOW, this is broken and should be fixed.  
-                    // We are hacking it here so we don't turn off the test completely.  
-                    if (eventName == "DotNet/CLR.SKUOrVersion")
-                    {
-                        return;
-                    }
+                        var line = file.ReadLine();
+                        Assert.Equal(evt, line);
+                    };
 
-                    var evt = GeneralParsing.Parse(data);
-
-                    var line = file.ReadLine();
-                    Assert.Equal(evt, line);
-                };
-
-                traceSource.Process();
+                    traceSource.Process();
+                }
             }
         }
     }

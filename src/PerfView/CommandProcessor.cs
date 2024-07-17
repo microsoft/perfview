@@ -3302,7 +3302,7 @@ namespace PerfView
 
             if (!File.Exists(iisCorePath))  // IIS is not installed.  
             {
-                LogFile.WriteLine("File {0} does not, ASP.NET is not enabled on the machine", iisCorePath);
+                LogFile.WriteLine("File {0} does not exist, ASP.NET is not enabled on the machine", iisCorePath);
                 return;
             }
             var iisetwPath = Path.Combine(Environment.GetEnvironmentVariable("WINDIR"), @"System32\inetsrv\iisetw.dll");
@@ -3653,7 +3653,7 @@ namespace PerfView
                 LogFile.WriteLine("Rundown File Length: {0:n1}MB delta: {1:n1}MB", newRundownFileLen / 1000000.0, delta / 1000000.0);
                 rundownFileLen = newRundownFileLen;
 
-                if ((maxSizeMB > 0) && rundownFileLen >= (maxSizeMB * 1024 * 1024))
+                if ((maxSizeMB > 0) && rundownFileLen >= ((long)maxSizeMB * 1024 * 1024))
                 {
                     LogFile.WriteLine($"Exceeded maximum rundown file size of {maxSizeMB}MB.");
                     break;
@@ -3714,7 +3714,7 @@ namespace PerfView
                 TraceEventLevel level = TraceEventLevel.Verbose;
                 ulong matchAnyKeywords = unchecked((ulong)-1);
 
-                var rest = providerSpec;
+                var rest = providerSpec.Trim();
                 Match m = Regex.Match(rest, @"^([^:]*)(:(.*))?$");
                 Debug.Assert(m.Success);
                 rest = m.Groups[3].Value;
@@ -4094,43 +4094,5 @@ namespace PerfView
 
             return manifest;
         }
-
-        #region private
-
-#if !NET
-        private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
-        {
-            soFar[assembly] = assembly;
-            string assemblyDirectory = Path.GetDirectoryName(assembly.ManifestModule.FullyQualifiedName);
-            foreach (AssemblyName childAssemblyName in assembly.GetReferencedAssemblies())
-            {
-                try
-                {
-                    // TODO is this is at best heuristic.  
-                    string childPath = Path.Combine(assemblyDirectory, childAssemblyName.Name + ".dll");
-                    Assembly childAssembly = null;
-                    if (File.Exists(childPath))
-                    {
-                        childAssembly = Assembly.ReflectionOnlyLoadFrom(childPath);
-                    }
-
-                    //TODO do we care about things in the GAC?   it expands the search quite a bit. 
-                    //else
-                    //    childAssembly = Assembly.Load(childAssemblyName);
-
-                    if (childAssembly != null && !soFar.ContainsKey(childAssembly))
-                    {
-                        GetStaticReferencedAssemblies(childAssembly, soFar);
-                    }
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("Could not load assembly " + childAssemblyName + " skipping.");
-                }
-            }
-        }
-#endif
-
-        #endregion
     }
 }

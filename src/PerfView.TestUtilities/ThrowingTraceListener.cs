@@ -94,10 +94,12 @@ namespace PerfView.TestUtilities
             public DebugAssertFailureException() { }
             public DebugAssertFailureException(string message) : base(message) { }
             public DebugAssertFailureException(string message, Exception inner) : base(message, inner) { }
+#if !NET
             protected DebugAssertFailureException(
               System.Runtime.Serialization.SerializationInfo info,
               System.Runtime.Serialization.StreamingContext context) : base(info, context)
             { }
+#endif
         }
     }
 }

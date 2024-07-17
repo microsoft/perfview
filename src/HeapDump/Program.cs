@@ -1,4 +1,6 @@
-﻿using Microsoft.Diagnostics.Runtime;
+﻿using Azure.Core;
+using Azure.Identity;
+using Microsoft.Diagnostics.Runtime;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -57,7 +59,15 @@ internal class Program
             bool processDump = false;
             string inputSpec = null;
             int minSecForTrigger = -1;
-            var dumper = new GCHeapDumper(Console.Out);
+
+            DefaultAzureCredential symbolsTokenCredential = new DefaultAzureCredential(
+                new DefaultAzureCredentialOptions()
+                {
+                    ExcludeInteractiveBrowserCredential = false,
+                    ExcludeManagedIdentityCredential = true,
+                });
+
+            var dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
 
             for (int curArgIdx = 0; curArgIdx < args.Length; curArgIdx++)
             {

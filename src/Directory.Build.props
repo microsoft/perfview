@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project> 
+<Project>
 
   <PropertyGroup>
     <EnableDefaultNoneItems>False</EnableDefaultNoneItems>
@@ -22,29 +22,32 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <FastSerializationVersion>3.1.8</FastSerializationVersion>
-    <HeapDumpDllVersion>3.1.8</HeapDumpDllVersion>
-    <MemoryGraphVersion>3.1.8</MemoryGraphVersion>
-    <PerfViewVersion>3.1.8</PerfViewVersion>
-    <TraceEventVersion>3.1.8</TraceEventVersion>
-    <UtilitiesVersion>3.1.8</UtilitiesVersion>
+    <ReleaseVersion>3.1.13</ReleaseVersion>
+    <FastSerializationVersion>$(ReleaseVersion)</FastSerializationVersion>
+    <HeapDumpDllVersion>$(ReleaseVersion)</HeapDumpDllVersion>
+    <MemoryGraphVersion>$(ReleaseVersion)</MemoryGraphVersion>
+    <PerfViewVersion>$(ReleaseVersion)</PerfViewVersion>
+    <SymbolsAuthVersion>$(ReleaseVersion)</SymbolsAuthVersion>
+    <TraceEventVersion>$(ReleaseVersion)</TraceEventVersion>
+    <UtilitiesVersion>$(ReleaseVersion)</UtilitiesVersion>
   </PropertyGroup>
 
   <!-- Support files and analyzers -->
   <PropertyGroup>
-    <PerfViewSupportFilesVersion>1.0.7</PerfViewSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.27</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <PerfViewSupportFilesVersion>1.0.8</PerfViewSupportFilesVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.28</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>0.1.2</MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion>
   </PropertyGroup>
 
   <!-- External dependencies -->
   <PropertyGroup>
-    <AzureCoreVersion>1.36.0</AzureCoreVersion>
-    <AzureIdentityVersion>1.10.4</AzureIdentityVersion>
+    <AzureCoreVersion>1.38.0</AzureCoreVersion>
+    <AzureIdentityVersion>1.11.4</AzureIdentityVersion>
     <MicroBuildCoreVersion>0.3.1</MicroBuildCoreVersion>
-    <MicrosoftNETCorePortableCompatibilityVersion>1.0.2</MicrosoftNETCorePortableCompatibilityVersion>
-    <MicrosoftIdentityClientVersion>4.58.1</MicrosoftIdentityClientVersion>
-    <MicrosoftIdentityClientExtensionsMsalVersion>4.58.1</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftDiagnosticsNETCoreClientVersion>0.2.510501</MicrosoftDiagnosticsNETCoreClientVersion>
+    <MicrosoftIdentityClientVersion>4.61.3</MicrosoftIdentityClientVersion>
+    <MicrosoftIdentityClientExtensionsMsalVersion>4.61.3</MicrosoftIdentityClientExtensionsMsalVersion>
+    <MicrosoftIdentityModelAbstractionsVersion>7.1.2</MicrosoftIdentityModelAbstractionsVersion>
     <MicrosoftIdentityModelTokensVersion>7.1.2</MicrosoftIdentityModelTokensVersion>
     <MicrosoftIdentityModelJsonWebTokensVersion>7.1.2</MicrosoftIdentityModelJsonWebTokensVersion>
     <MicrosoftSourceLinkGitHubVersion>8.0.0</MicrosoftSourceLinkGitHubVersion>
@@ -52,30 +55,22 @@
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsImmutableVersion>8.0.0</SystemCollectionsImmutableVersion>
     <SystemDiagnosticsDiagnosticSourceVersion>8.0.0</SystemDiagnosticsDiagnosticSourceVersion>
-    <SystemDiagnosticsProcessVersion>4.3.0</SystemDiagnosticsProcessVersion>
-    <SystemDiagnosticsTraceSourceVersion>4.3.0</SystemDiagnosticsTraceSourceVersion>
-    <SystemIOCompressionVersion>4.3.0</SystemIOCompressionVersion>
-    <SystemIOUnmanagedMemoryStreamVersion>4.3.0</SystemIOUnmanagedMemoryStreamVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
-    <SystemNetNameResolutionVersion>4.3.0</SystemNetNameResolutionVersion>
-    <SystemNetRequestsVersion>4.3.0</SystemNetRequestsVersion>
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
     <SystemReflectionMetadataVersion>8.0.0</SystemReflectionMetadataVersion>
     <SystemReflectionTypeExtensionsVersion>4.7.0</SystemReflectionTypeExtensionsVersion>
-    <SystemRuntimeVersion>4.3.1</SystemRuntimeVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeInteropServicesRuntimeInformationVersion></SystemRuntimeInteropServicesRuntimeInformationVersion>
     <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
+    <SystemSecurityCryptographyProtectedDataVersion>4.7.0</SystemSecurityCryptographyProtectedDataVersion>
     <SystemTextEncodingsWebVersion>8.0.0</SystemTextEncodingsWebVersion>
-    <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
+    <SystemTextJsonVersion>8.0.4</SystemTextJsonVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
-    <SystemThreadingTasksParallelVersion>4.3.0</SystemThreadingTasksParallelVersion>
-    <SystemThreadingThreadVersion>4.3.0</SystemThreadingThreadVersion>
   </PropertyGroup>
 
   <!-- ClrMD -->
   <PropertyGroup>
-    <MicrosoftDiagnosticsRuntimeVersion>2.3.405304</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>4.0.0-beta.24314.3</MicrosoftDiagnosticsRuntimeVersion>
     <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
     <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
     <!--

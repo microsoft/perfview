@@ -21,7 +21,11 @@ namespace TraceEventTests
         /// and scans them (so you should get asserts if there is parsing problem)
         /// and ensures that no more than .1% of the events are 
         /// </summary>
+#if NETCOREAPP3_0_OR_GREATER
+        [Theory(Skip = "Snapshot difs due to increased float accuracy on newer .NET versions.")]
+#else
         [Theory]
+#endif
         [MemberData(nameof(TestEtlFiles))]
         public void ETW_GeneralParsing_Basic(string etlFileName)
         {

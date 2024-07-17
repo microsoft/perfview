@@ -260,7 +260,7 @@ namespace PerfView.Collections.Tests
                 for (int i = 0; i < count; i++)
                     collection.Remove(collection.ElementAt(0));
                 collection.Add(CreateT(254));
-                Assert.Equal(1, collection.Count);
+                Assert.Single(collection);
             }
         }
 
@@ -310,7 +310,7 @@ namespace PerfView.Collections.Tests
             else
             {
                 collection.Clear();
-                Assert.Equal(0, collection.Count);
+                Assert.Empty(collection);
             }
         }
 
@@ -331,7 +331,7 @@ namespace PerfView.Collections.Tests
                 collection.Clear();
                 collection.Clear();
                 collection.Clear();
-                Assert.Equal(0, collection.Count);
+                Assert.Empty(collection);
             }
         }
 

@@ -43,7 +43,9 @@ namespace PerfViewTests.Utilities
 
         protected static async Task WaitForUIAsync(Dispatcher dispatcher, CancellationToken cancellationToken)
         {
+#pragma warning disable VSTHRD001
             await dispatcher.InvokeAsync(EmptyAction, DispatcherPriority.ContextIdle, cancellationToken);
+#pragma warning restore VSTHRD001
         }
 
         protected async Task RunUITestAsync<T>(
