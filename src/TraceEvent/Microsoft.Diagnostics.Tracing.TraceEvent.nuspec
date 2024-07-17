@@ -35,6 +35,7 @@
         <dependency id="System.Reflection.Metadata" version="$SystemReflectionMetadataVersion$" />
         <dependency id="System.Reflection.TypeExtensions" version="$SystemReflectionTypeExtensionsVersion$" />
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="$SystemRuntimeCompilerServicesUnsafeVersion$" />
+        <dependency id="Microsoft.Diagnostics.NETCore.Client" version="$MicrosoftDiagnosticsNETCoreClientVersion$" />
       </group>
     </dependencies>
   </metadata>
