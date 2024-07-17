@@ -292,28 +292,28 @@
       <Link>amd64\msdia140.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net6.0-windows\HeapDump.dll">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net8.0-windows\HeapDump.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.dll</LogicalName>
       <Link>amd64\HeapDump.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net6.0-windows\HeapDump.dll.config">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net8.0-windows\HeapDump.dll.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.dll.config</LogicalName>
       <Link>amd64\HeapDump.dll.config</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net6.0-windows\HeapDump.exe">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net8.0-windows\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
       <Link>amd64\HeapDump.exe</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net6.0-windows\HeapDump.runtimeconfig.json">
+    <EmbeddedResource Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" Include="..\HeapDump\bin\x64\$(Configuration)\net8.0-windows\HeapDump.runtimeconfig.json">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.runtimeconfig.json</LogicalName>

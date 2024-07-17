@@ -343,6 +343,10 @@ public class GCHeapDumper
             {
                 m_log.WriteLine(ex.Message);
             }
+            catch (FileNotFoundException ex)
+            {
+                m_log.WriteLine(ex.Message);
+            }
         }
 
         if (runtimes.Count == 0)
