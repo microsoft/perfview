@@ -275,5 +275,22 @@ namespace LinuxTracingTests
                 eventKinds: new EventKind[] { EventKind.BlockRequestIssue, EventKind.BlockRequestComplete, EventKind.BlockRequestIssue, EventKind.BlockRequestComplete },
                 switches: null);
         }
+
+        [Fact]
+        public void OneWakeup()
+        {
+            string path = Constants.GetTestingPerfDumpPath("one_wakeup");
+            HeaderTest(path, blockedTime: false,
+                commands: new string[] { "swapper" },
+                pids: new int[] { 0 },
+                tids: new int[] { 0 },
+                cpus: new int[] { 9 },
+                times: new double[] { 0.0 },
+                timeProperties: new int[] { 1 },
+                events: new string[] { "sched" },
+                eventProperties: new string[] { "sched_wakeup: comm=fio pid=243615 prio=120 target_cpu=031 ffffffff8bad311d ttwu_do_wakeup ([kernel.kallsyms])" },
+                eventKinds: new EventKind[] { EventKind.Wakeup },
+                switches: null);
+        }
     }
 }
