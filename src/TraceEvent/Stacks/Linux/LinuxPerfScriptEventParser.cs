@@ -975,29 +975,72 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         private SchedWakeup ReadSchedWakeup(FastStream source)
         {
             StringBuilder sb = new StringBuilder();
+            string comm;
+            int pid;
+            int priority;
+            int targetCpu;
 
-            // Format is: sched:sched_wakeup: comm=%s pid=%d prio=%d target_cpu=%03d
+            // New Format is: sched:sched_wakeup: comm=%s pid=%d prio=%d target_cpu=%03d
+            // Old format is: sched:sched_wakeup: task %s:%d [%d] success=%d [%03d]
 
             // Skip "sched:sched_wakeup: "
             source.SkipUpTo(' ');
             source.SkipSpace();
 
-            source.SkipUpTo('=');
-            source.MoveNext();
-            source.ReadAsciiStringUpTo(' ', sb);
-            string comm = sb.ToString();
+            // Figure out which format we have.
+            var pos = source.MarkPosition();
 
-            source.SkipSpace();
-            source.SkipUpTo('=');
-            int pid = source.ReadInt();
+            source.ReadFixedString(4, sb);
+            string nextField = sb.ToString();
+            sb.Clear();
+            source.RestoreToMark(pos);
 
-            source.SkipSpace();
-            source.SkipUpTo('=');
-            int priority = source.ReadInt();
+            if (nextField == "comm")
+            {
+                // New format
+                source.SkipUpTo('=');
+                source.MoveNext();
+                source.ReadAsciiStringUpTo(' ', sb);
+                comm = sb.ToString();
 
-            source.SkipSpace();
-            source.SkipUpTo('=');
-            int targetCpu = source.ReadInt();
+                source.SkipSpace();
+                source.SkipUpTo('=');
+                source.MoveNext();
+                pid = source.ReadInt();
+
+                source.SkipSpace();
+                source.SkipUpTo('=');
+                source.MoveNext();
+                priority = source.ReadInt();
+
+                source.SkipSpace();
+                source.SkipUpTo('=');
+                source.MoveNext();
+                targetCpu = source.ReadInt();
+            }
+            else
+            {
+                // Old format
+                source.SkipUpTo(' ');
+                source.SkipSpace();
+                source.ReadAsciiStringUpTo(':', sb);
+                comm = sb.ToString();
+
+                source.MoveNext();
+                pid = source.ReadInt();
+
+                source.SkipSpace();
+                source.MoveNext();      // skip '['
+                priority = source.ReadInt();
+                source.MoveNext();      // skip ']'
+
+                source.SkipSpace();
+                source.SkipUpTo(' ');   // skip error code
+                source.SkipSpace();
+
+                source.MoveNext();      // skip '['
+                targetCpu = source.ReadInt();
+            }
 
             source.ReadAsciiStringUpTo('\n', sb);
             sb.Clear();
