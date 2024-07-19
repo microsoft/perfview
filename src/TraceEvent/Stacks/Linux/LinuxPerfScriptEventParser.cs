@@ -459,6 +459,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new BlockReqCompleteEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, blockReqComplete);
                     }
+                    else if (eventDetails.Length > SchedWakeupEvent.Name.Length && eventDetails.Substring(0, SchedWakeupEvent.Name.Length) == SchedWakeupEvent.Name)
+                    {
+                        SchedWakeup schedWakeup = ReadSchedWakeup(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
+                        linuxEvent = new SchedWakeupEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedWakeup);
+                    }
                     else
                     {
                         source.ReadAsciiStringUpTo('\n', sb);
@@ -966,6 +972,82 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             return new BlockReqComplete(device, deviceMinor, flags, sector, sectorLength, error);
         }
 
+        private SchedWakeup ReadSchedWakeup(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+            string comm;
+            int pid;
+            int priority;
+            int targetCpu;
+
+            // New Format is: sched:sched_wakeup: comm=%s pid=%d prio=%d target_cpu=%03d
+            // Old format is: sched:sched_wakeup: task %s:%d [%d] success=%d [%03d]
+
+            // Skip "sched:sched_wakeup: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            // Figure out which format we have.
+            var pos = source.MarkPosition();
+
+            source.ReadFixedString(4, sb);
+            string nextField = sb.ToString();
+            sb.Clear();
+            source.RestoreToMark(pos);
+
+            if (nextField == "comm")
+            {
+                // New format
+                source.SkipUpTo('=');
+                source.MoveNext();
+                source.ReadAsciiStringUpTo(' ', sb);
+                comm = sb.ToString();
+
+                source.SkipSpace();
+                source.SkipUpTo('=');
+                source.MoveNext();
+                pid = source.ReadInt();
+
+                source.SkipSpace();
+                source.SkipUpTo('=');
+                source.MoveNext();
+                priority = source.ReadInt();
+
+                source.SkipSpace();
+                source.SkipUpTo('=');
+                source.MoveNext();
+                targetCpu = source.ReadInt();
+            }
+            else
+            {
+                // Old format
+                source.SkipUpTo(' ');
+                source.SkipSpace();
+                source.ReadAsciiStringUpTo(':', sb);
+                comm = sb.ToString();
+
+                source.MoveNext();
+                pid = source.ReadInt();
+
+                source.SkipSpace();
+                source.MoveNext();      // skip '['
+                priority = source.ReadInt();
+                source.MoveNext();      // skip ']'
+
+                source.SkipSpace();
+                source.SkipUpTo(' ');   // skip error code
+                source.SkipSpace();
+
+                source.MoveNext();      // skip '['
+                targetCpu = source.ReadInt();
+            }
+
+            source.ReadAsciiStringUpTo('\n', sb);
+            sb.Clear();
+
+            return new SchedWakeup(comm, pid, priority, targetCpu);
+        }
+
         private void ReadProcessNameFromSchedSwitch(FastStream source, string nextFieldName, StringBuilder dest)
         {
             StringBuilder fieldNameStringBuilder = new StringBuilder();
@@ -1301,6 +1383,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         /// Represents an IO complete event.
         /// </summary>
         BlockRequestComplete,
+
+        /// <summary>
+        /// Represents a wakeup event.
+        /// </summary>
+        Wakeup,
     }
 
     /// <summary>
@@ -1481,6 +1568,45 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             Sector = sector;
             SectorLength = sectorLength;
             Error = error;
+        }
+    }
+
+    /// <summary>
+    /// A sample that has extra properties to hold scheduler wakeup events.
+    /// </summary>
+    public class SchedWakeupEvent : LinuxEvent
+    {
+        public static readonly string Name = "sched_wakeup";
+
+        /// <summary>
+        /// The details of the wakeup.
+        /// </summary>
+        public SchedWakeup Wakeup { get; }
+
+        public SchedWakeupEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, SchedWakeup wakeup) :
+            base(EventKind.Wakeup, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            Wakeup = wakeup;
+        }
+    }
+
+    public class SchedWakeup
+    {
+        public string Comm { get; }
+        public int ProcessId { get; }
+        public int Priority { get; }
+        public int TargetCpu { get; }
+
+        public SchedWakeup(
+            string comm, int processId, int priority, int targetCpu)
+        {
+            Comm = comm;
+            ProcessId = processId;
+            Priority = priority;
+            TargetCpu = targetCpu;
         }
     }
 
