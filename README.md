@@ -7,7 +7,7 @@ started information.
 
 ### Getting PerfView 
 Please see the [PerfView Download Page](documentation/Downloading.md) for the link and instructions for downloading the 
-current version of PerfView.  
+current version of PerfView.  test
 
 PerfView requires .NET Framework 4.7.2 or later, which is widely available for all supported versions of Windows.
 
