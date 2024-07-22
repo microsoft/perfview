@@ -196,3 +196,5 @@ nuget package when these files need to be updated. Very few people should care a
 
   * [Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmain) This is documentation that is only 
   useful for internal Microsoft users. By design the link will not work for most people.
+
+Creating a PR for validation, do not merge!
