@@ -244,7 +244,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     guids[GetFileName(path)] = guid;
 
                     // Check to see if the base address has been appended to the line.
-                    if(source.Current != '\n')
+                    if (source.Current != '\n')
                     {
                         sb.Clear();
                         source.ReadAsciiStringUpTo(';', sb);
@@ -441,6 +441,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
                     }
+                    if (eventDetails.Length >= ProcessExecEvent.Name.Length && eventDetails.Substring(0, ProcessExecEvent.Name.Length) == ProcessExecEvent.Name)
+                    {
+                        ProcessExec processExec = ReadProcessExec(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
+                        linuxEvent = new ProcessExecEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, processExec);
+                    }
                     else if (eventDetails.Length > ThreadExitEvent.Name.Length && eventDetails.Substring(0, ThreadExitEvent.Name.Length) == ThreadExitEvent.Name)
                     {
                         ThreadExit exit = ReadExit(source);
@@ -495,7 +501,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
 
             char zeroVal = (char)source.Peek(0);
 
-            startOver:
+        startOver:
             int firstSpaceIdx = -1;
             bool seenDigit = false;
 
@@ -606,7 +612,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     string[] moduleSymbol = mapper.ResolveSymbols(processID, stackFrame.Module, stackFrame);
                     stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
                 }
-                if(stackFrame.Module.StartsWith("jitted-") && stackFrame.Module.EndsWith(".so") && stackFrame.Symbol.EndsWith(")"))
+                if (stackFrame.Module.StartsWith("jitted-") && stackFrame.Module.EndsWith(".so") && stackFrame.Symbol.EndsWith(")"))
                 {
                     // Jitted or R2R code.  Replace the module with the IL module name, and shorten the symbol.
                     // Example: uint8[] [System.Private.CoreLib] Internal.IO.File::ReadAllBytes(string)
@@ -617,21 +623,21 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     int currentIndex = symbol.Length - 1;
                     int endIndex = 0;
                     int parenDepth = 0;
-                    while(currentIndex >= endIndex)
+                    while (currentIndex >= endIndex)
                     {
                         char current = symbol[currentIndex];
-                        if(current == ')')
+                        if (current == ')')
                         {
                             // We know that we'll immediately increment the paren depth from 0 to 1 on the first loop iteration because
                             // the conditions on the if statement above require it.
                             parenDepth++;
                         }
-                        else if(current == '(')
+                        else if (current == '(')
                         {
                             parenDepth--;
                         }
 
-                        if(parenDepth <= 0)
+                        if (parenDepth <= 0)
                         {
                             // We found the open paren that matches the last close paren.
                             break;
@@ -647,7 +653,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     }
 
                     // Make sure we actually hit a ' ' char.
-                    if(symbol[currentIndex] != ' ')
+                    if (symbol[currentIndex] != ' ')
                     {
                         goto abort;
                     }
@@ -656,7 +662,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                     string newSymbol = symbol.Substring(currentIndex + 1, (symbol.Length - currentIndex - 1));
 
                     // Find the beginning of the module name by looking for ']'.
-                    while(currentIndex >= endIndex && symbol[currentIndex] != ']')
+                    while (currentIndex >= endIndex && symbol[currentIndex] != ']')
                     {
                         currentIndex--;
                     }
@@ -771,7 +777,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.SkipUpTo('=');
                 source.MoveNext();
 
-                ReadProcessNameFromSchedSwitch(source, "prev_pid", sb);
+                ReadProcessNameUntilNextField(source, "prev_pid", sb);
                 string prevComm = sb.ToString();
                 sb.Clear();
 
@@ -795,7 +801,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.SkipUpTo('=');
                 source.MoveNext();
 
-                ReadProcessNameFromSchedSwitch(source, "next_pid", sb);
+                ReadProcessNameUntilNextField(source, "next_pid", sb);
                 string nextComm = sb.ToString();
                 sb.Clear();
 
@@ -856,6 +862,39 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
             }
         }
+        private ProcessExec ReadProcessExec(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // Format is:
+            // sched:sched_process_exec: filename=/usr/bin/fio pid=228299 old_pid=228299
+
+            // Skip "sched_process_exec: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            // Skip "filename="
+            source.SkipUpTo('=');
+            source.MoveNext();
+
+            ReadProcessNameUntilNextField(source, "pid", sb);
+            string fileName = sb.ToString();
+            sb.Clear();
+
+            // skip "pid="
+            source.SkipUpTo('=');
+            source.MoveNext();
+
+            int newPid = source.ReadInt();
+
+            // skip "old_pid="
+            source.SkipUpTo('=');
+            source.MoveNext();
+
+            int oldPid = source.ReadInt();
+
+            return new ProcessExec(fileName, newPid, oldPid);
+        }
 
         private ThreadExit ReadExit(FastStream source)
         {
@@ -864,7 +903,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             source.SkipUpTo('=');
             source.MoveNext();
 
-            ReadProcessNameFromSchedSwitch(source, "pid", sb);
+            ReadProcessNameUntilNextField(source, "pid", sb);
             string comm = sb.ToString();
             sb.Clear();
 
@@ -966,7 +1005,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             return new BlockReqComplete(device, deviceMinor, flags, sector, sectorLength, error);
         }
 
-        private void ReadProcessNameFromSchedSwitch(FastStream source, string nextFieldName, StringBuilder dest)
+        // Reads from the current position to the next field name, storing the result in "dest". Looping logic is required because there may be spaces in the field name.
+        //
+        // Example: "swapper/3 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=rcu_sched next_pid=8 next_prio=120"
+        // With nextField == "prev_pid"
+        // Would store "swapper/3" in "dest".
+        private void ReadProcessNameUntilNextField(FastStream source, string nextFieldName, StringBuilder dest)
         {
             StringBuilder fieldNameStringBuilder = new StringBuilder();
 
@@ -1099,15 +1143,15 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         {
                             Dictionary<string, ulong> baseAddresses;
 
-                            if(processDllBaseAddresses.TryGetValue(
+                            if (processDllBaseAddresses.TryGetValue(
                                 perfInfoFileName, out baseAddresses))
                             {
-                                if(baseAddresses.TryGetValue(dllName, out ulong baseAddress))
+                                if (baseAddresses.TryGetValue(dllName, out ulong baseAddress))
                                 {
-                                    if(baseAddress <= ip)
+                                    if (baseAddress <= ip)
                                     {
                                         ulong offset = ip - baseAddress;
-                                        if(mapper.TryFindSymbol(offset,
+                                        if (mapper.TryFindSymbol(offset,
                                             out symbol, out address))
                                         {
                                             return parser.GetSymbolFromMicrosoftMap(symbol);
@@ -1189,7 +1233,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             symbol = "";
             startLocation = 0;
 
-            if(maps.Count <= 0)
+            if (maps.Count <= 0)
             {
                 return false;
             }
@@ -1288,6 +1332,11 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         Scheduler,
 
         /// <summary>
+        /// Represents a process exec event.
+        /// </summary>
+        ProcessExec,
+
+        /// <summary>
         /// Represents a thread exit event.
         /// </summary>
         ThreadExit,
@@ -1347,6 +1396,36 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             NextCommand = nextComm;
             NextThreadID = nextTid;
             NextPriority = nextPrio;
+        }
+    }
+    public class ProcessExecEvent : LinuxEvent
+    {
+        public static readonly string Name = "sched_process_exec";
+
+        public ProcessExec ProcessExec { get; }
+
+        public ProcessExecEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, ProcessExec processExec) :
+            base(EventKind.ProcessExec, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            ProcessExec = processExec;
+        }
+    }
+
+    public class ProcessExec
+    {
+
+        public string FileName { get; }
+        public int NewProcessId { get; }
+        public int PreviousProcessId { get; }
+
+        public ProcessExec(string fileName, int newPid, int oldPid)
+        {
+            FileName = fileName;
+            NewProcessId = newPid;
+            PreviousProcessId = oldPid;
         }
     }
 
