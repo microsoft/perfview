@@ -292,5 +292,22 @@ namespace LinuxTracingTests
                 eventKinds: new EventKind[] { EventKind.Wakeup, EventKind.Wakeup },
                 switches: null);
         }
+
+        [Fact]
+        public void ExecProcess()
+        {
+            string path = Constants.GetTestingPerfDumpPath("exec_process");
+            HeaderTest(path, blockedTime: false,
+                commands: new string[] { "probe-bcache" },
+                pids: new int[] { 286053, 286053 },
+                tids: new int[] { 286053, 286053 },
+                cpus: new int[] { 3, 3 },
+                times: new double[] { 0.0, 0.0 },
+                timeProperties: new int[] { 1, 1 },
+                events: new string[] { "sched" },
+                eventProperties: new string[] { "sched_process_exec: filename=/lib/udev/probe-bcache pid=286053 old_pid=286053" },
+                eventKinds: new EventKind[] { EventKind.ProcessExec },
+                switches: null);
+        }
     }
 }
