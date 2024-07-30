@@ -441,7 +441,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new SchedulerEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
                     }
-                    if (eventDetails.Length >= ProcessExecEvent.Name.Length && eventDetails.Substring(0, ProcessExecEvent.Name.Length) == ProcessExecEvent.Name)
+                    else if (eventDetails.Length >= ProcessExecEvent.Name.Length && eventDetails.Substring(0, ProcessExecEvent.Name.Length) == ProcessExecEvent.Name)
                     {
                         ProcessExec processExec = ReadProcessExec(source);
                         IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
