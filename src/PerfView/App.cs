@@ -868,7 +868,7 @@ namespace PerfView
             {
                 ret.SecurityCheck = delegate (string pdbFile)
                 {
-                    var result = System.Windows.MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
+                    var result = System.Windows.MessageBox.Show("Found " + pdbFile + " on your local machine.  Do you want to use it?",
                         "Security Check", System.Windows.MessageBoxButton.YesNo);
                     return result == System.Windows.MessageBoxResult.Yes;
                 };
