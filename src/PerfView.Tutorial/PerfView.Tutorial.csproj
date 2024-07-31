@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net462</TargetFramework>
+    <TargetName>tutorial</TargetName>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>PerfView Tutorial</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2024</Copyright>
+    <Version>$(PerfViewVersion)</Version>
+    <FileVersion>$(PerfViewVersion)</FileVersion>
+    <InformationalVersion>$(PerfViewVersion)</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+  </ItemGroup>
+
+</Project>

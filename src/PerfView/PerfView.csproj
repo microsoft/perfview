@@ -121,6 +121,7 @@
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
     <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\PerfView.Tutorial\PerfView.Tutorial.csproj" />
     <ProjectReference Include="..\SymbolsAuth\SymbolsAuth.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
@@ -178,11 +179,6 @@
     </Compile>
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
     <Compile Include="..\Utilities\TeeTextWriter.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The tutorial only gets included as an embedded resource -->
-    <Compile Remove="SupportFiles\tutorial.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -587,19 +583,19 @@
       <Link>System.Threading.Tasks.Extensions.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\tutorial.exe">
+    <EmbeddedResource Include="..\PerfView.Tutorial\bin\$(Configuration)\net462\tutorial.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.exe</LogicalName>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\tutorial.pdb">
+    <EmbeddedResource Include="..\PerfView.Tutorial\bin\$(Configuration)\net462\tutorial.pdb">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.pdb</LogicalName>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\tutorial.cs">
+    <EmbeddedResource Include="..\PerfView.Tutorial\tutorial.cs">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.cs.txt</LogicalName>
