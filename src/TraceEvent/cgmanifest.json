@@ -1,0 +1,28 @@
+{
+    "$schema": "https://json.schemastore.org/component-detection-manifest.json",
+    "version": 1,
+    "registrations": [
+        {
+            "component": {
+                "type": "other",
+                "other": {
+                    "name": "KernelTraceControl",
+                    "version": "10.0.22000.1",
+                    "downloadUrl": "https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install",
+                    "hash": ""
+                }
+            }
+        },
+        {
+            "component": {
+                "type": "other",
+                "other": {
+                    "name": "msdia140",
+                    "version": "14.36.32543.0",
+                    "downloadUrl": "https://devdiv.visualstudio.com/DevDiv/_artifacts/feed/VS-CoreXtFeeds/NuGet/VS.Redist.Vctools.Amd64/overview/1.0.8605846-17-6-20231027-01",
+                    "hash": ""
+                }
+            }
+        }
+    ]
+}
