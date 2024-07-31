@@ -117,7 +117,7 @@ extends:
             displayName: 'Pull AzDO SourceBranch'
             inputs:
               filename: 'git '
-              arguments: 'pull https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
+              arguments: 'pull --strategy=recursive --strategy-option no-renames https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
 
           - task: CmdLine@1
             displayName: 'Run git push '
