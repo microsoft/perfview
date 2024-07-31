@@ -13,7 +13,7 @@ PerfView requires .NET Framework 4.7.2 or later, which is widely available for a
 
 ### Are you here about the TraceEvent Library?
 
-PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) and EventPipe (.NET Core trace) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programmatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
+PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) and EventPipe (.NET Core trace) data. Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programmatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
 
 ### Not Sure if you should use PerfView or TraceEvent?
 
